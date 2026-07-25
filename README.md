@@ -7,8 +7,13 @@ sales analytics only; no inventory, stock, or shipment tracking.
 ## Status
 - **Phase 1 (this build):** HCPS-branded portal front end. Manufacturer tabs, category
   browsing, product cards, cart, and an order form. Data comes from `public/data/*.json`.
-  Complete Medical Supplies is seeded with 95 real products + images (from the June
-  Specials). Other manufacturers show a "soon" tab until their product data is loaded.
+  Complete Medical Supplies is loaded with the full catalog — 467 products across 17
+  categories with quantity-tier pricing (plus `tiers`, `upc`, and `msrp` carried in the
+  JSON for the Phase-2 `price_tiers` import). Other manufacturers show a "soon" tab until
+  their product data is loaded. Product images live in
+  `public/assets/products/complete-medical-supplies/`; the portal retries a lowercased
+  filename on load error, so image paths resolve whether the files are upper- or
+  lowercase in the repo.
 - **Phase 2 (next):** Supabase back end — products/pricing in the database, dealer logins
   (Supabase Auth), per-dealer custom pricing (Row-Level Security), and order submission
   writing to the DB. Set `CONFIG.DATA_SOURCE="supabase"` in `index.html` and fill the keys.
