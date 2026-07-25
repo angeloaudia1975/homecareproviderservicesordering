@@ -6,7 +6,32 @@
     "dark": "#2c3e50",
     "logo": "/assets/logos/complete-medical-supplies.jpg",
     "hasData": true,
-    "sort": 0
+    "sort": 0,
+    "freight": {
+      "summary": "Free freight: Blue Jay at $400 · Drive & Compass (consolidated) at $750. Other brands and orders below the threshold ship at actual freight, calculated and confirmed by Complete Medical.",
+      "actualNote": "Freight is calculated by Complete Medical and confirmed on your order confirmation.",
+      "groups": [
+        {
+          "label": "Blue Jay",
+          "brandKeywords": [
+            "bluejay",
+            "blue jay"
+          ],
+          "freeAt": 400
+        },
+        {
+          "label": "Drive & Compass",
+          "brandKeywords": [
+            "drive",
+            "devilbiss",
+            "compass"
+          ],
+          "freeAt": 750
+        }
+      ],
+      "otherLabel": "Other brands",
+      "elseActual": true
+    }
   },
   {
     "slug": "access4u",
@@ -87,7 +112,22 @@
     "dark": "#17324d",
     "logo": "/assets/logos/bemis.jpg",
     "hasData": true,
-    "sort": 9
+    "sort": 9,
+    "freight": {
+      "summary": "Free shipping on orders $500 or more; a $40 flat freight fee applies to orders under $500.",
+      "actualNote": "",
+      "groups": [
+        {
+          "label": "All Bemis items",
+          "brandKeywords": [
+            "*"
+          ],
+          "freeAt": 500,
+          "flatUnder": 40
+        }
+      ],
+      "elseActual": false
+    }
   },
   {
     "slug": "pedifix",
