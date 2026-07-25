@@ -291,16 +291,127 @@
   },
   {
     "manufacturer": "complete-medical-supplies",
+    "code": "3815C",
+    "name": "DreamEasy CPAP Full Face Mask with Comfort Cushion — Small",
+    "category": "Respiratory",
+    "subcategory": "CPAP Accessories",
+    "brand": "Roscoe Medical",
+    "description": "Comfort Cushion forms a superior seal that conforms to the facial contours. 360° rotational elbow, comes complete with headgear, dishwasher-safe for easy cleaning.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 29.95,
+    "price_note": "",
+    "image": "/assets/products/complete-medical-supplies/3815a.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 29.95
+      }
+    ],
+    "upc": "",
+    "msrp": null
+  },
+  {
+    "manufacturer": "complete-medical-supplies",
     "category": "Respiratory",
     "subcategory": "CPAP Accessories",
     "brand": "Roscoe Medical",
     "code": "3815A",
-    "name": "DreamEasy CPAP Face Mask with Comfort Cushion",
-    "description": "360° rotational elbow. Superior seal conforms to facial contours. Dishwasher safe. Headgear included.",
+    "name": "DreamEasy CPAP Full Face Mask with Comfort Cushion — Medium",
+    "description": "Comfort Cushion forms a superior seal that conforms to the facial contours. 360° rotational elbow, comes complete with headgear, dishwasher-safe for easy cleaning.",
     "hcpc": "",
     "base_price": 29.95,
     "price_note": "",
-    "image": "/assets/products/complete-medical-supplies/3815a.jpg"
+    "image": "/assets/products/complete-medical-supplies/3815a.jpg",
+    "uom": "Each"
+  },
+  {
+    "manufacturer": "complete-medical-supplies",
+    "code": "3815B",
+    "name": "DreamEasy CPAP Full Face Mask with Comfort Cushion — Large",
+    "category": "Respiratory",
+    "subcategory": "CPAP Accessories",
+    "brand": "Roscoe Medical",
+    "description": "Comfort Cushion forms a superior seal that conforms to the facial contours. 360° rotational elbow, comes complete with headgear, dishwasher-safe for easy cleaning.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 29.95,
+    "price_note": "",
+    "image": "/assets/products/complete-medical-supplies/3815a.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 29.95
+      }
+    ],
+    "upc": "",
+    "msrp": null
+  },
+  {
+    "manufacturer": "complete-medical-supplies",
+    "code": "3816C",
+    "name": "DreamEasy CPAP Nasal Mask with Comfort Cushion — Small",
+    "category": "Respiratory",
+    "subcategory": "CPAP Accessories",
+    "brand": "Roscoe Medical",
+    "description": "Comfort Cushion forms a superior seal that conforms to the facial contours. 360° rotational elbow, comes complete with headgear, dishwasher-safe for easy cleaning.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 29.95,
+    "price_note": "",
+    "image": "/assets/products/complete-medical-supplies/3816a.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 29.95
+      }
+    ],
+    "upc": "",
+    "msrp": null
+  },
+  {
+    "manufacturer": "complete-medical-supplies",
+    "code": "3816A",
+    "name": "DreamEasy CPAP Nasal Mask with Comfort Cushion — Medium",
+    "category": "Respiratory",
+    "subcategory": "CPAP Accessories",
+    "brand": "Roscoe Medical",
+    "description": "Comfort Cushion forms a superior seal that conforms to the facial contours. 360° rotational elbow, comes complete with headgear, dishwasher-safe for easy cleaning.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 29.95,
+    "price_note": "",
+    "image": "/assets/products/complete-medical-supplies/3816a.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 29.95
+      }
+    ],
+    "upc": "",
+    "msrp": null
+  },
+  {
+    "manufacturer": "complete-medical-supplies",
+    "code": "3816B",
+    "name": "DreamEasy CPAP Nasal Mask with Comfort Cushion — Large",
+    "category": "Respiratory",
+    "subcategory": "CPAP Accessories",
+    "brand": "Roscoe Medical",
+    "description": "Comfort Cushion forms a superior seal that conforms to the facial contours. 360° rotational elbow, comes complete with headgear, dishwasher-safe for easy cleaning.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 29.95,
+    "price_note": "",
+    "image": "/assets/products/complete-medical-supplies/3816a.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 29.95
+      }
+    ],
+    "upc": "",
+    "msrp": null
   },
   {
     "manufacturer": "complete-medical-supplies",
@@ -529,6 +640,28 @@
     "base_price": 489.95,
     "price_note": "",
     "image": "/assets/products/complete-medical-supplies/525ds.jpg"
+  },
+  {
+    "manufacturer": "complete-medical-supplies",
+    "code": "SIMO2DS",
+    "name": "SIMO2 Portable Oxygen Concentrator",
+    "category": "Respiratory",
+    "subcategory": "Oxygen Concentrators by DRIVE",
+    "brand": "DeVilbiss",
+    "description": "Portable oxygen concentrator. Pulse settings 1–6, O₂ production up to 1260 mL/min. On-board oxygen sensing with purity indications/alerts, field-replaceable sieve beds, proactive maintenance alerts, and a clear LCD interface. Conforms to FAA acceptance criteria for in-flight use. Carry bag included.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 849.95,
+    "price_note": "",
+    "image": "/assets/products/complete-medical-supplies/simo2ds.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 849.95
+      }
+    ],
+    "upc": "",
+    "msrp": null
   },
   {
     "manufacturer": "complete-medical-supplies",
