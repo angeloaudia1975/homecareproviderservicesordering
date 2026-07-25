@@ -22,6 +22,24 @@ Any static server pointed at `public/` (e.g. `npx serve public`). It's a static 
 New Netlify site from this repo. Build settings: publish directory `public`
 (see `netlify.toml`). Link it from the main HCPS site's "Online Ordering".
 
+## Order emails (Resend)
+Submitted carts are emailed to HCPS by the Netlify function
+`netlify/functions/submit-order.js` (endpoint `/.netlify/functions/submit-order`,
+already wired as `CONFIG.ORDER_ENDPOINT` in `index.html`). It formats the cart into
+a branded HTML + plain-text order email and sends it via Resend on the
+`homecareproviderservices.us` domain — the same provider/domain the main site's
+contact form uses. No npm dependencies (uses the runtime's native `fetch`).
+
+Set these in Netlify → Site settings → Environment variables:
+- `RESEND_API_KEY` **(required)** — the Resend key for `homecareproviderservices.us`.
+- `ORDER_TO` *(optional)* — recipient(s), comma-separated. Default `orders@homecareproviderservices.us`.
+- `ORDER_FROM` *(optional)* — From header. Default `HCPS Ordering Portal <orders@homecareproviderservices.us>`.
+
+Replies to the order email go to the dealer (the function sets `reply_to` to the
+dealer's email from the form). The order currently emails HCPS only; a dealer
+confirmation copy can be added later. Test after deploy by submitting a cart; the
+function returns `{ ok:true, id }` and the email lands in `orders@`.
+
 ## Supabase (Phase 2 setup)
 1. Create a new Supabase project (separate from Golden's).
 2. In the SQL editor, run `supabase/schema.sql`.

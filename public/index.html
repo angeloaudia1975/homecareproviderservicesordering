@@ -217,7 +217,7 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
    ============================================================ */
 const CONFIG = {
   DATA_SOURCE: "json",                 // "json" | "supabase"
-  ORDER_ENDPOINT: "",                  // Netlify function / Formspree in Phase 2
+  ORDER_ENDPOINT: "/.netlify/functions/submit-order",  // Resend order email (netlify/functions/submit-order.js)
   SUPABASE_URL: "",                    // filled in Phase 2
   SUPABASE_ANON: "",                   // filled in Phase 2
 };
