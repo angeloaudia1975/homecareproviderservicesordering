@@ -1,0 +1,101 @@
+[
+  {
+    "slug": "complete-medical-supplies",
+    "name": "Complete Medical Supplies",
+    "accent": "#ef6a1f",
+    "dark": "#2c3e50",
+    "logo": "/assets/logos/complete-medical-supplies.jpg",
+    "hasData": true,
+    "sort": 0
+  },
+  {
+    "slug": "access4u",
+    "name": "Access4U",
+    "accent": "#2f73b8",
+    "dark": "#0f2942",
+    "logo": "/assets/logos/access4u.jpg",
+    "hasData": false,
+    "sort": 1
+  },
+  {
+    "slug": "strongback-mobility",
+    "name": "Strongback Mobility",
+    "accent": "#25aeda",
+    "dark": "#173247",
+    "logo": "/assets/logos/strongback-mobility.jpg",
+    "hasData": false,
+    "sort": 2
+  },
+  {
+    "slug": "abm-respiratory-care",
+    "name": "ABM Respiratory Care",
+    "accent": "#1fa8c6",
+    "dark": "#3c4a52",
+    "logo": "/assets/logos/abm-respiratory-care.jpg",
+    "hasData": false,
+    "sort": 3
+  },
+  {
+    "slug": "ohio-medical",
+    "name": "Ohio Medical",
+    "accent": "#1e6fb3",
+    "dark": "#0f3a63",
+    "logo": "/assets/logos/ohio-medical.jpg",
+    "hasData": false,
+    "sort": 4
+  },
+  {
+    "slug": "airavant-bongorx",
+    "name": "AIRAVANT / BongoRx",
+    "accent": "#f3b223",
+    "dark": "#003f67",
+    "logo": "/assets/logos/airavant-bongorx.jpg",
+    "hasData": false,
+    "sort": 5
+  },
+  {
+    "slug": "climbing-steps",
+    "name": "Climbing Steps",
+    "accent": "#38a169",
+    "dark": "#1b3a63",
+    "logo": "/assets/logos/climbing-steps.jpg",
+    "hasData": false,
+    "sort": 6
+  },
+  {
+    "slug": "corsicana",
+    "name": "Corsicana Healthcare",
+    "accent": "#2fb3a8",
+    "dark": "#153a5e",
+    "logo": "/assets/logos/corsicana.jpg",
+    "hasData": false,
+    "sort": 7
+  },
+  {
+    "slug": "ovation-medical",
+    "name": "Ovation Medical",
+    "accent": "#00a7df",
+    "dark": "#10263f",
+    "logo": "/assets/logos/ovation-medical.jpg",
+    "hasData": false,
+    "sort": 8
+  },
+  {
+    "slug": "bemis",
+    "name": "BEMIS Assurance",
+    "accent": "#2477b3",
+    "dark": "#17324d",
+    "logo": "/assets/logos/bemis.jpg",
+    "hasData": false,
+    "sort": 9
+  },
+  {
+    "slug": "pedifix",
+    "name": "PediFix",
+    "accent": "#2672b9",
+    "dark": "#123057",
+    "logo": "/assets/logos/pedifix.jpg",
+    "hasData": false,
+    "sort": 10
+  }
+]

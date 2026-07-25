@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>HomeCare Provider Services — Dealer Ordering Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b0d0f; --navy:#10263f; --navy2:#173a5e;
+  --orange:#ef6325; --orange-d:#cf4e18; --gold:#fcb21e; --blue:#1681c2;
+  --paper:#f6f7f5; --white:#fff; --gray:#6b7280; --line:#e6e2dc; --green:#2d7d46;
+  --radius:12px; --shadow:0 8px 26px rgba(16,38,63,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',system-ui,sans-serif;background:var(--paper);color:var(--navy);}
+a{text-decoration:none;color:inherit;}
+.cond{font-family:'Barlow Condensed',sans-serif;}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px;}
+
+/* HEADER */
+header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 16px rgba(0,0,0,.25);}
+.htop{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 20px;border-bottom:2px solid var(--orange);}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand .mark{width:46px;height:46px;border-radius:10px;background:linear-gradient(120deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;color:#141414;font-weight:900;font-family:'Barlow Condensed',sans-serif;font-size:16px;}
+.brand .l1{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;color:#fff;letter-spacing:.5px;line-height:1;}
+.brand .l2{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#9fb0c4;}
+.hactions{display:flex;align-items:center;gap:10px;}
+.hbtn{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.22);color:#fff;background:transparent;padding:9px 14px;border-radius:999px;font-weight:600;font-size:13px;cursor:pointer;}
+.hbtn:hover{border-color:#fff;background:rgba(255,255,255,.08);}
+.hbtn.cart{border-color:transparent;background:var(--orange);}
+.hbtn.cart:hover{background:var(--orange-d);}
+.hbtn .muted{color:#ffe;opacity:.85;}
+
+/* MANUFACTURER TABS */
+.tabs{display:flex;gap:2px;overflow-x:auto;padding:0 20px;scrollbar-width:thin;}
+.tab{white-space:nowrap;color:#9fb0c4;padding:12px 16px;font-weight:600;font-size:12.5px;letter-spacing:.4px;text-transform:uppercase;border-bottom:3px solid transparent;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;}
+.tab:hover{color:#fff;}
+.tab.active{color:#fff;border-color:var(--orange);}
+.tab.disabled{opacity:.5;cursor:default;}
+.tab .soon{font-size:9px;background:rgba(255,255,255,.12);color:#cbd6e2;padding:1px 6px;border-radius:999px;margin-left:6px;letter-spacing:.5px;}
+
+/* MFR BANNER + CONTROLS */
+.mbanner{background:linear-gradient(120deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;padding:26px 0;}
+.mbanner h1{font-family:'Barlow Condensed',sans-serif;font-size:clamp(28px,4vw,44px);font-weight:900;line-height:1;letter-spacing:-.5px;}
+.mbanner h1 span{color:var(--gold);}
+.mbanner p{color:#a9bacd;font-size:14px;margin-top:6px;max-width:640px;}
+.mstat{display:flex;gap:26px;margin-top:16px;flex-wrap:wrap;}
+.mstat b{font-family:'Barlow Condensed',sans-serif;color:var(--orange);font-size:22px;display:block;line-height:1;}
+.mstat span{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#9fb0c4;}
+.controls{position:sticky;top:57px;z-index:40;background:var(--paper);border-bottom:1px solid var(--line);padding:12px 0;}
+.controls .row{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:10px;}
+.controls input,.controls select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;background:#fff;color:var(--navy);}
+.controls input:focus,.controls select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(22,129,194,.15);}
+@media(max-width:760px){.controls .row{grid-template-columns:1fr 1fr;} .controls input{grid-column:1/-1;}}
+
+/* CATEGORY + GRID */
+.section{padding:30px 0 8px;}
+.cat-div{display:flex;align-items:center;gap:14px;margin:14px 0 20px;}
+.cat-div .lbl{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;white-space:nowrap;}
+.cat-div .lbl span{color:var(--orange);}
+.cat-div .ln{flex:1;height:2px;background:var(--line);}
+.subdiv{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--navy);margin:22px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line);}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .2s;}
+.card:hover{box-shadow:var(--shadow);transform:translateY(-2px);}
+.card .img{background:#f5f2ee;padding:14px;min-height:170px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line);}
+.card .img img{max-width:100%;max-height:150px;object-fit:contain;}
+.card .img .ph{color:#b9bfc7;font-size:12px;}
+.cbody{padding:14px;display:flex;flex-direction:column;gap:8px;flex:1;}
+.cat-tag{font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--orange);}
+.pname{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;line-height:1.15;}
+.pcode{font-size:11px;color:var(--gray);}
+.pdesc{font-size:12.5px;color:#4b5563;line-height:1.4;flex:1;max-height:76px;overflow:auto;}
+.hcpc{align-self:flex-start;font-size:10px;font-weight:700;background:#e8f4ee;color:var(--green);padding:2px 7px;border-radius:4px;}
+.prow{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.price{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;}
+.price sup{font-size:14px;}
+.pnote{font-size:11px;color:var(--gray);}
+.price.locked{font-size:14px;color:var(--gray);font-family:'Barlow',sans-serif;font-weight:600;}
+.buy{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-top:4px;}
+.buy .qtyin{width:64px;padding:9px;text-align:center;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;}
+.addbtn{background:var(--navy);color:#fff;border:none;padding:10px 12px;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;}
+.addbtn:hover{background:var(--orange);}
+
+/* EMPTY STATE */
+.empty{padding:70px 0;text-align:center;color:var(--gray);}
+.empty h3{font-family:'Barlow Condensed',sans-serif;font-size:26px;color:var(--navy);margin-bottom:8px;}
+
+/* CART DRAWER */
+.scrim{position:fixed;inset:0;background:rgba(16,38,63,.45);opacity:0;pointer-events:none;transition:opacity .2s;z-index:70;}
+.scrim.open{opacity:1;pointer-events:auto;}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(460px,100%);background:#fff;box-shadow:-8px 0 30px rgba(0,0,0,.2);transform:translateX(110%);transition:transform .24s ease;z-index:80;display:flex;flex-direction:column;}
+.drawer.open{transform:translateX(0);}
+.dhead{padding:16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:between;justify-content:space-between;}
+.dhead h2{font-family:'Barlow Condensed',sans-serif;font-size:20px;}
+.dhead .x{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-weight:700;}
+.dbody{flex:1;overflow:auto;padding:14px 16px;}
+.citem{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:10px;}
+.citem .t{font-weight:700;font-size:13px;}
+.citem .s{color:var(--gray);font-size:11.5px;}
+.citem .r{display:grid;gap:6px;justify-items:end;}
+.citem .r input{width:64px;padding:7px;text-align:center;border:1px solid var(--line);border-radius:7px;}
+.citem .rm{border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 8px;font-size:11px;cursor:pointer;}
+.oform{margin-top:8px;border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:9px;}
+.oform h3{font-family:'Barlow Condensed',sans-serif;font-size:16px;}
+.oform .two{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.oform input,.oform textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;}
+.dfoot{border-top:1px solid var(--line);padding:12px 16px;display:grid;gap:8px;}
+.sumrow{display:flex;justify-content:space-between;font-size:14px;}
+.sumrow b{font-family:'Barlow Condensed',sans-serif;font-size:18px;}
+.subbtn{background:var(--orange);color:#fff;border:none;padding:12px;border-radius:9px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:15px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;}
+.subbtn:hover{background:var(--orange-d);}
+.clr{background:#fff;border:1px solid var(--line);color:var(--navy);padding:9px;border-radius:8px;font-weight:600;cursor:pointer;}
+.fineprint{font-size:11px;color:var(--gray);}
+
+/* LOGIN MODAL */
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;padding:20px;}
+.modal.open{display:flex;}
+.mcard{background:#fff;border-radius:14px;max-width:400px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.mcard h2{font-family:'Barlow Condensed',sans-serif;font-size:24px;margin-bottom:4px;}
+.mcard p{color:var(--gray);font-size:13px;margin-bottom:16px;}
+.mcard label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);}
+.mcard input{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;margin:5px 0 12px;font-family:inherit;}
+.mcard .go{width:100%;background:var(--navy);color:#fff;border:none;padding:12px;border-radius:9px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:15px;text-transform:uppercase;cursor:pointer;}
+.mcard .go:hover{background:var(--orange);}
+.mcard .note{margin-top:12px;font-size:11.5px;color:var(--gray);}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:22px;background:var(--navy);color:#fff;padding:12px 16px;border-radius:10px;font-weight:600;font-size:13px;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);transition:.2s;z-index:100;}
+.toast.show{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="htop">
+    <a class="brand" href="/">
+      <div class="mark">HCPS</div>
+      <div><div class="l1">HomeCare Provider Services</div><div class="l2">Dealer Ordering Portal</div></div>
+    </a>
+    <div class="hactions">
+      <button class="hbtn" id="loginBtn">🔒 Dealer Login</button>
+      <button class="hbtn cart" id="cartBtn">🛒 Cart <span class="muted" id="cartCount">(0)</span></button>
+    </div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</header>
+
+<div class="mbanner"><div class="wrap">
+  <h1 id="mfrName">Loading…</h1>
+  <p id="mfrSub">One portal for every HCPS manufacturer partner.</p>
+  <div class="mstat">
+    <div><b id="stProducts">0</b><span>Products</span></div>
+    <div><b id="stCats">0</b><span>Categories</span></div>
+    <div><b id="stAcct">Guest</b><span>Account</span></div>
+  </div>
+</div></div>
+
+<div class="controls"><div class="wrap"><div class="row">
+  <input id="search" placeholder="Search item code, name, category…" />
+  <select id="catFilter"><option value="">All categories</option></select>
+  <select id="brandFilter"><option value="">All brands</option></select>
+</div></div></div>
+
+<main class="wrap"><div id="content" class="section"></div></main>
+
+<!-- CART -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="dhead"><h2>Order Summary</h2><button class="x" id="closeCart">Close</button></div>
+  <div class="dbody">
+    <div id="cartItems"></div>
+    <div class="oform">
+      <h3>Dealer Information</h3>
+      <div class="two"><input id="f_biz" placeholder="Dealer / Business Name" /><input id="f_acct" placeholder="HCPS Account # (optional)" /></div>
+      <div class="two"><input id="f_contact" placeholder="Contact Name" /><input id="f_email" placeholder="Email" type="email" /></div>
+      <div class="two"><input id="f_phone" placeholder="Phone" /><input id="f_po" placeholder="PO Number" /></div>
+      <input id="f_addr" placeholder="Shipping Address" />
+      <div class="two"><input id="f_city" placeholder="City" /><input id="f_state" placeholder="State" /></div>
+      <input id="f_zip" placeholder="ZIP" />
+      <textarea id="f_notes" rows="3" placeholder="Notes / products not listed / volume-discount requests"></textarea>
+    </div>
+  </div>
+  <div class="dfoot">
+    <div class="sumrow"><span class="muted">Items</span><span id="itemsTotal">0</span></div>
+    <div class="sumrow"><span class="muted">Estimated total</span><b id="grandTotal">$0.00</b></div>
+    <button class="subbtn" id="submitOrder">Submit Order to HCPS</button>
+    <button class="clr" id="clearCart">Clear cart</button>
+    <div class="fineprint">Submitting sends your order to HomeCare Provider Services to review and place with the manufacturer. Estimated totals use list pricing; your account pricing is confirmed by HCPS.</div>
+  </div>
+</aside>
+
+<!-- LOGIN -->
+<div class="modal" id="loginModal">
+  <div class="mcard">
+    <h2>Dealer Login</h2>
+    <p>Log in to see your account-specific pricing and order history.</p>
+    <label>HCPS Account # or Email</label>
+    <input id="lg_user" placeholder="e.g. HCPS-1042 or you@dealer.com" />
+    <label>Password</label>
+    <input id="lg_pass" type="password" placeholder="••••••••" />
+    <button class="go" id="lg_go">Log In</button>
+    <div class="note">Don't have a login yet? Contact HCPS at <a href="mailto:info@homecareproviderservices.us" style="color:var(--orange)">info@homecareproviderservices.us</a> to have an account and password assigned. <br><br><em>Dealer accounts &amp; custom pricing activate once the Supabase back end is connected (Phase 2).</em></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   HCPS Ordering Portal — Phase 1 (front end, JSON data source)
+   Swap DATA_SOURCE to 'supabase' in Phase 2 to read live data,
+   dealer pricing, and write orders. Structure is kept identical.
+   ============================================================ */
+const CONFIG = {
+  DATA_SOURCE: "json",                 // "json" | "supabase"
+  ORDER_ENDPOINT: "",                  // Netlify function / Formspree in Phase 2
+  SUPABASE_URL: "",                    // filled in Phase 2
+  SUPABASE_ANON: "",                   // filled in Phase 2
+};
+
+const state = { manufacturers: [], active: null, products: [], dealer: null };
+const CART = new Map();                // key: mfr::code -> {p, qty}
+
+const $ = s => document.querySelector(s);
+const money = n => new Intl.NumberFormat(undefined,{style:"currency",currency:"USD"}).format(Number(n||0));
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+const clampInt=(v,min=1,max=99999)=>{const n=parseInt(String(v||"").replace(/\D/g,""),10);return Number.isNaN(n)?min:Math.min(max,Math.max(min,n));};
+const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2000);};
+
+/* ---------- pricing ---------- */
+function unitPrice(p, qty){
+  // Phase 2: dealer_pricing overrides here. For now: base_price.
+  return Number(p.base_price||0);
+}
+function priceHtml(p){
+  if (!state.dealer && p.base_price==null) return `<span class="price locked">Log in for pricing</span>`;
+  if (p.base_price==null) return `<span class="price locked">Call for pricing</span>`;
+  const [d,c]=Number(p.base_price).toFixed(2).split(".");
+  return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>${p.price_note?`<div class="pnote">${esc(p.price_note)}</div>`:""}</div>`;
+}
+
+/* ---------- data loading ---------- */
+async function loadManufacturers(){
+  const r = await fetch("./data/manufacturers.json",{cache:"no-store"});
+  state.manufacturers = await r.json();
+}
+async function loadProducts(slug){
+  const mfr = state.manufacturers.find(m=>m.slug===slug);
+  if (!mfr || !mfr.hasData){ state.products=[]; return; }
+  const r = await fetch(`./data/${slug}.json`,{cache:"no-store"});
+  state.products = await r.json();
+}
+
+/* ---------- render tabs ---------- */
+function renderTabs(){
+  const el=$("#tabs"); el.innerHTML="";
+  for (const m of state.manufacturers){
+    const b=document.createElement("button");
+    b.className="tab"+(m.slug===state.active?" active":"")+(m.hasData?"":" disabled");
+    b.innerHTML = esc(m.name) + (m.hasData?"":`<span class="soon">soon</span>`);
+    if (m.hasData) b.onclick=()=>selectManufacturer(m.slug);
+    el.appendChild(b);
+  }
+}
+
+/* ---------- render banner + filters ---------- */
+function renderBanner(){
+  const m=state.manufacturers.find(x=>x.slug===state.active)||{};
+  $("#mfrName").innerHTML = esc(m.name||"—");
+  const cats=[...new Set(state.products.map(p=>p.category).filter(Boolean))];
+  $("#stProducts").textContent=state.products.length;
+  $("#stCats").textContent=cats.length;
+  $("#stAcct").textContent = state.dealer ? state.dealer.account : "Guest";
+  $("#mfrSub").textContent = state.products.length
+    ? `Browse and order the ${esc(m.name)} line — grouped by category. Add items to your cart and submit to HCPS.`
+    : `Products for ${esc(m.name)} are being loaded into the portal.`;
+  // filters
+  const cf=$("#catFilter"); cf.innerHTML='<option value="">All categories</option>';
+  cats.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;cf.appendChild(o);});
+  const brands=[...new Set(state.products.map(p=>p.brand).filter(Boolean))].sort();
+  const bf=$("#brandFilter"); bf.innerHTML='<option value="">All brands</option>';
+  brands.forEach(b=>{const o=document.createElement("option");o.value=b;o.textContent=b;bf.appendChild(o);});
+}
+
+/* ---------- render products grouped by category ---------- */
+function filtered(){
+  const q=$("#search").value.trim().toLowerCase(), cat=$("#catFilter").value, brand=$("#brandFilter").value;
+  return state.products.filter(p=>{
+    if (cat && p.category!==cat) return false;
+    if (brand && p.brand!==brand) return false;
+    if (!q) return true;
+    return `${p.code} ${p.name} ${p.category} ${p.subcategory} ${p.brand} ${p.description} ${p.hcpc}`.toLowerCase().includes(q);
+  });
+}
+function cardHtml(p){
+  const img = p.image
+    ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=ph>No image</span>'">`
+    : `<span class="ph">No image</span>`;
+  return `<div class="card">
+    <div class="img">${img}</div>
+    <div class="cbody">
+      <div class="cat-tag">${esc(p.subcategory||p.category||"")}${p.brand?" · "+esc(p.brand):""}</div>
+      <div class="pname">${esc(p.name)}</div>
+      <div class="pcode">Item # ${esc(p.code)}</div>
+      <div class="pdesc">${esc(p.description||"")}</div>
+      ${p.hcpc?`<div class="hcpc">HCPC ${esc(p.hcpc)}</div>`:""}
+      <div class="prow">${priceHtml(p)}</div>
+      <div class="buy">
+        <input class="qtyin" type="number" min="1" value="1" aria-label="Qty">
+        <button class="addbtn" data-code="${esc(p.code)}">Add to cart</button>
+      </div>
+    </div></div>`;
+}
+function renderProducts(){
+  const list=filtered(), host=$("#content");
+  if (!state.products.length){
+    host.innerHTML=`<div class="empty"><h3>Coming soon</h3><p>This manufacturer's products are being added to the portal.</p></div>`;
+    return;
+  }
+  // group by category (in first-seen order), then subcategory
+  const order=[]; const groups={};
+  for (const p of list){
+    const c=p.category||"Other";
+    if(!(c in groups)){groups[c]={subs:{},order:[]};order.push(c);}
+    const s=p.subcategory||"";
+    if(!(s in groups[c].subs)){groups[c].subs[s]=[];groups[c].order.push(s);}
+    groups[c].subs[s].push(p);
+  }
+  let html="";
+  if(!list.length) html=`<div class="empty"><h3>No matches</h3><p>Try a different search or filter.</p></div>`;
+  for (const c of order){
+    html+=`<div class="cat-div"><div class="lbl">${esc(c).replace(/(\S+)\s*$/, '<span>$1</span>')}</div><div class="ln"></div></div>`;
+    for (const s of groups[c].order){
+      if (s) html+=`<div class="subdiv">${esc(s)}</div>`;
+      html+=`<div class="grid">${groups[c].subs[s].map(cardHtml).join("")}</div>`;
+    }
+  }
+  host.innerHTML=html;
+  host.querySelectorAll(".addbtn").forEach(btn=>{
+    btn.onclick=()=>{
+      const code=btn.getAttribute("data-code");
+      const p=state.products.find(x=>x.code===code);
+      const qty=clampInt(btn.closest(".buy").querySelector(".qtyin").value);
+      addToCart(p,qty);
+    };
+  });
+}
+
+/* ---------- cart ---------- */
+const cartKey=p=>`${p.manufacturer}::${p.code}`;
+function addToCart(p,qty){
+  const k=cartKey(p); const cur=CART.get(k);
+  CART.set(k,{p,qty:(cur?cur.qty:0)+qty});
+  updateCart(); toast(`Added ${qty} × ${p.code}`);
+}
+function cartCount(){let n=0;for(const{qty}of CART.values())n+=qty;return n;}
+function cartTotal(){let t=0;for(const{p,qty}of CART.values())t+=unitPrice(p,qty)*qty;return t;}
+function renderCart(){
+  const host=$("#cartItems"); const items=[...CART.values()];
+  if(!items.length){host.innerHTML='<div class="fineprint">Your cart is empty.</div>';}
+  else host.innerHTML=items.map(({p,qty})=>{
+    const u=unitPrice(p,qty);
+    return `<div class="citem" data-k="${esc(cartKey(p))}">
+      <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)} · ${esc(p.manufacturer)}</div>
+      <div class="s">Unit ${u?money(u):"—"} · Line ${u?money(u*qty):"—"}</div></div>
+      <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
+  }).join("");
+  host.querySelectorAll(".citem").forEach(row=>{
+    const k=row.getAttribute("data-k");
+    row.querySelector("input").oninput=e=>{const q=clampInt(e.target.value,0);const it=CART.get(k);if(q<=0)CART.delete(k);else CART.set(k,{...it,qty:q});updateCart();};
+    row.querySelector(".rm").onclick=()=>{CART.delete(k);updateCart();};
+  });
+}
+function updateCart(){
+  renderCart();
+  $("#cartCount").textContent=`(${cartCount()})`;
+  $("#itemsTotal").textContent=cartCount();
+  $("#grandTotal").textContent=money(cartTotal());
+}
+
+/* ---------- submit ---------- */
+async function submitOrder(){
+  if(!CART.size){toast("Cart is empty");return;}
+  const payload={
+    business:$("#f_biz").value.trim(), account:$("#f_acct").value.trim()||(state.dealer?state.dealer.account:""),
+    contact:$("#f_contact").value.trim(), email:$("#f_email").value.trim(), phone:$("#f_phone").value.trim(),
+    po:$("#f_po").value.trim(), address:$("#f_addr").value.trim(), city:$("#f_city").value.trim(),
+    state:$("#f_state").value.trim(), zip:$("#f_zip").value.trim(), notes:$("#f_notes").value.trim(),
+    items:[...CART.values()].map(({p,qty})=>({manufacturer:p.manufacturer,code:p.code,name:p.name,qty,unit:unitPrice(p,qty)})),
+    items_count:cartCount(), estimated_total:cartTotal().toFixed(2), submitted_at:new Date().toISOString()
+  };
+  if(!payload.business||!payload.contact||!payload.email){toast("Please fill business, contact, and email");return;}
+  const btn=$("#submitOrder"); btn.disabled=true; btn.textContent="Submitting…";
+  try{
+    if(CONFIG.ORDER_ENDPOINT){
+      const res=await fetch(CONFIG.ORDER_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      if(!res.ok) throw new Error("submit failed");
+    } else {
+      console.log("ORDER (no endpoint wired yet):",payload);
+      await new Promise(r=>setTimeout(r,500));
+    }
+    toast("Order submitted to HCPS ✓"); CART.clear(); updateCart(); closeCart();
+  }catch(e){console.error(e);toast("Could not submit — please try again.");}
+  finally{btn.disabled=false;btn.textContent="Submit Order to HCPS";}
+}
+
+/* ---------- navigation ---------- */
+async function selectManufacturer(slug){
+  state.active=slug; renderTabs();
+  await loadProducts(slug);
+  renderBanner(); renderProducts();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function openCart(){$("#drawer").classList.add("open");$("#scrim").classList.add("open");}
+function closeCart(){$("#drawer").classList.remove("open");$("#scrim").classList.remove("open");}
+
+/* ---------- init ---------- */
+$("#cartBtn").onclick=openCart; $("#closeCart").onclick=closeCart; $("#scrim").onclick=()=>{closeCart();$("#loginModal").classList.remove("open");};
+$("#clearCart").onclick=()=>{CART.clear();updateCart();toast("Cart cleared");};
+$("#submitOrder").onclick=submitOrder;
+$("#loginBtn").onclick=()=>$("#loginModal").classList.add("open");
+$("#lg_go").onclick=()=>toast("Dealer login connects in Phase 2 (Supabase).");
+["input","change"].forEach(ev=>{$("#search").addEventListener("input",renderProducts);$("#catFilter").addEventListener("change",renderProducts);$("#brandFilter").addEventListener("change",renderProducts);});
+
+(async function init(){
+  try{
+    await loadManufacturers();
+    const first=state.manufacturers.find(m=>m.hasData)||state.manufacturers[0];
+    await selectManufacturer(first.slug);
+    updateCart();
+  }catch(e){console.error(e);$("#content").innerHTML=`<div class="empty"><h3>Could not load data</h3><p>Confirm data/manufacturers.json is deployed.</p></div>`;}
+})();
+</script>
+</body>
+</html>
