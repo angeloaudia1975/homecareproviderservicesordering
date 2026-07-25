@@ -7,7 +7,7 @@ sales analytics only; no inventory, stock, or shipment tracking.
 ## Status
 - **Phase 1 (this build):** HCPS-branded portal front end. Manufacturer tabs, category
   browsing, product cards, cart, and an order form. Data comes from `public/data/*.json`.
-  Complete Medical Supplies is loaded with the full catalog — 467 products across 17
+  Complete Medical Supplies is loaded with the full catalog — 473 products across 17
   categories with quantity-tier pricing (plus `tiers`, `upc`, and `msrp` carried in the
   JSON for the Phase-2 `price_tiers` import). Other manufacturers show a "soon" tab until
   their product data is loaded. Product images live in
@@ -17,8 +17,32 @@ sales analytics only; no inventory, stock, or shipment tracking.
 - **Phase 2 (next):** Supabase back end — products/pricing in the database, dealer logins
   (Supabase Auth), per-dealer custom pricing (Row-Level Security), and order submission
   writing to the DB. Set `CONFIG.DATA_SOURCE="supabase"` in `index.html` and fill the keys.
+  **Per-dealer line access:** not every dealer can order every manufacturer (a dealer only
+  represents certain lines in their state/territory). HCPS assigns each dealer their allowed
+  lines via the `dealer_manufacturers` table; once logged in, a dealer sees and orders ONLY
+  those lines — the portal filters the manufacturer tabs to them and RLS gates catalog reads
+  (see the Phase-2 policy block in `supabase/schema.sql`).
 - **Phase 3:** Admin (product/price/dealer management + monthly sales-report upload) and
   analytics cross-referenced by HCPS account number.
+
+## Updating the catalog (adding products + images)
+GitHub's web uploader accepts at most **100 files per drag-and-drop**. To stay under that,
+catalog updates are delivered as **two separate things**, never one bundle:
+
+1. **Data/code update** — just the changed text files (`public/data/<slug>.json`, and
+   `public/index.html` only if the front end changed). Small; commit directly on GitHub.
+2. **New images** — a separate package containing only the new image files, ready to drop
+   into `public/assets/products/<slug>/`. If a single update brings **more than ~90 new
+   images**, they're split into multiple ≤90-file batches (`images-batch-1.zip`,
+   `images-batch-2.zip`, …) so each GitHub web upload stays under the 100-file cap.
+
+Image references in the JSON point at `public/assets/products/<slug>/<file>`. The portal
+retries a lowercased filename on load error, so casing mismatches self-heal — but the file
+must exist in the folder or the card shows "No image". Add the image batches first (or
+alongside) the JSON so products render with pictures.
+
+Tip: the 100-file limit is only the **web** uploader. GitHub Desktop or `git` on the
+command line have no such cap — a full folder can be committed at once that way.
 
 ## Run locally
 Any static server pointed at `public/` (e.g. `npx serve public`). It's a static site.
@@ -41,9 +65,39 @@ Set these in Netlify → Site settings → Environment variables:
 - `ORDER_FROM` *(optional)* — From header. Default `HCPS Ordering Portal <orders@homecareproviderservices.us>`.
 
 Replies to the order email go to the dealer (the function sets `reply_to` to the
-dealer's email from the form). The order currently emails HCPS only; a dealer
-confirmation copy can be added later. Test after deploy by submitting a cart; the
-function returns `{ ok:true, id }` and the email lands in `orders@`.
+dealer's email from the form). The order emails HCPS only. The function accepts a
+grouped payload (`{ dealer, orders:[...] }`) and sends **one email per manufacturer**;
+it returns `{ ok, sent, total, results:[...] }`.
+
+## Multi-manufacturer cart, per-manufacturer PO, and freight
+A single cart can hold items from several manufacturers. At checkout the cart **groups
+by manufacturer**: each group has its own **required PO number** (one PO can never span
+two manufacturers), its own notes, its own freight, and its own subtotal/total. Submitting
+sends a **separate order email per manufacturer**, each with that manufacturer's PO.
+
+Freight rules live per manufacturer in `manufacturers.json` under a `freight` object:
+
+```
+"freight": {
+  "summary": "shown at the top of the manufacturer's cart block",
+  "actualNote": "shown when a group ships at actual (unquoted) freight",
+  "groups": [
+    { "label": "Blue Jay", "brandKeywords": ["bluejay","blue jay"], "freeAt": 400 },
+    { "label": "Drive & Compass", "brandKeywords": ["drive","devilbiss","compass"], "freeAt": 750 }
+  ],
+  "otherLabel": "Other brands",   // items matching no group
+  "elseActual": true              // unmatched items ship at actual freight
+}
+```
+
+Per group: items are matched by `brandKeywords` (substring match on the product's `brand`;
+`"*"` matches everything). If the group subtotal reaches `freeAt` it's **free**; a
+`flatUnder` value (e.g. Bemis `40`) is added as a flat fee below the threshold; otherwise
+the group ships at **actual freight** (no fee added, shown with `actualNote`). The dealer
+sees free-freight progress ("add $X to reach free"), and any flat fee is included in the
+estimated total. Complete Medical uses brand-group thresholds (Blue Jay $400, Drive+Compass
+$750, everything else actual); Bemis is free at $500 / $40 flat under. MSRP is shown on
+product cards wherever a `msrp` value is present.
 
 ## Supabase (Phase 2 setup)
 1. Create a new Supabase project (separate from Golden's).
