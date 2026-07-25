@@ -115,6 +115,23 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
 .subbtn:hover{background:var(--orange-d);}
 .clr{background:#fff;border:1px solid var(--line);color:var(--navy);padding:9px;border-radius:8px;font-weight:600;cursor:pointer;}
 .fineprint{font-size:11px;color:var(--gray);}
+/* CART MANUFACTURER GROUPS */
+.mgroup{border:1px solid var(--line);border-radius:12px;margin-top:12px;overflow:hidden;}
+.mghead{background:var(--navy);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;}
+.mghead .cnt{font-family:'Barlow',sans-serif;font-size:11px;color:#9fb0c4;font-weight:600;}
+.mgbody{padding:10px 12px;}
+.freightbox{background:#f6f7f5;border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin:8px 0;display:grid;gap:5px;}
+.frow{font-size:11.5px;display:flex;justify-content:space-between;gap:8px;color:#4b5563;}
+.frow.free{color:var(--green);font-weight:700;}
+.frow .prog{color:var(--orange);font-weight:600;}
+.fnote{font-size:10.5px;color:var(--gray);font-style:italic;}
+.mgfields{display:grid;gap:7px;margin-top:8px;}
+.mgfields input,.mgfields textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;}
+.mgfields input.needpo{border-color:var(--orange);box-shadow:0 0 0 3px rgba(239,99,37,.12);}
+.mgtot{margin-top:9px;display:grid;gap:3px;}
+.mgtot .r{display:flex;justify-content:space-between;font-size:12.5px;color:#4b5563;}
+.mgtot .r.tot{font-weight:800;color:var(--navy);font-size:14px;border-top:1px solid var(--line);padding-top:5px;margin-top:2px;}
+.msrp{font-size:11px;color:var(--gray);text-decoration:line-through;}
 
 /* LOGIN MODAL */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;padding:20px;}
@@ -172,24 +189,23 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
 <aside class="drawer" id="drawer">
   <div class="dhead"><h2>Order Summary</h2><button class="x" id="closeCart">Close</button></div>
   <div class="dbody">
-    <div id="cartItems"></div>
     <div class="oform">
       <h3>Dealer Information</h3>
       <div class="two"><input id="f_biz" placeholder="Dealer / Business Name" /><input id="f_acct" placeholder="HCPS Account # (optional)" /></div>
       <div class="two"><input id="f_contact" placeholder="Contact Name" /><input id="f_email" placeholder="Email" type="email" /></div>
-      <div class="two"><input id="f_phone" placeholder="Phone" /><input id="f_po" placeholder="PO Number" /></div>
-      <input id="f_addr" placeholder="Shipping Address" />
+      <div class="two"><input id="f_phone" placeholder="Phone" /><input id="f_addr" placeholder="Shipping Address" /></div>
       <div class="two"><input id="f_city" placeholder="City" /><input id="f_state" placeholder="State" /></div>
       <input id="f_zip" placeholder="ZIP" />
-      <textarea id="f_notes" rows="3" placeholder="Notes / products not listed / volume-discount requests"></textarea>
+      <div class="fineprint">Each manufacturer ships as its own order with its own PO — enter a PO for each below.</div>
     </div>
+    <div id="cartGroups"></div>
   </div>
   <div class="dfoot">
     <div class="sumrow"><span class="muted">Items</span><span id="itemsTotal">0</span></div>
-    <div class="sumrow"><span class="muted">Estimated total</span><b id="grandTotal">$0.00</b></div>
+    <div class="sumrow"><span class="muted">Estimated total (incl. freight)</span><b id="grandTotal">$0.00</b></div>
     <button class="subbtn" id="submitOrder">Submit Order to HCPS</button>
     <button class="clr" id="clearCart">Clear cart</button>
-    <div class="fineprint">Submitting sends your order to HomeCare Provider Services to review and place with the manufacturer. Estimated totals use list pricing; your account pricing is confirmed by HCPS.</div>
+    <div class="fineprint">Submitting sends a separate order to HomeCare Provider Services for each manufacturer. Estimated totals use list pricing; your account pricing and final freight are confirmed by HCPS.</div>
   </div>
 </aside>
 
@@ -240,7 +256,8 @@ function priceHtml(p){
   if (!state.dealer && p.base_price==null) return `<span class="price locked">Log in for pricing</span>`;
   if (p.base_price==null) return `<span class="price locked">Call for pricing</span>`;
   const [d,c]=Number(p.base_price).toFixed(2).split(".");
-  return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>${p.price_note?`<div class="pnote">${esc(p.price_note)}</div>`:""}</div>`;
+  const msrp = (p.msrp!=null && Number(p.msrp)>Number(p.base_price)) ? `<div class="msrp">MSRP ${money(p.msrp)}</div>` : "";
+  return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>${msrp}${p.price_note?`<div class="pnote">${esc(p.price_note)}</div>`:""}</div>`;
 }
 
 /* ---------- data loading ---------- */
@@ -352,58 +369,145 @@ function renderProducts(){
 
 /* ---------- cart ---------- */
 const cartKey=p=>`${p.manufacturer}::${p.code}`;
+const MFR={};                          // slug -> {po, notes}  (per-manufacturer order fields)
 function addToCart(p,qty){
   const k=cartKey(p); const cur=CART.get(k);
   CART.set(k,{p,qty:(cur?cur.qty:0)+qty});
   updateCart(); toast(`Added ${qty} × ${p.code}`);
 }
 function cartCount(){let n=0;for(const{qty}of CART.values())n+=qty;return n;}
-function cartTotal(){let t=0;for(const{p,qty}of CART.values())t+=unitPrice(p,qty)*qty;return t;}
+function mfrInfo(slug){return state.manufacturers.find(m=>m.slug===slug)||{slug,name:slug};}
+function groupCart(){const g=new Map();for(const it of CART.values()){const s=it.p.manufacturer;if(!g.has(s))g.set(s,[]);g.get(s).push(it);}return g;}
+function linesSubtotal(lines){let t=0;for(const{p,qty}of lines)t+=unitPrice(p,qty)*qty;return t;}
+
+/* freight: partition a manufacturer's lines into brand groups and apply each rule */
+function computeFreight(slug,lines){
+  const cfg=mfrInfo(slug).freight; const itemsTotal=linesSubtotal(lines);
+  if(!cfg) return {rows:[],fee:0,itemsTotal,actualNote:""};
+  const assigned=new Set(); const rows=[]; let fee=0; let anyActual=false;
+  for(const g of (cfg.groups||[])){
+    let sub=0;
+    for(const ln of lines){
+      const b=(ln.p.brand||"").toLowerCase();
+      const match=g.brandKeywords.includes("*")||g.brandKeywords.some(k=>b.includes(k));
+      if(match&&!assigned.has(ln)){sub+=unitPrice(ln.p,ln.qty)*ln.qty;assigned.add(ln);}
+    }
+    if(sub<=0) continue;
+    if(g.freeAt!=null&&sub>=g.freeAt){rows.push({label:g.label,status:"free"});}
+    else if(g.flatUnder!=null){fee+=g.flatUnder;rows.push({label:g.label,status:"flat",fee:g.flatUnder,remaining:(g.freeAt!=null?g.freeAt-sub:0),freeAt:g.freeAt});}
+    else {anyActual=true;rows.push({label:g.label,status:"actual",remaining:(g.freeAt!=null?g.freeAt-sub:0),freeAt:g.freeAt});}
+  }
+  let other=0; for(const ln of lines){if(!assigned.has(ln))other+=unitPrice(ln.p,ln.qty)*ln.qty;}
+  if(other>0&&cfg.elseActual){anyActual=true;rows.push({label:cfg.otherLabel||"Other brands",status:"actual"});}
+  return {rows,fee,itemsTotal,actualNote:anyActual?(cfg.actualNote||""):""};
+}
+function grandTotal(){let t=0;for(const[slug,lines]of groupCart()){const f=computeFreight(slug,lines);t+=f.itemsTotal+f.fee;}return t;}
+
+function freightRowsHtml(f){
+  let h="";
+  for(const r of f.rows){
+    if(r.status==="free") h+=`<div class="frow free"><span>✓ ${esc(r.label)}</span><span>FREE freight</span></div>`;
+    else if(r.status==="flat") h+=`<div class="frow"><span>${esc(r.label)}${r.remaining>0?` <span class="prog">· add ${money(r.remaining)} for free</span>`:""}</span><span>${money(r.fee)} freight</span></div>`;
+    else h+=`<div class="frow"><span>${esc(r.label)}${r.remaining>0?` <span class="prog">· add ${money(r.remaining)} to reach free (${money(r.freeAt)})</span>`:""}</span><span>actual freight</span></div>`;
+  }
+  if(f.actualNote) h+=`<div class="fnote">${esc(f.actualNote)}</div>`;
+  return h;
+}
 function renderCart(){
-  const host=$("#cartItems"); const items=[...CART.values()];
-  if(!items.length){host.innerHTML='<div class="fineprint">Your cart is empty.</div>';}
-  else host.innerHTML=items.map(({p,qty})=>{
-    const u=unitPrice(p,qty);
-    return `<div class="citem" data-k="${esc(cartKey(p))}">
-      <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)} · ${esc(p.manufacturer)}</div>
-      <div class="s">Unit ${u?money(u):"—"} · Line ${u?money(u*qty):"—"}</div></div>
-      <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
-  }).join("");
+  const host=$("#cartGroups"); const groups=groupCart();
+  if(!groups.size){host.innerHTML='<div class="fineprint" style="margin-top:12px;">Your cart is empty.</div>';return;}
+  let html="";
+  for(const[slug,lines]of groups){
+    const info=mfrInfo(slug), f=computeFreight(slug,lines), tot=f.itemsTotal+f.fee;
+    const cnt=lines.reduce((n,{qty})=>n+qty,0);
+    const hasActual=f.rows.some(r=>r.status==="actual");
+    const items=lines.map(({p,qty})=>{
+      const u=unitPrice(p,qty);
+      return `<div class="citem" data-k="${esc(cartKey(p))}">
+        <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)}${p.brand?" · "+esc(p.brand):""}</div>
+        <div class="s">Unit ${u?money(u):"—"} · Line ${u?money(u*qty):"—"}</div></div>
+        <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
+    }).join("");
+    const fields=MFR[slug]||(MFR[slug]={po:"",notes:""});
+    html+=`<div class="mgroup" data-slug="${esc(slug)}">
+      <div class="mghead"><span>${esc(info.name)}</span><span class="cnt">${cnt} item${cnt===1?"":"s"}</span></div>
+      <div class="mgbody">
+        ${items}
+        ${f.rows.length?`<div class="freightbox">${freightRowsHtml(f)}</div>`:""}
+        <div class="mgfields">
+          <input class="po" placeholder="PO Number for ${esc(info.name)} (required)" value="${esc(fields.po)}">
+          <textarea class="notes" rows="2" placeholder="Notes for ${esc(info.name)} (optional)">${esc(fields.notes)}</textarea>
+        </div>
+        <div class="mgtot">
+          <div class="r"><span>Subtotal</span><span>${money(f.itemsTotal)}</span></div>
+          <div class="r"><span>Freight</span><span>${f.fee>0?money(f.fee):(hasActual?"actual":"—")}</span></div>
+          <div class="r tot"><span>${esc(info.name)} total</span><span>${money(tot)}${hasActual?"+":""}</span></div>
+        </div>
+      </div></div>`;
+  }
+  host.innerHTML=html;
   host.querySelectorAll(".citem").forEach(row=>{
     const k=row.getAttribute("data-k");
     row.querySelector("input").oninput=e=>{const q=clampInt(e.target.value,0);const it=CART.get(k);if(q<=0)CART.delete(k);else CART.set(k,{...it,qty:q});updateCart();};
     row.querySelector(".rm").onclick=()=>{CART.delete(k);updateCart();};
+  });
+  host.querySelectorAll(".mgroup").forEach(g=>{
+    const slug=g.getAttribute("data-slug");
+    const po=g.querySelector(".po"), notes=g.querySelector(".notes");
+    po.oninput=()=>{MFR[slug].po=po.value;po.classList.remove("needpo");};
+    notes.oninput=()=>{MFR[slug].notes=notes.value;};
   });
 }
 function updateCart(){
   renderCart();
   $("#cartCount").textContent=`(${cartCount()})`;
   $("#itemsTotal").textContent=cartCount();
-  $("#grandTotal").textContent=money(cartTotal());
+  $("#grandTotal").textContent=money(grandTotal());
 }
 
-/* ---------- submit ---------- */
+/* ---------- submit (one order per manufacturer) ---------- */
 async function submitOrder(){
   if(!CART.size){toast("Cart is empty");return;}
-  const payload={
+  const dealer={
     business:$("#f_biz").value.trim(), account:$("#f_acct").value.trim()||(state.dealer?state.dealer.account:""),
     contact:$("#f_contact").value.trim(), email:$("#f_email").value.trim(), phone:$("#f_phone").value.trim(),
-    po:$("#f_po").value.trim(), address:$("#f_addr").value.trim(), city:$("#f_city").value.trim(),
-    state:$("#f_state").value.trim(), zip:$("#f_zip").value.trim(), notes:$("#f_notes").value.trim(),
-    items:[...CART.values()].map(({p,qty})=>({manufacturer:p.manufacturer,code:p.code,name:p.name,qty,unit:unitPrice(p,qty)})),
-    items_count:cartCount(), estimated_total:cartTotal().toFixed(2), submitted_at:new Date().toISOString()
+    address:$("#f_addr").value.trim(), city:$("#f_city").value.trim(), state:$("#f_state").value.trim(), zip:$("#f_zip").value.trim()
   };
-  if(!payload.business||!payload.contact||!payload.email){toast("Please fill business, contact, and email");return;}
+  if(!dealer.business||!dealer.contact||!dealer.email){toast("Please fill business, contact, and email");return;}
+  const groups=groupCart();
+  for(const[slug]of groups){
+    if(!(MFR[slug]&&(MFR[slug].po||"").trim())){
+      const el=document.querySelector(`.mgroup[data-slug="${(window.CSS&&CSS.escape)?CSS.escape(slug):slug}"] .po`);
+      if(el){el.classList.add("needpo");el.focus();el.scrollIntoView({block:"center",behavior:"smooth"});}
+      toast(`Enter a PO number for ${mfrInfo(slug).name}`); return;
+    }
+  }
+  const orders=[];
+  for(const[slug,lines]of groups){
+    const f=computeFreight(slug,lines), info=mfrInfo(slug);
+    orders.push({
+      manufacturer_slug:slug, manufacturer_name:info.name,
+      po:MFR[slug].po.trim(), notes:(MFR[slug].notes||"").trim(),
+      items:lines.map(({p,qty})=>({code:p.code,name:p.name,brand:p.brand||"",uom:p.uom||"",qty,unit:unitPrice(p,qty)})),
+      items_count:lines.reduce((n,{qty})=>n+qty,0),
+      items_subtotal:Number(f.itemsTotal.toFixed(2)),
+      freight_fee:Number(f.fee.toFixed(2)),
+      freight_lines:f.rows, freight_note:f.actualNote||"",
+      estimated_total:Number((f.itemsTotal+f.fee).toFixed(2))
+    });
+  }
+  const payload={dealer, orders, submitted_at:new Date().toISOString()};
   const btn=$("#submitOrder"); btn.disabled=true; btn.textContent="Submitting…";
   try{
     if(CONFIG.ORDER_ENDPOINT){
       const res=await fetch(CONFIG.ORDER_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
       if(!res.ok) throw new Error("submit failed");
     } else {
-      console.log("ORDER (no endpoint wired yet):",payload);
+      console.log("ORDERS (no endpoint wired yet):",payload);
       await new Promise(r=>setTimeout(r,500));
     }
-    toast("Order submitted to HCPS ✓"); CART.clear(); updateCart(); closeCart();
+    toast(`Submitted ${orders.length} order${orders.length===1?"":"s"} to HCPS ✓`);
+    CART.clear(); for(const k in MFR) delete MFR[k]; updateCart(); closeCart();
   }catch(e){console.error(e);toast("Could not submit — please try again.");}
   finally{btn.disabled=false;btn.textContent="Submit Order to HCPS";}
 }
