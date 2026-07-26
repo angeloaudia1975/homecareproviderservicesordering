@@ -121,8 +121,13 @@
     "accent": "#2fb3a8",
     "dark": "#153a5e",
     "logo": "/assets/logos/corsicana.jpg",
-    "hasData": false,
-    "sort": 7
+    "hasData": true,
+    "sort": 7,
+    "freight": {
+      "mode": "per_item",
+      "threshold": 2500,
+      "summary": "Delivery billed per item: orders under $2,500 ship UPS/FedEx, orders $2,500+ ship LTL freight. White Glove delivery is available on select items — request it in your notes. Final freight is confirmed by HCPS."
+    }
   },
   {
     "slug": "ovation-medical",

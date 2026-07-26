@@ -1,0 +1,394 @@
+[
+  {
+    "manufacturer": "corsicana",
+    "code": "6EVEREST",
+    "name": "CorsicanaCare 6\" Everest Mattress 36\"x80\"x6\"",
+    "category": "Mattresses",
+    "subcategory": "Hospital Bed Mattresses (6\")",
+    "brand": "CorsicanaCare",
+    "description": "CorsicanaCare Nylon Zip-off Cover, Copper Infused Memory Foam, Reactive Foam, Air Grid, Edge Support System, Lumi Bands",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 250.0,
+    "price_note": "",
+    "image": "/assets/products/corsicana/6EVEREST.png",
+    "shipping": {
+      "white_glove": null,
+      "ups": 35.0,
+      "ltl": 35.0
+    },
+    "alt_code": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 250.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "6ELEVATE",
+    "name": "CorsicanaCare 6\" Elevate Mattress 36\"x80\"x6\"",
+    "category": "Mattresses",
+    "subcategory": "Hospital Bed Mattresses (6\")",
+    "brand": "CorsicanaCare",
+    "description": "CorsicanaCare Nylon Zip-off Cover, Copper Infused Memory Foam, Reactive Foam, Air Grid, Edge Support System",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 215.0,
+    "price_note": "",
+    "image": "/assets/products/corsicana/6ELEVATE.png",
+    "shipping": {
+      "white_glove": null,
+      "ups": 35.0,
+      "ltl": 35.0
+    },
+    "alt_code": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 215.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "6ESSENTIALS",
+    "name": "CorsicanaCare 6\" Essentials Mattress 36\"x80\"x6\"",
+    "category": "Mattresses",
+    "subcategory": "Hospital Bed Mattresses (6\")",
+    "brand": "CorsicanaCare",
+    "description": "CorsicanaCare Nylon Zip-off Cover, Memory Foam, Air Grid Core",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 199.0,
+    "price_note": "",
+    "image": "/assets/products/corsicana/6ESSENTIALS.png",
+    "shipping": {
+      "white_glove": null,
+      "ups": 35.0,
+      "ltl": 35.0
+    },
+    "alt_code": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 199.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "10ESSCA-TL",
+    "name": "CorsicanaCare Essentials 10\" Gel Infused Mattress - Residential/ Bed N Box",
+    "category": "Mattresses",
+    "subcategory": "Bed-in-Box (Residential)",
+    "brand": "CorsicanaCare",
+    "description": "Firm, Gel Air Foam, Comfort Reactive Core",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 199.0,
+    "price_note": "",
+    "image": "/assets/products/corsicana/10ESSCA.png",
+    "shipping": {
+      "white_glove": null,
+      "ups": 35.0,
+      "ltl": 35.0
+    },
+    "alt_code": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 199.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "8ESSCA-TL",
+    "name": "CorsicanaCare Essentials 8\" Gel Infused Mattress- Residential/Bed N Box",
+    "category": "Mattresses",
+    "subcategory": "Bed-in-Box (Residential)",
+    "brand": "CorsicanaCare",
+    "description": "Firm, Gel Air Foam, Comfort Reactive Core",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 180.0,
+    "price_note": "",
+    "image": "/assets/products/corsicana/8ESSCA.png",
+    "shipping": {
+      "white_glove": null,
+      "ups": 35.0,
+      "ltl": 35.0
+    },
+    "alt_code": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 180.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "SBLB-TL",
+    "name": "\"BEST\"Hi/Low Lift Power Base",
+    "category": "Adjustable Power Bases",
+    "subcategory": "",
+    "brand": "CorsicanaCare",
+    "description": "Voice Command, Massage, Tilt, Lights, USB, StackableLegs, Custom Presets, Twin Long/base raises up and down horizontally",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 995.0,
+    "price_note": "",
+    "image": "/assets/products/corsicana/SBLB.png",
+    "shipping": {
+      "white_glove": 225.0,
+      "ups": null,
+      "ltl": 150.0
+    },
+    "alt_code": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 995.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "SPKDP2-TL",
+    "name": "\"BETTER\" adjustable Power Base SPKDP2",
+    "category": "Adjustable Power Bases",
+    "subcategory": "",
+    "brand": "CorsicanaCare",
+    "description": "Head Up/Foot Up Power Base Upgrade Voice Command, Massage, Tilt, Lights, USB, Stackable Legs, Custom Presets",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 565.0,
+    "price_note": "",
+    "image": "/assets/products/corsicana/SPKDP2.png",
+    "shipping": {
+      "white_glove": null,
+      "ups": 75.0,
+      "ltl": 35.0
+    },
+    "alt_code": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 565.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "SBKD3-TL",
+    "name": "\"GOOD\" Head Up/Foot Up Power Base",
+    "category": "Adjustable Power Bases",
+    "subcategory": "",
+    "brand": "CorsicanaCare",
+    "description": "Wireless Remote, Zero Clearance, Stackable Legs, Custom Memory Presets",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 355.0,
+    "price_note": "",
+    "image": "/assets/products/corsicana/SBKD3.png",
+    "shipping": {
+      "white_glove": null,
+      "ups": 75.0,
+      "ltl": 35.0
+    },
+    "alt_code": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 355.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "10ERGOCB1",
+    "name": "The Mobility Bed",
+    "category": "Mobility Bed",
+    "subcategory": "",
+    "brand": "CorsicanaCare",
+    "description": "180 degree Swivel Rotation, 10\" EcoCore Foam Surface, Hi-Low Adjustability, Tilt Fuctionality, Underbed Lighting, Head and Foot Incline, One-Touch Flat (SKUs: 10ERGOCB1 / 10ERGOCB2)",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1999.0,
+    "price_note": "",
+    "image": "/assets/products/corsicana/10ERGOCB1.png",
+    "shipping": {
+      "white_glove": "included",
+      "ups": null,
+      "ltl": "included"
+    },
+    "alt_code": "10ERGOCB2",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1999.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "SB10MATPRON1-TL",
+    "name": "CorsicanaCare Mattress Protector Ice 5-sided",
+    "category": "Bedding & Bundles",
+    "subcategory": "",
+    "brand": "CorsicanaCare",
+    "description": "Case of 10",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 220.0,
+    "price_note": "",
+    "image": "/assets/products/corsicana/SB10MATPRON1.png",
+    "shipping": {
+      "white_glove": null,
+      "ups": 20.0,
+      "ltl": 11.0
+    },
+    "alt_code": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 220.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "PSP1-TL",
+    "name": "CorsicanaCare Bedding Bundle",
+    "category": "Bedding & Bundles",
+    "subcategory": "",
+    "brand": "CorsicanaCare",
+    "description": "2 pillows, 1 sheet set, 1 mattress protector (SKUs: PSP1-TL / PSP2-TL)",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 165.0,
+    "price_note": "",
+    "image": "/assets/products/corsicana/PSP1.png",
+    "shipping": {
+      "white_glove": null,
+      "ups": 20.0,
+      "ltl": 17.5
+    },
+    "alt_code": "PSP2-TL",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 165.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "SBKDB-30",
+    "name": "CorsicanaCare Bed Booster",
+    "category": "Accessories",
+    "subcategory": "",
+    "brand": "CorsicanaCare",
+    "description": "Backrest",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 165.0,
+    "price_note": "",
+    "image": "/assets/products/corsicana/SBKDB-30.png",
+    "shipping": {
+      "white_glove": null,
+      "ups": "tbd",
+      "ltl": "tbd"
+    },
+    "alt_code": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 165.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "LBHR",
+    "name": "Hand Rails",
+    "category": "Accessories",
+    "subcategory": "",
+    "brand": "CorsicanaCare",
+    "description": "For Power Bases",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 66.0,
+    "price_note": "",
+    "image": "",
+    "shipping": {
+      "white_glove": null,
+      "ups": 20.0,
+      "ltl": 10.0
+    },
+    "alt_code": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 66.0
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  },
+  {
+    "manufacturer": "corsicana",
+    "code": "LBCW",
+    "name": "Casters",
+    "category": "Accessories",
+    "subcategory": "",
+    "brand": "CorsicanaCare",
+    "description": "For Power Bases",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 26.5,
+    "price_note": "",
+    "image": "",
+    "shipping": {
+      "white_glove": null,
+      "ups": 12.0,
+      "ltl": 5.0
+    },
+    "alt_code": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 26.5
+      }
+    ],
+    "msrp": null,
+    "upc": ""
+  }
+]
