@@ -165,5 +165,14 @@
     "logo": "/assets/logos/pedifix.jpg",
     "hasData": false,
     "sort": 10
+  },
+  {
+    "slug": "gce",
+    "name": "GCE",
+    "accent": "#0e7ac0",
+    "dark": "#0c2b44",
+    "logo": "/assets/logos/gce.jpg",
+    "hasData": true,
+    "sort": 11
   }
 ]

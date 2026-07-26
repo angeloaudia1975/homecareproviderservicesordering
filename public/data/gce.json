@@ -1,0 +1,701 @@
+[
+  {
+    "manufacturer": "gce",
+    "code": "RS-00502-X-D + RS-00536",
+    "name": "Zen-O Transportable Concentrator - 2 Battery System with Backpack Rucksack",
+    "category": "Zen-O",
+    "subcategory": "Concentrators",
+    "brand": "GCE",
+    "description": "Includes: POC, two 12 cell lithium ion batteries, Backpack Rucksack AC power supply, Car charger, Power cords, Pull cart, carry bag, User manual, Quick Start Guide 3 Year Warranty Compressor 2 Year Warranty Seive Beds Flow: .5 LPM - 2.0 LPM 1.0 - 6.0 Pulse Dose · Weight: 10.27 LBS.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1475.0,
+    "price_note": "5+ units: $1,425",
+    "image": "/assets/products/gce/RS-00502-X-D_RS-00536.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1475.0
+      },
+      {
+        "minQty": 5,
+        "price": 1425.0
+      }
+    ],
+    "msrp": 3736.48,
+    "upc": "",
+    "details_url": "https://6980302-860447796248001271.preview.editmysite.com/uploads/6/9/8/0/6980302/gce_portable_concentrators_and_stationary_product_catalog_2025.pdf"
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00502-X-D",
+    "name": "Zen-O Transportable Concentrator - 2 Battery System",
+    "category": "Zen-O",
+    "subcategory": "Concentrators",
+    "brand": "GCE",
+    "description": "Includes: POC, two 12 cell lithium ion batteries, AC power supply, Car charger, Power cords, Pull cart, carry bag, User manual, Quick Start Guide 3 Year Warranty Compressor 2 Year Warranty Seive Beds Flow: .5 LPM - 2.0 LPM 1.0 - 6.0 Pulse Dose · Weight: 10.27 LBS.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1375.0,
+    "price_note": "5+ units: $1,325",
+    "image": "/assets/products/gce/RS-00502-X-D_RS-00536.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1375.0
+      },
+      {
+        "minQty": 5,
+        "price": 1325.0
+      }
+    ],
+    "msrp": 3400.0,
+    "upc": "",
+    "details_url": "https://6980302-860447796248001271.preview.editmysite.com/uploads/6/9/8/0/6980302/gce_portable_concentrators_and_stationary_product_catalog_2025.pdf"
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00608-X-S",
+    "name": "Zen-O Lite Portable Concentrator - 1 Battery System",
+    "category": "Zen-O",
+    "subcategory": "Concentrators",
+    "brand": "GCE",
+    "description": "Includes: POC, one 8 cell lithium ion batteries, AC power supply, Car charger, Power cords (North America and Europe), Carry bag, User manual, Quick Start Guide 3 Year Warranty Compressor 1 Year Warranty Seive Beds Flow: 1.0 - 5.0 Pulse Dose · Weight: 5.5 LBS.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 950.0,
+    "price_note": "5+ units: $925",
+    "image": "/assets/products/gce/RS-00608-X-S_RS-00619.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 950.0
+      },
+      {
+        "minQty": 5,
+        "price": 925.0
+      }
+    ],
+    "msrp": 2800.0,
+    "upc": "",
+    "details_url": "https://6980302-860447796248001271.preview.editmysite.com/uploads/6/9/8/0/6980302/gce_portable_concentrators_and_stationary_product_catalog_2025.pdf"
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00501",
+    "name": "Zen-O battery 12 cell",
+    "category": "Zen-O",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen O 12 cell re-chargeable lithium-ion battery",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 206.0,
+    "price_note": "",
+    "image": "/assets/products/gce/RS-00501.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 206.0
+      }
+    ],
+    "msrp": 297.08,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00515",
+    "name": "Zen-O Single Charging Station",
+    "category": "Zen-O",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Single bay battery charger Zen-O",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 206.0,
+    "price_note": "",
+    "image": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 206.0
+      }
+    ],
+    "msrp": 499.04,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00513",
+    "name": "Zen-O sieve beds",
+    "category": "Zen-O",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Complete Zen-O seive bed assembly",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 150.0,
+    "price_note": "",
+    "image": "/assets/products/gce/RS-00513.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 150.0
+      }
+    ],
+    "msrp": 591.15,
+    "upc": "",
+    "details_url": "www.youtube.com/watch?v=hg0GMqxDoQM"
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00522",
+    "name": "AC power and USA cord",
+    "category": "Zen-O",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen O AC power supply and US cord",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 105.0,
+    "price_note": "",
+    "image": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 105.0
+      }
+    ],
+    "msrp": 191.12,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00536",
+    "name": "Zen-O rucksack Backpack",
+    "category": "Zen-O",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen-O rucksack Backpack",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 104.99,
+    "price_note": "",
+    "image": "/assets/products/gce/RS-00502-X-D_RS-00536.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 104.99
+      }
+    ],
+    "msrp": 336.48,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00508",
+    "name": "Zen-O DC adapter",
+    "category": "Zen-O",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen-O car charger",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 90.0,
+    "price_note": "",
+    "image": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 90.0
+      }
+    ],
+    "msrp": 176.56,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00526",
+    "name": "Zen-O Intake Filter",
+    "category": "Zen-O",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen-O Compressor/Intake Filter (pack of 6)",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 32.5,
+    "price_note": "",
+    "image": "/assets/products/gce/RS-00526.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 32.5
+      }
+    ],
+    "msrp": 93.65,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00512",
+    "name": "Zen-O cannula filter pk of 10",
+    "category": "Zen-O",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen-O / Zen-O Lite patient filter pack of 10",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 28.0,
+    "price_note": "",
+    "image": "/assets/products/gce/RS-00512.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 28.0
+      }
+    ],
+    "msrp": 45.15,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00544",
+    "name": "Zen-O cannula wrench",
+    "category": "Zen-O",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen-O / Zen-O Lite cannula removal tool",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 19.0,
+    "price_note": "",
+    "image": "/assets/products/gce/RS-00544.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 19.0
+      }
+    ],
+    "msrp": 102.85,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00608-X-D + RS-00619",
+    "name": "Zen-O Lite Portable Concentrator - 2 Battery System with Backpack Rucksack",
+    "category": "Zen-O Lite",
+    "subcategory": "Concentrators",
+    "brand": "GCE",
+    "description": "Includes: POC, two 8 cell lithium ion batteries, Backpack Rucksack, AC power supply, Car charger, Power cords, Carry bag, User manual, Quick Start Guide 3 Year Warranty Compressor 1 Year Warranty Seive Beds Flow: 1.0 - 5.0 Pulse Dose · Weight: 5.5 LBS.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1080.0,
+    "price_note": "5+ units: $1,064",
+    "image": "/assets/products/gce/RS-00608-X-D_RS-00619.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1080.0
+      },
+      {
+        "minQty": 5,
+        "price": 1064.0
+      }
+    ],
+    "msrp": 3150.0,
+    "upc": "",
+    "details_url": "https://6980302-860447796248001271.preview.editmysite.com/uploads/6/9/8/0/6980302/gce_portable_concentrators_and_stationary_product_catalog_2025.pdf"
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00608-X-D",
+    "name": "Zen-O Lite Portable Concentrator - 2 Battery System",
+    "category": "Zen-O Lite",
+    "subcategory": "Concentrators",
+    "brand": "GCE",
+    "description": "Includes: POC, two 8 cell lithium ion batteries, Backpack Rucksack, AC power supply, Car charger, Power cords, Carry bag, User manual, Quick Start Guide 3 Year Warranty Compressor 1 Year Warranty Seive Beds Flow: 1.0 - 5.0 Pulse Dose · Weight: 5.5 LBS.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1025.0,
+    "price_note": "5+ units: $999",
+    "image": "/assets/products/gce/RS-00608-X-D_RS-00619.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1025.0
+      },
+      {
+        "minQty": 5,
+        "price": 999.0
+      }
+    ],
+    "msrp": 2800.0,
+    "upc": "",
+    "details_url": "https://6980302-860447796248001271.preview.editmysite.com/uploads/6/9/8/0/6980302/gce_portable_concentrators_and_stationary_product_catalog_2025.pdf"
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00608-X-S + RS-00619",
+    "name": "Zen-O Lite Portable Concentrator - 1 Battery System with Backpack Rucksack",
+    "category": "Zen-O Lite",
+    "subcategory": "Concentrators",
+    "brand": "GCE",
+    "description": "Includes: POC, one 8 cell lithium ion batteries, Backpack Rucksack, AC power supply, Car charger, Power cords, Carry bag, User manual, Quick Start Guide 3 Year Warranty Compressor 1 Year Warranty Seive Beds Flow: 1.0 - 5.0 Pulse Dose · Weight: 5.5 LBS.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1015.0,
+    "price_note": "5+ units: $990",
+    "image": "/assets/products/gce/RS-00608-X-S_RS-00619.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1015.0
+      },
+      {
+        "minQty": 5,
+        "price": 990.0
+      }
+    ],
+    "msrp": 2900.0,
+    "upc": "",
+    "details_url": "https://6980302-860447796248001271.preview.editmysite.com/uploads/6/9/8/0/6980302/gce_portable_concentrators_and_stationary_product_catalog_2025.pdf"
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00601",
+    "name": "Zen-O Lite battery 8 cell",
+    "category": "Zen-O Lite",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen-O Lite 8 cell re-chargeable lithium-ion battery",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 206.0,
+    "price_note": "",
+    "image": "/assets/products/gce/RS-00601.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 206.0
+      }
+    ],
+    "msrp": 306.32,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00515",
+    "name": "Zen-O Lite Single Charging Station",
+    "category": "Zen-O Lite",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Single bay battery charger Zen-O Lite",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 206.0,
+    "price_note": "",
+    "image": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 206.0
+      }
+    ],
+    "msrp": 499.04,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00616",
+    "name": "Zen-O Lite sieve beds",
+    "category": "Zen-O Lite",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Complete Zen-O lite seive bed assembly",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 125.0,
+    "price_note": "",
+    "image": "/assets/products/gce/RS-00616.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 125.0
+      }
+    ],
+    "msrp": 343.9,
+    "upc": "",
+    "details_url": "www.youtube.com/watch?v=OHUEthrdx4Y"
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00604",
+    "name": "Zen-O lite™ AC power and USA cord",
+    "category": "Zen-O Lite",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen-O-Lite AC power supply and US cord",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 100.0,
+    "price_note": "",
+    "image": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 100.0
+      }
+    ],
+    "msrp": 209.24,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00605",
+    "name": "Zen-O lite™ DC adapter",
+    "category": "Zen-O Lite",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen-O Lite car charger",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 90.0,
+    "price_note": "",
+    "image": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 90.0
+      }
+    ],
+    "msrp": 156.08,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00619",
+    "name": "Zen-O Lite rucksack Backpack",
+    "category": "Zen-O Lite",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen-O Lite rucksack Backpack",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 65.0,
+    "price_note": "",
+    "image": "/assets/products/gce/RS-00608-X-D_RS-00619.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 65.0
+      }
+    ],
+    "msrp": 100.0,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00624",
+    "name": "Zen-O Lite Intake Filter",
+    "category": "Zen-O Lite",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen-O Lite Intake Filter pack of 3",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 47.0,
+    "price_note": "",
+    "image": "/assets/products/gce/RS-00624.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 47.0
+      }
+    ],
+    "msrp": 88.85,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00512",
+    "name": "Zen-O Lite cannula filter pk of 10",
+    "category": "Zen-O Lite",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen-O / Zen-O Lite patient filter pack of 10",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 28.0,
+    "price_note": "",
+    "image": "/assets/products/gce/RS-00512.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 28.0
+      }
+    ],
+    "msrp": 45.15,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "RS-00544",
+    "name": "Zen-O Lite cannula wrench",
+    "category": "Zen-O Lite",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "Zen-O / Zen-O Lite cannula removal tool",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 19.0,
+    "price_note": "",
+    "image": "/assets/products/gce/RS-00544.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 19.0
+      }
+    ],
+    "msrp": 102.85,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "304051011 + Extended",
+    "name": "M50 Stationary 5L Concentrator with Extended Warraty",
+    "category": "M50",
+    "subcategory": "Concentrators",
+    "brand": "GCE",
+    "description": "M50 Oxygen Concentrator 5LPM 5 Year Warranty Compressor 3 Year Warranty Seive Beds Flow: .5 LPM - 5 LPM · Weight: 33 LBS.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 445.0,
+    "price_note": "5+ units: $434",
+    "image": "/assets/products/gce/304051011_Extended.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 445.0
+      },
+      {
+        "minQty": 5,
+        "price": 434.0
+      }
+    ],
+    "msrp": 955.0,
+    "upc": "",
+    "details_url": "https://6980302-860447796248001271.preview.editmysite.com/uploads/6/9/8/0/6980302/gce_portable_concentrators_and_stationary_product_catalog_2025.pdf"
+  },
+  {
+    "manufacturer": "gce",
+    "code": "304051011",
+    "name": "M50 Stationary 5L Concentrator",
+    "category": "M50",
+    "subcategory": "Concentrators",
+    "brand": "GCE",
+    "description": "M50 Oxygen Concentrator 5LPM 3 Year Warranty Compressor 3 Year Warranty Seive Beds Flow: .5 LPM - 5 LPM · Weight: 33 LBS.",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 410.0,
+    "price_note": "5+ units: $399",
+    "image": "/assets/products/gce/304051011_Extended.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 410.0
+      },
+      {
+        "minQty": 5,
+        "price": 399.0
+      }
+    ],
+    "msrp": 885.0,
+    "upc": "",
+    "details_url": "https://6980302-860447796248001271.preview.editmysite.com/uploads/6/9/8/0/6980302/gce_portable_concentrators_and_stationary_product_catalog_2025.pdf"
+  },
+  {
+    "manufacturer": "gce",
+    "code": "411220035",
+    "name": "M50 Replacement Sieve Beds",
+    "category": "M50",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "M50 Sieve beds assembly",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 95.0,
+    "price_note": "",
+    "image": "/assets/products/gce/411220035.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 95.0
+      }
+    ],
+    "msrp": 300.0,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "50101261",
+    "name": "Two Stage Paper filter",
+    "category": "M50",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "M50 Two Stage Paper Filter",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 3.45,
+    "price_note": "",
+    "image": "/assets/products/gce/50101261.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 3.45
+      }
+    ],
+    "msrp": 7.0,
+    "upc": "",
+    "details_url": ""
+  },
+  {
+    "manufacturer": "gce",
+    "code": "501150007",
+    "name": "Gross Partical Washable Intake filter",
+    "category": "M50",
+    "subcategory": "Accessories & Parts",
+    "brand": "GCE",
+    "description": "M50 Gross Partical Washable Intake filter",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1.65,
+    "price_note": "",
+    "image": "/assets/products/gce/501150007.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1.65
+      }
+    ],
+    "msrp": 4.0,
+    "upc": "",
+    "details_url": ""
+  }
+]
