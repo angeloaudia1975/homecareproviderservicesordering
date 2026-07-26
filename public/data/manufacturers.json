@@ -48,8 +48,22 @@
     "accent": "#25aeda",
     "dark": "#173247",
     "logo": "/assets/logos/strongback-mobility.jpg",
-    "hasData": false,
-    "sort": 2
+    "hasData": true,
+    "sort": 2,
+    "freight": {
+      "summary": "Free freight on all Strongback orders.",
+      "actualNote": "",
+      "groups": [
+        {
+          "label": "All Strongback items",
+          "brandKeywords": [
+            "*"
+          ],
+          "freeAt": 0
+        }
+      ],
+      "elseActual": false
+    }
   },
   {
     "slug": "abm-respiratory-care",
