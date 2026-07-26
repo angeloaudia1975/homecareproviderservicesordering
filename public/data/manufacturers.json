@@ -98,8 +98,22 @@
     "accent": "#38a169",
     "dark": "#1b3a63",
     "logo": "/assets/logos/climbing-steps.jpg",
-    "hasData": false,
-    "sort": 6
+    "hasData": true,
+    "sort": 6,
+    "freight": {
+      "summary": "Free freight on all Climbing Steps orders.",
+      "actualNote": "",
+      "groups": [
+        {
+          "label": "All Climbing Steps items",
+          "brandKeywords": [
+            "*"
+          ],
+          "freeAt": 0
+        }
+      ],
+      "elseActual": false
+    }
   },
   {
     "slug": "corsicana",

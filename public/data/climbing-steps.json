@@ -1,0 +1,623 @@
+[
+  {
+    "manufacturer": "climbing-steps",
+    "code": "FCOM-02",
+    "name": "Freedom Aqua Waterproof Patient Lift - Powered Sling Free Transfers",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Powered Patient Lifts",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1399.99,
+    "price_note": "Min. advertised (MAP): $1,999.99",
+    "image": "/assets/products/climbing-steps/FCOM-02.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1399.99
+      }
+    ],
+    "map": 1999.99,
+    "msrp": 4499.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "FCOM",
+    "name": "Freedom Transfer Patient Lift - Powered Sling Free Transfers",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Powered Patient Lifts",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1119.19,
+    "price_note": "Min. advertised (MAP): $1,599.99",
+    "image": "/assets/products/climbing-steps/FCOM.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1119.19
+      }
+    ],
+    "map": 1599.99,
+    "msrp": 3999.0,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "MP-P11",
+    "name": "Freedom Everylift Powered Sling Seat Patient Lift",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Powered Patient Lifts",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1049.99,
+    "price_note": "Min. advertised (MAP): $1,499.99",
+    "image": "/assets/products/climbing-steps/MP-P11.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1049.99
+      }
+    ],
+    "map": 1499.99,
+    "msrp": 2999.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "DSC06132",
+    "name": "Freedom Boost Patient Transfer Lift - Hydraulic Sling Free Transfers",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Powered Patient Lifts",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 629.99,
+    "price_note": "Min. advertised (MAP): $899.99",
+    "image": "/assets/products/climbing-steps/DSC06132.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 629.99
+      }
+    ],
+    "map": 899.99,
+    "msrp": 1799.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "MP-P02",
+    "name": "Ascend & Go Sit to Stand Patient Lift",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Sit-to-Stand Lifts",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1539.3,
+    "price_note": "Min. advertised (MAP): $2,199",
+    "image": "/assets/products/climbing-steps/MP-P02.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1539.3
+      }
+    ],
+    "map": 2199.0,
+    "msrp": 4999.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "ARMS3",
+    "name": "SafeSit Toilet Safety Arms Sit-to-Stand Support Handles",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Sit-to-Stand Lifts",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 80.99,
+    "price_note": "Min. advertised (MAP): $114.99",
+    "image": "/assets/products/climbing-steps/ARMS3.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 80.99
+      }
+    ],
+    "map": 114.99,
+    "msrp": 229.98,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "MP-P10",
+    "name": "Bounce Back Fall Recovery Patient Lift",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Fall Recovery Lifts",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 524.99,
+    "price_note": "Min. advertised (MAP): $749.99",
+    "image": "/assets/products/climbing-steps/MP-P10.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 524.99
+      }
+    ],
+    "map": 749.99,
+    "msrp": 1299.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "LIFTB",
+    "name": "Lift Buddy Folding Fall Recovery Chair Lift",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Fall Recovery Lifts",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 489.99,
+    "price_note": "Min. advertised (MAP): $699.99",
+    "image": "/assets/products/climbing-steps/LIFTB.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 489.99
+      }
+    ],
+    "map": 699.99,
+    "msrp": 979.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "MP-P01",
+    "name": "Bridge Bath Lift and Fall Recovery Lift",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Fall Recovery Lifts",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 299.99,
+    "price_note": "Min. advertised (MAP): $399.99",
+    "image": "/assets/products/climbing-steps/MP-P01.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 299.99
+      }
+    ],
+    "map": 399.99,
+    "msrp": 999.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "HELPUP",
+    "name": "HelpUp Fall Recovery Patient Lift - Portable Floor Assist",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Fall Recovery Lifts",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 279.99,
+    "price_note": "Min. advertised (MAP): $399.99",
+    "image": "/assets/products/climbing-steps/HELPUP.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 279.99
+      }
+    ],
+    "map": 399.99,
+    "msrp": 699.0,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "MP-P03",
+    "name": "ArGo Electric Toilet Lift",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Bath & Toilet Aids",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 979.99,
+    "price_note": "Min. advertised (MAP): $1,399.99",
+    "image": "/assets/products/climbing-steps/MP-P03.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 979.99
+      }
+    ],
+    "map": 1399.99,
+    "msrp": 2499.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "MP-P08-KIT",
+    "name": "Sidekick Shower Chair with Commode Opening W/24\" Rear Wheels",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Bath & Toilet Aids",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 367.49,
+    "price_note": "Min. advertised (MAP): $524.99",
+    "image": "/assets/products/climbing-steps/MP-P08-KIT.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 367.49
+      }
+    ],
+    "map": 524.99,
+    "msrp": 1149.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "MP-P08",
+    "name": "Sidekick Shower Chair with Commode Opening",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Bath & Toilet Aids",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 297.49,
+    "price_note": "Min. advertised (MAP): $424.99",
+    "image": "/assets/products/climbing-steps/MP-P08.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 297.49
+      }
+    ],
+    "map": 424.99,
+    "msrp": 1049.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "MP-P09",
+    "name": "AltiCare 5\" Non-Slip Raised Toilet Seat",
+    "category": "Patient Lifts & Transfer",
+    "subcategory": "Bath & Toilet Aids",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 69.99,
+    "price_note": "Min. advertised (MAP): $99.99",
+    "image": "/assets/products/climbing-steps/MP-P09.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 69.99
+      }
+    ],
+    "map": 99.99,
+    "msrp": 199.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Patient Lift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "MS-P02",
+    "name": "Genesis FLEX 2-in-1 Ultimate Portable Stairlift Unit Seperates",
+    "category": "Mobile Stairlifts",
+    "subcategory": "",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 2799.99,
+    "price_note": "Min. advertised (MAP): $3,999.99",
+    "image": "/assets/products/climbing-steps/MS-P02.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 2799.99
+      }
+    ],
+    "map": 3999.99,
+    "msrp": 9999.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Stairlift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "HELX",
+    "name": "Helix Mobile Curved Stairs Portable Stairlift",
+    "category": "Mobile Stairlifts",
+    "subcategory": "",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 2799.3,
+    "price_note": "Min. advertised (MAP): $3,999",
+    "image": "/assets/products/climbing-steps/HELX.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 2799.3
+      }
+    ],
+    "map": 3999.0,
+    "msrp": 8399.0,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Stairlift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "LITE",
+    "name": "LITE Mobile Portable Stairlift",
+    "category": "Mobile Stairlifts",
+    "subcategory": "",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 2239.99,
+    "price_note": "Min. advertised (MAP): $3,199.99",
+    "image": "/assets/products/climbing-steps/LITE.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 2239.99
+      }
+    ],
+    "map": 3199.99,
+    "msrp": 7999.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Stairlift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "MS-P02-GEN",
+    "name": "Genesis Mobile Portable Stairlift",
+    "category": "Mobile Stairlifts",
+    "subcategory": "",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 2099.99,
+    "price_note": "Min. advertised (MAP): $2,999.99",
+    "image": "",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 2099.99
+      }
+    ],
+    "map": 2999.99,
+    "msrp": 7999.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Stairlift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "ATLS",
+    "name": "Atlas Wheelchair Mobile Portable Stairlift",
+    "category": "Mobile Stairlifts",
+    "subcategory": "",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 2099.99,
+    "price_note": "Min. advertised (MAP): $2,999.99",
+    "image": "/assets/products/climbing-steps/ATLS.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 2099.99
+      }
+    ],
+    "map": 2999.99,
+    "msrp": 7999.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Stairlift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "MS-P02-GEN-ECO",
+    "name": "Genesis ECO Mobile Portable Stairlift",
+    "category": "Mobile Stairlifts",
+    "subcategory": "",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1499.99,
+    "price_note": "Min. advertised (MAP): $1,999.99",
+    "image": "/assets/products/climbing-steps/MS-P02-GEN-ECO.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1499.99
+      }
+    ],
+    "map": 1999.99,
+    "msrp": 6999.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Stairlift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "DSC00912",
+    "name": "Genesis GO Mobile Portable Stairlift",
+    "category": "Mobile Stairlifts",
+    "subcategory": "",
+    "brand": "",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1049.99,
+    "price_note": "Min. advertised (MAP): $1,499.99",
+    "image": "/assets/products/climbing-steps/DSC00912.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1049.99
+      }
+    ],
+    "map": 1499.99,
+    "msrp": 2999.99,
+    "upc": "",
+    "attributes": {
+      "Brand": "Mobile Stairlift"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "TROL",
+    "name": "Hercules Motorized Power Stair Climbing Hand Truck - Great for Lift Chairs Delivery",
+    "category": "Stair-Climbing Hand Trucks",
+    "subcategory": "",
+    "brand": "VOLTSTAIR",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1466.5,
+    "price_note": "Min. advertised (MAP): $2,095",
+    "image": "/assets/products/climbing-steps/TROL.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1466.5
+      }
+    ],
+    "map": 2095.0,
+    "msrp": 3995.0,
+    "upc": "",
+    "attributes": {
+      "Brand": "VOLTSTAIR"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  },
+  {
+    "manufacturer": "climbing-steps",
+    "code": "VLST",
+    "name": "Titan Motorized Power Stair Climbing Hand Truck - Great for Lift Chairs Delivery",
+    "category": "Stair-Climbing Hand Trucks",
+    "subcategory": "",
+    "brand": "VOLTSTAIR",
+    "description": "",
+    "hcpc": "",
+    "uom": "Each",
+    "base_price": 1399.99,
+    "price_note": "Min. advertised (MAP): $1,999.99",
+    "image": "/assets/products/climbing-steps/VLST.jpg",
+    "tiers": [
+      {
+        "minQty": 1,
+        "price": 1399.99
+      }
+    ],
+    "map": 1999.99,
+    "msrp": 2995.0,
+    "upc": "",
+    "attributes": {
+      "Brand": "VOLTSTAIR"
+    },
+    "details_url": "https://www.climbingsteps.com"
+  }
+]
