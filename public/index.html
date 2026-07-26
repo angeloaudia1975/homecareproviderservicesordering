@@ -331,7 +331,7 @@ function filtered(){
 }
 function cardHtml(p){
   const img = p.image
-    ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src=this.src.replace(/[^/]+$/,s=>s.toLowerCase());}else{this.style.display='none';this.parentElement.innerHTML='<span class=ph>No image</span>';}">`
+    ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src=this.src.replace(/[^/]+$/,s=>s.toLowerCase());}else{this.style.display='none';this.parentElement.innerHTML='<span class=ph>No image</span>';}">`
     : `<span class="ph">No image</span>`;
   return `<div class="card">
     <div class="img">${img}</div>
@@ -348,32 +348,13 @@ function cardHtml(p){
       </div>
     </div></div>`;
 }
-function renderProducts(){
-  const list=filtered(), host=$("#content");
-  if (!state.products.length){
-    host.innerHTML=`<div class="empty"><h3>Coming soon</h3><p>This manufacturer's products are being added to the portal.</p></div>`;
-    return;
-  }
-  // group by category (in first-seen order), then subcategory
-  const order=[]; const groups={};
-  for (const p of list){
-    const c=p.category||"Other";
-    if(!(c in groups)){groups[c]={subs:{},order:[]};order.push(c);}
-    const s=p.subcategory||"";
-    if(!(s in groups[c].subs)){groups[c].subs[s]=[];groups[c].order.push(s);}
-    groups[c].subs[s].push(p);
-  }
-  let html="";
-  if(!list.length) html=`<div class="empty"><h3>No matches</h3><p>Try a different search or filter.</p></div>`;
-  for (const c of order){
-    html+=`<div class="cat-div"><div class="lbl">${esc(c).replace(/(\S+)\s*$/, '<span>$1</span>')}</div><div class="ln"></div></div>`;
-    for (const s of groups[c].order){
-      if (s) html+=`<div class="subdiv">${esc(s)}</div>`;
-      html+=`<div class="grid">${groups[c].subs[s].map(cardHtml).join("")}</div>`;
-    }
-  }
-  host.innerHTML=html;
-  host.querySelectorAll(".addbtn").forEach(btn=>{
+/* Progressive rendering: emit category/subcategory headers inline and render
+   cards in batches, loading more as the user scrolls. Keeps big catalogs
+   (500+ products) instant to render and snappy to filter. */
+const RENDER_BATCH = 80;
+const RENDER = { list:[], idx:0, cat:null, sub:null, io:null };
+function wireAdd(scope){
+  scope.querySelectorAll(".addbtn").forEach(btn=>{
     btn.onclick=()=>{
       const code=btn.getAttribute("data-code");
       const p=state.products.find(x=>x.code===code);
@@ -381,6 +362,56 @@ function renderProducts(){
       addToCart(p,qty);
     };
   });
+}
+function renderNextBatch(){
+  const host=$("#content"); const {list}=RENDER;
+  let curCat=RENDER.cat, curSub=RENDER.sub, openGrid=false, count=0;
+  const parts=[];
+  while(RENDER.idx<list.length && count<RENDER_BATCH){
+    const p=list[RENDER.idx];
+    const c=p.category||"Other", s=p.subcategory||"";
+    if(c!==curCat){
+      if(openGrid){parts.push("</div>");openGrid=false;}
+      parts.push(`<div class="cat-div"><div class="lbl">${esc(c).replace(/(\S+)\s*$/, '<span>$1</span>')}</div><div class="ln"></div></div>`);
+      curCat=c; curSub=null;
+    }
+    if(s!==curSub){
+      if(openGrid){parts.push("</div>");openGrid=false;}
+      if(s) parts.push(`<div class="subdiv">${esc(s)}</div>`);
+      curSub=s;
+    }
+    if(!openGrid){parts.push('<div class="grid">');openGrid=true;}
+    parts.push(cardHtml(p));
+    RENDER.idx++; count++;
+  }
+  if(openGrid) parts.push("</div>");
+  RENDER.cat=curCat; RENDER.sub=curSub;
+  const frag=document.createElement("div"); frag.innerHTML=parts.join("");
+  wireAdd(frag);
+  while(frag.firstChild) host.appendChild(frag.firstChild);
+  // sentinel to load the next batch as it nears the viewport
+  const old=document.getElementById("_more"); if(old) old.remove();
+  if(RENDER.idx<list.length){
+    const sentinel=document.createElement("div"); sentinel.id="_more"; sentinel.style.height="1px";
+    host.appendChild(sentinel);
+    if(!RENDER.io){
+      RENDER.io=new IntersectionObserver(es=>{ if(es[0].isIntersecting) renderNextBatch(); },{rootMargin:"800px"});
+    }
+    RENDER.io.observe(sentinel);
+  }
+}
+function renderProducts(){
+  const host=$("#content");
+  if(RENDER.io){RENDER.io.disconnect();RENDER.io=null;}
+  if (!state.products.length){
+    host.innerHTML=`<div class="empty"><h3>Coming soon</h3><p>This manufacturer's products are being added to the portal.</p></div>`;
+    return;
+  }
+  const list=filtered();
+  RENDER.list=list; RENDER.idx=0; RENDER.cat=null; RENDER.sub=null;
+  host.innerHTML="";
+  if(!list.length){ host.innerHTML=`<div class="empty"><h3>No matches</h3><p>Try a different search or filter.</p></div>`; return; }
+  renderNextBatch();
 }
 
 /* ---------- cart ---------- */
@@ -568,7 +599,10 @@ $("#content").addEventListener("click",e=>{
 $("#lbClose").onclick=closeLightbox;
 lightbox.addEventListener("click",e=>{ if(e.target===lightbox || e.target.tagName==="FIGURE") closeLightbox(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && lightbox.classList.contains("open")) closeLightbox(); });
-["input","change"].forEach(ev=>{$("#search").addEventListener("input",renderProducts);$("#catFilter").addEventListener("change",renderProducts);$("#brandFilter").addEventListener("change",renderProducts);});
+const debounce=(fn,ms=180)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
+$("#search").addEventListener("input",debounce(renderProducts,180));
+$("#catFilter").addEventListener("change",renderProducts);
+$("#brandFilter").addEventListener("change",renderProducts);
 
 (async function init(){
   try{
