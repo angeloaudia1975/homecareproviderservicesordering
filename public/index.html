@@ -409,9 +409,17 @@ function computeFreight(slug,lines){
       if(match&&!assigned.has(ln)){sub+=unitPrice(ln.p,ln.qty)*ln.qty;assigned.add(ln);}
     }
     if(sub<=0) continue;
+    // flatFee applies when subtotal < flatBelow (default: whenever below freeAt). Legacy flatUnder = flat fee amount.
+    const flatFee = (g.flatFee!=null?g.flatFee:g.flatUnder);
+    const flatBelow = (g.flatBelow!=null?g.flatBelow:g.freeAt);
     if(g.freeAt!=null&&sub>=g.freeAt){rows.push({label:g.label,status:"free"});}
-    else if(g.flatUnder!=null){fee+=g.flatUnder;rows.push({label:g.label,status:"flat",fee:g.flatUnder,remaining:(g.freeAt!=null?g.freeAt-sub:0),freeAt:g.freeAt});}
-    else {anyActual=true;rows.push({label:g.label,status:"actual",remaining:(g.freeAt!=null?g.freeAt-sub:0),freeAt:g.freeAt});}
+    else if(flatFee!=null && (flatBelow==null || sub<flatBelow)){
+      fee+=flatFee;
+      rows.push({label:g.label,status:"flat",fee:flatFee,
+        waiveRemaining:(flatBelow!=null?flatBelow-sub:0),
+        freeAt:g.freeAt||null, freeRemaining:(g.freeAt!=null?g.freeAt-sub:0)});
+    }
+    else {anyActual=true;rows.push({label:g.label,status:"actual",freeAt:g.freeAt||null,freeRemaining:(g.freeAt!=null?g.freeAt-sub:0)});}
   }
   let other=0; for(const ln of lines){if(!assigned.has(ln))other+=unitPrice(ln.p,ln.qty)*ln.qty;}
   if(other>0&&cfg.elseActual){anyActual=true;rows.push({label:cfg.otherLabel||"Other brands",status:"actual"});}
@@ -423,8 +431,12 @@ function freightRowsHtml(f){
   let h="";
   for(const r of f.rows){
     if(r.status==="free") h+=`<div class="frow free"><span>✓ ${esc(r.label)}</span><span>FREE freight</span></div>`;
-    else if(r.status==="flat") h+=`<div class="frow"><span>${esc(r.label)}${r.remaining>0?` <span class="prog">· add ${money(r.remaining)} for free</span>`:""}</span><span>${money(r.fee)} freight</span></div>`;
-    else h+=`<div class="frow"><span>${esc(r.label)}${r.remaining>0?` <span class="prog">· add ${money(r.remaining)} to reach free (${money(r.freeAt)})</span>`:""}</span><span>actual freight</span></div>`;
+    else if(r.status==="flat"){
+      const prog = r.waiveRemaining>0 ? `· add ${money(r.waiveRemaining)} to waive the fee`
+                 : (r.freeRemaining>0 ? `· add ${money(r.freeRemaining)} for free` : "");
+      h+=`<div class="frow"><span>${esc(r.label)}${prog?` <span class="prog">${prog}</span>`:""}</span><span>${money(r.fee)} freight</span></div>`;
+    }
+    else h+=`<div class="frow"><span>${esc(r.label)}${r.freeRemaining>0?` <span class="prog">· add ${money(r.freeRemaining)} to reach free (${money(r.freeAt)})</span>`:""}</span><span>actual freight</span></div>`;
   }
   if(f.actualNote) h+=`<div class="fnote">${esc(f.actualNote)}</div>`;
   return h;
