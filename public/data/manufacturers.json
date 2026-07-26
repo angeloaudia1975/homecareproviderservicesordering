@@ -163,8 +163,24 @@
     "accent": "#2672b9",
     "dark": "#123057",
     "logo": "/assets/logos/pedifix.jpg",
-    "hasData": false,
-    "sort": 10
+    "hasData": true,
+    "sort": 10,
+    "freight": {
+      "summary": "Free freight on orders $200+. Orders under $50 add a $5 freight fee; $50–$200 ships at standard freight.",
+      "actualNote": "Standard freight is confirmed by HCPS/PediFix on your order.",
+      "groups": [
+        {
+          "label": "All PediFix items",
+          "brandKeywords": [
+            "*"
+          ],
+          "freeAt": 200,
+          "flatFee": 5,
+          "flatBelow": 50
+        }
+      ],
+      "elseActual": false
+    }
   },
   {
     "slug": "gce",
