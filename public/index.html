@@ -193,6 +193,15 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
 .a4u .aacts .go{background:var(--orange);color:#fff;border:none;padding:11px 16px;border-radius:9px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;text-transform:uppercase;cursor:pointer;}
 .a4u .aacts .go:hover{background:var(--orange-d);}
 .a4u .layout{font-size:12px;color:#4b5563;background:var(--paper);border:1px dashed var(--line);border-radius:8px;padding:8px 10px;margin-top:10px;}
+.a4u .ada{margin-top:12px;padding:9px 12px;border-radius:9px;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--paper);color:#4b5563;}
+.a4u .ada.pass{background:#e9f7ef;border-color:#b7e2c8;color:#1c7a44;}
+.a4u .ada.fail{background:#fdecec;border-color:#f3c0c0;color:#b42323;}
+.a4u .ada.warn{background:#fff6e6;border-color:#f2ddab;color:#8a5a00;}
+.a4u .planwrap{margin-top:12px;}
+.a4u .planbox{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#f7fafd;}
+.a4u .dlabel{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+.a4u table.steps td.idx{color:var(--gray);font-size:11px;width:26px;text-align:center;}
+.a4u td.turn .turnsel{font-size:12px;padding:5px 7px;border:1px solid var(--line);border-radius:7px;background:#fff;cursor:pointer;}
 @media(max-width:640px){.a4u .totgrid{grid-template-columns:repeat(2,1fr);}}
 </style>
 </head>
@@ -623,7 +632,7 @@ async function submitOrder(){
 }
 
 /* ---------- Access4U modular ramp quote builder ---------- */
-const A4U={items:[], open:false};                 // items: ordered [{code,fam,qty}]; PRK auto-added per platform
+const A4U={items:[], open:false, rise:0};          // items: ordered [{code,fam,qty,turn?}]; PRK auto-added per platform; turn on PS platforms
 // Codes SR3 & PRK exist in two families (RS single-fold ramps vs RR modular Ramp Run) at different prices.
 // The modular configurator is the RR (Ramp Run) system, so it always resolves parts to their family.
 function a4uProd(code,fam){return state.products.find(p=>p.code===code && (!fam||p.family===fam));}
@@ -631,13 +640,34 @@ function a4uFam(fam){return state.products.filter(p=>p.family===fam);}
 function a4uKey(code,fam){return (fam||"")+"::"+code;}
 function a4uAddRamp(){
   const L=clampInt($("#a4uLen").value,1,300);
-  A4U.items.push({code:"SR3",fam:"RR",qty:1});
+  if(!A4U.items.some(it=>it.code==="SR3")) A4U.items.push({code:"SR3",fam:"RR",qty:1}); // one ground starter per ramp
   let rem=L-3;
   while(rem>0){ const seg=Math.min(rem,30); const rr="RR"+seg+"x36"; if(a4uProd(rr,"RR")) A4U.items.push({code:rr,fam:"RR",qty:1}); rem-=seg; }
   renderA4U();
 }
-function a4uAdd(sel,fam){ const code=$(sel).value; if(code&&a4uProd(code,fam)){A4U.items.push({code,fam,qty:1}); renderA4U();} }
+function a4uAdd(sel,fam){ const code=$(sel).value; if(code&&a4uProd(code,fam)){A4U.items.push(fam==="PS"?{code,fam,qty:1,turn:"straight"}:{code,fam,qty:1}); renderA4U();} }
 function a4uRemove(i){ A4U.items.splice(i,1); renderA4U(); }
+function a4uSetTurn(i,val){ if(A4U.items[i]){ A4U.items[i].turn=val; renderA4U(); } }
+function a4uSetRise(v){ A4U.rise=Math.max(0,parseFloat(v)||0); a4uRefreshAda(); }
+// Physical, in-order component list with per-platform turn, for the plan diagram & ADA math.
+function a4uPhysical(){
+  const out=[];
+  A4U.items.forEach((it,idx)=>{ const p=a4uProd(it.code,it.fam); if(!p) return; for(let k=0;k<(it.qty||1);k++) out.push({p, turn:p.family==="PS"?(it.turn||"straight"):null, idx}); });
+  return out;
+}
+// ADA slope check from a total project rise (inches). 1:12 => needed run feet == rise inches.
+function a4uAda(seq, riseIn){
+  const runFt=seq.filter(p=>p.family==="RR"&&p.length_ft).reduce((n,p)=>n+p.length_ft,0);
+  // longest single ramp leg (run between platforms) — ADA wants a rest landing within 30 ft
+  let leg=0,maxLeg=0; for(const p of seq){ if(p.family==="PS"){maxLeg=Math.max(maxLeg,leg);leg=0;} else if(p.family==="RR"&&p.length_ft){leg+=p.length_ft;} } maxLeg=Math.max(maxLeg,leg);
+  if(!riseIn||riseIn<=0) return {rise:0,runFt,maxLeg,state:"none",msg:"Enter total rise to check ADA slope",ratio:null};
+  const ratio=runFt>0?runFt*12/riseIn:0;   // slope denominator X in 1:X (≥12 is compliant)
+  const needFt=Math.max(0,Math.ceil(riseIn-runFt));
+  if(ratio<12) return {rise:riseIn,runFt,maxLeg,ratio,state:"fail",msg:`Slope 1:${ratio.toFixed(1)} is steeper than ADA 1:12 — add ~${needFt} ft more ramp (need ${riseIn} ft of run for ${riseIn}″ rise)`};
+  if(maxLeg>30) return {rise:riseIn,runFt,maxLeg,ratio,state:"warn",msg:`Slope OK (1:${ratio.toFixed(1)}) but a run of ${maxLeg} ft has no rest platform — ADA requires a landing within 30 ft`};
+  return {rise:riseIn,runFt,maxLeg,ratio,state:"pass",msg:`Meets ADA 1:12 — actual slope 1:${ratio.toFixed(1)}, longest run ${maxLeg} ft`};
+}
+function a4uRefreshAda(){ const el=$("#a4uAda"); if(!el) return; const seq=a4uPhysical().map(x=>x.p); const a=a4uAda(seq,A4U.rise); el.className="ada "+a.state; el.innerHTML=`${a.state==="pass"?"✅":a.state==="fail"?"⛔":a.state==="warn"?"⚠️":"📏"} ${esc(a.msg)}`; }
 function a4uBom(){
   // merge duplicate (code,family) preserving first-seen order; auto-add PRK = one per platform unit (RR family)
   const order=[]; const q=new Map(); const meta=new Map();
@@ -651,28 +681,44 @@ function a4uOpts(fam,ph){
   const items=a4uFam(fam).filter(p=>p.family===fam);
   return `<option value="">${ph}</option>`+items.map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(p.base_price)})</option>`).join("");
 }
+const A4U_TURNS=[["straight","Straight ↑"],["left","Left 90° ↰"],["right","Right 90° ↱"],["u","U-turn ↺"]];
 function renderA4U(){
   const host=$("#a4uBuilder");
   if(state.active!=="access4u" || !a4uProd("SR3")){ host.innerHTML=""; return; }
   const bom=a4uBom(), t=a4uTotals(bom);
+  const phys=a4uPhysical();
+  const ada=a4uAda(phys.map(x=>x.p), A4U.rise);
   const rrOpts=a4uFam("RR").filter(p=>/^RR\d+x36$/.test(p.code)).map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(p.base_price)})</option>`).join("");
-  const bomRows = bom.length? bom.map((b,i)=>`<tr class="${b.auto?'auto':''}">
-      <td>${esc(b.p.code)}</td><td>${esc(b.p.name)}</td>
-      <td class="r">${b.qty}</td><td class="r">${money(b.p.base_price)}</td><td class="r">${money(b.p.base_price*b.qty)}</td>
-      <td class="r">${b.auto?'<span class=fineprint>auto</span>':`<button class="rm" onclick="a4uRemoveByCode('${esc(b.p.code)}','${esc(b.fam||'')}')">Remove</button>`}</td></tr>`).join("")
-    : `<tr><td colspan="6" class="empty">No components yet. Enter a ramp length or add platforms, gates, or stairs above.</td></tr>`;
-  const layout = bom.length? "Layout: "+bom.map(b=>`${b.qty}× ${b.p.code}`).join("  +  ") : "";
+  const platCount=A4U.items.filter(it=>it.fam==="PS").reduce((n,it)=>n+(it.qty||1),0);
+  // interactive, ordered build steps (real A4U.items indices) + platform turn selectors
+  const stepRows = A4U.items.length? A4U.items.map((it,i)=>{
+    const p=a4uProd(it.code,it.fam); if(!p) return "";
+    const isPS=it.fam==="PS";
+    const turnSel = isPS? `<select class="turnsel" onchange="a4uSetTurn(${i},this.value)">${A4U_TURNS.map(o=>`<option value="${o[0]}" ${((it.turn||'straight')===o[0])?'selected':''}>${o[1]}</option>`).join("")}</select>` : `<span class="fineprint">—</span>`;
+    return `<tr>
+      <td class="idx">${i+1}</td>
+      <td>${esc(p.code)}</td><td>${esc(p.name)}</td>
+      <td class="r">${it.qty||1}</td>
+      <td class="turn">${turnSel}</td>
+      <td class="r">${money((p.base_price||0)*(it.qty||1))}</td>
+      <td class="r"><button class="rm" onclick="a4uRemove(${i})">Remove</button></td></tr>`;
+  }).join("")
+    : `<tr><td colspan="7" class="empty">No components yet. Enter a ramp length or add platforms, gates, or stairs above.</td></tr>`;
+  const prkRow = platCount>0? `<tr class="auto"><td class="idx">+</td><td>PRK</td><td>Platform To Ramp Kit 36</td><td class="r">${platCount}</td><td class="turn"><span class="fineprint">auto</span></td><td class="r">${money((a4uProd("PRK","RR").base_price||0)*platCount)}</td><td class="r"><span class="fineprint">auto</span></td></tr>` : "";
+  const plan=a4uPlanDiagram(phys);
   host.innerHTML=`<div class="a4u ${A4U.open?'open':''}">
     <div class="ahead" onclick="A4U.open=!A4U.open;renderA4U()">
-      <h3>🛠 Modular Ramp Quote Builder <span class="sub">SR3 starter + runs, platforms, ground platforms, gates &amp; stairs</span></h3>
+      <h3>🛠 Modular Ramp Quote Builder <span class="sub">runs, platforms, turns (L/U shapes), gates &amp; stairs — with ADA slope check</span></h3>
       <span class="ab sm">${A4U.open?'Hide ▲':'Open ▼'}</span>
     </div>
     <div class="abody">
       <div class="arow">
-        <div class="fld"><label>Total ramp length (feet) — builds SR3 + run sections</label>
+        <div class="fld"><label>Total ramp length (feet) — builds starter + run sections</label>
           <div class="in"><input id="a4uLen" type="number" min="4" step="1" placeholder="e.g. 10" value="10"><button class="ab" onclick="a4uAddRamp()">Add Ramp</button></div></div>
         <div class="fld"><label>or add a single run section</label>
           <div class="in"><select id="a4uRR"><option value="">Select run…</option>${rrOpts}</select><button class="ab sm" onclick="a4uAdd('#a4uRR','RR')">Add</button></div></div>
+        <div class="fld"><label>Total project rise (inches) — for ADA check</label>
+          <div class="in"><input id="a4uRise" type="number" min="0" step="0.5" placeholder="e.g. 20" value="${A4U.rise||''}" onchange="a4uSetRise(this.value)"></div></div>
       </div>
       <div class="addgrid">
         <div class="fld"><label>Turn / Rest Platform (adds PRK)</label><div class="in"><select id="a4uPS">${a4uOpts("PS","Select platform…")}</select><button class="ab sm" onclick="a4uAdd('#a4uPS','PS')">Add</button></div></div>
@@ -680,9 +726,10 @@ function renderA4U(){
         <div class="fld"><label>Gate</label><div class="in"><select id="a4uGATE">${a4uOpts("GATE","Select…")}</select><button class="ab sm" onclick="a4uAdd('#a4uGATE','GATE')">Add</button></div></div>
         <div class="fld"><label>Stairs (by rise)</label><div class="in"><select id="a4uSTP">${a4uOpts("STP","Select…")}</select><button class="ab sm" onclick="a4uAdd('#a4uSTP','STP')">Add</button></div></div>
       </div>
-      <table><thead><tr><th>Item</th><th>Description</th><th class="r">Qty</th><th class="r">Your&nbsp;Price</th><th class="r">Line</th><th class="r"></th></tr></thead>
-        <tbody>${bomRows}</tbody></table>
-      ${layout?`<div class="layout">${esc(layout)}</div>`:""}
+      <div id="a4uAda" class="ada ${ada.state}">${ada.state==="pass"?"✅":ada.state==="fail"?"⛔":ada.state==="warn"?"⚠️":"📏"} ${esc(ada.msg)}</div>
+      ${phys.length?`<div class="planwrap"><div class="dlabel">Top view — set each platform's turn to shape the ramp (L, U, switchback…)</div><div class="planbox">${plan}</div></div>`:""}
+      <table class="steps"><thead><tr><th>#</th><th>Item</th><th>Description</th><th class="r">Qty</th><th>Turn at platform</th><th class="r">Your&nbsp;Line</th><th class="r"></th></tr></thead>
+        <tbody>${stepRows}${prkRow}</tbody></table>
       <div class="totgrid">
         <div class="tot"><div class="l">Dealer</div><div class="v">${money(t.dealer)}</div></div>
         <div class="tot your"><div class="l">Your Price (15%)</div><div class="v">${money(t.your)}</div></div>
@@ -692,7 +739,7 @@ function renderA4U(){
       <div class="aacts">
         <button class="go" onclick="a4uToCart()">Add configuration to cart</button>
         <button class="ab" onclick="a4uLayoutSheet()">🖨 Layout &amp; spec sheet</button>
-        <button class="clr" onclick="A4U.items=[];renderA4U()">Clear</button>
+        <button class="clr" onclick="A4U.items=[];A4U.rise=0;renderA4U()">Clear</button>
         <span class="fineprint" style="align-self:center;">Your Price shown at the 15% tier; per-dealer tiers apply once dealer logins are set up. Freight is FOB Access4U, quoted by HCPS.</span>
       </div>
     </div></div>`;
@@ -718,7 +765,7 @@ function a4uDiagram(seq){
   const segs=seq.map(p=>{
     const f=p.family; let type,len;
     if(f==="RR"){ type=(p.code==="SR3")?"start":"ramp"; len=Math.max(p.length_ft||1,1); }
-    else if(f==="PS"){ type="platform"; len=3; }
+    else if(f==="PS"){ type="platform"; len=Math.max(Math.min((p.width_in||48)/12,(p.length_ft||48)/12),3); } // platform depth ≈ shorter footprint dim
     else if(f==="GP"){ type="ground"; len=2.5; }
     else if(f==="STP"){ type="stairs"; len=2.5; }
     else if(f==="GATE"){ type="gate"; len=0.8; }
@@ -772,81 +819,74 @@ function a4uDiagram(seq){
   svg+=`</svg>`;
   return svg;
 }
-// Top-down plan view: a switchback ("boustrophedon") ribbon — ramp legs reverse direction at each turn/rest platform.
-function a4uPlanDiagram(seq){
-  if(!seq.length) return "";
+// Top-down plan view — a 2D "turtle" walk. Ramp runs advance along the heading; each platform
+// applies its turn (straight / left 90° / right 90° / U-turn) so the true L/U/switchback shape is drawn.
+function a4uPlanDiagram(phys){
+  if(!phys.length) return "";
   const RW=3; // 36" ramp width, in feet
-  const itFt=p=> p.family==="RR"?Math.max(p.length_ft||1,1) : p.family==="STP"?3 : p.family==="GP"?Math.max((p.width_in||48)/12,3) : p.family==="GATE"?1.2 : 2;
-  const platFt=p=> p?Math.max((p.width_in||48)/12,3):0;
-  // split into legs at turn/rest platforms
-  const legs=[]; let cur={items:[],platform:null};
-  for(const p of seq){ if(p.family==="PS"){ cur.platform=p; legs.push(cur); cur={items:[],platform:null}; } else cur.items.push(p); }
-  legs.push(cur);
-  while(legs.length>1 && !legs[legs.length-1].items.length && !legs[legs.length-1].platform) legs.pop(); // drop trailing empty leg after a terminal platform
-  const platDepthFt=p=>Math.max((p.length_ft||48)/12,3); // platform depth ⟂ to travel
-  // pass 1 — feet coordinates along a reversing pen
-  let penX=0, dir=1, minX=0, maxX=0;
-  const dl=[];
-  legs.forEach((lg,i)=>{
-    let cx=penX; const items=[];
-    for(const p of lg.items){ const w=itFt(p); const a=cx,b=cx+dir*w; items.push({p,x0:Math.min(a,b),x1:Math.max(a,b)}); cx=b; }
-    const legEndX=cx; let plat=null;
-    if(lg.platform){ const w=platFt(lg.platform); const a=legEndX,b=legEndX+dir*w; plat={p:lg.platform,x0:Math.min(a,b),x1:Math.max(a,b)}; penX=b; } else penX=legEndX;
-    const xs=[penX,legEndX,cx].concat(items.flatMap(it=>[it.x0,it.x1])).concat(plat?[plat.x0,plat.x1]:[]);
-    minX=Math.min(minX,...xs); maxX=Math.max(maxX,...xs);
-    dl.push({dir,items,plat,startX:i===0?0:dl[i-1].turnX,legEndX}); dl[i].turnX=penX;
-    dir=-dir;
-  });
-  const spanFt=Math.max(maxX-minX,6);
-  const W=760, padL=44, padR=30, padT=30, padB=40;
-  const FT=(W-padL-padR)/spanFt;
-  const RWpx=Math.max(RW*FT,15);
-  const rowPitch=Math.max(RWpx+30,54);
-  const X=fx=>padL+(fx-minX)*FT, rowY=i=>padT+i*rowPitch;
-  const hasNext=i=>(i+1<dl.length)&&dl[i+1].items.length>0;   // is there a following ramp leg to bridge to?
-  const platBottom=(lg,i)=> hasNext(i)? rowY(i+1)+RWpx : rowY(i)+Math.max(RWpx,platDepthFt(lg.plat.p)*FT);
-  let contentBottom=rowY(dl.length-1)+RWpx;
-  dl.forEach((lg,i)=>{ if(lg.plat) contentBottom=Math.max(contentBottom, platBottom(lg,i)); });
-  const H=contentBottom+padB;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" font-family="Arial,Helvetica,sans-serif">`;
-  svg+=`<rect x="0" y="0" width="${W}" height="${H}" fill="#f7fafd"/>`;
-  // platforms first (so ramp strips sit on top edges cleanly); bridge two rows, or draw as a terminal landing
-  dl.forEach((lg,i)=>{
-    if(!lg.plat) return;
-    const px=X(lg.plat.x0), pw=Math.max((lg.plat.x1-lg.plat.x0)*FT,RWpx);
-    const y0=rowY(i), y1=platBottom(lg,i);
-    svg+=`<rect x="${px}" y="${y0}" width="${pw}" height="${y1-y0}" rx="4" fill="#dbe9f6" stroke="#10263f" stroke-width="1.5"/>`;
-    svg+=`<text x="${px+pw/2}" y="${(y0+y1)/2+3}" text-anchor="middle" font-size="9" fill="#10263f">${lg.plat.p.code}</text>`;
-  });
-  // ramp legs
-  dl.forEach((lg,i)=>{
-    const y=rowY(i);
-    for(const it of lg.items){
-      const x=X(it.x0), w=Math.max((it.x1-it.x0)*FT,3), f=it.p.family;
-      let fill="#cfe6fa",stroke="#1681c2";
-      if(f==="STP"){fill="#eef2f6";stroke="#7a8ea0";}
-      if(f==="GP"){fill="#d7e8f6";stroke="#4a6076";}
-      if(f==="GATE"){fill="#fde6d8";stroke="#e0662b";}
-      svg+=`<rect x="${x}" y="${y}" width="${w}" height="${RWpx}" fill="${fill}" stroke="${stroke}" stroke-width="1.4"/>`;
-      if(f==="STP"){ const nn=4; for(let s=1;s<nn;s++){svg+=`<line x1="${x+w*s/nn}" y1="${y}" x2="${x+w*s/nn}" y2="${y+RWpx}" stroke="#7a8ea0" stroke-width="1"/>`;} }
-      if(w>24) svg+=`<text x="${x+w/2}" y="${y+RWpx/2+3}" text-anchor="middle" font-size="8.5" fill="#12466e">${it.p.code}</text>`;
+  const H=[[1,0],[0,1],[-1,0],[0,-1]]; // E, S, W, N (screen coords, y down)
+  let hi=0, pos={x:0,y:0}, uParity=0;
+  const shapes=[];
+  const addSeg=(cs,ce,dir,kind,label)=>{ const perp=H[(dir+1)%4]; const xs=[],ys=[]; for(const pt of [cs,ce]){ xs.push(pt.x+perp[0]*RW/2,pt.x-perp[0]*RW/2); ys.push(pt.y+perp[1]*RW/2,pt.y-perp[1]*RW/2);} shapes.push({kind,label,dir,cs,ce,x0:Math.min(...xs),y0:Math.min(...ys),x1:Math.max(...xs),y1:Math.max(...ys)}); };
+  for(const step of phys){
+    const p=step.p, f=p.family, Hv=H[hi];
+    if(f==="PS"){
+      // true footprint from data: width_in and length_ft(inches). Long side spans perpendicular; depth ≥ ramp width.
+      const d1=(p.width_in||48)/12, d2=(p.length_ft||48)/12;
+      const dPerp=Math.max(d1,d2), dAlong=Math.max(Math.min(d1,d2),RW);
+      const perpV=H[(hi+1)%4];                 // right-perpendicular reference
+      const turn=step.turn||'straight';
+      let nhi=hi; if(turn==='left')nhi=(hi+3)%4; else if(turn==='right')nhi=(hi+1)%4; else if(turn==='u')nhi=(hi+2)%4;
+      let aFrom=0,aTo=dAlong,pFrom=-dPerp/2,pTo=dPerp/2, evenSide=(uParity%2===0);
+      if(turn==='u'){ if(evenSide){pFrom=-RW/2;pTo=dPerp-RW/2;} else {pTo=RW/2;pFrom=RW/2-dPerp;} } // shift platform to span both legs
+      const pts=[]; for(const al of [aFrom,aTo]) for(const pe of [pFrom,pTo]) pts.push({x:pos.x+Hv[0]*al+perpV[0]*pe, y:pos.y+Hv[1]*al+perpV[1]*pe});
+      const xs=pts.map(q=>q.x), ys=pts.map(q=>q.y);
+      shapes.push({kind:'plat',label:p.code,x0:Math.min(...xs),y0:Math.min(...ys),x1:Math.max(...xs),y1:Math.max(...ys)});
+      if(turn==='u'){ const off=Math.max(RW,dPerp-RW), perpU=evenSide?perpV:[-perpV[0],-perpV[1]]; pos={x:pos.x+perpU[0]*off, y:pos.y+perpU[1]*off}; uParity++; }
+      else if(turn==='straight'){ pos={x:pos.x+Hv[0]*dAlong, y:pos.y+Hv[1]*dAlong}; }
+      else { const Hn=H[nhi], C={x:pos.x+Hv[0]*(dAlong/2), y:pos.y+Hv[1]*(dAlong/2)}; pos={x:C.x+Hn[0]*(dPerp/2), y:C.y+Hn[1]*(dPerp/2)}; } // L: exit perpendicular edge
+      hi=nhi;
+    } else {
+      const L = f==="RR"?Math.max(p.length_ft||1,1) : f==="GP"?Math.max((p.width_in||48)/12,3) : f==="STP"?3 : RW;
+      const cs={x:pos.x,y:pos.y}, ce={x:pos.x+Hv[0]*L, y:pos.y+Hv[1]*L};
+      addSeg(cs,ce,hi, f==="RR"?'ramp':f==="GP"?'ground':f==="STP"?'stairs':'gate', p.code);
+      pos=ce;
     }
-    // direction arrow across the leg
-    const xs=lg.items.map(it=>[it.x0,it.x1]).flat();
-    if(xs.length){
-      const lx0=X(Math.min(...xs)), lx1=X(Math.max(...xs)), ay=y+RWpx+9;
-      const ax0=lg.dir===1?lx0:lx1, ax1=lg.dir===1?lx1:lx0, tip=lg.dir===1?ax1:ax1;
-      svg+=`<line x1="${ax0}" y1="${ay}" x2="${ax1}" y2="${ay}" stroke="#8aa0b3" stroke-width="1"/>`;
-      svg+=`<path d="M ${ax1} ${ay} l ${lg.dir*-5} -3 l 0 6 z" fill="#8aa0b3"/>`;
-    }
-  });
-  // entry marker
-  const e=dl[0]; const ex=X(e.items.length?Math.min(...e.items.flatMap(it=>[it.x0,it.x1])):0);
-  svg+=`<text x="${ex}" y="${rowY(0)-8}" text-anchor="start" font-size="10" font-weight="bold" fill="#10263f">▸ ENTRY (grade)</text>`;
+  }
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for(const s of shapes){ minX=Math.min(minX,s.x0);minY=Math.min(minY,s.y0);maxX=Math.max(maxX,s.x1);maxY=Math.max(maxY,s.y1); }
+  const spanX=Math.max(maxX-minX,4), spanY=Math.max(maxY-minY,RW);
+  const W=760, padL=40, padR=34, padT=36, padB=28, maxH=380;
+  const scale=Math.min((W-padL-padR)/spanX,(maxH-padT-padB)/spanY);
+  const contentW=spanX*scale, contentH=spanY*scale;
+  const offX=padL+Math.max(0,(W-padL-padR-contentW)/2);
+  const Hpx=padT+contentH+padB;
+  const X=fx=>offX+(fx-minX)*scale, Y=fy=>padT+(fy-minY)*scale;
+  let svg=`<svg viewBox="0 0 ${W} ${Hpx}" width="100%" preserveAspectRatio="xMidYMid meet" font-family="Arial,Helvetica,sans-serif">`;
+  svg+=`<rect x="0" y="0" width="${W}" height="${Hpx}" fill="#f7fafd"/>`;
+  for(const s of shapes){ if(s.kind!=='plat')continue; const x=X(s.x0),y=Y(s.y0),w=(s.x1-s.x0)*scale,h=(s.y1-s.y0)*scale;
+    svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="#dbe9f6" stroke="#10263f" stroke-width="1.5"/><text x="${x+w/2}" y="${y+h/2+3}" text-anchor="middle" font-size="9" fill="#10263f">${s.label}</text>`; }
+  for(const s of shapes){ if(s.kind==='plat')continue;
+    const x=X(s.x0),y=Y(s.y0),w=(s.x1-s.x0)*scale,h=(s.y1-s.y0)*scale, horiz=(s.dir%2===0);
+    if(s.kind==='gate'){ svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fde6d8" stroke="#e0662b" stroke-width="1.4"/><text x="${x+w/2}" y="${y+h/2+3}" text-anchor="middle" font-size="7.5" fill="#e0662b">${s.label}</text>`; continue; }
+    let fill="#cfe6fa",stroke="#1681c2"; if(s.kind==='stairs'){fill="#eef2f6";stroke="#7a8ea0";} if(s.kind==='ground'){fill="#d7e8f6";stroke="#4a6076";}
+    svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}" stroke-width="1.4"/>`;
+    if(s.kind==='stairs'){ const nn=4; for(let k=1;k<nn;k++){ if(horiz){const lx=x+w*k/nn; svg+=`<line x1="${lx}" y1="${y}" x2="${lx}" y2="${y+h}" stroke="#7a8ea0" stroke-width="1"/>`;} else {const ly=y+h*k/nn; svg+=`<line x1="${x}" y1="${ly}" x2="${x+w}" y2="${ly}" stroke="#7a8ea0" stroke-width="1"/>`;} } }
+    const cmx=X((s.cs.x+s.ce.x)/2), cmy=Y((s.cs.y+s.ce.y)/2);
+    if(Math.min(w,h)>13) svg+=`<text x="${cmx}" y="${cmy+3}" text-anchor="middle" font-size="8.5" fill="#12466e">${s.label}</text>`;
+    const dv=H[s.dir], perp=H[(s.dir+1)%4];
+    const ax=X(s.cs.x+(s.ce.x-s.cs.x)*0.72), ay=Y(s.cs.y+(s.ce.y-s.cs.y)*0.72);
+    svg+=`<path d="M ${ax+dv[0]*6} ${ay+dv[1]*6} L ${ax-dv[0]*4+perp[0]*3.4} ${ay-dv[1]*4+perp[1]*3.4} L ${ax-dv[0]*4-perp[0]*3.4} ${ay-dv[1]*4-perp[1]*3.4} Z" fill="#5b7085"/>`;
+  }
+  const first=shapes.find(s=>s.kind!=='plat'); if(first){ svg+=`<circle cx="${X(first.cs.x)}" cy="${Y(first.cs.y)}" r="4" fill="#10263f"/><text x="${X(first.cs.x)}" y="${Y(first.cs.y)-8}" text-anchor="middle" font-size="9" font-weight="bold" fill="#10263f">ENTRY</text>`; }
+  // scale bar — a real 5 ft reference so the drawing reads to scale
+  const barFt=5, bx=offX, by=Hpx-12, bw=barFt*scale;
+  svg+=`<line x1="${bx}" y1="${by}" x2="${bx+bw}" y2="${by}" stroke="#33475b" stroke-width="1.6"/><line x1="${bx}" y1="${by-4}" x2="${bx}" y2="${by+4}" stroke="#33475b" stroke-width="1.6"/><line x1="${bx+bw}" y1="${by-4}" x2="${bx+bw}" y2="${by+4}" stroke="#33475b" stroke-width="1.6"/><text x="${bx+bw+6}" y="${by+3}" font-size="9" fill="#33475b">5 ft · drawn to scale (36&quot; ramp width)</text>`;
   svg+=`</svg>`;
   return svg;
 }
-function a4uSheetHtml(bom,t,seq){
+function a4uSheetHtml(bom,t,phys){
+  const seq=phys.map(x=>x.p);
   const fmt=n=>"$"+(Number(n)||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
   const esc2=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   // specs
@@ -858,8 +898,13 @@ function a4uSheetHtml(bom,t,seq){
   const totalWeight=bom.reduce((n,b)=>n+((b.p.weight_lb||0)*b.qty),0);
   const pieces=bom.reduce((n,b)=>n+b.qty,0);
   const servedRise=rampFeet; // ADA 1:12 → 1 in rise per 12 in run → served rise (in) ≈ run (ft)
+  const ada=a4uAda(seq, A4U.rise);
+  const adaLabel = ada.state==="pass"?"✓ ADA compliant (1:12)" : ada.state==="fail"?"✗ Exceeds ADA 1:12" : ada.state==="warn"?"⚠ Needs rest platform" : "Rise not entered";
   const specRows=[
     ["Total ramp run", rampFeet? rampFeet+" ft ("+(rampFeet*12)+" in)":"—"],
+    ["Total project rise", A4U.rise? A4U.rise+" in":"— (not entered)"],
+    ["Actual slope", (A4U.rise&&rampFeet)? "1:"+ada.ratio.toFixed(1)+" (ADA min 1:12)":"—"],
+    ["ADA slope check", adaLabel],
     ["Serves vertical rise up to", rampFeet? "≈ "+servedRise+' in at ADA 1:12 slope':"—"],
     ["Usable width", "36 in clear"],
     ["Rest / turn platforms", platforms||"0"],
@@ -886,7 +931,7 @@ function a4uSheetHtml(bom,t,seq){
   }).join("");
   const layoutStr=seq.map(p=>p.code).join("  →  ");
   const diagram=a4uDiagram(seq);
-  const plan=a4uPlanDiagram(seq);
+  const plan=a4uPlanDiagram(phys);
   const dateStr=(new Date()).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
   return `<!doctype html><html><head><meta charset="utf-8"><title>Access4U Modular Ramp — Layout & Quote</title>
 <style>
@@ -938,7 +983,7 @@ function a4uSheetHtml(bom,t,seq){
   </div>
 
   <h2>Configuration Layout</h2>
-  <div class="dlabel">Top view (plan) — switchback footprint</div>
+  <div class="dlabel">Top view (plan) — configured shape</div>
   <div class="diagram">${plan}</div>
   <div class="dlabel">Side elevation — slope profile</div>
   <div class="diagram">${diagram}</div>
@@ -963,7 +1008,7 @@ function a4uSheetHtml(bom,t,seq){
   </div>
 
   <div class="note">
-    Diagram is a schematic side elevation — not to exact scale; final turn direction and configuration are set on site.
+    The top view is drawn to scale from the component dimensions (36&quot; ramp width and platform footprints), per the scale bar; the side elevation exaggerates height for readability. Turn directions reflect the configurator selections — verify final orientation, clearances, and site fit against field measurements.
     ADA guidance: 1:12 maximum slope (1&quot; of rise per 12&quot; of ramp run); a 30&quot; rise or 30&#39; run should include an intermediate rest platform.
     Prices are per the current Access4U list. <b>Dealer cost is the HCPS/dealer figure — for your records, not for the customer.</b>
     Freight is FOB Access4U and quoted separately by HCPS. Configuration and pricing subject to final measurement and confirmation. Not a contract.
@@ -973,8 +1018,8 @@ function a4uSheetHtml(bom,t,seq){
 }
 function a4uLayoutSheet(){
   const bom=a4uBom(); if(!bom.length){toast("Build a configuration first");return;}
-  const seq=a4uSequence(); const t=a4uTotals(bom);
-  const html=a4uSheetHtml(bom,t,seq);
+  const phys=a4uPhysical(); const t=a4uTotals(bom);
+  const html=a4uSheetHtml(bom,t,phys);
   const w=window.open("","_blank");
   if(!w){toast("Allow pop-ups to open the layout sheet");return;}
   w.document.open(); w.document.write(html); w.document.close();
