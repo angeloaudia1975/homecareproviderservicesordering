@@ -431,6 +431,19 @@ function linesSubtotal(lines){let t=0;for(const{p,qty}of lines)t+=unitPrice(p,qt
 function computeFreight(slug,lines){
   const cfg=mfrInfo(slug).freight; const itemsTotal=linesSubtotal(lines);
   if(!cfg) return {rows:[],fee:0,itemsTotal,actualNote:""};
+  // per-item shipping: method chosen by order total (e.g. UPS under threshold, LTL over)
+  if(cfg.mode==="per_item"){
+    const method = itemsTotal >= (cfg.threshold||1e12) ? "ltl" : "ups";
+    let fee=0, tbd=false;
+    for(const {p,qty} of lines){
+      const s=p.shipping||{}; let v=s[method];
+      if(v==null) v=(s.ltl!=null?s.ltl:s.ups);          // fall back if selected method n/a
+      if(v==="tbd") tbd=true; else if(v!=null && v!=="included") fee+=Number(v)*qty;
+    }
+    const label = method==="ltl" ? "LTL freight (order $2,500+)" : "UPS/FedEx (order under $2,500)";
+    let note = cfg.summary||""; if(tbd) note += " Some items' freight is confirmed by HCPS.";
+    return {rows:[{label,status:"peritem",fee}], fee, itemsTotal, actualNote:note};
+  }
   const assigned=new Set(); const rows=[]; let fee=0; let anyActual=false;
   for(const g of (cfg.groups||[])){
     let sub=0;
@@ -461,7 +474,8 @@ function grandTotal(){let t=0;for(const[slug,lines]of groupCart()){const f=compu
 function freightRowsHtml(f){
   let h="";
   for(const r of f.rows){
-    if(r.status==="free") h+=`<div class="frow free"><span>✓ ${esc(r.label)}</span><span>FREE freight</span></div>`;
+    if(r.status==="peritem") h+=`<div class="frow"><span>${esc(r.label)}</span><span>${r.fee>0?money(r.fee):"included"}</span></div>`;
+    else if(r.status==="free") h+=`<div class="frow free"><span>✓ ${esc(r.label)}</span><span>FREE freight</span></div>`;
     else if(r.status==="flat"){
       const prog = r.waiveRemaining>0 ? `· add ${money(r.waiveRemaining)} to waive the fee`
                  : (r.freeRemaining>0 ? `· add ${money(r.freeRemaining)} for free` : "");
