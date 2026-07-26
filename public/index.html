@@ -148,6 +148,16 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
 /* TOAST */
 .toast{position:fixed;bottom:22px;left:22px;background:var(--navy);color:#fff;padding:12px 16px;border-radius:10px;font-weight:600;font-size:13px;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);transition:.2s;z-index:100;}
 .toast.show{opacity:1;transform:translateY(0);}
+
+/* IMAGE LIGHTBOX */
+.card .img img{cursor:zoom-in;}
+.lightbox{position:fixed;inset:0;background:rgba(11,13,15,.9);display:none;align-items:center;justify-content:center;z-index:120;padding:30px;cursor:zoom-out;}
+.lightbox.open{display:flex;}
+.lightbox figure{margin:0;max-width:94vw;max-height:94vh;display:flex;flex-direction:column;align-items:center;gap:12px;}
+.lightbox img{max-width:94vw;max-height:82vh;object-fit:contain;background:#fff;border-radius:12px;box-shadow:0 24px 70px rgba(0,0,0,.55);cursor:default;}
+.lightbox figcaption{color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;text-align:center;max-width:82vw;line-height:1.2;}
+.lightbox .lbx{position:absolute;top:18px;right:22px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:10px;padding:8px 13px;font-weight:700;cursor:pointer;font-size:15px;}
+.lightbox .lbx:hover{background:rgba(255,255,255,.25);}
 </style>
 </head>
 <body>
@@ -221,6 +231,12 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
     <button class="go" id="lg_go">Log In</button>
     <div class="note">Don't have a login yet? Contact HCPS at <a href="mailto:info@homecareproviderservices.us" style="color:var(--orange)">info@homecareproviderservices.us</a> to have an account and password assigned. <br><br><em>Dealer accounts &amp; custom pricing activate once the Supabase back end is connected (Phase 2).</em></div>
   </div>
+</div>
+
+<!-- IMAGE LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+  <button class="lbx" id="lbClose">✕ Close</button>
+  <figure><img id="lbImg" src="" alt="" /><figcaption id="lbCap"></figcaption></figure>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -528,6 +544,18 @@ $("#clearCart").onclick=()=>{CART.clear();updateCart();toast("Cart cleared");};
 $("#submitOrder").onclick=submitOrder;
 $("#loginBtn").onclick=()=>$("#loginModal").classList.add("open");
 $("#lg_go").onclick=()=>toast("Dealer login connects in Phase 2 (Supabase).");
+
+/* ---------- image lightbox ---------- */
+const lightbox=$("#lightbox"), lbImg=$("#lbImg"), lbCap=$("#lbCap");
+function openLightbox(src,cap){lbImg.src=src;lbImg.alt=cap||"";lbCap.textContent=cap||"";lightbox.classList.add("open");}
+function closeLightbox(){lightbox.classList.remove("open");lbImg.src="";}
+$("#content").addEventListener("click",e=>{
+  const img=e.target.closest(".card .img img");
+  if(img && img.getAttribute("src")) openLightbox(img.currentSrc||img.src, img.alt);
+});
+$("#lbClose").onclick=closeLightbox;
+lightbox.addEventListener("click",e=>{ if(e.target===lightbox || e.target.tagName==="FIGURE") closeLightbox(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && lightbox.classList.contains("open")) closeLightbox(); });
 ["input","change"].forEach(ev=>{$("#search").addEventListener("input",renderProducts);$("#catFilter").addEventListener("change",renderProducts);$("#brandFilter").addEventListener("change",renderProducts);});
 
 (async function init(){
