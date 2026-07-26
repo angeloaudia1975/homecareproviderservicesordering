@@ -158,6 +158,42 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
 .lightbox figcaption{color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;text-align:center;max-width:82vw;line-height:1.2;}
 .lightbox .lbx{position:absolute;top:18px;right:22px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:10px;padding:8px 13px;font-weight:700;cursor:pointer;font-size:15px;}
 .lightbox .lbx:hover{background:rgba(255,255,255,.25);}
+
+/* ACCESS4U MODULAR RAMP BUILDER */
+.a4u{background:#fff;border:1px solid var(--line);border-radius:14px;margin:18px 0 4px;overflow:hidden;box-shadow:var(--shadow);}
+.a4u .ahead{background:linear-gradient(120deg,var(--navy),var(--navy2));color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.a4u .ahead h3{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;display:flex;gap:8px;align-items:center;}
+.a4u .ahead .sub{font-size:11.5px;color:#9fb0c4;}
+.a4u .abody{padding:14px 16px;display:none;}
+.a4u.open .abody{display:block;}
+.a4u .arow{display:grid;grid-template-columns:1.3fr auto;gap:10px;align-items:end;margin-bottom:10px;}
+.a4u .addgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px;}
+.a4u .fld label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);margin-bottom:3px;}
+.a4u .fld{display:flex;flex-direction:column;}
+.a4u .fld .in{display:flex;gap:6px;}
+.a4u select,.a4u input{padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;background:#fff;width:100%;}
+.a4u .ab{background:var(--navy);color:#fff;border:none;padding:9px 12px;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;white-space:nowrap;}
+.a4u .ab:hover{background:var(--orange);}
+.a4u .ab.sm{padding:9px 11px;}
+.a4u table{width:100%;border-collapse:collapse;margin-top:6px;}
+.a4u th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);}
+.a4u td{padding:7px 8px;border-bottom:1px solid var(--line);font-size:13px;}
+.a4u td.r,.a4u th.r{text-align:right;white-space:nowrap;}
+.a4u tr.auto td{color:var(--gray);font-style:italic;}
+.a4u .rm{border:1px solid var(--line);background:#fff;border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;}
+.a4u .empty{color:var(--gray);font-size:13px;padding:10px 0;}
+.a4u .totgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px;}
+.a4u .tot{border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+.a4u .tot .l{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);}
+.a4u .tot .v{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--navy);}
+.a4u .tot.your{background:#eef5ff;border-color:#cfe2fb;}
+.a4u .tot.your .v{color:var(--blue);}
+.a4u .tot.msrp .v{color:var(--green);}
+.a4u .aacts{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
+.a4u .aacts .go{background:var(--orange);color:#fff;border:none;padding:11px 16px;border-radius:9px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;text-transform:uppercase;cursor:pointer;}
+.a4u .aacts .go:hover{background:var(--orange-d);}
+.a4u .layout{font-size:12px;color:#4b5563;background:var(--paper);border:1px dashed var(--line);border-radius:8px;padding:8px 10px;margin-top:10px;}
+@media(max-width:640px){.a4u .totgrid{grid-template-columns:repeat(2,1fr);}}
 </style>
 </head>
 <body>
@@ -192,6 +228,7 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
   <select id="brandFilter"><option value="">All brands</option></select>
 </div></div></div>
 
+<div class="wrap"><div id="a4uBuilder"></div></div>
 <main class="wrap"><div id="content" class="section"></div></main>
 
 <!-- CART -->
@@ -585,11 +622,92 @@ async function submitOrder(){
   finally{btn.disabled=false;btn.textContent="Submit Order to HCPS";}
 }
 
+/* ---------- Access4U modular ramp quote builder ---------- */
+const A4U={items:[], open:false};                 // items: ordered [{code,fam,qty}]; PRK auto-added per platform
+// Codes SR3 & PRK exist in two families (RS single-fold ramps vs RR modular Ramp Run) at different prices.
+// The modular configurator is the RR (Ramp Run) system, so it always resolves parts to their family.
+function a4uProd(code,fam){return state.products.find(p=>p.code===code && (!fam||p.family===fam));}
+function a4uFam(fam){return state.products.filter(p=>p.family===fam);}
+function a4uKey(code,fam){return (fam||"")+"::"+code;}
+function a4uAddRamp(){
+  const L=clampInt($("#a4uLen").value,1,300);
+  A4U.items.push({code:"SR3",fam:"RR",qty:1});
+  let rem=L-3;
+  while(rem>0){ const seg=Math.min(rem,30); const rr="RR"+seg+"x36"; if(a4uProd(rr,"RR")) A4U.items.push({code:rr,fam:"RR",qty:1}); rem-=seg; }
+  renderA4U();
+}
+function a4uAdd(sel,fam){ const code=$(sel).value; if(code&&a4uProd(code,fam)){A4U.items.push({code,fam,qty:1}); renderA4U();} }
+function a4uRemove(i){ A4U.items.splice(i,1); renderA4U(); }
+function a4uBom(){
+  // merge duplicate (code,family) preserving first-seen order; auto-add PRK = one per platform unit (RR family)
+  const order=[]; const q=new Map(); const meta=new Map();
+  for(const it of A4U.items){ const k=a4uKey(it.code,it.fam); if(!q.has(k)){order.push(k);meta.set(k,it);} q.set(k,(q.get(k)||0)+it.qty); }
+  const platQty=A4U.items.filter(it=>{const p=a4uProd(it.code,it.fam);return p&&p.family==="PS";}).reduce((n,it)=>n+it.qty,0);
+  if(platQty>0){ const pk=a4uKey("PRK","RR"); if(!q.has(pk)){order.push(pk);meta.set(pk,{code:"PRK",fam:"RR"});} q.set(pk,platQty); }
+  return order.map(k=>{const m=meta.get(k);return {p:a4uProd(m.code,m.fam),fam:m.fam,qty:q.get(k),auto:(m.code==="PRK"&&platQty>0)};}).filter(x=>x.p);
+}
+function a4uTotals(bom){let d=0,y=0,mp=0,ma=0;for(const{p,qty}of bom){d+=(p.dealer_price||0)*qty;y+=(p.base_price||0)*qty;mp+=(p.msrp||0)*qty;ma+=(p.map||0)*qty;}return{dealer:d,your:y,msrp:mp,map:ma};}
+function a4uOpts(fam,ph){
+  const items=a4uFam(fam).filter(p=>p.family===fam);
+  return `<option value="">${ph}</option>`+items.map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(p.base_price)})</option>`).join("");
+}
+function renderA4U(){
+  const host=$("#a4uBuilder");
+  if(state.active!=="access4u" || !a4uProd("SR3")){ host.innerHTML=""; return; }
+  const bom=a4uBom(), t=a4uTotals(bom);
+  const rrOpts=a4uFam("RR").filter(p=>/^RR\d+x36$/.test(p.code)).map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(p.base_price)})</option>`).join("");
+  const bomRows = bom.length? bom.map((b,i)=>`<tr class="${b.auto?'auto':''}">
+      <td>${esc(b.p.code)}</td><td>${esc(b.p.name)}</td>
+      <td class="r">${b.qty}</td><td class="r">${money(b.p.base_price)}</td><td class="r">${money(b.p.base_price*b.qty)}</td>
+      <td class="r">${b.auto?'<span class=fineprint>auto</span>':`<button class="rm" onclick="a4uRemoveByCode('${esc(b.p.code)}','${esc(b.fam||'')}')">Remove</button>`}</td></tr>`).join("")
+    : `<tr><td colspan="6" class="empty">No components yet. Enter a ramp length or add platforms, gates, or stairs above.</td></tr>`;
+  const layout = bom.length? "Layout: "+bom.map(b=>`${b.qty}× ${b.p.code}`).join("  +  ") : "";
+  host.innerHTML=`<div class="a4u ${A4U.open?'open':''}">
+    <div class="ahead" onclick="A4U.open=!A4U.open;renderA4U()">
+      <h3>🛠 Modular Ramp Quote Builder <span class="sub">SR3 starter + runs, platforms, ground platforms, gates &amp; stairs</span></h3>
+      <span class="ab sm">${A4U.open?'Hide ▲':'Open ▼'}</span>
+    </div>
+    <div class="abody">
+      <div class="arow">
+        <div class="fld"><label>Total ramp length (feet) — builds SR3 + run sections</label>
+          <div class="in"><input id="a4uLen" type="number" min="4" step="1" placeholder="e.g. 10" value="10"><button class="ab" onclick="a4uAddRamp()">Add Ramp</button></div></div>
+        <div class="fld"><label>or add a single run section</label>
+          <div class="in"><select id="a4uRR"><option value="">Select run…</option>${rrOpts}</select><button class="ab sm" onclick="a4uAdd('#a4uRR','RR')">Add</button></div></div>
+      </div>
+      <div class="addgrid">
+        <div class="fld"><label>Turn / Rest Platform (adds PRK)</label><div class="in"><select id="a4uPS">${a4uOpts("PS","Select platform…")}</select><button class="ab sm" onclick="a4uAdd('#a4uPS','PS')">Add</button></div></div>
+        <div class="fld"><label>Ground Platform</label><div class="in"><select id="a4uGP">${a4uOpts("GP","Select…")}</select><button class="ab sm" onclick="a4uAdd('#a4uGP','GP')">Add</button></div></div>
+        <div class="fld"><label>Gate</label><div class="in"><select id="a4uGATE">${a4uOpts("GATE","Select…")}</select><button class="ab sm" onclick="a4uAdd('#a4uGATE','GATE')">Add</button></div></div>
+        <div class="fld"><label>Stairs (by rise)</label><div class="in"><select id="a4uSTP">${a4uOpts("STP","Select…")}</select><button class="ab sm" onclick="a4uAdd('#a4uSTP','STP')">Add</button></div></div>
+      </div>
+      <table><thead><tr><th>Item</th><th>Description</th><th class="r">Qty</th><th class="r">Your&nbsp;Price</th><th class="r">Line</th><th class="r"></th></tr></thead>
+        <tbody>${bomRows}</tbody></table>
+      ${layout?`<div class="layout">${esc(layout)}</div>`:""}
+      <div class="totgrid">
+        <div class="tot"><div class="l">Dealer</div><div class="v">${money(t.dealer)}</div></div>
+        <div class="tot your"><div class="l">Your Price (15%)</div><div class="v">${money(t.your)}</div></div>
+        <div class="tot msrp"><div class="l">MSRP (customer)</div><div class="v">${money(t.msrp)}</div></div>
+        <div class="tot"><div class="l">MAP</div><div class="v">${money(t.map)}</div></div>
+      </div>
+      <div class="aacts">
+        <button class="go" onclick="a4uToCart()">Add configuration to cart</button>
+        <button class="clr" onclick="A4U.items=[];renderA4U()">Clear</button>
+        <span class="fineprint" style="align-self:center;">Your Price shown at the 15% tier; per-dealer tiers apply once dealer logins are set up. Freight is FOB Access4U, quoted by HCPS.</span>
+      </div>
+    </div></div>`;
+}
+function a4uRemoveByCode(code,fam){ for(let i=A4U.items.length-1;i>=0;i--){ if(A4U.items[i].code===code && (!fam||A4U.items[i].fam===fam)){A4U.items.splice(i,1);break;} } renderA4U(); }
+function a4uToCart(){
+  const bom=a4uBom(); if(!bom.length){toast("Build a configuration first");return;}
+  for(const {p,qty} of bom) addToCart(p,qty);
+  toast("Ramp configuration added to cart ✓"); openCart();
+}
+
 /* ---------- navigation ---------- */
 async function selectManufacturer(slug){
   state.active=slug; renderTabs();
   await loadProducts(slug);
-  renderBanner(); renderProducts();
+  renderBanner(); renderProducts(); renderA4U();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function openCart(){$("#drawer").classList.add("open");$("#scrim").classList.add("open");}
