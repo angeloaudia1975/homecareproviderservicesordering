@@ -65,8 +65,8 @@ const money=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,
 const money0=n=>"$"+Number(n||0).toLocaleString("en-US",{maximumFractionDigits:0});
 const pm=p=>{const[y,m]=p.split("-").map(Number);return y*12+(m-1);};
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let DATA=null,TOKEN=null,TAB="overview",EXP=null,DEALER=null,LT={};
-const TABS=[["overview","Overview"],["trend","Line trend"],["dealers","Dealers"],["cadence","Order cadence"],["bizdev","Business development"]];
+let DATA=null,TOKEN=null,TAB="overview",EXP=null,DEALER=null,LT={},ASSIGN={},REPOPTS=[];
+const TABS=[["overview","Overview"],["trend","Line trend"],["dealers","Dealers"],["cadence","Order cadence"],["bizdev","Business development"],["assign","Assignments"]];
 
 async function load(){
   try{
@@ -76,6 +76,8 @@ async function load(){
     const j=await r.json(); if(j.error){showErr(j.error);return;}
     DATA=j;
     LT={}; for(const f of j.facts){LT[f.line]=(LT[f.line]||0)+f.sales;}
+    ASSIGN={}; (j.assignments||[]).forEach(a=>ASSIGN[a.dealer_name]={rep:a.rep_name||"",acct:a.hcps_account||""});
+    REPOPTS=(j.repOptions&&j.repOptions.length?j.repOptions:(j.reps||[])).filter(r=>r&&r!=="Unassigned");
     $("#line").innerHTML=`<option value="all">All lines</option>`+j.lines.map(l=>`<option>${esc(l)}</option>`).join("");
     $("#period").innerHTML=j.periods.map(p=>`<option value="${p.key}">${esc(p.label)}</option>`).join("");
     $("#foot").textContent="Generated "+new Date(j.generatedAt).toLocaleString()+" · cadence in months (source reports are monthly). Product detail shown where the line's report itemizes orders.";
@@ -104,7 +106,7 @@ function render(){ if(!DATA)return;
   $("#body").innerHTML=`<div id="kpis">${$("#kpis")?$("#kpis").innerHTML:""}</div>`+
     `<div class="tabs">${TABS.map(t=>`<button class="tab ${TAB===t[0]?'on':''}" onclick="setTab('${t[0]}')">${t[1]}</button>`).join("")}</div><div id="app"></div>`;
   renderKpis();
-  ({overview:renderOverview,trend:renderTrend,dealers:renderDealers,cadence:renderCadence,bizdev:renderBizdev}[TAB])();
+  ({overview:renderOverview,trend:renderTrend,dealers:renderDealers,cadence:renderCadence,bizdev:renderBizdev,assign:renderAssign}[TAB])();
 }
 function renderKpis(){
   const rows=facts();const de=new Set(),rp=new Set();let s=0,c=0,recs=0;
@@ -208,6 +210,7 @@ function renderProfile(){
     <div class="card"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline">
       <h2 style="font-size:19px;color:#10263f;margin:0;text-transform:none;letter-spacing:0">${esc(name)}</h2>
       <div>${[...linesSet].sort().map(x=>`<span class="chip">${esc(x)}</span>`).join("")}</div></div>
+      ${(ASSIGN[name]&&(ASSIGN[name].rep||ASSIGN[name].acct))?`<div class="hint" style="margin:6px 0 0">Owner rep: <b>${esc(ASSIGN[name].rep||"—")}</b> · HCPS account #: <b>${esc(ASSIGN[name].acct||"—")}</b></div>`:`<div class="hint" style="margin:6px 0 0">No rep/account assigned yet — set it on the Assignments tab.</div>`}
       <div class="kpis" style="grid-template-columns:repeat(4,1fr);margin:14px 0 4px">
         <div class="kpi"><div class="l">Total sales</div><div class="v">${money0(s)}</div></div>
         <div class="kpi"><div class="l">Commission</div><div class="v orange">${money0(c)}</div></div>
@@ -246,6 +249,36 @@ function renderBizdev(){
     <div class="card"><h2 class="warn">Declining</h2><table><thead><tr><th>Dealer</th><th class="num">From→To</th><th class="num">Change</th></tr></thead><tbody>`+
       decline.map(d=>`<tr class="drow" onclick="openDealer('${esc(d.dealer).replace(/'/g,"\\'")}')"><td class="lbl link">${esc(d.dealer)}</td><td class="num dim">${money0(d.from)}→${money0(d.to)}</td><td class="num warn">${money0(d.delta)}</td></tr>`).join("")+`</tbody></table></div></div>`;
   $("#app").innerHTML=h;
+}
+function renderAssign(){
+  const q=($("#as")?.value||"").toLowerCase();
+  let ds=dealerAgg("all").sort((a,b)=>b.sales-a.sales);
+  if(q) ds=ds.filter(d=>d.dealer.toLowerCase().includes(q));
+  const datalist=`<datalist id="repopts">${REPOPTS.map(r=>`<option value="${esc(r)}">`).join("")}</datalist>`;
+  let h=`<div class="card"><h2>Assign rep &amp; HCPS account <span class="hint" style="text-transform:none">— saves live to the database</span></h2>
+    <div class="hint">Set each dealer's owning rep and HCPS account number. This is the dealer's assignment for territory/logins; it does not rewrite the commission already reported by each manufacturer.</div>
+    <input type="search" id="as" placeholder="Search dealer…" value="${esc(q)}" oninput="render()" style="width:260px;margin-bottom:10px">${datalist}
+    <table><thead><tr><th>Dealer</th><th>Reported rep(s)</th><th>Assigned rep (owner)</th><th>HCPS account #</th><th></th></tr></thead><tbody>`;
+  ds.forEach((d,i)=>{
+    const rr=[...new Set(DATA.facts.filter(f=>f.dealer===d.dealer).map(f=>f.rep))].sort().join(", ");
+    const a=ASSIGN[d.dealer]||{rep:"",acct:""};
+    h+=`<tr><td class="lbl">${esc(d.dealer)}</td><td class="dim" style="font-size:12px">${esc(rr)}</td>
+      <td><input list="repopts" id="rep_${i}" value="${esc(a.rep)}" placeholder="rep…" style="width:150px"></td>
+      <td><input id="acct_${i}" value="${esc(a.acct)}" placeholder="account #" style="width:130px"></td>
+      <td><button class="go" style="padding:6px 12px" onclick="saveAssign('${esc(d.dealer).replace(/'/g,"\\'")}',${i},this)">Save</button> <span id="st_${i}" class="hint" style="margin:0"></span></td></tr>`;
+  });
+  h+=`</tbody></table></div>`; $("#app").innerHTML=h;
+}
+async function saveAssign(name,i){
+  const rep=$("#rep_"+i).value.trim(), acct=$("#acct_"+i).value.trim(), st=$("#st_"+i);
+  st.textContent="Saving…"; st.className="hint"; st.style.margin="0";
+  try{
+    const h={"content-type":"application/json"}; if(TOKEN)h["x-analytics-token"]=TOKEN;
+    const r=await fetch("/.netlify/functions/assign",{method:"POST",headers:h,body:JSON.stringify({dealer_name:name,rep_name:rep,hcps_account:acct})});
+    const j=await r.json().catch(()=>({}));
+    if(r.ok&&j.ok){ASSIGN[name]={rep,acct};st.textContent="Saved ✓";st.className="ok";}
+    else {st.textContent="Error: "+(j.error||r.status);st.className="warn";}
+  }catch(e){st.textContent="Error";st.className="warn";}
 }
 load();
 </script></body></html>
