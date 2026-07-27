@@ -101,6 +101,7 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
 .citem{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:10px;}
 .citem .t{font-weight:700;font-size:13px;}
 .citem .s{color:var(--gray);font-size:11.5px;}
+.citem .volnote{color:#1c7a44;font-weight:600;}
 .citem .r{display:grid;gap:6px;justify-items:end;}
 .citem .r input{width:64px;padding:7px;text-align:center;border:1px solid var(--line);border-radius:7px;}
 .citem .rm{border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 8px;font-size:11px;cursor:pointer;}
@@ -310,8 +311,26 @@ const clampInt=(v,min=1,max=99999)=>{const n=parseInt(String(v||"").replace(/\D/
 const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2000);};
 
 /* ---------- pricing ---------- */
+// Total quantity of a product's family (same manufacturer + group) currently in the cart —
+// quantity-break tiers apply to the COMBINED qty across sizes, not per SKU.
+function familyQty(p){
+  if(!p.group) return 0;
+  let q=0; for(const {p:cp,qty} of CART.values()){ if(cp.manufacturer===p.manufacturer && cp.group===p.group) q+=qty; }
+  return q;
+}
+function tierQty(p, qty){
+  // If the item belongs to a family, tier on the family's combined cart qty; else on this line's qty.
+  const fam=familyQty(p);
+  return Math.max(1, fam>0?fam:(parseInt(qty)||1));
+}
 function unitPrice(p, qty){
-  // Phase 2: dealer_pricing overrides here. For now: base_price.
+  // Phase 2: dealer_pricing overrides here. Quantity-break tiers apply when present.
+  if(Array.isArray(p.tiers)&&p.tiers.length){
+    const q=tierQty(p,qty);
+    let price=null;
+    for(const t of p.tiers){ const mq=(t.minQty??t.min_qty??1); if(q>=mq && t.price!=null) price=Number(t.price); }
+    if(price!=null) return price;
+  }
   return Number(p.base_price||0);
 }
 function priceHtml(p){
@@ -542,9 +561,12 @@ function renderCart(){
     const hasActual=f.rows.some(r=>r.status==="actual");
     const items=lines.map(({p,qty})=>{
       const u=unitPrice(p,qty);
+      const fam=familyQty(p);
+      const volNote=(Array.isArray(p.tiers)&&p.tiers.length>1&&p.group&&fam>1&&u<Number(p.base_price||0)-0.005)
+        ? `<div class="s volnote">Volume tier — ${fam} of “${esc((p.group.split("::")[1]||p.name))}” across sizes</div>` : "";
       return `<div class="citem" data-k="${esc(cartKey(p))}">
         <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)}${p.brand?" · "+esc(p.brand):""}</div>
-        <div class="s">Unit ${u?money(u):"—"} · Line ${u?money(u*qty):"—"}</div></div>
+        <div class="s">Unit ${u?money(u):"—"} · Line ${u?money(u*qty):"—"}</div>${volNote}</div>
         <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
     }).join("");
     const fields=MFR[slug]||(MFR[slug]={po:"",notes:""});
