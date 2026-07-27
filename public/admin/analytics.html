@@ -1,0 +1,96 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HCPS — Sales &amp; Commission Analytics</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,Segoe UI,Arial,sans-serif;background:#eef2f6;color:#10263f}
+.wrap{max-width:1060px;margin:0 auto;padding:22px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #ef6a1f;padding-bottom:12px;margin-bottom:8px;flex-wrap:wrap;gap:10px}
+.top h1{margin:0;font-size:23px}.top .sub{color:#5b7085;font-size:13px;margin-top:4px}
+.ctrls{display:flex;gap:10px;align-items:center}
+select,input{font:inherit;padding:8px 10px;border:1px solid #cdd8e3;border-radius:8px;background:#fff}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:18px 0}
+.kpi{background:#fff;border:1px solid #dbe4ec;border-radius:12px;padding:14px 16px}
+.kpi .l{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#5b7085}
+.kpi .v{font-size:24px;font-weight:800;margin-top:5px}.kpi .v.orange{color:#ef6a1f}.kpi .v.blue{color:#1681c2}
+.card{background:#fff;border:1px solid #dbe4ec;border-radius:12px;padding:16px 18px;margin-bottom:18px}
+.card h2{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.6px;color:#1681c2}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+td{padding:7px 8px;border-bottom:1px solid #eef2f6;vertical-align:middle}
+th{text-align:left;font-size:11px;text-transform:uppercase;color:#5b7085;padding:6px 8px;border-bottom:2px solid #e2e9f0}
+.lbl{font-weight:600;white-space:nowrap}.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.num.comm{color:#1c7a44;font-weight:700}.num.dim{color:#8496a8}
+.barcell{width:44%}.bar{height:15px;background:#1681c2;border-radius:4px;min-width:2px}.bar.rep{background:#ef6a1f}
+.foot{font-size:11.5px;color:#8496a8;margin-top:6px}
+.msg{background:#fff;border:1px solid #dbe4ec;border-radius:12px;padding:22px;text-align:center;color:#5b7085}
+.msg.err{background:#fdecec;border-color:#f3c0c0;color:#b42323}
+.gate{max-width:360px;margin:60px auto}.gate input{width:100%;margin:10px 0}
+.gate button,.reload{background:#10263f;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer}
+</style></head>
+<body><div class="wrap">
+<div class="top">
+  <div><h1>HomeCare Provider Services</h1><div class="sub">Sales &amp; Commission Analytics — live from database</div></div>
+  <div class="ctrls"><label class="sub">Period</label><select id="period" onchange="render()"></select></div>
+</div>
+<div id="app"><div class="msg">Loading…</div></div>
+<div class="foot" id="foot"></div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const money=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const money0=n=>"$"+Number(n||0).toLocaleString("en-US",{maximumFractionDigits:0});
+let STATE=null, TOKEN=null;
+
+async function load(){
+  try{
+    const headers={}; if(TOKEN) headers["x-analytics-token"]=TOKEN;
+    const r=await fetch("/.netlify/functions/analytics",{headers});
+    if(r.status===401){ gate(); return; }
+    const j=await r.json();
+    if(j.error){ showErr(j.error); return; }
+    STATE=j;
+    const sel=$("#period"); sel.innerHTML=j.periods.map(p=>`<option value="${p.key}">${p.label}</option>`).join("");
+    // default to the most recent single month if present, else "all"
+    const months=j.periods.filter(p=>p.key!=="all");
+    sel.value = months.length? months[months.length-1].key : "all";
+    $("#foot").textContent="Generated "+new Date(j.generatedAt).toLocaleString()+" · reads monthly_sales in Supabase.";
+    render();
+  }catch(e){ showErr(String(e)); }
+}
+function gate(){
+  $("#app").innerHTML=`<div class="gate card"><h2>Enter access code</h2>
+    <input id="tok" type="password" placeholder="Analytics passcode" onkeydown="if(event.key==='Enter')submitTok()">
+    <button onclick="submitTok()">View analytics</button></div>`;
+}
+function submitTok(){ TOKEN=$("#tok").value.trim(); load(); }
+function showErr(m){ $("#app").innerHTML=`<div class="msg err"><b>Couldn't load analytics.</b><br>${m}<br><br><button class="reload" onclick="load()">Retry</button></div>`; }
+
+function bars(items, key, cls){
+  const max=Math.max(1,...items.map(i=>i[key]));
+  return items.map(i=>`<tr><td class="lbl">${i.name}</td><td class="barcell"><div class="bar ${cls}" style="width:${i[key]/max*100}%"></div></td>${i.cells}</tr>`).join("");
+}
+function render(){
+  if(!STATE) return;
+  const d=STATE.data[$("#period").value]; if(!d){ $("#app").innerHTML='<div class="msg">No data for this period.</div>'; return; }
+  const t=d.totals;
+  const lineRows=d.byLine.map(l=>({name:l.line,sales:l.sales,cells:`<td class="num">${money0(l.sales)}</td><td class="num comm">${money(l.comm)}</td><td class="num dim">${l.recs}</td>`}));
+  const repRows=d.byRep.map(r=>({name:r.rep,comm:r.comm,cells:`<td class="num comm">${money(r.comm)}</td><td class="num dim">${money0(r.sales)}</td>`}));
+  const dealerRows=d.topDealers.map(x=>`<tr><td class="lbl">${x.dealer}</td><td class="num">${money0(x.sales)}</td><td class="num comm">${money(x.comm)}</td><td class="num dim">${x.lines}</td></tr>`).join("");
+  $("#app").innerHTML=`
+  <div class="kpis">
+    <div class="kpi"><div class="l">Total Sales</div><div class="v">${money0(t.sales)}</div></div>
+    <div class="kpi"><div class="l">Total Commission</div><div class="v orange">${money0(t.comm)}</div></div>
+    <div class="kpi"><div class="l">Dealers</div><div class="v blue">${t.dealers}</div></div>
+    <div class="kpi"><div class="l">Lines</div><div class="v">${t.lines}</div></div>
+    <div class="kpi"><div class="l">Reps</div><div class="v">${t.reps}</div></div>
+  </div>
+  <div class="card"><h2>Sales &amp; commission by line</h2><table>
+    <thead><tr><th>Line</th><th>Sales (relative)</th><th class="num">Sales</th><th class="num">Commission</th><th class="num">Recs</th></tr></thead>
+    <tbody>${bars(lineRows,"sales","")}</tbody></table></div>
+  <div class="card"><h2>Commission by rep</h2><table>
+    <thead><tr><th>Rep</th><th>Commission (relative)</th><th class="num">Commission</th><th class="num">Sales</th></tr></thead>
+    <tbody>${bars(repRows,"comm","rep")}</tbody></table></div>
+  <div class="card"><h2>Top dealers by revenue</h2><table>
+    <thead><tr><th>Dealer</th><th class="num">Sales</th><th class="num">Commission</th><th class="num">Lines</th></tr></thead>
+    <tbody>${dealerRows}</tbody></table></div>`;
+}
+load();
+</script></body></html>
