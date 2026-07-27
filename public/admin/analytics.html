@@ -2,34 +2,53 @@
 <title>HCPS — Sales &amp; Commission Analytics</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,Segoe UI,Arial,sans-serif;background:#eef2f6;color:#10263f}
-.wrap{max-width:1060px;margin:0 auto;padding:22px}
-.top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #ef6a1f;padding-bottom:12px;margin-bottom:8px;flex-wrap:wrap;gap:10px}
-.top h1{margin:0;font-size:23px}.top .sub{color:#5b7085;font-size:13px;margin-top:4px}
-.ctrls{display:flex;gap:10px;align-items:center}
-select,input{font:inherit;padding:8px 10px;border:1px solid #cdd8e3;border-radius:8px;background:#fff}
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:18px 0}
-.kpi{background:#fff;border:1px solid #dbe4ec;border-radius:12px;padding:14px 16px}
-.kpi .l{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#5b7085}
-.kpi .v{font-size:24px;font-weight:800;margin-top:5px}.kpi .v.orange{color:#ef6a1f}.kpi .v.blue{color:#1681c2}
-.card{background:#fff;border:1px solid #dbe4ec;border-radius:12px;padding:16px 18px;margin-bottom:18px}
-.card h2{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.6px;color:#1681c2}
-table{width:100%;border-collapse:collapse;font-size:13.5px}
-td{padding:7px 8px;border-bottom:1px solid #eef2f6;vertical-align:middle}
-th{text-align:left;font-size:11px;text-transform:uppercase;color:#5b7085;padding:6px 8px;border-bottom:2px solid #e2e9f0}
-.lbl{font-weight:600;white-space:nowrap}.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.wrap{max-width:1080px;margin:0 auto;padding:20px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #ef6a1f;padding-bottom:12px;flex-wrap:wrap;gap:10px}
+.top h1{margin:0;font-size:22px}.top .sub{color:#5b7085;font-size:13px;margin-top:3px}
+.ctrls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+label.f{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#5b7085;margin-right:-4px}
+select,input[type=search]{font:inherit;padding:8px 10px;border:1px solid #cdd8e3;border-radius:8px;background:#fff}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:16px 0}
+.kpi{background:#fff;border:1px solid #dbe4ec;border-radius:11px;padding:12px 14px}
+.kpi .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:#5b7085}
+.kpi .v{font-size:22px;font-weight:800;margin-top:4px}.kpi .v.orange{color:#ef6a1f}.kpi .v.blue{color:#1681c2}
+.tabs{display:flex;gap:6px;margin:6px 0 14px;flex-wrap:wrap}
+.tab{background:#dde6ee;border:0;border-radius:8px 8px 0 0;padding:9px 16px;font-weight:700;font-size:13px;color:#41576b;cursor:pointer}
+.tab.on{background:#10263f;color:#fff}
+.card{background:#fff;border:1px solid #dbe4ec;border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.card h2{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:#1681c2}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td{padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:middle}
+th{text-align:left;font-size:10.5px;text-transform:uppercase;color:#5b7085;padding:6px 8px;border-bottom:2px solid #e2e9f0}
+.lbl{font-weight:600}.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .num.comm{color:#1c7a44;font-weight:700}.num.dim{color:#8496a8}
-.barcell{width:44%}.bar{height:15px;background:#1681c2;border-radius:4px;min-width:2px}.bar.rep{background:#ef6a1f}
+.bar{height:14px;background:#1681c2;border-radius:4px;min-width:2px}.bar.rep{background:#ef6a1f}.bar.c{background:#1c7a44}
+.barcell{width:38%}
+.chip{display:inline-block;background:#eaf3fb;color:#12466e;border:1px solid #cfe2fb;border-radius:20px;padding:1px 9px;font-size:11px;margin:1px 3px 1px 0;white-space:nowrap}
+.dots{display:inline-flex;gap:3px}.dot{width:15px;height:15px;border-radius:3px;background:#e2e9f0;font-size:8px;color:#8496a8;text-align:center;line-height:15px}
+.dot.on{background:#1681c2;color:#fff;font-weight:700}
+.drow{cursor:pointer}.drow:hover{background:#f6f9fc}
+.detail{background:#f7fafd}.detail td{padding:0}
+.detail .inner{padding:10px 14px}
+.warn{color:#b4651a;font-weight:700}.ok{color:#1c7a44;font-weight:700}
+.pill{font-size:10px;padding:1px 7px;border-radius:20px;background:#f0f3f7;color:#5b7085}
 .foot{font-size:11.5px;color:#8496a8;margin-top:6px}
 .msg{background:#fff;border:1px solid #dbe4ec;border-radius:12px;padding:22px;text-align:center;color:#5b7085}
 .msg.err{background:#fdecec;border-color:#f3c0c0;color:#b42323}
-.gate{max-width:360px;margin:60px auto}.gate input{width:100%;margin:10px 0}
-.gate button,.reload{background:#10263f;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer}
+.gate{max-width:360px;margin:60px auto}.gate input{width:100%;margin:10px 0;padding:9px;border:1px solid #cdd8e3;border-radius:8px}
+button.go{background:#10263f;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer}
+.hint{font-size:12px;color:#5b7085;margin:-4px 0 10px}
 </style></head>
 <body><div class="wrap">
 <div class="top">
   <div><h1>HomeCare Provider Services</h1><div class="sub">Sales &amp; Commission Analytics — live from database</div></div>
-  <div class="ctrls"><label class="sub">Period</label><select id="period" onchange="render()"></select></div>
+  <div class="ctrls">
+    <label class="f">Line</label><select id="line" onchange="render()"></select>
+    <label class="f">Period</label><select id="period" onchange="render()"></select>
+  </div>
 </div>
+<div id="kpis"></div>
+<div class="tabs" id="tabs"></div>
 <div id="app"><div class="msg">Loading…</div></div>
 <div class="foot" id="foot"></div>
 </div>
@@ -37,60 +56,151 @@ th{text-align:left;font-size:11px;text-transform:uppercase;color:#5b7085;padding
 const $=s=>document.querySelector(s);
 const money=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const money0=n=>"$"+Number(n||0).toLocaleString("en-US",{maximumFractionDigits:0});
-let STATE=null, TOKEN=null;
+const pm=p=>{const[y,m]=p.split("-").map(Number);return y*12+(m-1);};
+let DATA=null,TOKEN=null,TAB="overview",EXP=null;
+const TABS=[["overview","Overview"],["trend","Line trend"],["dealers","Dealers & line-mix"],["cadence","Order cadence"]];
 
 async function load(){
   try{
     const headers={}; if(TOKEN) headers["x-analytics-token"]=TOKEN;
     const r=await fetch("/.netlify/functions/analytics",{headers});
-    if(r.status===401){ gate(); return; }
-    const j=await r.json();
-    if(j.error){ showErr(j.error); return; }
-    STATE=j;
-    const sel=$("#period"); sel.innerHTML=j.periods.map(p=>`<option value="${p.key}">${p.label}</option>`).join("");
-    // default to the most recent single month if present, else "all"
-    const months=j.periods.filter(p=>p.key!=="all");
-    sel.value = months.length? months[months.length-1].key : "all";
-    $("#foot").textContent="Generated "+new Date(j.generatedAt).toLocaleString()+" · reads monthly_sales in Supabase.";
-    render();
-  }catch(e){ showErr(String(e)); }
+    if(r.status===401){gate();return;}
+    const j=await r.json(); if(j.error){showErr(j.error);return;}
+    DATA=j;
+    $("#line").innerHTML=`<option value="all">All lines</option>`+j.lines.map(l=>`<option>${l}</option>`).join("");
+    $("#period").innerHTML=j.periods.map(p=>`<option value="${p.key}">${p.label}</option>`).join("");
+    $("#tabs").innerHTML=TABS.map(t=>`<button class="tab" data-t="${t[0]}" onclick="setTab('${t[0]}')">${t[1]}</button>`).join("");
+    $("#foot").textContent="Generated "+new Date(j.generatedAt).toLocaleString()+" · cadence is measured in months (source reports are monthly).";
+    setTab("overview");
+  }catch(e){showErr(String(e));}
 }
-function gate(){
-  $("#app").innerHTML=`<div class="gate card"><h2>Enter access code</h2>
-    <input id="tok" type="password" placeholder="Analytics passcode" onkeydown="if(event.key==='Enter')submitTok()">
-    <button onclick="submitTok()">View analytics</button></div>`;
-}
-function submitTok(){ TOKEN=$("#tok").value.trim(); load(); }
-function showErr(m){ $("#app").innerHTML=`<div class="msg err"><b>Couldn't load analytics.</b><br>${m}<br><br><button class="reload" onclick="load()">Retry</button></div>`; }
+function gate(){$("#app").innerHTML=`<div class="gate card"><h2>Enter access code</h2><input id="tok" type="password" placeholder="Analytics passcode" onkeydown="if(event.key==='Enter')submitTok()"><button class="go" onclick="submitTok()">View analytics</button></div>`;}
+function submitTok(){TOKEN=$("#tok").value.trim();load();}
+function showErr(m){$("#app").innerHTML=`<div class="msg err"><b>Couldn't load analytics.</b><br>${m}<br><br><button class="go" onclick="load()">Retry</button></div>`;}
+function setTab(t){TAB=t;EXP=null;[...document.querySelectorAll(".tab")].forEach(b=>b.classList.toggle("on",b.dataset.t===t));render();}
 
-function bars(items, key, cls){
-  const max=Math.max(1,...items.map(i=>i[key]));
-  return items.map(i=>`<tr><td class="lbl">${i.name}</td><td class="barcell"><div class="bar ${cls}" style="width:${i[key]/max*100}%"></div></td>${i.cells}</tr>`).join("");
+const monthsList=()=>DATA.periods.filter(p=>p.key!=="all").map(p=>p.key);
+const lineF=()=>$("#line").value, periodF=()=>$("#period").value;
+function facts(scope={}){
+  const l=scope.line??lineF(), p=scope.period??periodF();
+  return DATA.facts.filter(f=>(l==="all"||f.line===l)&&(p==="all"||f.period===p));
 }
-function render(){
-  if(!STATE) return;
-  const d=STATE.data[$("#period").value]; if(!d){ $("#app").innerHTML='<div class="msg">No data for this period.</div>'; return; }
-  const t=d.totals;
-  const lineRows=d.byLine.map(l=>({name:l.line,sales:l.sales,cells:`<td class="num">${money0(l.sales)}</td><td class="num comm">${money(l.comm)}</td><td class="num dim">${l.recs}</td>`}));
-  const repRows=d.byRep.map(r=>({name:r.rep,comm:r.comm,cells:`<td class="num comm">${money(r.comm)}</td><td class="num dim">${money0(r.sales)}</td>`}));
-  const dealerRows=d.topDealers.map(x=>`<tr><td class="lbl">${x.dealer}</td><td class="num">${money0(x.sales)}</td><td class="num comm">${money(x.comm)}</td><td class="num dim">${x.lines}</td></tr>`).join("");
-  $("#app").innerHTML=`
-  <div class="kpis">
-    <div class="kpi"><div class="l">Total Sales</div><div class="v">${money0(t.sales)}</div></div>
-    <div class="kpi"><div class="l">Total Commission</div><div class="v orange">${money0(t.comm)}</div></div>
-    <div class="kpi"><div class="l">Dealers</div><div class="v blue">${t.dealers}</div></div>
-    <div class="kpi"><div class="l">Lines</div><div class="v">${t.lines}</div></div>
-    <div class="kpi"><div class="l">Reps</div><div class="v">${t.reps}</div></div>
-  </div>
-  <div class="card"><h2>Sales &amp; commission by line</h2><table>
-    <thead><tr><th>Line</th><th>Sales (relative)</th><th class="num">Sales</th><th class="num">Commission</th><th class="num">Recs</th></tr></thead>
-    <tbody>${bars(lineRows,"sales","")}</tbody></table></div>
-  <div class="card"><h2>Commission by rep</h2><table>
-    <thead><tr><th>Rep</th><th>Commission (relative)</th><th class="num">Commission</th><th class="num">Sales</th></tr></thead>
-    <tbody>${bars(repRows,"comm","rep")}</tbody></table></div>
-  <div class="card"><h2>Top dealers by revenue</h2><table>
-    <thead><tr><th>Dealer</th><th class="num">Sales</th><th class="num">Commission</th><th class="num">Lines</th></tr></thead>
-    <tbody>${dealerRows}</tbody></table></div>`;
+function groupSum(rows,keyFn){
+  const m=new Map();
+  for(const f of rows){const k=keyFn(f);const v=m.get(k)||{sales:0,comm:0,recs:0,rows:[]};v.sales+=f.sales;v.comm+=f.comm;v.recs+=f.recs;v.rows.push(f);m.set(k,v);}
+  return m;
+}
+function barTable(head,items,valKey,cls,fmtCells){
+  const max=Math.max(1,...items.map(i=>i[valKey]));
+  return `<table><thead><tr>${head}</tr></thead><tbody>`+items.map(i=>
+    `<tr><td class="lbl">${i.name}</td><td class="barcell"><div class="bar ${cls}" style="width:${i[valKey]/max*100}%"></div></td>${fmtCells(i)}</tr>`).join("")+`</tbody></table>`;
+}
+
+function renderKpis(){
+  const rows=facts(); const dealers=new Set(),reps=new Set(); let s=0,c=0,recs=0;
+  for(const f of rows){s+=f.sales;c+=f.comm;recs+=f.recs;dealers.add(f.dealer);reps.add(f.rep);}
+  const scope=(lineF()==="all"?"All lines":lineF())+" · "+(DATA.periods.find(p=>p.key===periodF())||{}).label;
+  $("#kpis").innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="l">Sales</div><div class="v">${money0(s)}</div></div>
+    <div class="kpi"><div class="l">Commission</div><div class="v orange">${money0(c)}</div></div>
+    <div class="kpi"><div class="l">Dealers</div><div class="v blue">${dealers.size}</div></div>
+    <div class="kpi"><div class="l">${lineF()==="all"?"Lines":"Reps"}</div><div class="v">${lineF()==="all"?new Set(rows.map(f=>f.line)).size:reps.size}</div></div>
+    <div class="kpi"><div class="l">Records</div><div class="v">${recs}</div></div>
+  </div><div class="hint">Scope: ${scope}</div>`;
+}
+function render(){ if(!DATA)return; renderKpis();
+  if(TAB==="overview")return renderOverview();
+  if(TAB==="trend")return renderTrend();
+  if(TAB==="dealers")return renderDealers();
+  if(TAB==="cadence")return renderCadence();
+}
+
+function renderOverview(){
+  const rows=facts(); let h="";
+  if(lineF()==="all"){
+    const g=[...groupSum(rows,f=>f.line)].map(([name,v])=>({name,...v})).sort((a,b)=>b.sales-a.sales);
+    h+=`<div class="card"><h2>By line</h2>${barTable(`<th>Line</th><th>Sales</th><th class="num">Sales</th><th class="num">Commission</th><th class="num">Recs</th>`,g,"sales","",i=>`<td class="num">${money0(i.sales)}</td><td class="num comm">${money(i.comm)}</td><td class="num dim">${i.recs}</td>`)}</div>`;
+  }
+  const gr=[...groupSum(rows,f=>f.rep)].map(([name,v])=>({name,...v})).sort((a,b)=>b.comm-a.comm);
+  h+=`<div class="card"><h2>By rep</h2>${barTable(`<th>Rep</th><th>Commission</th><th class="num">Commission</th><th class="num">Sales</th>`,gr,"comm","rep",i=>`<td class="num comm">${money(i.comm)}</td><td class="num dim">${money0(i.sales)}</td>`)}</div>`;
+  const gd=[...groupSum(rows,f=>f.dealer)].map(([name,v])=>({name,...v})).sort((a,b)=>b.sales-a.sales).slice(0,15);
+  h+=`<div class="card"><h2>Top dealers</h2>${barTable(`<th>Dealer</th><th>Sales</th><th class="num">Sales</th><th class="num">Commission</th><th class="num">Recs</th>`,gd,"sales","",i=>`<td class="num">${money0(i.sales)}</td><td class="num comm">${money(i.comm)}</td><td class="num dim">${i.recs}</td>`)}</div>`;
+  $("#app").innerHTML=h;
+}
+
+function renderTrend(){
+  const l=lineF(), months=monthsList();
+  const rows=DATA.facts.filter(f=>l==="all"||f.line===l);
+  const byM=months.map(p=>{const fs=rows.filter(f=>f.period===p);return{p,label:(DATA.periods.find(x=>x.key===p)||{}).label,sales:fs.reduce((a,b)=>a+b.sales,0),comm:fs.reduce((a,b)=>a+b.comm,0),recs:fs.reduce((a,b)=>a+b.recs,0),dealers:new Set(fs.map(f=>f.dealer)).size};});
+  const maxS=Math.max(1,...byM.map(m=>m.sales));
+  let h=`<div class="card"><h2>${l==="all"?"All lines":l} — monthly trend</h2>
+    <table><thead><tr><th>Month</th><th>Sales (relative)</th><th class="num">Sales</th><th class="num">Commission</th><th class="num">Dealers</th><th class="num">Recs</th></tr></thead><tbody>`+
+    byM.map(m=>`<tr><td class="lbl">${m.label}</td><td class="barcell"><div class="bar" style="width:${m.sales/maxS*100}%"></div></td><td class="num">${money0(m.sales)}</td><td class="num comm">${money(m.comm)}</td><td class="num dim">${m.dealers}</td><td class="num dim">${m.recs}</td></tr>`).join("")+`</tbody></table></div>`;
+  if(l==="all"){ // month x line matrix
+    const lines=DATA.lines;
+    h+=`<div class="card"><h2>Sales by line &amp; month</h2><table><thead><tr><th>Line</th>${months.map(p=>`<th class="num">${(DATA.periods.find(x=>x.key===p)||{}).label.split(" ")[0]}</th>`).join("")}<th class="num">Total</th></tr></thead><tbody>`;
+    const mat=lines.map(ln=>{const cells=months.map(p=>DATA.facts.filter(f=>f.line===ln&&f.period===p).reduce((a,b)=>a+b.sales,0));return{ln,cells,tot:cells.reduce((a,b)=>a+b,0)};}).sort((a,b)=>b.tot-a.tot);
+    h+=mat.map(r=>`<tr><td class="lbl">${r.ln}</td>${r.cells.map(c=>`<td class="num ${c?'':'dim'}">${c?money0(c):"·"}</td>`).join("")}<td class="num" style="font-weight:700">${money0(r.tot)}</td></tr>`).join("")+`</tbody></table></div>`;
+  }
+  $("#app").innerHTML=h;
+}
+
+function dealerAgg(l){ // per dealer across all periods, optionally scoped to a line
+  const rows=DATA.facts.filter(f=>l==="all"||f.line===l);
+  const m=new Map();
+  for(const f of rows){const d=m.get(f.dealer)||{dealer:f.dealer,sales:0,comm:0,recs:0,lines:{},periods:new Set()};
+    d.sales+=f.sales;d.comm+=f.comm;d.recs+=f.recs;d.periods.add(f.period);
+    const ln=d.lines[f.line]||{sales:0,comm:0,recs:0,periods:new Set()};ln.sales+=f.sales;ln.comm+=f.comm;ln.recs+=f.recs;ln.periods.add(f.period);d.lines[f.line]=ln;
+    m.set(f.dealer,d);}
+  return [...m.values()];
+}
+function cad(periodsSet){
+  const ps=[...periodsSet].sort(); const nums=ps.map(pm);
+  const gaps=[];for(let i=1;i<nums.length;i++)gaps.push(nums[i]-nums[i-1]);
+  const avg=gaps.length?gaps.reduce((a,b)=>a+b,0)/gaps.length:null;
+  const sinceLast=DATA.latestPeriod?pm(DATA.latestPeriod)-nums[nums.length-1]:0;
+  return {months:ps,avg,sinceLast,count:ps.length};
+}
+function dotsFor(periodsSet){return `<span class="dots">`+monthsList().map(p=>{const on=periodsSet.has(p);const L=(DATA.periods.find(x=>x.key===p)||{}).label.slice(0,1);return `<span class="dot ${on?'on':''}" title="${(DATA.periods.find(x=>x.key===p)||{}).label}">${L}</span>`;}).join("")+`</span>`;}
+
+function renderDealers(){
+  const l=lineF(), q=($("#dsearch")?.value||"").toLowerCase();
+  let ds=dealerAgg(l).sort((a,b)=>b.sales-a.sales);
+  if(q) ds=ds.filter(d=>d.dealer.toLowerCase().includes(q));
+  let h=`<div class="card"><h2>Dealers &amp; line-mix ${l==="all"?"(all lines)":"— "+l}</h2>
+    <input type="search" id="dsearch" placeholder="Search dealer…" value="${q.replace(/"/g,'&quot;')}" oninput="render()" style="width:260px;margin-bottom:10px">
+    <table><thead><tr><th>Dealer</th><th>Lines purchased</th><th class="num">Sales</th><th class="num">Commission</th><th>Active</th></tr></thead><tbody>`;
+  for(const d of ds){
+    const lines=Object.keys(d.lines).sort();
+    const chips=lines.map(x=>`<span class="chip">${x}</span>`).join("");
+    h+=`<tr class="drow" onclick="toggle('${d.dealer.replace(/'/g,"\\'")}')"><td class="lbl">${d.dealer}</td><td>${chips}</td><td class="num">${money0(d.sales)}</td><td class="num comm">${money(d.comm)}</td><td>${dotsFor(d.periods)}</td></tr>`;
+    if(EXP===d.dealer){
+      let inner=`<table><thead><tr><th>Line</th><th class="num">Sales</th><th class="num">Commission</th><th>Order months</th><th class="num">Avg gap (mo)</th><th class="num">Mo. since last</th></tr></thead><tbody>`;
+      for(const ln of lines){const c=cad(d.lines[ln].periods);
+        inner+=`<tr><td class="lbl">${ln}</td><td class="num">${money0(d.lines[ln].sales)}</td><td class="num comm">${money(d.lines[ln].comm)}</td><td>${dotsFor(d.lines[ln].periods)}</td><td class="num">${c.avg==null?"—":c.avg.toFixed(1)}</td><td class="num ${c.sinceLast>=2?'warn':''}">${c.sinceLast}</td></tr>`;}
+      inner+=`</tbody></table>`;
+      h+=`<tr class="detail"><td colspan="5"><div class="inner">${inner}</div></td></tr>`;
+    }
+  }
+  h+=`</tbody></table></div>`;
+  $("#app").innerHTML=h;
+}
+function toggle(name){EXP=EXP===name?null:name;render();}
+
+function renderCadence(){
+  const l=lineF();
+  const ds=dealerAgg(l).map(d=>({dealer:d.dealer,lines:Object.keys(d.lines).sort(),sales:d.sales,...cad(d.periods)}))
+    .sort((a,b)=>b.sinceLast-a.sinceLast || b.sales-a.sales);
+  const scopeNote = l==="all"
+    ? "Cadence across <b>any line</b> — pick a specific line above to see reorder timing for that line only."
+    : `Reorder cadence for <b>${l}</b>.`;
+  let h=`<div class="card"><h2>Order cadence ${l==="all"?"(all lines)":"— "+l}</h2><div class="hint">${scopeNote} “Months since last” ≥ 2 is flagged — the dealer hasn't ordered recently.</div>
+    <table><thead><tr><th>Dealer</th>${l==="all"?"<th>Lines</th>":""}<th>Order months</th><th class="num">Order-months</th><th class="num">Avg gap (mo)</th><th class="num">Months since last</th></tr></thead><tbody>`;
+  for(const d of ds){
+    h+=`<tr><td class="lbl">${d.dealer}</td>${l==="all"?`<td>${d.lines.map(x=>`<span class="chip">${x}</span>`).join("")}</td>`:""}<td>${dotsFor(new Set(d.months))}</td><td class="num">${d.count}</td><td class="num">${d.avg==null?"—":d.avg.toFixed(1)}</td><td class="num ${d.sinceLast>=2?'warn':(d.sinceLast===0?'ok':'')}">${d.sinceLast}</td></tr>`;
+  }
+  h+=`</tbody></table></div>`;
+  $("#app").innerHTML=h;
 }
 load();
 </script></body></html>
