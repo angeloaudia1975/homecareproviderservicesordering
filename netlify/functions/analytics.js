@@ -53,6 +53,10 @@ exports.handler = async (event) => {
 
     const mfrs = await sbGet("manufacturers?select=slug,name");
     const mfrName = Object.fromEntries(mfrs.map(m => [m.slug, m.name]));
+    // Optional (present after the dealer_directory migration): saved rep/account assignments + rep list.
+    let assignments = [], repTable = [];
+    try { assignments = await sbGet("dealer_directory?select=dealer_name,rep_name,hcps_account"); } catch (e) { assignments = []; }
+    try { repTable = (await sbGet("reps?select=name")).map(x => x.name); } catch (e) { repTable = []; }
     const rows = await sbGetAll("monthly_sales?select=manufacturer,period,customer_name,rep_name,product_code,product_name,qty,amount,commission");
 
     // Aggregate to a cube: one row per (period, line, rep, dealer, product).
@@ -84,6 +88,8 @@ exports.handler = async (event) => {
       periods: [{ key: "all", label: "All periods" }, ...periodList.map(p => ({ key: p, label: label(p) }))],
       lines: [...lines].sort(),
       reps: [...reps].sort(),
+      repOptions: [...new Set([...repTable, ...reps])].filter(Boolean).sort(),
+      assignments,
       facts,
     });
   } catch (e) {
