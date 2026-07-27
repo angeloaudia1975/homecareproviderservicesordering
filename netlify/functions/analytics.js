@@ -1,6 +1,6 @@
 // HCPS admin analytics — reads monthly_sales from Supabase (service_role, server-side)
 // and returns an aggregated fact "cube" the admin page slices for all its reports:
-// per-line history, dealer line-mix, and order cadence. No npm deps (native fetch).
+// per-line history, dealer line-mix, product detail, and order cadence. No npm deps.
 //
 // Netlify env vars required:
 //   SUPABASE_URL             e.g. https://YOUR-PROJECT.supabase.co
@@ -25,8 +25,7 @@ async function sbGet(path) {
 }
 
 // Supabase/PostgREST caps each response at ~1000 rows regardless of ?limit,
-// so page through with limit/offset until a short page comes back. Ordering by
-// a stable unique column (id) keeps the paging consistent.
+// so page through with limit/offset until a short page comes back.
 async function sbGetAll(base) {
   const PAGE = 1000;
   let from = 0, out = [];
@@ -54,9 +53,9 @@ exports.handler = async (event) => {
 
     const mfrs = await sbGet("manufacturers?select=slug,name");
     const mfrName = Object.fromEntries(mfrs.map(m => [m.slug, m.name]));
-    const rows = await sbGetAll("monthly_sales?select=manufacturer,period,customer_name,rep_name,amount,commission");
+    const rows = await sbGetAll("monthly_sales?select=manufacturer,period,customer_name,rep_name,product_code,product_name,qty,amount,commission");
 
-    // Aggregate to a cube: one row per (period, line, rep, dealer).
+    // Aggregate to a cube: one row per (period, line, rep, dealer, product).
     const cube = new Map();
     const periods = new Set(), lines = new Set(), reps = new Set();
     const money = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -65,11 +64,14 @@ exports.handler = async (event) => {
       const line = mfrName[r.manufacturer] || r.manufacturer || "(unknown)";
       const rep  = r.rep_name || "Unassigned";
       const dealer = r.customer_name || "(unknown)";
+      const prod = (r.product_code || "").trim();
+      const pname = (r.product_name || "").trim();
       periods.add(period); lines.add(line); reps.add(rep);
-      const key = [period, line, rep, dealer].join("");
-      const cur = cube.get(key) || { period, line, rep, dealer, sales: 0, comm: 0, recs: 0 };
+      const key = [period, line, rep, dealer, prod, pname].join("|~|");
+      const cur = cube.get(key) || { period, line, rep, dealer, product: prod, productName: pname, sales: 0, comm: 0, qty: 0, recs: 0 };
       cur.sales += Number(r.amount) || 0;
       cur.comm  += Number(r.commission) || 0;
+      cur.qty   += Number(r.qty) || 0;
       cur.recs  += 1;
       cube.set(key, cur);
     }
