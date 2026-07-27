@@ -2,6 +2,13 @@
   publish = "public"
   functions = "netlify/functions"
 
+[build.environment]
+  # The Supabase project URL is public by design (it ships in the browser for the
+  # catalog and is just an address, not a credential), so exclude it from Netlify's
+  # secret scanner. The real secret — SUPABASE_SERVICE_ROLE — is NOT listed here and
+  # stays scanned, so it can never be committed to code.
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL"
+
 [[headers]]
   for = "/data/*"
   [headers.values]
