@@ -1,0 +1,54 @@
+# Where the dashboard lives — and how to turn it on
+
+The dashboard is now a real page in your site instead of a loose file. It reads
+**live from Supabase**, so it always shows whatever months are loaded — no
+regenerating.
+
+- **URL:** `https://<your-netlify-site>/admin/analytics.html`
+- **How it works:** the page calls a small server function (`/.netlify/functions/analytics`)
+  that queries the `monthly_sales` table with your secret service-role key (kept on the
+  server, never in the browser) and returns the totals. A **Period** dropdown at the top
+  right switches between *All periods*, *January 2026*, *February 2026*, and each future
+  month you load.
+
+## Deploy it (3 files, already in the repo)
+1. `netlify/functions/analytics.js` — the server function
+2. `public/admin/analytics.html` — the dashboard page
+3. `supabase/load_feb2026_sales.sql` — February data (run in Supabase)
+
+Commit the two code files with your normal deploy. Netlify picks up the function
+automatically (it's in `netlify/functions/`).
+
+## Set the environment variables (Netlify → Site settings → Environment variables)
+- `SUPABASE_URL` = `https://ycqmztthwldytkzyvmiv.supabase.co`
+- `SUPABASE_SERVICE_ROLE` = **your secret service-role key** (Supabase → Project Settings
+  → API → `service_role`). This is the secret one — it goes here, never in chat or in the
+  page. The function reads it server-side.
+- `ANALYTICS_TOKEN` *(optional but recommended)* = any passcode you choose. If set, the
+  page asks for it before showing numbers, so the URL isn't wide open. Leave it unset
+  while testing.
+
+After saving env vars, trigger a redeploy so the function picks them up.
+
+## Load February
+In the Supabase SQL Editor, run **`load_feb2026_sales.sql`** (idempotent, safe to re-run).
+It loads all 529 February rows and ends with a per-line summary. Once it's in, the
+dashboard's Period dropdown will show February automatically.
+
+## February totals (so you can sanity-check)
+| Line | Sales | Commission |
+|------|-------|-----------|
+| Golden | $410,527.90 | $18,594.95 |
+| Access4U | $58,589.17 | $2,373.74 |
+| Ohio Medical/GCE | $9,483.00 | $94.83 |
+| PediFix | $1,421.20 | $142.20 |
+| **February total** | **$480,021.27** | **$21,205.72** |
+| **2026 YTD (Jan+Feb)** | **$954,939.72** | **$44,263.63** |
+
+Only these 4 lines reported for February (no Complete Medical or Climbing Steps this month).
+
+## One thing to confirm
+**Access4U's February file didn't include the rep column** (January's did). So that
+$2,373.74 is currently parked under a placeholder rep, "Unassigned — Access4U," on the
+dashboard. Tell me who should be credited — January's Access4U was split between Greg
+Campbell and Angelo Audia — and I'll reattribute it (it's a one-line update).
