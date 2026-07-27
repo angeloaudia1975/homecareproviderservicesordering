@@ -24,6 +24,22 @@ async function sbGet(path) {
   return r.json();
 }
 
+// Supabase/PostgREST caps each response at ~1000 rows regardless of ?limit,
+// so page through with limit/offset until a short page comes back. Ordering by
+// a stable unique column (id) keeps the paging consistent.
+async function sbGetAll(base) {
+  const PAGE = 1000;
+  let from = 0, out = [];
+  for (;;) {
+    const sep = base.includes("?") ? "&" : "?";
+    const rows = await sbGet(`${base}${sep}order=id&limit=${PAGE}&offset=${from}`);
+    out = out.concat(rows);
+    if (rows.length < PAGE) break;
+    from += PAGE;
+  }
+  return out;
+}
+
 const MONTH = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const label = (p) => { const [y,m] = p.split("-"); return `${MONTH[parseInt(m,10)-1]} ${y}`; };
 
@@ -38,7 +54,7 @@ exports.handler = async (event) => {
 
     const mfrs = await sbGet("manufacturers?select=slug,name");
     const mfrName = Object.fromEntries(mfrs.map(m => [m.slug, m.name]));
-    const rows = await sbGet("monthly_sales?select=manufacturer,period,customer_name,rep_name,amount,commission&limit=100000");
+    const rows = await sbGetAll("monthly_sales?select=manufacturer,period,customer_name,rep_name,amount,commission");
 
     // Aggregate to a cube: one row per (period, line, rep, dealer).
     const cube = new Map();
