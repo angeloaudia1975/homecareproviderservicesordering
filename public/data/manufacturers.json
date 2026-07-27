@@ -75,15 +75,6 @@
     "sort": 3
   },
   {
-    "slug": "ohio-medical",
-    "name": "Ohio Medical",
-    "accent": "#1e6fb3",
-    "dark": "#0f3a63",
-    "logo": "/assets/logos/ohio-medical.jpg",
-    "hasData": false,
-    "sort": 4
-  },
-  {
     "slug": "airavant-bongorx",
     "name": "AIRAVANT / BongoRx",
     "accent": "#f3b223",
@@ -135,8 +126,14 @@
     "accent": "#00a7df",
     "dark": "#10263f",
     "logo": "/assets/logos/ovation-medical.jpg",
-    "hasData": false,
-    "sort": 8
+    "hasData": true,
+    "sort": 8,
+    "freight": {
+      "summary": "Volume pricing applies to the combined quantity of an item across its sizes. Freight is calculated and confirmed by HCPS on your order (Ovation's standard shipping terms — update here if free-freight thresholds apply).",
+      "actualNote": "Freight is confirmed by HCPS on your order confirmation.",
+      "groups": [],
+      "elseActual": true
+    }
   },
   {
     "slug": "bemis",
@@ -189,7 +186,7 @@
   },
   {
     "slug": "gce",
-    "name": "GCE",
+    "name": "Ohio Medical / GCE",
     "accent": "#0e7ac0",
     "dark": "#0c2b44",
     "logo": "/assets/logos/gce.jpg",
