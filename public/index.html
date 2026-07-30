@@ -710,6 +710,9 @@ function renderA4U(){
   const host=$("#a4uBuilder");
   if(state.active!=="access4u" || !a4uProd("SR3")){ host.innerHTML=""; return; }
   const bom=a4uBom(), t=a4uTotals(bom);
+  const alumSur=Math.round(t.dealer*0.23*100)/100;   // aluminum surcharge: 23% of STANDARD dealer rate
+  const estShip=bom.length?400:0;                     // flat estimated shipping per quote
+  const estTotal=Math.round((t.your+alumSur+estShip)*100)/100;
   const phys=a4uPhysical();
   const ada=a4uAda(phys.map(x=>x.p), A4U.rise);
   const rrOpts=a4uFam("RR").filter(p=>/^RR\d+x36$/.test(p.code)).map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(p.base_price)})</option>`).join("");
@@ -760,11 +763,16 @@ function renderA4U(){
         <div class="tot msrp"><div class="l">MSRP (customer)</div><div class="v">${money(t.msrp)}</div></div>
         <div class="tot"><div class="l">MAP</div><div class="v">${money(t.map)}</div></div>
       </div>
+      <div class="totgrid est">
+        <div class="tot"><div class="l">Aluminum surcharge <span class="fineprint">est · 23% of dealer</span></div><div class="v">${money(alumSur)}</div></div>
+        <div class="tot"><div class="l">Estimated shipping</div><div class="v">${money(estShip)}</div></div>
+        <div class="tot your"><div class="l">Est. total <span class="fineprint">Your Price + surcharge + shipping</span></div><div class="v">${money(estTotal)}</div></div>
+      </div>
       <div class="aacts">
         <button class="go" onclick="a4uToCart()">Add configuration to cart</button>
         <button class="ab" onclick="a4uLayoutSheet()">🖨 Layout &amp; spec sheet</button>
         <button class="clr" onclick="A4U.items=[];A4U.rise=0;renderA4U()">Clear</button>
-        <span class="fineprint" style="align-self:center;">Your Price shown at the 15% tier; per-dealer tiers apply once dealer logins are set up. Freight is FOB Access4U, quoted by HCPS.</span>
+        <span class="fineprint" style="align-self:center;">Your Price shown at the 15% tier; per-dealer tiers apply once dealer logins are set up. Freight is FOB Access4U, quoted by HCPS. The Aluminum surcharge and estimated shipping rates vary. This is only an estimated amount for quote purposes.</span>
       </div>
     </div></div>`;
 }
@@ -983,6 +991,7 @@ function a4uSheetHtml(bom,t,phys){
   const diagram=a4uDiagram(seq);
   const plan=a4uPlanDiagram(phys);
   const dateStr=(new Date()).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
+  const alumSur=Math.round(t.dealer*0.23*100)/100, estShip=bom.length?400:0, estTotal=Math.round((t.your+alumSur+estShip)*100)/100;
   return `<!doctype html><html><head><meta charset="utf-8"><title>Access4U Modular Ramp — Layout & Quote</title>
 <style>
   *{box-sizing:border-box} html,body{margin:0;padding:0;background:#eef2f6;color:#10263f;font-family:Arial,Helvetica,sans-serif}
@@ -1056,12 +1065,18 @@ function a4uSheetHtml(bom,t,phys){
     <div class="pc map"><div class="l">MAP (advertised)</div><div class="v">${fmt(t.map)}</div></div>
     <div class="pc dealer"><div class="l">Dealer cost</div><div class="v">${fmt(t.dealer)}</div></div>
   </div>
+  <div class="dlabel" style="margin-top:12px">Estimated add-ons — 23% aluminum surcharge on the standard dealer rate + flat freight estimate</div>
+  <div class="pricebox">
+    <div class="pc"><div class="l">Aluminum surcharge (est.)</div><div class="v">${fmt(alumSur)}</div></div>
+    <div class="pc"><div class="l">Estimated shipping</div><div class="v">${fmt(estShip)}</div></div>
+    <div class="pc dealer"><div class="l">Est. total (Your Price + add-ons)</div><div class="v">${fmt(estTotal)}</div></div>
+  </div>
 
   <div class="note">
     The top view is drawn to scale from the component dimensions (36&quot; ramp width and platform footprints), per the scale bar; the side elevation exaggerates height for readability. Turn directions reflect the configurator selections — verify final orientation, clearances, and site fit against field measurements.
     ADA guidance: 1:12 maximum slope (1&quot; of rise per 12&quot; of ramp run); a 30&quot; rise or 30&#39; run should include an intermediate rest platform.
     Prices are per the current Access4U list. <b>Dealer cost is the HCPS/dealer figure — for your records, not for the customer.</b>
-    Freight is FOB Access4U and quoted separately by HCPS. Configuration and pricing subject to final measurement and confirmation. Not a contract.
+    Freight is FOB Access4U and quoted separately by HCPS. <b>The Aluminum surcharge and estimated shipping rates vary. This is only an estimated amount for quote purposes.</b> Configuration and pricing subject to final measurement and confirmation. Not a contract.
   </div>
 </div>
 </body></html>`;
