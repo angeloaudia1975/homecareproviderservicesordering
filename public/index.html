@@ -295,10 +295,10 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
    dealer pricing, and write orders. Structure is kept identical.
    ============================================================ */
 const CONFIG = {
-  DATA_SOURCE: "json",                 // "json" | "supabase"
+  DATA_SOURCE: "json",                 // "json" | "supabase" — stays "json" until the catalog-migration slice
   ORDER_ENDPOINT: "/.netlify/functions/submit-order",  // Resend order email (netlify/functions/submit-order.js)
-  SUPABASE_URL: "",                    // filled in Phase 2
-  SUPABASE_ANON: "",                   // filled in Phase 2
+  SUPABASE_URL: "https://ycqmztthwldytkzyvmiv.supabase.co",   // HCPS Supabase project
+  SUPABASE_ANON: "sb_publishable_rO3Z6aJW_u6rx3TZdO3cww_b9pbvcFZ", // publishable/anon key — safe to embed (public by design)
 };
 
 const state = { manufacturers: [], active: null, products: [], dealer: null };
@@ -667,7 +667,7 @@ function a4uAddRamp(){
   while(rem>0){ const seg=Math.min(rem,30); const rr="RR"+seg+"x36"; if(a4uProd(rr,"RR")) A4U.items.push({code:rr,fam:"RR",qty:1}); rem-=seg; }
   renderA4U();
 }
-function a4uAdd(sel,fam){ const code=$(sel).value; if(code&&a4uProd(code,fam)){A4U.items.push(fam==="PS"?{code,fam,qty:1,turn:"straight"}:{code,fam,qty:1}); renderA4U();} }
+function a4uAdd(sel,fam){ const code=$(sel).value; if(code&&a4uProd(code,fam)){A4U.items.push(fam==="PS"?{code,fam,qty:1,turn:(/PS45/i.test(code)?"right45":"straight")}:{code,fam,qty:1}); renderA4U();} }
 function a4uRemove(i){ A4U.items.splice(i,1); renderA4U(); }
 function a4uSetTurn(i,val){ if(A4U.items[i]){ A4U.items[i].turn=val; renderA4U(); } }
 function a4uSetRise(v){ A4U.rise=Math.max(0,parseFloat(v)||0); a4uRefreshAda(); }
@@ -704,6 +704,8 @@ function a4uOpts(fam,ph){
   return `<option value="">${ph}</option>`+items.map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(p.base_price)})</option>`).join("");
 }
 const A4U_TURNS=[["straight","Straight ↑"],["left","Left 90° ↰"],["right","Right 90° ↱"],["u","U-turn ↺"]];
+const A4U_TURNS45=[["straight","Straight ↑"],["left45","45° left ↖"],["right45","45° right ↗"]];
+function a4uTurnsFor(code){ return /PS45/i.test(code)? A4U_TURNS45 : A4U_TURNS; }
 function renderA4U(){
   const host=$("#a4uBuilder");
   if(state.active!=="access4u" || !a4uProd("SR3")){ host.innerHTML=""; return; }
@@ -716,7 +718,7 @@ function renderA4U(){
   const stepRows = A4U.items.length? A4U.items.map((it,i)=>{
     const p=a4uProd(it.code,it.fam); if(!p) return "";
     const isPS=it.fam==="PS";
-    const turnSel = isPS? `<select class="turnsel" onchange="a4uSetTurn(${i},this.value)">${A4U_TURNS.map(o=>`<option value="${o[0]}" ${((it.turn||'straight')===o[0])?'selected':''}>${o[1]}</option>`).join("")}</select>` : `<span class="fineprint">—</span>`;
+    const turnSel = isPS? `<select class="turnsel" onchange="a4uSetTurn(${i},this.value)">${a4uTurnsFor(it.code).map(o=>`<option value="${o[0]}" ${((it.turn||'straight')===o[0])?'selected':''}>${o[1]}</option>`).join("")}</select>` : `<span class="fineprint">—</span>`;
     return `<tr>
       <td class="idx">${i+1}</td>
       <td>${esc(p.code)}</td><td>${esc(p.name)}</td>
@@ -845,38 +847,60 @@ function a4uDiagram(seq){
 // applies its turn (straight / left 90° / right 90° / U-turn) so the true L/U/switchback shape is drawn.
 function a4uPlanDiagram(phys){
   if(!phys.length) return "";
-  const RW=3; // 36" ramp width, in feet
-  const H=[[1,0],[0,1],[-1,0],[0,-1]]; // E, S, W, N (screen coords, y down)
+  const RW=3;                                   // 36" ramp width, in feet
+  const S2=Math.SQRT1_2;
+  // 8 compass headings 45° apart (screen coords, y-down): 0=E 1=SE 2=S 3=SW 4=W 5=NW 6=N 7=NE
+  const H=[[1,0],[S2,S2],[0,1],[-S2,S2],[-1,0],[-S2,-S2],[0,-1],[S2,-S2]];
+  const perpOf=i=>H[(i+2)%8];                    // right-hand perpendicular (+90°)
+  const add=(a,b,s)=>({x:a.x+b[0]*s,y:a.y+b[1]*s});
+  const mid=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
   let hi=0, pos={x:0,y:0}, uParity=0;
   const shapes=[];
-  const addSeg=(cs,ce,dir,kind,label)=>{ const perp=H[(dir+1)%4]; const xs=[],ys=[]; for(const pt of [cs,ce]){ xs.push(pt.x+perp[0]*RW/2,pt.x-perp[0]*RW/2); ys.push(pt.y+perp[1]*RW/2,pt.y-perp[1]*RW/2);} shapes.push({kind,label,dir,cs,ce,x0:Math.min(...xs),y0:Math.min(...ys),x1:Math.max(...xs),y1:Math.max(...ys)}); };
   for(const step of phys){
-    const p=step.p, f=p.family, Hv=H[hi];
+    const p=step.p, f=p.family, Hv=H[hi], perpV=perpOf(hi);
     if(f==="PS"){
-      // true footprint from data: width_in and length_ft(inches). Long side spans perpendicular; depth ≥ ramp width.
       const d1=(p.width_in||48)/12, d2=(p.length_ft||48)/12;
       const dPerp=Math.max(d1,d2), dAlong=Math.max(Math.min(d1,d2),RW);
-      const perpV=H[(hi+1)%4];                 // right-perpendicular reference
       const turn=step.turn||'straight';
-      let nhi=hi; if(turn==='left')nhi=(hi+3)%4; else if(turn==='right')nhi=(hi+1)%4; else if(turn==='u')nhi=(hi+2)%4;
-      let aFrom=0,aTo=dAlong,pFrom=-dPerp/2,pTo=dPerp/2, evenSide=(uParity%2===0);
-      if(turn==='u'){ if(evenSide){pFrom=-RW/2;pTo=dPerp-RW/2;} else {pTo=RW/2;pFrom=RW/2-dPerp;} } // shift platform to span both legs
-      const pts=[]; for(const al of [aFrom,aTo]) for(const pe of [pFrom,pTo]) pts.push({x:pos.x+Hv[0]*al+perpV[0]*pe, y:pos.y+Hv[1]*al+perpV[1]*pe});
-      const xs=pts.map(q=>q.x), ys=pts.map(q=>q.y);
-      shapes.push({kind:'plat',label:p.code,x0:Math.min(...xs),y0:Math.min(...ys),x1:Math.max(...xs),y1:Math.max(...ys)});
-      if(turn==='u'){ const off=Math.max(RW,dPerp-RW), perpU=evenSide?perpV:[-perpV[0],-perpV[1]]; pos={x:pos.x+perpU[0]*off, y:pos.y+perpU[1]*off}; uParity++; }
-      else if(turn==='straight'){ pos={x:pos.x+Hv[0]*dAlong, y:pos.y+Hv[1]*dAlong}; }
-      else { const Hn=H[nhi], C={x:pos.x+Hv[0]*(dAlong/2), y:pos.y+Hv[1]*(dAlong/2)}; pos={x:C.x+Hn[0]*(dPerp/2), y:C.y+Hn[1]*(dPerp/2)}; } // L: exit perpendicular edge
-      hi=nhi;
+      const is45=(turn==='left45'||turn==='right45');
+      let nhi=hi;
+      if(turn==='left')nhi=(hi+6)%8; else if(turn==='right')nhi=(hi+2)%8;
+      else if(turn==='u')nhi=(hi+4)%8; else if(turn==='left45')nhi=(hi+7)%8;
+      else if(turn==='right45')nhi=(hi+1)%8;
+      if(is45){
+        // PS45D — square footprint with one front corner sliced at 45° => pentagon.
+        // The angled edge faces the turn and carries the ramp exit (yellow safety strip on it).
+        const sq=Math.max(dPerp,dAlong,RW);
+        const C=add(pos,Hv,sq/2);                          // centre (ramp enters at rear-edge midpoint = pos)
+        const sgn=(turn==='right45')?1:-1;                 // +perp is "right"
+        const cut=sq*0.62;                                 // 45° bevel depth (feet)
+        const frontOut=add(add(C,Hv, sq/2),perpV,-sgn*sq/2);       // front, outside of turn
+        const backOut =add(add(C,Hv,-sq/2),perpV,-sgn*sq/2);       // back, outside
+        const backIn  =add(add(C,Hv,-sq/2),perpV, sgn*sq/2);       // back, inside (turn side)
+        const cutSide =add(add(C,Hv, sq/2-cut),perpV, sgn*sq/2);   // side edge, just before sliced corner
+        const cutFront=add(add(C,Hv, sq/2),perpV, sgn*(sq/2-cut)); // front edge, just before sliced corner
+        shapes.push({kind:'plat',label:p.code,pts:[frontOut,backOut,backIn,cutSide,cutFront],strip:[cutSide,cutFront]});
+        pos=mid(cutSide,cutFront); hi=nhi;                 // exit off the angled edge, heading rotated 45°
+      } else {
+        let aFrom=0,aTo=dAlong,pFrom=-dPerp/2,pTo=dPerp/2, evenSide=(uParity%2===0);
+        if(turn==='u'){ if(evenSide){pFrom=-RW/2;pTo=dPerp-RW/2;} else {pTo=RW/2;pFrom=RW/2-dPerp;} }
+        const P=(al,pe)=>({x:pos.x+Hv[0]*al+perpV[0]*pe, y:pos.y+Hv[1]*al+perpV[1]*pe});
+        shapes.push({kind:'plat',label:p.code,pts:[P(aFrom,pFrom),P(aFrom,pTo),P(aTo,pTo),P(aTo,pFrom)]});
+        if(turn==='u'){ const off=Math.max(RW,dPerp-RW), pu=evenSide?perpV:[-perpV[0],-perpV[1]]; pos={x:pos.x+pu[0]*off,y:pos.y+pu[1]*off}; uParity++; }
+        else if(turn==='straight'){ pos={x:pos.x+Hv[0]*dAlong,y:pos.y+Hv[1]*dAlong}; }
+        else { const Hn=H[nhi], Cc={x:pos.x+Hv[0]*(dAlong/2),y:pos.y+Hv[1]*(dAlong/2)}; pos={x:Cc.x+Hn[0]*(dPerp/2),y:Cc.y+Hn[1]*(dPerp/2)}; }
+        hi=nhi;
+      }
     } else {
       const L = f==="RR"?Math.max(p.length_ft||1,1) : f==="GP"?Math.max((p.width_in||48)/12,3) : f==="STP"?3 : RW;
-      const cs={x:pos.x,y:pos.y}, ce={x:pos.x+Hv[0]*L, y:pos.y+Hv[1]*L};
-      addSeg(cs,ce,hi, f==="RR"?'ramp':f==="GP"?'ground':f==="STP"?'stairs':'gate', p.code);
+      const cs={x:pos.x,y:pos.y}, ce={x:pos.x+Hv[0]*L,y:pos.y+Hv[1]*L}, pp=perpV;
+      const kind=f==="RR"?'ramp':f==="GP"?'ground':f==="STP"?'stairs':'gate';
+      shapes.push({kind,label:p.code,dir:hi,cs,ce,L,pts:[add(cs,pp,RW/2),add(ce,pp,RW/2),add(ce,pp,-RW/2),add(cs,pp,-RW/2)]});
       pos=ce;
     }
   }
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  for(const s of shapes){ minX=Math.min(minX,s.x0);minY=Math.min(minY,s.y0);maxX=Math.max(maxX,s.x1);maxY=Math.max(maxY,s.y1); }
+  for(const s of shapes) for(const q of s.pts){ minX=Math.min(minX,q.x);minY=Math.min(minY,q.y);maxX=Math.max(maxX,q.x);maxY=Math.max(maxY,q.y); }
   const spanX=Math.max(maxX-minX,4), spanY=Math.max(maxY-minY,RW);
   const W=760, padL=40, padR=34, padT=36, padB=28, maxH=380;
   const scale=Math.min((W-padL-padR)/spanX,(maxH-padT-padB)/spanY);
@@ -884,24 +908,31 @@ function a4uPlanDiagram(phys){
   const offX=padL+Math.max(0,(W-padL-padR-contentW)/2);
   const Hpx=padT+contentH+padB;
   const X=fx=>offX+(fx-minX)*scale, Y=fy=>padT+(fy-minY)*scale;
+  const poly=pts=>pts.map(q=>X(q.x)+","+Y(q.y)).join(" ");
+  const cen=pts=>{let x=0,y=0;for(const q of pts){x+=q.x;y+=q.y;}return {x:X(x/pts.length),y:Y(y/pts.length)};};
   let svg=`<svg viewBox="0 0 ${W} ${Hpx}" width="100%" preserveAspectRatio="xMidYMid meet" font-family="Arial,Helvetica,sans-serif">`;
   svg+=`<rect x="0" y="0" width="${W}" height="${Hpx}" fill="#f7fafd"/>`;
-  for(const s of shapes){ if(s.kind!=='plat')continue; const x=X(s.x0),y=Y(s.y0),w=(s.x1-s.x0)*scale,h=(s.y1-s.y0)*scale;
-    svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="#dbe9f6" stroke="#10263f" stroke-width="1.5"/><text x="${x+w/2}" y="${y+h/2+3}" text-anchor="middle" font-size="9" fill="#10263f">${s.label}</text>`; }
+  // segments first (ramps / ground / stairs / gates) so platforms sit on top
   for(const s of shapes){ if(s.kind==='plat')continue;
-    const x=X(s.x0),y=Y(s.y0),w=(s.x1-s.x0)*scale,h=(s.y1-s.y0)*scale, horiz=(s.dir%2===0);
-    if(s.kind==='gate'){ svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fde6d8" stroke="#e0662b" stroke-width="1.4"/><text x="${x+w/2}" y="${y+h/2+3}" text-anchor="middle" font-size="7.5" fill="#e0662b">${s.label}</text>`; continue; }
-    let fill="#cfe6fa",stroke="#1681c2"; if(s.kind==='stairs'){fill="#eef2f6";stroke="#7a8ea0";} if(s.kind==='ground'){fill="#d7e8f6";stroke="#4a6076";}
-    svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}" stroke-width="1.4"/>`;
-    if(s.kind==='stairs'){ const nn=4; for(let k=1;k<nn;k++){ if(horiz){const lx=x+w*k/nn; svg+=`<line x1="${lx}" y1="${y}" x2="${lx}" y2="${y+h}" stroke="#7a8ea0" stroke-width="1"/>`;} else {const ly=y+h*k/nn; svg+=`<line x1="${x}" y1="${ly}" x2="${x+w}" y2="${ly}" stroke="#7a8ea0" stroke-width="1"/>`;} } }
-    const cmx=X((s.cs.x+s.ce.x)/2), cmy=Y((s.cs.y+s.ce.y)/2);
-    if(Math.min(w,h)>13) svg+=`<text x="${cmx}" y="${cmy+3}" text-anchor="middle" font-size="8.5" fill="#12466e">${s.label}</text>`;
-    const dv=H[s.dir], perp=H[(s.dir+1)%4];
-    const ax=X(s.cs.x+(s.ce.x-s.cs.x)*0.72), ay=Y(s.cs.y+(s.ce.y-s.cs.y)*0.72);
-    svg+=`<path d="M ${ax+dv[0]*6} ${ay+dv[1]*6} L ${ax-dv[0]*4+perp[0]*3.4} ${ay-dv[1]*4+perp[1]*3.4} L ${ax-dv[0]*4-perp[0]*3.4} ${ay-dv[1]*4-perp[1]*3.4} Z" fill="#5b7085"/>`;
+    let fill="#cfe6fa",stroke="#1681c2";
+    if(s.kind==='gate'){fill="#fde6d8";stroke="#e0662b";}
+    else if(s.kind==='stairs'){fill="#eef2f6";stroke="#7a8ea0";}
+    else if(s.kind==='ground'){fill="#d7e8f6";stroke="#4a6076";}
+    svg+=`<polygon points="${poly(s.pts)}" fill="${fill}" stroke="${stroke}" stroke-width="1.4"/>`;
+    if(s.kind==='stairs'){ const pp=perpOf(s.dir), Hd=H[s.dir]; for(let k=1;k<4;k++){ const a=add(s.cs,Hd,s.L*k/4); const p1=add(a,pp,RW/2),p2=add(a,pp,-RW/2); svg+=`<line x1="${X(p1.x)}" y1="${Y(p1.y)}" x2="${X(p2.x)}" y2="${Y(p2.y)}" stroke="#7a8ea0" stroke-width="1"/>`; } }
+    const cm=cen(s.pts);
+    if(s.L*scale>13) svg+=`<text x="${cm.x}" y="${cm.y+3}" text-anchor="middle" font-size="8.5" fill="#12466e">${s.label}</text>`;
+    const Hd=H[s.dir], pp=perpOf(s.dir), a=add(s.cs,Hd,s.L*0.72);
+    const tip=add(a,Hd,0.9), b1=add(add(a,Hd,-0.2),pp,0.5), b2=add(add(a,Hd,-0.2),pp,-0.5);
+    svg+=`<path d="M ${X(tip.x)} ${Y(tip.y)} L ${X(b1.x)} ${Y(b1.y)} L ${X(b2.x)} ${Y(b2.y)} Z" fill="#5b7085"/>`;
+  }
+  // platforms on top
+  for(const s of shapes){ if(s.kind!=='plat')continue;
+    svg+=`<polygon points="${poly(s.pts)}" fill="#dbe9f6" stroke="#10263f" stroke-width="1.5" stroke-linejoin="round"/>`;
+    if(s.strip){ const a=s.strip[0],b=s.strip[1]; svg+=`<line x1="${X(a.x)}" y1="${Y(a.y)}" x2="${X(b.x)}" y2="${Y(b.y)}" stroke="#f2c200" stroke-width="4" stroke-linecap="round"/>`; }
+    const cm=cen(s.pts); svg+=`<text x="${cm.x}" y="${cm.y+3}" text-anchor="middle" font-size="9" fill="#10263f">${s.label}</text>`;
   }
   const first=shapes.find(s=>s.kind!=='plat'); if(first){ svg+=`<circle cx="${X(first.cs.x)}" cy="${Y(first.cs.y)}" r="4" fill="#10263f"/><text x="${X(first.cs.x)}" y="${Y(first.cs.y)-8}" text-anchor="middle" font-size="9" font-weight="bold" fill="#10263f">ENTRY</text>`; }
-  // scale bar — a real 5 ft reference so the drawing reads to scale
   const barFt=5, bx=offX, by=Hpx-12, bw=barFt*scale;
   svg+=`<line x1="${bx}" y1="${by}" x2="${bx+bw}" y2="${by}" stroke="#33475b" stroke-width="1.6"/><line x1="${bx}" y1="${by-4}" x2="${bx}" y2="${by+4}" stroke="#33475b" stroke-width="1.6"/><line x1="${bx+bw}" y1="${by-4}" x2="${bx+bw}" y2="${by+4}" stroke="#33475b" stroke-width="1.6"/><text x="${bx+bw+6}" y="${by+3}" font-size="9" fill="#33475b">5 ft · drawn to scale (36&quot; ramp width)</text>`;
   svg+=`</svg>`;
