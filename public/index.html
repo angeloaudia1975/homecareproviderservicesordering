@@ -868,19 +868,16 @@ function a4uPlanDiagram(phys){
       else if(turn==='u')nhi=(hi+4)%8; else if(turn==='left45')nhi=(hi+7)%8;
       else if(turn==='right45')nhi=(hi+1)%8;
       if(is45){
-        // PS45D — square footprint with one front corner sliced at 45° => pentagon.
-        // The angled edge faces the turn and carries the ramp exit (yellow safety strip on it).
-        const sq=Math.max(dPerp,dAlong,RW);
-        const C=add(pos,Hv,sq/2);                          // centre (ramp enters at rear-edge midpoint = pos)
+        // PS45D — a right-isosceles 45° turn platform ("3 X 3 X 5"): two ~3.7 ft legs and a
+        // ~5.2 ft angled hypotenuse (data: 44" leg / 63" hyp). Ramp enters a leg, exits the
+        // angled face at 45°. Yellow safety strip runs along that hypotenuse.
+        const leg=Math.max(Math.min(dPerp,dAlong),RW);     // 45° platform leg ≈ 3.7 ft (>= ramp width)
         const sgn=(turn==='right45')?1:-1;                 // +perp is "right"
-        const cut=sq*0.62;                                 // 45° bevel depth (feet)
-        const frontOut=add(add(C,Hv, sq/2),perpV,-sgn*sq/2);       // front, outside of turn
-        const backOut =add(add(C,Hv,-sq/2),perpV,-sgn*sq/2);       // back, outside
-        const backIn  =add(add(C,Hv,-sq/2),perpV, sgn*sq/2);       // back, inside (turn side)
-        const cutSide =add(add(C,Hv, sq/2-cut),perpV, sgn*sq/2);   // side edge, just before sliced corner
-        const cutFront=add(add(C,Hv, sq/2),perpV, sgn*(sq/2-cut)); // front edge, just before sliced corner
-        shapes.push({kind:'plat',label:p.code,pts:[frontOut,backOut,backIn,cutSide,cutFront],strip:[cutSide,cutFront]});
-        pos=mid(cutSide,cutFront); hi=nhi;                 // exit off the angled edge, heading rotated 45°
+        const cornerOut=add(pos,perpV,-sgn*leg/2);         // right-angle corner (outer, at entry)
+        const backIn   =add(pos,perpV, sgn*leg/2);         // back inner corner (entry leg = cornerOut→backIn)
+        const frontOut =add(add(pos,perpV,-sgn*leg/2),Hv,leg); // front outer corner (outer leg)
+        shapes.push({kind:'plat',label:p.code,pts:[cornerOut,backIn,frontOut],strip:[backIn,frontOut]});
+        pos=add(pos,Hv,leg/2); hi=nhi;                     // exit off the hypotenuse midpoint, rotated 45°
       } else {
         let aFrom=0,aTo=dAlong,pFrom=-dPerp/2,pTo=dPerp/2, evenSide=(uParity%2===0);
         if(turn==='u'){ if(evenSide){pFrom=-RW/2;pTo=dPerp-RW/2;} else {pTo=RW/2;pFrom=RW/2-dPerp;} }
