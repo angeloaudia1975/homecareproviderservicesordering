@@ -140,6 +140,12 @@ exports.handler = async (event)=>{
         await rpc("split_alias",{p_alias:b.alias_norm,p_new_name:b.new_name});
         return json(200,{ok:true});
       }
+      if(act==="import_contacts"){
+        if(!Array.isArray(b.rows)||!b.rows.length) return json(400,{error:"rows[] required"});
+        // resolve+enrich each company via dealer_norm/aliases; create unmatched when requested
+        const res=await sbSend("POST","rpc/import_dealer_contacts",{p_rows:b.rows,p_create:b.create!==false});
+        return json(200,{ok:true,result:res});
+      }
       return json(400,{error:"unknown action"});
     }
     return json(405,{error:"method not allowed"});
