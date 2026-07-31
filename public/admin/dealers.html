@@ -62,7 +62,7 @@ const $=s=>document.querySelector(s);
 const money=n=>"$"+Number(n||0).toLocaleString("en-US",{maximumFractionDigits:0});
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const jesc=s=>String(s).replace(/'/g,"\\'").replace(/"/g,"&quot;");
-let DATA=null,TOKEN=null,TAB="all",SEL=new Set(),DETAIL=null;
+let DATA=null,TOKEN=null,TAB="all",SEL=new Set(),SELP=new Set(),DETAIL=null;
 const SUF=/\b(inc|incorporated|llc|corp|corporation|co|company|ltd|lp|pllc|plc|dba|the)\b/gi;
 function jnorm(n){return String(n||"").toUpperCase().replace(/HEALTH ?CARE/g,"HEALTHCARE").replace(/[.,'&/#-]/g," ").replace(SUF," ").replace(/\s+/g," ").trim();}
 const COMMON=new Set(["MEDICAL","SUPPLY","SUPPLIES","PHARMACY","HOME","HEALTHCARE","HEALTH","CARE","EQUIPMENT","EQUIP","MOBILITY","DRUG","DRUGS","STORE","CENTER","SERVICES","MART","MED","OF","AND","DME","PLUS","GA","TN","KY","IN"]);
@@ -126,17 +126,23 @@ function render(){
   ({all:renderAll,review:renderReview,dupes:renderDupes,import:renderImport}[TAB])();
 }
 function mergeBar(){
-  if(SEL.size<2) return "";
+  if(SEL.size<1) return "";
   const names=[...SEL].map(id=>DATA.dealers.find(d=>d.id===id)?.name).filter(Boolean);
-  return `<div class="mergebar"><div><span class="sel">${SEL.size} selected</span> · ${names.map(n=>esc(n)).join(" · ")}</div>
-    <div><button class="go orange sm" onclick="openMerge()">Merge selected →</button> <button class="go blue sm" onclick="clearSel()">Clear</button></div></div>`;
+  const shown=names.slice(0,6).map(n=>esc(n)).join(" · ")+(names.length>6?` · +${names.length-6} more`:"");
+  const action = SEL.size>=2
+    ? `<button class="go orange sm" onclick="openMerge()">Merge ${SEL.size} selected →</button> <button class="go blue sm" onclick="clearSel()">Clear</button>`
+    : `<span class="hint" style="margin-right:10px">Tick one more account to merge</span><button class="go blue sm" onclick="clearSel()">Clear</button>`;
+  return `<div class="mergebar" style="position:sticky;top:0;z-index:8"><div><span class="sel">${SEL.size} selected</span> · ${shown}</div><div>${action}</div></div>`;
 }
 function toggleSel(id){SEL.has(id)?SEL.delete(id):SEL.add(id);render();}
 function clearSel(){SEL.clear();render();}
+function visibleIds(){return (TAB==='review'?reviewList():filtered()).map(d=>d.id);}
+function allSelected(){const v=visibleIds();return v.length>0&&v.every(id=>SEL.has(id));}
+function toggleAll(el){const v=visibleIds();el.checked?v.forEach(id=>SEL.add(id)):v.forEach(id=>SEL.delete(id));render();}
 function renderAll(){
   const ds=filtered();
-  let h=`<div class="card"><h2>All dealers <span class="hint" style="text-transform:none">(${ds.length} shown — tick 2+ to merge, or click a dealer to manage)</span></h2>
-    <table><thead><tr><th></th><th>Dealer</th><th>Also known as</th><th>Buys</th><th class="num">Sales</th><th>Rep</th><th>Access</th><th></th></tr></thead><tbody>`;
+  let h=`<div class="card"><h2>All dealers <span class="hint" style="text-transform:none">(${ds.length} shown — tick 2+ boxes (or “Select all”) then “Merge selected”, or click a dealer to manage)</span></h2>
+    <table><thead><tr><th><input type="checkbox" ${allSelected()?"checked":""} onclick="toggleAll(this)" title="Select all shown"></th><th>Dealer</th><th>Also known as</th><th>Buys</th><th class="num">Sales</th><th>Rep</th><th>Access</th><th></th></tr></thead><tbody>`;
   for(const d of ds){
     h+=`<tr class="drow"><td><input type="checkbox" ${SEL.has(d.id)?"checked":""} onclick="toggleSel('${d.id}')"></td>
       <td class="lbl">${esc(d.name)} ${d.status==="review"?`<span class="chip rev">review</span>`:""}</td>
@@ -153,7 +159,7 @@ function renderReview(){
   const ds=reviewList();
   if(!ds.length){$("#app").innerHTML=`<div class="card"><div class="ok">✓ Review queue is empty.</div><div class="hint" style="margin-top:6px">New dealer names from future report loads land here for you to confirm or merge.</div></div>`;return;}
   let h=`<div class="card"><h2>Review queue — new names from recent loads</h2><div class="hint">Each is a name a report used that didn't match a known dealer. Confirm it's genuinely new, or merge it into the right existing dealer (tick it plus the real dealer on the All-dealers tab).</div>
-    <table><thead><tr><th></th><th>New dealer name</th><th>Line(s)</th><th class="num">Sales</th><th></th></tr></thead><tbody>`;
+    <table><thead><tr><th><input type="checkbox" ${allSelected()?"checked":""} onclick="toggleAll(this)" title="Select all shown"></th><th>New dealer name</th><th>Line(s)</th><th class="num">Sales</th><th></th></tr></thead><tbody>`;
   for(const d of ds){
     h+=`<tr><td><input type="checkbox" ${SEL.has(d.id)?"checked":""} onclick="toggleSel('${d.id}')"></td>
       <td class="lbl">${esc(d.name)}</td><td>${d.buysLines.map(l=>`<span class="chip">${esc(DATA.mfrName[l]||l)}</span>`).join("")}</td>
@@ -162,14 +168,40 @@ function renderReview(){
   }
   h+=`</tbody></table></div>`; $("#app").innerHTML=h;
 }
+function pairKey(p){return [p.a.id,p.b.id].sort().join("|");}
+function togglePair(k){SELP.has(k)?SELP.delete(k):SELP.add(k);render();}
+function allPairsSel(){const ps=suggestedPairs();return ps.length>0&&ps.every(p=>SELP.has(pairKey(p)));}
+function toggleAllPairs(el){const ps=suggestedPairs();el.checked?ps.forEach(p=>SELP.add(pairKey(p))):ps.forEach(p=>SELP.delete(pairKey(p)));render();}
+function pairsBar(){
+  if(SELP.size<1) return "";
+  return `<div class="mergebar" style="position:sticky;top:0;z-index:8"><div><span class="sel">${SELP.size} pair${SELP.size>1?"s":""} selected</span> · each folds the smaller account into the larger</div>
+    <div><button class="go orange sm" onclick="askMergePairs()">Merge ${SELP.size} pair${SELP.size>1?"s":""} →</button> <button class="go blue sm" onclick="SELP.clear();render()">Clear</button></div></div>`;
+}
+function askMergePairs(){
+  const ps=suggestedPairs().filter(p=>SELP.has(pairKey(p)));
+  if(!ps.length)return;
+  const lines=ps.map(p=>{const s=p.a.sales>=p.b.sales?p.a:p.b,l=s===p.a?p.b:p.a;return `<div>• fold <b>${esc(l.name)}</b> → <b>${esc(s.name)}</b></div>`;}).join("");
+  showDlg(`<h3>Merge ${ps.length} suggested pair${ps.length>1?"s":""}?</h3><div class="hint">Each pair keeps the bigger account; the other's sales history + aliases fold in and its name becomes an alias. This can't be auto-undone (use Manage → Split if needed).</div>
+    <div style="margin:10px 0;max-height:220px;overflow:auto;font-size:13px">${lines}</div>
+    <div style="text-align:right"><button class="go blue sm" onclick="closeDlg()">Cancel</button>
+    <button class="go orange sm" onclick="closeDlg();doMergePairs()">Merge all</button></div>`);
+}
+async function doMergePairs(){
+  const ps=suggestedPairs().filter(p=>SELP.has(pairKey(p)));
+  let done=0;
+  for(const p of ps){ const s=p.a.sales>=p.b.sales?p.a:p.b, l=s===p.a?p.b:p.a;
+    try{ await post({action:"merge",survivor_id:s.id,loser_ids:[l.id]},null); done++; }catch(e){} }
+  SELP.clear(); await load(); alertDlg(`Merged ${done} pair${done===1?"":"s"}.`);
+}
 function renderDupes(){
   const pairs=suggestedPairs();
   if(!pairs.length){$("#app").innerHTML=`<div class="card"><div class="ok">✓ No likely duplicates detected.</div></div>`;return;}
-  let h=`<div class="card"><h2>Suggested duplicates <span class="hint" style="text-transform:none">(${pairs.length} — review each; merges keep the bigger account and fold the other's history + aliases in)</span></h2>
-    <table><thead><tr><th>Likely same dealer</th><th class="num">Sales A / B</th><th>Merge into</th><th></th></tr></thead><tbody>`;
+  let h=pairsBar()+`<div class="card"><h2>Suggested duplicates <span class="hint" style="text-transform:none">(${pairs.length} — tick the pairs you agree with, then “Merge selected pairs”; each keeps the bigger account and folds the other's history + aliases in)</span></h2>
+    <table><thead><tr><th><input type="checkbox" ${allPairsSel()?"checked":""} onclick="toggleAllPairs(this)" title="Select all pairs"></th><th>Likely same dealer</th><th class="num">Sales A / B</th><th>Merge into</th><th></th></tr></thead><tbody>`;
   for(const p of pairs){
-    const surv=p.a.sales>=p.b.sales?p.a:p.b, loser=surv===p.a?p.b:p.a;
-    h+=`<tr><td><b>${esc(p.a.name)}</b> <span class="dim">↔</span> <b>${esc(p.b.name)}</b></td>
+    const surv=p.a.sales>=p.b.sales?p.a:p.b, loser=surv===p.a?p.b:p.a, k=pairKey(p);
+    h+=`<tr><td><input type="checkbox" ${SELP.has(k)?"checked":""} onclick="togglePair('${k}')"></td>
+      <td><b>${esc(p.a.name)}</b> <span class="dim">↔</span> <b>${esc(p.b.name)}</b></td>
       <td class="num dim">${money(p.a.sales)} / ${money(p.b.sales)}</td>
       <td>${esc(surv.name)}</td>
       <td><button class="go orange sm" onclick="askMerge('${surv.id}',['${loser.id}'])">Merge →</button>
