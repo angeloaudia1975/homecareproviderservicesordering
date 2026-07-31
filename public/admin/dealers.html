@@ -120,9 +120,10 @@ function render(){
   const tabs=`<div class="tabs">
     <button class="tab ${TAB==='all'?'on':''}" onclick="setTab('all')">All dealers</button>
     <button class="tab ${TAB==='review'?'on':''}" onclick="setTab('review')">Review queue${rev?` (${rev})`:""}</button>
-    <button class="tab ${TAB==='dupes'?'on':''}" onclick="setTab('dupes')">Suggested duplicates${dup?` (${dup})`:""}</button></div>`;
+    <button class="tab ${TAB==='dupes'?'on':''}" onclick="setTab('dupes')">Suggested duplicates${dup?` (${dup})`:""}</button>
+    <button class="tab ${TAB==='import'?'on':''}" onclick="setTab('import')">Import contacts</button></div>`;
   $("#body").innerHTML=kpis+tabs+mergeBar()+`<div id="app"></div>`;
-  ({all:renderAll,review:renderReview,dupes:renderDupes}[TAB])();
+  ({all:renderAll,review:renderReview,dupes:renderDupes,import:renderImport}[TAB])();
 }
 function mergeBar(){
   if(SEL.size<2) return "";
@@ -263,5 +264,103 @@ async function post(body,working,stSel){
 function showDlg(html){$("#dlg").innerHTML=`<div class="dlg" onclick="if(event.target===this)closeDlg()"><div class="dlgbox">${html}</div></div>`;}
 function closeDlg(){$("#dlg").innerHTML="";DLGSURV=null;}
 function alertDlg(m){showDlg(`<h3>Notice</h3><div>${esc(m)}</div><div style="margin-top:14px;text-align:right"><button class="go sm" onclick="closeDlg()">OK</button></div>`);}
+
+/* ---------- Import contacts (master list -> dealers) ---------- */
+const IMPORT_LINES=[
+  ["complete-medical-supplies","Complete Medical Account","Complete Account Number"],
+  ["golden-technologies","Golden Account","Golden Account Number"],
+  ["access4u","Access4u Account","Access4u Account Number"],
+  ["pedifix","Pedifix Account","Pedifix Account Number"],
+  ["gce","GCE Account","GCE Account Number"],
+  ["climbing-steps","Climbing Steps Account","Climbing Steps Account Number"],
+  ["strongback-mobility","Strongback Account",null],
+  ["corsicana","Corsicana Account",null],
+  ["airavant-bongorx","Bongo RX Account",null],
+  ["bemis","Bemis Account",null],
+  ["ovation-medical","Ovation Medical",null],
+];
+let IMPORT={rows:null,create:true,busy:false,result:null,fname:""};
+// RFC-4180-ish CSV parser: quotes, escaped quotes, embedded commas + newlines.
+function parseCSV(text){
+  const rows=[]; let field="",row=[],q=false,i=0; const n=text.length;
+  const pf=()=>{row.push(field);field="";}, pr=()=>{pf();rows.push(row);row=[];};
+  if(text.charCodeAt(0)===0xFEFF) i=1;                       // strip BOM
+  for(;i<n;i++){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;} else q=false; } else field+=c; }
+    else { if(c==='"')q=true; else if(c===",")pf(); else if(c==="\r"){} else if(c==="\n")pr(); else field+=c; }
+  }
+  if(field.length||row.length)pr();
+  return rows;
+}
+function importFromText(text,fname){
+  const grid=parseCSV(text); if(grid.length<2){alertDlg("That file has no data rows.");return;}
+  const head=grid[0].map(h=>String(h||"").trim());
+  const col=name=>head.indexOf(name);
+  const need=col("Company Name"); if(need<0){alertDlg("Couldn't find a 'Company Name' column — is this the HCPS master list?");return;}
+  const get=(r,name)=>{const k=col(name);return k>=0?String(r[k]||"").trim():"";};
+  const seen=new Set(), out=[];
+  for(let ri=1;ri<grid.length;ri++){ const r=grid[ri]; const company=get(r,"Company Name"); if(!company)continue;
+    const key=jnorm(company); if(seen.has(key))continue; seen.add(key);
+    const addr=[get(r,"Address 1"),get(r,"Address 2")].filter(Boolean).join(", ");
+    const contact=[get(r,"Contact First"),get(r,"Contact Last")].filter(Boolean).join(" ");
+    const lines=[];
+    for(const [slug,flag,num] of IMPORT_LINES){ const yes=get(r,flag).toLowerCase()==="yes"; const acct=num?get(r,num):""; if(yes||acct)lines.push({slug,account:acct}); }
+    out.push({company,address:addr,city:get(r,"City"),state:get(r,"State"),zip:get(r,"ZIP"),
+      contact,email:get(r,"Contact Emails"),phone:get(r,"Office Phones"),lines});
+  }
+  IMPORT={rows:out,create:true,busy:false,result:null,fname};
+  render();
+}
+function onImportFile(inp){ const f=inp.files&&inp.files[0]; if(!f)return; const rd=new FileReader();
+  rd.onload=()=>importFromText(String(rd.result||""),f.name); rd.readAsText(f); }
+function importPreview(){
+  const known=new Set(); for(const d of (DATA?.dealers||[])){ known.add(jnorm(d.name)); (d.aliases||[]).forEach(a=>known.add(jnorm(a))); }
+  let match=0; const lc={};
+  for(const r of IMPORT.rows){ if(known.has(jnorm(r.company)))match++; for(const l of r.lines)lc[l.slug]=(lc[l.slug]||0)+1; }
+  return {total:IMPORT.rows.length,match,create:IMPORT.rows.length-match,lc};
+}
+async function applyImport(){
+  if(!IMPORT.rows||IMPORT.busy)return; IMPORT.busy=true; render();
+  try{ const j=await post({action:"import_contacts",rows:IMPORT.rows,create:IMPORT.create},null);
+    IMPORT.result=j.result||{}; IMPORT.busy=false; await load(); TAB="import"; IMPORT_KEEP(); render();
+  }catch(e){ IMPORT.busy=false; render(); }
+}
+let _IMPRES=null; function IMPORT_KEEP(){_IMPRES=IMPORT.result;}   // survive load()'s render reset
+function renderImport(){
+  const app=$("#app"); if(!app)return;
+  if(_IMPRES && !IMPORT.result){IMPORT.result=_IMPRES;_IMPRES=null;}
+  if(!IMPORT.rows){
+    app.innerHTML=`<div class="card" style="padding:18px">
+      <h3 style="margin:0 0 6px">Import dealer contacts &amp; addresses</h3>
+      <p class="muted" style="margin:0 0 12px">Upload your master list (CSV). Each company is matched to an existing dealer by name/alias; unmatched companies are created so <b>every dealer is loaded</b>. Addresses, primary contact, phone, and per-line account numbers are filled in, and line access is turned on wherever an account exists.</p>
+      <input type="file" accept=".csv,text/csv" onchange="onImportFile(this)">
+      <p class="muted" style="margin:12px 0 0;font-size:12px">Expected columns: Company Name, Address 1/2, City, State, ZIP, Office Phones, Contact First/Last, Contact Emails, and the per-line “… Account / … Account Number” columns.</p>
+    </div>`; return;
+  }
+  const p=importPreview();
+  const mfrName=Object.fromEntries((DATA.manufacturers||[]).map(m=>[m.slug,m.name]));
+  const lineRows=IMPORT_LINES.filter(([s])=>p.lc[s]).map(([s])=>`<tr><td>${esc(mfrName[s]||s)}</td><td class="r">${p.lc[s]}</td></tr>`).join("");
+  const res=IMPORT.result;
+  const resHtml=res?`<div class="msg ok" style="margin-top:14px"><b>Import complete.</b><br>
+      Matched existing: <b>${res.matched||0}</b> · Created new: <b>${res.created||0}</b> · Records updated: <b>${res.updated||0}</b> · Line-access rows set: <b>${res.entitlements||0}</b>
+      ${(res.unmatched&&res.unmatched.length)?`<br>Skipped (not created): ${res.unmatched.length}`:""}</div>`:"";
+  app.innerHTML=`<div class="card" style="padding:18px">
+    <h3 style="margin:0 0 4px">Review import — ${esc(IMPORT.fname)}</h3>
+    <p class="muted" style="margin:0 0 12px">${p.total} companies found.</p>
+    <div class="kpis" style="margin:0 0 12px">
+      <div class="kpi"><div class="l">Will match existing</div><div class="v">${p.match}</div></div>
+      <div class="kpi"><div class="l">Will be created</div><div class="v orange">${p.create}</div></div>
+      <div class="kpi"><div class="l">Total dealers after</div><div class="v">${(DATA.dealers.length)+p.create}</div></div>
+    </div>
+    <table class="tbl" style="max-width:360px"><thead><tr><th>Line access to set</th><th class="r">Dealers</th></tr></thead><tbody>${lineRows||'<tr><td colspan=2 class="muted">none</td></tr>'}</tbody></table>
+    <label style="display:flex;gap:8px;align-items:center;margin:14px 0 6px;font-size:14px">
+      <input type="checkbox" ${IMPORT.create?"checked":""} onchange="IMPORT.create=this.checked"> Create dealers for unmatched companies (recommended — loads all dealers)</label>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+      <button class="go orange" ${IMPORT.busy?"disabled":""} onclick="applyImport()">${IMPORT.busy?"Importing…":"Apply import"}</button>
+      <button class="go blue sm" onclick="IMPORT={rows:null,create:true,busy:false,result:null,fname:''};render()">Choose a different file</button>
+    </div>
+    ${resHtml}
+  </div>`;
+}
 load();
 </script></body></html>
