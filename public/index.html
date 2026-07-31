@@ -204,6 +204,35 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
 .a4u table.steps td.idx{color:var(--gray);font-size:11px;width:26px;text-align:center;}
 .a4u td.turn .turnsel{font-size:12px;padding:5px 7px;border:1px solid var(--line);border-radius:7px;background:#fff;cursor:pointer;}
 @media(max-width:640px){.a4u .totgrid{grid-template-columns:repeat(2,1fr);}}
+/* ---- Slatwall / Planogram builder (reuses .a4u shell) ---- */
+.a4u.sw .ctrls{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px;}
+.a4u.sw .armed{font-size:12.5px;font-weight:600;color:var(--navy);background:#eef5ff;border:1px solid #cfe2fb;border-radius:8px;padding:8px 11px;margin-bottom:11px;display:flex;justify-content:space-between;gap:8px;align-items:center;}
+.a4u.sw .armed.none{color:var(--gray);background:var(--paper);border-color:var(--line);font-weight:500;}
+.a4u.sw .picker{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:12px;}
+.a4u.sw .pbar{display:grid;grid-template-columns:1.4fr 1fr;gap:8px;padding:8px;background:var(--paper);border-bottom:1px solid var(--line);}
+.a4u.sw .plist{max-height:230px;overflow:auto;}
+.a4u.sw .pitem{display:flex;gap:9px;align-items:center;padding:6px 9px;border-bottom:1px solid #eef2f6;cursor:pointer;}
+.a4u.sw .pitem:hover{background:#f5f9ff;}
+.a4u.sw .pitem.on{background:#eef5ff;}
+.a4u.sw .pitem img,.a4u.sw .pitem .ph{width:36px;height:36px;flex:none;background:#fff;border:1px solid var(--line);border-radius:5px;object-fit:contain;}
+.a4u.sw .pitem .ph{display:flex;align-items:center;justify-content:center;font-size:7.5px;color:var(--gray);background:var(--paper);text-align:center;}
+.a4u.sw .pitem .nm{flex:1;font-size:12px;line-height:1.25;}
+.a4u.sw .pitem .nm b{display:block;font-size:10px;color:var(--gray);font-weight:600;}
+.a4u.sw .pitem .pr{font-size:12px;font-weight:700;color:var(--navy);white-space:nowrap;}
+.a4u.sw .wall{background:#eef3f8;border:1px solid #cdd8e3;border-radius:10px;padding:12px;margin-bottom:12px;}
+.a4u.sw .whead{display:flex;justify-content:space-between;font-size:11px;color:var(--gray);margin-bottom:7px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.a4u.sw .panel{display:grid;gap:5px;background:#dfe8f1;background-image:repeating-linear-gradient(#cfdae6 0 1px,transparent 1px 11px);border:1px solid #b9c7d6;border-radius:6px;padding:7px;}
+.a4u.sw .cell{position:relative;min-height:74px;border:1px dashed #b3c3d3;border-radius:6px;background:rgba(255,255,255,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;text-align:center;padding:4px 3px;}
+.a4u.sw .cell:hover{border-color:var(--orange);background:rgba(255,255,255,.8);}
+.a4u.sw .cell.filled{border-style:solid;border-color:var(--navy);background:#fff;cursor:default;}
+.a4u.sw .cell .plus{font-size:20px;color:#9fb4c7;}
+.a4u.sw .cell img{max-width:100%;max-height:40px;object-fit:contain;}
+.a4u.sw .cell .cc{font-size:9px;font-weight:700;color:var(--navy);margin-top:2px;line-height:1.05;}
+.a4u.sw .cell .qty{display:flex;align-items:center;gap:3px;margin-top:3px;}
+.a4u.sw .cell .qty input{width:36px;padding:2px 3px;font-size:11px;text-align:center;border:1px solid var(--line);border-radius:5px;}
+.a4u.sw .cell .qty .u{font-size:8.5px;color:var(--gray);text-transform:uppercase;}
+.a4u.sw .cell .x{position:absolute;top:2px;right:3px;font-size:11px;color:#b42323;cursor:pointer;line-height:1;background:#fff;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;border:1px solid #f0c9c9;}
+@media(max-width:640px){.a4u.sw .pbar{grid-template-columns:1fr;}.a4u.sw .cell{min-height:60px;}}
 </style>
 </head>
 <body>
@@ -238,7 +267,7 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
   <select id="brandFilter"><option value="">All brands</option></select>
 </div></div></div>
 
-<div class="wrap"><div id="a4uBuilder"></div></div>
+<div class="wrap"><div id="a4uBuilder"></div><div id="swBuilder"></div></div>
 <main class="wrap"><div id="content" class="section"></div></main>
 
 <!-- CART -->
@@ -1090,11 +1119,189 @@ function a4uLayoutSheet(){
   w.document.open(); w.document.write(html); w.document.close();
 }
 
+/* ---------- Complete Medical — Slatwall / Planogram Builder ---------- */
+const SW_SLUG="complete-medical-supplies";
+const SW_FACE_IN=12, SW_ROW_IN=15;           // 12" facing columns, ~15" hook rows
+const SW={open:false, wft:4, hin:72, cells:[], armed:null, q:"", cat:""};
+function swCols(){ return Math.max(1,Math.round(SW.wft*12/SW_FACE_IN)); }
+function swRows(){ return Math.max(2,Math.floor(SW.hin/SW_ROW_IN)); }
+function swProd(code){ return state.products.find(p=>p.code===code); }
+function swResize(){ const n=swCols()*swRows(), old=SW.cells; SW.cells=Array.from({length:n},(_,i)=>old[i]||null); }
+function swSetW(v){ SW.wft=Math.max(2,Math.min(12,parseInt(v)||4)); swResize(); renderSW(); }
+function swSetH(v){ SW.hin=(parseInt(v)===60?60:72); swResize(); renderSW(); }
+function swArm(code){ SW.armed=code||null; renderSW(); }
+function swClickCell(i){ if(SW.cells[i]) return; if(!SW.armed){toast("Pick a product below, then click a slot");return;} SW.cells[i]={code:SW.armed,qty:3}; renderSW(); }
+function swRemoveCell(i){ if(SW.cells[i]){ SW.cells[i]=null; renderSW(); } }
+function swSetQty(i,v){ if(SW.cells[i]){ SW.cells[i].qty=Math.max(3,clampInt(v,3,9999)); renderSW(); } }
+function swClear(){ SW.cells=SW.cells.map(()=>null); renderSW(); }
+function swImg(p,abs){ return p&&p.image?((abs?location.origin:"")+p.image):null; }
+function swCandidates(){
+  let list=state.products.slice();
+  if(SW.cat) list=list.filter(p=>p.category===SW.cat);
+  const q=SW.q.trim().toLowerCase();
+  if(q) list=list.filter(p=>`${p.code} ${p.name} ${p.category} ${p.brand}`.toLowerCase().includes(q));
+  return list;
+}
+function swBom(){ const m=new Map();
+  for(const c of SW.cells){ if(!c)continue; const p=swProd(c.code); if(!p)continue;
+    const e=m.get(c.code)||{p,qty:0,facings:0}; e.qty+=c.qty; e.facings+=1; m.set(c.code,e); }
+  return [...m.values()];
+}
+function swTotals(bom){ let cost=0,retail=0; for(const{p,qty}of bom){ cost+=unitPrice(p,qty)*qty; retail+=(Number(p.msrp)||unitPrice(p,qty))*qty; } return {cost,retail,margin:retail-cost}; }
+// "Start from a Blue Jay planogram" templates: set the section size + auto-fill from the matching category.
+const SW_TEMPLATES=[["","Start from a Blue Jay planogram… (optional)"],
+  ["bath","Bath Care — 3′ × 60″ (BJBATH360)"],["adl","Aids to Daily Living — 4′ × 60″ (BJADL460)"],
+  ["mob","Mobility Aids — 3′ × 60″ (BJMB360)"],["ortho","Orthopedic — 2′ × 72″ (BJORTH)"],
+  ["mix","Mixed Bath / ADL / Mobility — 10′ × 60″ (BJMIX1060)"]];
+const SW_TPL_CFG={bath:{w:3,h:60,cats:["Bath Safety"]},adl:{w:4,h:60,cats:["Aids to Daily Living"]},
+  mob:{w:3,h:60,cats:["Mobility"]},ortho:{w:2,h:72,cats:["Orthopedic Braces"]},
+  mix:{w:10,h:60,cats:["Bath Safety","Aids to Daily Living","Mobility"]}};
+function swApplyTpl(key){ if(!key)return; const cfg=SW_TPL_CFG[key]; if(!cfg)return;
+  SW.wft=cfg.w; SW.hin=cfg.h; swResize();
+  let pool=[]; for(const cat of cfg.cats) pool=pool.concat(state.products.filter(p=>p.category===cat));
+  pool.sort((a,b)=>(b.image?1:0)-(a.image?1:0));
+  const fill=Math.min(SW.cells.length, swCols()*Math.min(swRows(),3));  // seed up to 3 rows
+  for(let i=0;i<SW.cells.length;i++) SW.cells[i]= (i<fill && pool[i])?{code:pool[i].code,qty:3}:null;
+  SW.open=true; renderSW();
+}
+function swCellHtml(i,print){
+  const c=SW.cells[i];
+  if(!c) return print?`<div class="cell"></div>`:`<div class="cell" onclick="swClickCell(${i})"><span class="plus">＋</span></div>`;
+  const p=swProd(c.code); if(!p) return `<div class="cell"></div>`;
+  const src=swImg(p,print);
+  const pic=src?`<img src="${esc(src)}" alt="${esc(p.code)}" loading="lazy" onerror="this.style.display='none'">`:"";
+  const qty=print?`<div class="cc">×${c.qty}</div>`
+    :`<div class="qty"><input type="number" min="3" value="${c.qty}" onchange="swSetQty(${i},this.value)" onclick="event.stopPropagation()"><span class="u">ea</span></div>`;
+  const rm=print?"":`<span class="x" title="Remove" onclick="swRemoveCell(${i})">✕</span>`;
+  return `<div class="cell filled">${rm}${pic}<div class="cc">${esc(p.code)}</div>${qty}</div>`;
+}
+function swWallHtml(print){
+  const cols=swCols(); const cells=SW.cells.map((_,i)=>swCellHtml(i,print)).join("");
+  const filled=SW.cells.filter(Boolean).length;
+  return `<div class="wall">
+    <div class="whead"><span>Section ${SW.wft}′ W × ${SW.hin}″ H · ${cols} facings × ${swRows()} rows</span><span>${filled} slot${filled===1?"":"s"} filled</span></div>
+    <div class="panel" style="grid-template-columns:repeat(${cols},1fr)">${cells}</div>
+  </div>`;
+}
+function swUpdateList(){ const el=$("#swPlist"); if(el) el.innerHTML=swListHtml(); }
+function swListHtml(){
+  const list=swCandidates(); const cap=list.slice(0,120);
+  if(!cap.length) return `<div class="pitem"><div class="nm">No products match — clear the search or category.</div></div>`;
+  const rows=cap.map(p=>{ const src=swImg(p,false);
+    const pic=src?`<img src="${esc(src)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:'No image'}))">`:`<span class="ph">No image</span>`;
+    return `<div class="pitem ${SW.armed===p.code?'on':''}" onclick="swArm('${esc(p.code)}')">${pic}<div class="nm">${esc(p.name)}<b>#${esc(p.code)} · ${esc(p.category||"")}</b></div><div class="pr">${p.base_price!=null?money(p.base_price):"—"}</div></div>`;
+  }).join("");
+  const more=list.length>cap.length?`<div class="pitem"><div class="nm" style="color:var(--gray)">+${list.length-cap.length} more — refine with search or category.</div></div>`:"";
+  return rows+more;
+}
+function renderSW(){
+  const host=$("#swBuilder"); if(!host) return;
+  if(state.active!==SW_SLUG || !state.products.length){ host.innerHTML=""; return; }
+  if(SW.cells.length!==swCols()*swRows()) swResize();
+  const cats=[...new Set(state.products.map(p=>p.category).filter(Boolean))].sort();
+  const bom=swBom(), t=swTotals(bom);
+  const wOpts=[2,3,4,5,6,7,8,9,10].map(v=>`<option value="${v}" ${SW.wft===v?'selected':''}>${v} ft wide</option>`).join("");
+  const hOpts=[60,72].map(v=>`<option value="${v}" ${SW.hin===v?'selected':''}>${v}″ high</option>`).join("");
+  const tplOpts=SW_TEMPLATES.map(t=>`<option value="${t[0]}">${t[1]}</option>`).join("");
+  const catOpts=`<option value="">All categories</option>`+cats.map(c=>`<option value="${esc(c)}" ${SW.cat===c?'selected':''}>${esc(c)}</option>`).join("");
+  const armed = SW.armed && swProd(SW.armed)
+    ? `<div class="armed"><span>▶ Placing <b>${esc(SW.armed)}</b> — ${esc(swProd(SW.armed).name)}. Click empty slots to add facings.</span><button class="rm" onclick="swArm('')">Done</button></div>`
+    : `<div class="armed none">Pick a product below, then click an empty slot on the wall to place it (each item orders a minimum of 3).</div>`;
+  const bomRows = bom.length? bom.map(b=>`<tr>
+      <td>${esc(b.p.code)}</td><td>${esc(b.p.name)}</td>
+      <td class="r">${b.facings}</td><td class="r">${b.qty}</td>
+      <td class="r">${money(unitPrice(b.p,b.qty))}</td><td class="r">${money(unitPrice(b.p,b.qty)*b.qty)}</td></tr>`).join("")
+    : `<tr><td colspan="6" class="empty">No products placed yet. Pick one below and click a slot above.</td></tr>`;
+  host.innerHTML=`<div class="a4u sw ${SW.open?'open':''}">
+    <div class="ahead" onclick="SW.open=!SW.open;renderSW()">
+      <h3>🧱 Slatwall / Planogram Builder <span class="sub">click a slot, drop in a product — min 3 each · live pricing · printable planogram</span></h3>
+      <span class="ab sm">${SW.open?'Hide ▲':'Open ▼'}</span>
+    </div>
+    <div class="abody">
+      <div class="ctrls">
+        <div class="fld"><label>Section width</label><select onchange="swSetW(this.value)">${wOpts}</select></div>
+        <div class="fld"><label>Section height</label><select onchange="swSetH(this.value)">${hOpts}</select></div>
+        <div class="fld"><label>Start from a template</label><select onchange="swApplyTpl(this.value);this.value=''">${tplOpts}</select></div>
+        <div class="fld"><label>&nbsp;</label><button class="ab sm" onclick="swClear()">Clear wall</button></div>
+      </div>
+      ${armed}
+      ${swWallHtml(false)}
+      <div class="picker">
+        <div class="pbar">
+          <input id="swSearch" type="text" placeholder="Search products by name or item #…" value="${esc(SW.q)}" oninput="SW.q=this.value;swUpdateList()">
+          <select onchange="SW.cat=this.value;swUpdateList()">${catOpts}</select>
+        </div>
+        <div class="plist" id="swPlist">${swListHtml()}</div>
+      </div>
+      <table><thead><tr><th>Item</th><th>Description</th><th class="r">Facings</th><th class="r">Qty</th><th class="r">Unit</th><th class="r">Ext</th></tr></thead>
+        <tbody>${bomRows}</tbody></table>
+      <div class="totgrid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="tot your"><div class="l">Your cost</div><div class="v">${money(t.cost)}</div></div>
+        <div class="tot msrp"><div class="l">MSRP retail value</div><div class="v">${money(t.retail)}</div></div>
+        <div class="tot"><div class="l">Retail margin</div><div class="v">${money(t.margin)}</div></div>
+      </div>
+      <div class="aacts">
+        <button class="go" onclick="swToCart()">Add planogram to cart</button>
+        <button class="ab" onclick="swLayoutSheet()">🖨 Planogram &amp; reorder sheet</button>
+        <button class="clr rm" onclick="swClear()">Clear</button>
+        <span class="fineprint" style="align-self:center;">Each item is added at a minimum of 3. Pricing is your dealer cost per the current Complete Medical list; MSRP shown for retail reference.</span>
+      </div>
+    </div></div>`;
+}
+function swToCart(){ const bom=swBom(); if(!bom.length){toast("Place at least one product first");return;}
+  for(const {p,qty} of bom) addToCart(p,qty); toast("Planogram added to cart ✓"); openCart(); }
+function swSheetHtml(bom,t){
+  const fmt=n=>"$"+(Number(n)||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const e2=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const rows=bom.map(b=>`<tr><td>${e2(b.p.code)}</td><td>${e2(b.p.name)}</td><td class="c">${b.facings}</td><td class="c">${b.qty}</td><td class="r">${fmt(unitPrice(b.p,b.qty))}</td><td class="r">${fmt(unitPrice(b.p,b.qty)*b.qty)}</td></tr>`).join("");
+  const units=bom.reduce((n,b)=>n+b.qty,0);
+  const dateStr=(new Date()).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Complete Medical — Slatwall Planogram</title><style>
+  *{box-sizing:border-box}html,body{margin:0;background:#eef2f6;color:#10263f;font-family:Arial,Helvetica,sans-serif}
+  .sheet{max-width:860px;margin:16px auto;background:#fff;padding:28px 32px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+  .top{display:flex;justify-content:space-between;border-bottom:3px solid #1681c2;padding-bottom:10px;margin-bottom:12px}
+  .brand{font-size:19px;font-weight:800}.brand small{display:block;font-size:11px;color:#5b7085;text-transform:uppercase;letter-spacing:.6px;margin-top:3px}
+  .doc{text-align:right;font-size:12px;color:#5b7085}.doc b{display:block;font-size:15px;color:#10263f}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:#1681c2;margin:18px 0 8px;border-bottom:1px solid #e2e9f0;padding-bottom:4px}
+  .wall{background:#eef3f8;border:1px solid #cdd8e3;border-radius:8px;padding:10px}
+  .panel{display:grid;gap:5px;background:#dfe8f1;background-image:repeating-linear-gradient(#cfdae6 0 1px,transparent 1px 11px);border:1px solid #b9c7d6;border-radius:6px;padding:7px}
+  .cell{min-height:74px;border:1px solid #10263f;border-radius:6px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4px}
+  .cell.empty{border:1px dashed #b3c3d3;background:rgba(255,255,255,.4)}
+  .cell img{max-width:100%;max-height:42px;object-fit:contain}.cell .cc{font-size:9px;font-weight:700;margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}th,td{padding:6px 8px;border-bottom:1px solid #e6ecf2;text-align:left}
+  th{background:#f2f7fb;color:#33475b;font-size:11px;text-transform:uppercase}td.c,th.c{text-align:center}td.r,th.r{text-align:right}
+  .pricebox{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px}
+  .pc{border:1px solid #dbe4ec;border-radius:8px;padding:12px;text-align:center}.pc .l{font-size:11px;text-transform:uppercase;color:#5b7085}.pc .v{font-size:20px;font-weight:800;margin-top:4px}
+  .note{font-size:10.5px;color:#7b8da0;margin-top:12px;line-height:1.5;border-top:1px solid #e6ecf2;padding-top:10px}
+  .actions{max-width:860px;margin:0 auto 20px;text-align:center}.actions button{background:#1681c2;color:#fff;border:0;border-radius:6px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer}
+  @media print{body{background:#fff}.sheet{box-shadow:none;margin:0;max-width:none}.actions{display:none}@page{margin:12mm}}
+  </style></head><body>
+  <div class="actions"><button onclick="window.print()">🖨 Print / Save as PDF</button></div>
+  <div class="sheet">
+    <div class="top"><div class="brand">HomeCare Provider Services<small>Complete Medical · Slatwall Planogram</small></div><div class="doc"><b>Planogram &amp; Reorder</b>${dateStr}</div></div>
+    <h2>Section — ${SW.wft}′ W × ${SW.hin}″ H (${swCols()} facings × ${swRows()} rows)</h2>
+    <div class="wall"><div class="panel" style="grid-template-columns:repeat(${swCols()},1fr)">${SW.cells.map((c,i)=>{ if(!c)return '<div class="cell empty"></div>'; const p=swProd(c.code); if(!p)return '<div class="cell empty"></div>'; const s=swImg(p,true); return `<div class="cell">${s?`<img src="${e2(s)}" onerror="this.style.display='none'">`:""}<div class="cc">${e2(p.code)}</div><div class="cc">×${c.qty}</div></div>`; }).join("")}</div></div>
+    <h2>Reorder List</h2>
+    <table><thead><tr><th>Item</th><th>Description</th><th class="c">Facings</th><th class="c">Qty</th><th class="r">Unit</th><th class="r">Ext</th></tr></thead><tbody>${rows}</tbody></table>
+    <h2>Totals</h2>
+    <div class="pricebox">
+      <div class="pc"><div class="l">Your cost</div><div class="v">${fmt(t.cost)}</div></div>
+      <div class="pc"><div class="l">MSRP retail value</div><div class="v">${fmt(t.retail)}</div></div>
+      <div class="pc"><div class="l">Retail margin</div><div class="v">${fmt(t.margin)}</div></div>
+    </div>
+    <div class="note">${bom.length} item${bom.length===1?"":"s"} · ${units} total units. Each item is ordered at a minimum of 3. Pricing is dealer cost per the current Complete Medical list; MSRP is shown for retail reference. Quantities and layout subject to final confirmation. Not a contract.</div>
+  </div></body></html>`;
+}
+function swLayoutSheet(){ const bom=swBom(); if(!bom.length){toast("Place at least one product first");return;}
+  const html=swSheetHtml(bom,swTotals(bom)); const w=window.open("","_blank");
+  if(!w){toast("Allow pop-ups to open the planogram sheet");return;}
+  w.document.open(); w.document.write(html); w.document.close(); }
+
 /* ---------- navigation ---------- */
 async function selectManufacturer(slug){
   state.active=slug; renderTabs();
   await loadProducts(slug);
-  renderBanner(); renderProducts(); renderA4U();
+  renderBanner(); renderProducts(); renderA4U(); renderSW();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function openCart(){$("#drawer").classList.add("open");$("#scrim").classList.add("open");}
