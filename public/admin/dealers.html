@@ -62,7 +62,7 @@ const $=s=>document.querySelector(s);
 const money=n=>"$"+Number(n||0).toLocaleString("en-US",{maximumFractionDigits:0});
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const jesc=s=>String(s).replace(/'/g,"\\'").replace(/"/g,"&quot;");
-let DATA=null,TOKEN=null,TAB="all",SEL=new Set(),SELP=new Set(),DETAIL=null;
+let DATA=null,TOKEN=null,TAB="all",SEL=new Set(),SELP=new Set(),DETAIL=null,SORT={key:"sales",dir:-1};
 const SUF=/\b(inc|incorporated|llc|corp|corporation|co|company|ltd|lp|pllc|plc|dba|the)\b/gi;
 function jnorm(n){return String(n||"").toUpperCase().replace(/HEALTH ?CARE/g,"HEALTHCARE").replace(/[.,'&/#-]/g," ").replace(SUF," ").replace(/\s+/g," ").trim();}
 const COMMON=new Set(["MEDICAL","SUPPLY","SUPPLIES","PHARMACY","HOME","HEALTHCARE","HEALTH","CARE","EQUIPMENT","EQUIP","MOBILITY","DRUG","DRUGS","STORE","CENTER","SERVICES","MART","MED","OF","AND","DME","PLUS","GA","TN","KY","IN"]);
@@ -105,18 +105,35 @@ function suggestedPairs(){
 }
 function filtered(){const q=($("#q")?.value||"").toLowerCase();
   let ds=DATA.dealers;
-  if(q) ds=ds.filter(d=>d.name.toLowerCase().includes(q)||d.aliases.some(a=>a.toLowerCase().includes(q)));
-  return ds;
+  if(q) ds=ds.filter(d=>d.name.toLowerCase().includes(q)||d.aliases.some(a=>a.toLowerCase().includes(q))
+      ||(d.email||"").toLowerCase().includes(q)||(d.city||"").toLowerCase().includes(q)||(d.state||"").toLowerCase().includes(q)||(d.address||"").toLowerCase().includes(q));
+  return sortDealers(ds);
+}
+const SORTDEF={sales:-1,name:1,state:1,email:-1,updated:1};
+const SORTLBL={sales:"Revenue (high→low)",name:"Name (A→Z)",state:"State",email:"Has email first",updated:"Recently ordered"};
+function setSort(k){ if(SORT.key===k) SORT.dir*=-1; else {SORT.key=k;SORT.dir=SORTDEF[k]||1;} render(); }
+function sortDealers(list){
+  const cmp={
+    name:(a,b)=>a.name.localeCompare(b.name),
+    sales:(a,b)=>a.sales-b.sales,
+    state:(a,b)=>(a.state||"~").localeCompare(b.state||"~")||(a.city||"").localeCompare(b.city||"")||a.name.localeCompare(b.name),
+    email:(a,b)=>((a.email?1:0)-(b.email?1:0))||a.name.localeCompare(b.name),
+    updated:(a,b)=>((a.monthsSince==null?999:a.monthsSince)-(b.monthsSince==null?999:b.monthsSince))||b.sales-a.sales,
+  }[SORT.key]||((a,b)=>a.sales-b.sales);
+  return list.slice().sort((a,b)=>SORT.dir*cmp(a,b));
 }
 function render(){
   if(!DATA)return;
   if(DETAIL) return renderDetail();
   const rev=reviewList().length, dup=suggestedPairs().length;
+  const N=DATA.dealers.length||1;
+  const withEmail=DATA.dealers.filter(d=>d.email).length, withAddr=DATA.dealers.filter(d=>d.address||d.city).length;
   const kpis=`<div class="kpis">
     <div class="kpi"><div class="l">Dealers</div><div class="v">${DATA.dealers.length}</div></div>
+    <div class="kpi"><div class="l">Emails on file</div><div class="v ${withEmail<N?'warn':''}">${withEmail}<span style="font-size:12px;color:var(--gray)">/${DATA.dealers.length}</span></div></div>
+    <div class="kpi"><div class="l">Addresses on file</div><div class="v ${withAddr<N?'warn':''}">${withAddr}<span style="font-size:12px;color:var(--gray)">/${DATA.dealers.length}</span></div></div>
     <div class="kpi"><div class="l">Review queue</div><div class="v warn">${rev}</div></div>
-    <div class="kpi"><div class="l">Suggested dupes</div><div class="v orange">${dup}</div></div>
-    <div class="kpi"><div class="l">Unlinked sales rows</div><div class="v">${DATA.unlinked||0}</div></div></div>`;
+    <div class="kpi"><div class="l">Suggested dupes</div><div class="v orange">${dup}</div></div></div>`;
   const tabs=`<div class="tabs">
     <button class="tab ${TAB==='all'?'on':''}" onclick="setTab('all')">All dealers</button>
     <button class="tab ${TAB==='review'?'on':''}" onclick="setTab('review')">Review queue${rev?` (${rev})`:""}</button>
@@ -139,14 +156,28 @@ function clearSel(){SEL.clear();render();}
 function visibleIds(){return (TAB==='review'?reviewList():filtered()).map(d=>d.id);}
 function allSelected(){const v=visibleIds();return v.length>0&&v.every(id=>SEL.has(id));}
 function toggleAll(el){const v=visibleIds();el.checked?v.forEach(id=>SEL.add(id)):v.forEach(id=>SEL.delete(id));render();}
+function sortArrow(k){return SORT.key===k?(SORT.dir>0?" ▲":" ▼"):"";}
 function renderAll(){
   const ds=filtered();
-  let h=`<div class="card"><h2>All dealers <span class="hint" style="text-transform:none">(${ds.length} shown — tick 2+ boxes (or “Select all”) then “Merge selected”, or click a dealer to manage)</span></h2>
-    <table><thead><tr><th><input type="checkbox" ${allSelected()?"checked":""} onclick="toggleAll(this)" title="Select all shown"></th><th>Dealer</th><th>Also known as</th><th>Buys</th><th class="num">Sales</th><th>Rep</th><th>Access</th><th></th></tr></thead><tbody>`;
+  const sortSel=Object.keys(SORTLBL).map(k=>`<option value="${k}" ${SORT.key===k?"selected":""}>${SORTLBL[k]}${SORT.key===k?(SORT.dir>0?" ▲":" ▼"):""}</option>`).join("");
+  let h=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h2 style="margin:0">All dealers <span class="hint" style="text-transform:none">(${ds.length} shown — tick 2+ (or “Select all”) then “Merge selected”, or click a dealer to manage)</span></h2>
+      <label class="hint" style="text-transform:none">Sort: <select onchange="setSort(this.value)">${sortSel}</select></label></div>
+    <table style="margin-top:8px"><thead><tr><th><input type="checkbox" ${allSelected()?"checked":""} onclick="toggleAll(this)" title="Select all shown"></th>
+      <th class="link" onclick="setSort('name')" style="cursor:pointer">Dealer${sortArrow('name')}</th>
+      <th>Address / email</th><th>Buys</th>
+      <th class="num link" onclick="setSort('sales')" style="cursor:pointer">Sales${sortArrow('sales')}</th>
+      <th>Rep</th><th>Access</th><th></th></tr></thead><tbody>`;
   for(const d of ds){
+    const loc=[d.city,d.state].filter(Boolean).join(", ");
+    const contact=`<div class="hint" style="text-transform:none;line-height:1.5">
+        ${d.address?`${esc(d.address)}${loc?", "+esc(loc):""}`:(loc?`📍 ${esc(loc)}`:`<span class="chip rev">no address</span>`)}<br>
+        ${d.email?`✉ <a href="mailto:${esc(d.email)}" style="color:var(--blue)">${esc(d.email)}</a>`:`<span class="chip rev">no email</span>`}${d.phone?` · ${esc(d.phone)}`:""}</div>`;
     h+=`<tr class="drow"><td><input type="checkbox" ${SEL.has(d.id)?"checked":""} onclick="toggleSel('${d.id}')"></td>
-      <td class="lbl">${esc(d.name)} ${d.status==="review"?`<span class="chip rev">review</span>`:""}</td>
-      <td>${d.aliases.filter(a=>a!==d.name).slice(0,4).map(a=>`<span class="chip al">${esc(a)}</span>`).join("")||`<span class="dim">—</span>`}${(d.accounts&&d.accounts.length)?`<div class="hint" style="margin:2px 0 0">acct: ${d.accounts.slice(0,6).map(esc).join(", ")}</div>`:""}</td>
+      <td class="lbl">${esc(d.name)} ${d.status==="review"?`<span class="chip rev">review</span>`:""}${d.status==="prospect"?`<span class="chip al">prospect</span>`:""}
+        ${d.aliases.filter(a=>a!==d.name).slice(0,3).map(a=>`<span class="chip al">${esc(a)}</span>`).join("")}
+        ${(d.accounts&&d.accounts.length)?`<div class="hint" style="margin:2px 0 0">acct: ${d.accounts.slice(0,6).map(esc).join(", ")}</div>`:""}</td>
+      <td>${contact}</td>
       <td>${d.buysLines.map(l=>`<span class="chip">${esc(DATA.mfrName[l]||l)}</span>`).join("")||`<span class="dim">—</span>`}</td>
       <td class="num">${money(d.sales)}</td>
       <td>${d.rep?esc(d.rep):`<span class="dim">—</span>`}</td>
