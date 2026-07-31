@@ -134,13 +134,15 @@ function render(){
     <div class="kpi"><div class="l">Addresses on file</div><div class="v ${withAddr<N?'warn':''}">${withAddr}<span style="font-size:12px;color:var(--gray)">/${DATA.dealers.length}</span></div></div>
     <div class="kpi"><div class="l">Review queue</div><div class="v warn">${rev}</div></div>
     <div class="kpi"><div class="l">Suggested dupes</div><div class="v orange">${dup}</div></div></div>`;
+  const plog=(DATA.logins||[]).filter(l=>l.status==="pending").length;
   const tabs=`<div class="tabs">
     <button class="tab ${TAB==='all'?'on':''}" onclick="setTab('all')">All dealers</button>
     <button class="tab ${TAB==='review'?'on':''}" onclick="setTab('review')">Review queue${rev?` (${rev})`:""}</button>
     <button class="tab ${TAB==='dupes'?'on':''}" onclick="setTab('dupes')">Suggested duplicates${dup?` (${dup})`:""}</button>
+    <button class="tab ${TAB==='logins'?'on':''}" onclick="setTab('logins')">Pending logins${plog?` (${plog})`:""}</button>
     <button class="tab ${TAB==='import'?'on':''}" onclick="setTab('import')">Import contacts</button></div>`;
   $("#body").innerHTML=kpis+tabs+mergeBar()+`<div id="app"></div>`;
-  ({all:renderAll,review:renderReview,dupes:renderDupes,import:renderImport}[TAB])();
+  ({all:renderAll,review:renderReview,dupes:renderDupes,logins:renderLogins,import:renderImport}[TAB])();
 }
 function mergeBar(){
   if(SEL.size<1) return "";
@@ -327,6 +329,37 @@ async function post(body,working,stSel){
 function showDlg(html){$("#dlg").innerHTML=`<div class="dlg" onclick="if(event.target===this)closeDlg()"><div class="dlgbox">${html}</div></div>`;}
 function closeDlg(){$("#dlg").innerHTML="";DLGSURV=null;}
 function alertDlg(m){showDlg(`<h3>Notice</h3><div>${esc(m)}</div><div style="margin-top:14px;text-align:right"><button class="go sm" onclick="closeDlg()">OK</button></div>`);}
+
+/* ---------- Pending logins (dealer portal accounts) ---------- */
+function fmtDate(s){try{return new Date(s).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});}catch(e){return "";}}
+async function approveLogin(uid){
+  const inp=document.getElementById("lnk_"+uid); let did="";
+  if(inp){const m=DATA.dealers.find(d=>d.name===inp.value.trim()); if(inp.value.trim()&&!m){alertDlg("Pick a dealer from the list to link this login to.");return;} did=m?m.id:"";}
+  await post({action:"approve_login",uid,dealer_id:did||undefined},"Approving…"); await load(); TAB="logins"; render();
+}
+async function revokeLogin(uid,status){ await post({action:"revoke_login",uid,status},"Saving…"); await load(); TAB="logins"; render(); }
+function renderLogins(){
+  const app=$("#app"); const L=DATA.logins||[];
+  const pending=L.filter(l=>l.status==="pending"), approved=L.filter(l=>l.status==="approved"), revoked=L.filter(l=>l.status==="revoked");
+  const dlOpts=`<datalist id="dealerlist">${DATA.dealers.slice(0,1200).map(d=>`<option value="${esc(d.name)}">`).join("")}</datalist>`;
+  const pRows=pending.length? pending.map(l=>`<tr>
+      <td class="lbl">${esc(l.email)}</td>
+      <td>${l.dealer_name?esc(l.dealer_name):`<input id="lnk_${l.uid}" list="dealerlist" placeholder="link to dealer…" style="width:200px">`}</td>
+      <td>${fmtDate(l.created_at)}</td>
+      <td><button class="go orange sm" onclick="approveLogin('${l.uid}')">Approve</button>
+          <button class="go sm" onclick="revokeLogin('${l.uid}','revoked')">Reject</button></td></tr>`).join("")
+    : `<tr><td colspan="4" class="empty">No pending registrations.</td></tr>`;
+  const aRows=approved.map(l=>`<tr><td class="lbl">${esc(l.email)}</td><td>${esc(l.dealer_name||"—")}</td><td><span class="chip acc">approved</span></td>
+      <td><button class="go sm" onclick="revokeLogin('${l.uid}','revoked')">Revoke</button></td></tr>`).join("");
+  const rRows=revoked.map(l=>`<tr><td class="lbl">${esc(l.email)}</td><td>${esc(l.dealer_name||"—")}</td><td><span class="chip rev">revoked</span></td>
+      <td><button class="go blue sm" onclick="revokeLogin('${l.uid}','approved')">Re-approve</button></td></tr>`).join("");
+  app.innerHTML=`${dlOpts}<div class="card">
+    <h2>Pending logins <span class="hint" style="text-transform:none">— dealers who registered on the ordering portal. Approve to let them sign in and order (only their entitled lines show).</span></h2>
+    <table><thead><tr><th>Email</th><th>Dealer</th><th>Registered</th><th></th></tr></thead><tbody>${pRows}</tbody></table>
+  </div>
+  ${approved.length?`<div class="card"><h2>Active accounts (${approved.length})</h2><table><thead><tr><th>Email</th><th>Dealer</th><th>Status</th><th></th></tr></thead><tbody>${aRows}</tbody></table></div>`:""}
+  ${revoked.length?`<div class="card"><h2>Revoked (${revoked.length})</h2><table><thead><tr><th>Email</th><th>Dealer</th><th>Status</th><th></th></tr></thead><tbody>${rRows}</tbody></table></div>`:""}`;
+}
 
 /* ---------- Import contacts (master list -> dealers) ---------- */
 const IMPORT_LINES=[
