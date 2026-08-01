@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>HomeCare Provider Services — Dealer Ordering Portal</title>
+<title>HCPS Partner Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#0b0d0f; --navy:#10263f; --navy2:#173a5e;
-  --orange:#ef6325; --orange-d:#cf4e18; --gold:#fcb21e; --blue:#1681c2;
+  --ink:#0b0d0f; --navy:#3B599A; --navy2:#2B4071;
+  --orange:#F5821F; --orange-d:#d96f14; --gold:#fcb21e; --blue:#1681c2;
   --paper:#f6f7f5; --white:#fff; --gray:#6b7280; --line:#e6e2dc; --green:#2d7d46;
   --radius:12px; --shadow:0 8px 26px rgba(16,38,63,.12);
 }
@@ -149,6 +149,44 @@ body.guest .mbanner,body.guest .controls,body.guest #a4uBuilder,body.guest #swBu
 .lk-actions{display:flex;gap:12px;justify-content:center;margin:22px 0 6px;}
 .lk-actions .go{background:#3B599A;}.lk-actions .ab2{background:#fff;color:#3B599A;border:1.5px solid #3B599A;border-radius:9px;padding:11px 22px;font-weight:800;font-family:'Barlow Condensed',sans-serif;font-size:15px;text-transform:uppercase;cursor:pointer;}
 .lk-note{font-size:12px;color:var(--gray);margin-top:14px;}
+
+/* PERSONALIZED HOME DASHBOARD */
+body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
+.mbanner .tagline{color:var(--gold);font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+.dash{padding:26px 0 44px;}
+.dsec{margin-bottom:30px;}
+.dsec .sh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.dsec .sh h2{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--navy);letter-spacing:.3px;}
+.dsec .sh .link{font-size:12.5px;font-weight:700;color:var(--orange);cursor:pointer;}
+.lines{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+.lncard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;transition:transform .12s,box-shadow .12s;position:relative;overflow:hidden;}
+.lncard:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--navy);}
+.lncard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(180deg,var(--navy),var(--orange));}
+.lncard .ln{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:19px;color:var(--navy);line-height:1.1;margin-bottom:4px;}
+.lncard .lc{font-size:12.5px;color:var(--gray);}
+.lncard .go2{margin-top:12px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;}
+.featstrip{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;}
+.fcard{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:transform .12s,box-shadow .12s;}
+.fcard:hover{transform:translateY(-2px);box-shadow:var(--shadow);}
+.fcard .fi{height:140px;background:linear-gradient(135deg,#eef2f7,#e2e8f0);display:flex;align-items:center;justify-content:center;position:relative;}
+.fcard .fi img{max-width:100%;max-height:140px;object-fit:contain;}
+.fcard .fi .ph{color:var(--gray);font-size:12px;}
+.fcard .fi .star{position:absolute;top:8px;left:8px;background:var(--gold);color:#5a3d00;font-size:9.5px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:8px;}
+.fcard .fb{padding:11px 13px;flex:1;display:flex;flex-direction:column;gap:3px;}
+.fcard .fb .fmfr{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);font-weight:800;}
+.fcard .fb .fnm{font-size:13px;font-weight:600;line-height:1.25;color:var(--ink);}
+.fcard .fb .fnt{font-size:11.5px;color:var(--orange-d);font-style:italic;}
+.fcard .fb .fpr{margin-top:2px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:17px;color:var(--navy);}
+.fcard .fb .fmsrp{font-size:11px;color:var(--gray);}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:760px){.dgrid{grid-template-columns:1fr;}}
+.dcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;}
+.dcard h3{font-family:'Barlow Condensed',sans-serif;font-size:16px;color:var(--navy);margin-bottom:10px;}
+.dcard .kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid #f0eee9;font-size:13px;}
+.dcard .kv:first-of-type{border-top:none;}.dcard .kv .k{color:var(--gray);}.dcard .kv .v{font-weight:600;text-align:right;}
+.dcard .muted2{font-size:12.5px;color:var(--gray);line-height:1.6;}
+.dcard .bigbtn{margin-top:12px;display:inline-block;background:var(--orange);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-weight:800;font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;}
+.dcard .bigbtn:hover{background:var(--orange-d);}
 
 /* LOGIN MODAL */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;padding:20px;}
@@ -359,6 +397,8 @@ const CONFIG = {
 
 const state = { manufacturers: [], active: null, products: [], dealer: null };
 const CART = new Map();                // key: mfr::code -> {p, qty}
+const HOME = "__home__";               // sentinel slug for the personalized dashboard
+const DASH = { featured: null, lineCache: {} };   // featured rows + per-line product cache
 
 const $ = s => document.querySelector(s);
 const money = n => new Intl.NumberFormat(undefined,{style:"currency",currency:"USD"}).format(Number(n||0));
@@ -406,7 +446,15 @@ async function loadProducts(slug){
   const mfr = state.manufacturers.find(m=>m.slug===slug);
   if (!mfr || !mfr.hasData){ state.products=[]; return; }
   const r = await fetch(`./data/${slug}.json`,{cache:"no-store"});
-  state.products = (await r.json()).map(fillMsrp);
+  let prods = await r.json();
+  // apply admin-uploaded image overrides (Image Manager) so new photos show without a redeploy
+  try{
+    const ov = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_images?manufacturer=eq.${encodeURIComponent(slug)}&select=code,url`,
+      {headers:{apikey:CONFIG.SUPABASE_ANON}}).then(x=>x.ok?x.json():[]);
+    const om=Object.fromEntries((ov||[]).map(o=>[o.code,o.url]));
+    prods.forEach(p=>{ if(om[p.code]) p.image=om[p.code]; });
+  }catch(e){}
+  state.products = prods.map(fillMsrp);
 }
 // If a product has no MSRP, suggest one at 2× the dealer price so dealers always have a
 // selling point (marked "suggested"). Never overrides a manufacturer-provided MSRP.
@@ -424,6 +472,14 @@ function entitledManufacturers(){
 }
 function renderTabs(){
   const el=$("#tabs"); el.innerHTML="";
+  // Home / dashboard tab (only for signed-in dealers)
+  if(AUTH.status==='approved'){
+    const h=document.createElement("button");
+    h.className="tab"+(state.active===HOME?" active":"");
+    h.innerHTML="🏠 Home";
+    h.onclick=()=>selectManufacturer(HOME);
+    el.appendChild(h);
+  }
   for (const m of entitledManufacturers()){
     const b=document.createElement("button");
     b.className="tab"+(m.slug===state.active?" active":"")+(m.hasData?"":" disabled");
@@ -433,14 +489,111 @@ function renderTabs(){
   }
 }
 
+/* ---------- personalized home dashboard ---------- */
+// Featured products are published by the admin Featured tool and read here with the
+// public anon key (featured_products has a public-read RLS policy). Filtered to the
+// dealer's entitled lines so each dealer only sees promos for lines they carry.
+async function loadFeatured(){
+  if(DASH.featured) return DASH.featured;
+  try{
+    const r=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/featured_products?active=eq.true&order=rank.asc&select=manufacturer,code,name,note,rank`,
+      {headers:{apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON}});
+    DASH.featured = r.ok ? (await r.json()) : [];
+  }catch(e){ DASH.featured=[]; }
+  return DASH.featured;
+}
+// Load a line's products (with image overrides + MSRP fill), cached, without disturbing state.products.
+async function loadLine(slug){
+  if(DASH.lineCache[slug]) return DASH.lineCache[slug];
+  let prods=[];
+  try{
+    const r=await fetch(`./data/${slug}.json`,{cache:"no-store"});
+    prods=(await r.json())||[];
+    try{
+      const ov=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_images?manufacturer=eq.${encodeURIComponent(slug)}&select=code,url`,
+        {headers:{apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON}});
+      if(ov.ok){ const map=Object.fromEntries((await ov.json()).map(o=>[o.code,o.url])); prods.forEach(p=>{ if(map[p.code]) p.image=map[p.code]; }); }
+    }catch(e){}
+    prods=prods.map(fillMsrp);
+  }catch(e){ prods=[]; }
+  DASH.lineCache[slug]=prods; return prods;
+}
+async function renderHome(){
+  const d=AUTH.dealer||{}, biz=d.name||"there";
+  const lines=entitledManufacturers();
+  // hero
+  $("#mfrName").innerHTML=`Welcome back, <span>${esc(biz)}</span>`;
+  $("#mfrSub").innerHTML=`<span class="tagline">Innovative Products · Showroom Solutions · Simplified Ordering</span>`;
+  document.querySelector(".mstat").innerHTML=
+    `<div><b>${lines.length}</b><span>Your Lines</span></div>
+     <div><b id="stFeat">—</b><span>Featured</span></div>
+     <div><b>${esc(d.hcps_account||"—")}</b><span>Account #</span></div>`;
+  $("#content").innerHTML=`<div class="dash"><div class="msg" style="text-align:center;color:var(--gray);padding:20px">Loading your dashboard…</div></div>`;
+
+  const allowed=new Set(lines.map(m=>m.slug));
+  const feat=(await loadFeatured()).filter(f=>allowed.has(f.manufacturer));
+  $("#stFeat") && ($("#stFeat").textContent=String(feat.length));
+  // load the lines that have featured items, then resolve each featured product
+  const need=[...new Set(feat.map(f=>f.manufacturer))];
+  await Promise.all(need.map(s=>loadLine(s)));
+  const fcards=feat.map(f=>{
+    const prod=(DASH.lineCache[f.manufacturer]||[]).find(p=>p.code===f.code)||{};
+    const mfr=state.manufacturers.find(m=>m.slug===f.manufacturer)||{};
+    const img=prod.image?`<img src="${esc(prod.image)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:'No image'}))">`:`<span class="ph">No image</span>`;
+    const nm=esc(prod.name||f.name||f.code);
+    const price=(prod.base_price!=null)?`<div class="fpr">${money(prod.base_price)}</div>`:'';
+    const msrp=(prod.msrp!=null&&Number(prod.msrp)>Number(prod.base_price))?`<div class="fmsrp">MSRP ${money(prod.msrp)}</div>`:'';
+    const note=f.note?`<div class="fnt">${esc(f.note)}</div>`:'';
+    return `<div class="fcard" onclick="gotoProduct('${esc(f.manufacturer)}','${esc(f.code)}')">
+      <div class="fi"><span class="star">★ Featured</span>${img}</div>
+      <div class="fb"><div class="fmfr">${esc(mfr.name||f.manufacturer)}</div><div class="fnm">${nm}</div>${note}${price}${msrp}</div></div>`;
+  }).join("");
+  const lncards=lines.map(m=>`<div class="lncard" onclick="selectManufacturer('${esc(m.slug)}')">
+     <div class="ln">${esc(m.name)}</div><div class="lc">Browse & order the ${esc(m.name)} line</div>
+     <div class="go2">Open catalog →</div></div>`).join("");
+
+  const featSec = feat.length ? `<div class="dsec"><div class="sh"><h2>⭐ Featured for you</h2></div><div class="featstrip">${fcards}</div></div>` : "";
+  $("#content").innerHTML=`<div class="dash">
+    <div class="dsec"><div class="sh"><h2>Your Lines</h2></div>
+      ${lines.length?`<div class="lines">${lncards}</div>`:`<p class="dcard muted2">No manufacturer lines are enabled on your account yet. Contact HCPS to turn on your lines.</p>`}</div>
+    ${featSec}
+    <div class="dgrid">
+      <div class="dcard"><h3>Your Account</h3>
+        <div class="kv"><span class="k">Business</span><span class="v">${esc(d.name||"—")}</span></div>
+        <div class="kv"><span class="k">Account #</span><span class="v">${esc(d.hcps_account||"—")}</span></div>
+        <div class="kv"><span class="k">Contact</span><span class="v">${esc(d.contact_name||"—")}</span></div>
+        <div class="kv"><span class="k">Email</span><span class="v">${esc(d.email||"—")}</span></div>
+        ${d.city||d.state?`<div class="kv"><span class="k">Location</span><span class="v">${esc([d.city,d.state].filter(Boolean).join(", "))}</span></div>`:""}
+      </div>
+      <div class="dcard"><h3>Recent Orders</h3>
+        <p class="muted2">Your submitted orders will appear here so you can reorder in one click. Place an order from any line to get started.</p>
+        ${lines.length?`<button class="bigbtn" onclick="selectManufacturer('${esc(lines[0].slug)}')">Start an order</button>`:""}
+      </div>
+    </div>
+  </div>`;
+}
+// jump to a line and scroll/highlight a product
+async function gotoProduct(slug,code){
+  await selectManufacturer(slug);
+  setTimeout(()=>{ const el=document.querySelector(`[data-code="${CSS.escape(code)}"]`);
+    if(el){ el.scrollIntoView({behavior:"smooth",block:"center"}); el.style.transition="box-shadow .3s"; el.style.boxShadow="0 0 0 3px var(--orange)"; setTimeout(()=>el.style.boxShadow="",1600); }
+  },350);
+}
+
 /* ---------- render banner + filters ---------- */
 function renderBanner(){
   const m=state.manufacturers.find(x=>x.slug===state.active)||{};
   $("#mfrName").innerHTML = esc(m.name||"—");
   const cats=[...new Set(state.products.map(p=>p.category).filter(Boolean))];
+  // Rebuild the stat strip each time — the home dashboard replaces this markup, so
+  // recreate the line-view stats rather than assuming the spans still exist.
+  document.querySelector(".mstat").innerHTML=
+    `<div><b id="stProducts">0</b><span>Products</span></div>
+     <div><b id="stCats">0</b><span>Categories</span></div>
+     <div><b id="stAcct">Guest</b><span>Account</span></div>`;
   $("#stProducts").textContent=state.products.length;
   $("#stCats").textContent=cats.length;
-  $("#stAcct").textContent = state.dealer ? state.dealer.account : "Guest";
+  $("#stAcct").textContent = state.dealer ? (state.dealer.account||"—") : "Guest";
   $("#mfrSub").textContent = state.products.length
     ? `Browse and order the ${esc(m.name)} line — grouped by category. Add items to your cart and submit to HCPS.`
     : `Products for ${esc(m.name)} are being loaded into the portal.`;
@@ -466,7 +619,7 @@ function cardHtml(p){
   const img = p.image
     ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src=this.src.replace(/[^/]+$/,s=>s.toLowerCase());}else{this.style.display='none';this.parentElement.innerHTML='<span class=ph>No image</span>';}">`
     : `<span class="ph">No image</span>`;
-  return `<div class="card">
+  return `<div class="card" data-code="${esc(p.code)}">
     <div class="img">${img}</div>
     <div class="cbody">
       <div class="cat-tag">${esc(p.subcategory||p.category||"")}${p.brand?" · "+esc(p.brand):""}</div>
@@ -1338,6 +1491,11 @@ function swLayoutSheet(){ const bom=swBom(); if(!bom.length){toast("Place at lea
 
 /* ---------- navigation ---------- */
 async function selectManufacturer(slug){
+  if(slug===HOME){
+    state.active=HOME; document.body.classList.add('home'); renderTabs();
+    await renderHome(); window.scrollTo({top:0,behavior:"smooth"}); return;
+  }
+  document.body.classList.remove('home');
   state.active=slug; renderTabs();
   await loadProducts(slug);
   renderBanner(); renderProducts(); renderA4U(); renderSW();
@@ -1398,11 +1556,9 @@ function applyAuth(){
   $("#loginBtn").style.display=signed?'none':'';
   $("#whoami").innerHTML=signed?`<span class="who">Hi, <b>${esc((AUTH.dealer&&AUTH.dealer.name)||'')}</b></span><button class="hbtn" id="outBtn">Sign out</button>`:'';
   if(signed){const ob=$("#outBtn");if(ob)ob.onclick=signOut;prefillDealer();}
-  if(!signed){renderLocked();return;}
-  renderTabs();
-  const list=entitledManufacturers();
-  if(list.length)selectManufacturer(list[0].slug);
-  else $("#content").innerHTML=`<div class="empty"><h3>No lines enabled yet</h3><p>Your account is approved, but no manufacturer lines are turned on. Contact HCPS to enable your lines.</p></div>`;}
+  if(!signed){document.body.classList.remove('home');renderLocked();return;}
+  // Signed-in dealers land on their personalized home dashboard.
+  selectManufacturer(HOME);}
 $("#loginBtn").onclick=()=>openLogin('signin');
 $("#si_go").onclick=doSignin;$("#rg_go").onclick=doRegister;
 $("#si_forgot").onclick=(e)=>{e.preventDefault();doForgot();};
