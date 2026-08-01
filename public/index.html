@@ -154,6 +154,8 @@ body.guest #loginBtn,body.guest #cartBtn{display:none;}
 .logincard .go{width:100%;margin-top:16px;background:#2B4071;color:#fff;border:none;border-radius:9px;padding:13px;font-weight:800;font-family:'Barlow Condensed',sans-serif;font-size:16px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;}
 .logincard .go:hover{background:#3B599A;}
 .logincard .note{font-size:12px;color:var(--gray);margin-top:12px;line-height:1.5;}
+.logincard .rememberme{display:flex;align-items:center;gap:8px;font-size:13px;color:#41525f;font-weight:600;text-transform:none;letter-spacing:0;margin:12px 0 2px;cursor:pointer;}
+.logincard .rememberme input{width:auto;}
 .logincard .rg2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .logincard .rg3{display:grid;grid-template-columns:1.4fr .8fr 1fr;gap:10px;}
 .logincard .rg2 input,.logincard .rg3 input{width:100%;}
@@ -162,6 +164,21 @@ body.guest #loginBtn,body.guest #cartBtn{display:none;}
 body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .mbanner .tagline{color:var(--gold);font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
 .dash{padding:26px 0 44px;}
+/* admin-editable portal-home hero banner + promo tiles */
+.homehero{position:relative;border-radius:16px;overflow:hidden;margin-bottom:26px;min-height:150px;display:flex;align-items:center;background:linear-gradient(120deg,var(--navy) 0%,var(--navy2) 100%);border:1px solid var(--line);}
+.homehero .bg{position:absolute;inset:0;background-size:cover;background-position:center;}
+.homehero .scrim{position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,35,66,.82) 0%,rgba(20,35,66,.45) 60%,rgba(20,35,66,.2) 100%);}
+.homehero .hh-in{position:relative;padding:26px 30px;max-width:640px;}
+.homehero .hh-h{color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:30px;line-height:1.08;margin:0 0 6px;}
+.homehero .hh-s{color:#eaf0f7;font-size:15px;line-height:1.4;margin:0;}
+.homehero .hh-cta{display:inline-block;margin-top:14px;background:var(--orange);color:#fff;font-weight:700;padding:9px 18px;border-radius:9px;text-decoration:none;font-size:14px;}
+.hometiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+.htile{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .12s,box-shadow .12s;display:flex;flex-direction:column;}
+.htile:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(16,38,63,.12);}
+.htile .ti{aspect-ratio:16/9;background:#eef2f7 center/cover no-repeat;}
+.htile .tb{padding:13px 15px;}
+.htile .tt{font-weight:700;color:var(--navy);font-size:15px;margin-bottom:4px;}
+.htile .tx{color:var(--gray);font-size:13px;line-height:1.35;}
 .dsec{margin-bottom:30px;}
 .dsec .sh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;}
 .dsec .sh h2{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--navy);letter-spacing:.3px;}
@@ -405,7 +422,7 @@ const CONFIG = {
 const state = { manufacturers: [], active: null, products: [], dealer: null };
 const CART = new Map();                // key: mfr::code -> {p, qty}
 const HOME = "__home__";               // sentinel slug for the personalized dashboard
-const DASH = { featured: null, lineCache: {}, orders: null };   // featured rows + per-line product cache + order history
+const DASH = { featured: null, lineCache: {}, orders: null, home: null };   // featured rows + per-line product cache + order history + portal-home content
 
 const $ = s => document.querySelector(s);
 const money = n => new Intl.NumberFormat(undefined,{style:"currency",currency:"USD"}).format(Number(n||0));
@@ -562,6 +579,41 @@ function orderCardHtml(o){
       <div class="ordsub">${dt}${o.po?` · PO ${esc(o.po)}`:""} · ${o.items_count} item${o.items_count===1?"":"s"} · ${money(o.subtotal)}</div></div>
     <button class="reord" onclick="reorder('${esc(o.id)}')">Reorder</button></div>`;
 }
+// admin-editable portal-home content (hero banner + promo tiles). Public-read via anon key.
+async function loadHomeContent(){
+  if(DASH.home) return DASH.home;
+  try{
+    const r=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/portal_content?key=eq.home&select=value`,
+      {headers:{apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON}});
+    const rows=r.ok?await r.json():[];
+    DASH.home=(rows[0]&&rows[0].value)||{};
+  }catch(e){ DASH.home={}; }
+  return DASH.home;
+}
+function homeHeroHtml(hc){
+  const h=(hc&&hc.hero)||{};
+  if(h.enabled===false) return "";
+  const hasText=(h.headline||h.subhead), hasImg=!!h.image;
+  if(!hasText&&!hasImg) return "";
+  const bg=hasImg?`<div class="bg" style="background-image:url('${esc(h.image)}')"></div><div class="scrim"></div>`:"";
+  let cta="";
+  if(h.cta_label){ const link=String(h.cta_link||"").trim();
+    const href=/^https?:/i.test(link)?esc(link):(link?`javascript:selectManufacturer('${esc(link)}')`:"javascript:void(0)");
+    cta=`<a class="hh-cta" href="${href}">${esc(h.cta_label)}</a>`; }
+  return `<div class="homehero">${bg}<div class="hh-in">
+    ${h.headline?`<h2 class="hh-h">${esc(h.headline)}</h2>`:""}
+    ${h.subhead?`<p class="hh-s">${esc(h.subhead)}</p>`:""}${cta}</div></div>`;
+}
+function homeTilesHtml(hc){
+  const tiles=((hc&&hc.tiles)||[]).filter(t=>t&&t.active!==false&&(t.title||t.image));
+  if(!tiles.length) return "";
+  const cards=tiles.map(t=>{const link=String(t.link||"").trim();
+    const onclick=/^https?:/i.test(link)?`window.open('${esc(link)}','_blank')`:(link?`selectManufacturer('${esc(link)}')`:"");
+    const img=t.image?`<div class="ti" style="background-image:url('${esc(t.image)}')"></div>`:"";
+    return `<div class="htile" ${onclick?`onclick="${onclick}"`:""}>${img}
+      <div class="tb">${t.title?`<div class="tt">${esc(t.title)}</div>`:""}${t.text?`<div class="tx">${esc(t.text)}</div>`:""}</div></div>`;}).join("");
+  return `<div class="dsec"><div class="hometiles">${cards}</div></div>`;
+}
 async function renderHome(){
   const d=AUTH.dealer||{}, biz=d.name||"there";
   const lines=entitledManufacturers();
@@ -610,6 +662,8 @@ async function renderHome(){
      <div class="oppacts"><button class="oppbtn primary" onclick="selectManufacturer('${esc(m.slug)}')">Explore catalog →</button>
        <a class="oppbtn ghost" href="mailto:${bizEmail}?subject=${subj}&body=${bodyq}">Request account</a></div></div>`;}).join("");
 
+  const hc=await loadHomeContent();
+  const heroSec=homeHeroHtml(hc), tilesSec=homeTilesHtml(hc);
   const featSec = feat.length ? `<div class="dsec"><div class="sh"><h2>⭐ Featured for you</h2></div><div class="featstrip">${fcards}</div></div>` : "";
   const orders = await loadOrders();
   const ordersHtml = orders.length
@@ -624,6 +678,8 @@ async function renderHome(){
         <div class="opps">${oppCards}</div></div>`
     : "";
   $("#content").innerHTML=`<div class="dash">
+    ${heroSec}
+    ${tilesSec}
     ${(activeLines.length||oppLines.length)?activeSec+oppSec:`<div class="dsec"><p class="dcard muted2">No manufacturer lines are enabled on your account yet. Contact HCPS to turn on your lines.</p></div>`}
     ${featSec}
     <div class="dgrid">
@@ -1585,9 +1641,24 @@ $("#submitOrder").onclick=submitOrder;
 /* ---------- dealer auth (email + password · self-serve + HCPS approval) ---------- */
 const AUTH={session:null,status:'anon',dealer:null,lines:[]};
 const _sbURL=CONFIG.SUPABASE_URL,_anon=CONFIG.SUPABASE_ANON;
-function saveSession(s){AUTH.session=s;try{localStorage.setItem('hcps_session',JSON.stringify(s));}catch(e){}}
+function saveSession(s){ if(s&&s.expires_in&&!s.expires_at) s.expires_at=Date.now()+(Number(s.expires_in)||3600)*1000;
+  AUTH.session=s;try{localStorage.setItem('hcps_session',JSON.stringify(s));}catch(e){}}
 function clearSession(){AUTH.session=null;try{localStorage.removeItem('hcps_session');}catch(e){}}
 function loadStoredSession(){try{return JSON.parse(localStorage.getItem('hcps_session')||'null');}catch(e){return null;}}
+// Remember-me: persist the email so the login form prefills next visit.
+function rememberEmail(email){try{ if(email) localStorage.setItem('hcps_email',email); }catch(e){}}
+function forgetEmail(){try{localStorage.removeItem('hcps_email');}catch(e){}}
+function savedEmail(){try{return localStorage.getItem('hcps_email')||'';}catch(e){return '';}}
+// Keep the dealer signed in: refresh the Supabase access token before it expires so the
+// session survives past the ~1-hour token lifetime (they no longer get logged out).
+async function sbRefresh(refresh_token){
+  const r=await fetch(`${_sbURL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{'content-type':'application/json',apikey:_anon},body:JSON.stringify({refresh_token})});
+  const j=await r.json().catch(()=>({})); if(!r.ok||!j.access_token) throw new Error('refresh failed'); return j; }
+async function ensureFreshSession(){
+  const s=AUTH.session; if(!s||!s.refresh_token) return;
+  if(s.expires_at && Date.now() < s.expires_at-90*1000) return;   // still valid (>90s left)
+  try{ const ns=await sbRefresh(s.refresh_token); saveSession(ns); }catch(e){ /* keep old; authMe will handle */ }
+}
 function openLogin(tab){renderLocked();authTab(tab||'signin');}
 function closeLogin(){/* login form is inline on the locked screen; nothing to close */}
 function authTab(t){const r=t==='register';$("#atab_signin").classList.toggle('on',!r);$("#atab_register").classList.toggle('on',r);
@@ -1597,6 +1668,7 @@ async function sbToken(email,password){
   const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error_description||j.msg||j.error||'Sign-in failed');return j;}
 async function authMe(){
   if(!AUTH.session||!AUTH.session.access_token){AUTH.status='anon';return;}
+  await ensureFreshSession();
   try{const r=await fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+AUTH.session.access_token},body:JSON.stringify({action:'me'})});
     const j=await r.json().catch(()=>({}));AUTH.status=j.status||'anon';AUTH.dealer=j.dealer||null;
     AUTH.lineObjs=(j.lines||[]);                       // [{slug, account}] — account present = they HAVE an account
@@ -1605,7 +1677,9 @@ async function authMe(){
     if(AUTH.status==='approved'&&AUTH.dealer)state.dealer={business:AUTH.dealer.name,account:AUTH.dealer.hcps_account||'',...AUTH.dealer};else state.dealer=null;
   }catch(e){AUTH.status='anon';}}
 async function doSignin(){const msg=$("#si_msg"),email=$("#si_email").value.trim(),pass=$("#si_pass").value;
+  const remember=$("#si_remember")?$("#si_remember").checked:true;
   if(!email||!pass){msg.textContent='Enter your email and password.';return;}msg.textContent='Signing in…';
+  if(remember) rememberEmail(email); else forgetEmail();
   try{const s=await sbToken(email,pass);saveSession(s);await authMe();
     if(AUTH.status==='approved'){closeLogin();applyAuth();toast('Signed in ✓');}
     else if(AUTH.status==='pending'){clearSession();msg.innerHTML='Your account is <b>pending HCPS approval</b>. You’ll be able to order once approved.';}
@@ -1636,8 +1710,9 @@ function renderLocked(){$("#tabs").innerHTML="";
     <div class="logincard">
       <div class="authtabs"><button class="authtab on" id="atab_signin" onclick="authTab('signin')">Sign in</button><button class="authtab" id="atab_register" onclick="authTab('register')">Register</button></div>
       <div id="pane_signin">
-        <label>Email</label><input id="si_email" type="email" placeholder="you@dealer.com" autocomplete="username" />
+        <label>Email</label><input id="si_email" type="email" placeholder="you@dealer.com" autocomplete="username" value="${esc(savedEmail())}" />
         <label>Password</label><input id="si_pass" type="password" placeholder="••••••••" autocomplete="current-password" />
+        <label class="rememberme"><input type="checkbox" id="si_remember" ${savedEmail()?"checked":"checked"}> Remember me on this device</label>
         <button class="go" onclick="doSignin()">Sign in</button>
         <div class="authmsg" id="si_msg"></div>
         <div class="note"><a href="#" onclick="event.preventDefault();doForgot()" style="color:var(--orange);font-weight:700">Forgot your password?</a></div>
@@ -1691,9 +1766,11 @@ $("#brandFilter").addEventListener("change",renderProducts);
   try{
     await loadManufacturers();
     AUTH.session=loadStoredSession();
-    await authMe();          // restore any signed-in dealer
+    await authMe();          // restore any signed-in dealer (refreshes the token if needed)
     applyAuth();             // gate: locked landing for guests, entitled lines for approved dealers
     updateCart();
+    // keep the session alive so dealers stay signed in instead of dropping after ~1 hour
+    setInterval(()=>{ if(AUTH.session&&AUTH.session.refresh_token) ensureFreshSession(); }, 20*60*1000);
   }catch(e){console.error(e);$("#content").innerHTML=`<div class="empty"><h3>Could not load data</h3><p>Confirm data/manufacturers.json is deployed.</p></div>`;}
 })();
 </script>
