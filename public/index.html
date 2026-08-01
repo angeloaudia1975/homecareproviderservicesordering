@@ -134,6 +134,21 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
 .mgtot .r.tot{font-weight:800;color:var(--navy);font-size:14px;border-top:1px solid var(--line);padding-top:5px;margin-top:2px;}
 .msrp{font-size:11px;color:var(--gray);text-decoration:line-through;}
 .msrp .sugg{text-decoration:none;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#b8791a;background:#fff4e0;border-radius:5px;padding:1px 5px;margin-left:3px;}
+/* auth + gating */
+#whoami .who{color:#cdd8e6;font-size:13px;margin-right:8px;}#whoami .who b{color:#fff;}
+.authtabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--line);}
+.authtab{background:none;border:none;padding:8px 12px;font-weight:700;font-size:14px;color:var(--gray);cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;}
+.authtab.on{color:#3B599A;border-bottom-color:#3B599A;}
+.authmsg{font-size:12.5px;margin-top:10px;color:#4b5563;min-height:16px;line-height:1.5;}
+body.guest .mbanner,body.guest .controls,body.guest #a4uBuilder,body.guest #swBuilder,body.guest #tabs{display:none;}
+.locked{display:flex;justify-content:center;padding:40px 16px;}
+.lk-card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);max-width:560px;width:100%;text-align:center;padding:44px 34px;}
+.lk-eyebrow{font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#F5821F;margin-bottom:10px;}
+.lk-card h2{font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:800;color:#3B599A;line-height:1.05;}
+.lk-tag{color:var(--gray);font-size:13px;margin-top:8px;font-weight:600;}
+.lk-actions{display:flex;gap:12px;justify-content:center;margin:22px 0 6px;}
+.lk-actions .go{background:#3B599A;}.lk-actions .ab2{background:#fff;color:#3B599A;border:1.5px solid #3B599A;border-radius:9px;padding:11px 22px;font-weight:800;font-family:'Barlow Condensed',sans-serif;font-size:15px;text-transform:uppercase;cursor:pointer;}
+.lk-note{font-size:12px;color:var(--gray);margin-top:14px;}
 
 /* LOGIN MODAL */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;padding:20px;}
@@ -236,16 +251,17 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
 @media(max-width:640px){.a4u.sw .pbar{grid-template-columns:1fr;}.a4u.sw .cell{min-height:60px;}}
 </style>
 </head>
-<body>
+<body class="guest">
 
 <header>
   <div class="htop">
     <a class="brand" href="/">
       <div class="mark">HCPS</div>
-      <div><div class="l1">HomeCare Provider Services</div><div class="l2">Dealer Ordering Portal</div></div>
+      <div><div class="l1">HomeCare Provider Services</div><div class="l2">Partner Portal</div></div>
     </a>
     <div class="hactions">
-      <button class="hbtn" id="loginBtn">🔒 Dealer Login</button>
+      <span id="whoami"></span>
+      <button class="hbtn" id="loginBtn">🔒 Sign in</button>
       <button class="hbtn cart" id="cartBtn">🛒 Cart <span class="muted" id="cartCount">(0)</span></button>
     </div>
   </div>
@@ -296,17 +312,26 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
   </div>
 </aside>
 
-<!-- LOGIN -->
+<!-- LOGIN / REGISTER -->
 <div class="modal" id="loginModal">
   <div class="mcard">
-    <h2>Dealer Login</h2>
-    <p>Log in to see your account-specific pricing and order history.</p>
-    <label>HCPS Account # or Email</label>
-    <input id="lg_user" placeholder="e.g. HCPS-1042 or you@dealer.com" />
-    <label>Password</label>
-    <input id="lg_pass" type="password" placeholder="••••••••" />
-    <button class="go" id="lg_go">Log In</button>
-    <div class="note">Don't have a login yet? Contact HCPS at <a href="mailto:info@homecareproviderservices.us" style="color:var(--orange)">info@homecareproviderservices.us</a> to have an account and password assigned. <br><br><em>Dealer accounts &amp; custom pricing activate once the Supabase back end is connected (Phase 2).</em></div>
+    <div class="authtabs"><button class="authtab on" id="atab_signin" onclick="authTab('signin')">Sign in</button><button class="authtab" id="atab_register" onclick="authTab('register')">Register</button></div>
+    <div id="pane_signin">
+      <p>Access your assigned lines, your pricing, and order history.</p>
+      <label>Email</label><input id="si_email" type="email" placeholder="you@dealer.com" />
+      <label>Password</label><input id="si_pass" type="password" placeholder="••••••••" />
+      <button class="go" id="si_go">Sign in</button>
+      <div class="authmsg" id="si_msg"></div>
+      <div class="note"><a href="#" id="si_forgot" style="color:var(--orange)">Forgot your password?</a></div>
+    </div>
+    <div id="pane_register" style="display:none">
+      <p>Register with the email HCPS has on file for your account. Ordering activates once HCPS approves you.</p>
+      <label>Email (on file with HCPS)</label><input id="rg_email" type="email" placeholder="you@dealer.com" />
+      <label>Create a password</label><input id="rg_pass" type="password" placeholder="At least 8 characters" />
+      <button class="go" id="rg_go">Create account</button>
+      <div class="authmsg" id="rg_msg"></div>
+      <div class="note">Email not recognized? Ask your HCPS rep to add it to your account, then register.</div>
+    </div>
   </div>
 </div>
 
@@ -327,6 +352,7 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
 const CONFIG = {
   DATA_SOURCE: "json",                 // "json" | "supabase" — stays "json" until the catalog-migration slice
   ORDER_ENDPOINT: "/.netlify/functions/submit-order",  // Resend order email (netlify/functions/submit-order.js)
+  AUTH_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/dealer-auth", // dealer login backend (CORS-enabled)
   SUPABASE_URL: "https://ycqmztthwldytkzyvmiv.supabase.co",   // HCPS Supabase project
   SUPABASE_ANON: "sb_publishable_rO3Z6aJW_u6rx3TZdO3cww_b9pbvcFZ", // publishable/anon key — safe to embed (public by design)
 };
@@ -390,10 +416,15 @@ function fillMsrp(p){
   return p;
 }
 
-/* ---------- render tabs ---------- */
+/* ---------- render tabs (gated to the dealer's entitled lines) ---------- */
+function entitledManufacturers(){
+  if(AUTH.status!=='approved') return [];
+  const ent = AUTH.lines&&AUTH.lines.length ? state.manufacturers.filter(m=>AUTH.lines.includes(m.slug)) : state.manufacturers.filter(m=>m.hasData);
+  return ent;
+}
 function renderTabs(){
   const el=$("#tabs"); el.innerHTML="";
-  for (const m of state.manufacturers){
+  for (const m of entitledManufacturers()){
     const b=document.createElement("button");
     b.className="tab"+(m.slug===state.active?" active":"")+(m.hasData?"":" disabled");
     b.innerHTML = esc(m.name) + (m.hasData?"":`<span class="soon">soon</span>`);
@@ -1319,8 +1350,64 @@ function closeCart(){$("#drawer").classList.remove("open");$("#scrim").classList
 $("#cartBtn").onclick=openCart; $("#closeCart").onclick=closeCart; $("#scrim").onclick=()=>{closeCart();$("#loginModal").classList.remove("open");};
 $("#clearCart").onclick=()=>{CART.clear();updateCart();toast("Cart cleared");};
 $("#submitOrder").onclick=submitOrder;
-$("#loginBtn").onclick=()=>$("#loginModal").classList.add("open");
-$("#lg_go").onclick=()=>toast("Dealer login connects in Phase 2 (Supabase).");
+/* ---------- dealer auth (email + password · self-serve + HCPS approval) ---------- */
+const AUTH={session:null,status:'anon',dealer:null,lines:[]};
+const _sbURL=CONFIG.SUPABASE_URL,_anon=CONFIG.SUPABASE_ANON;
+function saveSession(s){AUTH.session=s;try{localStorage.setItem('hcps_session',JSON.stringify(s));}catch(e){}}
+function clearSession(){AUTH.session=null;try{localStorage.removeItem('hcps_session');}catch(e){}}
+function loadStoredSession(){try{return JSON.parse(localStorage.getItem('hcps_session')||'null');}catch(e){return null;}}
+function openLogin(tab){authTab(tab||'signin');$("#loginModal").classList.add("open");}
+function closeLogin(){$("#loginModal").classList.remove("open");}
+function authTab(t){const r=t==='register';$("#atab_signin").classList.toggle('on',!r);$("#atab_register").classList.toggle('on',r);
+  $("#pane_signin").style.display=r?'none':'';$("#pane_register").style.display=r?'':'none';}
+async function sbToken(email,password){
+  const r=await fetch(`${_sbURL}/auth/v1/token?grant_type=password`,{method:'POST',headers:{'content-type':'application/json',apikey:_anon},body:JSON.stringify({email,password})});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error_description||j.msg||j.error||'Sign-in failed');return j;}
+async function authMe(){
+  if(!AUTH.session||!AUTH.session.access_token){AUTH.status='anon';return;}
+  try{const r=await fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+AUTH.session.access_token},body:JSON.stringify({action:'me'})});
+    const j=await r.json().catch(()=>({}));AUTH.status=j.status||'anon';AUTH.dealer=j.dealer||null;AUTH.lines=(j.lines||[]).map(l=>l.slug);
+    if(AUTH.status==='approved'&&AUTH.dealer)state.dealer={business:AUTH.dealer.name,account:AUTH.dealer.hcps_account||'',...AUTH.dealer};else state.dealer=null;
+  }catch(e){AUTH.status='anon';}}
+async function doSignin(){const msg=$("#si_msg"),email=$("#si_email").value.trim(),pass=$("#si_pass").value;
+  if(!email||!pass){msg.textContent='Enter your email and password.';return;}msg.textContent='Signing in…';
+  try{const s=await sbToken(email,pass);saveSession(s);await authMe();
+    if(AUTH.status==='approved'){closeLogin();applyAuth();toast('Signed in ✓');}
+    else if(AUTH.status==='pending'){clearSession();msg.innerHTML='Your account is <b>pending HCPS approval</b>. You’ll be able to order once approved.';}
+    else{clearSession();msg.innerHTML='Signed in, but no dealer account is linked yet — contact HCPS.';}
+  }catch(e){msg.textContent=String(e.message||e);}}
+async function doRegister(){const msg=$("#rg_msg"),email=$("#rg_email").value.trim(),pass=$("#rg_pass").value;
+  if(!email||!pass){msg.textContent='Enter your email and a password.';return;}msg.textContent='Creating account…';
+  try{const r=await fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'register',email,password:pass})});
+    const j=await r.json().catch(()=>({}));msg.innerHTML=esc(j.message||(j.ok?'Registration received — pending approval.':'Could not register.'));
+  }catch(e){msg.textContent=String(e.message||e);}}
+async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg");if(!email){msg.textContent='Enter your email first, then click reset.';return;}
+  try{await fetch(`${_sbURL}/auth/v1/recover`,{method:'POST',headers:{'content-type':'application/json',apikey:_anon},body:JSON.stringify({email})});
+    msg.innerHTML='If that email has an account, a password-reset link is on its way.';}catch(e){msg.textContent='Could not send reset email.';}}
+function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];state.dealer=null;applyAuth();toast('Signed out');}
+function prefillDealer(){const d=AUTH.dealer||{},set=(id,v)=>{const el=$(id);if(el&&!el.value&&v)el.value=v;};
+  set('#f_biz',d.name);set('#f_acct',d.hcps_account);set('#f_contact',d.contact_name);set('#f_email',d.email);set('#f_phone',d.phone);set('#f_addr',d.address);set('#f_city',d.city);set('#f_state',d.state);set('#f_zip',d.zip);}
+function renderLocked(){$("#tabs").innerHTML="";
+  $("#content").innerHTML=`<div class="locked"><div class="lk-card"><div class="lk-eyebrow">HCPS Partner Portal</div>
+    <h2>Sign in to your Partner Portal</h2><p class="lk-tag">Innovative Products · Showroom Solutions · Simplified Ordering</p>
+    <div class="lk-actions"><button class="go" onclick="openLogin('signin')">Sign in</button><button class="ab2" onclick="openLogin('register')">Register</button></div>
+    <p class="lk-note">Product catalog and pricing are visible to approved HCPS partners only.</p></div></div>`;}
+function applyAuth(){
+  const signed=AUTH.status==='approved';
+  document.body.classList.toggle('guest',!signed);
+  $("#loginBtn").style.display=signed?'none':'';
+  $("#whoami").innerHTML=signed?`<span class="who">Hi, <b>${esc((AUTH.dealer&&AUTH.dealer.name)||'')}</b></span><button class="hbtn" id="outBtn">Sign out</button>`:'';
+  if(signed){const ob=$("#outBtn");if(ob)ob.onclick=signOut;prefillDealer();}
+  if(!signed){renderLocked();return;}
+  renderTabs();
+  const list=entitledManufacturers();
+  if(list.length)selectManufacturer(list[0].slug);
+  else $("#content").innerHTML=`<div class="empty"><h3>No lines enabled yet</h3><p>Your account is approved, but no manufacturer lines are turned on. Contact HCPS to enable your lines.</p></div>`;}
+$("#loginBtn").onclick=()=>openLogin('signin');
+$("#si_go").onclick=doSignin;$("#rg_go").onclick=doRegister;
+$("#si_forgot").onclick=(e)=>{e.preventDefault();doForgot();};
+$("#si_pass").addEventListener('keydown',e=>{if(e.key==='Enter')doSignin();});
+$("#rg_pass").addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
 
 /* ---------- image lightbox ---------- */
 const lightbox=$("#lightbox"), lbImg=$("#lbImg"), lbCap=$("#lbCap");
@@ -1341,8 +1428,9 @@ $("#brandFilter").addEventListener("change",renderProducts);
 (async function init(){
   try{
     await loadManufacturers();
-    const first=state.manufacturers.find(m=>m.hasData)||state.manufacturers[0];
-    await selectManufacturer(first.slug);
+    AUTH.session=loadStoredSession();
+    await authMe();          // restore any signed-in dealer
+    applyAuth();             // gate: locked landing for guests, entitled lines for approved dealers
     updateCart();
   }catch(e){console.error(e);$("#content").innerHTML=`<div class="empty"><h3>Could not load data</h3><p>Confirm data/manufacturers.json is deployed.</p></div>`;}
 })();
