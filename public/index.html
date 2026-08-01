@@ -155,6 +155,9 @@ body.guest #loginBtn,body.guest #cartBtn{display:none;}
 .logincard .go{width:100%;margin-top:16px;background:#2B4071;color:#fff;border:none;border-radius:9px;padding:13px;font-weight:800;font-family:'Barlow Condensed',sans-serif;font-size:16px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;}
 .logincard .go:hover{background:#3B599A;}
 .logincard .note{font-size:12px;color:var(--gray);margin-top:12px;line-height:1.5;}
+.logincard .rg2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.logincard .rg3{display:grid;grid-template-columns:1.4fr .8fr 1fr;gap:10px;}
+.logincard .rg2 input,.logincard .rg3 input{width:100%;}
 
 /* PERSONALIZED HOME DASHBOARD */
 body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
@@ -1575,9 +1578,15 @@ async function doSignin(){const msg=$("#si_msg"),email=$("#si_email").value.trim
     else if(AUTH.status==='pending'){clearSession();msg.innerHTML='Your account is <b>pending HCPS approval</b>. You’ll be able to order once approved.';}
     else{clearSession();msg.innerHTML='Signed in, but no dealer account is linked yet — contact HCPS.';}
   }catch(e){msg.textContent=String(e.message||e);}}
-async function doRegister(){const msg=$("#rg_msg"),email=$("#rg_email").value.trim(),pass=$("#rg_pass").value;
-  if(!email||!pass){msg.textContent='Enter your email and a password.';return;}msg.textContent='Creating account…';
-  try{const r=await fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'register',email,password:pass})});
+async function doRegister(){const msg=$("#rg_msg"),g=id=>($(id)?.value||"").trim();
+  const email=g("#rg_email"),pass=$("#rg_pass").value,company=g("#rg_company");
+  if(!company){msg.textContent='Enter your company / business name.';return;}
+  if(!email||!pass){msg.textContent='Enter your email and a password.';return;}
+  if(pass.length<8){msg.textContent='Password must be at least 8 characters.';return;}
+  msg.textContent='Creating account…';
+  const body={action:'register',email,password:pass,company,
+    contact:g("#rg_contact"),phone:g("#rg_phone"),address:g("#rg_addr"),city:g("#rg_city"),state:g("#rg_state"),zip:g("#rg_zip")};
+  try{const r=await fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json().catch(()=>({}));msg.innerHTML=esc(j.message||(j.ok?'Registration received — pending approval.':'Could not register.'));
   }catch(e){msg.textContent=String(e.message||e);}}
 async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg");if(!email){msg.textContent='Enter your email first, then click reset.';return;}
@@ -1601,12 +1610,16 @@ function renderLocked(){$("#tabs").innerHTML="";
         <div class="note"><a href="#" onclick="event.preventDefault();doForgot()" style="color:var(--orange);font-weight:700">Forgot your password?</a></div>
       </div>
       <div id="pane_register" style="display:none">
-        <p style="font-size:12.5px;color:#4b5563;line-height:1.5;margin-bottom:4px">Register with the email HCPS has on file for your account. Ordering activates once HCPS approves you.</p>
-        <label>Email (on file with HCPS)</label><input id="rg_email" type="email" placeholder="you@dealer.com" autocomplete="username" />
+        <p style="font-size:12.5px;color:#4b5563;line-height:1.5;margin-bottom:4px">Register for the HCPS Partner Portal. Tell us your business so HCPS can match your account — ordering activates once HCPS approves you.</p>
+        <label>Company / business name</label><input id="rg_company" type="text" placeholder="Your dealership or business" autocomplete="organization" />
+        <div class="rg2"><div><label>Contact name</label><input id="rg_contact" type="text" placeholder="Full name" autocomplete="name" /></div><div><label>Phone</label><input id="rg_phone" type="tel" placeholder="(555) 555-5555" autocomplete="tel" /></div></div>
+        <label>Address</label><input id="rg_addr" type="text" placeholder="Street address" autocomplete="street-address" />
+        <div class="rg3"><div><label>City</label><input id="rg_city" type="text" autocomplete="address-level2" /></div><div><label>State</label><input id="rg_state" type="text" placeholder="TX" autocomplete="address-level1" /></div><div><label>ZIP</label><input id="rg_zip" type="text" autocomplete="postal-code" /></div></div>
+        <label>Email</label><input id="rg_email" type="email" placeholder="you@dealer.com" autocomplete="username" />
         <label>Create a password</label><input id="rg_pass" type="password" placeholder="At least 8 characters" autocomplete="new-password" />
         <button class="go" onclick="doRegister()">Create account</button>
         <div class="authmsg" id="rg_msg"></div>
-        <div class="note">Email not recognized? Ask your HCPS rep to add it to your account, then register.</div>
+        <div class="note">HCPS reviews every registration and links it to your dealer account before ordering is enabled.</div>
       </div>
     </div></div>`;
   const p1=$("#si_pass"); if(p1)p1.addEventListener('keydown',e=>{if(e.key==='Enter')doSignin();});
