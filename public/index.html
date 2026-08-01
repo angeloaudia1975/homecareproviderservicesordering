@@ -141,14 +141,20 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
 .authtab.on{color:#3B599A;border-bottom-color:#3B599A;}
 .authmsg{font-size:12.5px;margin-top:10px;color:#4b5563;min-height:16px;line-height:1.5;}
 body.guest .mbanner,body.guest .controls,body.guest #a4uBuilder,body.guest #swBuilder,body.guest #tabs{display:none;}
-.locked{display:flex;justify-content:center;padding:40px 16px;}
-.lk-card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);max-width:560px;width:100%;text-align:center;padding:44px 34px;}
-.lk-eyebrow{font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#F5821F;margin-bottom:10px;}
-.lk-card h2{font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:800;color:#3B599A;line-height:1.05;}
-.lk-tag{color:var(--gray);font-size:13px;margin-top:8px;font-weight:600;}
-.lk-actions{display:flex;gap:12px;justify-content:center;margin:22px 0 6px;}
-.lk-actions .go{background:#3B599A;}.lk-actions .ab2{background:#fff;color:#3B599A;border:1.5px solid #3B599A;border-radius:9px;padding:11px 22px;font-weight:800;font-family:'Barlow Condensed',sans-serif;font-size:15px;text-transform:uppercase;cursor:pointer;}
-.lk-note{font-size:12px;color:var(--gray);margin-top:14px;}
+/* Logged-out portal = clean login on a solid dark-blue screen; hide the redundant header Sign in + Cart */
+body.guest{background:#2B4071;}
+body.guest main.wrap{max-width:none;margin:0;padding:0;}
+body.guest #loginBtn,body.guest #cartBtn{display:none;}
+.loginhero{min-height:calc(100vh - 62px);background:linear-gradient(165deg,#3B599A 0%,#2B4071 55%,#22335c 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 18px;}
+.lh-eyebrow{font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#F5821F;margin-bottom:8px;text-align:center;}
+.lh-h{font-family:'Barlow Condensed',sans-serif;font-size:clamp(30px,5vw,42px);font-weight:800;color:#fff;line-height:1.02;text-align:center;}
+.lh-tag{color:#c3d0e6;font-size:12.5px;margin-top:8px;font-weight:600;text-align:center;letter-spacing:.3px;}
+.logincard{background:#fff;border-radius:16px;box-shadow:0 26px 70px rgba(0,0,0,.35);max-width:420px;width:100%;padding:28px 28px 26px;margin-top:24px;}
+.logincard label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#41525f;margin:12px 0 5px;}
+.logincard input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit;}
+.logincard .go{width:100%;margin-top:16px;background:#2B4071;color:#fff;border:none;border-radius:9px;padding:13px;font-weight:800;font-family:'Barlow Condensed',sans-serif;font-size:16px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;}
+.logincard .go:hover{background:#3B599A;}
+.logincard .note{font-size:12px;color:var(--gray);margin-top:12px;line-height:1.5;}
 
 /* PERSONALIZED HOME DASHBOARD */
 body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
@@ -187,6 +193,16 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .dcard .muted2{font-size:12.5px;color:var(--gray);line-height:1.6;}
 .dcard .bigbtn{margin-top:12px;display:inline-block;background:var(--orange);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-weight:800;font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;}
 .dcard .bigbtn:hover{background:var(--orange-d);}
+.ordlist{display:flex;flex-direction:column;}
+.ordrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #f0eee9;}
+.ordrow:first-child{border-top:none;}
+.ordrow .ordmain{flex:1;min-width:0;}
+.ordrow .ordtop{display:flex;align-items:center;gap:8px;font-size:13.5px;}
+.ordrow .ordtop b{color:var(--navy);}
+.ordrow .ordstat{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:7px;}
+.ordrow .ordsub{font-size:12px;color:var(--gray);margin-top:2px;}
+.ordrow .reord{background:#fff;border:1.5px solid var(--navy);color:var(--navy);border-radius:8px;padding:7px 14px;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;white-space:nowrap;}
+.ordrow .reord:hover{background:var(--navy);color:#fff;}
 
 /* LOGIN MODAL */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;padding:20px;}
@@ -351,28 +367,6 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 </aside>
 
 <!-- LOGIN / REGISTER -->
-<div class="modal" id="loginModal">
-  <div class="mcard">
-    <div class="authtabs"><button class="authtab on" id="atab_signin" onclick="authTab('signin')">Sign in</button><button class="authtab" id="atab_register" onclick="authTab('register')">Register</button></div>
-    <div id="pane_signin">
-      <p>Access your assigned lines, your pricing, and order history.</p>
-      <label>Email</label><input id="si_email" type="email" placeholder="you@dealer.com" />
-      <label>Password</label><input id="si_pass" type="password" placeholder="••••••••" />
-      <button class="go" id="si_go">Sign in</button>
-      <div class="authmsg" id="si_msg"></div>
-      <div class="note"><a href="#" id="si_forgot" style="color:var(--orange)">Forgot your password?</a></div>
-    </div>
-    <div id="pane_register" style="display:none">
-      <p>Register with the email HCPS has on file for your account. Ordering activates once HCPS approves you.</p>
-      <label>Email (on file with HCPS)</label><input id="rg_email" type="email" placeholder="you@dealer.com" />
-      <label>Create a password</label><input id="rg_pass" type="password" placeholder="At least 8 characters" />
-      <button class="go" id="rg_go">Create account</button>
-      <div class="authmsg" id="rg_msg"></div>
-      <div class="note">Email not recognized? Ask your HCPS rep to add it to your account, then register.</div>
-    </div>
-  </div>
-</div>
-
 <!-- IMAGE LIGHTBOX -->
 <div class="lightbox" id="lightbox">
   <button class="lbx" id="lbClose">✕ Close</button>
@@ -391,6 +385,7 @@ const CONFIG = {
   DATA_SOURCE: "json",                 // "json" | "supabase" — stays "json" until the catalog-migration slice
   ORDER_ENDPOINT: "/.netlify/functions/submit-order",  // Resend order email (netlify/functions/submit-order.js)
   AUTH_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/dealer-auth", // dealer login backend (CORS-enabled)
+  ORDERS_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/orders-api", // saves order history + reorder (CORS-enabled)
   SUPABASE_URL: "https://ycqmztthwldytkzyvmiv.supabase.co",   // HCPS Supabase project
   SUPABASE_ANON: "sb_publishable_rO3Z6aJW_u6rx3TZdO3cww_b9pbvcFZ", // publishable/anon key — safe to embed (public by design)
 };
@@ -398,7 +393,7 @@ const CONFIG = {
 const state = { manufacturers: [], active: null, products: [], dealer: null };
 const CART = new Map();                // key: mfr::code -> {p, qty}
 const HOME = "__home__";               // sentinel slug for the personalized dashboard
-const DASH = { featured: null, lineCache: {} };   // featured rows + per-line product cache
+const DASH = { featured: null, lineCache: {}, orders: null };   // featured rows + per-line product cache + order history
 
 const $ = s => document.querySelector(s);
 const money = n => new Intl.NumberFormat(undefined,{style:"currency",currency:"USD"}).format(Number(n||0));
@@ -518,6 +513,43 @@ async function loadLine(slug){
   }catch(e){ prods=[]; }
   DASH.lineCache[slug]=prods; return prods;
 }
+// Fetch this dealer's saved order history (cached per session; invalidated on submit).
+async function loadOrders(){
+  if(DASH.orders) return DASH.orders;
+  if(!AUTH.session||!AUTH.session.access_token){ DASH.orders=[]; return DASH.orders; }
+  try{
+    const r=await fetch(CONFIG.ORDERS_ENDPOINT,{method:"POST",
+      headers:{"Content-Type":"application/json",authorization:"Bearer "+AUTH.session.access_token},
+      body:JSON.stringify({action:"list"})});
+    const j=await r.json().catch(()=>({})); DASH.orders=Array.isArray(j.orders)?j.orders:[];
+  }catch(e){ DASH.orders=[]; }
+  return DASH.orders;
+}
+// One-click reorder: jump to the order's line and load its items back into the cart.
+async function reorder(orderId){
+  const o=(DASH.orders||[]).find(x=>x.id===orderId); if(!o){toast("Order not found");return;}
+  const slug=o.manufacturer;
+  if(!slug || !state.manufacturers.some(m=>m.slug===slug&&m.hasData)){toast("That line isn't available to reorder right now");return;}
+  await selectManufacturer(slug);   // loads state.products for the line + leaves the home view
+  let added=0, missing=0;
+  for(const it of (o.items||[])){
+    const p=state.products.find(x=>x.code===it.code);
+    if(p){ const k=cartKey(p); const cur=CART.get(k); CART.set(k,{p,qty:(cur?cur.qty:0)+(Math.max(1,Math.round(Number(it.qty))||1))}); added++; }
+    else missing++;
+  }
+  updateCart();
+  if(added){ openCart(); toast(`Reordered ${added} item${added===1?"":"s"}${missing?` · ${missing} no longer in catalog`:""} — review your cart`); }
+  else toast("Those items are no longer in the catalog");
+}
+function orderCardHtml(o){
+  const name=(state.manufacturers.find(m=>m.slug===o.manufacturer)||{}).name || o.manufacturer || "Order";
+  const dt=o.submitted_at? new Date(o.submitted_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
+  const st=(o.status||"submitted"); const stColor= st==="placed"?"#1A7A4A":st==="reviewed"?"#2B4071":st==="cancelled"?"#B91C1C":"#F5821F";
+  return `<div class="ordrow">
+    <div class="ordmain"><div class="ordtop"><b>${esc(name)}</b><span class="ordstat" style="background:${stColor}1a;color:${stColor}">${esc(st)}</span></div>
+      <div class="ordsub">${dt}${o.po?` · PO ${esc(o.po)}`:""} · ${o.items_count} item${o.items_count===1?"":"s"} · ${money(o.subtotal)}</div></div>
+    <button class="reord" onclick="reorder('${esc(o.id)}')">Reorder</button></div>`;
+}
 async function renderHome(){
   const d=AUTH.dealer||{}, biz=d.name||"there";
   const lines=entitledManufacturers();
@@ -553,6 +585,10 @@ async function renderHome(){
      <div class="go2">Open catalog →</div></div>`).join("");
 
   const featSec = feat.length ? `<div class="dsec"><div class="sh"><h2>⭐ Featured for you</h2></div><div class="featstrip">${fcards}</div></div>` : "";
+  const orders = await loadOrders();
+  const ordersHtml = orders.length
+    ? `<div class="ordlist">${orders.slice(0,6).map(orderCardHtml).join("")}</div>`
+    : `<p class="muted2">Your submitted orders will appear here so you can reorder in one click. Place an order from any line to get started.</p>${lines.length?`<button class="bigbtn" onclick="selectManufacturer('${esc(lines[0].slug)}')">Start an order</button>`:""}`;
   $("#content").innerHTML=`<div class="dash">
     <div class="dsec"><div class="sh"><h2>Your Lines</h2></div>
       ${lines.length?`<div class="lines">${lncards}</div>`:`<p class="dcard muted2">No manufacturer lines are enabled on your account yet. Contact HCPS to turn on your lines.</p>`}</div>
@@ -565,10 +601,7 @@ async function renderHome(){
         <div class="kv"><span class="k">Email</span><span class="v">${esc(d.email||"—")}</span></div>
         ${d.city||d.state?`<div class="kv"><span class="k">Location</span><span class="v">${esc([d.city,d.state].filter(Boolean).join(", "))}</span></div>`:""}
       </div>
-      <div class="dcard"><h3>Recent Orders</h3>
-        <p class="muted2">Your submitted orders will appear here so you can reorder in one click. Place an order from any line to get started.</p>
-        ${lines.length?`<button class="bigbtn" onclick="selectManufacturer('${esc(lines[0].slug)}')">Start an order</button>`:""}
-      </div>
+      <div class="dcard"><h3>Recent Orders</h3>${ordersHtml}</div>
     </div>
   </div>`;
 }
@@ -867,6 +900,14 @@ async function submitOrder(){
     } else {
       console.log("ORDERS (no endpoint wired yet):",payload);
       await new Promise(r=>setTimeout(r,500));
+    }
+    // Record the order for the dashboard's history + reorder (best-effort; never blocks).
+    if(AUTH.status==='approved' && AUTH.session && AUTH.session.access_token){
+      try{ await fetch(CONFIG.ORDERS_ENDPOINT,{method:"POST",
+        headers:{"Content-Type":"application/json",authorization:"Bearer "+AUTH.session.access_token},
+        body:JSON.stringify({action:"create",orders,dealer})});
+        DASH.orders=null;   // invalidate cache so the dashboard refetches
+      }catch(e){}
     }
     toast(`Submitted ${orders.length} order${orders.length===1?"":"s"} to HCPS ✓`);
     CART.clear(); for(const k in MFR) delete MFR[k]; updateCart(); closeCart();
@@ -1505,7 +1546,7 @@ function openCart(){$("#drawer").classList.add("open");$("#scrim").classList.add
 function closeCart(){$("#drawer").classList.remove("open");$("#scrim").classList.remove("open");}
 
 /* ---------- init ---------- */
-$("#cartBtn").onclick=openCart; $("#closeCart").onclick=closeCart; $("#scrim").onclick=()=>{closeCart();$("#loginModal").classList.remove("open");};
+$("#cartBtn").onclick=openCart; $("#closeCart").onclick=closeCart; $("#scrim").onclick=()=>{closeCart();};
 $("#clearCart").onclick=()=>{CART.clear();updateCart();toast("Cart cleared");};
 $("#submitOrder").onclick=submitOrder;
 /* ---------- dealer auth (email + password · self-serve + HCPS approval) ---------- */
@@ -1514,8 +1555,8 @@ const _sbURL=CONFIG.SUPABASE_URL,_anon=CONFIG.SUPABASE_ANON;
 function saveSession(s){AUTH.session=s;try{localStorage.setItem('hcps_session',JSON.stringify(s));}catch(e){}}
 function clearSession(){AUTH.session=null;try{localStorage.removeItem('hcps_session');}catch(e){}}
 function loadStoredSession(){try{return JSON.parse(localStorage.getItem('hcps_session')||'null');}catch(e){return null;}}
-function openLogin(tab){authTab(tab||'signin');$("#loginModal").classList.add("open");}
-function closeLogin(){$("#loginModal").classList.remove("open");}
+function openLogin(tab){renderLocked();authTab(tab||'signin');}
+function closeLogin(){/* login form is inline on the locked screen; nothing to close */}
 function authTab(t){const r=t==='register';$("#atab_signin").classList.toggle('on',!r);$("#atab_register").classList.toggle('on',r);
   $("#pane_signin").style.display=r?'none':'';$("#pane_register").style.display=r?'':'none';}
 async function sbToken(email,password){
@@ -1546,10 +1587,31 @@ function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines
 function prefillDealer(){const d=AUTH.dealer||{},set=(id,v)=>{const el=$(id);if(el&&!el.value&&v)el.value=v;};
   set('#f_biz',d.name);set('#f_acct',d.hcps_account);set('#f_contact',d.contact_name);set('#f_email',d.email);set('#f_phone',d.phone);set('#f_addr',d.address);set('#f_city',d.city);set('#f_state',d.state);set('#f_zip',d.zip);}
 function renderLocked(){$("#tabs").innerHTML="";
-  $("#content").innerHTML=`<div class="locked"><div class="lk-card"><div class="lk-eyebrow">HCPS Partner Portal</div>
-    <h2>Sign in to your Partner Portal</h2><p class="lk-tag">Innovative Products · Showroom Solutions · Simplified Ordering</p>
-    <div class="lk-actions"><button class="go" onclick="openLogin('signin')">Sign in</button><button class="ab2" onclick="openLogin('register')">Register</button></div>
-    <p class="lk-note">Product catalog and pricing are visible to approved HCPS partners only.</p></div></div>`;}
+  $("#content").innerHTML=`<div class="loginhero">
+    <div class="lh-eyebrow">HCPS Partner Portal</div>
+    <h2 class="lh-h">Sign in to your Partner Portal</h2>
+    <p class="lh-tag">Innovative Products · Showroom Solutions · Simplified Ordering</p>
+    <div class="logincard">
+      <div class="authtabs"><button class="authtab on" id="atab_signin" onclick="authTab('signin')">Sign in</button><button class="authtab" id="atab_register" onclick="authTab('register')">Register</button></div>
+      <div id="pane_signin">
+        <label>Email</label><input id="si_email" type="email" placeholder="you@dealer.com" autocomplete="username" />
+        <label>Password</label><input id="si_pass" type="password" placeholder="••••••••" autocomplete="current-password" />
+        <button class="go" onclick="doSignin()">Sign in</button>
+        <div class="authmsg" id="si_msg"></div>
+        <div class="note"><a href="#" onclick="event.preventDefault();doForgot()" style="color:var(--orange);font-weight:700">Forgot your password?</a></div>
+      </div>
+      <div id="pane_register" style="display:none">
+        <p style="font-size:12.5px;color:#4b5563;line-height:1.5;margin-bottom:4px">Register with the email HCPS has on file for your account. Ordering activates once HCPS approves you.</p>
+        <label>Email (on file with HCPS)</label><input id="rg_email" type="email" placeholder="you@dealer.com" autocomplete="username" />
+        <label>Create a password</label><input id="rg_pass" type="password" placeholder="At least 8 characters" autocomplete="new-password" />
+        <button class="go" onclick="doRegister()">Create account</button>
+        <div class="authmsg" id="rg_msg"></div>
+        <div class="note">Email not recognized? Ask your HCPS rep to add it to your account, then register.</div>
+      </div>
+    </div></div>`;
+  const p1=$("#si_pass"); if(p1)p1.addEventListener('keydown',e=>{if(e.key==='Enter')doSignin();});
+  const p2=$("#rg_pass"); if(p2)p2.addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
+}
 function applyAuth(){
   const signed=AUTH.status==='approved';
   document.body.classList.toggle('guest',!signed);
@@ -1560,10 +1622,8 @@ function applyAuth(){
   // Signed-in dealers land on their personalized home dashboard.
   selectManufacturer(HOME);}
 $("#loginBtn").onclick=()=>openLogin('signin');
-$("#si_go").onclick=doSignin;$("#rg_go").onclick=doRegister;
-$("#si_forgot").onclick=(e)=>{e.preventDefault();doForgot();};
-$("#si_pass").addEventListener('keydown',e=>{if(e.key==='Enter')doSignin();});
-$("#rg_pass").addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
+/* Sign-in / Register controls are rendered inline by renderLocked() with their own
+   inline handlers, so no load-time binding is needed here. */
 
 /* ---------- image lightbox ---------- */
 const lightbox=$("#lightbox"), lbImg=$("#lbImg"), lbCap=$("#lbCap");
