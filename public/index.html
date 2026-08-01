@@ -133,6 +133,7 @@ header{background:var(--navy);position:sticky;top:0;z-index:60;box-shadow:0 2px 
 .mgtot .r{display:flex;justify-content:space-between;font-size:12.5px;color:#4b5563;}
 .mgtot .r.tot{font-weight:800;color:var(--navy);font-size:14px;border-top:1px solid var(--line);padding-top:5px;margin-top:2px;}
 .msrp{font-size:11px;color:var(--gray);text-decoration:line-through;}
+.msrp .sugg{text-decoration:none;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#b8791a;background:#fff4e0;border-radius:5px;padding:1px 5px;margin-left:3px;}
 
 /* LOGIN MODAL */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:90;padding:20px;}
@@ -366,7 +367,7 @@ function priceHtml(p){
   if (!state.dealer && p.base_price==null) return `<span class="price locked">Log in for pricing</span>`;
   if (p.base_price==null) return `<span class="price locked">Call for pricing</span>`;
   const [d,c]=Number(p.base_price).toFixed(2).split(".");
-  const msrp = (p.msrp!=null && Number(p.msrp)>Number(p.base_price)) ? `<div class="msrp">MSRP ${money(p.msrp)}</div>` : "";
+  const msrp = (p.msrp!=null && Number(p.msrp)>Number(p.base_price)) ? `<div class="msrp">MSRP ${money(p.msrp)}${p._msrp_suggested?' <span class="sugg">suggested</span>':''}</div>` : "";
   return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>${msrp}${p.price_note?`<div class="pnote">${esc(p.price_note)}</div>`:""}</div>`;
 }
 
@@ -379,7 +380,14 @@ async function loadProducts(slug){
   const mfr = state.manufacturers.find(m=>m.slug===slug);
   if (!mfr || !mfr.hasData){ state.products=[]; return; }
   const r = await fetch(`./data/${slug}.json`,{cache:"no-store"});
-  state.products = await r.json();
+  state.products = (await r.json()).map(fillMsrp);
+}
+// If a product has no MSRP, suggest one at 2× the dealer price so dealers always have a
+// selling point (marked "suggested"). Never overrides a manufacturer-provided MSRP.
+function fillMsrp(p){
+  const base=Number(p.base_price);
+  if((p.msrp==null||p.msrp==="") && base>0){ p.msrp=Math.round(base*2*100)/100; p._msrp_suggested=true; }
+  return p;
 }
 
 /* ---------- render tabs ---------- */
