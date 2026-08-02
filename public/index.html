@@ -116,7 +116,10 @@ header{background:#fff;position:sticky;top:0;z-index:60;box-shadow:0 2px 14px rg
 .dhead h2{font-family:'Barlow Condensed',sans-serif;font-size:20px;}
 .dhead .x{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-weight:700;}
 .dbody{flex:1;overflow:auto;padding:14px 16px;}
-.citem{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:10px;}
+.citem{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;display:grid;grid-template-columns:54px 1fr auto;gap:10px;align-items:start;}
+.cthumb{width:54px;height:54px;border-radius:8px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+.cthumb img{max-width:100%;max-height:100%;object-fit:contain;}
+.cthumb .ph{font-size:8.5px;color:var(--gray);text-align:center;line-height:1.1;padding:2px;}
 .citem .t{font-weight:700;font-size:13px;}
 .citem .s{color:var(--gray);font-size:11.5px;}
 .citem .volnote{color:#1c7a44;font-weight:600;}
@@ -127,6 +130,9 @@ header{background:#fff;position:sticky;top:0;z-index:60;box-shadow:0 2px 14px rg
 .oform h3{font-family:'Barlow Condensed',sans-serif;font-size:16px;}
 .oform .two{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
 .oform input,.oform textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;}
+.shiptorow{display:grid;gap:4px;}
+.shiptorow label{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--gray);font-weight:700;}
+.oform select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;background:#fff;}
 .dfoot{border-top:1px solid var(--line);padding:12px 16px;display:grid;gap:8px;}
 .sumrow{display:flex;justify-content:space-between;font-size:14px;}
 .sumrow b{font-family:'Barlow Condensed',sans-serif;font-size:18px;}
@@ -402,6 +408,7 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
   <div class="dbody">
     <div class="oform">
       <h3>Dealer Information</h3>
+      <div class="shiptorow" id="shiptoRow" style="display:none"><label for="f_shipto">Ship to location</label><select id="f_shipto"></select></div>
       <div class="two"><input id="f_biz" placeholder="Dealer / Business Name" /><input id="f_acct" placeholder="HCPS Account # (optional)" /></div>
       <div class="two"><input id="f_contact" placeholder="Contact Name" /><input id="f_email" placeholder="Email" type="email" /></div>
       <div class="two"><input id="f_phone" placeholder="Phone" /><input id="f_addr" placeholder="Shipping Address" /></div>
@@ -956,7 +963,11 @@ function renderCart(){
       const fam=familyQty(p);
       const volNote=(Array.isArray(p.tiers)&&p.tiers.length>1&&p.group&&fam>1&&u<Number(p.base_price||0)-0.005)
         ? `<div class="s volnote">Volume tier — ${fam} of “${esc((p.group.split("::")[1]||p.name))}” across sizes</div>` : "";
+      const cimg=p.image
+        ? `<div class="cthumb"><img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>No image</span>'"></div>`
+        : `<div class="cthumb"><span class="ph">No image</span></div>`;
       return `<div class="citem" data-k="${esc(cartKey(p))}">
+        ${cimg}
         <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)}${p.brand?" · "+esc(p.brand):""}</div>
         <div class="s">Unit ${u?money(u):"—"} · Line ${u?money(u*qty):"—"}</div>${volNote}</div>
         <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
@@ -1004,7 +1015,8 @@ async function submitOrder(){
   const dealer={
     business:$("#f_biz").value.trim(), account:$("#f_acct").value.trim()||(state.dealer?state.dealer.account:""),
     contact:$("#f_contact").value.trim(), email:$("#f_email").value.trim(), phone:$("#f_phone").value.trim(),
-    address:$("#f_addr").value.trim(), city:$("#f_city").value.trim(), state:$("#f_state").value.trim(), zip:$("#f_zip").value.trim()
+    address:$("#f_addr").value.trim(), city:$("#f_city").value.trim(), state:$("#f_state").value.trim(), zip:$("#f_zip").value.trim(),
+    ship_to_label:SHIPTO_LABEL||""
   };
   if(!dealer.business||!dealer.contact||!dealer.email){toast("Please fill business, contact, and email");return;}
   const groups=groupCart();
@@ -1680,7 +1692,26 @@ async function selectManufacturer(slug){
   renderBanner(); renderProducts(); renderA4U(); renderSW();
   window.scrollTo({top:0,behavior:"smooth"});
 }
-function openCart(){$("#drawer").classList.add("open");$("#scrim").classList.add("open");}
+let SHIPTO_LABEL="";
+function fmtShipAddr(a){return [a.address,[a.city,a.state].filter(Boolean).join(", "),a.zip].filter(Boolean).join(" · ");}
+function shipAddrList(){const d=AUTH.dealer||{},list=[],seen=new Set();
+  const push=(a,lbl)=>{if(!a||(!a.address&&!a.city))return;const key=[a.address,a.city,a.state,a.zip].join('|').toLowerCase();if(seen.has(key))return;seen.add(key);list.push({address:a.address||"",city:a.city||"",state:a.state||"",zip:a.zip||"",label:a.label||lbl||""});};
+  (d.addresses||[]).forEach(a=>push(a,a.label));
+  push(d.shipping,"Shipping");
+  if(!list.length) push({address:d.address,city:d.city,state:d.state,zip:d.zip},"On file");
+  return list;}
+function populateShipTo(){
+  const sel=$("#f_shipto"),row=$("#shiptoRow");if(!sel||!row)return;
+  const list=shipAddrList();
+  if(AUTH.status!=='approved'||!list.length){row.style.display='none';return;}
+  row.style.display='';
+  sel.innerHTML=list.map((a,i)=>`<option value="${i}">${esc((a.label?a.label+" — ":"")+fmtShipAddr(a))}</option>`).join("")+`<option value="other">✏️ Ship to a different address…</option>`;
+  const apply=v=>{ if(v==='other'){SHIPTO_LABEL="Other address";["f_addr","f_city","f_state","f_zip"].forEach(id=>{const el=$('#'+id);if(el)el.readOnly=false;});$("#f_addr").focus();return;}
+    const a=list[+v]||{};$("#f_addr").value=a.address||"";$("#f_city").value=a.city||"";$("#f_state").value=a.state||"";$("#f_zip").value=a.zip||"";SHIPTO_LABEL=a.label||"Selected location";};
+  sel.onchange=()=>apply(sel.value);
+  if(!sel.dataset.init){sel.dataset.init="1";apply("0");}
+}
+function openCart(){populateShipTo();$("#drawer").classList.add("open");$("#scrim").classList.add("open");}
 function closeCart(){$("#drawer").classList.remove("open");$("#scrim").classList.remove("open");}
 
 /* ---------- init ---------- */
