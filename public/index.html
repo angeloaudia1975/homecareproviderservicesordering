@@ -1007,6 +1007,7 @@ function updateCart(){
   $("#cartCount").textContent=`(${cartCount()})`;
   $("#itemsTotal").textContent=cartCount();
   $("#grandTotal").textContent=money(grandTotal());
+  scheduleCartSave();   // persist to the server so it survives logout/login (and admin can see it)
 }
 
 /* ---------- submit (one order per manufacturer) ---------- */
@@ -1060,7 +1061,7 @@ async function submitOrder(){
       }catch(e){}
     }
     toast(`Submitted ${orders.length} order${orders.length===1?"":"s"} to HCPS ✓`);
-    CART.clear(); for(const k in MFR) delete MFR[k]; updateCart(); closeCart();
+    CART.clear(); for(const k in MFR) delete MFR[k]; clearCartRemote(); updateCart(); closeCart();
   }catch(e){console.error(e);toast("Could not submit — please try again.");}
   finally{btn.disabled=false;btn.textContent="Submit Order to HCPS";}
 }
@@ -1755,7 +1756,30 @@ async function authMe(){
     AUTH.lines=AUTH.lineObjs.map(l=>l.slug);
     AUTH.acctBySlug=Object.fromEntries(AUTH.lineObjs.map(l=>[l.slug,(l.account||'').trim()]));
     if(AUTH.status==='approved'&&AUTH.dealer)state.dealer={business:AUTH.dealer.name,account:AUTH.dealer.hcps_account||'',...AUTH.dealer};else state.dealer=null;
+    if(AUTH.status==='approved'&&j.cart) hydrateCart(j.cart);   // restore the dealer's saved cart
   }catch(e){AUTH.status='anon';}}
+// Rebuild CART + per-manufacturer fields from a server-saved cart (survives logout/login).
+function hydrateCart(saved){
+  if(!saved||!Array.isArray(saved.items))return;
+  CART.clear();
+  for(const it of saved.items){ if(it&&it.p&&it.p.code&&it.p.manufacturer&&Number(it.qty)>0) CART.set(cartKey(it.p),{p:it.p,qty:Number(it.qty)}); }
+  for(const k in MFR) delete MFR[k];
+  if(saved.mfr&&typeof saved.mfr==="object") Object.assign(MFR,saved.mfr);
+}
+/* ---- persistent cart + login activity (server-backed, so the admin can see open carts) ---- */
+let _cartSaveT=null, SESSION_ID=null, _hbT=null;
+function scheduleCartSave(){ if(AUTH.status!=='approved'||!AUTH.session)return; clearTimeout(_cartSaveT); _cartSaveT=setTimeout(saveCartRemote,700); }
+async function authPost(body){ await ensureFreshSession();
+  return fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+(AUTH.session&&AUTH.session.access_token||'')},body:JSON.stringify(body)}); }
+async function saveCartRemote(){ if(AUTH.status!=='approved'||!AUTH.session||!AUTH.session.access_token)return;
+  try{ const items=[...CART.values()].map(({p,qty})=>({p,qty})); await authPost({action:'save_cart',cart:{items,mfr:MFR}}); }catch(e){} }
+async function clearCartRemote(){ if(!AUTH.session||!AUTH.session.access_token)return; try{ await authPost({action:'clear_cart'}); }catch(e){} }
+async function sessionStart(){ if(AUTH.status!=='approved'||!AUTH.session||!AUTH.session.access_token||SESSION_ID)return;
+  try{ const r=await authPost({action:'session_start',ua:(navigator&&navigator.userAgent)||''}); const j=await r.json().catch(()=>({})); SESSION_ID=j.session_id||null;
+    if(!_hbT) _hbT=setInterval(sessionPing,60*1000);
+  }catch(e){} }
+async function sessionPing(){ if(!SESSION_ID||AUTH.status!=='approved'||!AUTH.session||!AUTH.session.access_token)return; try{ await authPost({action:'session_ping',session_id:SESSION_ID}); }catch(e){} }
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') sessionPing(); });
 async function doSignin(){const msg=$("#si_msg"),email=$("#si_email").value.trim(),pass=$("#si_pass").value;
   const remember=$("#si_remember")?$("#si_remember").checked:true;
   if(!email||!pass){msg.textContent='Enter your email and password.';return;}msg.textContent='Signing in…';
@@ -1779,7 +1803,10 @@ async function doRegister(){const msg=$("#rg_msg"),g=id=>($(id)?.value||"").trim
 async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg");if(!email){msg.textContent='Enter your email first, then click reset.';return;}
   try{await fetch(`${_sbURL}/auth/v1/recover`,{method:'POST',headers:{'content-type':'application/json',apikey:_anon},body:JSON.stringify({email})});
     msg.innerHTML='If that email has an account, a password-reset link is on its way.';}catch(e){msg.textContent='Could not send reset email.';}}
-function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];state.dealer=null;applyAuth();toast('Signed out');}
+function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];state.dealer=null;
+  SESSION_ID=null; if(_hbT){clearInterval(_hbT);_hbT=null;}                 // stop the activity heartbeat
+  CART.clear(); for(const k in MFR) delete MFR[k];                          // local cart clears; the saved cart stays in the system
+  applyAuth();updateCart();toast('Signed out');}
 /* ---------- dealer self-service: edit account (submitted to HCPS for approval) ---------- */
 function closeAccountEditor(){const m=$("#acctModal");if(m)m.remove();}
 function openAccountEditor(){
@@ -1866,7 +1893,7 @@ function applyAuth(){
   document.body.classList.toggle('guest',!signed);
   $("#loginBtn").style.display=signed?'none':'';
   $("#whoami").innerHTML=signed?`<span class="who">Hi, <b>${esc((AUTH.dealer&&AUTH.dealer.name)||'')}</b></span><button class="hbtn" id="acctBtn">⚙️ My account</button><button class="hbtn" id="outBtn">Sign out</button>`:'';
-  if(signed){const ob=$("#outBtn");if(ob)ob.onclick=signOut;const ab=$("#acctBtn");if(ab)ab.onclick=openAccountEditor;prefillDealer();}
+  if(signed){const ob=$("#outBtn");if(ob)ob.onclick=signOut;const ab=$("#acctBtn");if(ab)ab.onclick=openAccountEditor;prefillDealer();sessionStart();}
   if(!signed){document.body.classList.remove('home');renderLocked();return;}
   // Signed-in dealers land on their personalized home dashboard.
   selectManufacturer(HOME);}
