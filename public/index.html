@@ -506,33 +506,38 @@ async function loadManufacturers(){
     state.manufacturers.forEach(m=>{ if(lm[m.slug]) m.logo=lm[m.slug]; });
   }catch(e){}
 }
+// Merge all admin edits (images, per-product overrides + hide, custom/added products,
+// More-Info links) over a line's raw catalog JSON. Shared by the catalog view AND the
+// home/featured cache so both see exactly the same products — no redeploy.
+async function mergeCatalogEdits(slug, prods){
+  const H={apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON};
+  try{
+    const [imgs,cust,links,overs] = await Promise.all([
+      fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_images?manufacturer=eq.${encodeURIComponent(slug)}&select=code,url`,{headers:H}).then(x=>x.ok?x.json():[]),
+      fetch(`${CONFIG.SUPABASE_URL}/rest/v1/custom_products?manufacturer=eq.${encodeURIComponent(slug)}&select=code,name,category,base_price,msrp,image,description,active,tiers,price_note`,{headers:H}).then(x=>x.ok?x.json():[]),
+      fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_links?manufacturer=eq.${encodeURIComponent(slug)}&select=code,label,url`,{headers:H}).then(x=>x.ok?x.json():[]),
+      fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_overrides?manufacturer=eq.${encodeURIComponent(slug)}&select=code,patch`,{headers:H}).then(x=>x.ok?x.json():[]),
+    ]);
+    const im=Object.fromEntries((imgs||[]).map(o=>[o.code,o.url]));
+    prods.forEach(p=>{ if(im[p.code]) p.image=im[p.code]; });
+    const om=Object.fromEntries((overs||[]).map(o=>[o.code,o.patch||{}]));
+    prods=prods.map(p=>{ const pa=om[p.code]; if(!pa) return p; const merged={...p};
+      for(const k of ["name","category","description","price_note","base_price","msrp","tiers","image"]) if(k in pa && pa[k]!=null) merged[k]=pa[k];
+      if(pa.active===false) merged._hidden=true; return merged; }).filter(p=>!p._hidden);
+    const have=new Set(prods.map(p=>p.code));
+    (cust||[]).forEach(c=>{ if(c.active===false||have.has(c.code)) return;
+      prods.push({code:c.code,name:c.name,category:c.category||"",base_price:c.base_price,msrp:c.msrp,image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",_custom:true}); });
+    const lm=Object.fromEntries((links||[]).map(l=>[l.code,l]));
+    prods.forEach(p=>{ const L=lm[p.code]; if(L&&L.url){ p.moreUrl=L.url; p.moreLabel=L.label||"More Information"; } });
+  }catch(e){}
+  return prods.map(fillMsrp);
+}
 async function loadProducts(slug){
   const mfr = state.manufacturers.find(m=>m.slug===slug);
   if (!mfr || !mfr.hasData){ state.products=[]; return; }
   const r = await fetch(`./data/${slug}.json`,{cache:"no-store"});
-  let prods = await r.json();
-  // apply admin-uploaded image overrides (Image Manager) so new photos show without a redeploy
-  try{
-    const ov = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_images?manufacturer=eq.${encodeURIComponent(slug)}&select=code,url`,
-      {headers:{apikey:CONFIG.SUPABASE_ANON}}).then(x=>x.ok?x.json():[]);
-    const om=Object.fromEntries((ov||[]).map(o=>[o.code,o.url]));
-    prods.forEach(p=>{ if(om[p.code]) p.image=om[p.code]; });
-  }catch(e){}
-  // merge admin-added custom products + "More Information" links (Catalog manager), no redeploy
-  try{
-    const H={apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON};
-    const [cust,links] = await Promise.all([
-      fetch(`${CONFIG.SUPABASE_URL}/rest/v1/custom_products?manufacturer=eq.${encodeURIComponent(slug)}&select=code,name,category,base_price,msrp,image,description,active`,{headers:H}).then(x=>x.ok?x.json():[]),
-      fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_links?manufacturer=eq.${encodeURIComponent(slug)}&select=code,label,url`,{headers:H}).then(x=>x.ok?x.json():[]),
-    ]);
-    const have=new Set(prods.map(p=>p.code));
-    (cust||[]).forEach(c=>{ if(c.active===false) return;
-      if(have.has(c.code)) return;   // don't duplicate a catalog code
-      prods.push({code:c.code,name:c.name,category:c.category||"",base_price:c.base_price,msrp:c.msrp,image:c.image||"",description:c.description||"",_custom:true}); });
-    const lm=Object.fromEntries((links||[]).map(l=>[l.code,l]));
-    prods.forEach(p=>{ const L=lm[p.code]; if(L&&L.url){ p.moreUrl=L.url; p.moreLabel=L.label||"More Information"; } });
-  }catch(e){}
-  state.products = prods.map(fillMsrp);
+  const prods = await r.json();
+  state.products = await mergeCatalogEdits(slug, prods||[]);
 }
 // If a product has no MSRP, suggest one at 2× the dealer price so dealers always have a
 // selling point (marked "suggested"). Never overrides a manufacturer-provided MSRP.
@@ -586,13 +591,7 @@ async function loadLine(slug){
   let prods=[];
   try{
     const r=await fetch(`./data/${slug}.json`,{cache:"no-store"});
-    prods=(await r.json())||[];
-    try{
-      const ov=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_images?manufacturer=eq.${encodeURIComponent(slug)}&select=code,url`,
-        {headers:{apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON}});
-      if(ov.ok){ const map=Object.fromEntries((await ov.json()).map(o=>[o.code,o.url])); prods.forEach(p=>{ if(map[p.code]) p.image=map[p.code]; }); }
-    }catch(e){}
-    prods=prods.map(fillMsrp);
+    prods=await mergeCatalogEdits(slug,(await r.json())||[]);   // same edits/hides/custom as the catalog view
   }catch(e){ prods=[]; }
   DASH.lineCache[slug]=prods; return prods;
 }
@@ -683,11 +682,13 @@ async function renderHome(){
   $("#content").innerHTML=`<div class="dash"><div class="msg" style="text-align:center;color:var(--gray);padding:20px">Loading your dashboard…</div></div>`;
 
   const allowed=new Set(lines.map(m=>m.slug));
-  const feat=(await loadFeatured()).filter(f=>allowed.has(f.manufacturer));
-  $("#stFeat") && ($("#stFeat").textContent=String(feat.length));
-  // load the lines that have featured items, then resolve each featured product
+  let feat=(await loadFeatured()).filter(f=>allowed.has(f.manufacturer));
+  // load the lines that have featured items first, then DROP any featured product that no
+  // longer exists on its line (removed or hidden in Catalog) so dealers never see a dead card.
   const need=[...new Set(feat.map(f=>f.manufacturer))];
   await Promise.all(need.map(s=>loadLine(s)));
+  feat=feat.filter(f=>(DASH.lineCache[f.manufacturer]||[]).some(p=>p.code===f.code));
+  $("#stFeat") && ($("#stFeat").textContent=String(feat.length));
   const fcards=feat.map(f=>{
     const prod=(DASH.lineCache[f.manufacturer]||[]).find(p=>p.code===f.code)||{};
     const mfr=state.manufacturers.find(m=>m.slug===f.manufacturer)||{};
