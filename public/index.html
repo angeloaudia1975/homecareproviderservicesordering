@@ -36,6 +36,21 @@ header{background:#fff;position:sticky;top:0;z-index:60;box-shadow:0 2px 14px rg
 .hbtn.cart{border-color:transparent;background:var(--orange);color:#fff;}
 .hbtn.cart:hover{background:var(--orange-d);}
 .hbtn .muted{color:#fff;opacity:.9;}
+/* My-account self-service editor */
+.acctov{position:fixed;inset:0;background:rgba(16,38,63,.5);display:flex;align-items:flex-start;justify-content:center;z-index:120;padding:28px 16px;overflow:auto;}
+.acctbox{background:#fff;border-radius:16px;max-width:620px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.3);padding:22px 24px;}
+.acctbox h3{margin:0 0 3px;color:var(--navy);font-size:20px;}
+.acctbox .sub{color:var(--gray);font-size:13px;margin:0 0 14px;}
+.acctbox h4{margin:16px 0 6px;color:var(--navy);font-size:13px;text-transform:uppercase;letter-spacing:.6px;}
+.acctbox label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--gray);font-weight:700;margin:8px 0 3px;}
+.acctbox input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff;}
+.acctbox input[readonly]{background:var(--paper);color:var(--gray);}
+.acctgrid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;}
+.acctgrid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+@media(max-width:520px){.acctgrid,.acctgrid2{grid-template-columns:1fr;}}
+.acctnote{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:10px 12px;font-size:12.5px;margin:14px 0 4px;}
+.acctacts{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+.acctmsg{font-size:13px;margin-top:8px;}.acctmsg.ok{color:#1A7A4A;}.acctmsg.err{color:#B91C1C;}
 
 /* MANUFACTURER TABS — light bar */
 .tabs{display:flex;gap:2px;overflow-x:auto;padding:0 20px;scrollbar-width:thin;background:#fff;border-bottom:1px solid var(--line);}
@@ -1734,6 +1749,54 @@ async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg
   try{await fetch(`${_sbURL}/auth/v1/recover`,{method:'POST',headers:{'content-type':'application/json',apikey:_anon},body:JSON.stringify({email})});
     msg.innerHTML='If that email has an account, a password-reset link is on its way.';}catch(e){msg.textContent='Could not send reset email.';}}
 function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];state.dealer=null;applyAuth();toast('Signed out');}
+/* ---------- dealer self-service: edit account (submitted to HCPS for approval) ---------- */
+function closeAccountEditor(){const m=$("#acctModal");if(m)m.remove();}
+function openAccountEditor(){
+  const d=AUTH.dealer||{}, sh=d.shipping||{address:d.address||"",city:d.city||"",state:d.state||"",zip:d.zip||""}, bi=d.billing||{};
+  const box=document.createElement("div"); box.id="acctModal"; box.className="acctov";
+  box.onclick=e=>{if(e.target===box)closeAccountEditor();};
+  box.innerHTML=`<div class="acctbox">
+    <h3>My account</h3>
+    <p class="sub">Update your details below and submit — HCPS reviews changes before they take effect.</p>
+    <label>Business</label><input value="${esc(d.name||"")}" readonly>
+    <div class="acctgrid2">
+      <div><label>Contact name</label><input id="ac_contact" value="${esc(d.contact_name||"")}"></div>
+      <div><label>Phone</label><input id="ac_phone" value="${esc(d.phone||"")}"></div>
+    </div>
+    <label>Contact email</label><input id="ac_email" type="email" value="${esc(d.email||"")}">
+    <h4>Shipping address</h4>
+    <label>Street</label><input id="ac_ship_address" value="${esc(sh.address||"")}">
+    <div class="acctgrid"><div><label>City</label><input id="ac_ship_city" value="${esc(sh.city||"")}"></div>
+      <div><label>State</label><input id="ac_ship_state" value="${esc(sh.state||"")}"></div>
+      <div><label>ZIP</label><input id="ac_ship_zip" value="${esc(sh.zip||"")}"></div></div>
+    <h4>Billing address</h4>
+    <label>Street</label><input id="ac_bill_address" value="${esc(bi.address||"")}">
+    <div class="acctgrid"><div><label>City</label><input id="ac_bill_city" value="${esc(bi.city||"")}"></div>
+      <div><label>State</label><input id="ac_bill_state" value="${esc(bi.state||"")}"></div>
+      <div><label>ZIP</label><input id="ac_bill_zip" value="${esc(bi.zip||"")}"></div></div>
+    <div class="acctnote">🔒 To change the <b>email you sign in with</b>, contact HCPS — that's separate from your contact email above.</div>
+    <div class="acctmsg" id="ac_msg"></div>
+    <div class="acctacts"><button class="hbtn" onclick="closeAccountEditor()">Cancel</button>
+      <button class="hbtn cart" id="ac_save" onclick="submitAccountChange()">Submit for approval</button></div>
+  </div>`;
+  document.body.appendChild(box);
+}
+async function submitAccountChange(){
+  const g=id=>($("#"+id)?.value||"").trim(), msg=$("#ac_msg"), btn=$("#ac_save");
+  const changes={contact_name:g("ac_contact"),phone:g("ac_phone"),email:g("ac_email"),
+    ship_address:g("ac_ship_address"),ship_city:g("ac_ship_city"),ship_state:g("ac_ship_state"),ship_zip:g("ac_ship_zip"),
+    bill_address:g("ac_bill_address"),bill_city:g("ac_bill_city"),bill_state:g("ac_bill_state"),bill_zip:g("ac_bill_zip")};
+  msg.className="acctmsg"; msg.textContent="Submitting…"; if(btn)btn.disabled=true;
+  try{
+    await ensureFreshSession();
+    const r=await fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',
+      headers:{'content-type':'application/json',authorization:'Bearer '+(AUTH.session&&AUTH.session.access_token||'')},
+      body:JSON.stringify({action:'request_profile_change',changes})});
+    const j=await r.json().catch(()=>({}));
+    if(j.ok){ msg.className="acctmsg ok"; msg.textContent=j.message||"Submitted for approval ✓"; setTimeout(closeAccountEditor,1800); }
+    else { msg.className="acctmsg err"; msg.textContent=j.message||j.error||"Could not submit."; if(btn)btn.disabled=false; }
+  }catch(e){ msg.className="acctmsg err"; msg.textContent=String(e.message||e); if(btn)btn.disabled=false; }
+}
 function prefillDealer(){const d=AUTH.dealer||{},set=(id,v)=>{const el=$(id);if(el&&!el.value&&v)el.value=v;};
   set('#f_biz',d.name);set('#f_acct',d.hcps_account);set('#f_contact',d.contact_name);set('#f_email',d.email);set('#f_phone',d.phone);set('#f_addr',d.address);set('#f_city',d.city);set('#f_state',d.state);set('#f_zip',d.zip);}
 function renderLocked(){$("#tabs").innerHTML="";
@@ -1771,8 +1834,8 @@ function applyAuth(){
   const signed=AUTH.status==='approved';
   document.body.classList.toggle('guest',!signed);
   $("#loginBtn").style.display=signed?'none':'';
-  $("#whoami").innerHTML=signed?`<span class="who">Hi, <b>${esc((AUTH.dealer&&AUTH.dealer.name)||'')}</b></span><button class="hbtn" id="outBtn">Sign out</button>`:'';
-  if(signed){const ob=$("#outBtn");if(ob)ob.onclick=signOut;prefillDealer();}
+  $("#whoami").innerHTML=signed?`<span class="who">Hi, <b>${esc((AUTH.dealer&&AUTH.dealer.name)||'')}</b></span><button class="hbtn" id="acctBtn">⚙️ My account</button><button class="hbtn" id="outBtn">Sign out</button>`:'';
+  if(signed){const ob=$("#outBtn");if(ob)ob.onclick=signOut;const ab=$("#acctBtn");if(ab)ab.onclick=openAccountEditor;prefillDealer();}
   if(!signed){document.body.classList.remove('home');renderLocked();return;}
   // Signed-in dealers land on their personalized home dashboard.
   selectManufacturer(HOME);}
