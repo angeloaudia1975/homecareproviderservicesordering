@@ -500,10 +500,13 @@ async function loadManufacturers(){
   // admin-uploaded manufacturer logos (Supabase, public-read) — merged so they show
   // below the manufacturer name on the home cards + catalog header, no redeploy needed.
   try{
-    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url`,
+    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,active`,
       {headers:{apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON}}).then(x=>x.ok?x.json():[]);
     const lm=Object.fromEntries((lg||[]).map(o=>[o.slug,o.logo_url]));
+    const inactive=new Set((lg||[]).filter(o=>o.active===false).map(o=>o.slug));
     state.manufacturers.forEach(m=>{ if(lm[m.slug]) m.logo=lm[m.slug]; });
+    // a manufacturer turned off in Admin → Catalog disappears from the whole portal
+    if(inactive.size) state.manufacturers=state.manufacturers.filter(m=>!inactive.has(m.slug));
   }catch(e){}
 }
 // Merge all admin edits (images, per-product overrides + hide, custom/added products,
