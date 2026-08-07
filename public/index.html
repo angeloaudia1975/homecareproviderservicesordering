@@ -477,8 +477,16 @@ function tierQty(p, qty){
   const fam=familyQty(p);
   return Math.max(1, fam>0?fam:(parseInt(qty)||1));
 }
+function contractPrice(p){
+  // HCPS-set per-dealer contract price for this exact product (manufacturer slug + code).
+  if(AUTH && AUTH.prices){ const k=(p.manufacturer||"")+"::"+(p.code||""); if(AUTH.prices[k]!=null) return Number(AUTH.prices[k]); }
+  return null;
+}
 function unitPrice(p, qty){
-  // Phase 2: dealer_pricing overrides here. Quantity-break tiers apply when present.
+  // Per-dealer contract price (set by HCPS) wins over list price and quantity tiers.
+  const cp=contractPrice(p);
+  if(cp!=null) return cp;
+  // Quantity-break tiers apply when present.
   if(Array.isArray(p.tiers)&&p.tiers.length){
     const q=tierQty(p,qty);
     let price=null;
@@ -490,9 +498,14 @@ function unitPrice(p, qty){
 function priceHtml(p){
   if (!state.dealer && p.base_price==null) return `<span class="price locked">Log in for pricing</span>`;
   if (p.base_price==null) return `<span class="price locked">Call for pricing</span>`;
-  const [d,c]=Number(p.base_price).toFixed(2).split(".");
-  const msrp = (p.msrp!=null && Number(p.msrp)>Number(p.base_price)) ? `<div class="msrp">MSRP ${money(p.msrp)}${p._msrp_suggested?' <span class="sugg">suggested</span>':''}</div>` : "";
-  return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>${msrp}${p.price_note?`<div class="pnote">${esc(p.price_note)}</div>`:""}</div>`;
+  const cp=contractPrice(p);
+  const eff=(cp!=null)?cp:Number(p.base_price);
+  const [d,c]=Number(eff).toFixed(2).split(".");
+  const contractTag=(cp!=null)
+    ? `<div class="pnote" style="color:#0a7f3f;font-weight:700">Your contract price${(Number(p.base_price)>cp+0.005)?` · <span style="color:#8a94a6;font-weight:600;text-decoration:line-through">List ${money(p.base_price)}</span>`:""}</div>`
+    : "";
+  const msrp = (cp==null && p.msrp!=null && Number(p.msrp)>Number(p.base_price)) ? `<div class="msrp">MSRP ${money(p.msrp)}${p._msrp_suggested?' <span class="sugg">suggested</span>':''}</div>` : "";
+  return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>${contractTag}${msrp}${p.price_note?`<div class="pnote">${esc(p.price_note)}</div>`:""}</div>`;
 }
 
 /* ---------- data loading ---------- */
@@ -1013,7 +1026,7 @@ function renderCart(){
       return `<div class="citem" data-k="${esc(cartKey(p))}">
         ${cimg}
         <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)}${p.brand?" · "+esc(p.brand):""}</div>
-        <div class="s">Unit ${u?money(u):"—"} · Line ${u?money(u*qty):"—"}</div>${volNote}</div>
+        <div class="s">Unit ${u?money(u):"—"} · Line ${u?money(u*qty):"—"}${contractPrice(p)!=null?` · <span style="color:#0a7f3f;font-weight:700">contract</span>`:""}</div>${volNote}</div>
         <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
     }).join("");
     const fields=MFR[slug]||(MFR[slug]={po:"",notes:""});
@@ -1764,7 +1777,7 @@ $("#cartBtn").onclick=openCart; $("#closeCart").onclick=closeCart; $("#scrim").o
 $("#clearCart").onclick=()=>{CART.clear();updateCart();toast("Cart cleared");};
 $("#submitOrder").onclick=submitOrder;
 /* ---------- dealer auth (email + password · self-serve + HCPS approval) ---------- */
-const AUTH={session:null,status:'anon',dealer:null,lines:[]};
+const AUTH={session:null,status:'anon',dealer:null,lines:[],prices:{}};
 const _sbURL=CONFIG.SUPABASE_URL,_anon=CONFIG.SUPABASE_ANON;
 function saveSession(s){ if(s&&s.expires_in&&!s.expires_at) s.expires_at=Date.now()+(Number(s.expires_in)||3600)*1000;
   AUTH.session=s;try{localStorage.setItem('hcps_session',JSON.stringify(s));}catch(e){}}
@@ -1800,6 +1813,7 @@ async function authMe(){
     AUTH.lines=AUTH.lineObjs.map(l=>l.slug);
     AUTH.acctBySlug=Object.fromEntries(AUTH.lineObjs.map(l=>[l.slug,(l.account||'').trim()]));
     AUTH.access=j.access||null;   // {your_accounts, available, golden:'Account|Prospect|None', ovation}
+    AUTH.prices=(j.prices&&typeof j.prices==='object')?j.prices:{};   // {"slug::code": contractPrice} — per-dealer
     if(AUTH.status==='approved'&&AUTH.dealer)state.dealer={business:AUTH.dealer.name,account:AUTH.dealer.hcps_account||'',...AUTH.dealer};else state.dealer=null;
     if(AUTH.status==='approved'&&j.cart) hydrateCart(j.cart);   // restore the dealer's saved cart
   }catch(e){AUTH.status='anon';}}
@@ -1848,7 +1862,7 @@ async function doRegister(){const msg=$("#rg_msg"),g=id=>($(id)?.value||"").trim
 async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg");if(!email){msg.textContent='Enter your email first, then click reset.';return;}
   try{await fetch(`${_sbURL}/auth/v1/recover`,{method:'POST',headers:{'content-type':'application/json',apikey:_anon},body:JSON.stringify({email})});
     msg.innerHTML='If that email has an account, a password-reset link is on its way.';}catch(e){msg.textContent='Could not send reset email.';}}
-function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];state.dealer=null;
+function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];AUTH.prices={};state.dealer=null;
   SESSION_ID=null; if(_hbT){clearInterval(_hbT);_hbT=null;}                 // stop the activity heartbeat
   CART.clear(); for(const k in MFR) delete MFR[k];                          // local cart clears; the saved cart stays in the system
   applyAuth();updateCart();toast('Signed out');}
