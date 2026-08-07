@@ -1,39 +1,5 @@
 [
   {
-    "slug": "complete-medical-supplies",
-    "name": "Complete Medical Supplies",
-    "accent": "#ef6a1f",
-    "dark": "#2c3e50",
-    "logo": "/assets/logos/complete-medical-supplies.jpg",
-    "hasData": true,
-    "sort": 0,
-    "freight": {
-      "summary": "Free freight: Blue Jay at $400 · Drive & Compass (consolidated) at $750. Other brands and orders below the threshold ship at actual freight, calculated and confirmed by Complete Medical.",
-      "actualNote": "Freight is calculated by Complete Medical and confirmed on your order confirmation.",
-      "groups": [
-        {
-          "label": "Blue Jay",
-          "brandKeywords": [
-            "bluejay",
-            "blue jay"
-          ],
-          "freeAt": 400
-        },
-        {
-          "label": "Drive & Compass",
-          "brandKeywords": [
-            "drive",
-            "devilbiss",
-            "compass"
-          ],
-          "freeAt": 750
-        }
-      ],
-      "otherLabel": "Other brands",
-      "elseActual": true
-    }
-  },
-  {
     "slug": "access4u",
     "name": "Access4U",
     "accent": "#2f73b8",
