@@ -446,6 +446,8 @@ const CONFIG = {
   DATA_SOURCE: "json",                 // "json" | "supabase" — stays "json" until the catalog-migration slice
   ORDER_ENDPOINT: "/.netlify/functions/submit-order",  // Resend order email (netlify/functions/submit-order.js)
   AUTH_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/dealer-auth", // dealer login backend (CORS-enabled)
+  GOLDEN_URL: "",                      // ← set to your Golden dealer ordering platform URL; blank shows a "contact your rep" note
+
   ORDERS_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/orders-api", // saves order history + reorder (CORS-enabled)
   SUPABASE_URL: "https://ycqmztthwldytkzyvmiv.supabase.co",   // HCPS Supabase project
   SUPABASE_ANON: "sb_publishable_rO3Z6aJW_u6rx3TZdO3cww_b9pbvcFZ", // publishable/anon key — safe to embed (public by design)
@@ -500,13 +502,10 @@ async function loadManufacturers(){
   // admin-uploaded manufacturer logos (Supabase, public-read) — merged so they show
   // below the manufacturer name on the home cards + catalog header, no redeploy needed.
   try{
-    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,active`,
+    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url`,
       {headers:{apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON}}).then(x=>x.ok?x.json():[]);
     const lm=Object.fromEntries((lg||[]).map(o=>[o.slug,o.logo_url]));
-    const inactive=new Set((lg||[]).filter(o=>o.active===false).map(o=>o.slug));
     state.manufacturers.forEach(m=>{ if(lm[m.slug]) m.logo=lm[m.slug]; });
-    // a manufacturer turned off in Admin → Catalog disappears from the whole portal
-    if(inactive.size) state.manufacturers=state.manufacturers.filter(m=>!inactive.has(m.slug));
   }catch(e){}
 }
 // Merge all admin edits (images, per-product overrides + hide, custom/added products,
@@ -553,8 +552,20 @@ function fillMsrp(p){
 /* ---------- render tabs (gated to the dealer's entitled lines) ---------- */
 function entitledManufacturers(){
   if(AUTH.status!=='approved') return [];
+  // With the access engine: show every line the dealer can order — the ones they already
+  // have an account with PLUS the ones they're eligible for (prospect). Golden is excluded
+  // here (it's ordered on the separate Golden platform, surfaced via its own card).
+  if(AUTH.access){
+    const acc=new Set([...(AUTH.access.your_accounts||[]),...(AUTH.access.available||[])]);
+    return state.manufacturers.filter(m=>acc.has(m.slug));
+  }
   const ent = AUTH.lines&&AUTH.lines.length ? state.manufacturers.filter(m=>AUTH.lines.includes(m.slug)) : state.manufacturers.filter(m=>m.hasData);
   return ent;
+}
+// Which accessible lines the dealer already has an account for (vs. available/prospect).
+function ownedSlugSet(){
+  if(AUTH.access) return new Set(AUTH.access.your_accounts||[]);
+  const acct=AUTH.acctBySlug||{}; return new Set(Object.keys(acct).filter(s=>acct[s]));
 }
 function renderTabs(){
   const el=$("#tabs"); el.innerHTML="";
@@ -670,11 +681,31 @@ function homeTilesHtml(hc){
       <div class="tb">${t.title?`<div class="tt">${esc(t.title)}</div>`:""}${t.text?`<div class="tx">${esc(t.text)}</div>`:""}</div></div>`;}).join("");
   return `<div class="dsec"><div class="hometiles">${cards}</div></div>`;
 }
+// Golden is ordered on a separate Golden dealer platform, so it never appears as an
+// orderable tab. It's surfaced here as its own card, driven by the dealer's per-account
+// Golden status (Account = they order it there; Prospect = eligible to become a Golden dealer).
+function goldenSectionHtml(){
+  const g=AUTH.access&&AUTH.access.golden;
+  if(!g||g==='None') return "";
+  const url=(CONFIG.GOLDEN_URL||"").trim();
+  const btn=url
+    ? `<a class="oppbtn primary" href="${esc(url)}" target="_blank" rel="noopener">Golden Ordering Platform →</a>`
+    : `<button class="oppbtn primary" onclick="toast('Ask your HCPS sales rep for the Golden platform link and password')">Golden Ordering Platform →</button>`;
+  const isAcct=g==='Account';
+  const lead=isAcct
+    ? "You order Golden Technologies on the dedicated Golden Dealer Platform."
+    : "Golden Technologies is available to you — ask about becoming a Golden dealer.";
+  const card=`<div class="oppcard">
+     <div class="opptop"><div class="ln">Golden Technologies</div><span class="oppbadge">${isAcct?'Your account':'Opportunity'}</span></div>
+     <div class="lc">${lead} It opens in a separate site; if you need the password, contact your HCPS sales representative.</div>
+     <div class="oppacts">${btn}</div></div>`;
+  return `<div class="dsec"><div class="sh"><h2>Golden Technologies</h2><span class="seccount ${isAcct?'':'opp'}">${isAcct?'Your account':'Available'}</span></div><div class="opps">${card}</div></div>`;
+}
 async function renderHome(){
   const d=AUTH.dealer||{}, biz=d.name||"there";
   const lines=entitledManufacturers();
-  const acctMap=(AUTH.acctBySlug||{});
-  const nActive=lines.filter(m=>acctMap[m.slug]).length, nOpp=lines.length-nActive;
+  const OWNED=ownedSlugSet();
+  const nActive=lines.filter(m=>OWNED.has(m.slug)).length, nOpp=lines.length-nActive;
   // hero
   $("#mfrName").innerHTML=`Welcome back, <span>${esc(biz)}</span>`;
   $("#mfrSub").innerHTML=`<span class="tagline">Innovative Products · Showroom Solutions · Simplified Ordering</span>`;
@@ -704,13 +735,14 @@ async function renderHome(){
       <div class="fi"><span class="star">★ Featured</span>${img}</div>
       <div class="fb"><div class="fmfr">${esc(mfr.name||f.manufacturer)}</div><div class="fnm">${nm}</div>${note}${price}${msrp}</div></div>`;
   }).join("");
-  // Split lines by whether the dealer already has an account with that manufacturer.
+  // Split lines by whether the dealer already has an account with that manufacturer
+  // (from the access engine); the account number, when known, is shown on the card.
   const acct=(AUTH.acctBySlug||{});
-  const activeLines=lines.filter(m=>acct[m.slug]);           // has an account number on file
-  const oppLines=lines.filter(m=>!acct[m.slug]);             // access only — a new-account opportunity
+  const activeLines=lines.filter(m=>OWNED.has(m.slug));       // has an account with this line
+  const oppLines=lines.filter(m=>!OWNED.has(m.slug));         // eligible — a new-account opportunity
   const mlogo=m=>m&&m.logo?`<div class="mlogo"><img src="${esc(m.logo)}" alt="${esc(m.name)} logo" loading="lazy" onerror="this.parentNode.style.display='none'"></div>`:"";
   const activeCards=activeLines.map(m=>`<div class="lncard" onclick="selectManufacturer('${esc(m.slug)}')">
-     <div class="ln">${esc(m.name)}</div>${mlogo(m)}<div class="lc">Account #${esc(acct[m.slug])}</div>
+     <div class="ln">${esc(m.name)}</div>${mlogo(m)}<div class="lc">${acct[m.slug]?('Account #'+esc(acct[m.slug])):'Account on file'}</div>
      <div class="go2">Open catalog →</div></div>`).join("");
   const bizEmail="orders@homecareproviderservices.us";
   const oppCards=oppLines.map(m=>{const subj=encodeURIComponent(`New account request — ${(d.name||"Dealer")} — ${m.name}`);
@@ -740,6 +772,7 @@ async function renderHome(){
     ${heroSec}
     ${tilesSec}
     ${(activeLines.length||oppLines.length)?activeSec+oppSec:`<div class="dsec"><p class="dcard muted2">No manufacturer lines are enabled on your account yet. Contact HCPS to turn on your lines.</p></div>`}
+    ${goldenSectionHtml()}
     ${featSec}
     <div class="dgrid">
       <div class="dcard"><h3>Your Account</h3>
@@ -1759,6 +1792,7 @@ async function authMe(){
     AUTH.lineObjs=(j.lines||[]);                       // [{slug, account}] — account present = they HAVE an account
     AUTH.lines=AUTH.lineObjs.map(l=>l.slug);
     AUTH.acctBySlug=Object.fromEntries(AUTH.lineObjs.map(l=>[l.slug,(l.account||'').trim()]));
+    AUTH.access=j.access||null;   // {your_accounts, available, golden:'Account|Prospect|None', ovation}
     if(AUTH.status==='approved'&&AUTH.dealer)state.dealer={business:AUTH.dealer.name,account:AUTH.dealer.hcps_account||'',...AUTH.dealer};else state.dealer=null;
     if(AUTH.status==='approved'&&j.cart) hydrateCart(j.cart);   // restore the dealer's saved cart
   }catch(e){AUTH.status='anon';}}
