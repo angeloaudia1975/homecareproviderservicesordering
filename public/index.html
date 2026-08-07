@@ -446,7 +446,7 @@ const CONFIG = {
   DATA_SOURCE: "json",                 // "json" | "supabase" — stays "json" until the catalog-migration slice
   ORDER_ENDPOINT: "/.netlify/functions/submit-order",  // Resend order email (netlify/functions/submit-order.js)
   AUTH_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/dealer-auth", // dealer login backend (CORS-enabled)
-  GOLDEN_URL: "",                      // ← set to your Golden dealer ordering platform URL; blank shows a "contact your rep" note
+  GOLDEN_BASE: "",                     // ← your Golden ordering platform base domain (e.g. https://order.golden-tech.com). Each dealer's /portal/… path is appended. Blank shows a "contact your rep" note.
 
   ORDERS_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/orders-api", // saves order history + reorder (CORS-enabled)
   SUPABASE_URL: "https://ycqmztthwldytkzyvmiv.supabase.co",   // HCPS Supabase project
@@ -687,7 +687,14 @@ function homeTilesHtml(hc){
 function goldenSectionHtml(){
   const g=AUTH.access&&AUTH.access.golden;
   if(!g||g==='None') return "";
-  const url=(CONFIG.GOLDEN_URL||"").trim();
+  // Each Golden dealer has a specific portal path (e.g. /portal/queen-city-med-mart); the
+  // portal appends it to the Golden base domain. Falls back to the base, then to a note.
+  const path=((AUTH.access&&AUTH.access.golden_url)||"").trim();
+  const base=(CONFIG.GOLDEN_BASE||CONFIG.GOLDEN_URL||"").trim().replace(/\/+$/,"");
+  let url="";
+  if(/^https?:\/\//i.test(path)) url=path;
+  else if(path&&base) url=base+path;
+  else if(!path&&base) url=base;
   const btn=url
     ? `<a class="oppbtn primary" href="${esc(url)}" target="_blank" rel="noopener">Golden Ordering Platform →</a>`
     : `<button class="oppbtn primary" onclick="toast('Ask your HCPS sales rep for the Golden platform link and password')">Golden Ordering Platform →</button>`;
