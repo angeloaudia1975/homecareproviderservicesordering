@@ -708,15 +708,16 @@ function goldenSectionHtml(){
   if(/^https?:\/\//i.test(path)) url=path;
   else if(path&&base) url=base+path;
   else if(!path&&base) url=base;
-  const btn=url
-    ? `<a class="oppbtn primary" href="${esc(url)}" target="_blank" rel="noopener">Golden Ordering Platform →</a>`
-    : `<button class="oppbtn primary" onclick="toast('Ask your HCPS sales rep for the Golden platform link and password')">Golden Ordering Platform →</button>`;
   const isAcct=g==='Account';
+  const btn=url
+    ? `<a class="oppbtn primary" href="${esc(url)}" target="_blank" rel="noopener">Explore Golden catalog →</a>`
+    : `<button class="oppbtn primary" onclick="toast('Ask your HCPS sales rep for the Golden platform link and password')">Explore Golden catalog →</button>`;
   const lead=isAcct
     ? "You order Golden Technologies on the dedicated Golden Dealer Platform."
     : "Golden Technologies is available to you — ask about becoming a Golden dealer.";
+  const logo=`<div class="mlogo"><img src="/assets/logos/golden-technologies.jpg" alt="Golden Technologies logo" loading="lazy" onerror="this.parentNode.style.display='none'"></div>`;
   const card=`<div class="oppcard">
-     <div class="opptop"><div class="ln">Golden Technologies</div><span class="oppbadge">${isAcct?'Your account':'Opportunity'}</span></div>
+     <div class="opptop"><div class="ln">Golden Technologies</div><span class="oppbadge">${isAcct?'Your account':'Opportunity'}</span></div>${logo}
      <div class="lc">${lead} It opens in a separate site; if you need the password, contact your HCPS sales representative.</div>
      <div class="oppacts">${btn}</div></div>`;
   return `<div class="dsec"><div class="sh"><h2>Golden Technologies</h2><span class="seccount ${isAcct?'':'opp'}">${isAcct?'Your account':'Available'}</span></div><div class="opps">${card}</div></div>`;
