@@ -230,6 +230,9 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .oppcard .ln{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:19px;color:var(--navy);line-height:1.1;}
 .oppcard .lc{font-size:12.5px;color:var(--ink);line-height:1.5;}
 .oppbadge{font-size:9.5px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:#8a4b0d;background:#fff3e0;border:1px solid #f2d9b0;border-radius:20px;padding:3px 9px;white-space:nowrap;}
+.oppcard.soon{border-color:#cfe0ee;border-left-color:var(--blue);}
+.oppbadge.soon{color:#0f5b86;background:#e8f3fb;border-color:#c7e2f2;}
+.seccount.soon{background:var(--blue);}
 .oppacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;}
 .oppbtn{display:inline-flex;align-items:center;gap:6px;border-radius:9px;padding:9px 14px;font-weight:800;font-size:12.5px;cursor:pointer;text-decoration:none;border:none;font-family:inherit;}
 .oppbtn.primary{background:var(--orange);color:#fff;}.oppbtn.primary:hover{background:var(--orange-d);}
@@ -698,8 +701,11 @@ function homeTilesHtml(hc){
 // orderable tab. It's surfaced here as its own card, driven by the dealer's per-account
 // Golden status (Account = they order it there; Prospect = eligible to become a Golden dealer).
 function goldenSectionHtml(){
-  const g=AUTH.access&&AUTH.access.golden;
-  if(!g||g==='None') return "";
+  // Golden Technologies is always surfaced as an available line: dealers who have a Golden
+  // account get the platform link; everyone else sees it as a new-account opportunity, since
+  // HCPS is a Golden distributor and any dealer can open a Golden account.
+  const g=(AUTH.access&&AUTH.access.golden)||'None';
+  const isAcct=g==='Account';
   // Each Golden dealer has a specific portal path (e.g. /portal/queen-city-med-mart); the
   // portal appends it to the Golden base domain. Falls back to the base, then to a note.
   const path=((AUTH.access&&AUTH.access.golden_url)||"").trim();
@@ -708,19 +714,43 @@ function goldenSectionHtml(){
   if(/^https?:\/\//i.test(path)) url=path;
   else if(path&&base) url=base+path;
   else if(!path&&base) url=base;
-  const isAcct=g==='Account';
-  const btn=url
-    ? `<a class="oppbtn primary" href="${esc(url)}" target="_blank" rel="noopener">Explore Golden catalog →</a>`
-    : `<button class="oppbtn primary" onclick="toast('Ask your HCPS sales rep for the Golden platform link and password')">Explore Golden catalog →</button>`;
-  const lead=isAcct
-    ? "You order Golden Technologies on the dedicated Golden Dealer Platform."
-    : "Golden Technologies is available to you — ask about becoming a Golden dealer.";
   const logo=`<div class="mlogo"><img src="/assets/logos/golden-technologies.jpg" alt="Golden Technologies logo" loading="lazy" onerror="this.parentNode.style.display='none'"></div>`;
-  const card=`<div class="oppcard">
-     <div class="opptop"><div class="ln">Golden Technologies</div><span class="oppbadge">${isAcct?'Your account':'Opportunity'}</span></div>${logo}
-     <div class="lc">${lead} It opens in a separate site; if you need the password, contact your HCPS sales representative.</div>
-     <div class="oppacts">${btn}</div></div>`;
-  return `<div class="dsec"><div class="sh"><h2>Golden Technologies</h2><span class="seccount ${isAcct?'':'opp'}">${isAcct?'Your account':'Available'}</span></div><div class="opps">${card}</div></div>`;
+  const d=AUTH.dealer||{};
+  let card, secBadge;
+  if(isAcct){
+    const btn=url
+      ? `<a class="oppbtn primary" href="${esc(url)}" target="_blank" rel="noopener">Explore Golden catalog →</a>`
+      : `<button class="oppbtn primary" onclick="toast('Ask your HCPS sales rep for the Golden platform link and password')">Explore Golden catalog →</button>`;
+    card=`<div class="oppcard">
+       <div class="opptop"><div class="ln">Golden Technologies</div><span class="oppbadge">Your account</span></div>${logo}
+       <div class="lc">You order Golden Technologies on the dedicated Golden Dealer Platform. It opens in a separate site; if you need the password, contact your HCPS sales representative.</div>
+       <div class="oppacts">${btn}</div></div>`;
+    secBadge=`<span class="seccount">Your account</span>`;
+  } else {
+    const bizEmail="orders@homecareproviderservices.us";
+    const subj=encodeURIComponent(`New account request — ${(d.name||"Dealer")} — Golden Technologies`);
+    const bodyq=encodeURIComponent(`We'd like to open a Golden Technologies account.\n\nBusiness: ${d.name||""}\nContact: ${d.contact_name||""}\nEmail: ${d.email||""}\nPhone: ${d.phone||""}`);
+    const preview=url?`<a class="oppbtn ghost" href="${esc(url)}" target="_blank" rel="noopener">Preview Golden catalog →</a>`:"";
+    card=`<div class="oppcard">
+       <div class="opptop"><div class="ln">Golden Technologies</div><span class="oppbadge">Opportunity</span></div>${logo}
+       <div class="lc">Golden Technologies is available to you through HCPS — open a Golden dealer account to unlock lift chairs, power &amp; mobility, and your dealer pricing.</div>
+       <div class="oppacts"><a class="oppbtn primary" href="mailto:${bizEmail}?subject=${subj}&body=${bodyq}">Request account</a>${preview}</div></div>`;
+    secBadge=`<span class="seccount opp">Available</span>`;
+  }
+  return `<div class="dsec"><div class="sh"><h2>Golden Technologies</h2>${secBadge}</div><div class="opps">${card}</div></div>`;
+}
+function abmSectionHtml(){
+  // ABM Respiratory Care is a prospect line for Indiana dealers only, and not yet orderable —
+  // surfaced as a "coming soon" teaser so IN dealers know it's on the way. Hidden everywhere else.
+  const d=AUTH.dealer||{};
+  const st=String(d.state||"").toUpperCase();
+  if(st!=="IN") return "";
+  const logo=`<div class="mlogo"><img src="/assets/logos/abm-respiratory-care.jpg" alt="ABM Respiratory Care logo" loading="lazy" onerror="this.parentNode.style.display='none'"></div>`;
+  const card=`<div class="oppcard soon">
+     <div class="opptop"><div class="ln">ABM Respiratory Care</div><span class="oppbadge soon">Coming soon</span></div>${logo}
+     <div class="lc">ABM Respiratory Care is coming to the HCPS portal for Indiana dealers — advanced airway clearance &amp; respiratory technology. Ordering and your dealer pricing will open here soon.</div>
+     <div class="oppacts"><button class="oppbtn ghost" onclick="toast('We will notify you the moment ABM Respiratory Care is available to order.')">Notify me when it is live</button></div></div>`;
+  return `<div class="dsec"><div class="sh"><h2>ABM Respiratory Care</h2><span class="seccount soon">Coming soon</span></div><div class="opps">${card}</div></div>`;
 }
 async function renderHome(){
   const d=AUTH.dealer||{}, biz=d.name||"there";
@@ -732,8 +762,7 @@ async function renderHome(){
   $("#mfrSub").innerHTML=`<span class="tagline">Innovative Products · Showroom Solutions · Simplified Ordering</span>`;
   document.querySelector(".mstat").innerHTML=
     `<div><b>${nActive}</b><span>Active accounts</span></div>
-     <div><b style="color:var(--gold)">${nOpp}</b><span>New-account opportunities</span></div>
-     <div><b>${esc(d.hcps_account||"—")}</b><span>HCPS Account #</span></div>`;
+     <div><b style="color:var(--gold)">${nOpp}</b><span>New-account opportunities</span></div>`;
   $("#content").innerHTML=`<div class="dash"><div class="msg" style="text-align:center;color:var(--gray);padding:20px">Loading your dashboard…</div></div>`;
 
   const allowed=new Set(lines.map(m=>m.slug));
@@ -794,11 +823,11 @@ async function renderHome(){
     ${tilesSec}
     ${(activeLines.length||oppLines.length)?activeSec+oppSec:`<div class="dsec"><p class="dcard muted2">No manufacturer lines are enabled on your account yet. Contact HCPS to turn on your lines.</p></div>`}
     ${goldenSectionHtml()}
+    ${abmSectionHtml()}
     ${featSec}
     <div class="dgrid">
       <div class="dcard"><h3>Your Account</h3>
         <div class="kv"><span class="k">Business</span><span class="v">${esc(d.name||"—")}</span></div>
-        <div class="kv"><span class="k">Account #</span><span class="v">${esc(d.hcps_account||"—")}</span></div>
         <div class="kv"><span class="k">Contact</span><span class="v">${esc(d.contact_name||"—")}</span></div>
         <div class="kv"><span class="k">Email</span><span class="v">${esc(d.email||"—")}</span></div>
         ${d.city||d.state?`<div class="kv"><span class="k">Location</span><span class="v">${esc([d.city,d.state].filter(Boolean).join(", "))}</span></div>`:""}
