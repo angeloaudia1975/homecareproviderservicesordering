@@ -456,6 +456,7 @@ const CONFIG = {
   ORDERS_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/orders-api", // saves order history + reorder (CORS-enabled)
   SUPABASE_URL: "https://ycqmztthwldytkzyvmiv.supabase.co",   // HCPS Supabase project
   SUPABASE_ANON: "sb_publishable_rO3Z6aJW_u6rx3TZdO3cww_b9pbvcFZ", // publishable/anon key — safe to embed (public by design)
+  EVENTS_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/events-api", // per-dealer intent capture (CORS-enabled)
 };
 
 const state = { manufacturers: [], active: null, products: [], dealer: null };
@@ -843,6 +844,7 @@ async function renderHome(){
 // jump to a line and scroll/highlight a product
 async function gotoProduct(slug,code){
   await selectManufacturer(slug);
+  track(_repeatProduct(code)?'product_view_repeat':'product_view',slug,code);  // focused a specific product (+3, or +5 if repeat ≤14d)
   setTimeout(()=>{ const el=document.querySelector(`[data-code="${CSS.escape(code)}"]`);
     if(el){ el.scrollIntoView({behavior:"smooth",block:"center"}); el.style.transition="box-shadow .3s"; el.style.boxShadow="0 0 0 3px var(--orange)"; setTimeout(()=>el.style.boxShadow="",1600); }
   },350);
@@ -976,6 +978,7 @@ function addToCart(p,qty){
   const k=cartKey(p); const cur=CART.get(k);
   CART.set(k,{p,qty:(cur?cur.qty:0)+qty});
   updateCart(); toast(`Added ${qty} × ${p.code}`);
+  track('pricing_view',p&&p.manufacturer,p&&p.code);   // added a priced item to cart — strong buying intent (+8)
 }
 function cartCount(){let n=0;for(const{qty}of CART.values())n+=qty;return n;}
 function mfrInfo(slug){return state.manufacturers.find(m=>m.slug===slug)||{slug,name:slug};}
@@ -1112,6 +1115,7 @@ async function submitOrder(){
   };
   if(!dealer.business||!dealer.contact||!dealer.email){toast("Please fill business, contact, and email");return;}
   const groups=groupCart();
+  try{ for(const[slug,lines]of groups) track('order_started',slug,undefined,{items:lines.reduce((n,it)=>n+(it.qty||0),0)}); }catch(e){}  // began placing an order (+15/line)
   for(const[slug]of groups){
     if(!(MFR[slug]&&(MFR[slug].po||"").trim())){
       const el=document.querySelector(`.mgroup[data-slug="${(window.CSS&&CSS.escape)?CSS.escape(slug):slug}"] .po`);
@@ -1783,6 +1787,7 @@ async function selectManufacturer(slug){
   await loadProducts(slug);
   renderBanner(); renderProducts(); renderA4U(); renderSW();
   window.scrollTo({top:0,behavior:"smooth"});
+  if(slug && !_viewedLines.has(slug)){ _viewedLines.add(slug); track('product_view',slug); }  // viewed a line's catalog (+3)
 }
 let SHIPTO_LABEL="";
 function fmtShipAddr(a){return [a.address,[a.city,a.state].filter(Boolean).join(", "),a.zip].filter(Boolean).join(" · ");}
@@ -1803,7 +1808,9 @@ function populateShipTo(){
   sel.onchange=()=>apply(sel.value);
   if(!sel.dataset.init){sel.dataset.init="1";apply("0");}
 }
-function openCart(){populateShipTo();$("#drawer").classList.add("open");$("#scrim").classList.add("open");}
+function openCart(){populateShipTo();$("#drawer").classList.add("open");$("#scrim").classList.add("open");
+  if(CART.size) track('order_page',state.active&&state.active!==HOME?state.active:undefined);  // opened the cart to order (+10)
+}
 function closeCart(){$("#drawer").classList.remove("open");$("#scrim").classList.remove("open");}
 
 /* ---------- init ---------- */
@@ -1861,6 +1868,30 @@ function hydrateCart(saved){
 }
 /* ---- persistent cart + login activity (server-backed, so the admin can see open carts) ---- */
 let _cartSaveT=null, SESSION_ID=null, _hbT=null;
+/* ---------- intent capture ----------
+   Fire-and-forget per-dealer behavior to the HCPS portal's events-api, which scores
+   buying intent (login/product view/pricing/order-page/order-start). Only signed-in,
+   approved dealers are tracked; the server assigns the point weight, never the client.
+   Failures are swallowed so tracking never affects the ordering experience. */
+const _viewedLines=new Set();
+function _repeatProduct(code){        // true if this code was viewed within 14 days; records the view
+  if(!code) return false;
+  try{ const k='hcps_pv', now=Date.now(); const m=JSON.parse(localStorage.getItem(k)||'{}');
+    const last=m[code]||0; m[code]=now;
+    for(const c in m){ if(now-m[c] > 30*864e5) delete m[c]; }   // prune > 30d
+    localStorage.setItem(k,JSON.stringify(m));
+    return last>0 && (now-last) <= 14*864e5;
+  }catch(e){ return false; }
+}
+function track(type,manufacturer,product,meta){
+  if(AUTH.status!=='approved'||!AUTH.session||!AUTH.session.access_token) return;   // signed-in dealers only
+  try{
+    fetch(CONFIG.EVENTS_ENDPOINT,{method:'POST',keepalive:true,
+      headers:{'content-type':'application/json',authorization:'Bearer '+AUTH.session.access_token},
+      body:JSON.stringify({action:'track',events:[{type,manufacturer:manufacturer||undefined,product:product||undefined,meta:meta||undefined}]})
+    }).catch(()=>{});
+  }catch(e){}
+}
 function scheduleCartSave(){ if(AUTH.status!=='approved'||!AUTH.session)return; clearTimeout(_cartSaveT); _cartSaveT=setTimeout(saveCartRemote,700); }
 async function authPost(body){ await ensureFreshSession();
   return fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+(AUTH.session&&AUTH.session.access_token||'')},body:JSON.stringify(body)}); }
@@ -1870,6 +1901,7 @@ async function clearCartRemote(){ if(!AUTH.session||!AUTH.session.access_token)r
 async function sessionStart(){ if(AUTH.status!=='approved'||!AUTH.session||!AUTH.session.access_token||SESSION_ID)return;
   try{ const r=await authPost({action:'session_start',ua:(navigator&&navigator.userAgent)||''}); const j=await r.json().catch(()=>({})); SESSION_ID=j.session_id||null;
     if(!_hbT) _hbT=setInterval(sessionPing,60*1000);
+    track('login');                                    // intent: returning/ordering login (+2)
   }catch(e){} }
 async function sessionPing(){ if(!SESSION_ID||AUTH.status!=='approved'||!AUTH.session||!AUTH.session.access_token)return; try{ await authPost({action:'session_ping',session_id:SESSION_ID}); }catch(e){} }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') sessionPing(); });
