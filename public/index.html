@@ -296,6 +296,12 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .lightbox figcaption{color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;text-align:center;max-width:82vw;line-height:1.2;}
 .lightbox .lbx{position:absolute;top:18px;right:22px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:10px;padding:8px 13px;font-weight:700;cursor:pointer;font-size:15px;}
 .lightbox .lbx:hover{background:rgba(255,255,255,.25);}
+.thumbs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
+.thumb{width:44px;height:44px;border-radius:7px;border:1px solid #dfe5ea;background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#fff;cursor:pointer;padding:0;}
+.thumb.on{outline:2px solid #F5821F;outline-offset:1px;}
+.thumb.vid{display:flex;align-items:center;justify-content:center;background:#10263f;color:#fff;font-size:16px;}
+.card .img img{cursor:zoom-in;}
+.reslinks{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 4px;}
 
 /* ACCESS4U MODULAR RAMP BUILDER */
 .a4u{background:#fff;border:1px solid var(--line);border-radius:14px;margin:18px 0 4px;overflow:hidden;box-shadow:var(--shadow);}
@@ -533,11 +539,12 @@ async function loadManufacturers(){
 async function mergeCatalogEdits(slug, prods){
   const H={apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON};
   try{
-    const [imgs,cust,links,overs] = await Promise.all([
+    const [imgs,cust,links,overs,media] = await Promise.all([
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_images?manufacturer=eq.${encodeURIComponent(slug)}&select=code,url`,{headers:H}).then(x=>x.ok?x.json():[]),
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/custom_products?manufacturer=eq.${encodeURIComponent(slug)}&select=code,name,category,base_price,msrp,image,description,active,tiers,price_note`,{headers:H}).then(x=>x.ok?x.json():[]),
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_links?manufacturer=eq.${encodeURIComponent(slug)}&select=code,label,url`,{headers:H}).then(x=>x.ok?x.json():[]),
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_overrides?manufacturer=eq.${encodeURIComponent(slug)}&select=code,patch`,{headers:H}).then(x=>x.ok?x.json():[]),
+      fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_media?manufacturer=eq.${encodeURIComponent(slug)}&select=code,kind,url,title,sort&order=sort`,{headers:H}).then(x=>x.ok?x.json():[]),
     ]);
     const im=Object.fromEntries((imgs||[]).map(o=>[o.code,o.url]));
     prods.forEach(p=>{ if(im[p.code]) p.image=im[p.code]; });
@@ -550,6 +557,9 @@ async function mergeCatalogEdits(slug, prods){
       prods.push({code:c.code,name:c.name,category:c.category||"",base_price:c.base_price,msrp:c.msrp,image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",_custom:true}); });
     const lm=Object.fromEntries((links||[]).map(l=>[l.code,l]));
     prods.forEach(p=>{ const L=lm[p.code]; if(L&&L.url){ p.moreUrl=L.url; p.moreLabel=L.label||"More Information"; } });
+    // media gallery (extra images, videos, brochures, links) keyed by code
+    const mm={}; (media||[]).forEach(m=>{ if(m&&m.code&&m.url){ (mm[m.code]=mm[m.code]||[]).push(m); } });
+    prods.forEach(p=>{ if(mm[p.code]) p.media=mm[p.code]; });
   }catch(e){}
   return prods.map(fillMsrp);
 }
@@ -886,18 +896,31 @@ function filtered(){
   });
 }
 function cardHtml(p){
-  const img = p.image
-    ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src=this.src.replace(/[^/]+$/,s=>s.toLowerCase());}else{this.style.display='none';this.parentElement.innerHTML='<span class=ph>No image</span>';}">`
+  const media = Array.isArray(p.media)?p.media:[];
+  const gimgs = media.filter(m=>m.kind==="image"&&m.url);
+  const vids  = media.filter(m=>m.kind==="video"&&m.url);
+  const docs  = media.filter(m=>(m.kind==="brochure"||m.kind==="link")&&m.url);
+  const imgList = [...(p.image?[{url:p.image}]:[]), ...gimgs];   // primary photo first, then gallery
+  const mainUrl = imgList.length ? imgList[0].url : "";
+  const img = mainUrl
+    ? `<img src="${esc(mainUrl)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onclick="event.stopPropagation();openLightbox(this.src,this.alt)" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src=this.src.replace(/[^/]+$/,s=>s.toLowerCase());}else{this.style.display='none';this.parentElement.innerHTML='<span class=ph>No image</span>';}">`
     : `<span class="ph">No image</span>`;
+  const thumbs = (imgList.length>1 || vids.length) ? `<div class="thumbs">
+      ${imgList.map((m,i)=>`<button class="thumb${i===0?' on':''}" data-src="${esc(m.url)}" title="${esc(m.title||p.name)}" style="background-image:url('${esc(m.url)}')" onclick="event.stopPropagation();galSwap(this)"></button>`).join("")}
+      ${vids.map(v=>`<button class="thumb vid" data-vid="${esc(v.url)}" data-cap="${esc(v.title||p.name)}" title="${esc(v.title||'Video')}" onclick="event.stopPropagation();openVideo(this.dataset.vid,this.dataset.cap)">▶</button>`).join("")}
+    </div>` : "";
+  const resLinks = docs.length ? `<div class="reslinks">${docs.map(d=>`<a class="moreinfo" href="${esc(d.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${d.kind==="brochure"?"📄":"🔗"} ${esc(d.title||(d.kind==="brochure"?"Brochure":"Link"))}</a>`).join("")}</div>` : "";
   return `<div class="card" data-code="${esc(p.code)}">
     <div class="img">${img}</div>
     <div class="cbody">
+      ${thumbs}
       <div class="cat-tag">${esc(p.subcategory||p.category||"")}${p.brand?" · "+esc(p.brand):""}</div>
       <div class="pname">${esc(p.name)}</div>
       <div class="pcode">Item # ${esc(p.code)}</div>
       <div class="pdesc">${esc(p.description||"")}</div>
       ${p.hcpc?`<div class="hcpc">HCPC ${esc(p.hcpc)}</div>`:""}
       ${p.moreUrl?`<a class="moreinfo" href="${esc(p.moreUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📄 ${esc(p.moreLabel||"More Information")}</a>`:""}
+      ${resLinks}
       <div class="prow">${priceHtml(p)}</div>
       <div class="buy">
         <input class="qtyin" type="number" min="1" value="1" aria-label="Qty">
@@ -2065,13 +2088,33 @@ $("#loginBtn").onclick=()=>openLogin('signin');
 const lightbox=$("#lightbox"), lbImg=$("#lbImg"), lbCap=$("#lbCap");
 function openLightbox(src,cap){lbImg.src=src;lbImg.alt=cap||"";lbCap.textContent=cap||"";lightbox.classList.add("open");}
 function closeLightbox(){lightbox.classList.remove("open");lbImg.src="";}
+/* ---------- product media gallery: thumbnail swap + video embeds ---------- */
+function galSwap(btn){ const card=btn.closest(".card"); if(!card)return; const img=card.querySelector(".img img"); const src=btn.dataset.src;
+  if(img&&src){ img.dataset.retry=""; img.src=src; }
+  card.querySelectorAll(".thumb").forEach(t=>t.classList.remove("on")); btn.classList.add("on"); }
+function videoEmbed(u){ u=String(u||""); let m;
+  if((m=u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/))) return "https://www.youtube.com/embed/"+m[1];
+  if((m=u.match(/vimeo\.com\/(?:video\/)?(\d+)/))) return "https://player.vimeo.com/video/"+m[1];
+  if((m=u.match(/drive\.google\.com\/file\/d\/([\w-]+)/))) return "https://drive.google.com/file/d/"+m[1]+"/preview";
+  return u; }
+function closeVideo(){ const ov=document.getElementById("vidbox"); if(ov){ const f=ov.querySelector("iframe"); if(f)f.src=""; ov.classList.remove("open"); } }
+function openVideo(url,cap){
+  let ov=document.getElementById("vidbox");
+  if(!ov){ ov=document.createElement("div"); ov.id="vidbox"; ov.className="lightbox";
+    ov.innerHTML='<button class="lbx">Close ✕</button><figure><iframe allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen style="width:min(90vw,900px);height:min(70vh,506px);border:0;border-radius:12px;background:#000"></iframe><figcaption></figcaption></figure>';
+    document.body.appendChild(ov);
+    ov.querySelector(".lbx").onclick=closeVideo;
+    ov.addEventListener("click",e=>{ if(e.target===ov||e.target.tagName==="FIGURE") closeVideo(); });
+  }
+  ov.querySelector("iframe").src=videoEmbed(url); ov.querySelector("figcaption").textContent=cap||""; ov.classList.add("open");
+}
 $("#content").addEventListener("click",e=>{
   const img=e.target.closest(".card .img img");
   if(img && img.getAttribute("src")) openLightbox(img.currentSrc||img.src, img.alt);
 });
 $("#lbClose").onclick=closeLightbox;
 lightbox.addEventListener("click",e=>{ if(e.target===lightbox || e.target.tagName==="FIGURE") closeLightbox(); });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape" && lightbox.classList.contains("open")) closeLightbox(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(lightbox.classList.contains("open")) closeLightbox(); closeVideo(); } });
 const debounce=(fn,ms=180)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
 $("#search").addEventListener("input",debounce(renderProducts,180));
 $("#catFilter").addEventListener("change",renderProducts);
