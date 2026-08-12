@@ -463,9 +463,47 @@ const CONFIG = {
   SUPABASE_URL: "https://ycqmztthwldytkzyvmiv.supabase.co",   // HCPS Supabase project
   SUPABASE_ANON: "sb_publishable_rO3Z6aJW_u6rx3TZdO3cww_b9pbvcFZ", // publishable/anon key — safe to embed (public by design)
   EVENTS_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/events-api", // per-dealer intent capture (CORS-enabled)
+  SALESIQ_WIDGETCODE: "siq79854f99c955d9686e6bec5a6868e8ee8dc77fc43d5666ee6f72f4ab47bd51ee82c29bb9945316058a5b2345b377241e", // Zoho SalesIQ live chat + visitor→CRM identity
+  SALESIQ_DOMAIN: "https://salesiq.zohopublic.com",
 };
 
 const state = { manufacturers: [], active: null, products: [], dealer: null };
+
+/* ---- Zoho SalesIQ loader + dealer→CRM identity bridge ----
+   Loads the SalesIQ widget once and maps each chat/visit to the matching CRM
+   contact (keyed on the dealer's email, same key contacts were imported on).
+   HCPSChat.identify() queues until the widget is live, so it is safe to call
+   from the auth handler regardless of load order. */
+(function(){
+  var wc=CONFIG.SALESIQ_WIDGETCODE, dom=CONFIG.SALESIQ_DOMAIN||"https://salesiq.zohopublic.com";
+  var pending=null, ready=false;
+  function sq(){ return window.$zoho && window.$zoho.salesiq ? window.$zoho.salesiq : null; }
+  function apply(id){ var s=sq(); if(!s||!id) return;
+    try{
+      if(id.name) s.visitor.name(id.name);
+      if(id.email) s.visitor.email(id.email);
+      var info={};
+      if(id.dealerId) info["Dealer ID"]=id.dealerId;
+      if(id.company)  info["Company"]=id.company;
+      if(id.account)  info["HCPS Account"]=id.account;
+      if(id.ovation)  info["Ovation Access"]=id.ovation;
+      if(Object.keys(info).length) s.visitor.info(info);
+    }catch(e){}
+  }
+  function flush(){ if(ready && pending) apply(pending); }
+  window.HCPSChat={
+    identify:function(id){ pending=Object.assign({},pending||{},id||{}); flush(); },
+    reset:function(){ pending=null; var s=sq(); try{ if(s&&s.reset) s.reset(); }catch(e){} }
+  };
+  if(!wc || wc.indexOf("REPLACE_")===0){ return; }
+  window.$zoho=window.$zoho||{};
+  window.$zoho.salesiq=window.$zoho.salesiq||{ready:function(){}};
+  var prev=window.$zoho.salesiq.ready;
+  window.$zoho.salesiq.ready=function(){ if(typeof prev==="function"){try{prev();}catch(e){}} ready=true; flush(); };
+  var s=document.createElement("script"); s.id="zsiqscript"; s.defer=true;
+  s.src=dom.replace(/\/$/,"")+"/widget?wc="+encodeURIComponent(wc);
+  var f=document.getElementsByTagName("script")[0]; f.parentNode.insertBefore(s,f);
+})();
 const CART = new Map();                // key: mfr::code -> {p, qty}
 const HOME = "__home__";               // sentinel slug for the personalized dashboard
 const DASH = { featured: null, lineCache: {}, orders: null, home: null };   // featured rows + per-line product cache + order history + portal-home content
@@ -1879,6 +1917,10 @@ async function authMe(){
     AUTH.access=j.access||null;   // {your_accounts, available, golden:'Account|Prospect|None', ovation}
     AUTH.prices=(j.prices&&typeof j.prices==='object')?j.prices:{};   // {"slug::code": contractPrice} — per-dealer
     if(AUTH.status==='approved'&&AUTH.dealer)state.dealer={business:AUTH.dealer.name,account:AUTH.dealer.hcps_account||'',...AUTH.dealer};else state.dealer=null;
+    if(AUTH.status==='approved'&&AUTH.dealer&&window.HCPSChat){   // map this dealer's chat/visit to their CRM contact
+      HCPSChat.identify({ name:AUTH.dealer.name, email:AUTH.dealer.email||'', dealerId:AUTH.dealer.id||'',
+        company:AUTH.dealer.name, account:(AUTH.dealer.hcps_account||''), ovation:(AUTH.access&&AUTH.access.ovation)||'' });
+    }
     if(AUTH.status==='approved'&&j.cart) hydrateCart(j.cart);   // restore the dealer's saved cart
   }catch(e){AUTH.status='anon';}}
 // Rebuild CART + per-manufacturer fields from a server-saved cart (survives logout/login).
@@ -1954,6 +1996,7 @@ async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg
 function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];AUTH.prices={};state.dealer=null;
   SESSION_ID=null; if(_hbT){clearInterval(_hbT);_hbT=null;}                 // stop the activity heartbeat
   CART.clear(); for(const k in MFR) delete MFR[k];                          // local cart clears; the saved cart stays in the system
+  if(window.HCPSChat) HCPSChat.reset();                                     // clear chat identity so a shared machine doesn't leak
   applyAuth();updateCart();toast('Signed out');}
 /* ---------- dealer self-service: edit account (submitted to HCPS for approval) ---------- */
 function closeAccountEditor(){const m=$("#acctModal");if(m)m.remove();}
