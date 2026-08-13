@@ -33,6 +33,9 @@ header{background:#fff;position:sticky;top:0;z-index:60;box-shadow:0 2px 14px rg
 .betabadge{align-self:center;background:#fff3e0;color:#9a4b0d;border:1px solid #f2d9b0;border-radius:999px;padding:3px 9px;font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase;}
 .hactions{display:flex;align-items:center;gap:10px;}
 .hbtn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--silver);color:var(--navy);background:#fff;padding:9px 14px;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer;}
+.hbtn.ccbtn{background:#EE5A5A;border-color:#EE5A5A;color:#fff;text-decoration:none;box-shadow:0 4px 12px rgba(238,90,90,.28);}
+.hbtn.ccbtn:hover{filter:brightness(.96);}
+@media(max-width:640px){.hbtn.ccbtn{font-size:0;gap:0;padding:9px 12px;}.hbtn.ccbtn::after{content:"Cash Flow";font-size:13px;}}
 .hbtn:hover{border-color:var(--navy);background:var(--light);}
 .hbtn.cart{border-color:transparent;background:var(--orange);color:#fff;}
 .hbtn.cart:hover{background:var(--orange-d);}
@@ -386,6 +389,7 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
     <div class="hactions">
       <span class="betabadge" title="This portal is in beta — we're still adding features. Thanks for helping us test it.">BETA</span>
       <span id="whoami"></span>
+      <a class="hbtn ccbtn" id="ccBtn" href="https://www.cardchamp.com/homecareproviderservices?utm_source=hcps&amp;utm_medium=ordering&amp;utm_campaign=dealer-services&amp;utm_content=cardchamp" target="_blank" rel="noopener" title="Turn Credit Card Fees into Cash Flow — an HCPS Dealer Service" onclick="ccClick()">💳 Card Fees &rarr; Cash Flow</a>
       <button class="hbtn" id="loginBtn">🔒 Sign in</button>
       <button class="hbtn cart" id="cartBtn">🛒 Cart <span class="muted" id="cartCount">(0)</span></button>
     </div>
@@ -493,6 +497,7 @@ const state = { manufacturers: [], active: null, products: [], dealer: null };
   function flush(){ if(ready && pending) apply(pending); }
   window.HCPSChat={
     identify:function(id){ pending=Object.assign({},pending||{},id||{}); flush(); },
+    event:function(name,payload){ var s=sq(); try{ if(s&&s.visitor&&s.visitor.info){ var info={"Last Interest":name}; if(payload){ for(var k in payload){ if(Object.prototype.hasOwnProperty.call(payload,k)) info[k]=payload[k]; } } s.visitor.info(info); } }catch(e){} },
     reset:function(){ pending=null; var s=sq(); try{ if(s&&s.reset) s.reset(); }catch(e){} }
   };
   if(!wc || wc.indexOf("REPLACE_")===0){ return; }
@@ -1955,6 +1960,16 @@ function track(type,manufacturer,product,meta){
       headers:{'content-type':'application/json',authorization:'Bearer '+AUTH.session.access_token},
       body:JSON.stringify({action:'track',events:[{type,manufacturer:manufacturer||undefined,product:product||undefined,meta:meta||undefined}]})
     }).catch(()=>{});
+  }catch(e){}
+}
+/* CardChamp / Dealer Services CTA — capture which signed-in dealer showed interest.
+   track() posts to events-api for approved dealers only (per-dealer admin reporting);
+   HCPSChat.event tags the SalesIQ visitor so the interest joins their CRM activity. */
+function ccClick(){
+  try{
+    var d=(window.AUTH&&AUTH.dealer)||{};
+    track('service_cardchamp_click','CardChamp',undefined,{surface:'Ordering Platform',dealerId:d.id||'',company:d.name||''});
+    if(window.HCPSChat&&HCPSChat.event) HCPSChat.event('CardChamp interest',{Service:'CardChamp',Surface:'Ordering Platform'});
   }catch(e){}
 }
 function scheduleCartSave(){ if(AUTH.status!=='approved'||!AUTH.session)return; clearTimeout(_cartSaveT); _cartSaveT=setTimeout(saveCartRemote,700); }
