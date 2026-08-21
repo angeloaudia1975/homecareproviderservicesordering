@@ -1,0 +1,239 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HCPS Dealer Business Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700;800&display=swap">
+<style>
+  :root{--navy:#10263f;--navy2:#2B4071;--navy3:#3B599A;--orange:#F5821F;--orange-d:#d96f14;--gold:#fcb21e;--blue:#1681c2;--green:#2d7d46;--green-bg:#e7f4ec;
+    --paper:#eef1f5;--surface:#fff;--surface-2:#f6f9fc;--ink:#152332;--ink-2:#41546a;--muted:#6b7d90;--line:#e0e6ee;--line-2:#eef2f7;
+    --shadow-sm:0 4px 14px rgba(16,38,63,.07);--shadow:0 14px 40px rgba(16,38,63,.13);--radius:14px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Barlow',system-ui,-apple-system,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  h1,h2,h3,h4,.cond{font-family:'Barlow Condensed','Barlow',system-ui,sans-serif}
+  a{color:inherit;text-decoration:none;cursor:pointer}button{font-family:inherit;cursor:pointer}
+  .tnum{font-variant-numeric:tabular-nums}
+  .topbar{position:sticky;top:0;z-index:60;background:#fff;border-bottom:3px solid var(--orange);box-shadow:0 2px 12px rgba(16,38,63,.06)}
+  .tb-in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:10px 22px}
+  .logo{display:flex;align-items:center;gap:11px}
+  .logo .lm{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,var(--navy),var(--navy3));display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Barlow Condensed';font-weight:800;font-size:18px}
+  .logo b{font-family:'Barlow Condensed';font-weight:800;font-size:17px;color:var(--navy);letter-spacing:.3px;display:block;line-height:1}
+  .logo span{font-size:8.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .tb-actions{display:flex;align-items:center;gap:14px;margin-left:auto;font-size:13px;font-weight:600;color:var(--ink-2)}
+  .tb-actions .dl{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid var(--line);border-radius:22px;background:var(--surface-2)}
+  .tb-actions .dl b{color:var(--navy);font-size:12.5px}
+  .btn{border:0;border-radius:9px;padding:9px 15px;font-weight:800;font-size:13px;display:inline-flex;align-items:center;gap:7px}
+  .btn.pri{background:var(--orange);color:#fff}.btn.pri:hover{background:var(--orange-d)}
+  .btn.nv{background:var(--navy2);color:#fff}.btn.nv:hover{background:var(--navy)}
+  .btn.gh{background:#fff;color:var(--ink-2);border:1px solid var(--line)}
+  .mainnav{background:var(--navy)}
+  .mn-in{max-width:1240px;margin:0 auto;display:flex;gap:1px;padding:0 14px;overflow-x:auto}
+  .mn-in a{color:#aebdd0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:12px 14px;border-bottom:3px solid transparent;white-space:nowrap}
+  .mn-in a:hover{color:#fff}.mn-in a.on{color:#fff;border-color:var(--orange)}
+  .mn-in a.soon{color:#6b7d90;cursor:default}.mn-in a.soon:hover{color:#8a97a8}
+  .page{max-width:1240px;margin:0 auto;padding:22px 22px 70px}
+  .view{display:none}.view.on{display:block}
+  .ph{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .ph h1{margin:0;font-size:26px;font-weight:800;color:var(--navy)}
+  .ph .sub{color:var(--muted);font-size:14px;margin-top:2px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:900px){.kpis{grid-template-columns:1fr 1fr}}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow-sm)}
+  .kpi.accent{border-left:4px solid var(--orange);background:linear-gradient(120deg,#fff,#fffaf3)}
+  .kpi .kl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:800}
+  .kpi .kv{font-size:29px;font-weight:800;color:var(--navy);font-family:'Barlow Condensed';line-height:1;margin-top:6px}
+  .kpi .kv.o{color:var(--orange-d)}
+  .kpi .ks{font-size:12px;color:var(--ink-2);margin-top:4px}
+  .grid2{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:16px}
+  @media(max-width:980px){.grid2{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px 20px;margin-top:16px}
+  .card:first-child{margin-top:0}
+  .card .chead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .card h3{margin:0;font-size:18px;font-weight:800;color:var(--navy)}
+  .seelink{font-size:12px;font-weight:800;color:var(--orange-d)}
+  .rowlist{display:flex;flex-direction:column}
+  .rl{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line-2)}
+  .rl:first-child{border-top:0}
+  .rl .b{flex:1;min-width:0}
+  .rl .n{font-size:13.5px;font-weight:700;color:var(--navy);line-height:1.2}
+  .rl .m{font-size:11.5px;color:var(--muted)}
+  .rl .amt{text-align:right;font-weight:800;font-family:'Barlow Condensed';font-size:16px;color:var(--ink)}
+  .pill{display:inline-block;font-size:10px;font-weight:800;border-radius:20px;padding:3px 8px;white-space:nowrap}
+  .pill.gold{background:#fdeee0;color:#b45309;border:1px solid #f6d5ad}
+  .pill.portal{background:#e6f0f8;color:#1466a3;border:1px solid #bcd8ef}
+  .pill.imported{background:var(--surface-2);color:#6b7d90;border:1px solid var(--line)}
+  .pill.done{background:var(--green-bg);color:var(--green);border:1px solid #bfe3ca}
+  .pill.open{background:#fff4d6;color:#8a5a00;border:1px solid #f3d27a}
+  .hbars{display:flex;flex-direction:column;gap:9px}
+  .hbar{display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:10px;font-size:12.5px}
+  .hbar .hn{font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hbar .htrack{height:15px;background:var(--surface-2);border-radius:8px;overflow:hidden}
+  .hbar .hfill{height:100%;border-radius:8px;background:var(--navy3)}
+  .hbar .hv{font-weight:800;font-family:'Barlow Condensed';color:var(--ink);white-space:nowrap}
+  .barchart{display:flex;align-items:flex-end;gap:6px;height:130px;padding-top:8px}
+  .barchart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+  .barchart .bar{width:64%;background:linear-gradient(180deg,var(--orange),#f7a24f);border-radius:5px 5px 0 0;min-height:3px}
+  .barchart .bl{font-size:9px;color:var(--muted);font-weight:700}
+  .tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+  .tbl th{text-align:left;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+  .tbl td{padding:10px 12px;border-bottom:1px solid var(--line-2)}
+  .tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums}
+  .gate{max-width:440px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px 30px;text-align:center}
+  .gate .lm{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--navy),var(--navy3));display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Barlow Condensed';font-weight:800;font-size:24px;margin:0 auto 14px}
+  .gate h2{margin:0 0 6px;font-size:23px;color:var(--navy)}
+  .gate p{color:var(--ink-2);font-size:14px;margin:0 0 18px}
+  .msg{padding:34px;text-align:center;color:var(--muted);font-size:14px}
+  .foot{color:var(--muted);font-size:12px;padding:24px 0 6px;text-align:center}
+  .empty{padding:26px;text-align:center;color:var(--muted);font-size:13.5px}
+</style>
+</head><body>
+<div class="topbar">
+  <div class="tb-in">
+    <a class="logo" href="/dashboard.html"><span class="lm">H</span><span><b>HCPS</b><span>Dealer Business Hub</span></span></a>
+    <div class="tb-actions">
+      <span class="dl" id="dealerChip" style="display:none">👤 <b id="dealerName">—</b></span>
+      <a class="btn gh" href="/">← Back to shop</a>
+      <a id="signout" style="display:none;color:var(--muted)">Sign out</a>
+    </div>
+  </div>
+  <div class="mainnav"><div class="mn-in" id="nav">
+    <a class="on" onclick="showView('dash')">Dashboard</a>
+    <a href="/">Shop</a>
+    <a onclick="showView('orders')">My Orders</a>
+    <a class="soon" title="Coming in a later phase">Showroom</a>
+    <a class="soon" title="Coming in a later phase">Reports</a>
+    <a class="soon" title="Coming in a later phase">Quotes</a>
+    <a class="soon" title="Coming in a later phase">My Manufacturers</a>
+    <a class="soon" title="Coming in a later phase">Resources</a>
+    <a class="soon" title="Coming in a later phase">Account &amp; Pricing</a>
+  </div></div>
+</div>
+<div class="page">
+  <div id="gate"></div>
+  <div class="view on" id="view-dash"><div class="msg">Loading your business hub…</div></div>
+  <div class="view" id="view-orders"><div class="msg">Loading…</div></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+/* ---- config (matches the portal's index.html) ---- */
+const SUPABASE_URL="https://ycqmztthwldytkzyvmiv.supabase.co";
+const SUPABASE_ANON="sb_publishable_rO3Z6aJW_u6rx3TZdO3cww_b9pbvcFZ";
+const API_BASE="https://homecareproviderservices.netlify.app/.netlify/functions";
+const AUTH_ENDPOINT=API_BASE+"/dealer-auth";
+const HISTORY_ENDPOINT=API_BASE+"/order-history-api";
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money=n=>"$"+Math.round(Number(n)||0).toLocaleString();
+const num=n=>Math.round(Number(n)||0).toLocaleString();
+const MONS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const monthLbl=ym=>{const[y,m]=String(ym||"").split("-");return m?MONS[(+m)-1]+" "+y:ym;};
+const dateShort=d=>{if(!d)return"—";const t=String(d);if(/^\d{4}-\d{2}/.test(t)){const[y,m,dd]=t.slice(0,10).split("-");return MONS[(+m)-1]+" "+(dd?(+dd)+", ":"")+y;}return t;};
+
+/* ---- session (reads the portal's stored login; same origin) ---- */
+let SESSION=null, PROFILE=null;
+function loadSession(){try{return JSON.parse(localStorage.getItem("hcps_session")||"null");}catch(e){return null;}}
+function saveSession(s){SESSION=s;try{localStorage.setItem("hcps_session",JSON.stringify(s));}catch(e){}}
+async function refreshIfNeeded(){
+  const s=SESSION; if(!s||!s.refresh_token) return;
+  if(s.expires_at && Date.now() < s.expires_at-90000) return;
+  try{const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{method:"POST",headers:{"content-type":"application/json",apikey:SUPABASE_ANON},body:JSON.stringify({refresh_token:s.refresh_token})});
+    const j=await r.json().catch(()=>({}));if(r.ok&&j.access_token){if(j.expires_in&&!j.expires_at)j.expires_at=Date.now()+j.expires_in*1000;saveSession(j);}}catch(e){}
+}
+function token(){return SESSION&&SESSION.access_token;}
+async function api(endpoint,body){
+  await refreshIfNeeded();
+  const r=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+(token()||"")},body:JSON.stringify(body||{})});
+  return r.json().catch(()=>({}));
+}
+
+/* ---- boot ---- */
+async function boot(){
+  document.getElementById("foot").textContent="HCPS Dealer Business Hub — Phase 1 · consolidated order history across imported sales, portal & Golden.";
+  SESSION=loadSession();
+  if(!token()){ return gate(); }
+  const me=await api(AUTH_ENDPOINT,{action:"me"}).catch(()=>({}));
+  if(!me||me.status!=="approved"||!me.dealer){ return gate(me&&me.status); }
+  PROFILE=me.dealer;
+  $("#dealerChip").style.display="";$("#dealerName").textContent=PROFILE.name||"Dealer";
+  $("#signout").style.display="";$("#signout").onclick=()=>{try{localStorage.removeItem("hcps_session");}catch(e){}location.href="/";};
+  loadDash();
+}
+function gate(status){
+  $("#gate").innerHTML=`<div class="gate"><div class="lm">H</div><h2>Sign in to your Business Hub</h2>
+    <p>${status==="pending"?"Your account is pending HCPS approval. You'll get access as soon as it's approved.":"Sign in on the ordering portal, then return here to see your consolidated purchases, reports and tools."}</p>
+    <a class="btn pri" href="/">Go to the portal to sign in →</a></div>`;
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
+}
+
+/* ---- dashboard ---- */
+let SUMMARY=null;
+async function loadDash(){
+  const d=await api(HISTORY_ENDPOINT,{action:"summary"});
+  if(!d||d.ok===false){ $("#view-dash").innerHTML=`<div class="msg">Couldn't load your history right now. Please try again shortly.</div>`; return; }
+  SUMMARY=d;
+  const y=d.ytd||{spend:0,units:0,orders:0,year:new Date().getFullYear()};
+  const all=d.allTime||{spend:0,orders:0,sinceYear:"2025"};
+  const lines=(d.byManufacturer||[]).filter(m=>m.spend>0);
+  const monthly=d.monthly||[];
+  const maxM=Math.max(1,...monthly.map(m=>m.spend));
+  // fill 12 months for the current year
+  const byYm=Object.fromEntries(monthly.map(m=>[m.month,m.spend]));
+  const cols=MONS.map((lbl,i)=>{const k=`${y.year}-${String(i+1).padStart(2,"0")}`;const v=byYm[k]||0;return `<div class="col"><div class="bar" style="height:${v?Math.max(4,Math.round(v/maxM*100)):0}%"></div><div class="bl">${lbl}</div></div>`;}).join("");
+  const maxMf=Math.max(1,...lines.map(m=>m.spend));
+  const hbars=lines.slice(0,6).map(m=>`<div class="hbar"><div class="hn">${esc(m.name)}</div><div class="htrack"><div class="hfill" style="width:${Math.max(3,Math.round(m.spend/maxMf*100))}%"></div></div><div class="hv tnum">${money(m.spend)}</div></div>`).join("")||`<div class="empty">No manufacturer activity yet.</div>`;
+  const recent=(d.recent||[]);
+  const recentHtml=recent.length?recent.map(o=>`<div class="rl">
+      <div class="b"><div class="n">${esc(o.manufacturerName)} ${srcPill(o.source)}</div><div class="m">${dateShort(o.date)} · ${o.itemsCount} item${o.itemsCount!==1?"s":""} · ${o.units} units${o.preview&&o.preview.length?" · "+esc(o.preview.join(", ")):""}</div></div>
+      <div class="amt tnum">${money(o.cost)}</div></div>`).join(""):`<div class="empty">No orders on file yet.</div>`;
+  $("#view-dash").innerHTML=`
+    <div class="ph"><div><h1>Welcome back${PROFILE&&PROFILE.name?", "+esc(PROFILE.name):""}</h1><div class="sub">Your HCPS purchases across every line · account ${esc((PROFILE&&PROFILE.hcps_account)||"—")}</div></div>
+      <div><a class="btn nv" href="/">Start an order</a> <a class="btn pri" onclick="showView('orders')">View all orders →</a></div></div>
+    <div class="kpis">
+      <div class="kpi accent"><div class="kl">Purchases — YTD ${y.year}</div><div class="kv o tnum">${money(y.spend)}</div><div class="ks">${num(y.units)} units · ${y.orders} orders</div></div>
+      <div class="kpi"><div class="kl">Purchases — all time</div><div class="kv tnum">${money(all.spend)}</div><div class="ks">since ${esc(all.sinceYear||"2025")}</div></div>
+      <div class="kpi"><div class="kl">Orders — YTD</div><div class="kv tnum">${y.orders}</div><div class="ks">across all lines</div></div>
+      <div class="kpi"><div class="kl">Lines with activity</div><div class="kv tnum">${lines.length}</div><div class="ks">manufacturers purchased</div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="chead"><h3>Recent orders</h3><a class="seelink" onclick="showView('orders')">All orders →</a></div><div class="rowlist">${recentHtml}</div></div>
+      <div>
+        <div class="card"><div class="chead"><h3>Purchases by month · ${y.year}</h3></div><div class="barchart">${cols}</div></div>
+        <div class="card"><div class="chead"><h3>By manufacturer</h3></div><div class="hbars">${hbars}</div></div>
+      </div>
+    </div>`;
+  showView("dash");
+}
+function srcPill(s){return s==="golden"?'<span class="pill gold">Golden</span>':s==="portal"?'<span class="pill portal">Portal</span>':'<span class="pill imported">Imported</span>';}
+function statPill(s){s=String(s||"").toLowerCase();return s==="delivered"?'<span class="pill done">Delivered</span>':(s==="submitted"||s==="open")?'<span class="pill open">Submitted</span>':'<span class="pill portal">'+esc(s||"—")+'</span>';}
+
+/* ---- my orders (full consolidated history) ---- */
+let HISTORY=null;
+async function loadOrders(){
+  if(HISTORY){return;}
+  const d=await api(HISTORY_ENDPOINT,{action:"history",limit:300});
+  if(!d||d.ok===false){ $("#view-orders").innerHTML=`<div class="msg">Couldn't load your orders right now.</div>`; return; }
+  HISTORY=d.orders||[];
+  const rows=HISTORY.map(o=>`<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b></td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${money(o.cost)}</td><td>${statPill(o.status)}</td></tr>`).join("");
+  const total=HISTORY.reduce((s,o)=>s+(Number(o.cost)||0),0);
+  $("#view-orders").innerHTML=`
+    <div class="ph"><div><h1>My Orders</h1><div class="sub">Consolidated history — imported sales, portal &amp; Golden · ${HISTORY.length} records</div></div>
+      <div><a class="btn gh" onclick="alert('Excel export arrives in Phase 2')">⬇ Export</a> <a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
+    <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Date</th><th>Source</th><th>Manufacturer</th><th>Items</th><th class="n">Units</th><th class="n">Amount</th><th>Status</th></tr></thead>
+      <tbody>${rows||`<tr><td colspan="7" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
+      ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total purchases</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${money(total)}</td><td></td></tr></tfoot>`:""}
+    </table></div>`;
+}
+
+function showView(v){
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
+  $("#view-"+v).classList.add("on");
+  document.querySelectorAll("#nav a").forEach(a=>a.classList.remove("on"));
+  const idx={dash:0,orders:2}[v]; const links=document.querySelectorAll("#nav a"); if(links[idx])links[idx].classList.add("on");
+  window.scrollTo({top:0});
+  if(v==="orders")loadOrders();
+}
+window.showView=showView;
+boot();
+</script>
+</body></html>
