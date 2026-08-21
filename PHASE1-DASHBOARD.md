@@ -56,5 +56,48 @@ All added to **`dashboard.html`** (no backend change — the Phase 1 API already
 
 **Note on MAP:** most catalog records carry MSRP but not MAP; the pricing export includes a MAP column that populates as MAP values are added to the catalog.
 
-## Next (Phase 3)
-Favorites + quick reorder, the branded customer MSRP quote generator, automatic order confirmations (already partially handled by `orders-api`), and dealer branding — all read from this same consolidated view + pricing map.
+---
+
+# Phase 3 — Productivity tools: favorites, quotes, pricing requests, branding  (shipped)
+
+**New function `dealer-tools-api.js`** → **marketing** repo (`netlify/functions/`). One JWT-gated function, four actions:
+`favorites_list` · `favorites_toggle {manufacturer,code}` · `branding_get` / `branding_set {logo_url}` · `pricing_request {manufacturer,code,product,current_price,quantity,competitor_note}` (stores + emails HCPS via Resend).
+
+**Dashboard additions** (`dashboard.html`):
+- **Quotes** (nav item now live): branded customer MSRP quote generator — pick any HCPS product, MSRP pulls from the catalog (2×-cost estimate where none on file), customer name + validity, dealer **logo branding**, live preview, print/PDF.
+- **Favorites**: a dashboard quick-reorder card + a Favorites view (reorder / remove / request volume pricing). Hearts also live in the quote builder.
+- **Volume-pricing request**: a modal (product, current price, anticipated quantity, competitive context) → `pricing_request` (stored + emailed to HCPS, reply-to the dealer).
+- **Dealer branding**: logo shown in the top bar and on quotes; set via a logo URL, with an automatic **monogram fallback** from the business name. Persists via `branding_set` (and localStorage).
+- **Order confirmations**: already handled by `orders-api` `create` (transactional Resend email on every saved order) — no new work.
+
+**Resilience:** favorites and branding use the API as the source of truth with a **localStorage fallback**, so they work even before the DB migrations below are applied (per-device until then).
+
+### Migrations (run once in Supabase)
+```sql
+-- favorites
+create table if not exists favorites (
+  dealer_id uuid not null,
+  manufacturer text not null,
+  code text not null,
+  created_at timestamptz default now(),
+  primary key (dealer_id, manufacturer, code)
+);
+-- volume-pricing requests
+create table if not exists pricing_requests (
+  id bigint generated always as identity primary key,
+  dealer_id uuid not null,
+  manufacturer text, code text, product text,
+  current_price numeric, quantity int, competitor_note text,
+  status text default 'new',
+  created_at timestamptz default now()
+);
+-- dealer logo for portal + quote branding
+alter table dealers add column if not exists logo_url text;
+```
+Optional env: `PRICING_REQUEST_TO` (defaults to `ORDER_TO` / orders@homecareproviderservices.us); `RESEND_API_KEY` already set.
+
+### Auto-populating the dealer logo
+`branding_get` also reads `dealers.website`; a later enhancement can derive a logo from the stored website (favicon/logo service) so the field pre-fills — today it falls back to the business-name monogram until a logo URL is set or uploaded.
+
+## Next (Phase 4)
+HCPS Showroom Development Platform (multi-line, history-aware), the manufacturer literature request center, and the tracking-request workflow.

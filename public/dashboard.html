@@ -80,6 +80,25 @@
   .est{display:inline-block;font-size:10px;font-weight:800;color:#b9791a;background:#fdf3e3;border:1px solid #f0d9a8;border-radius:5px;padding:1px 6px}
   .kpi .kv.g{color:var(--green)}
   @media print{.topbar,.mainnav,.tb-actions,.ph .btn,.seelink,.foot,.mn-in{display:none!important}.page{padding:0;max-width:none}.card{box-shadow:none;break-inside:avoid;border-color:#ccc}.view:not(.on){display:none}}
+  .qbuild{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:900px){.qbuild{grid-template-columns:1fr}}
+  .qpaper{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:20px 22px}
+  .qhead{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--navy2);padding-bottom:12px;margin-bottom:12px;gap:12px}
+  .qbiz{font-family:'Barlow Condensed';font-weight:800;font-size:18px;color:var(--navy);line-height:1.1}
+  .qc{font-size:11px;color:var(--muted)}
+  .qtbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+  .qtbl th{text-align:left;color:var(--muted);font-size:10px;text-transform:uppercase;padding:6px 6px;border-bottom:1px solid var(--line)}
+  .qtbl td{padding:7px 6px;border-bottom:1px solid var(--line-2)}
+  .qtot{display:flex;justify-content:flex-end;margin-top:10px;font-family:'Barlow Condensed';font-weight:800;font-size:18px;color:var(--navy)}
+  .modal{display:none;position:fixed;inset:0;background:rgba(16,38,63,.5);z-index:100;align-items:center;justify-content:center;padding:20px}
+  .modal.on{display:flex}
+  .mbox{background:#fff;border-radius:14px;box-shadow:var(--shadow);max-width:480px;width:100%;padding:22px 24px}
+  .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .mhead h3{margin:0;color:var(--navy)}
+  .mx{color:var(--muted);font-size:18px;cursor:pointer}
+  .fld2{margin-bottom:10px}
+  .fld2 label{font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px}
+  .fld2 input,.fld2 select,.fld2 textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:inherit;font-size:13.5px}
   .gate{max-width:440px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px 30px;text-align:center}
   .gate .lm{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--navy),var(--navy3));display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Barlow Condensed';font-weight:800;font-size:24px;margin:0 auto 14px}
   .gate h2{margin:0 0 6px;font-size:23px;color:var(--navy)}
@@ -93,7 +112,7 @@
   <div class="tb-in">
     <a class="logo" href="/dashboard.html"><span class="lm">H</span><span><b>HCPS</b><span>Dealer Business Hub</span></span></a>
     <div class="tb-actions">
-      <span class="dl" id="dealerChip" style="display:none">👤 <b id="dealerName">—</b></span>
+      <span class="dl" id="dealerChip" style="display:none"><span id="brandLogo"></span><b id="dealerName">—</b></span>
       <a class="btn gh" href="/">← Back to shop</a>
       <a id="signout" style="display:none;color:var(--muted)">Sign out</a>
     </div>
@@ -104,7 +123,7 @@
     <a onclick="showView('orders')">My Orders</a>
     <a class="soon" title="Coming in a later phase">Showroom</a>
     <a onclick="showView('reports')">Reports</a>
-    <a class="soon" title="Coming in a later phase">Quotes</a>
+    <a onclick="showView('quotes')">Quotes</a>
     <a class="soon" title="Coming in a later phase">My Manufacturers</a>
     <a class="soon" title="Coming in a later phase">Resources</a>
     <a class="soon" title="Coming in a later phase">Account &amp; Pricing</a>
@@ -115,7 +134,10 @@
   <div class="view on" id="view-dash"><div class="msg">Loading your business hub…</div></div>
   <div class="view" id="view-orders"><div class="msg">Loading…</div></div>
   <div class="view" id="view-reports"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-quotes"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-favorites"><div class="msg">Loading…</div></div>
   <div class="foot" id="foot"></div>
+  <div class="modal" id="modal"></div>
 </div>
 
 <script>
@@ -125,6 +147,7 @@ const SUPABASE_ANON="sb_publishable_rO3Z6aJW_u6rx3TZdO3cww_b9pbvcFZ";
 const API_BASE="https://homecareproviderservices.netlify.app/.netlify/functions";
 const AUTH_ENDPOINT=API_BASE+"/dealer-auth";
 const HISTORY_ENDPOINT=API_BASE+"/order-history-api";
+const TOOLS_ENDPOINT=API_BASE+"/dealer-tools-api";
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -153,7 +176,7 @@ async function api(endpoint,body){
 
 /* ---- boot ---- */
 async function boot(){
-  document.getElementById("foot").textContent="HCPS Dealer Business Hub — Phases 1–2 · consolidated order history, reports with retail-margin math, and Excel/PDF & pricing exports.";
+  document.getElementById("foot").textContent="HCPS Dealer Business Hub — Phases 1–3 · consolidated order history, reports & retail-margin math, exports, favorites, branded quotes & volume-pricing requests.";
   SESSION=loadSession();
   if(!token()){ return gate(); }
   const me=await api(AUTH_ENDPOINT,{action:"me"}).catch(()=>({}));
@@ -161,6 +184,7 @@ async function boot(){
   PROFILE=me.dealer;
   $("#dealerChip").style.display="";$("#dealerName").textContent=PROFILE.name||"Dealer";
   $("#signout").style.display="";$("#signout").onclick=()=>{try{localStorage.removeItem("hcps_session");}catch(e){}location.href="/";};
+  await loadBranding(); applyBranding();
   loadDash();
 }
 function gate(status){
@@ -205,8 +229,17 @@ async function loadDash(){
         <div class="card"><div class="chead"><h3>Purchases by month · ${y.year}</h3></div><div class="barchart">${cols}</div></div>
         <div class="card"><div class="chead"><h3>By manufacturer</h3></div><div class="hbars">${hbars}</div></div>
       </div>
+    </div>
+    <div class="grid2" style="grid-template-columns:2fr 1fr">
+      <div class="card"><div class="chead"><h3>Favorites — quick reorder</h3><a class="seelink" onclick="showView('favorites')">Manage →</a></div><div id="dashFav" class="rowlist"><div class="empty">Loading…</div></div></div>
+      <div class="card"><div class="chead"><h3>Dealer tools</h3></div>
+        <div class="rowlist">
+          <div class="rl"><div class="b"><div class="n">Customer MSRP quotes</div><div class="m">Build a branded quote from any HCPS product</div></div><a class="btn nv" onclick="showView('quotes')">Open</a></div>
+          <div class="rl"><div class="b"><div class="n">Request volume pricing</div><div class="m">Ask HCPS to sharpen pricing on a bigger order</div></div><a class="btn gh" onclick="openPriceReq()">Request</a></div>
+        </div></div>
     </div>`;
   showView("dash");
+  ensureCatalogFav().then(renderDashFav);
 }
 function srcPill(s){return s==="golden"?'<span class="pill gold">Golden</span>':s==="portal"?'<span class="pill portal">Portal</span>':'<span class="pill imported">Imported</span>';}
 function statPill(s){s=String(s||"").toLowerCase();return s==="delivered"?'<span class="pill done">Delivered</span>':(s==="submitted"||s==="open")?'<span class="pill open">Submitted</span>':'<span class="pill portal">'+esc(s||"—")+'</span>';}
@@ -335,14 +368,106 @@ async function exportPricingCSV(){await loadPricing();const rows=[['SKU','Manufa
 function printPDF(){window.print();}
 window.exportHistoryCSV=exportHistoryCSV;window.exportReportCSV=exportReportCSV;window.exportPricingCSV=exportPricingCSV;window.printPDF=printPDF;window.renderReports=renderReports;
 
+/* ================= PHASE 3: favorites, branding, quotes, pricing requests ================= */
+let FAVS=new Set(), BRANDING={logo_url:null}, _catFavReady=false;
+let QUOTE=[], QCUST={name:"",valid:"30 days"};
+async function ensureCatalogFav(){ await loadPricing(); if(!_catFavReady){ await loadFavorites(); _catFavReady=true; } }
+
+async function loadFavorites(){
+  try{ const d=await api(TOOLS_ENDPOINT,{action:"favorites_list"}); if(d&&d.ok&&Array.isArray(d.favorites)){ FAVS=new Set(d.favorites.map(f=>f.manufacturer+"|"+f.code)); try{localStorage.setItem("hcps_favs",JSON.stringify([...FAVS]));}catch(e){} return; } }catch(e){}
+  try{ FAVS=new Set(JSON.parse(localStorage.getItem("hcps_favs")||"[]")); }catch(e){ FAVS=new Set(); }
+}
+async function toggleFav(mfr,code){
+  const key=mfr+"|"+code; if(FAVS.has(key))FAVS.delete(key); else FAVS.add(key);
+  try{localStorage.setItem("hcps_favs",JSON.stringify([...FAVS]));}catch(e){}
+  try{ await api(TOOLS_ENDPOINT,{action:"favorites_toggle",manufacturer:mfr,code}); }catch(e){}
+  renderDashFav(); if($("#view-favorites").classList.contains("on"))renderFavorites(); if($("#view-quotes").classList.contains("on"))renderQuotes();
+}
+function favProducts(){ return [...FAVS].map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const p=PRICE&&PRICE[mfr+"|"+code];return {mfr,code,name:(p&&p.name)||code,mfrName:(p&&p.mfrName)||mfr,cost:p?p.cost:null,msrp:p?p.msrp:null};}); }
+function renderDashFav(){ const host=$("#dashFav"); if(!host)return; const items=favProducts().slice(0,5);
+  host.innerHTML=items.length?items.map(p=>`<div class="rl"><div class="b"><div class="n">${esc(p.name)}</div><div class="m">${esc(p.mfrName)} · #${esc(p.code)}${p.cost!=null?" · "+money(p.cost):""}</div></div><a class="btn gh" href="/">Reorder</a></div>`).join(""):`<div class="empty">No favorites yet — add ♥ from the quote builder or Shop.</div>`;
+}
+async function loadFavView(){ await ensureCatalogFav(); renderFavorites(); }
+function renderFavorites(){ const items=favProducts();
+  $("#view-favorites").innerHTML=`<div class="ph"><div><h1>Favorites</h1><div class="sub">Your saved products — quick reorder</div></div><div><a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
+   <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Product</th><th>Manufacturer</th><th class="n">Your cost</th><th class="n">MSRP</th><th></th></tr></thead>
+   <tbody>${items.length?items.map(p=>`<tr><td><b>${esc(p.name)}</b><div style="font-size:11px;color:var(--muted)">#${esc(p.code)}</div></td><td>${esc(p.mfrName)}</td><td class="n tnum">${p.cost!=null?money(p.cost):"—"}</td><td class="n tnum">${p.msrp!=null?money(p.msrp):"—"}</td><td class="n" style="white-space:nowrap"><a class="btn gh" href="/">Reorder</a> <a class="btn gh" onclick="toggleFav('${p.mfr}','${p.code}')">♥ Remove</a> <a class="btn gh" onclick="openPriceReq('${p.mfr}','${p.code}')">Volume price</a></td></tr>`).join(""):`<tr><td colspan="5" class="empty">No favorites yet. Add ♥ from the quote builder or Shop.</td></tr>`}</tbody></table></div>`;
+}
+
+/* branding */
+function monogram(s){const name=(PROFILE&&PROFILE.name)||"HCPS";const init=name.split(/\s+/).slice(0,2).map(w=>w[0]||"").join("").toUpperCase()||"H";return `<span style="width:${s}px;height:${s}px;border-radius:8px;background:linear-gradient(135deg,#0e7a5f,#12a37c);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-family:'Barlow Condensed';font-weight:800;font-size:${Math.round(s*0.42)}px">${esc(init)}</span>`;}
+function brandLogoHtml(size){ const s=size||44; if(BRANDING.logo_url){return `<img src="${esc(BRANDING.logo_url)}" alt="logo" style="width:${s}px;height:${s}px;border-radius:8px;object-fit:contain;background:#fff;border:1px solid var(--line)" onerror="this.outerHTML=monogram(${s})">`;} return monogram(s); }
+async function loadBranding(){ try{ const d=await api(TOOLS_ENDPOINT,{action:"branding_get"}); if(d&&d.ok)BRANDING.logo_url=d.logo_url||null; }catch(e){} try{ if(!BRANDING.logo_url)BRANDING.logo_url=localStorage.getItem("hcps_logo")||null; }catch(e){} }
+async function saveBranding(url){ url=(url||"").trim(); BRANDING.logo_url=url||null; try{ if(url)localStorage.setItem("hcps_logo",url); else localStorage.removeItem("hcps_logo"); }catch(e){} try{ await api(TOOLS_ENDPOINT,{action:"branding_set",logo_url:url}); }catch(e){} applyBranding(); if($("#view-quotes").classList.contains("on"))renderQuotes(); }
+function applyBranding(){ const el=$("#brandLogo"); if(el)el.innerHTML=brandLogoHtml(22); }
+
+/* quotes */
+function hashStr(s){let h=0;for(let i=0;i<String(s).length;i++){h=(h*31+String(s).charCodeAt(i))|0;}return h;}
+async function loadQuotesView(){ await ensureCatalogFav(); renderQuotes(); }
+function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const p=(PRICE&&PRICE[mfr+"|"+code])||{};const msrp=(p.msrp!=null?p.msrp:(p.cost!=null?p.cost*2:0));return {mfr,code,name:p.name||code,mfrName:p.mfrName||mfr,msrp,est:p.msrp==null};}); }
+function quotePaperHtml(picked,total){
+  return `<div class="qhead"><div style="display:flex;gap:11px;align-items:center">${brandLogoHtml(46)}<div><div class="qbiz">${esc((PROFILE&&PROFILE.name)||"Your Business")}</div><div class="qc">Account ${esc((PROFILE&&PROFILE.hcps_account)||"—")}</div></div></div>
+    <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>#Q-${(Math.abs(hashStr((PROFILE&&PROFILE.name)||"x"))%9000+1000)}</b><div class="qc">Valid ${esc(QCUST.valid||"")}</div></div></div>
+    ${QCUST.name?`<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">Prepared for <b>${esc(QCUST.name)}</b></div>`:""}
+    <table class="qtbl"><thead><tr><th>Product</th><th>Mfr</th><th style="text-align:right">MSRP</th></tr></thead><tbody>${picked.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(String(r.mfrName).split(" ")[0])}</td><td style="text-align:right">${money(r.msrp)}${r.est?' <span class="est">est</span>':""}</td></tr>`).join("")||'<tr><td colspan="3" style="color:#9aa4ae">No items yet.</td></tr>'}</tbody></table>
+    <div class="qtot">Total MSRP: ${money(total)}</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:10px">Manufacturer suggested retail. Prepared by ${esc((PROFILE&&PROFILE.name)||"your business")} via HCPS. Estimated MSRP shown where manufacturer MSRP is pending.</div>`;
+}
+function renderQuotes(){
+  const list=PRICELIST||[]; const picked=quotePicked(); const total=picked.reduce((s,r)=>s+r.msrp,0);
+  const opts=list.filter(p=>!QUOTE.includes(p.mfr+"|"+p.code)).slice(0,500).map(p=>`<option value="${p.mfr}|${esc(p.code)}">${esc(p.mfrName)} — ${esc(p.name)} (#${esc(p.code)})</option>`).join("");
+  $("#view-quotes").innerHTML=`<div class="ph"><div><h1>Customer MSRP Quotes</h1><div class="sub">Build a branded quote for your customer from any HCPS product</div></div>
+     <div><a class="btn gh" onclick="printPDF()">⬇ Print / PDF</a> <a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
+   <div class="qbuild">
+    <div class="card" style="margin-top:0"><h3>Build the quote</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">MSRP pulls from the catalog; 2× dealer-cost estimate where none on file.</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px"><select id="qsel" style="flex:1;border:1px solid var(--line);border-radius:9px;padding:9px;font-family:inherit;font-size:13px">${opts}</select><a class="btn nv" onclick="qAdd()">＋ Add</a></div>
+      <div class="rowlist">${picked.length?picked.map(r=>`<div class="rl"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${esc(r.mfrName)} · MSRP ${money(r.msrp)}${r.est?" est":""}</div></div><a class="btn gh" title="Favorite" onclick="toggleFav('${r.mfr}','${r.code}')">${FAVS.has(r.mfr+"|"+r.code)?"♥":"♡"}</a> <a class="btn gh" onclick="qDel('${r.mfr}','${r.code}')">Remove</a></div>`).join(""):`<div class="empty">Add a product above to start the quote.</div>`}</div>
+      <div class="card" style="box-shadow:none;background:var(--surface-2);margin-top:14px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Customer &amp; branding</div>
+        <div class="fld2"><label>Customer name</label><input value="${esc(QCUST.name)}" oninput="QCUST.name=this.value;qPreview()"></div>
+        <div class="fld2"><label>Valid for</label><input value="${esc(QCUST.valid)}" oninput="QCUST.valid=this.value;qPreview()"></div>
+        <div class="fld2"><label>Your logo URL (optional — shows on the quote)</label><input id="qlogo" value="${esc(BRANDING.logo_url||"")}" placeholder="https://…/logo.png"><a class="btn gh" style="margin-top:6px" onclick="saveBranding(document.getElementById('qlogo').value)">Save logo</a></div>
+      </div>
+    </div>
+    <div><div style="font-size:12px;color:var(--muted);margin-bottom:8px">Live preview — what your customer sees</div><div id="qpaper" class="qpaper">${quotePaperHtml(picked,total)}</div></div>
+   </div>`;
+}
+function qPreview(){ const picked=quotePicked(); const total=picked.reduce((s,r)=>s+r.msrp,0); const el=$("#qpaper"); if(el)el.innerHTML=quotePaperHtml(picked,total); }
+function qAdd(){ const v=$("#qsel").value; if(v&&!QUOTE.includes(v))QUOTE.push(v); renderQuotes(); }
+function qDel(mfr,code){ QUOTE=QUOTE.filter(x=>x!==mfr+"|"+code); renderQuotes(); }
+
+/* volume-pricing request modal */
+function openPriceReq(mfr,code){
+  const p=(mfr&&code&&PRICE)?PRICE[mfr+"|"+code]:null;
+  const optAll=(PRICELIST||[]);
+  $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Request volume pricing</h3><a class="mx" onclick="closeModal()">✕</a></div>
+    <div class="fld2"><label>Product</label>${p?`<input value="${esc(p.name)} (#${esc(code)})" readonly>`:`<select id="prProd">${optAll.map(x=>`<option value="${x.mfr}|${esc(x.code)}">${esc(x.mfrName)} — ${esc(x.name)}</option>`).join("")}</select>`}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="fld2"><label>Your current price</label><input id="prPrice" type="number" placeholder="$"></div><div class="fld2"><label>Anticipated quantity</label><input id="prQty" type="number" placeholder="e.g. 50"></div></div>
+    <div class="fld2"><label>Competitive context (optional)</label><textarea id="prNote" rows="3" placeholder="Competitor, their price, timing…"></textarea></div>
+    <input type="hidden" id="prMfr" value="${esc(mfr||"")}"><input type="hidden" id="prCode" value="${esc(code||"")}">
+    <div style="text-align:right;margin-top:8px"><a class="btn gh" onclick="closeModal()">Cancel</a> <a class="btn pri" onclick="submitPriceReq()">Send to HCPS</a></div></div>`;
+  $("#modal").classList.add("on");
+}
+function closeModal(){ $("#modal").classList.remove("on"); $("#modal").innerHTML=""; }
+async function submitPriceReq(){
+  let mfr=($("#prMfr")||{}).value||"", code=($("#prCode")||{}).value||"", product="";
+  const sel=$("#prProd");
+  if(sel){ const v=sel.value; const i=v.indexOf("|"); mfr=v.slice(0,i); code=v.slice(i+1); const p=PRICE&&PRICE[v]; product=(p&&p.name)||""; }
+  else { const p=PRICE&&PRICE[mfr+"|"+code]; product=(p&&p.name)||""; }
+  try{ await api(TOOLS_ENDPOINT,{action:"pricing_request",manufacturer:mfr,code,product,current_price:($("#prPrice")||{}).value,quantity:($("#prQty")||{}).value,competitor_note:($("#prNote")||{}).value}); }catch(e){}
+  closeModal(); alert("Sent to HCPS — your rep will follow up on pricing.");
+}
+
 function showView(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
   $("#view-"+v).classList.add("on");
   document.querySelectorAll("#nav a").forEach(a=>a.classList.remove("on"));
-  const idx={dash:0,orders:2,reports:4}[v]; const links=document.querySelectorAll("#nav a"); if(links[idx])links[idx].classList.add("on");
+  const idx={dash:0,orders:2,reports:4,quotes:5}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
   window.scrollTo({top:0});
   if(v==="orders")loadOrders();
   if(v==="reports")loadReports();
+  if(v==="quotes")loadQuotesView();
+  if(v==="favorites")loadFavView();
 }
 window.showView=showView;
 boot();
