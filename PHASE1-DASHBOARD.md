@@ -99,5 +99,40 @@ Optional env: `PRICING_REQUEST_TO` (defaults to `ORDER_TO` / orders@homecareprov
 ### Auto-populating the dealer logo
 `branding_get` also reads `dealers.website`; a later enhancement can derive a logo from the stored website (favicon/logo service) so the field pre-fills — today it falls back to the business-name monogram until a logo URL is set or uploaded.
 
-## Next (Phase 4)
-HCPS Showroom Development Platform (multi-line, history-aware), the manufacturer literature request center, and the tracking-request workflow.
+---
+
+# Phase 4 — Showroom, literature requests & shipment tracking  (shipped)
+
+**`dealer-tools-api.js`** gained: `showroom_get` / `showroom_save {layout}`, `literature_request {manufacturer, items[], ship_to, note}` (store + email HCPS), and `tracking_request {order_ref, manufacturer, po, summary}` (store + email the manufacturer contact if on file, else HCPS).
+
+**`orders-api.js`** — added an isolated, best-effort `sendTrackingRequests()` after the confirmation email in `create`, so **every order placed auto-fires** a tracking request to each manufacturer (their contact if on file, else HCPS), asking them to send tracking to the dealer and back to HCPS. Wrapped in try/catch — it never affects the saved order or the confirmation.
+
+**Dashboard** (`dashboard.html`):
+- **Showroom** (nav live): the HCPS Showroom Development Platform — a 12-zone floor builder, history-aware (the product picker stars items you've purchased; "Recommended fills" pulls from your purchases + favorites not yet on the floor). Live retail value + est. margin + lines represented per layout; save (persisted) + print planogram.
+- **Resources** (nav live): the Manufacturer Literature Request Center (line, materials + quantities, ship-to, note → submitted through HCPS) plus dealer-support links.
+- **My Orders**: a per-order **Request tracking** action (portal/Golden orders not yet delivered) → `tracking_request`. Also fixed the cache guard so My Orders always renders even after Reports has loaded the history.
+
+### Migrations (run once in Supabase)
+```sql
+create table if not exists showrooms (
+  dealer_id uuid primary key,
+  layout jsonb,
+  updated_at timestamptz default now()
+);
+create table if not exists literature_requests (
+  id bigint generated always as identity primary key,
+  dealer_id uuid not null, manufacturer text, items jsonb,
+  ship_to text, note text, status text default 'new',
+  created_at timestamptz default now()
+);
+create table if not exists tracking_requests (
+  id bigint generated always as identity primary key,
+  dealer_id uuid, order_ref text, manufacturer text, po text,
+  summary text, status text default 'requested',
+  created_at timestamptz default now()
+);
+-- optional: a per-manufacturer shipping/tracking contact (else requests go to HCPS)
+alter table manufacturers add column if not exists contact_email text;
+```
+
+That completes the blueprint's Phases 1–4. **Phase 5** (Account Setup Center — digital credit apps, resale certs, per-line terms — and the intelligence layer: reorder-due, declining categories, crossover, whitespace) is the remaining slice.

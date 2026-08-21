@@ -99,6 +99,18 @@
   .fld2{margin-bottom:10px}
   .fld2 label{font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px}
   .fld2 input,.fld2 select,.fld2 textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:inherit;font-size:13.5px}
+  .lead-note{font-size:12.5px;color:var(--muted);margin-top:10px}
+  .swwall{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  @media(max-width:1100px){.swwall{grid-template-columns:repeat(3,1fr)}}
+  .swz{aspect-ratio:1;border:1.5px dashed #c9d3df;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;padding:8px;text-align:center}
+  .swz:hover{border-color:var(--orange)}
+  .swz.f{border-style:solid;border-color:var(--line);background:#fff;cursor:default;flex-direction:column;gap:2px}
+  .swadd{font-size:12px;color:var(--muted);font-weight:700}
+  .swzn{font-size:11.5px;font-weight:700;color:var(--navy);line-height:1.15}
+  .swzm{font-size:9.5px;color:var(--muted)}
+  .swzr{font-size:10px;color:var(--green);font-weight:700;margin-top:2px}
+  .swx{position:absolute;top:5px;right:6px;color:#c0c9d4;font-size:12px;cursor:pointer;line-height:1}
+  .swx:hover{color:#b23b3b}
   .gate{max-width:440px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px 30px;text-align:center}
   .gate .lm{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--navy),var(--navy3));display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Barlow Condensed';font-weight:800;font-size:24px;margin:0 auto 14px}
   .gate h2{margin:0 0 6px;font-size:23px;color:var(--navy)}
@@ -121,11 +133,11 @@
     <a class="on" onclick="showView('dash')">Dashboard</a>
     <a href="/">Shop</a>
     <a onclick="showView('orders')">My Orders</a>
-    <a class="soon" title="Coming in a later phase">Showroom</a>
+    <a onclick="showView('showroom')">Showroom</a>
     <a onclick="showView('reports')">Reports</a>
     <a onclick="showView('quotes')">Quotes</a>
     <a class="soon" title="Coming in a later phase">My Manufacturers</a>
-    <a class="soon" title="Coming in a later phase">Resources</a>
+    <a onclick="showView('resources')">Resources</a>
     <a class="soon" title="Coming in a later phase">Account &amp; Pricing</a>
   </div></div>
 </div>
@@ -136,6 +148,8 @@
   <div class="view" id="view-reports"><div class="msg">Loading…</div></div>
   <div class="view" id="view-quotes"><div class="msg">Loading…</div></div>
   <div class="view" id="view-favorites"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-showroom"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-resources"><div class="msg">Loading…</div></div>
   <div class="foot" id="foot"></div>
   <div class="modal" id="modal"></div>
 </div>
@@ -176,12 +190,12 @@ async function api(endpoint,body){
 
 /* ---- boot ---- */
 async function boot(){
-  document.getElementById("foot").textContent="HCPS Dealer Business Hub — Phases 1–3 · consolidated order history, reports & retail-margin math, exports, favorites, branded quotes & volume-pricing requests.";
+  document.getElementById("foot").textContent="HCPS Dealer Business Hub — Phases 1–4 · order history, reports & margin math, exports, favorites, branded quotes, showroom builder, literature requests & shipment tracking.";
   SESSION=loadSession();
   if(!token()){ return gate(); }
   const me=await api(AUTH_ENDPOINT,{action:"me"}).catch(()=>({}));
   if(!me||me.status!=="approved"||!me.dealer){ return gate(me&&me.status); }
-  PROFILE=me.dealer;
+  PROFILE=me.dealer; LINES=(me.lines||[]);
   $("#dealerChip").style.display="";$("#dealerName").textContent=PROFILE.name||"Dealer";
   $("#signout").style.display="";$("#signout").onclick=()=>{try{localStorage.removeItem("hcps_session");}catch(e){}location.href="/";};
   await loadBranding(); applyBranding();
@@ -247,20 +261,23 @@ function statPill(s){s=String(s||"").toLowerCase();return s==="delivered"?'<span
 /* ---- my orders (full consolidated history) ---- */
 let HISTORY=null;
 async function loadOrders(){
-  if(HISTORY){return;}
-  const d=await api(HISTORY_ENDPOINT,{action:"history",limit:300});
-  if(!d||d.ok===false){ $("#view-orders").innerHTML=`<div class="msg">Couldn't load your orders right now.</div>`; return; }
-  HISTORY=d.orders||[];
-  const rows=HISTORY.map(o=>`<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b></td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${money(o.cost)}</td><td>${statPill(o.status)}</td></tr>`).join("");
+  if(!HISTORY){ const d=await api(HISTORY_ENDPOINT,{action:"history",limit:300}); if(!d||d.ok===false){ $("#view-orders").innerHTML=`<div class="msg">Couldn't load your orders right now.</div>`; return; } HISTORY=d.orders||[]; }
+  const rows=HISTORY.map(o=>{
+    const canTrack=(o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="delivered";
+    const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
+    return `<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b></td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${money(o.cost)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
+  }).join("");
   const total=HISTORY.reduce((s,o)=>s+(Number(o.cost)||0),0);
   $("#view-orders").innerHTML=`
     <div class="ph"><div><h1>My Orders</h1><div class="sub">Consolidated history — imported sales, portal &amp; Golden · ${HISTORY.length} records</div></div>
       <div><a class="btn gh" onclick="exportHistoryCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a> <a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
-    <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Date</th><th>Source</th><th>Manufacturer</th><th>Items</th><th class="n">Units</th><th class="n">Amount</th><th>Status</th></tr></thead>
-      <tbody>${rows||`<tr><td colspan="7" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
-      ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total purchases</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${money(total)}</td><td></td></tr></tfoot>`:""}
-    </table></div>`;
+    <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Date</th><th>Source</th><th>Manufacturer</th><th>Items</th><th class="n">Units</th><th class="n">Amount</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows||`<tr><td colspan="8" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
+      ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total purchases</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${money(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
+    </table></div>
+    <div class="lead-note">"Request tracking" asks the manufacturer to send shipment tracking to you and to HCPS. Retail uses MSRP on file, or 2× dealer cost where none is on file.</div>`;
 }
+async function reqTracking(id,mfr,summary){ try{ await api(TOOLS_ENDPOINT,{action:"tracking_request",order_ref:id,manufacturer:mfr,summary}); }catch(e){} alert("Tracking request sent — the manufacturer will send tracking to you and HCPS."); }
 
 /* ================= PHASE 2: pricing map, reports, exports ================= */
 let PRICE=null, PRICELIST=null;
@@ -269,6 +286,7 @@ async function loadPricing(){
   PRICE={}; PRICELIST=[];
   try{
     const mf=await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]);
+    MFRLIST=(mf||[]).map(m=>({slug:m.slug,name:m.name}));
     const withData=(mf||[]).filter(m=>m.hasData!==false);
     await Promise.all(withData.map(async m=>{
       try{
@@ -458,16 +476,93 @@ async function submitPriceReq(){
   closeModal(); alert("Sent to HCPS — your rep will follow up on pricing.");
 }
 
+/* ================= PHASE 4: showroom, literature, tracking UI ================= */
+let SHOWROOM={zones:[]}, ZONE_N=12, MFRLIST=[], LINES=[], SW_PICK_IDX=null;
+function ensureZones(){ if(!Array.isArray(SHOWROOM.zones))SHOWROOM.zones=[]; while(SHOWROOM.zones.length<ZONE_N)SHOWROOM.zones.push(null); SHOWROOM.zones=SHOWROOM.zones.slice(0,ZONE_N); }
+function mfrNameOf(slug){ const m=(MFRLIST||[]).find(x=>x.slug===slug); return m?m.name:slug; }
+function prodRec(key){ const i=key.indexOf("|"); const mfr=key.slice(0,i),code=key.slice(i+1); const p=(PRICE&&PRICE[key])||{}; const cost=p.cost!=null?p.cost:null; const msrp=(p.msrp!=null?p.msrp:(cost!=null?cost*2:0)); return {key,mfr,code,name:p.name||code,mfrName:p.mfrName||mfrNameOf(mfr),cost,msrp,est:p.msrp==null}; }
+function purchasedKeys(){ const m={}; for(const o of (HISTORY||[])){ for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; m[k]=(m[k]||0)+(Number(l.line!=null?l.line:l.cost)||0); } } return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k])=>k); }
+async function loadShowroom(){
+  await ensureCatalogFav();
+  if(!HISTORY){ try{ const d=await api(HISTORY_ENDPOINT,{action:"history",limit:500}); HISTORY=(d&&d.orders)||[]; }catch(e){ HISTORY=[]; } }
+  try{ const d=await api(TOOLS_ENDPOINT,{action:"showroom_get"}); if(d&&d.ok&&d.layout&&Array.isArray(d.layout.zones)){ SHOWROOM=d.layout; } else { const ls=localStorage.getItem("hcps_showroom"); if(ls)SHOWROOM=JSON.parse(ls); } }
+  catch(e){ try{ const ls=localStorage.getItem("hcps_showroom"); if(ls)SHOWROOM=JSON.parse(ls); }catch(_){} }
+  ensureZones(); renderShowroom();
+}
+function showroomStats(){ let retail=0,cost=0,filled=0; const lines=new Set(); for(const z of SHOWROOM.zones){ if(!z)continue; filled++; const r=prodRec(z.mfr+"|"+z.code); retail+=r.msrp; if(r.cost!=null)cost+=r.cost; lines.add(z.mfr); } return {retail,cost,margin:retail-cost,filled,open:ZONE_N-filled,lines:lines.size}; }
+function renderShowroom(){
+  ensureZones(); const s=showroomStats();
+  const zonesHtml=SHOWROOM.zones.map((z,i)=>{ if(z){ const r=prodRec(z.mfr+"|"+z.code); return `<div class="swz f"><a class="swx" title="Remove" onclick="swClear(${i})">✕</a><div class="swzn">${esc(r.name)}</div><div class="swzm">${esc(r.mfrName)} · #${esc(r.code)}</div><div class="swzr">Retail ${money(r.msrp)}${r.est?" est":""}</div></div>`; } return `<div class="swz" onclick="swPick(${i})"><div class="swadd">＋ Add product</div></div>`; }).join("");
+  const on=new Set(SHOWROOM.zones.filter(Boolean).map(z=>z.mfr+"|"+z.code));
+  const recs=[...new Set([...purchasedKeys(),...[...FAVS]])].filter(k=>!on.has(k)&&PRICE&&PRICE[k]).slice(0,6).map(prodRec);
+  $("#view-showroom").innerHTML=`
+   <div class="ph"><div><h1>HCPS Showroom Development Platform</h1><div class="sub">Build &amp; analyze a showroom floor from every HCPS line — using your own purchase history</div></div>
+     <div><a class="btn gh" onclick="printPDF()">⬇ Print planogram</a> <a class="btn gh" onclick="swSave()">Save layout</a> <a class="btn gh" onclick="swClearAll()">Clear</a></div></div>
+   <div class="kpis">
+     <div class="kpi"><div class="kl">Floor filled</div><div class="kv tnum">${Math.round(s.filled/ZONE_N*100)}%</div><div class="ks">${s.filled} of ${ZONE_N} zones</div></div>
+     <div class="kpi accent"><div class="kl">Retail value on floor</div><div class="kv o tnum">${money(s.retail)}</div></div>
+     <div class="kpi"><div class="kl">Est. margin on floor</div><div class="kv g tnum">${money(s.margin)}</div></div>
+     <div class="kpi"><div class="kl">Lines represented</div><div class="kv tnum">${s.lines}</div></div>
+   </div>
+   <div class="grid2">
+     <div class="card"><div class="chead"><h3>Showroom floor</h3><span class="lead-note" style="margin:0">Tap a zone to place a product · ★ = you've purchased it</span></div><div class="swwall">${zonesHtml}</div></div>
+     <div class="card"><div class="chead"><h3>Recommended fills</h3></div><div style="font-size:12px;color:var(--muted);margin-bottom:8px">From your purchases &amp; favorites, not yet on the floor.</div>
+       <div class="rowlist">${recs.length?recs.map(r=>`<div class="rl"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${esc(r.mfrName)} · retail ${money(r.msrp)}${r.est?" est":""}</div></div><a class="btn gh" onclick="swPlaceFirst('${r.mfr}','${r.code}')">Place</a></div>`).join(""):`<div class="empty">Your floor already covers your top products.</div>`}</div></div>
+   </div>`;
+}
+function swClear(i){ SHOWROOM.zones[i]=null; renderShowroom(); }
+function swClearAll(){ SHOWROOM.zones=SHOWROOM.zones.map(()=>null); renderShowroom(); }
+function swPlaceFirst(mfr,code){ ensureZones(); const i=SHOWROOM.zones.findIndex(z=>!z); if(i<0){ alert("Floor is full — clear a zone first."); return; } SHOWROOM.zones[i]={mfr,code}; renderShowroom(); }
+function swPick(i){ SW_PICK_IDX=i; const list=PRICELIST||[]; const purchased=new Set(purchasedKeys());
+  const opts=list.slice().sort((a,b)=>((purchased.has(a.mfr+"|"+a.code)?0:1)-(purchased.has(b.mfr+"|"+b.code)?0:1))).map(p=>`<option value="${p.mfr}|${esc(p.code)}">${purchased.has(p.mfr+"|"+p.code)?"★ ":""}${esc(p.mfrName)} — ${esc(p.name)} (#${esc(p.code)})</option>`).join("");
+  $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Place a product</h3><a class="mx" onclick="closeModal()">✕</a></div><div class="fld2"><label>Product (★ = you've purchased it)</label><select id="swSel">${opts}</select></div><div style="text-align:right"><a class="btn gh" onclick="closeModal()">Cancel</a> <a class="btn pri" onclick="swPlace()">Place on floor</a></div></div>`;
+  $("#modal").classList.add("on");
+}
+function swPlace(){ const v=$("#swSel").value; const i=v.indexOf("|"); if(SW_PICK_IDX!=null&&v){ SHOWROOM.zones[SW_PICK_IDX]={mfr:v.slice(0,i),code:v.slice(i+1)}; } closeModal(); renderShowroom(); }
+async function swSave(){ try{ localStorage.setItem("hcps_showroom",JSON.stringify(SHOWROOM)); }catch(e){} try{ await api(TOOLS_ENDPOINT,{action:"showroom_save",layout:SHOWROOM}); }catch(e){} alert("Showroom layout saved."); }
+
+/* resources — literature request center */
+async function loadResourcesView(){ await loadPricing(); renderResources(); }
+function renderResources(){
+  const lines=(LINES&&LINES.length)?LINES.map(l=>({slug:l.slug,name:mfrNameOf(l.slug)})):(MFRLIST||[]);
+  const mats=["Product catalog","Line brochure","Showroom / point-of-sale materials","Spec sheets","Warranty & care cards"];
+  $("#view-resources").innerHTML=`<div class="ph"><div><h1>Resources</h1><div class="sub">Literature request center &amp; dealer support</div></div></div>
+   <div class="grid2"><div>
+     <div class="card" style="margin-top:0"><h3>Manufacturer Literature Request Center</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Select a line, choose materials &amp; quantities, and submit through HCPS.</div>
+       <div class="fld2"><label>Manufacturer</label><select id="litMfr">${lines.map(m=>`<option value="${esc(m.slug)}">${esc(m.name)}</option>`).join("")}</select></div>
+       <div class="fld2"><label>Ship to</label><input id="litShip" value="${esc((PROFILE&&PROFILE.name)||"")} — main showroom"></div>
+       <div style="font-size:11px;color:var(--muted);margin:6px 0 4px;font-weight:800;text-transform:uppercase;letter-spacing:.4px">Materials</div>
+       ${mats.map(m=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line-2);font-size:13.5px"><input type="checkbox" class="litChk" data-m="${esc(m)}"> ${esc(m)} <input type="number" class="litQty" min="1" value="1" style="margin-left:auto;width:66px;border:1px solid var(--line);border-radius:7px;padding:5px 8px"></label>`).join("")}
+       <div class="fld2" style="margin-top:8px"><label>Note (optional)</label><textarea id="litNote" rows="2"></textarea></div>
+       <a class="btn pri" onclick="submitLit()">Submit request</a></div>
+    </div>
+    <div><div class="card" style="margin-top:0"><h3>Dealer support</h3><div class="rowlist">
+       <div class="rl"><div class="b"><div class="n">Resource library</div><div class="m">Catalogs, guides &amp; pricing</div></div><a class="btn gh" href="/">Open</a></div>
+       <div class="rl"><div class="b"><div class="n">Request in-service / training</div><div class="m">Schedule with your rep</div></div><a class="btn gh" onclick="alert('Opens the in-service scheduler')">Book</a></div>
+       <div class="rl"><div class="b"><div class="n">Technical support</div><div class="m">Product &amp; warranty help</div></div><a class="btn gh" onclick="alert('Opens technical support')">Contact</a></div>
+     </div></div></div>
+   </div>`;
+}
+async function submitLit(){
+  const mfrSlug=$("#litMfr").value; const items=[];
+  document.querySelectorAll(".litChk").forEach(chk=>{ if(chk.checked){ const q=chk.parentNode.querySelector(".litQty"); items.push({material:chk.dataset.m,qty:(q&&q.value)||1}); } });
+  if(!items.length){ alert("Choose at least one material."); return; }
+  try{ await api(TOOLS_ENDPOINT,{action:"literature_request",manufacturer:mfrNameOf(mfrSlug),items,ship_to:($("#litShip")||{}).value,note:($("#litNote")||{}).value}); }catch(e){}
+  alert("Literature request submitted to HCPS.");
+}
+
 function showView(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
   $("#view-"+v).classList.add("on");
   document.querySelectorAll("#nav a").forEach(a=>a.classList.remove("on"));
-  const idx={dash:0,orders:2,reports:4,quotes:5}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
+  const idx={dash:0,orders:2,showroom:3,reports:4,quotes:5,resources:7}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
   window.scrollTo({top:0});
   if(v==="orders")loadOrders();
   if(v==="reports")loadReports();
   if(v==="quotes")loadQuotesView();
   if(v==="favorites")loadFavView();
+  if(v==="showroom")loadShowroom();
+  if(v==="resources")loadResourcesView();
 }
 window.showView=showView;
 boot();
