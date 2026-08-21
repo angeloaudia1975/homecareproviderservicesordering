@@ -77,6 +77,9 @@
   .tbl th{text-align:left;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--surface-2)}
   .tbl td{padding:10px 12px;border-bottom:1px solid var(--line-2)}
   .tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums}
+  .est{display:inline-block;font-size:10px;font-weight:800;color:#b9791a;background:#fdf3e3;border:1px solid #f0d9a8;border-radius:5px;padding:1px 6px}
+  .kpi .kv.g{color:var(--green)}
+  @media print{.topbar,.mainnav,.tb-actions,.ph .btn,.seelink,.foot,.mn-in{display:none!important}.page{padding:0;max-width:none}.card{box-shadow:none;break-inside:avoid;border-color:#ccc}.view:not(.on){display:none}}
   .gate{max-width:440px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px 30px;text-align:center}
   .gate .lm{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--navy),var(--navy3));display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Barlow Condensed';font-weight:800;font-size:24px;margin:0 auto 14px}
   .gate h2{margin:0 0 6px;font-size:23px;color:var(--navy)}
@@ -100,7 +103,7 @@
     <a href="/">Shop</a>
     <a onclick="showView('orders')">My Orders</a>
     <a class="soon" title="Coming in a later phase">Showroom</a>
-    <a class="soon" title="Coming in a later phase">Reports</a>
+    <a onclick="showView('reports')">Reports</a>
     <a class="soon" title="Coming in a later phase">Quotes</a>
     <a class="soon" title="Coming in a later phase">My Manufacturers</a>
     <a class="soon" title="Coming in a later phase">Resources</a>
@@ -111,6 +114,7 @@
   <div id="gate"></div>
   <div class="view on" id="view-dash"><div class="msg">Loading your business hub…</div></div>
   <div class="view" id="view-orders"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-reports"><div class="msg">Loading…</div></div>
   <div class="foot" id="foot"></div>
 </div>
 
@@ -149,7 +153,7 @@ async function api(endpoint,body){
 
 /* ---- boot ---- */
 async function boot(){
-  document.getElementById("foot").textContent="HCPS Dealer Business Hub — Phase 1 · consolidated order history across imported sales, portal & Golden.";
+  document.getElementById("foot").textContent="HCPS Dealer Business Hub — Phases 1–2 · consolidated order history, reports with retail-margin math, and Excel/PDF & pricing exports.";
   SESSION=loadSession();
   if(!token()){ return gate(); }
   const me=await api(AUTH_ENDPOINT,{action:"me"}).catch(()=>({}));
@@ -218,20 +222,127 @@ async function loadOrders(){
   const total=HISTORY.reduce((s,o)=>s+(Number(o.cost)||0),0);
   $("#view-orders").innerHTML=`
     <div class="ph"><div><h1>My Orders</h1><div class="sub">Consolidated history — imported sales, portal &amp; Golden · ${HISTORY.length} records</div></div>
-      <div><a class="btn gh" onclick="alert('Excel export arrives in Phase 2')">⬇ Export</a> <a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
+      <div><a class="btn gh" onclick="exportHistoryCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a> <a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
     <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Date</th><th>Source</th><th>Manufacturer</th><th>Items</th><th class="n">Units</th><th class="n">Amount</th><th>Status</th></tr></thead>
       <tbody>${rows||`<tr><td colspan="7" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
       ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total purchases</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${money(total)}</td><td></td></tr></tfoot>`:""}
     </table></div>`;
 }
 
+/* ================= PHASE 2: pricing map, reports, exports ================= */
+let PRICE=null, PRICELIST=null;
+async function loadPricing(){
+  if(PRICE) return;
+  PRICE={}; PRICELIST=[];
+  try{
+    const mf=await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]);
+    const withData=(mf||[]).filter(m=>m.hasData!==false);
+    await Promise.all(withData.map(async m=>{
+      try{
+        const d=await fetch('/data/'+m.slug+'.json').then(r=>r.json());
+        const items=Array.isArray(d)?d:(d.products||[]);
+        for(const p of items){
+          const code=String(p.code||'').trim(); if(!code) continue;
+          const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(p.map!=null?Number(p.map):null),cost:(p.base_price!=null?Number(p.base_price):null),category:p.category||'',name:p.name||'',mfrName:m.name};
+          PRICE[m.slug+'|'+code]=rec;
+          PRICELIST.push({code,mfr:m.slug,mfrName:m.name,name:p.name||'',cost:rec.cost,map:rec.map,msrp:rec.msrp,category:p.category||''});
+        }
+      }catch(e){}
+    }));
+  }catch(e){}
+}
+function retailUnit(mfr,code,unitCost){
+  const r=PRICE&&PRICE[mfr+'|'+code];
+  if(r&&r.msrp>0) return {v:r.msrp,est:false};
+  return {v:(Number(unitCost)||0)*2,est:true};
+}
+let REPORT_YEAR=null;
+async function loadReports(){
+  if(!HISTORY){ const d=await api(HISTORY_ENDPOINT,{action:'history',limit:500}); HISTORY=(d&&d.orders)||[]; }
+  await loadPricing();
+  renderReports();
+}
+function reportAgg(year){
+  const lines=[];
+  for(const o of (HISTORY||[])){
+    const ym=String(o.ym||(o.date||'').slice(0,7)); const y=ym.slice(0,4);
+    for(const l of (o.lines||[])){
+      const qty=Number(l.qty)||0; const line=Number(l.line!=null?l.line:l.cost)||0; const unit=qty?line/qty:line;
+      const r=retailUnit(o.manufacturer,l.code,unit);
+      lines.push({ym,y,mfr:o.manufacturer,mfrName:o.manufacturerName,code:l.code,name:l.name,qty,cost:line,retail:r.v*qty,est:r.est});
+    }
+  }
+  const sel=lines.filter(l=>year==='all'||l.y===year);
+  let spend=0,retail=0,units=0; const monthly={}, byMfr={}, prod={};
+  sel.forEach(l=>{spend+=l.cost;retail+=l.retail;units+=l.qty;
+    if(year!=='all') monthly[l.ym]=(monthly[l.ym]||0)+l.cost;
+    const m=byMfr[l.mfr]||(byMfr[l.mfr]={name:l.mfrName,spend:0,retail:0}); m.spend+=l.cost; m.retail+=l.retail;
+    const k=l.mfr+'|'+l.code; const p=prod[k]||(prod[k]={name:l.name,mfrName:l.mfrName,code:l.code,qty:0,spend:0,retail:0,est:false}); p.qty+=l.qty; p.spend+=l.cost; p.retail+=l.retail; if(l.est)p.est=true;
+  });
+  return {spend,retail,margin:retail-spend,units,monthly,
+    byMfr:Object.values(byMfr).sort((a,b)=>b.spend-a.spend),
+    prod:Object.values(prod).sort((a,b)=>b.spend-a.spend),
+    years:[...new Set(lines.map(l=>l.y))].filter(Boolean).sort().reverse()};
+}
+function renderReports(){
+  const cy=String(new Date().getFullYear()); const year=REPORT_YEAR||cy;
+  const a=reportAgg(year);
+  const blended=a.retail>0?Math.round(a.margin/a.retail*100):0;
+  const allYears=reportAgg('all').years;
+  const yearOpts=[`<option value="${cy}"${year===cy?' selected':''}>Year: ${cy}</option>`]
+    .concat(allYears.filter(y=>y!==cy).map(y=>`<option value="${y}"${year===y?' selected':''}>Year: ${y}</option>`))
+    .concat([`<option value="all"${year==='all'?' selected':''}>All time</option>`]).join('');
+  let chart;
+  if(year!=='all'){const maxM=Math.max(1,...Object.values(a.monthly));chart=MONS.map((lbl,i)=>{const k=`${year}-${String(i+1).padStart(2,'0')}`;const v=a.monthly[k]||0;return `<div class="col"><div class="bar" style="height:${v?Math.max(4,Math.round(v/maxM*100)):0}%"></div><div class="bl">${lbl}</div></div>`;}).join('');}
+  else chart='<div class="empty">Select a specific year to see the monthly breakdown.</div>';
+  const maxMf=Math.max(1,...a.byMfr.map(m=>m.spend));
+  const hbars=a.byMfr.slice(0,8).map(m=>`<div class="hbar"><div class="hn">${esc(m.name)}</div><div class="htrack"><div class="hfill" style="width:${Math.max(3,Math.round(m.spend/maxMf*100))}%"></div></div><div class="hv tnum">${money(m.spend)}</div></div>`).join('')||'<div class="empty">No activity.</div>';
+  const toprows=a.prod.slice(0,10).map(p=>`<tr><td><b>${esc(p.name)}</b><div style="font-size:11px;color:var(--muted)">${esc(p.mfrName)} · #${esc(p.code)}</div></td><td class="n tnum">${p.qty}</td><td class="n tnum">${money(p.spend)}</td><td class="n tnum" style="color:var(--green)">${money(p.retail)}${p.est?' <span class="est">est</span>':''}</td><td class="n tnum">${money(p.retail-p.spend)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No products in this period.</td></tr>';
+  $("#view-reports").innerHTML=`
+    <div class="ph"><div><h1>Reports</h1><div class="sub">Purchases, manufacturer performance &amp; retail opportunity</div></div>
+      <div><select class="btn gh" onchange="REPORT_YEAR=this.value;renderReports()">${yearOpts}</select> <a class="btn gh" onclick="exportReportCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a></div></div>
+    <div class="kpis">
+      <div class="kpi accent"><div class="kl">Spend${year==='all'?' — all time':' — '+year}</div><div class="kv o tnum">${money(a.spend)}</div><div class="ks">${num(a.units)} units</div></div>
+      <div class="kpi"><div class="kl">Retail revenue opportunity</div><div class="kv g tnum">${money(a.retail)}</div><div class="ks">at MSRP / estimate</div></div>
+      <div class="kpi"><div class="kl">Margin opportunity</div><div class="kv tnum">${money(a.margin)}</div></div>
+      <div class="kpi"><div class="kl">Blended margin</div><div class="kv tnum">${blended}%</div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="chead"><h3>Monthly purchases${year==='all'?'':' · '+year}</h3></div><div class="barchart">${chart}</div></div>
+      <div class="card"><div class="chead"><h3>By manufacturer</h3></div><div class="hbars">${hbars}</div></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px 4px"><h3>Top products ordered</h3><div style="font-size:12.5px;color:var(--muted)">Retail &amp; margin at MSRP, or 2× dealer cost where none on file (<span class="est">est</span>)</div></div>
+      <table class="tbl"><thead><tr><th>Product</th><th class="n">Qty</th><th class="n">Spend</th><th class="n">Retail</th><th class="n">Margin</th></tr></thead><tbody>${toprows}</tbody></table></div>
+    <div class="card"><div class="chead"><h3>Pricing export</h3></div><div style="font-size:13px;color:var(--ink-2)">Export your full HCPS product &amp; dealer-pricing file — SKU, manufacturer, description, dealer cost, MAP, MSRP, category — for billing, ERP, inventory or POS.</div>
+      <a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">⬇ Export pricing file (Excel/CSV)</a></div>`;
+}
+/* ---- exports (CSV opens in Excel; PDF via print) ---- */
+function dl(filename,text,mime){const blob=new Blob(["﻿"+text],{type:mime||'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},120);}
+function csvCell(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+function toCSV(rows){return rows.map(r=>r.map(csvCell).join(',')).join('\r\n');}
+function exportHistoryCSV(){const rows=[['Date','Source','Manufacturer','Item #','Product','Qty','Unit','Line total','Status']];
+  for(const o of (HISTORY||[])){for(const l of (o.lines||[])){const qty=Number(l.qty)||0;const line=Number(l.line!=null?l.line:l.cost)||0;rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,l.code,l.name,qty,qty?(line/qty).toFixed(2):line.toFixed(2),line.toFixed(2),o.status]);}}
+  dl('hcps-order-history.csv',toCSV(rows));}
+function exportReportCSV(){const year=REPORT_YEAR||String(new Date().getFullYear());const a=reportAgg(year);
+  const rows=[['HCPS Purchase Report',year==='all'?'All time':year],[],['Manufacturer','Spend','Retail','Margin']];
+  a.byMfr.forEach(m=>rows.push([m.name,m.spend.toFixed(2),m.retail.toFixed(2),(m.retail-m.spend).toFixed(2)]));
+  rows.push([],['Top products'],['Product','Item #','Manufacturer','Qty','Spend','Retail','Margin','MSRP source']);
+  a.prod.forEach(p=>rows.push([p.name,p.code,p.mfrName,p.qty,p.spend.toFixed(2),p.retail.toFixed(2),(p.retail-p.spend).toFixed(2),p.est?'estimated (2x cost)':'MSRP on file']));
+  dl('hcps-report-'+year+'.csv',toCSV(rows));}
+async function exportPricingCSV(){await loadPricing();const rows=[['SKU','Manufacturer','Description','Dealer cost','MAP','MSRP','Category']];
+  (PRICELIST||[]).forEach(p=>rows.push([p.code,p.mfrName,p.name,p.cost!=null?p.cost:'',p.map!=null?p.map:'',p.msrp!=null?p.msrp:'',p.category]));
+  dl('hcps-pricing.csv',toCSV(rows));}
+function printPDF(){window.print();}
+window.exportHistoryCSV=exportHistoryCSV;window.exportReportCSV=exportReportCSV;window.exportPricingCSV=exportPricingCSV;window.printPDF=printPDF;window.renderReports=renderReports;
+
 function showView(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
   $("#view-"+v).classList.add("on");
   document.querySelectorAll("#nav a").forEach(a=>a.classList.remove("on"));
-  const idx={dash:0,orders:2}[v]; const links=document.querySelectorAll("#nav a"); if(links[idx])links[idx].classList.add("on");
+  const idx={dash:0,orders:2,reports:4}[v]; const links=document.querySelectorAll("#nav a"); if(links[idx])links[idx].classList.add("on");
   window.scrollTo({top:0});
   if(v==="orders")loadOrders();
+  if(v==="reports")loadReports();
 }
 window.showView=showView;
 boot();

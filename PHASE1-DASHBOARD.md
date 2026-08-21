@@ -39,5 +39,22 @@ Optionally make `/dashboard.html` the post-login landing for returning dealers.
 ## Verify
 Sign in as a dealer that has `monthly_sales` rows (and/or saved portal orders) → the dashboard shows YTD + all-time purchases, the monthly chart, the manufacturer breakdown, and a consolidated recent-orders list; **My Orders** lists every record with its source. A dealer with no history sees a clean empty state.
 
-## Next (Phase 2)
-Retail-revenue & margin (MSRP/MAP, 2×-cost fallback) on Reports, Excel/PDF export, and the productivity tools — all read from this same consolidated view, so they're additive.
+---
+
+# Phase 2 — Reports, retail-margin math & exports  (shipped)
+
+All added to **`dashboard.html`** (no backend change — the Phase 1 API already returns per-line data).
+
+**Reports view** (nav item now live): year selector (each year + all-time), KPIs (spend, retail-revenue opportunity, margin opportunity, blended margin), a monthly-purchases chart, manufacturer performance bars, and a top-products table.
+
+**Retail-margin math** — computed client-side, because MSRP/MAP live in the catalog JSON the portal already serves. `loadPricing()` builds a `(manufacturer|code) → {msrp, map, cost, category}` map from `/data/manufacturers.json` + each line's `/data/<slug>.json`. Per purchased line: **retail = MSRP × qty** when MSRP is on file, else **2× dealer cost** (flagged `est`); **margin = retail − spend**. As real MSRP/MAP get loaded per SKU, the estimates resolve to exact figures automatically.
+
+**Exports** (client-side, no dependencies — CSV opens directly in Excel; PDF via the browser's print, with a print stylesheet that hides the chrome):
+- **Order history → Excel** (My Orders): date, source, manufacturer, item #, product, qty, unit, line total, status.
+- **Report → Excel**: manufacturer performance + top products with the MSRP-source note.
+- **Pricing file → Excel** (in Reports): **SKU, manufacturer, description, dealer cost, MAP, MSRP, category** — for billing/ERP/inventory/POS.
+
+**Note on MAP:** most catalog records carry MSRP but not MAP; the pricing export includes a MAP column that populates as MAP values are added to the catalog.
+
+## Next (Phase 3)
+Favorites + quick reorder, the branded customer MSRP quote generator, automatic order confirmations (already partially handled by `orders-api`), and dealer branding — all read from this same consolidated view + pricing map.
