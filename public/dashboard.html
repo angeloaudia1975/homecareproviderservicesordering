@@ -100,6 +100,15 @@
   .fld2 label{font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px}
   .fld2 input,.fld2 select,.fld2 textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:inherit;font-size:13.5px}
   .lead-note{font-size:12.5px;color:var(--muted);margin-top:10px}
+  .steps{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .step{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+  .step .sn{width:26px;height:26px;border-radius:50%;background:var(--navy2);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-family:'Barlow Condensed'}
+  .step.done .sn{background:var(--green)}
+  .step .stx{flex:1;min-width:0}
+  .step h4{margin:0 0 3px;font-size:14.5px;font-weight:800;color:var(--navy)}
+  .step p{margin:0;font-size:12.5px;color:var(--ink-2)}
+  .secure{font-size:12px;color:var(--green);font-weight:700;display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid #bfe3ca;border-radius:8px;padding:7px 11px}
+  .csub2{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--navy);margin-bottom:6px}
   .swwall{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
   @media(max-width:1100px){.swwall{grid-template-columns:repeat(3,1fr)}}
   .swz{aspect-ratio:1;border:1.5px dashed #c9d3df;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;padding:8px;text-align:center}
@@ -138,7 +147,7 @@
     <a onclick="showView('quotes')">Quotes</a>
     <a class="soon" title="Coming in a later phase">My Manufacturers</a>
     <a onclick="showView('resources')">Resources</a>
-    <a class="soon" title="Coming in a later phase">Account &amp; Pricing</a>
+    <a onclick="showView('account')">Account &amp; Pricing</a>
   </div></div>
 </div>
 <div class="page">
@@ -150,6 +159,7 @@
   <div class="view" id="view-favorites"><div class="msg">Loading…</div></div>
   <div class="view" id="view-showroom"><div class="msg">Loading…</div></div>
   <div class="view" id="view-resources"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-account"><div class="msg">Loading…</div></div>
   <div class="foot" id="foot"></div>
   <div class="modal" id="modal"></div>
 </div>
@@ -190,7 +200,7 @@ async function api(endpoint,body){
 
 /* ---- boot ---- */
 async function boot(){
-  document.getElementById("foot").textContent="HCPS Dealer Business Hub — Phases 1–4 · order history, reports & margin math, exports, favorites, branded quotes, showroom builder, literature requests & shipment tracking.";
+  document.getElementById("foot").textContent="HCPS Dealer Business Hub — Phases 1–5 · order history, reports & margin math, exports, favorites, branded quotes, showroom builder, literature requests & shipment tracking, account setup (credit apps, resale cert & terms) and purchase-data intelligence.";
   SESSION=loadSession();
   if(!token()){ return gate(); }
   const me=await api(AUTH_ENDPOINT,{action:"me"}).catch(()=>({}));
@@ -251,9 +261,10 @@ async function loadDash(){
           <div class="rl"><div class="b"><div class="n">Customer MSRP quotes</div><div class="m">Build a branded quote from any HCPS product</div></div><a class="btn nv" onclick="showView('quotes')">Open</a></div>
           <div class="rl"><div class="b"><div class="n">Request volume pricing</div><div class="m">Ask HCPS to sharpen pricing on a bigger order</div></div><a class="btn gh" onclick="openPriceReq()">Request</a></div>
         </div></div>
-    </div>`;
+    </div>
+    <div id="dashOpps"></div>`;
   showView("dash");
-  ensureCatalogFav().then(renderDashFav);
+  ensureCatalogFav().then(loadDashExtras);
 }
 function srcPill(s){return s==="golden"?'<span class="pill gold">Golden</span>':s==="portal"?'<span class="pill portal">Portal</span>':'<span class="pill imported">Imported</span>';}
 function statPill(s){s=String(s||"").toLowerCase();return s==="delivered"?'<span class="pill done">Delivered</span>':(s==="submitted"||s==="open")?'<span class="pill open">Submitted</span>':'<span class="pill portal">'+esc(s||"—")+'</span>';}
@@ -551,11 +562,90 @@ async function submitLit(){
   alert("Literature request submitted to HCPS.");
 }
 
+/* ================= PHASE 5: account setup + intelligence ================= */
+let ACCOUNT={resale:null,applications:[],terms:[]};
+/* --- intelligence (dashboard) --- */
+function daysSince(d){ const t=Date.parse(d); if(!t)return 9999; return Math.floor((Date.now()-t)/86400000); }
+function reorderDueList(){ const m={};
+  for(const o of (HISTORY||[])){ const dt=o.date||((o.ym||"")+"-01"); for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; const x=m[k]||(m[k]={mfr:o.manufacturer,mfrName:o.manufacturerName,name:l.name,code:l.code,count:0,last:"",spend:0}); x.count++; x.spend+=Number(l.line!=null?l.line:l.cost)||0; if(String(dt)>String(x.last))x.last=String(dt); } }
+  return Object.values(m).filter(x=>x.count>=2 && daysSince(x.last)>45).sort((a,b)=>b.spend-a.spend).slice(0,4); }
+function decliningCats(){ const Y=String(new Date().getFullYear()),PY=String(new Date().getFullYear()-1); const cur={},prev={};
+  for(const o of (HISTORY||[])){ const y=String(o.ym||"").slice(0,4); for(const l of (o.lines||[])){ const p=PRICE&&PRICE[o.manufacturer+"|"+l.code]; const cat=(p&&p.category)||"Other"; const amt=Number(l.line!=null?l.line:l.cost)||0; if(y===Y)cur[cat]=(cur[cat]||0)+amt; else if(y===PY)prev[cat]=(prev[cat]||0)+amt; } }
+  const out=[]; for(const c in prev){ if(prev[c]>=400 && (cur[c]||0)<prev[c]*0.6) out.push({cat:c,prev:prev[c],cur:cur[c]||0,drop:Math.round((1-(cur[c]||0)/prev[c])*100)}); }
+  return out.sort((a,b)=>b.prev-a.prev).slice(0,3); }
+function whitespaceLines(){ const carried=new Set((LINES||[]).map(l=>l.slug)); return (MFRLIST||[]).filter(m=>!carried.has(m.slug)).slice(0,8); }
+async function loadDashExtras(){ renderDashFav(); if(!HISTORY){ try{ const h=await api(HISTORY_ENDPOINT,{action:"history",limit:500}); HISTORY=(h&&h.orders)||[]; }catch(e){} } renderOpportunities(); }
+function renderOpportunities(){
+  const host=$("#dashOpps"); if(!host)return;
+  const due=reorderDueList(), decl=decliningCats(), ws=whitespaceLines();
+  const dueHtml=due.length?due.map(p=>`<div class="rl"><div class="b"><div class="n">${esc(p.name)}</div><div class="m">${esc(p.mfrName)} · last ${daysSince(p.last)}d ago · ${p.count} orders</div></div><a class="btn gh" href="/">Reorder</a></div>`).join(""):`<div class="empty">Nothing due to reorder right now.</div>`;
+  const declHtml=decl.length?decl.map(d=>`<div class="rl"><div class="b"><div class="n">${esc(d.cat)}</div><div class="m">Down ${d.drop}% vs last year · ${money(d.cur)} vs ${money(d.prev)}</div></div><a class="btn gh" href="/">Re-stock</a></div>`).join(""):`<div class="empty">No categories are slipping — nice.</div>`;
+  const wsHtml=ws.length?ws.map(m=>`<span class="pill open" style="cursor:pointer" title="Open an account" onclick="showView('account')">${esc(m.name)}</span>`).join(" "):`<div class="empty">You carry every HCPS line.</div>`;
+  host.innerHTML=`<div class="card"><div class="chead"><h3>Grow your business</h3><span style="font-size:12px;color:var(--muted)">Recommendations from your own purchase data</span></div>
+     <div class="grid2" style="grid-template-columns:1fr 1fr;gap:18px">
+       <div><div class="csub2">Due for reorder</div><div class="rowlist">${dueHtml}</div></div>
+       <div>
+         <div class="csub2">Declining categories</div><div class="rowlist">${declHtml}</div>
+         <div class="csub2" style="margin-top:14px">Lines you don't carry yet (whitespace)</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:6px">${wsHtml}</div>
+         <div class="rl" style="border-top:1px solid var(--line-2);margin-top:12px"><div class="b"><div class="n">Showroom revenue opportunity</div><div class="m">Fill open floor zones to add estimated retail</div></div><a class="btn gh" onclick="showView('showroom')">Open builder</a></div>
+       </div>
+     </div></div>`;
+}
+
+/* --- account & pricing view --- */
+async function loadAccountView(){ await loadPricing(); try{ const a=await api(TOOLS_ENDPOINT,{action:"account_get"}); if(a&&a.ok)ACCOUNT={resale:a.resale||null,applications:a.applications||[],terms:a.terms||[]}; }catch(e){} renderAccount(); }
+function termsForLines(){ const map={}; (ACCOUNT.terms||[]).forEach(t=>{map[t.manufacturer]=t.terms;}); const slugs=(LINES&&LINES.length)?LINES.map(l=>l.slug):(MFRLIST||[]).map(m=>m.slug); return slugs.map(s=>({slug:s,name:mfrNameOf(s),terms:map[s]||map[mfrNameOf(s)]||"—"})); }
+function renderAccount(){
+  const resaleOn=ACCOUNT.resale&&ACCOUNT.resale.status==="on_file";
+  const terms=termsForLines();
+  const lineList=(LINES&&LINES.length)?LINES.map(l=>({slug:l.slug,name:mfrNameOf(l.slug)})):(MFRLIST||[]);
+  const lineOpts=lineList.map(m=>`<option value="${esc(m.name)}">${esc(m.name)}</option>`).join("");
+  const appsHtml=(ACCOUNT.applications||[]).length?ACCOUNT.applications.map(a=>`<div class="rl"><div class="b"><div class="n">${esc(a.manufacturer)}</div><div class="m">${esc(a.requested_terms||"")} · ${dateShort(a.created_at)}</div></div><span class="pill open">${esc(a.status||"submitted")}</span></div>`).join(""):`<div class="empty" style="padding:12px">No applications submitted yet.</div>`;
+  const fld=(id,label,val,type)=>`<label class="fld2" style="margin:0"><span style="font-size:11px;font-weight:800;color:var(--navy)">${label}</span><input id="${id}" type="${type||"text"}" value="${esc(val||"")}"></label>`;
+  $("#view-account").innerHTML=`
+   <div class="ph"><div><h1>Account &amp; Pricing</h1><div class="sub">Manufacturer onboarding, terms, branding &amp; pricing export — no card storage</div></div></div>
+   <div class="grid2"><div>
+     <div class="card" style="margin-top:0"><h3>Digital account setup center</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Complete manufacturer onboarding online — paperwork only, no payment handling.</div>
+       <div class="steps">
+         <div class="step done"><div class="sn">✓</div><div class="stx"><h4>Business profile</h4><p>${esc((PROFILE&&PROFILE.name)||"—")} · account ${esc((PROFILE&&PROFILE.hcps_account)||"—")}</p></div></div>
+         <div class="step ${resaleOn?"done":""}"><div class="sn">${resaleOn?"✓":"2"}</div><div class="stx"><h4>Resale / tax-exemption certificate</h4><p>${resaleOn?("On file"+(ACCOUNT.resale.reference?" · "+esc(ACCOUNT.resale.reference):"")+" — auto-attached to every application."):"Add your certificate reference, then email the file to HCPS to complete."}</p>
+           <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input id="resaleRef" placeholder="Certificate # / reference" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.reference)||"")}" style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><input id="resaleState" placeholder="State" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.state)||"")}" style="width:72px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><a class="btn nv" onclick="submitResale()">Save</a></div></div></div>
+         <div class="step"><div class="sn">3</div><div class="stx"><h4>Manufacturer credit application</h4><p>Complete an electronic credit app for any HCPS line — submitted to the manufacturer with your resale certificate attached.</p>
+           <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+             <label class="fld2" style="margin:0"><span style="font-size:11px;font-weight:800;color:var(--navy)">Line</span><select id="caMfr">${lineOpts}</select></label>
+             <label class="fld2" style="margin:0"><span style="font-size:11px;font-weight:800;color:var(--navy)">Requested terms</span><select id="caTerms"><option>Net 30</option><option>Net 45</option><option>Net 60</option><option>Prepay</option></select></label>
+             ${fld("caLegal","Legal business name",(PROFILE&&PROFILE.name)||"")}
+             ${fld("caEin","EIN / Tax ID","")}
+             ${fld("caYears","Years in business","","number")}
+             ${fld("caBank","Bank reference","")}
+             <label class="fld2" style="margin:0;grid-column:1/-1"><span style="font-size:11px;font-weight:800;color:var(--navy)">Trade references</span><input id="caTrade" placeholder="Company, contact, phone…"></label>
+           </div>
+           <a class="btn pri" style="margin-top:10px" onclick="submitCreditApp()">Submit application</a></div></div>
+       </div>
+       <div class="secure" style="margin-top:12px">🔒 HCPS stores no credit-card data — payment stays between you and the manufacturer</div></div>
+
+     <div class="card"><div class="chead"><h3>Your terms by line</h3><span style="font-size:11px;color:var(--muted)">Set by HCPS per manufacturer</span></div>
+       <div class="rowlist">${terms.length?terms.map(t=>{const prepay=String(t.terms).toLowerCase()==="prepay";return `<div class="rl"><div class="b"><div class="n">${esc(t.name)}</div></div>${prepay?`<span class="pill open">Prepay</span> <a class="btn gh" onclick="alert('Routing you to pay the manufacturer directly')">Pay mfr →</a>`:(t.terms==="—"?`<span class="pill imported">Terms pending</span>`:`<span class="pill done">Credit · ${esc(t.terms)}</span>`)}</div>`;}).join(""):`<div class="empty">No lines yet.</div>`}</div>
+       <div class="lead-note" style="margin-top:8px"><b>Credit</b> lines order on net terms once approved. <b>Prepay</b> lines: you pay the manufacturer directly — HCPS never touches the payment.</div></div>
+
+     <div class="card"><h3>Submitted applications</h3><div class="rowlist">${appsHtml}</div></div>
+   </div>
+   <div>
+     <div class="card" style="margin-top:0"><h3>Dealer branding</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Personalize your portal, quotes &amp; confirmations.</div>
+       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">${brandLogoHtml(52)}<div style="font-weight:700;color:var(--navy)">${esc((PROFILE&&PROFILE.name)||"")}</div></div>
+       <div class="fld2"><label>Logo URL</label><input id="acctLogo" value="${esc(BRANDING.logo_url||"")}" placeholder="https://…/logo.png"></div><a class="btn gh" onclick="saveBranding(document.getElementById('acctLogo').value)">Save logo</a></div>
+     <div class="card"><h3>Pricing export</h3><div style="font-size:12.5px;color:var(--muted)">Export your full HCPS product &amp; dealer-pricing file (SKU, manufacturer, description, dealer cost, MAP, MSRP, category) for billing, ERP, inventory or POS.</div><a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">⬇ Export pricing file</a></div>
+   </div>
+  </div>`;
+}
+async function submitResale(){ try{ await api(TOOLS_ENDPOINT,{action:"resale_cert_set",reference:($("#resaleRef")||{}).value,state:($("#resaleState")||{}).value}); }catch(e){} alert("Resale certificate reference saved. Email the certificate file to HCPS to complete."); loadAccountView(); }
+async function submitCreditApp(){ const body={action:"credit_application",manufacturer:($("#caMfr")||{}).value,requested_terms:($("#caTerms")||{}).value,legal_name:($("#caLegal")||{}).value,ein:($("#caEin")||{}).value,years_in_business:($("#caYears")||{}).value,bank_ref:($("#caBank")||{}).value,trade_refs:($("#caTrade")||{}).value}; if(!body.manufacturer){ alert("Pick a line."); return; } try{ await api(TOOLS_ENDPOINT,body); }catch(e){} alert("Credit application submitted to HCPS."); loadAccountView(); }
+
 function showView(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
   $("#view-"+v).classList.add("on");
   document.querySelectorAll("#nav a").forEach(a=>a.classList.remove("on"));
-  const idx={dash:0,orders:2,showroom:3,reports:4,quotes:5,resources:7}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
+  const idx={dash:0,orders:2,showroom:3,reports:4,quotes:5,resources:7,account:8}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
   window.scrollTo({top:0});
   if(v==="orders")loadOrders();
   if(v==="reports")loadReports();
@@ -563,6 +653,7 @@ function showView(v){
   if(v==="favorites")loadFavView();
   if(v==="showroom")loadShowroom();
   if(v==="resources")loadResourcesView();
+  if(v==="account")loadAccountView();
 }
 window.showView=showView;
 boot();

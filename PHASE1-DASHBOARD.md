@@ -136,3 +136,63 @@ alter table manufacturers add column if not exists contact_email text;
 ```
 
 That completes the blueprint's Phases 1–4. **Phase 5** (Account Setup Center — digital credit apps, resale certs, per-line terms — and the intelligence layer: reorder-due, declining categories, crossover, whitespace) is the remaining slice.
+
+---
+
+# Phase 5 — Account Setup Center + purchase-data intelligence  (shipped)
+
+The final blueprint slice. Two things: a digital **Account Setup Center** (the paperwork a dealer needs to open lines with manufacturers) and an **intelligence layer** on the dashboard that turns the dealer's own purchase history into next-step recommendations. **No credit-card data is captured or stored anywhere** — payment stays between the dealer and the manufacturing partner.
+
+## Account Setup Center  (nav item "Account & Pricing" now live)
+A single **Account & Pricing** view (`#view-account`, `loadAccountView` → `account_get` → `renderAccount`) with:
+- **Business profile** — name + HCPS account, read from the auth profile.
+- **Resale certificate** — reference # + state, saved via `resale_cert_set`. Status badge (on file / pending). The dealer emails the actual certificate file to HCPS to complete — we store only the reference, not the document.
+- **Manufacturer credit application** — one clean form (legal name, EIN/Tax ID, years in business, bank reference, trade references, requested terms, note) submitted per line via `credit_application`. On submit it's **stored + emailed to HCPS**, and the email automatically notes whether a resale certificate is already on file so HCPS can forward both to the manufacturer together. **There are no card fields.**
+- **Terms by line** — a credit-vs-prepay matrix across the dealer's carried lines, from admin-set `dealer_terms` (defaults to "—" until HCPS sets a line's terms). Prepay lines simply route the dealer to pay the manufacturer directly.
+- **Submitted applications** — a running list with status.
+- **Branding + pricing export** — the dealer logo control and the SKU/cost/MAP/MSRP pricing-file export, surfaced here too.
+- A persistent **`🔒 HCPS stores no credit-card data`** notice on the view.
+
+## Intelligence layer  (dashboard "Grow your business" card, `#dashOpps`)
+Computed entirely client-side from the consolidated history + catalog pricing (`loadDashExtras` → `renderOpportunities`):
+- **Due for reorder** — `reorderDueList()`: any (manufacturer|item) purchased ≥ 2 times whose last order was > 45 days ago, ranked by spend (top 4).
+- **Declining categories** — `decliningCats()`: catalog category where this-year spend is down > 40% vs last year (and last year ≥ $400), so a slipping category surfaces before it's lost (top 3).
+- **Whitespace lines** — `whitespaceLines()`: HCPS lines the dealer doesn't carry yet — click a chip to open an account for that line.
+- **Showroom revenue opportunity** — a prompt into the Phase 4 floor builder to fill open zones.
+
+## `dealer-tools-api.js` — three new actions (no card fields)
+`account_get` (returns `{resale, applications[], terms[]}`) · `resale_cert_set {reference, state}` (upsert) · `credit_application {manufacturer, legal_name, ein, years_in_business, bank_ref, trade_refs, requested_terms, note}` (store + email HCPS, with resale-cert-on-file status included). All JWT-gated and dealer-scoped like the rest of the function.
+
+### Migrations (run once in Supabase)
+```sql
+-- resale certificate reference (NOT the document; no card data)
+create table if not exists resale_certs (
+  dealer_id uuid primary key,
+  reference text,
+  state text,
+  status text default 'pending',
+  updated_at timestamptz default now()
+);
+-- manufacturer credit applications (NO card / bank-account numbers stored)
+create table if not exists credit_applications (
+  id bigint generated always as identity primary key,
+  dealer_id uuid not null,
+  manufacturer text not null,
+  legal_name text, ein text, years_in_business text,
+  bank_ref text, trade_refs text, requested_terms text, note text,
+  status text default 'submitted',
+  created_at timestamptz default now()
+);
+-- per-line credit vs prepay terms (admin-set)
+create table if not exists dealer_terms (
+  dealer_id uuid not null,
+  manufacturer text not null,
+  terms text,
+  primary key (dealer_id, manufacturer)
+);
+```
+Optional env: `CREDIT_APP_TO` (defaults to `ORDER_TO` / orders@homecareproviderservices.us).
+
+**Resilience:** the view renders with graceful fallbacks — if a table isn't present yet, that section shows an empty/"—" state instead of erroring, so the center is usable before the migrations are applied.
+
+That completes the blueprint's **Phases 1–5**. The dealer platform now spans consolidated history, reports & margin math, exports, favorites, branded quotes, volume-pricing requests, dealer branding, the showroom builder, literature requests, shipment tracking, the Account Setup Center, and purchase-data intelligence.
