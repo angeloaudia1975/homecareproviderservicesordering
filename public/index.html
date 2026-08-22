@@ -900,6 +900,41 @@ header .htop{flex-wrap:nowrap;}
 .shopchip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
 
 </style>
+<style id="p360-cart">
+/* ===== Partner 360 — full-page cart & checkout (concept) ===== */
+#drawer.cartpage{display:none;position:fixed;inset:0;z-index:85;background:var(--paper);overflow:auto;}
+#drawer.cartpage.open{display:block;}
+.cartpage-in{max-width:1180px;margin:0 auto;padding:34px 22px 60px;}
+.cartpage-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+.cp-eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--blue-dk);}
+.cartpage-head h1{font-family:'Archivo',sans-serif;font-weight:900;font-size:30px;color:var(--navy);margin:7px 0 6px;letter-spacing:-.01em;}
+.cp-sub{color:var(--gray);font-size:14px;max-width:600px;line-height:1.5;}
+.cp-back{border:1px solid var(--line);background:#fff;border-radius:10px;padding:11px 16px;font-family:'Archivo',sans-serif;font-weight:700;font-size:13.5px;color:var(--navy);cursor:pointer;white-space:nowrap;}
+.cp-back:hover{border-color:var(--navy);}
+.cartpage-grid{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start;}
+@media(max-width:900px){.cartpage-grid{grid-template-columns:1fr;}}
+.cartpage-right{position:sticky;top:20px;display:flex;flex-direction:column;gap:16px;}
+.ordersum{background:#fff;border:1px solid var(--line);border-radius:15px;padding:22px;box-shadow:var(--shadow);}
+.ordersum h3{font-family:'Archivo',sans-serif;font-weight:800;font-size:19px;color:var(--navy);margin:0 0 14px;}
+.ordersum .dfoot{padding:0;border:none;background:none;position:static;}
+.ordersum .sumrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:14px;}
+.ordersum .sumrow .muted{color:var(--gray);}
+.ordersum .sumrow b{font-family:'Archivo',sans-serif;font-size:22px;color:var(--navy);}
+.ordersum .subbtn{width:100%;background:var(--grad);color:#141414;border:none;border-radius:11px;padding:15px;font-family:'Archivo',sans-serif;font-weight:800;font-size:15.5px;letter-spacing:.3px;cursor:pointer;margin-top:12px;box-shadow:0 14px 30px -14px rgba(239,99,37,.6);}
+.ordersum .subbtn:hover{filter:brightness(.98);transform:translateY(-1px);}
+.ordersum .clr{width:100%;background:none;border:1px solid var(--line);border-radius:10px;padding:11px;font-family:inherit;font-weight:700;font-size:13px;color:var(--gray);cursor:pointer;margin-top:9px;}
+.ordersum .clr:hover{border-color:#d64545;color:#c0392b;}
+.ordersum .fineprint{margin-top:10px;}
+.cp-notebox{background:#e7f4ec;border:1px solid #b7e2c8;border-radius:11px;padding:13px 15px;font-size:12.5px;color:#1c7a44;font-weight:600;line-height:1.55;margin-top:14px;}
+.cp-dealer summary{font-family:'Archivo',sans-serif;font-weight:800;font-size:15px;color:var(--navy);cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;}
+.cp-dealer summary::-webkit-details-marker{display:none;}
+.cp-dealer summary::after{content:"⌄";font-size:16px;color:var(--gray);}
+.cp-dealer[open] summary{margin-bottom:14px;}
+.cp-dealer .oform h3{display:none;}
+.cartpage-left #cartGroups .mgroup{margin-bottom:16px;}
+.cartpage-left #cartGroups .fineprint{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:26px;text-align:center;}
+
+</style>
 </head>
 <body class="guest">
 
@@ -942,29 +977,42 @@ header .htop{flex-wrap:nowrap;}
 
 <!-- CART -->
 <div class="scrim" id="scrim"></div>
-<aside class="drawer" id="drawer">
-  <div class="dhead"><h2>Order Summary</h2><button class="x" id="closeCart">Close</button></div>
-  <div class="dbody">
-    <div class="oform">
-      <h3>Dealer Information</h3>
-      <div class="shiptorow" id="shiptoRow" style="display:none"><label for="f_shipto">Ship to location</label><select id="f_shipto"></select></div>
-      <div class="two"><input id="f_biz" placeholder="Dealer / Business Name" /><input id="f_acct" placeholder="HCPS Account # (optional)" /></div>
-      <div class="two"><input id="f_contact" placeholder="Contact Name" /><input id="f_email" placeholder="Email" type="email" /></div>
-      <div class="two"><input id="f_phone" placeholder="Phone" /><input id="f_addr" placeholder="Shipping Address" /></div>
-      <div class="two"><input id="f_city" placeholder="City" /><input id="f_state" placeholder="State" /></div>
-      <input id="f_zip" placeholder="ZIP" />
-      <div class="fineprint">Each manufacturer ships as its own order with its own PO — enter a PO for each below.</div>
+<div class="cartpage" id="drawer">
+  <div class="cartpage-in">
+    <div class="cartpage-head">
+      <div><div class="cp-eyebrow">Cart &amp; Checkout</div><h1>Your order</h1><p class="cp-sub">Items group by manufacturer with your terms applied — HCPS routes each order to the right manufacturer.</p></div>
+      <button class="cp-back" id="closeCart">← Keep shopping</button>
     </div>
-    <div id="cartGroups"></div>
+    <div class="cartpage-grid">
+      <div class="cartpage-left"><div id="cartGroups"></div></div>
+      <aside class="cartpage-right">
+        <div class="ordersum">
+          <h3>Order summary</h3>
+          <div class="dfoot">
+            <div class="sumrow"><span class="muted">Items</span><span id="itemsTotal">0</span></div>
+            <div class="sumrow"><span class="muted">Estimated total (incl. freight)</span><b id="grandTotal">$0.00</b></div>
+            <button class="subbtn" id="submitOrder">Place order →</button>
+            <button class="clr" id="clearCart">Clear cart</button>
+            <div class="fineprint">A separate order goes to HCPS for each manufacturer. Estimated totals use list pricing; your account pricing &amp; final freight are confirmed by HCPS.</div>
+          </div>
+          <div class="cp-notebox">🔒 No card is stored or charged here. Credit lines bill on your terms; prepay lines are paid to the manufacturer directly. HCPS sends confirmations &amp; tracking.</div>
+        </div>
+        <details class="ordersum cp-dealer" open>
+          <summary>Dealer &amp; ship-to information</summary>
+          <div class="oform">
+            <div class="shiptorow" id="shiptoRow" style="display:none"><label for="f_shipto">Ship to location</label><select id="f_shipto"></select></div>
+            <div class="two"><input id="f_biz" placeholder="Dealer / Business Name" /><input id="f_acct" placeholder="HCPS Account # (optional)" /></div>
+            <div class="two"><input id="f_contact" placeholder="Contact Name" /><input id="f_email" placeholder="Email" type="email" /></div>
+            <div class="two"><input id="f_phone" placeholder="Phone" /><input id="f_addr" placeholder="Shipping Address" /></div>
+            <div class="two"><input id="f_city" placeholder="City" /><input id="f_state" placeholder="State" /></div>
+            <input id="f_zip" placeholder="ZIP" />
+            <div class="fineprint">Each manufacturer ships as its own order with its own PO — enter a PO for each group.</div>
+          </div>
+        </details>
+      </aside>
+    </div>
   </div>
-  <div class="dfoot">
-    <div class="sumrow"><span class="muted">Items</span><span id="itemsTotal">0</span></div>
-    <div class="sumrow"><span class="muted">Estimated total (incl. freight)</span><b id="grandTotal">$0.00</b></div>
-    <button class="subbtn" id="submitOrder">Submit Order</button>
-    <button class="clr" id="clearCart">Clear cart</button>
-    <div class="fineprint">Submitting sends a separate order to HomeCare Provider Services for each manufacturer. Estimated totals use list pricing; your account pricing and final freight are confirmed by HCPS.</div>
-  </div>
-</aside>
+</div>
 
 <!-- LOGIN / REGISTER -->
 <!-- IMAGE LIGHTBOX -->
