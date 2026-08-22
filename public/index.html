@@ -935,6 +935,17 @@ header .htop{flex-wrap:nowrap;}
 .cartpage-left #cartGroups .fineprint{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:26px;text-align:center;}
 
 </style>
+<style id="p360-tighten">
+#a4uBuilder,#swBuilder{display:none!important;}
+.qh-cfg-head{margin:14px 0 4px;}
+.qh-cfg-crumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray);margin-bottom:8px;}
+.qh-cfg-crumb a{color:var(--blue-dk);font-weight:700;cursor:pointer;}
+.qh-cfg-crumb .sep{opacity:.5;}
+.qh-cfg-crumb .cur{color:var(--navy);font-weight:700;}
+.qh-cfg-eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--blue-dk);}
+.qh-cfg-title{font-family:'Archivo',sans-serif;font-weight:900;font-size:29px;color:var(--navy);letter-spacing:-.01em;margin:7px 0 6px;}
+.qh-cfg-sub{color:var(--gray);font-size:14px;line-height:1.55;max-width:620px;margin:0;}
+</style>
 </head>
 <body class="guest">
 
@@ -3731,6 +3742,12 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     var host=$q('#content'); if(!host) return;
     var pn=(proj&&proj.name)||'', pc=(proj&&proj.customer)||'';
     host.innerHTML = '<div class="qhub">'
+      +'<div class="qh-cfg-head">'
+        +'<div class="qh-cfg-crumb"><a onclick="showQuotesHub()">Quotes &amp; Configurators</a><span class="sep">/</span><span class="cur">Access4U Ramp Designer</span></div>'
+        +'<div class="qh-cfg-eyebrow">Access4U · Modular Ramp Configurator</div>'
+        +'<h1 class="qh-cfg-title">Access4U Ramp Designer</h1>'
+        +'<p class="qh-cfg-sub">Design a modular ramp system, check ADA slope, price it at your Access4U tier, and turn it into a quote or an order — without leaving Partner 360.</p>'
+      +'</div>'
       +'<div class="qh-cfgbar">'
         +'<button class="qh-back" onclick="showQuotesHub()">&larr; Quotes &amp; Configurators</button>'
         +'<div class="qh-save">'
