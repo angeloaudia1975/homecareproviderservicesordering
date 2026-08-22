@@ -453,6 +453,52 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .subbtn{background:var(--grad)!important;color:#141414!important;}
 
 </style>
+<style id="p360-stage4">
+/* ===== Partner 360 Stage 4 — Quotes & Configurators hub ===== */
+body.hubon .mbanner,body.hubon .controls,body.hubon #a4uBuilder,body.hubon #swBuilder{display:none!important;}
+.qhub{max-width:1180px;margin:0 auto;padding:4px 0 40px;}
+.qh-hero{background:linear-gradient(120deg,var(--navy),var(--navy2));color:#fff;border-radius:16px;padding:30px 34px;margin:14px 0 22px;box-shadow:var(--shadow);}
+.qh-eyebrow{font-size:11.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
+.qh-hero h1{font-family:'Archivo',sans-serif;font-weight:900;font-size:30px;letter-spacing:-.01em;margin:8px 0 8px;color:#fff;}
+.qh-hero p{color:#c8d6e6;font-size:14.5px;line-height:1.55;max-width:640px;margin:0;}
+.qh-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-bottom:26px;}
+.qh-card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:24px 24px 22px;cursor:pointer;transition:transform .18s,box-shadow .18s,border-color .18s;position:relative;overflow:hidden;}
+.qh-card::after{content:"";position:absolute;left:0;top:0;height:4px;width:100%;background:var(--grad);opacity:0;transition:opacity .18s;}
+.qh-card:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:#cfe2fb;}
+.qh-card:hover::after{opacity:1;}
+.qh-ic{width:52px;height:52px;border-radius:13px;display:grid;place-items:center;font-size:26px;background:linear-gradient(135deg,rgba(239,99,37,.14),rgba(252,178,30,.16));margin-bottom:14px;}
+.qh-card h3{font-family:'Archivo',sans-serif;font-weight:800;font-size:19px;color:var(--navy);margin:0 0 7px;}
+.qh-card p{color:#4b5563;font-size:13.5px;line-height:1.5;margin:0 0 14px;}
+.qh-go{font-family:'Archivo',sans-serif;font-weight:800;font-size:13.5px;color:var(--blue-dk);letter-spacing:.2px;}
+.qh-saved{background:#fff;border:1px solid var(--line);border-radius:15px;padding:22px 24px;box-shadow:var(--shadow);}
+.qh-saved-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px;}
+.qh-saved-head h2{font-family:'Archivo',sans-serif;font-weight:800;font-size:19px;color:var(--navy);margin:0;}
+.qh-hint{font-size:12px;color:var(--gray);font-weight:600;}
+.qh-table{width:100%;border-collapse:collapse;margin-top:8px;}
+.qh-table th{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);}
+.qh-table td{padding:11px 8px;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--navy);vertical-align:middle;}
+.qh-table th.r,.qh-table td.r{text-align:right;}
+.qh-table tbody tr:hover{background:var(--paper);}
+.qh-cust{font-size:12px;color:var(--gray);font-weight:600;margin-top:2px;}
+.qh-empty{color:var(--gray);font-style:italic;text-align:center;padding:22px 0!important;}
+.qh-act{white-space:nowrap;}
+.qh-mini{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 11px;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;margin-left:6px;font-family:inherit;}
+.qh-mini:hover{border-color:var(--navy);background:var(--paper);}
+.qh-mini.danger:hover{border-color:#d64545;color:#c0392b;background:#fdecec;}
+/* configurator bar (in-hub) */
+.qh-cfgbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 16px;margin:14px 0 10px;box-shadow:var(--shadow);}
+.qh-back{border:1px solid var(--line);background:#fff;border-radius:9px;padding:10px 14px;font-family:'Archivo',sans-serif;font-weight:700;font-size:13.5px;color:var(--navy);cursor:pointer;}
+.qh-back:hover{border-color:var(--navy);background:var(--paper);}
+.qh-save{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+.qh-input{border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13px;background:#fff;min-width:180px;color:var(--navy);}
+.qh-input:focus{outline:none;border-color:var(--blue);}
+.qh-savebtn{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:9px;padding:10px 15px;font-family:'Archivo',sans-serif;font-weight:700;font-size:13.5px;cursor:pointer;}
+.qh-savebtn:hover{background:var(--navy2);}
+.qh-cartbtn{border:none;background:var(--grad);color:#141414;border-radius:9px;padding:10px 16px;font-family:'Archivo',sans-serif;font-weight:800;font-size:13.5px;cursor:pointer;box-shadow:0 10px 22px -12px rgba(239,99,37,.6);}
+.qh-cartbtn:hover{filter:brightness(.97);transform:translateY(-1px);}
+@media(max-width:640px){.qh-input{min-width:0;flex:1;}.qh-cfgbar{gap:10px;}}
+
+</style>
 </head>
 <body class="guest">
 
@@ -738,13 +784,14 @@ function renderTabs(){
     [['dash','Dashboard'],['reports','Reports'],['quotes','Quotes'],['showroom','Showroom'],['account','Account'],['resources','Resources']].forEach(function(pair){
       const b=document.createElement('button');
       b.className='tab p360tab'+(state.active==='p360:'+pair[0]?' active':'');
-      b.textContent=pair[1]; b.onclick=function(){showP360(pair[0]);}; el.appendChild(b);
+      b.textContent=pair[1]; b.onclick=(pair[0]==='quotes')?function(){showQuotesHub();}:function(){showP360(pair[0]);}; el.appendChild(b);
     });
   }
 }
 function showP360(v){
   state.active='p360:'+v;
   document.body.classList.add('p360on');
+  document.body.classList.remove('hubon'); A4U.hubMode=false; A4U.host=null;
   var pw=document.getElementById('p360wrap'); if(pw)pw.style.display='block';
   renderTabs(); window.scrollTo({top:0});
   Promise.resolve(window.P360 && window.P360.boot && window.P360.boot()).then(function(){ if(window.P360&&window.P360.show)window.P360.show(v); });
@@ -1319,7 +1366,7 @@ async function submitOrder(){
 }
 
 /* ---------- Access4U modular ramp quote builder ---------- */
-const A4U={items:[], open:false, rise:0};          // items: ordered [{code,fam,qty,turn?}]; PRK auto-added per platform; turn on PS platforms
+const A4U={items:[], open:false, rise:0, hubMode:false, host:null, project:null};          // items: ordered [{code,fam,qty,turn?}]; PRK auto-added per platform; turn on PS platforms
 // Codes SR3 & PRK exist in two families (RS single-fold ramps vs RR modular Ramp Run) at different prices.
 // The modular configurator is the RR (Ramp Run) system, so it always resolves parts to their family.
 function a4uProd(code,fam){return state.products.find(p=>p.code===code && (!fam||p.family===fam));}
@@ -1372,8 +1419,8 @@ const A4U_TURNS=[["straight","Straight ↑"],["left","Left 90° ↰"],["right","
 const A4U_TURNS45=[["straight","Straight ↑"],["left45","45° left ↖"],["right45","45° right ↗"]];
 function a4uTurnsFor(code){ return /PS45/i.test(code)? A4U_TURNS45 : A4U_TURNS; }
 function renderA4U(){
-  const host=$("#a4uBuilder");
-  if(state.active!=="access4u" || !a4uProd("SR3")){ host.innerHTML=""; return; }
+  const host=$(A4U.host||"#a4uBuilder"); if(!host) return;
+  if((!A4U.hubMode && state.active!=="access4u") || !a4uProd("SR3")){ host.innerHTML=""; return; }
   const bom=a4uBom(), t=a4uTotals(bom);
   const alumSur=Math.round(t.dealer*0.23*100)/100;   // aluminum surcharge: 23% of STANDARD dealer rate
   const estShip=bom.length?400:0;                     // flat estimated shipping per quote
@@ -1936,6 +1983,7 @@ function swLayoutSheet(){ const bom=swBom(); if(!bom.length){toast("Place at lea
 /* ---------- navigation ---------- */
 async function selectManufacturer(slug){
   document.body.classList.remove('p360on'); var _pw=document.getElementById('p360wrap'); if(_pw)_pw.style.display='none';
+  A4U.hubMode=false; A4U.host=null; document.body.classList.remove('hubon');
   if(slug===HOME){
     state.active=HOME; document.body.classList.add('home'); renderTabs();
     await renderHome(); window.scrollTo({top:0,behavior:"smooth"}); return;
@@ -3046,6 +3094,131 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     setTimeout(()=>openProductDetail(code),350);
   };
   document.addEventListener('click',function(e){ if(!e.target.closest('.hsearch')){ const b=$q('#gsresults'); if(b)b.classList.remove('on'); } });
+})();
+
+</script>
+<script>
+/* ===== Partner 360 Stage 4 — Quotes & Configurators hub ===== */
+(function(){
+  function $q(s){return document.querySelector(s);}
+
+  // ---------- saved projects (per-dealer, localStorage) ----------
+  function dealerKey(){ try{ var d=(window.AUTH&&AUTH.dealer)||{}; return 'hcps_a4u_projects_'+(d.hcps_account||d.email||'anon'); }catch(e){ return 'hcps_a4u_projects_anon'; } }
+  function loadProjects(){ try{ return JSON.parse(localStorage.getItem(dealerKey())||'[]'); }catch(e){ return []; } }
+  function saveProjects(list){ try{ localStorage.setItem(dealerKey(), JSON.stringify(list)); }catch(e){} }
+  window.a4uLoadProjects=loadProjects;
+
+  // ---------- Quotes & Configurators hub ----------
+  window.showQuotesHub=function(){
+    A4U.hubMode=false; A4U.host=null;
+    document.body.classList.remove('p360on','home'); document.body.classList.add('hubon');
+    var pw=document.getElementById('p360wrap'); if(pw)pw.style.display='none';
+    state.active='p360:quotes'; renderTabs();
+    renderQuotesHubLanding();
+    window.scrollTo({top:0});
+  };
+
+  window.renderQuotesHubLanding=function(){
+    var host=$q('#content'); if(!host) return;
+    var projects=loadProjects();
+    var rows = projects.length ? projects.map(function(p){
+      var when=''; try{ when=new Date(p.savedAt).toLocaleDateString(); }catch(e){ when='—'; }
+      return '<tr>'
+        +'<td><b>'+esc(p.name||'Untitled')+'</b>'+(p.customer?'<div class="qh-cust">'+esc(p.customer)+'</div>':'')+'</td>'
+        +'<td>'+esc(when)+'</td>'
+        +'<td class="r">'+(p.count||0)+'</td>'
+        +'<td class="r">'+money(p.your||0)+'</td>'
+        +'<td class="r qh-act">'
+          +'<button class="qh-mini" onclick="a4uOpenSavedProject(\''+p.id+'\')">Open</button>'
+          +'<button class="qh-mini" onclick="a4uConvertSaved(\''+p.id+'\')">&rarr; Cart</button>'
+          +'<button class="qh-mini danger" onclick="a4uDeleteSavedProject(\''+p.id+'\')">Delete</button>'
+        +'</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="qh-empty">No saved projects yet — open a configurator and save your first quote.</td></tr>';
+
+    host.innerHTML = '<div class="qhub">'
+      +'<div class="qh-hero">'
+        +'<div class="qh-eyebrow">Partner 360</div>'
+        +'<h1>Quotes &amp; Configurators</h1>'
+        +'<p>Build professional configurations and customer quotes, save them as projects, export a spec sheet, or convert straight into a Partner 360 order.</p>'
+      +'</div>'
+      +'<div class="qh-tools">'
+        +'<div class="qh-card" onclick="a4uOpenConfigurator()">'
+          +'<div class="qh-ic">&#128736;</div>'
+          +'<h3>Access4U Ramp Configurator</h3>'
+          +'<p>Model modular ramp runs, platforms, turns (L / U / switchback), gates &amp; stairs with a live ADA slope check and dealer / MSRP pricing.</p>'
+          +'<span class="qh-go">Open configurator &rarr;</span>'
+        +'</div>'
+        +'<div class="qh-card" onclick="showP360(\'quotes\')">'
+          +'<div class="qh-ic">&#129534;</div>'
+          +'<h3>Customer MSRP Quote</h3>'
+          +'<p>Build a branded, print-ready quote for your customer from any HCPS product, on your own letterhead.</p>'
+          +'<span class="qh-go">Open quote builder &rarr;</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="qh-saved">'
+        +'<div class="qh-saved-head"><h2>Saved projects &amp; quotes</h2><span id="hubSavedHint" class="qh-hint">'+projects.length+' saved project'+(projects.length===1?'':'s')+'</span></div>'
+        +'<table class="qh-table"><thead><tr><th>Project</th><th>Saved</th><th class="r">Items</th><th class="r">Your price</th><th class="r"></th></tr></thead><tbody>'+rows+'</tbody></table>'
+      +'</div>'
+    +'</div>';
+  };
+
+  // ---------- open the Access4U configurator inside the hub ----------
+  window.a4uOpenConfigurator=async function(proj){
+    document.body.classList.remove('p360on','home'); document.body.classList.add('hubon');
+    var pw=document.getElementById('p360wrap'); if(pw)pw.style.display='none';
+    state.active='p360:quotes'; renderTabs();
+    A4U.hubMode=true; A4U.host='#hubA4u';
+    var host=$q('#content'); if(!host) return;
+    var pn=(proj&&proj.name)||'', pc=(proj&&proj.customer)||'';
+    host.innerHTML = '<div class="qhub">'
+      +'<div class="qh-cfgbar">'
+        +'<button class="qh-back" onclick="showQuotesHub()">&larr; Quotes &amp; Configurators</button>'
+        +'<div class="qh-save">'
+          +'<input id="hubProjName" class="qh-input" placeholder="Project name (e.g. Smith residence)" value="'+esc(pn)+'">'
+          +'<input id="hubProjCust" class="qh-input" placeholder="Customer (optional)" value="'+esc(pc)+'">'
+          +'<button class="qh-savebtn" onclick="a4uSaveCurrentProject()">&#128190; Save project</button>'
+          +'<button class="qh-cartbtn" onclick="a4uToCart()">&#128722; Convert to order</button>'
+        +'</div>'
+      +'</div>'
+      +'<div id="hubA4u"></div>'
+    +'</div>';
+    // ensure Access4U catalog data is loaded so the configurator can resolve parts
+    if(!a4uProd('SR3')){ try{ await loadProducts('access4u'); }catch(e){} }
+    if(proj){ try{ A4U.items=JSON.parse(JSON.stringify(proj.items||[])); }catch(e){ A4U.items=[]; } A4U.rise=proj.rise||0; A4U.project=proj.name||null; }
+    A4U.open=true;
+    renderA4U();
+    window.scrollTo({top:0});
+  };
+
+  // ---------- save / reopen / convert / delete ----------
+  window.a4uSaveCurrentProject=function(){
+    if(!A4U.items.length){ toast('Build a configuration first'); return; }
+    var nameEl=document.getElementById('hubProjName');
+    var custEl=document.getElementById('hubProjCust');
+    var name=(nameEl&&nameEl.value.trim())||('Ramp quote '+new Date().toLocaleDateString());
+    var customer=(custEl&&custEl.value.trim())||'';
+    var bom=a4uBom(), t=a4uTotals(bom);
+    var count=bom.reduce(function(n,b){return n+(b.qty||1);},0);
+    var list=loadProjects();
+    var proj={ id:'p'+Date.now(), name:name, customer:customer,
+      items:JSON.parse(JSON.stringify(A4U.items)), rise:A4U.rise,
+      your:t.your, msrp:t.msrp, count:count, savedAt:new Date().toISOString() };
+    var idx=-1; for(var i=0;i<list.length;i++){ if(list[i].name===name){ idx=i; break; } }
+    if(idx>=0){ proj.id=list[idx].id; list[idx]=proj; } else { list.unshift(proj); }
+    saveProjects(list); A4U.project=name;
+    toast('Project saved ✓');
+    var h=document.getElementById('hubSavedHint'); if(h) h.textContent=list.length+' saved project'+(list.length===1?'':'s');
+  };
+
+  window.a4uOpenSavedProject=async function(id){ var p=loadProjects().find(function(x){return x.id===id;}); if(p) await a4uOpenConfigurator(p); };
+  window.a4uDeleteSavedProject=function(id){ var list=loadProjects().filter(function(x){return x.id!==id;}); saveProjects(list); renderQuotesHubLanding(); };
+  window.a4uConvertSaved=async function(id){
+    var p=loadProjects().find(function(x){return x.id===id;}); if(!p) return;
+    try{ A4U.items=JSON.parse(JSON.stringify(p.items||[])); }catch(e){ A4U.items=[]; }
+    A4U.rise=p.rise||0;
+    if(!a4uProd('SR3')){ try{ await loadProducts('access4u'); }catch(e){} }
+    a4uToCart();
+  };
 })();
 
 </script>
