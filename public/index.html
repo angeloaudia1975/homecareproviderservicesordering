@@ -62,6 +62,10 @@ header{background:#fff;position:sticky;top:0;z-index:60;box-shadow:0 2px 14px rg
 .tab:hover{color:var(--navy);}
 .tab.active{color:var(--navy);border-color:var(--orange);}
 .tab.disabled{opacity:.5;cursor:default;}
+.tabsep{display:inline-block;width:1px;align-self:center;min-height:20px;background:var(--line);margin:8px 8px;}
+.tab.p360tab.active{color:var(--navy);border-color:var(--orange);}
+body.p360on main.wrap,body.p360on .mbanner,body.p360on .controls{display:none!important;}
+body:not(.p360on) #p360wrap{display:none!important;}
 .tab .soon{font-size:9px;background:var(--light);color:var(--gray);padding:1px 6px;border-radius:999px;margin-left:6px;letter-spacing:.5px;}
 
 /* MFR BANNER + CONTROLS */
@@ -658,7 +662,24 @@ function renderTabs(){
     if (m.hasData) b.onclick=()=>selectManufacturer(m.slug);
     el.appendChild(b);
   }
+  // ---- Partner 360 business tools ----
+  if(AUTH.status==='approved'){
+    const sep=document.createElement('span'); sep.className='tabsep'; el.appendChild(sep);
+    [['dash','Dashboard'],['reports','Reports'],['quotes','Quotes'],['showroom','Showroom'],['account','Account'],['resources','Resources']].forEach(function(pair){
+      const b=document.createElement('button');
+      b.className='tab p360tab'+(state.active==='p360:'+pair[0]?' active':'');
+      b.textContent=pair[1]; b.onclick=function(){showP360(pair[0]);}; el.appendChild(b);
+    });
+  }
 }
+function showP360(v){
+  state.active='p360:'+v;
+  document.body.classList.add('p360on');
+  var pw=document.getElementById('p360wrap'); if(pw)pw.style.display='block';
+  renderTabs(); window.scrollTo({top:0});
+  Promise.resolve(window.P360 && window.P360.boot && window.P360.boot()).then(function(){ if(window.P360&&window.P360.show)window.P360.show(v); });
+}
+
 
 /* ---------- personalized home dashboard ---------- */
 // Featured products are published by the admin Featured tool and read here with the
@@ -1844,6 +1865,7 @@ function swLayoutSheet(){ const bom=swBom(); if(!bom.length){toast("Place at lea
 
 /* ---------- navigation ---------- */
 async function selectManufacturer(slug){
+  document.body.classList.remove('p360on'); var _pw=document.getElementById('p360wrap'); if(_pw)_pw.style.display='none';
   if(slug===HOME){
     state.active=HOME; document.body.classList.add('home'); renderTabs();
     await renderHome(); window.scrollTo({top:0,behavior:"smooth"}); return;
@@ -2190,5 +2212,669 @@ $("#brandFilter").addEventListener("change",renderProducts);
   }catch(e){console.error(e);$("#content").innerHTML=`<div class="empty"><h3>Could not load data</h3><p>Confirm data/manufacturers.json is deployed.</p></div>`;}
 })();
 </script>
+
+<!-- ===== Partner 360 business tools (folded-in dashboard, scoped) ===== -->
+<style id="p360css">
+
+  #p360wrap{--navy:#12253c;--navy2:#2B4071;--navy3:#3B599A;--orange:#ef6325;--orange-d:#d96f14;--gold:#fcb21e;--blue:#1681c2;--green:#2d7d46;--green-bg:#e7f4ec;
+    --paper:#eef1f5;--surface:#fff;--surface-2:#f6f9fc;--ink:#152332;--ink-2:#41546a;--muted:#6b7d90;--line:#e0e6ee; --grad:linear-gradient(100deg,var(--orange),var(--gold));--line-2:#eef2f7;
+    --shadow-sm:0 4px 14px rgba(16,38,63,.07);--shadow:0 18px 40px -20px rgba(11,13,15,.28);--radius:14px;background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,-apple-system,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  #p360wrap h1,#p360wrap h2,#p360wrap h3,#p360wrap h4,#p360wrap .cond{font-family:'Archivo','Inter',system-ui,sans-serif}
+  #p360wrap a{color:inherit;text-decoration:none;cursor:pointer}#p360wrap button{font-family:inherit;cursor:pointer}
+  #p360wrap .tnum{font-variant-numeric:tabular-nums}
+  #p360wrap .topbar{position:sticky;top:0;z-index:60;background:#fff;border-bottom:3px solid var(--orange);box-shadow:0 2px 12px rgba(16,38,63,.06)}
+  #p360wrap .tb-in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:10px 22px}
+  #p360wrap .logo{display:flex;align-items:center;gap:11px}
+  #p360wrap .logo .lm{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,var(--navy),var(--navy3));display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Archivo';font-weight:800;font-size:18px}
+  #p360wrap .logo b{font-family:'Archivo';font-weight:800;font-size:17px;color:var(--navy);letter-spacing:.3px;display:block;line-height:1}
+  #p360wrap .logo span{font-size:8.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:700}
+  #p360wrap .tb-actions{display:flex;align-items:center;gap:14px;margin-left:auto;font-size:13px;font-weight:600;color:var(--ink-2)}
+  #p360wrap .tb-actions .dl{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid var(--line);border-radius:22px;background:var(--surface-2)}
+  #p360wrap .tb-actions .dl b{color:var(--navy);font-size:12.5px}
+  #p360wrap .btn{border:0;border-radius:9px;padding:9px 15px;font-weight:800;font-size:13px;display:inline-flex;align-items:center;gap:7px}
+  #p360wrap .btn.pri{background:var(--orange);color:#fff}#p360wrap .btn.pri:hover{background:var(--orange-d)}
+  #p360wrap .btn.nv{background:var(--navy2);color:#fff}#p360wrap .btn.nv:hover{background:var(--navy)}
+  #p360wrap .btn.gh{background:#fff;color:var(--ink-2);border:1px solid var(--line)}
+  #p360wrap .mainnav{background:var(--navy)}
+  #p360wrap .mn-in{max-width:1240px;margin:0 auto;display:flex;gap:1px;padding:0 14px;overflow-x:auto}
+  #p360wrap .mn-in a{color:#aebdd0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:12px 14px;border-bottom:3px solid transparent;white-space:nowrap}
+  #p360wrap .mn-in a:hover{color:#fff}#p360wrap .mn-in a.on{color:#fff;border-color:var(--orange)}
+  #p360wrap .mn-in a.soon{color:#6b7d90;cursor:default}#p360wrap .mn-in a.soon:hover{color:#8a97a8}
+  #p360wrap .page{max-width:1240px;margin:0 auto;padding:22px 22px 70px}
+  #p360wrap .view{display:none}#p360wrap .view.on{display:block}
+  #p360wrap .ph{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  #p360wrap .ph h1{margin:0;font-size:26px;font-weight:800;color:var(--navy)}
+  #p360wrap .ph .sub{color:var(--muted);font-size:14px;margin-top:2px}
+  #p360wrap .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:900px){#p360wrap .kpis{grid-template-columns:1fr 1fr}}
+  #p360wrap .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow-sm)}
+  #p360wrap .kpi.accent{border-left:4px solid var(--orange);background:linear-gradient(120deg,#fff,#fffaf3)}
+  #p360wrap .kpi .kl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:800}
+  #p360wrap .kpi .kv{font-size:29px;font-weight:800;color:var(--navy);font-family:'Archivo';line-height:1;margin-top:6px}
+  #p360wrap .kpi .kv.o{color:var(--orange-d)}
+  #p360wrap .kpi .ks{font-size:12px;color:var(--ink-2);margin-top:4px}
+  #p360wrap .grid2{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:16px}
+  @media(max-width:980px){#p360wrap .grid2{grid-template-columns:1fr}}
+  #p360wrap .card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px 20px;margin-top:16px}
+  #p360wrap .card:first-child{margin-top:0}
+  #p360wrap .card .chead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  #p360wrap .card h3{margin:0;font-size:18px;font-weight:800;color:var(--navy)}
+  #p360wrap .seelink{font-size:12px;font-weight:800;color:var(--orange-d)}
+  #p360wrap .rowlist{display:flex;flex-direction:column}
+  #p360wrap .rl{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line-2)}
+  #p360wrap .rl:first-child{border-top:0}
+  #p360wrap .rl .b{flex:1;min-width:0}
+  #p360wrap .rl .n{font-size:13.5px;font-weight:700;color:var(--navy);line-height:1.2}
+  #p360wrap .rl .m{font-size:11.5px;color:var(--muted)}
+  #p360wrap .rl .amt{text-align:right;font-weight:800;font-family:'Archivo';font-size:16px;color:var(--ink)}
+  #p360wrap .pill{display:inline-block;font-size:10px;font-weight:800;border-radius:20px;padding:3px 8px;white-space:nowrap}
+  #p360wrap .pill.gold{background:#fdeee0;color:#b45309;border:1px solid #f6d5ad}
+  #p360wrap .pill.portal{background:#e6f0f8;color:#1466a3;border:1px solid #bcd8ef}
+  #p360wrap .pill.imported{background:var(--surface-2);color:#6b7d90;border:1px solid var(--line)}
+  #p360wrap .pill.done{background:var(--green-bg);color:var(--green);border:1px solid #bfe3ca}
+  #p360wrap .pill.open{background:#fff4d6;color:#8a5a00;border:1px solid #f3d27a}
+  #p360wrap .hbars{display:flex;flex-direction:column;gap:9px}
+  #p360wrap .hbar{display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:10px;font-size:12.5px}
+  #p360wrap .hbar .hn{font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #p360wrap .hbar .htrack{height:15px;background:var(--surface-2);border-radius:8px;overflow:hidden}
+  #p360wrap .hbar .hfill{height:100%;border-radius:8px;background:var(--navy3)}
+  #p360wrap .hbar .hv{font-weight:800;font-family:'Archivo';color:var(--ink);white-space:nowrap}
+  #p360wrap .barchart{display:flex;align-items:flex-end;gap:6px;height:130px;padding-top:8px}
+  #p360wrap .barchart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+  #p360wrap .barchart .bar{width:64%;background:linear-gradient(180deg,var(--orange),#f7a24f);border-radius:5px 5px 0 0;min-height:3px}
+  #p360wrap .barchart .bl{font-size:9px;color:var(--muted);font-weight:700}
+  #p360wrap .tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+  #p360wrap .tbl th{text-align:left;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+  #p360wrap .tbl td{padding:10px 12px;border-bottom:1px solid var(--line-2)}
+  #p360wrap .tbl td.n,#p360wrap .tbl th.n{text-align:right;font-variant-numeric:tabular-nums}
+  #p360wrap .est{display:inline-block;font-size:10px;font-weight:800;color:#b9791a;background:#fdf3e3;border:1px solid #f0d9a8;border-radius:5px;padding:1px 6px}
+  #p360wrap .kpi .kv.g{color:var(--green)}
+  @media print{#p360wrap .topbar,#p360wrap .mainnav,#p360wrap .tb-actions,#p360wrap .ph .btn,#p360wrap .seelink,#p360wrap .foot,#p360wrap .mn-in{display:none!important}#p360wrap .page{padding:0;max-width:none}#p360wrap .card{box-shadow:none;break-inside:avoid;border-color:#ccc}#p360wrap .view:not(.on){display:none}}
+  #p360wrap .qbuild{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:900px){#p360wrap .qbuild{grid-template-columns:1fr}}
+  #p360wrap .qpaper{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:20px 22px}
+  #p360wrap .qhead{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--navy2);padding-bottom:12px;margin-bottom:12px;gap:12px}
+  #p360wrap .qbiz{font-family:'Archivo';font-weight:800;font-size:18px;color:var(--navy);line-height:1.1}
+  #p360wrap .qc{font-size:11px;color:var(--muted)}
+  #p360wrap .qtbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+  #p360wrap .qtbl th{text-align:left;color:var(--muted);font-size:10px;text-transform:uppercase;padding:6px 6px;border-bottom:1px solid var(--line)}
+  #p360wrap .qtbl td{padding:7px 6px;border-bottom:1px solid var(--line-2)}
+  #p360wrap .qtot{display:flex;justify-content:flex-end;margin-top:10px;font-family:'Archivo';font-weight:800;font-size:18px;color:var(--navy)}
+  #p360wrap .modal{display:none;position:fixed;inset:0;background:rgba(16,38,63,.5);z-index:100;align-items:center;justify-content:center;padding:20px}
+  #p360wrap .modal.on{display:flex}
+  #p360wrap .mbox{background:#fff;border-radius:14px;box-shadow:var(--shadow);max-width:480px;width:100%;padding:22px 24px}
+  #p360wrap .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  #p360wrap .mhead h3{margin:0;color:var(--navy)}
+  #p360wrap .mx{color:var(--muted);font-size:18px;cursor:pointer}
+  #p360wrap .fld2{margin-bottom:10px}
+  #p360wrap .fld2 label{font-size:12px;font-weight:700;color:var(--navy);display:block;margin-bottom:4px}
+  #p360wrap .fld2 input,#p360wrap .fld2 select,#p360wrap .fld2 textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:inherit;font-size:13.5px}
+  #p360wrap .lead-note{font-size:12.5px;color:var(--muted);margin-top:10px}
+  #p360wrap .steps{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  #p360wrap .step{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+  #p360wrap .step .sn{width:26px;height:26px;border-radius:50%;background:var(--navy2);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-family:'Archivo'}
+  #p360wrap .step.done .sn{background:var(--green)}
+  #p360wrap .step .stx{flex:1;min-width:0}
+  #p360wrap .step h4{margin:0 0 3px;font-size:14.5px;font-weight:800;color:var(--navy)}
+  #p360wrap .step p{margin:0;font-size:12.5px;color:var(--ink-2)}
+  #p360wrap .secure{font-size:12px;color:var(--green);font-weight:700;display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid #bfe3ca;border-radius:8px;padding:7px 11px}
+  #p360wrap .csub2{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--navy);margin-bottom:6px}
+  #p360wrap .swwall{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  @media(max-width:1100px){#p360wrap .swwall{grid-template-columns:repeat(3,1fr)}}
+  #p360wrap .swz{aspect-ratio:1;border:1.5px dashed #c9d3df;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;padding:8px;text-align:center}
+  #p360wrap .swz:hover{border-color:var(--orange)}
+  #p360wrap .swz.f{border-style:solid;border-color:var(--line);background:#fff;cursor:default;flex-direction:column;gap:2px}
+  #p360wrap .swadd{font-size:12px;color:var(--muted);font-weight:700}
+  #p360wrap .swzn{font-size:11.5px;font-weight:700;color:var(--navy);line-height:1.15}
+  #p360wrap .swzm{font-size:9.5px;color:var(--muted)}
+  #p360wrap .swzr{font-size:10px;color:var(--green);font-weight:700;margin-top:2px}
+  #p360wrap .swx{position:absolute;top:5px;right:6px;color:#c0c9d4;font-size:12px;cursor:pointer;line-height:1}
+  #p360wrap .swx:hover{color:#b23b3b}
+  #p360wrap .gate{max-width:440px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px 30px;text-align:center}
+  #p360wrap .gate .lm{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--navy),var(--navy3));display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Archivo';font-weight:800;font-size:24px;margin:0 auto 14px}
+  #p360wrap .gate h2{margin:0 0 6px;font-size:23px;color:var(--navy)}
+  #p360wrap .gate p{color:var(--ink-2);font-size:14px;margin:0 0 18px}
+  #p360wrap .msg{padding:34px;text-align:center;color:var(--muted);font-size:14px}
+  #p360wrap .foot{color:var(--muted);font-size:12px;padding:24px 0 6px;text-align:center}
+  #p360wrap .empty{padding:26px;text-align:center;color:var(--muted);font-size:13.5px}
+
+#p360wrap .topbar{display:none!important;}
+#p360wrap>.page{padding-top:8px;}
+#p360wrap{background:var(--paper);}
+</style>
+<div id="p360wrap" style="display:none">
+<div class="topbar">
+  <div class="tb-in">
+    <a class="logo" href="/dashboard.html"><span class="lm">H</span><span><b>HCPS</b><span>Dealer Business Hub</span></span></a>
+    <div class="tb-actions">
+      <span class="dl" id="dealerChip" style="display:none"><span id="brandLogo"></span><b id="dealerName">—</b></span>
+      <a class="btn gh" href="/">← Back to shop</a>
+      <a id="signout" style="display:none;color:var(--muted)">Sign out</a>
+    </div>
+  </div>
+  <div class="mainnav"><div class="mn-in" id="nav">
+    <a class="on" onclick="showView('dash')">Dashboard</a>
+    <a href="/">Shop</a>
+    <a onclick="showView('orders')">My Orders</a>
+    <a onclick="showView('showroom')">Showroom</a>
+    <a onclick="showView('reports')">Reports</a>
+    <a onclick="showView('quotes')">Quotes</a>
+    <a class="soon" title="Coming in a later phase">My Manufacturers</a>
+    <a onclick="showView('resources')">Resources</a>
+    <a onclick="showView('account')">Account &amp; Pricing</a>
+  </div></div>
+</div>
+<div class="page">
+  <div id="gate"></div>
+  <div class="view on" id="view-dash"><div class="msg">Loading your business hub…</div></div>
+  <div class="view" id="view-orders"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-reports"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-quotes"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-favorites"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-showroom"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-resources"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-account"><div class="msg">Loading…</div></div>
+  <div class="foot" id="foot"></div>
+  <div class="modal" id="modal"></div>
+</div>
+</div>
+<script>
+(function(){
+
+/* ---- config (matches the portal's index.html) ---- */
+const SUPABASE_URL="https://ycqmztthwldytkzyvmiv.supabase.co";
+const SUPABASE_ANON="sb_publishable_rO3Z6aJW_u6rx3TZdO3cww_b9pbvcFZ";
+const API_BASE="https://homecareproviderservices.netlify.app/.netlify/functions";
+const AUTH_ENDPOINT=API_BASE+"/dealer-auth";
+const HISTORY_ENDPOINT=API_BASE+"/order-history-api";
+const TOOLS_ENDPOINT=API_BASE+"/dealer-tools-api";
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money=n=>"$"+Math.round(Number(n)||0).toLocaleString();
+const num=n=>Math.round(Number(n)||0).toLocaleString();
+const MONS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const monthLbl=ym=>{const[y,m]=String(ym||"").split("-");return m?MONS[(+m)-1]+" "+y:ym;};
+const dateShort=d=>{if(!d)return"—";const t=String(d);if(/^\d{4}-\d{2}/.test(t)){const[y,m,dd]=t.slice(0,10).split("-");return MONS[(+m)-1]+" "+(dd?(+dd)+", ":"")+y;}return t;};
+
+/* ---- session (reads the portal's stored login; same origin) ---- */
+let SESSION=null, PROFILE=null;
+function loadSession(){try{return JSON.parse(localStorage.getItem("hcps_session")||"null");}catch(e){return null;}}
+function saveSession(s){SESSION=s;try{localStorage.setItem("hcps_session",JSON.stringify(s));}catch(e){}}
+async function refreshIfNeeded(){
+  const s=SESSION; if(!s||!s.refresh_token) return;
+  if(s.expires_at && Date.now() < s.expires_at-90000) return;
+  try{const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{method:"POST",headers:{"content-type":"application/json",apikey:SUPABASE_ANON},body:JSON.stringify({refresh_token:s.refresh_token})});
+    const j=await r.json().catch(()=>({}));if(r.ok&&j.access_token){if(j.expires_in&&!j.expires_at)j.expires_at=Date.now()+j.expires_in*1000;saveSession(j);}}catch(e){}
+}
+function token(){return SESSION&&SESSION.access_token;}
+async function api(endpoint,body){
+  await refreshIfNeeded();
+  const r=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+(token()||"")},body:JSON.stringify(body||{})});
+  return r.json().catch(()=>({}));
+}
+
+/* ---- boot ---- */
+async function boot(){
+  document.getElementById("foot").textContent="HCPS Dealer Business Hub — Phases 1–5 · order history, reports & margin math, exports, favorites, branded quotes, showroom builder, literature requests & shipment tracking, account setup (credit apps, resale cert & terms) and purchase-data intelligence.";
+  SESSION=loadSession();
+  if(!token()){ return gate(); }
+  const me=await api(AUTH_ENDPOINT,{action:"me"}).catch(()=>({}));
+  if(!me||me.status!=="approved"||!me.dealer){ return gate(me&&me.status); }
+  PROFILE=me.dealer; LINES=(me.lines||[]);
+  $("#dealerChip").style.display="";$("#dealerName").textContent=PROFILE.name||"Dealer";
+  $("#signout").style.display="";$("#signout").onclick=()=>{try{localStorage.removeItem("hcps_session");}catch(e){}location.href="/";};
+  await loadBranding(); applyBranding(); await loadDash();
+}
+function gate(status){
+  $("#gate").innerHTML=`<div class="gate"><div class="lm">H</div><h2>Sign in to your Business Hub</h2>
+    <p>${status==="pending"?"Your account is pending HCPS approval. You'll get access as soon as it's approved.":"Sign in on the ordering portal, then return here to see your consolidated purchases, reports and tools."}</p>
+    <a class="btn pri" href="/">Go to the portal to sign in →</a></div>`;
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
+}
+
+/* ---- dashboard ---- */
+let SUMMARY=null;
+async function loadDash(){
+  const d=await api(HISTORY_ENDPOINT,{action:"summary"});
+  if(!d||d.ok===false){ $("#view-dash").innerHTML=`<div class="msg">Couldn't load your history right now. Please try again shortly.</div>`; return; }
+  SUMMARY=d;
+  const y=d.ytd||{spend:0,units:0,orders:0,year:new Date().getFullYear()};
+  const all=d.allTime||{spend:0,orders:0,sinceYear:"2025"};
+  const lines=(d.byManufacturer||[]).filter(m=>m.spend>0);
+  const monthly=d.monthly||[];
+  const maxM=Math.max(1,...monthly.map(m=>m.spend));
+  // fill 12 months for the current year
+  const byYm=Object.fromEntries(monthly.map(m=>[m.month,m.spend]));
+  const cols=MONS.map((lbl,i)=>{const k=`${y.year}-${String(i+1).padStart(2,"0")}`;const v=byYm[k]||0;return `<div class="col"><div class="bar" style="height:${v?Math.max(4,Math.round(v/maxM*100)):0}%"></div><div class="bl">${lbl}</div></div>`;}).join("");
+  const maxMf=Math.max(1,...lines.map(m=>m.spend));
+  const hbars=lines.slice(0,6).map(m=>`<div class="hbar"><div class="hn">${esc(m.name)}</div><div class="htrack"><div class="hfill" style="width:${Math.max(3,Math.round(m.spend/maxMf*100))}%"></div></div><div class="hv tnum">${money(m.spend)}</div></div>`).join("")||`<div class="empty">No manufacturer activity yet.</div>`;
+  const recent=(d.recent||[]);
+  const recentHtml=recent.length?recent.map(o=>`<div class="rl">
+      <div class="b"><div class="n">${esc(o.manufacturerName)} ${srcPill(o.source)}</div><div class="m">${dateShort(o.date)} · ${o.itemsCount} item${o.itemsCount!==1?"s":""} · ${o.units} units${o.preview&&o.preview.length?" · "+esc(o.preview.join(", ")):""}</div></div>
+      <div class="amt tnum">${money(o.cost)}</div></div>`).join(""):`<div class="empty">No orders on file yet.</div>`;
+  $("#view-dash").innerHTML=`
+    <div class="ph"><div><h1>Welcome back${PROFILE&&PROFILE.name?", "+esc(PROFILE.name):""}</h1><div class="sub">Your HCPS purchases across every line · account ${esc((PROFILE&&PROFILE.hcps_account)||"—")}</div></div>
+      <div><a class="btn nv" href="/">Start an order</a> <a class="btn pri" onclick="showView('orders')">View all orders →</a></div></div>
+    <div class="kpis">
+      <div class="kpi accent"><div class="kl">Purchases — YTD ${y.year}</div><div class="kv o tnum">${money(y.spend)}</div><div class="ks">${num(y.units)} units · ${y.orders} orders</div></div>
+      <div class="kpi"><div class="kl">Purchases — all time</div><div class="kv tnum">${money(all.spend)}</div><div class="ks">since ${esc(all.sinceYear||"2025")}</div></div>
+      <div class="kpi"><div class="kl">Orders — YTD</div><div class="kv tnum">${y.orders}</div><div class="ks">across all lines</div></div>
+      <div class="kpi"><div class="kl">Lines with activity</div><div class="kv tnum">${lines.length}</div><div class="ks">manufacturers purchased</div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="chead"><h3>Recent orders</h3><a class="seelink" onclick="showView('orders')">All orders →</a></div><div class="rowlist">${recentHtml}</div></div>
+      <div>
+        <div class="card"><div class="chead"><h3>Purchases by month · ${y.year}</h3></div><div class="barchart">${cols}</div></div>
+        <div class="card"><div class="chead"><h3>By manufacturer</h3></div><div class="hbars">${hbars}</div></div>
+      </div>
+    </div>
+    <div class="grid2" style="grid-template-columns:2fr 1fr">
+      <div class="card"><div class="chead"><h3>Favorites — quick reorder</h3><a class="seelink" onclick="showView('favorites')">Manage →</a></div><div id="dashFav" class="rowlist"><div class="empty">Loading…</div></div></div>
+      <div class="card"><div class="chead"><h3>Dealer tools</h3></div>
+        <div class="rowlist">
+          <div class="rl"><div class="b"><div class="n">Customer MSRP quotes</div><div class="m">Build a branded quote from any HCPS product</div></div><a class="btn nv" onclick="showView('quotes')">Open</a></div>
+          <div class="rl"><div class="b"><div class="n">Request volume pricing</div><div class="m">Ask HCPS to sharpen pricing on a bigger order</div></div><a class="btn gh" onclick="openPriceReq()">Request</a></div>
+        </div></div>
+    </div>
+    <div id="dashOpps"></div>`;
+  showView("dash");
+  ensureCatalogFav().then(loadDashExtras);
+}
+function srcPill(s){return s==="golden"?'<span class="pill gold">Golden</span>':s==="portal"?'<span class="pill portal">Portal</span>':'<span class="pill imported">Imported</span>';}
+function statPill(s){s=String(s||"").toLowerCase();return s==="delivered"?'<span class="pill done">Delivered</span>':(s==="submitted"||s==="open")?'<span class="pill open">Submitted</span>':'<span class="pill portal">'+esc(s||"—")+'</span>';}
+
+/* ---- my orders (full consolidated history) ---- */
+let HISTORY=null;
+async function loadOrders(){
+  if(!HISTORY){ const d=await api(HISTORY_ENDPOINT,{action:"history",limit:300}); if(!d||d.ok===false){ $("#view-orders").innerHTML=`<div class="msg">Couldn't load your orders right now.</div>`; return; } HISTORY=d.orders||[]; }
+  const rows=HISTORY.map(o=>{
+    const canTrack=(o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="delivered";
+    const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
+    return `<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b></td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${money(o.cost)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
+  }).join("");
+  const total=HISTORY.reduce((s,o)=>s+(Number(o.cost)||0),0);
+  $("#view-orders").innerHTML=`
+    <div class="ph"><div><h1>My Orders</h1><div class="sub">Consolidated history — imported sales, portal &amp; Golden · ${HISTORY.length} records</div></div>
+      <div><a class="btn gh" onclick="exportHistoryCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a> <a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
+    <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Date</th><th>Source</th><th>Manufacturer</th><th>Items</th><th class="n">Units</th><th class="n">Amount</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows||`<tr><td colspan="8" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
+      ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total purchases</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${money(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
+    </table></div>
+    <div class="lead-note">"Request tracking" asks the manufacturer to send shipment tracking to you and to HCPS. Retail uses MSRP on file, or 2× dealer cost where none is on file.</div>`;
+}
+async function reqTracking(id,mfr,summary){ try{ await api(TOOLS_ENDPOINT,{action:"tracking_request",order_ref:id,manufacturer:mfr,summary}); }catch(e){} alert("Tracking request sent — the manufacturer will send tracking to you and HCPS."); }
+
+/* ================= PHASE 2: pricing map, reports, exports ================= */
+let PRICE=null, PRICELIST=null;
+async function loadPricing(){
+  if(PRICE) return;
+  PRICE={}; PRICELIST=[];
+  try{
+    const mf=await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]);
+    MFRLIST=(mf||[]).map(m=>({slug:m.slug,name:m.name}));
+    const withData=(mf||[]).filter(m=>m.hasData!==false);
+    await Promise.all(withData.map(async m=>{
+      try{
+        const d=await fetch('/data/'+m.slug+'.json').then(r=>r.json());
+        const items=Array.isArray(d)?d:(d.products||[]);
+        for(const p of items){
+          const code=String(p.code||'').trim(); if(!code) continue;
+          const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(p.map!=null?Number(p.map):null),cost:(p.base_price!=null?Number(p.base_price):null),category:p.category||'',name:p.name||'',mfrName:m.name};
+          PRICE[m.slug+'|'+code]=rec;
+          PRICELIST.push({code,mfr:m.slug,mfrName:m.name,name:p.name||'',cost:rec.cost,map:rec.map,msrp:rec.msrp,category:p.category||''});
+        }
+      }catch(e){}
+    }));
+  }catch(e){}
+}
+function retailUnit(mfr,code,unitCost){
+  const r=PRICE&&PRICE[mfr+'|'+code];
+  if(r&&r.msrp>0) return {v:r.msrp,est:false};
+  return {v:(Number(unitCost)||0)*2,est:true};
+}
+let REPORT_YEAR=null;
+async function loadReports(){
+  if(!HISTORY){ const d=await api(HISTORY_ENDPOINT,{action:'history',limit:500}); HISTORY=(d&&d.orders)||[]; }
+  await loadPricing();
+  renderReports();
+}
+function reportAgg(year){
+  const lines=[];
+  for(const o of (HISTORY||[])){
+    const ym=String(o.ym||(o.date||'').slice(0,7)); const y=ym.slice(0,4);
+    for(const l of (o.lines||[])){
+      const qty=Number(l.qty)||0; const line=Number(l.line!=null?l.line:l.cost)||0; const unit=qty?line/qty:line;
+      const r=retailUnit(o.manufacturer,l.code,unit);
+      lines.push({ym,y,mfr:o.manufacturer,mfrName:o.manufacturerName,code:l.code,name:l.name,qty,cost:line,retail:r.v*qty,est:r.est});
+    }
+  }
+  const sel=lines.filter(l=>year==='all'||l.y===year);
+  let spend=0,retail=0,units=0; const monthly={}, byMfr={}, prod={};
+  sel.forEach(l=>{spend+=l.cost;retail+=l.retail;units+=l.qty;
+    if(year!=='all') monthly[l.ym]=(monthly[l.ym]||0)+l.cost;
+    const m=byMfr[l.mfr]||(byMfr[l.mfr]={name:l.mfrName,spend:0,retail:0}); m.spend+=l.cost; m.retail+=l.retail;
+    const k=l.mfr+'|'+l.code; const p=prod[k]||(prod[k]={name:l.name,mfrName:l.mfrName,code:l.code,qty:0,spend:0,retail:0,est:false}); p.qty+=l.qty; p.spend+=l.cost; p.retail+=l.retail; if(l.est)p.est=true;
+  });
+  return {spend,retail,margin:retail-spend,units,monthly,
+    byMfr:Object.values(byMfr).sort((a,b)=>b.spend-a.spend),
+    prod:Object.values(prod).sort((a,b)=>b.spend-a.spend),
+    years:[...new Set(lines.map(l=>l.y))].filter(Boolean).sort().reverse()};
+}
+function renderReports(){
+  const cy=String(new Date().getFullYear()); const year=REPORT_YEAR||cy;
+  const a=reportAgg(year);
+  const blended=a.retail>0?Math.round(a.margin/a.retail*100):0;
+  const allYears=reportAgg('all').years;
+  const yearOpts=[`<option value="${cy}"${year===cy?' selected':''}>Year: ${cy}</option>`]
+    .concat(allYears.filter(y=>y!==cy).map(y=>`<option value="${y}"${year===y?' selected':''}>Year: ${y}</option>`))
+    .concat([`<option value="all"${year==='all'?' selected':''}>All time</option>`]).join('');
+  let chart;
+  if(year!=='all'){const maxM=Math.max(1,...Object.values(a.monthly));chart=MONS.map((lbl,i)=>{const k=`${year}-${String(i+1).padStart(2,'0')}`;const v=a.monthly[k]||0;return `<div class="col"><div class="bar" style="height:${v?Math.max(4,Math.round(v/maxM*100)):0}%"></div><div class="bl">${lbl}</div></div>`;}).join('');}
+  else chart='<div class="empty">Select a specific year to see the monthly breakdown.</div>';
+  const maxMf=Math.max(1,...a.byMfr.map(m=>m.spend));
+  const hbars=a.byMfr.slice(0,8).map(m=>`<div class="hbar"><div class="hn">${esc(m.name)}</div><div class="htrack"><div class="hfill" style="width:${Math.max(3,Math.round(m.spend/maxMf*100))}%"></div></div><div class="hv tnum">${money(m.spend)}</div></div>`).join('')||'<div class="empty">No activity.</div>';
+  const toprows=a.prod.slice(0,10).map(p=>`<tr><td><b>${esc(p.name)}</b><div style="font-size:11px;color:var(--muted)">${esc(p.mfrName)} · #${esc(p.code)}</div></td><td class="n tnum">${p.qty}</td><td class="n tnum">${money(p.spend)}</td><td class="n tnum" style="color:var(--green)">${money(p.retail)}${p.est?' <span class="est">est</span>':''}</td><td class="n tnum">${money(p.retail-p.spend)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No products in this period.</td></tr>';
+  $("#view-reports").innerHTML=`
+    <div class="ph"><div><h1>Reports</h1><div class="sub">Purchases, manufacturer performance &amp; retail opportunity</div></div>
+      <div><select class="btn gh" onchange="REPORT_YEAR=this.value;renderReports()">${yearOpts}</select> <a class="btn gh" onclick="exportReportCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a></div></div>
+    <div class="kpis">
+      <div class="kpi accent"><div class="kl">Spend${year==='all'?' — all time':' — '+year}</div><div class="kv o tnum">${money(a.spend)}</div><div class="ks">${num(a.units)} units</div></div>
+      <div class="kpi"><div class="kl">Retail revenue opportunity</div><div class="kv g tnum">${money(a.retail)}</div><div class="ks">at MSRP / estimate</div></div>
+      <div class="kpi"><div class="kl">Margin opportunity</div><div class="kv tnum">${money(a.margin)}</div></div>
+      <div class="kpi"><div class="kl">Blended margin</div><div class="kv tnum">${blended}%</div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="chead"><h3>Monthly purchases${year==='all'?'':' · '+year}</h3></div><div class="barchart">${chart}</div></div>
+      <div class="card"><div class="chead"><h3>By manufacturer</h3></div><div class="hbars">${hbars}</div></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px 4px"><h3>Top products ordered</h3><div style="font-size:12.5px;color:var(--muted)">Retail &amp; margin at MSRP, or 2× dealer cost where none on file (<span class="est">est</span>)</div></div>
+      <table class="tbl"><thead><tr><th>Product</th><th class="n">Qty</th><th class="n">Spend</th><th class="n">Retail</th><th class="n">Margin</th></tr></thead><tbody>${toprows}</tbody></table></div>
+    <div class="card"><div class="chead"><h3>Pricing export</h3></div><div style="font-size:13px;color:var(--ink-2)">Export your full HCPS product &amp; dealer-pricing file — SKU, manufacturer, description, dealer cost, MAP, MSRP, category — for billing, ERP, inventory or POS.</div>
+      <a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">⬇ Export pricing file (Excel/CSV)</a></div>`;
+}
+/* ---- exports (CSV opens in Excel; PDF via print) ---- */
+function dl(filename,text,mime){const blob=new Blob(["﻿"+text],{type:mime||'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},120);}
+function csvCell(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+function toCSV(rows){return rows.map(r=>r.map(csvCell).join(',')).join('\r\n');}
+function exportHistoryCSV(){const rows=[['Date','Source','Manufacturer','Item #','Product','Qty','Unit','Line total','Status']];
+  for(const o of (HISTORY||[])){for(const l of (o.lines||[])){const qty=Number(l.qty)||0;const line=Number(l.line!=null?l.line:l.cost)||0;rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,l.code,l.name,qty,qty?(line/qty).toFixed(2):line.toFixed(2),line.toFixed(2),o.status]);}}
+  dl('hcps-order-history.csv',toCSV(rows));}
+function exportReportCSV(){const year=REPORT_YEAR||String(new Date().getFullYear());const a=reportAgg(year);
+  const rows=[['HCPS Purchase Report',year==='all'?'All time':year],[],['Manufacturer','Spend','Retail','Margin']];
+  a.byMfr.forEach(m=>rows.push([m.name,m.spend.toFixed(2),m.retail.toFixed(2),(m.retail-m.spend).toFixed(2)]));
+  rows.push([],['Top products'],['Product','Item #','Manufacturer','Qty','Spend','Retail','Margin','MSRP source']);
+  a.prod.forEach(p=>rows.push([p.name,p.code,p.mfrName,p.qty,p.spend.toFixed(2),p.retail.toFixed(2),(p.retail-p.spend).toFixed(2),p.est?'estimated (2x cost)':'MSRP on file']));
+  dl('hcps-report-'+year+'.csv',toCSV(rows));}
+async function exportPricingCSV(){await loadPricing();const rows=[['SKU','Manufacturer','Description','Dealer cost','MAP','MSRP','Category']];
+  (PRICELIST||[]).forEach(p=>rows.push([p.code,p.mfrName,p.name,p.cost!=null?p.cost:'',p.map!=null?p.map:'',p.msrp!=null?p.msrp:'',p.category]));
+  dl('hcps-pricing.csv',toCSV(rows));}
+function printPDF(){window.print();}
+window.exportHistoryCSV=exportHistoryCSV;window.exportReportCSV=exportReportCSV;window.exportPricingCSV=exportPricingCSV;window.printPDF=printPDF;window.renderReports=renderReports;
+
+/* ================= PHASE 3: favorites, branding, quotes, pricing requests ================= */
+let FAVS=new Set(), BRANDING={logo_url:null}, _catFavReady=false;
+let QUOTE=[], QCUST={name:"",valid:"30 days"};
+async function ensureCatalogFav(){ await loadPricing(); if(!_catFavReady){ await loadFavorites(); _catFavReady=true; } }
+
+async function loadFavorites(){
+  try{ const d=await api(TOOLS_ENDPOINT,{action:"favorites_list"}); if(d&&d.ok&&Array.isArray(d.favorites)){ FAVS=new Set(d.favorites.map(f=>f.manufacturer+"|"+f.code)); try{localStorage.setItem("hcps_favs",JSON.stringify([...FAVS]));}catch(e){} return; } }catch(e){}
+  try{ FAVS=new Set(JSON.parse(localStorage.getItem("hcps_favs")||"[]")); }catch(e){ FAVS=new Set(); }
+}
+async function toggleFav(mfr,code){
+  const key=mfr+"|"+code; if(FAVS.has(key))FAVS.delete(key); else FAVS.add(key);
+  try{localStorage.setItem("hcps_favs",JSON.stringify([...FAVS]));}catch(e){}
+  try{ await api(TOOLS_ENDPOINT,{action:"favorites_toggle",manufacturer:mfr,code}); }catch(e){}
+  renderDashFav(); if($("#view-favorites").classList.contains("on"))renderFavorites(); if($("#view-quotes").classList.contains("on"))renderQuotes();
+}
+function favProducts(){ return [...FAVS].map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const p=PRICE&&PRICE[mfr+"|"+code];return {mfr,code,name:(p&&p.name)||code,mfrName:(p&&p.mfrName)||mfr,cost:p?p.cost:null,msrp:p?p.msrp:null};}); }
+function renderDashFav(){ const host=$("#dashFav"); if(!host)return; const items=favProducts().slice(0,5);
+  host.innerHTML=items.length?items.map(p=>`<div class="rl"><div class="b"><div class="n">${esc(p.name)}</div><div class="m">${esc(p.mfrName)} · #${esc(p.code)}${p.cost!=null?" · "+money(p.cost):""}</div></div><a class="btn gh" href="/">Reorder</a></div>`).join(""):`<div class="empty">No favorites yet — add ♥ from the quote builder or Shop.</div>`;
+}
+async function loadFavView(){ await ensureCatalogFav(); renderFavorites(); }
+function renderFavorites(){ const items=favProducts();
+  $("#view-favorites").innerHTML=`<div class="ph"><div><h1>Favorites</h1><div class="sub">Your saved products — quick reorder</div></div><div><a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
+   <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Product</th><th>Manufacturer</th><th class="n">Your cost</th><th class="n">MSRP</th><th></th></tr></thead>
+   <tbody>${items.length?items.map(p=>`<tr><td><b>${esc(p.name)}</b><div style="font-size:11px;color:var(--muted)">#${esc(p.code)}</div></td><td>${esc(p.mfrName)}</td><td class="n tnum">${p.cost!=null?money(p.cost):"—"}</td><td class="n tnum">${p.msrp!=null?money(p.msrp):"—"}</td><td class="n" style="white-space:nowrap"><a class="btn gh" href="/">Reorder</a> <a class="btn gh" onclick="toggleFav('${p.mfr}','${p.code}')">♥ Remove</a> <a class="btn gh" onclick="openPriceReq('${p.mfr}','${p.code}')">Volume price</a></td></tr>`).join(""):`<tr><td colspan="5" class="empty">No favorites yet. Add ♥ from the quote builder or Shop.</td></tr>`}</tbody></table></div>`;
+}
+
+/* branding */
+function monogram(s){const name=(PROFILE&&PROFILE.name)||"HCPS";const init=name.split(/\s+/).slice(0,2).map(w=>w[0]||"").join("").toUpperCase()||"H";return `<span style="width:${s}px;height:${s}px;border-radius:8px;background:linear-gradient(135deg,#0e7a5f,#12a37c);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-family:'Barlow Condensed';font-weight:800;font-size:${Math.round(s*0.42)}px">${esc(init)}</span>`;}
+function brandLogoHtml(size){ const s=size||44; if(BRANDING.logo_url){return `<img src="${esc(BRANDING.logo_url)}" alt="logo" style="width:${s}px;height:${s}px;border-radius:8px;object-fit:contain;background:#fff;border:1px solid var(--line)" onerror="this.outerHTML=monogram(${s})">`;} return monogram(s); }
+async function loadBranding(){ try{ const d=await api(TOOLS_ENDPOINT,{action:"branding_get"}); if(d&&d.ok)BRANDING.logo_url=d.logo_url||null; }catch(e){} try{ if(!BRANDING.logo_url)BRANDING.logo_url=localStorage.getItem("hcps_logo")||null; }catch(e){} }
+async function saveBranding(url){ url=(url||"").trim(); BRANDING.logo_url=url||null; try{ if(url)localStorage.setItem("hcps_logo",url); else localStorage.removeItem("hcps_logo"); }catch(e){} try{ await api(TOOLS_ENDPOINT,{action:"branding_set",logo_url:url}); }catch(e){} applyBranding(); if($("#view-quotes").classList.contains("on"))renderQuotes(); }
+function applyBranding(){ const el=$("#brandLogo"); if(el)el.innerHTML=brandLogoHtml(22); }
+
+/* quotes */
+function hashStr(s){let h=0;for(let i=0;i<String(s).length;i++){h=(h*31+String(s).charCodeAt(i))|0;}return h;}
+async function loadQuotesView(){ await ensureCatalogFav(); renderQuotes(); }
+function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const p=(PRICE&&PRICE[mfr+"|"+code])||{};const msrp=(p.msrp!=null?p.msrp:(p.cost!=null?p.cost*2:0));return {mfr,code,name:p.name||code,mfrName:p.mfrName||mfr,msrp,est:p.msrp==null};}); }
+function quotePaperHtml(picked,total){
+  return `<div class="qhead"><div style="display:flex;gap:11px;align-items:center">${brandLogoHtml(46)}<div><div class="qbiz">${esc((PROFILE&&PROFILE.name)||"Your Business")}</div><div class="qc">Account ${esc((PROFILE&&PROFILE.hcps_account)||"—")}</div></div></div>
+    <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>#Q-${(Math.abs(hashStr((PROFILE&&PROFILE.name)||"x"))%9000+1000)}</b><div class="qc">Valid ${esc(QCUST.valid||"")}</div></div></div>
+    ${QCUST.name?`<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">Prepared for <b>${esc(QCUST.name)}</b></div>`:""}
+    <table class="qtbl"><thead><tr><th>Product</th><th>Mfr</th><th style="text-align:right">MSRP</th></tr></thead><tbody>${picked.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(String(r.mfrName).split(" ")[0])}</td><td style="text-align:right">${money(r.msrp)}${r.est?' <span class="est">est</span>':""}</td></tr>`).join("")||'<tr><td colspan="3" style="color:#9aa4ae">No items yet.</td></tr>'}</tbody></table>
+    <div class="qtot">Total MSRP: ${money(total)}</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:10px">Manufacturer suggested retail. Prepared by ${esc((PROFILE&&PROFILE.name)||"your business")} via HCPS. Estimated MSRP shown where manufacturer MSRP is pending.</div>`;
+}
+function renderQuotes(){
+  const list=PRICELIST||[]; const picked=quotePicked(); const total=picked.reduce((s,r)=>s+r.msrp,0);
+  const opts=list.filter(p=>!QUOTE.includes(p.mfr+"|"+p.code)).slice(0,500).map(p=>`<option value="${p.mfr}|${esc(p.code)}">${esc(p.mfrName)} — ${esc(p.name)} (#${esc(p.code)})</option>`).join("");
+  $("#view-quotes").innerHTML=`<div class="ph"><div><h1>Customer MSRP Quotes</h1><div class="sub">Build a branded quote for your customer from any HCPS product</div></div>
+     <div><a class="btn gh" onclick="printPDF()">⬇ Print / PDF</a> <a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
+   <div class="qbuild">
+    <div class="card" style="margin-top:0"><h3>Build the quote</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">MSRP pulls from the catalog; 2× dealer-cost estimate where none on file.</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px"><select id="qsel" style="flex:1;border:1px solid var(--line);border-radius:9px;padding:9px;font-family:inherit;font-size:13px">${opts}</select><a class="btn nv" onclick="qAdd()">＋ Add</a></div>
+      <div class="rowlist">${picked.length?picked.map(r=>`<div class="rl"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${esc(r.mfrName)} · MSRP ${money(r.msrp)}${r.est?" est":""}</div></div><a class="btn gh" title="Favorite" onclick="toggleFav('${r.mfr}','${r.code}')">${FAVS.has(r.mfr+"|"+r.code)?"♥":"♡"}</a> <a class="btn gh" onclick="qDel('${r.mfr}','${r.code}')">Remove</a></div>`).join(""):`<div class="empty">Add a product above to start the quote.</div>`}</div>
+      <div class="card" style="box-shadow:none;background:var(--surface-2);margin-top:14px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Customer &amp; branding</div>
+        <div class="fld2"><label>Customer name</label><input value="${esc(QCUST.name)}" oninput="QCUST.name=this.value;qPreview()"></div>
+        <div class="fld2"><label>Valid for</label><input value="${esc(QCUST.valid)}" oninput="QCUST.valid=this.value;qPreview()"></div>
+        <div class="fld2"><label>Your logo URL (optional — shows on the quote)</label><input id="qlogo" value="${esc(BRANDING.logo_url||"")}" placeholder="https://…/logo.png"><a class="btn gh" style="margin-top:6px" onclick="saveBranding(document.getElementById('qlogo').value)">Save logo</a></div>
+      </div>
+    </div>
+    <div><div style="font-size:12px;color:var(--muted);margin-bottom:8px">Live preview — what your customer sees</div><div id="qpaper" class="qpaper">${quotePaperHtml(picked,total)}</div></div>
+   </div>`;
+}
+function qPreview(){ const picked=quotePicked(); const total=picked.reduce((s,r)=>s+r.msrp,0); const el=$("#qpaper"); if(el)el.innerHTML=quotePaperHtml(picked,total); }
+function qAdd(){ const v=$("#qsel").value; if(v&&!QUOTE.includes(v))QUOTE.push(v); renderQuotes(); }
+function qDel(mfr,code){ QUOTE=QUOTE.filter(x=>x!==mfr+"|"+code); renderQuotes(); }
+
+/* volume-pricing request modal */
+function openPriceReq(mfr,code){
+  const p=(mfr&&code&&PRICE)?PRICE[mfr+"|"+code]:null;
+  const optAll=(PRICELIST||[]);
+  $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Request volume pricing</h3><a class="mx" onclick="closeModal()">✕</a></div>
+    <div class="fld2"><label>Product</label>${p?`<input value="${esc(p.name)} (#${esc(code)})" readonly>`:`<select id="prProd">${optAll.map(x=>`<option value="${x.mfr}|${esc(x.code)}">${esc(x.mfrName)} — ${esc(x.name)}</option>`).join("")}</select>`}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="fld2"><label>Your current price</label><input id="prPrice" type="number" placeholder="$"></div><div class="fld2"><label>Anticipated quantity</label><input id="prQty" type="number" placeholder="e.g. 50"></div></div>
+    <div class="fld2"><label>Competitive context (optional)</label><textarea id="prNote" rows="3" placeholder="Competitor, their price, timing…"></textarea></div>
+    <input type="hidden" id="prMfr" value="${esc(mfr||"")}"><input type="hidden" id="prCode" value="${esc(code||"")}">
+    <div style="text-align:right;margin-top:8px"><a class="btn gh" onclick="closeModal()">Cancel</a> <a class="btn pri" onclick="submitPriceReq()">Send to HCPS</a></div></div>`;
+  $("#modal").classList.add("on");
+}
+function closeModal(){ $("#modal").classList.remove("on"); $("#modal").innerHTML=""; }
+async function submitPriceReq(){
+  let mfr=($("#prMfr")||{}).value||"", code=($("#prCode")||{}).value||"", product="";
+  const sel=$("#prProd");
+  if(sel){ const v=sel.value; const i=v.indexOf("|"); mfr=v.slice(0,i); code=v.slice(i+1); const p=PRICE&&PRICE[v]; product=(p&&p.name)||""; }
+  else { const p=PRICE&&PRICE[mfr+"|"+code]; product=(p&&p.name)||""; }
+  try{ await api(TOOLS_ENDPOINT,{action:"pricing_request",manufacturer:mfr,code,product,current_price:($("#prPrice")||{}).value,quantity:($("#prQty")||{}).value,competitor_note:($("#prNote")||{}).value}); }catch(e){}
+  closeModal(); alert("Sent to HCPS — your rep will follow up on pricing.");
+}
+
+/* ================= PHASE 4: showroom, literature, tracking UI ================= */
+let SHOWROOM={zones:[]}, ZONE_N=12, MFRLIST=[], LINES=[], SW_PICK_IDX=null;
+function ensureZones(){ if(!Array.isArray(SHOWROOM.zones))SHOWROOM.zones=[]; while(SHOWROOM.zones.length<ZONE_N)SHOWROOM.zones.push(null); SHOWROOM.zones=SHOWROOM.zones.slice(0,ZONE_N); }
+function mfrNameOf(slug){ const m=(MFRLIST||[]).find(x=>x.slug===slug); return m?m.name:slug; }
+function prodRec(key){ const i=key.indexOf("|"); const mfr=key.slice(0,i),code=key.slice(i+1); const p=(PRICE&&PRICE[key])||{}; const cost=p.cost!=null?p.cost:null; const msrp=(p.msrp!=null?p.msrp:(cost!=null?cost*2:0)); return {key,mfr,code,name:p.name||code,mfrName:p.mfrName||mfrNameOf(mfr),cost,msrp,est:p.msrp==null}; }
+function purchasedKeys(){ const m={}; for(const o of (HISTORY||[])){ for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; m[k]=(m[k]||0)+(Number(l.line!=null?l.line:l.cost)||0); } } return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k])=>k); }
+async function loadShowroom(){
+  await ensureCatalogFav();
+  if(!HISTORY){ try{ const d=await api(HISTORY_ENDPOINT,{action:"history",limit:500}); HISTORY=(d&&d.orders)||[]; }catch(e){ HISTORY=[]; } }
+  try{ const d=await api(TOOLS_ENDPOINT,{action:"showroom_get"}); if(d&&d.ok&&d.layout&&Array.isArray(d.layout.zones)){ SHOWROOM=d.layout; } else { const ls=localStorage.getItem("hcps_showroom"); if(ls)SHOWROOM=JSON.parse(ls); } }
+  catch(e){ try{ const ls=localStorage.getItem("hcps_showroom"); if(ls)SHOWROOM=JSON.parse(ls); }catch(_){} }
+  ensureZones(); renderShowroom();
+}
+function showroomStats(){ let retail=0,cost=0,filled=0; const lines=new Set(); for(const z of SHOWROOM.zones){ if(!z)continue; filled++; const r=prodRec(z.mfr+"|"+z.code); retail+=r.msrp; if(r.cost!=null)cost+=r.cost; lines.add(z.mfr); } return {retail,cost,margin:retail-cost,filled,open:ZONE_N-filled,lines:lines.size}; }
+function renderShowroom(){
+  ensureZones(); const s=showroomStats();
+  const zonesHtml=SHOWROOM.zones.map((z,i)=>{ if(z){ const r=prodRec(z.mfr+"|"+z.code); return `<div class="swz f"><a class="swx" title="Remove" onclick="swClear(${i})">✕</a><div class="swzn">${esc(r.name)}</div><div class="swzm">${esc(r.mfrName)} · #${esc(r.code)}</div><div class="swzr">Retail ${money(r.msrp)}${r.est?" est":""}</div></div>`; } return `<div class="swz" onclick="swPick(${i})"><div class="swadd">＋ Add product</div></div>`; }).join("");
+  const on=new Set(SHOWROOM.zones.filter(Boolean).map(z=>z.mfr+"|"+z.code));
+  const recs=[...new Set([...purchasedKeys(),...[...FAVS]])].filter(k=>!on.has(k)&&PRICE&&PRICE[k]).slice(0,6).map(prodRec);
+  $("#view-showroom").innerHTML=`
+   <div class="ph"><div><h1>HCPS Showroom Development Platform</h1><div class="sub">Build &amp; analyze a showroom floor from every HCPS line — using your own purchase history</div></div>
+     <div><a class="btn gh" onclick="printPDF()">⬇ Print planogram</a> <a class="btn gh" onclick="swSave()">Save layout</a> <a class="btn gh" onclick="swClearAll()">Clear</a></div></div>
+   <div class="kpis">
+     <div class="kpi"><div class="kl">Floor filled</div><div class="kv tnum">${Math.round(s.filled/ZONE_N*100)}%</div><div class="ks">${s.filled} of ${ZONE_N} zones</div></div>
+     <div class="kpi accent"><div class="kl">Retail value on floor</div><div class="kv o tnum">${money(s.retail)}</div></div>
+     <div class="kpi"><div class="kl">Est. margin on floor</div><div class="kv g tnum">${money(s.margin)}</div></div>
+     <div class="kpi"><div class="kl">Lines represented</div><div class="kv tnum">${s.lines}</div></div>
+   </div>
+   <div class="grid2">
+     <div class="card"><div class="chead"><h3>Showroom floor</h3><span class="lead-note" style="margin:0">Tap a zone to place a product · ★ = you've purchased it</span></div><div class="swwall">${zonesHtml}</div></div>
+     <div class="card"><div class="chead"><h3>Recommended fills</h3></div><div style="font-size:12px;color:var(--muted);margin-bottom:8px">From your purchases &amp; favorites, not yet on the floor.</div>
+       <div class="rowlist">${recs.length?recs.map(r=>`<div class="rl"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${esc(r.mfrName)} · retail ${money(r.msrp)}${r.est?" est":""}</div></div><a class="btn gh" onclick="swPlaceFirst('${r.mfr}','${r.code}')">Place</a></div>`).join(""):`<div class="empty">Your floor already covers your top products.</div>`}</div></div>
+   </div>`;
+}
+function swClear(i){ SHOWROOM.zones[i]=null; renderShowroom(); }
+function swClearAll(){ SHOWROOM.zones=SHOWROOM.zones.map(()=>null); renderShowroom(); }
+function swPlaceFirst(mfr,code){ ensureZones(); const i=SHOWROOM.zones.findIndex(z=>!z); if(i<0){ alert("Floor is full — clear a zone first."); return; } SHOWROOM.zones[i]={mfr,code}; renderShowroom(); }
+function swPick(i){ SW_PICK_IDX=i; const list=PRICELIST||[]; const purchased=new Set(purchasedKeys());
+  const opts=list.slice().sort((a,b)=>((purchased.has(a.mfr+"|"+a.code)?0:1)-(purchased.has(b.mfr+"|"+b.code)?0:1))).map(p=>`<option value="${p.mfr}|${esc(p.code)}">${purchased.has(p.mfr+"|"+p.code)?"★ ":""}${esc(p.mfrName)} — ${esc(p.name)} (#${esc(p.code)})</option>`).join("");
+  $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Place a product</h3><a class="mx" onclick="closeModal()">✕</a></div><div class="fld2"><label>Product (★ = you've purchased it)</label><select id="swSel">${opts}</select></div><div style="text-align:right"><a class="btn gh" onclick="closeModal()">Cancel</a> <a class="btn pri" onclick="swPlace()">Place on floor</a></div></div>`;
+  $("#modal").classList.add("on");
+}
+function swPlace(){ const v=$("#swSel").value; const i=v.indexOf("|"); if(SW_PICK_IDX!=null&&v){ SHOWROOM.zones[SW_PICK_IDX]={mfr:v.slice(0,i),code:v.slice(i+1)}; } closeModal(); renderShowroom(); }
+async function swSave(){ try{ localStorage.setItem("hcps_showroom",JSON.stringify(SHOWROOM)); }catch(e){} try{ await api(TOOLS_ENDPOINT,{action:"showroom_save",layout:SHOWROOM}); }catch(e){} alert("Showroom layout saved."); }
+
+/* resources — literature request center */
+async function loadResourcesView(){ await loadPricing(); renderResources(); }
+function renderResources(){
+  const lines=(LINES&&LINES.length)?LINES.map(l=>({slug:l.slug,name:mfrNameOf(l.slug)})):(MFRLIST||[]);
+  const mats=["Product catalog","Line brochure","Showroom / point-of-sale materials","Spec sheets","Warranty & care cards"];
+  $("#view-resources").innerHTML=`<div class="ph"><div><h1>Resources</h1><div class="sub">Literature request center &amp; dealer support</div></div></div>
+   <div class="grid2"><div>
+     <div class="card" style="margin-top:0"><h3>Manufacturer Literature Request Center</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Select a line, choose materials &amp; quantities, and submit through HCPS.</div>
+       <div class="fld2"><label>Manufacturer</label><select id="litMfr">${lines.map(m=>`<option value="${esc(m.slug)}">${esc(m.name)}</option>`).join("")}</select></div>
+       <div class="fld2"><label>Ship to</label><input id="litShip" value="${esc((PROFILE&&PROFILE.name)||"")} — main showroom"></div>
+       <div style="font-size:11px;color:var(--muted);margin:6px 0 4px;font-weight:800;text-transform:uppercase;letter-spacing:.4px">Materials</div>
+       ${mats.map(m=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line-2);font-size:13.5px"><input type="checkbox" class="litChk" data-m="${esc(m)}"> ${esc(m)} <input type="number" class="litQty" min="1" value="1" style="margin-left:auto;width:66px;border:1px solid var(--line);border-radius:7px;padding:5px 8px"></label>`).join("")}
+       <div class="fld2" style="margin-top:8px"><label>Note (optional)</label><textarea id="litNote" rows="2"></textarea></div>
+       <a class="btn pri" onclick="submitLit()">Submit request</a></div>
+    </div>
+    <div><div class="card" style="margin-top:0"><h3>Dealer support</h3><div class="rowlist">
+       <div class="rl"><div class="b"><div class="n">Resource library</div><div class="m">Catalogs, guides &amp; pricing</div></div><a class="btn gh" href="/">Open</a></div>
+       <div class="rl"><div class="b"><div class="n">Request in-service / training</div><div class="m">Schedule with your rep</div></div><a class="btn gh" onclick="alert('Opens the in-service scheduler')">Book</a></div>
+       <div class="rl"><div class="b"><div class="n">Technical support</div><div class="m">Product &amp; warranty help</div></div><a class="btn gh" onclick="alert('Opens technical support')">Contact</a></div>
+     </div></div></div>
+   </div>`;
+}
+async function submitLit(){
+  const mfrSlug=$("#litMfr").value; const items=[];
+  document.querySelectorAll(".litChk").forEach(chk=>{ if(chk.checked){ const q=chk.parentNode.querySelector(".litQty"); items.push({material:chk.dataset.m,qty:(q&&q.value)||1}); } });
+  if(!items.length){ alert("Choose at least one material."); return; }
+  try{ await api(TOOLS_ENDPOINT,{action:"literature_request",manufacturer:mfrNameOf(mfrSlug),items,ship_to:($("#litShip")||{}).value,note:($("#litNote")||{}).value}); }catch(e){}
+  alert("Literature request submitted to HCPS.");
+}
+
+/* ================= PHASE 5: account setup + intelligence ================= */
+let ACCOUNT={resale:null,applications:[],terms:[]};
+/* --- intelligence (dashboard) --- */
+function daysSince(d){ const t=Date.parse(d); if(!t)return 9999; return Math.floor((Date.now()-t)/86400000); }
+function reorderDueList(){ const m={};
+  for(const o of (HISTORY||[])){ const dt=o.date||((o.ym||"")+"-01"); for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; const x=m[k]||(m[k]={mfr:o.manufacturer,mfrName:o.manufacturerName,name:l.name,code:l.code,count:0,last:"",spend:0}); x.count++; x.spend+=Number(l.line!=null?l.line:l.cost)||0; if(String(dt)>String(x.last))x.last=String(dt); } }
+  return Object.values(m).filter(x=>x.count>=2 && daysSince(x.last)>45).sort((a,b)=>b.spend-a.spend).slice(0,4); }
+function decliningCats(){ const Y=String(new Date().getFullYear()),PY=String(new Date().getFullYear()-1); const cur={},prev={};
+  for(const o of (HISTORY||[])){ const y=String(o.ym||"").slice(0,4); for(const l of (o.lines||[])){ const p=PRICE&&PRICE[o.manufacturer+"|"+l.code]; const cat=(p&&p.category)||"Other"; const amt=Number(l.line!=null?l.line:l.cost)||0; if(y===Y)cur[cat]=(cur[cat]||0)+amt; else if(y===PY)prev[cat]=(prev[cat]||0)+amt; } }
+  const out=[]; for(const c in prev){ if(prev[c]>=400 && (cur[c]||0)<prev[c]*0.6) out.push({cat:c,prev:prev[c],cur:cur[c]||0,drop:Math.round((1-(cur[c]||0)/prev[c])*100)}); }
+  return out.sort((a,b)=>b.prev-a.prev).slice(0,3); }
+function whitespaceLines(){ const carried=new Set((LINES||[]).map(l=>l.slug)); return (MFRLIST||[]).filter(m=>!carried.has(m.slug)).slice(0,8); }
+async function loadDashExtras(){ renderDashFav(); if(!HISTORY){ try{ const h=await api(HISTORY_ENDPOINT,{action:"history",limit:500}); HISTORY=(h&&h.orders)||[]; }catch(e){} } renderOpportunities(); }
+function renderOpportunities(){
+  const host=$("#dashOpps"); if(!host)return;
+  const due=reorderDueList(), decl=decliningCats(), ws=whitespaceLines();
+  const dueHtml=due.length?due.map(p=>`<div class="rl"><div class="b"><div class="n">${esc(p.name)}</div><div class="m">${esc(p.mfrName)} · last ${daysSince(p.last)}d ago · ${p.count} orders</div></div><a class="btn gh" href="/">Reorder</a></div>`).join(""):`<div class="empty">Nothing due to reorder right now.</div>`;
+  const declHtml=decl.length?decl.map(d=>`<div class="rl"><div class="b"><div class="n">${esc(d.cat)}</div><div class="m">Down ${d.drop}% vs last year · ${money(d.cur)} vs ${money(d.prev)}</div></div><a class="btn gh" href="/">Re-stock</a></div>`).join(""):`<div class="empty">No categories are slipping — nice.</div>`;
+  const wsHtml=ws.length?ws.map(m=>`<span class="pill open" style="cursor:pointer" title="Open an account" onclick="showView('account')">${esc(m.name)}</span>`).join(" "):`<div class="empty">You carry every HCPS line.</div>`;
+  host.innerHTML=`<div class="card"><div class="chead"><h3>Grow your business</h3><span style="font-size:12px;color:var(--muted)">Recommendations from your own purchase data</span></div>
+     <div class="grid2" style="grid-template-columns:1fr 1fr;gap:18px">
+       <div><div class="csub2">Due for reorder</div><div class="rowlist">${dueHtml}</div></div>
+       <div>
+         <div class="csub2">Declining categories</div><div class="rowlist">${declHtml}</div>
+         <div class="csub2" style="margin-top:14px">Lines you don't carry yet (whitespace)</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:6px">${wsHtml}</div>
+         <div class="rl" style="border-top:1px solid var(--line-2);margin-top:12px"><div class="b"><div class="n">Showroom revenue opportunity</div><div class="m">Fill open floor zones to add estimated retail</div></div><a class="btn gh" onclick="showView('showroom')">Open builder</a></div>
+       </div>
+     </div></div>`;
+}
+
+/* --- account & pricing view --- */
+async function loadAccountView(){ await loadPricing(); try{ const a=await api(TOOLS_ENDPOINT,{action:"account_get"}); if(a&&a.ok)ACCOUNT={resale:a.resale||null,applications:a.applications||[],terms:a.terms||[]}; }catch(e){} renderAccount(); }
+function termsForLines(){ const map={}; (ACCOUNT.terms||[]).forEach(t=>{map[t.manufacturer]=t.terms;}); const slugs=(LINES&&LINES.length)?LINES.map(l=>l.slug):(MFRLIST||[]).map(m=>m.slug); return slugs.map(s=>({slug:s,name:mfrNameOf(s),terms:map[s]||map[mfrNameOf(s)]||"—"})); }
+function renderAccount(){
+  const resaleOn=ACCOUNT.resale&&ACCOUNT.resale.status==="on_file";
+  const terms=termsForLines();
+  const lineList=(LINES&&LINES.length)?LINES.map(l=>({slug:l.slug,name:mfrNameOf(l.slug)})):(MFRLIST||[]);
+  const lineOpts=lineList.map(m=>`<option value="${esc(m.name)}">${esc(m.name)}</option>`).join("");
+  const appsHtml=(ACCOUNT.applications||[]).length?ACCOUNT.applications.map(a=>`<div class="rl"><div class="b"><div class="n">${esc(a.manufacturer)}</div><div class="m">${esc(a.requested_terms||"")} · ${dateShort(a.created_at)}</div></div><span class="pill open">${esc(a.status||"submitted")}</span></div>`).join(""):`<div class="empty" style="padding:12px">No applications submitted yet.</div>`;
+  const fld=(id,label,val,type)=>`<label class="fld2" style="margin:0"><span style="font-size:11px;font-weight:800;color:var(--navy)">${label}</span><input id="${id}" type="${type||"text"}" value="${esc(val||"")}"></label>`;
+  $("#view-account").innerHTML=`
+   <div class="ph"><div><h1>Account &amp; Pricing</h1><div class="sub">Manufacturer onboarding, terms, branding &amp; pricing export — no card storage</div></div></div>
+   <div class="grid2"><div>
+     <div class="card" style="margin-top:0"><h3>Digital account setup center</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Complete manufacturer onboarding online — paperwork only, no payment handling.</div>
+       <div class="steps">
+         <div class="step done"><div class="sn">✓</div><div class="stx"><h4>Business profile</h4><p>${esc((PROFILE&&PROFILE.name)||"—")} · account ${esc((PROFILE&&PROFILE.hcps_account)||"—")}</p></div></div>
+         <div class="step ${resaleOn?"done":""}"><div class="sn">${resaleOn?"✓":"2"}</div><div class="stx"><h4>Resale / tax-exemption certificate</h4><p>${resaleOn?("On file"+(ACCOUNT.resale.reference?" · "+esc(ACCOUNT.resale.reference):"")+" — auto-attached to every application."):"Add your certificate reference, then email the file to HCPS to complete."}</p>
+           <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input id="resaleRef" placeholder="Certificate # / reference" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.reference)||"")}" style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><input id="resaleState" placeholder="State" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.state)||"")}" style="width:72px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><a class="btn nv" onclick="submitResale()">Save</a></div></div></div>
+         <div class="step"><div class="sn">3</div><div class="stx"><h4>Manufacturer credit application</h4><p>Complete an electronic credit app for any HCPS line — submitted to the manufacturer with your resale certificate attached.</p>
+           <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+             <label class="fld2" style="margin:0"><span style="font-size:11px;font-weight:800;color:var(--navy)">Line</span><select id="caMfr">${lineOpts}</select></label>
+             <label class="fld2" style="margin:0"><span style="font-size:11px;font-weight:800;color:var(--navy)">Requested terms</span><select id="caTerms"><option>Net 30</option><option>Net 45</option><option>Net 60</option><option>Prepay</option></select></label>
+             ${fld("caLegal","Legal business name",(PROFILE&&PROFILE.name)||"")}
+             ${fld("caEin","EIN / Tax ID","")}
+             ${fld("caYears","Years in business","","number")}
+             ${fld("caBank","Bank reference","")}
+             <label class="fld2" style="margin:0;grid-column:1/-1"><span style="font-size:11px;font-weight:800;color:var(--navy)">Trade references</span><input id="caTrade" placeholder="Company, contact, phone…"></label>
+           </div>
+           <a class="btn pri" style="margin-top:10px" onclick="submitCreditApp()">Submit application</a></div></div>
+       </div>
+       <div class="secure" style="margin-top:12px">🔒 HCPS stores no credit-card data — payment stays between you and the manufacturer</div></div>
+
+     <div class="card"><div class="chead"><h3>Your terms by line</h3><span style="font-size:11px;color:var(--muted)">Set by HCPS per manufacturer</span></div>
+       <div class="rowlist">${terms.length?terms.map(t=>{const prepay=String(t.terms).toLowerCase()==="prepay";return `<div class="rl"><div class="b"><div class="n">${esc(t.name)}</div></div>${prepay?`<span class="pill open">Prepay</span> <a class="btn gh" onclick="alert('Routing you to pay the manufacturer directly')">Pay mfr →</a>`:(t.terms==="—"?`<span class="pill imported">Terms pending</span>`:`<span class="pill done">Credit · ${esc(t.terms)}</span>`)}</div>`;}).join(""):`<div class="empty">No lines yet.</div>`}</div>
+       <div class="lead-note" style="margin-top:8px"><b>Credit</b> lines order on net terms once approved. <b>Prepay</b> lines: you pay the manufacturer directly — HCPS never touches the payment.</div></div>
+
+     <div class="card"><h3>Submitted applications</h3><div class="rowlist">${appsHtml}</div></div>
+   </div>
+   <div>
+     <div class="card" style="margin-top:0"><h3>Dealer branding</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Personalize your portal, quotes &amp; confirmations.</div>
+       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">${brandLogoHtml(52)}<div style="font-weight:700;color:var(--navy)">${esc((PROFILE&&PROFILE.name)||"")}</div></div>
+       <div class="fld2"><label>Logo URL</label><input id="acctLogo" value="${esc(BRANDING.logo_url||"")}" placeholder="https://…/logo.png"></div><a class="btn gh" onclick="saveBranding(document.getElementById('acctLogo').value)">Save logo</a></div>
+     <div class="card"><h3>Pricing export</h3><div style="font-size:12.5px;color:var(--muted)">Export your full HCPS product &amp; dealer-pricing file (SKU, manufacturer, description, dealer cost, MAP, MSRP, category) for billing, ERP, inventory or POS.</div><a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">⬇ Export pricing file</a></div>
+   </div>
+  </div>`;
+}
+async function submitResale(){ try{ await api(TOOLS_ENDPOINT,{action:"resale_cert_set",reference:($("#resaleRef")||{}).value,state:($("#resaleState")||{}).value}); }catch(e){} alert("Resale certificate reference saved. Email the certificate file to HCPS to complete."); loadAccountView(); }
+async function submitCreditApp(){ const body={action:"credit_application",manufacturer:($("#caMfr")||{}).value,requested_terms:($("#caTerms")||{}).value,legal_name:($("#caLegal")||{}).value,ein:($("#caEin")||{}).value,years_in_business:($("#caYears")||{}).value,bank_ref:($("#caBank")||{}).value,trade_refs:($("#caTrade")||{}).value}; if(!body.manufacturer){ alert("Pick a line."); return; } try{ await api(TOOLS_ENDPOINT,body); }catch(e){} alert("Credit application submitted to HCPS."); loadAccountView(); }
+
+function showView(v){
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
+  $("#view-"+v).classList.add("on");
+  document.querySelectorAll("#nav a").forEach(a=>a.classList.remove("on"));
+  const idx={dash:0,orders:2,showroom:3,reports:4,quotes:5,resources:7,account:8}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
+  window.scrollTo({top:0});
+  if(v==="orders")loadOrders();
+  if(v==="reports")loadReports();
+  if(v==="quotes")loadQuotesView();
+  if(v==="favorites")loadFavView();
+  if(v==="showroom")loadShowroom();
+  if(v==="resources")loadResourcesView();
+  if(v==="account")loadAccountView();
+}
+window.showView=showView;
+
+window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
+})();
+</script>
+
 </body>
 </html>
