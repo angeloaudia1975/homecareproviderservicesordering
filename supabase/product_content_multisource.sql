@@ -33,9 +33,13 @@ create table if not exists public.product_content_sources (
   billing_codes         jsonb not null default '[]'::jsonb,
   images        jsonb not null default '[]'::jsonb,   -- [{url,role,w,h,hash,caption}]
   sizing_rows   jsonb not null default '[]'::jsonb,   -- [{sku,product,color,size,fit,height,...}]
+  sizing_note   text,                                 -- e.g. 'For left or right foot. Black & White.'
   raw           jsonb,                                -- anything else the importer captured
   unique (manufacturer, page_key, source)
 );
+
+-- Additive column for tables created before sizing_note existed (safe to re-run).
+alter table public.product_content_sources add column if not exists sizing_note text;
 
 alter table public.product_content_sources enable row level security;
 -- Source captures are internal review data — no public read policy.
