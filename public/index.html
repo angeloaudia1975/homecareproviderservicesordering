@@ -1209,7 +1209,7 @@ async function mergeCatalogEdits(slug, prods){
   try{
     let pages=null;
     try{
-      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=eq.approved&select=page_key,name,tagline,description,features,clinical_applications,options,billing_codes`,{headers:H}).then(x=>x.ok?x.json():null);
+      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=eq.approved&select=page_key,name,tagline,description,features,clinical_applications,options,billing_codes,image,images_gallery,sizing_table,sizing_note,documents,videos`,{headers:H}).then(x=>x.ok?x.json():null);
       if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); }
     }catch(e){}
     if(!pages){ // static fallback (same approved-only gate applied client-side)
@@ -1227,6 +1227,16 @@ async function mergeCatalogEdits(slug, prods){
           if(Array.isArray(C)&&C.length) p._clinical=C;
           if(O&&typeof O==='object'&&Object.keys(O).length) p._options=O;
           if(Array.isArray(B)&&B.length) p._billing=B;
+          // approved images: primary → hero, others → thumbnails
+          if(Array.isArray(pg.images_gallery)&&pg.images_gallery.length){
+            p.media=Array.isArray(p.media)?p.media:[];
+            const prim=pg.images_gallery.find(g=>g&&g.primary);
+            if(prim&&prim.url) p.image=prim.url;
+            pg.images_gallery.forEach(g=>{ if(g&&g.url&&!(prim&&g.url===prim.url)&&!p.media.some(m=>m.url===g.url)) p.media.push({kind:'image',url:g.url,title:g.caption||''}); });
+          } else if(pg.image){ p.image=pg.image; }
+          if(Array.isArray(pg.sizing_table)&&pg.sizing_table.length){ p._sizing=pg.sizing_table; if(pg.sizing_note) p._sizingNote=pg.sizing_note; }
+          if(Array.isArray(pg.documents)&&pg.documents.length) p._documents=pg.documents;
+          if(Array.isArray(pg.videos)&&pg.videos.length) p._videos=pg.videos;
         }});
     }
   }catch(e){}
@@ -3607,6 +3617,12 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
 (function(){
   function $q(s){return document.querySelector(s);}
   function curLineName(){ try{ const m=(state.manufacturers||[]).find(x=>x.slug===state.active); return m?m.name:''; }catch(e){return '';} }
+  function ytEmbed(url){ try{ url=String(url||"");
+    var yt=url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+    if(yt) return '<iframe width="100%" height="340" src="https://www.youtube.com/embed/'+yt[1]+'" title="video" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy" style="border-radius:12px;max-width:680px"></iframe>';
+    var vm=url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if(vm) return '<iframe src="https://player.vimeo.com/video/'+vm[1]+'" width="100%" height="340" frameborder="0" allow="autoplay;fullscreen;picture-in-picture" allowfullscreen loading="lazy" style="border-radius:12px;max-width:680px"></iframe>';
+  }catch(e){} return ""; }
 
   // ---------- Product detail (drill-in state of Shop) ----------
   window.openProductDetail = function(code){
@@ -3617,6 +3633,12 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const imgs=[...(p.image?[{url:p.image,title:p.name}]:[]), ...media.filter(m=>m.kind==="image"&&m.url)];
     const docs=media.filter(m=>(m.kind==="brochure"||m.kind==="link")&&m.url);
     if(p.moreUrl) docs.push({url:p.moreUrl,title:p.moreLabel||"More information",kind:"link"});
+    if(Array.isArray(p._documents)) p._documents.forEach(dc=>{ if(dc&&dc.url) docs.push({url:dc.url,title:dc.title||dc.type||"Document",kind:"link"}); });
+    const _sz=Array.isArray(p._sizing)?p._sizing:[];
+    const _szCols=_sz.length?Object.keys(_sz[0]):[];
+    const sizingHtml=_sz.length?`<div class="pd-sect"><h2>Sizing chart</h2><div style="overflow-x:auto"><table class="pd-spec"><thead><tr>${_szCols.map(c=>`<th style="text-align:left;padding:9px 12px;font-size:12px;color:#6b7580">${esc(c)}</th>`).join("")}</tr></thead><tbody>${_sz.map(r=>`<tr>${_szCols.map(c=>`<td class="v">${esc(String(r[c]!=null?r[c]:""))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${p._sizingNote?`<div style="font-size:12px;color:#6b7580;margin-top:6px">${esc(p._sizingNote)}</div>`:""}</div>`:"";
+    const _vids=Array.isArray(p._videos)?p._videos:[];
+    const videoHtml=_vids.length?`<div class="pd-sect"><h2>Videos</h2>${_vids.map(v=>{const em=ytEmbed(v.url);return em?`<div style="margin:0 0 14px">${em}</div>`:`<div class="pd-doc"><div class="dn">${esc(v.title||v.url)}</div><a class="dl" href="${esc(v.url)}" target="_blank" rel="noopener">Watch ↗</a></div>`;}).join("")}</div>`:"";
     const eff=Number(unitPrice(p,1)||p.base_price||0);
     const cp=(typeof contractPrice==="function")?contractPrice(p):null;
     const msrp=(p.msrp!=null&&Number(p.msrp)>eff)?Number(p.msrp):null;
@@ -3662,7 +3684,9 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       ${(p._options&&Object.keys(p._options).length)?`<div class="pd-sect"><h2>Options &amp; configurations</h2>${Object.keys(p._options).map(k=>`<div class="pd-opt"><div class="ol">${esc(k)}</div><div class="ov">${(p._options[k]||[]).map(v=>`<span class="pd-chip">${esc(v)}</span>`).join("")}</div></div>`).join("")}</div>`:""}
       ${(p._clinical&&p._clinical.length)?`<div class="pd-sect"><h2>Clinical applications</h2>${p._clinical.map(x=>`<span class="pd-chip">${esc(x)}</span>`).join("")}</div>`:""}
       ${specRows?`<div class="pd-sect"><h2>Specifications</h2><table class="pd-spec">${specRows}</table></div>`:""}
+      ${sizingHtml}
       ${docs.length?`<div class="pd-sect"><h2>Documents &amp; resources</h2>${docs.map(dc=>`<div class="pd-doc"><div class="di"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="dn">${esc(dc.title||(dc.kind==="brochure"?"Brochure":"Link"))}</div><a class="dl" href="${esc(dc.url)}" target="_blank" rel="noopener">Open ↗</a></div>`).join("")}</div>`:""}
+      ${videoHtml}
       ${related.length?`<div class="pd-sect"><h2>Related products</h2><div class="pd-rel">${related.map(r=>{const rimg=r.image||((Array.isArray(r.media)?r.media.find(m=>m.kind==="image"&&m.url):null)||{}).url||"";const re=Number(unitPrice(r,1)||r.base_price||0);return `<div class="pd-relc" onclick="openProductDetail('${esc(r.code)}')"><div class="ri" style="background-image:url('${esc(rimg)}')"></div><div class="rb"><div class="rn">${esc(r.name)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;}).join("")}</div></div>`:""}
     </div>`;
     if(typeof wireAdd==="function") wireAdd(host);
