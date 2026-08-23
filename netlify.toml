@@ -13,3 +13,19 @@
   for = "/data/*"
   [headers.values]
     Cache-Control = "no-store"
+
+# The Product Content Enrichment & Review tool moved to the Connect 360 (main-site) deploy so it
+# can use the shared staff sign-in instead of a separate token. Old bookmarks to the copy that
+# used to live here are permanently redirected. `force = true` is required because the old file
+# still exists at this path — without it Netlify would serve the file instead of redirecting.
+[[redirects]]
+  from = "/admin/product-content-review.html"
+  to = "https://homecareproviderservices.netlify.app/admin/product-content-review.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/admin/product-content-review"
+  to = "https://homecareproviderservices.netlify.app/admin/product-content-review.html"
+  status = 301
+  force = true
