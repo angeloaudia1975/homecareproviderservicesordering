@@ -1064,6 +1064,7 @@ const CONFIG = {
   ORDERS_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/orders-api", // saves order history + reorder (CORS-enabled)
   SUPABASE_URL: "https://ycqmztthwldytkzyvmiv.supabase.co",   // HCPS Supabase project
   SUPABASE_ANON: "sb_publishable_rO3Z6aJW_u6rx3TZdO3cww_b9pbvcFZ", // publishable/anon key — safe to embed (public by design)
+  CONTENT_APPROVED_ONLY: true,         // product-content gate: dealers see ONLY status='approved' content (Supabase RLS enforces this server-side too)
   EVENTS_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/events-api", // per-dealer intent capture (CORS-enabled)
   SALESIQ_WIDGETCODE: "siq79854f99c955d9686e6bec5a6868e8ee8dc77fc43d5666ee6f72f4ab47bd51ee82c29bb9945316058a5b2345b377241e", // Zoho SalesIQ live chat + visitor→CRM identity
   SALESIQ_DOMAIN: "https://salesiq.zohopublic.com",
@@ -1202,19 +1203,30 @@ async function mergeCatalogEdits(slug, prods){
     const mm={}; (media||[]).forEach(m=>{ if(m&&m.code&&m.url){ (mm[m.code]=mm[m.code]||[]).push(m); } });
     prods.forEach(p=>{ if(mm[p.code]) p.media=mm[p.code]; });
   }catch(e){}
-  // ---- product-content enrichment layer (importer output; review-gated) ----
+  // ---- product-content enrichment layer (approved-only gate) ----
+  // Source of truth is Supabase product_content, filtered to status='approved' (RLS enforces this
+  // server-side too). Falls back to the static ./data/content file, respecting the same gate.
   try{
-    const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"});
-    if(cr.ok){ const cj=await cr.json(); const pages=(cj&&cj.pages)||{};
+    let pages=null;
+    try{
+      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=eq.approved&select=page_key,name,tagline,description,features,clinical_applications,options,billing_codes`,{headers:H}).then(x=>x.ok?x.json():null);
+      if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); }
+    }catch(e){}
+    if(!pages){ // static fallback (same approved-only gate applied client-side)
+      const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"});
+      if(cr.ok){ const cj=await cr.json(); const pg=(cj&&cj.pages)||{}; pages={};
+        for(const k in pg){ const st=pg[k].status; if(!CONFIG.CONTENT_APPROVED_ONLY || st==='approved') pages[k]=pg[k]; } }
+    }
+    if(pages){
       prods.forEach(p=>{ const key=(p.image||'').split('/').pop().replace(/\.(png|jpe?g|webp)$/i,''); const pg=key&&pages[key];
-        if(pg && pg.status!=='rejected'){
+        if(pg){
           if(!p.description && pg.description) p.description=pg.description;
           if(pg.tagline) p._tagline=pg.tagline;
-          if(pg.features&&pg.features.length) p._features=pg.features;
-          if(pg.clinical_applications&&pg.clinical_applications.length) p._clinical=pg.clinical_applications;
-          if(pg.options&&Object.keys(pg.options).length) p._options=pg.options;
-          if(pg.billing_codes&&pg.billing_codes.length) p._billing=pg.billing_codes;
-          p._contentStatus=pg.status; p._contentSrc=pg.source_pages;
+          const F=pg.features, C=pg.clinical_applications, O=pg.options, B=pg.billing_codes;
+          if(Array.isArray(F)&&F.length) p._features=F;
+          if(Array.isArray(C)&&C.length) p._clinical=C;
+          if(O&&typeof O==='object'&&Object.keys(O).length) p._options=O;
+          if(Array.isArray(B)&&B.length) p._billing=B;
         }});
     }
   }catch(e){}
