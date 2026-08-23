@@ -946,6 +946,13 @@ header .htop{flex-wrap:nowrap;}
 .qh-cfg-title{font-family:'Archivo',sans-serif;font-weight:900;font-size:29px;color:var(--navy);letter-spacing:-.01em;margin:7px 0 6px;}
 .qh-cfg-sub{color:var(--gray);font-size:14px;line-height:1.55;max-width:620px;margin:0;}
 </style>
+<style id="p360-content">
+.pd-tagline{color:var(--orange);font-weight:800;font-size:14.5px;margin:2px 0 6px;}
+.pd-billing{font-size:12.5px;color:var(--gray);margin-top:6px;}.pd-billing b{color:var(--navy);}
+.pd-feat{margin:0;padding-left:20px;color:#39424e;font-size:14.5px;line-height:1.7;}
+.pd-opt{margin-bottom:12px;}.pd-opt .ol{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);margin-bottom:6px;}
+.pd-chip{display:inline-block;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;color:var(--navy);margin:0 6px 6px 0;}
+</style>
 </head>
 <body class="guest">
 
@@ -1194,6 +1201,22 @@ async function mergeCatalogEdits(slug, prods){
     // media gallery (extra images, videos, brochures, links) keyed by code
     const mm={}; (media||[]).forEach(m=>{ if(m&&m.code&&m.url){ (mm[m.code]=mm[m.code]||[]).push(m); } });
     prods.forEach(p=>{ if(mm[p.code]) p.media=mm[p.code]; });
+  }catch(e){}
+  // ---- product-content enrichment layer (importer output; review-gated) ----
+  try{
+    const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"});
+    if(cr.ok){ const cj=await cr.json(); const pages=(cj&&cj.pages)||{};
+      prods.forEach(p=>{ const key=(p.image||'').split('/').pop().replace(/\.(png|jpe?g|webp)$/i,''); const pg=key&&pages[key];
+        if(pg && pg.status!=='rejected'){
+          if(!p.description && pg.description) p.description=pg.description;
+          if(pg.tagline) p._tagline=pg.tagline;
+          if(pg.features&&pg.features.length) p._features=pg.features;
+          if(pg.clinical_applications&&pg.clinical_applications.length) p._clinical=pg.clinical_applications;
+          if(pg.options&&Object.keys(pg.options).length) p._options=pg.options;
+          if(pg.billing_codes&&pg.billing_codes.length) p._billing=pg.billing_codes;
+          p._contentStatus=pg.status; p._contentSrc=pg.source_pages;
+        }});
+    }
   }catch(e){}
   return prods.map(fillMsrp);
 }
@@ -3602,7 +3625,9 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
         <div>
           <div class="pd-eyebrow">${esc(p.brand||curLineName()||"")}</div>
           <h1>${esc(p.name)}</h1>
+          ${p._tagline?`<div class="pd-tagline">${esc(p._tagline)}</div>`:""}
           <div class="pd-code">Item # ${esc(p.code)}${p.category?" · "+esc(p.category):""}${p.hcpc?" · HCPC "+esc(p.hcpc):""}</div>
+          ${(p._billing&&p._billing.length)?`<div class="pd-billing">HCPC / PDAC <b>${p._billing.map(esc).join(' · ')}</b></div>`:""}
           <div class="pd-pricebox">
             ${eff>0?`<div class="pd-plabel">${cp!=null?"Your contract price":"Your dealer price"}</div>
               <div class="pd-price"><sup>$</sup>${d}<sup>.${c}</sup></div>
@@ -3621,6 +3646,9 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
         </div>
       </div>
       ${p.description?`<div class="pd-sect"><h2>Overview</h2><p>${esc(p.description)}</p></div>`:""}
+      ${(p._features&&p._features.length)?`<div class="pd-sect"><h2>Key features</h2><ul class="pd-feat">${p._features.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></div>`:""}
+      ${(p._options&&Object.keys(p._options).length)?`<div class="pd-sect"><h2>Options &amp; configurations</h2>${Object.keys(p._options).map(k=>`<div class="pd-opt"><div class="ol">${esc(k)}</div><div class="ov">${(p._options[k]||[]).map(v=>`<span class="pd-chip">${esc(v)}</span>`).join("")}</div></div>`).join("")}</div>`:""}
+      ${(p._clinical&&p._clinical.length)?`<div class="pd-sect"><h2>Clinical applications</h2>${p._clinical.map(x=>`<span class="pd-chip">${esc(x)}</span>`).join("")}</div>`:""}
       ${specRows?`<div class="pd-sect"><h2>Specifications</h2><table class="pd-spec">${specRows}</table></div>`:""}
       ${docs.length?`<div class="pd-sect"><h2>Documents &amp; resources</h2>${docs.map(dc=>`<div class="pd-doc"><div class="di"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="dn">${esc(dc.title||(dc.kind==="brochure"?"Brochure":"Link"))}</div><a class="dl" href="${esc(dc.url)}" target="_blank" rel="noopener">Open ↗</a></div>`).join("")}</div>`:""}
       ${related.length?`<div class="pd-sect"><h2>Related products</h2><div class="pd-rel">${related.map(r=>{const rimg=r.image||((Array.isArray(r.media)?r.media.find(m=>m.kind==="image"&&m.url):null)||{}).url||"";const re=Number(unitPrice(r,1)||r.base_price||0);return `<div class="pd-relc" onclick="openProductDetail('${esc(r.code)}')"><div class="ri" style="background-image:url('${esc(rimg)}')"></div><div class="rb"><div class="rn">${esc(r.name)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;}).join("")}</div></div>`:""}
