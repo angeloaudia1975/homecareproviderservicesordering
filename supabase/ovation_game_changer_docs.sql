@@ -1,0 +1,4 @@
+-- The Game Changer OA Knee Brace — documents & videos from ovationmed.com.
+update public.product_content
+set documents = '[{"title": "PDAC Coding Verification Letter (OA Knee)", "url": "https://www.ovationmed.com/app/uploads/2023/07/PDAC-Letter-OA-KNEE-67849939-CODING-VERIFICATION-1.pdf", "type": "other", "hosted": false}]'::jsonb, videos = '[{"title": "The Game Changer — Product Film", "url": "https://www.ovationmed.com/app/uploads/2023/09/Y2Mate.is-The-Game-Changer-Product-Film-Ovation-Medical-D75-AJ_8dD8-720p-1659815002306.mp4"}, {"title": "The Game Changer — Instructions for Use (IFU)", "url": "https://www.ovationmed.com/app/uploads/2023/07/TheGameChangerIFU.mp4"}, {"title": "Game Changer — Strap Application", "url": "https://www.ovationmed.com/app/uploads/2023/07/Game-Changer-Strap-Fin1-2-1-1.mp4"}]'::jsonb
+where manufacturer = 'ovation-medical' and page_key = 'game-changer-oa';
