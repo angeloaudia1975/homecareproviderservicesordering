@@ -127,6 +127,16 @@
   .msg{padding:34px;text-align:center;color:var(--muted);font-size:14px}
   .foot{color:var(--muted);font-size:12px;padding:24px 0 6px;text-align:center}
   .empty{padding:26px;text-align:center;color:var(--muted);font-size:13.5px}
+
+/* MOBILE HARDENING (added for phone/tablet support; scoped to small screens) */
+@media (max-width:980px){
+  body{overflow-x:hidden;}
+  img,video,canvas,svg{max-width:100%;height:auto;}
+  input,select,textarea{font-size:16px !important;}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;}
+  table{max-width:100%;}
+  .btn{min-height:44px;}
+}
 </style>
 </head><body>
 <div class="topbar">
@@ -657,5 +667,14 @@ function showView(v){
 }
 window.showView=showView;
 boot();
+</script>
+
+<script>
+/* Mobile: wrap any table (incl. dynamically rendered) in a horizontal scroller. */
+(function(){
+  function wrap(){var ts=document.getElementsByTagName('table');for(var i=0;i<ts.length;i++){var t=ts[i],p=t.parentElement;if(!p||p.classList.contains('table-scroll'))continue;var ox='';try{ox=getComputedStyle(p).overflowX;}catch(e){}if(ox==='auto'||ox==='scroll')continue;var w=document.createElement('div');w.className='table-scroll';t.parentNode.insertBefore(w,t);w.appendChild(t);}}
+  var s=false;function sch(){if(s)return;s=true;(window.requestAnimationFrame||setTimeout)(function(){s=false;wrap();});}
+  wrap();try{new MutationObserver(function(m){for(var i=0;i<m.length;i++){if(m[i].addedNodes&&m[i].addedNodes.length){sch();return;}}}).observe(document.body,{childList:true,subtree:true});}catch(e){}
+})();
 </script>
 </body></html>

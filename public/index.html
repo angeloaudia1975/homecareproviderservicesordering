@@ -3076,6 +3076,29 @@ $("#brandFilter").addEventListener("change",renderProducts);
 #p360wrap>.page{padding-top:8px;}
 #p360wrap{background:var(--paper);}
 </style>
+<style id="p360-mobile-hardening">
+/* ============================================================
+   MOBILE HARDENING (portal-wide) — phone/tablet support for the shop,
+   cart/checkout, Partner 360 hub, reports & tools. Scoped to small
+   screens so desktop is unchanged. Pairs with the table-wrap script below.
+   ============================================================ */
+@media (max-width:980px){
+  body{overflow-x:hidden;}
+  img,video,canvas,svg{max-width:100%;height:auto;}
+  /* Portal inputs are 13–14px, which makes iOS zoom on focus. Force >=16px. */
+  input,select,textarea{font-size:16px !important;}
+  /* Tables (orders, reports, tools) scroll horizontally instead of overflowing. */
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;}
+  table{max-width:100%;}
+  /* Comfortable tap height on primary actions. */
+  .btn,.subbtn,.pl-btn,.cp-back{min-height:46px;display:inline-flex;align-items:center;justify-content:center;}
+}
+@media (max-width:600px){
+  /* Cart header/back button wrap cleanly; summary sits below items (already stacks at 900). */
+  .cartpage-in{padding:22px 16px 48px;}
+  .cartpage-head h1{font-size:24px;}
+}
+</style>
 <div id="p360wrap" style="display:none">
 <div class="topbar">
   <div class="tb-in">
@@ -6784,6 +6807,36 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   window.__sdBoot=boot;
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,800);});
   else setTimeout(boot,800);
+})();
+</script>
+<!-- Mobile safety net: wrap any table (incl. dynamically rendered orders/reports/tools)
+     in a horizontal scroller so it never overflows the page on phones. -->
+<script>
+(function(){
+  function wrap(){
+    var tables=document.getElementsByTagName('table');
+    for(var i=0;i<tables.length;i++){
+      var t=tables[i], p=t.parentElement;
+      if(!p) continue;
+      if(p.classList.contains('table-scroll')) continue;
+      var ox='';
+      try{ ox=getComputedStyle(p).overflowX; }catch(e){}
+      if(ox==='auto'||ox==='scroll') continue;
+      var w=document.createElement('div');
+      w.className='table-scroll';
+      t.parentNode.insertBefore(w,t);
+      w.appendChild(t);
+    }
+  }
+  var scheduled=false;
+  function schedule(){ if(scheduled)return; scheduled=true; (window.requestAnimationFrame||setTimeout)(function(){scheduled=false;wrap();}); }
+  wrap();
+  try{
+    var mo=new MutationObserver(function(muts){
+      for(var i=0;i<muts.length;i++){ if(muts[i].addedNodes && muts[i].addedNodes.length){ schedule(); return; } }
+    });
+    mo.observe(document.body,{childList:true,subtree:true});
+  }catch(e){}
 })();
 </script>
 </body>
