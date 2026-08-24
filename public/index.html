@@ -1209,7 +1209,7 @@ async function mergeCatalogEdits(slug, prods){
   try{
     let pages=null;
     try{
-      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=eq.approved&select=page_key,name,tagline,description,features,clinical_applications,options,billing_codes,image,images_gallery,sizing_table,sizing_note,documents,videos`,{headers:H}).then(x=>x.ok?x.json():null);
+      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=eq.approved&select=page_key,name,tagline,description,features,clinical_applications,options,billing_codes,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label`,{headers:H}).then(x=>x.ok?x.json():null);
       if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); }
     }catch(e){}
     if(!pages){ // static fallback (same approved-only gate applied client-side)
@@ -1218,7 +1218,16 @@ async function mergeCatalogEdits(slug, prods){
         for(const k in pg){ const st=pg[k].status; if(!CONFIG.CONTENT_APPROVED_ONLY || st==='approved') pages[k]=pg[k]; } }
     }
     if(pages){
-      prods.forEach(p=>{ const key=(p.image||'').split('/').pop().replace(/\.(png|jpe?g|webp)$/i,''); const pg=key&&pages[key];
+      // Variant-aware routing: a product family (e.g. Gen 2 Walking Boot) can resolve into
+      // multiple MODEL variants, each with its own page/images. A SKU is routed to its model
+      // by the catalog `group` string. Falls back to the image-basename key (single-model
+      // products, or a model variant not yet approved → shows the parent/base content).
+      const variantByGroup={}; Object.keys(pages).forEach(k=>{ const vg=pages[k]&&pages[k].variant_group; if(vg) variantByGroup[vg]=k; });
+      prods.forEach(p=>{
+        const imgKey=(p.image||'').split('/').pop().replace(/\.(png|jpe?g|webp)$/i,'');
+        const vKey=p.group&&variantByGroup[p.group];
+        const key=(vKey&&pages[vKey])?vKey:imgKey;
+        const pg=key&&pages[key];
         if(pg){
           if(!p.description && pg.description) p.description=pg.description;
           if(pg.tagline) p._tagline=pg.tagline;
