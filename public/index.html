@@ -1222,7 +1222,9 @@ async function mergeCatalogEdits(slug, prods){
       // multiple MODEL variants, each with its own page/images. A SKU is routed to its model
       // by the catalog `group` string. Falls back to the image-basename key (single-model
       // products, or a model variant not yet approved → shows the parent/base content).
-      const variantByGroup={}; Object.keys(pages).forEach(k=>{ const vg=pages[k]&&pages[k].variant_group; if(vg) variantByGroup[vg]=k; });
+      // variant_group may hold ONE catalog group or a pipe-delimited list (e.g. a product that
+      // spans "standard" + "(4XL)" groups). Register every listed group → this page_key.
+      const variantByGroup={}; Object.keys(pages).forEach(k=>{ const vg=pages[k]&&pages[k].variant_group; if(!vg) return; String(vg).split('|').forEach(g=>{ g=g.trim(); if(g) variantByGroup[g]=k; }); });
       prods.forEach(p=>{
         const imgKey=(p.image||'').split('/').pop().replace(/\.(png|jpe?g|webp)$/i,'');
         const vKey=p.group&&variantByGroup[p.group];
