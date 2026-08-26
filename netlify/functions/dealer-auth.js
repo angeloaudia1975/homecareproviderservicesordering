@@ -24,6 +24,20 @@ async function sb(method,path,body,extra){
 const rpc=(fn,args)=>sb("POST",`rpc/${fn}`,args);
 const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Build the approved dealer profile + entitled lines for a dealer_id. Shared by "me" (a signed-in
+// dealer) and "preview" (staff previewing that dealer read-only). Reads only.
+async function loadDealerContext(dealer_id, fallbackEmail){
+  let dealer=null, lines=[];
+  if(dealer_id){
+    const d=await sb("GET",`dealers?id=eq.${dealer_id}&select=id,business_name,hcps_account,contact_name,email,phone,address,city,state,zip`);
+    dealer=d&&d[0]?{id:d[0].id,name:d[0].business_name,hcps_account:d[0].hcps_account||"",contact_name:d[0].contact_name||"",
+      email:d[0].email||fallbackEmail||"",phone:d[0].phone||"",address:d[0].address||"",city:d[0].city||"",state:d[0].state||"",zip:d[0].zip||""}:null;
+    const dm=await sb("GET",`dealer_manufacturers?dealer_id=eq.${dealer_id}&active=eq.true&select=manufacturer,account_ref`);
+    lines=(dm||[]).map(x=>({slug:x.manufacturer,account:x.account_ref||""}));
+  }
+  return {dealer,lines};
+}
+
 exports.handler = async (event)=>{
   if(event.httpMethod==="OPTIONS") return {statusCode:204,headers:CORS,body:""};
   try{
@@ -67,15 +81,26 @@ exports.handler = async (event)=>{
       if(!du) return json(200,{ok:true,status:"none",email:u.email});
       if(du.status!=="approved") return json(200,{ok:true,status:du.status,email:du.email});
       // approved -> return dealer profile + entitled lines for gating + cart prefill
-      let dealer=null, lines=[];
-      if(du.dealer_id){
-        const d=await sb("GET",`dealers?id=eq.${du.dealer_id}&select=id,business_name,hcps_account,contact_name,email,phone,address,city,state,zip`);
-        dealer=d&&d[0]?{id:d[0].id,name:d[0].business_name,hcps_account:d[0].hcps_account||"",contact_name:d[0].contact_name||"",
-          email:d[0].email||du.email,phone:d[0].phone||"",address:d[0].address||"",city:d[0].city||"",state:d[0].state||"",zip:d[0].zip||""}:null;
-        const dm=await sb("GET",`dealer_manufacturers?dealer_id=eq.${du.dealer_id}&active=eq.true&select=manufacturer,account_ref`);
-        lines=(dm||[]).map(x=>({slug:x.manufacturer,account:x.account_ref||""}));
-      }
+      const {dealer,lines}=await loadDealerContext(du.dealer_id,du.email);
       return json(200,{ok:true,status:"approved",email:du.email,dealer,lines});
+    }
+
+    if(b.action==="preview"){
+      // Admin READ-ONLY preview: staff open the portal "as" a dealer using a short-lived token
+      // minted by Dealer 360 & CRM (dealers-api → preview_link). No dealer login, no shared
+      // credentials. Returns the same approved context as "me" but never mints a dealer session.
+      const token=String(b.token||"").trim();
+      if(!token) return json(200,{ok:false,code:"no_token"});
+      let rows; try{ rows=await sb("GET",`dealer_preview_tokens?token=eq.${encodeURIComponent(token)}&select=dealer_id,expires_at,used_at`); }
+      catch(e){ return json(200,{ok:false,code:"unavailable",message:"Preview is not set up yet. Run supabase/dealer_preview_tokens.sql."}); }
+      const t=rows&&rows[0];
+      if(!t||!t.dealer_id) return json(200,{ok:false,code:"invalid",message:"This preview link is invalid."});
+      if(t.expires_at && new Date(t.expires_at).getTime()<Date.now()) return json(200,{ok:false,code:"expired",message:"This preview link has expired. Reopen it from Dealer 360 & CRM."});
+      // Record first use (audit only) — does NOT invalidate the token for the rest of the session.
+      if(!t.used_at){ try{ await sb("PATCH",`dealer_preview_tokens?token=eq.${encodeURIComponent(token)}`,{used_at:new Date().toISOString()},{Prefer:"return=minimal"}); }catch(e){} }
+      const {dealer,lines}=await loadDealerContext(t.dealer_id,null);
+      if(!dealer) return json(200,{ok:false,code:"no_dealer",message:"Dealer record not found."});
+      return json(200,{ok:true,status:"approved",preview:true,email:(dealer&&dealer.email)||"",dealer,lines});
     }
 
     return json(400,{error:"unknown action"});
