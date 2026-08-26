@@ -289,6 +289,17 @@ exports.handler = async (event) => {
         return reply(res.ok ? 200 : 500, { ok: res.ok, rows: res.rows });
       }
 
+      // ---- Replace a product's whole SKU list in one write (bulk edit of the SKU grid) ----
+      if (action === 'save_skus') {
+        if (!m || !body.page_key || !Array.isArray(body.skus)) return reply(400, { ok: false, error: 'manufacturer, page_key, skus[] required' });
+        const before = await getRow(m, body.page_key);
+        const skus = normSkus(body.skus);
+        const res = await patchRow(m, body.page_key, { skus, sku_count: skus.length });
+        await logHistory({ manufacturer: m, page_key: body.page_key, action: 'save_skus', actor: who,
+          summary: `Saved ${skus.length} SKU row(s)`, before: before, after: res.rows });
+        return reply(res.ok ? 200 : 500, { ok: res.ok, rows: res.rows });
+      }
+
       // ---- Move SKUs from one product to another ----
       if (action === 'move_skus') {
         const from = body.from_page_key, to = body.to_page_key;
