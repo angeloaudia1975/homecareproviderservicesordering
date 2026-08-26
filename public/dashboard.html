@@ -130,7 +130,8 @@
 
 /* MOBILE HARDENING (added for phone/tablet support; scoped to small screens) */
 @media (max-width:980px){
-  body{overflow-x:hidden;}
+  /* clip (not hidden) keeps the sticky topbar stuck to the viewport on phones/tablets */
+  body{overflow-x:clip;}
   img,video,canvas,svg{max-width:100%;height:auto;}
   input,select,textarea{font-size:16px !important;}
   .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;}
@@ -249,7 +250,7 @@ async function loadDash(){
       <div class="b"><div class="n">${esc(o.manufacturerName)} ${srcPill(o.source)}</div><div class="m">${dateShort(o.date)} · ${o.itemsCount} item${o.itemsCount!==1?"s":""} · ${o.units} units${o.preview&&o.preview.length?" · "+esc(o.preview.join(", ")):""}</div></div>
       <div class="amt tnum">${money(o.cost)}</div></div>`).join(""):`<div class="empty">No orders on file yet.</div>`;
   $("#view-dash").innerHTML=`
-    <div class="ph"><div><h1>Welcome back${PROFILE&&PROFILE.name?", "+esc(PROFILE.name):""}</h1><div class="sub">Your HCPS purchases across every line · account ${esc((PROFILE&&PROFILE.hcps_account)||"—")}</div></div>
+    <div class="ph"><div><h1>Welcome back${PROFILE&&PROFILE.name?", "+esc(PROFILE.name):""}</h1><div class="sub">Your HCPS purchases across every line</div></div>
       <div><a class="btn nv" href="/">Start an order</a> <a class="btn pri" onclick="showView('orders')">View all orders →</a></div></div>
     <div class="kpis">
       <div class="kpi accent"><div class="kl">Purchases — YTD ${y.year}</div><div class="kv o tnum">${money(y.spend)}</div><div class="ks">${num(y.units)} units · ${y.orders} orders</div></div>
@@ -445,7 +446,7 @@ function hashStr(s){let h=0;for(let i=0;i<String(s).length;i++){h=(h*31+String(s
 async function loadQuotesView(){ await ensureCatalogFav(); renderQuotes(); }
 function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const p=(PRICE&&PRICE[mfr+"|"+code])||{};const msrp=(p.msrp!=null?p.msrp:(p.cost!=null?p.cost*2:0));return {mfr,code,name:p.name||code,mfrName:p.mfrName||mfr,msrp,est:p.msrp==null};}); }
 function quotePaperHtml(picked,total){
-  return `<div class="qhead"><div style="display:flex;gap:11px;align-items:center">${brandLogoHtml(46)}<div><div class="qbiz">${esc((PROFILE&&PROFILE.name)||"Your Business")}</div><div class="qc">Account ${esc((PROFILE&&PROFILE.hcps_account)||"—")}</div></div></div>
+  return `<div class="qhead"><div style="display:flex;gap:11px;align-items:center">${brandLogoHtml(46)}<div><div class="qbiz">${esc((PROFILE&&PROFILE.name)||"Your Business")}</div></div></div>
     <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>#Q-${(Math.abs(hashStr((PROFILE&&PROFILE.name)||"x"))%9000+1000)}</b><div class="qc">Valid ${esc(QCUST.valid||"")}</div></div></div>
     ${QCUST.name?`<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">Prepared for <b>${esc(QCUST.name)}</b></div>`:""}
     <table class="qtbl"><thead><tr><th>Product</th><th>Mfr</th><th style="text-align:right">MSRP</th></tr></thead><tbody>${picked.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(String(r.mfrName).split(" ")[0])}</td><td style="text-align:right">${money(r.msrp)}${r.est?' <span class="est">est</span>':""}</td></tr>`).join("")||'<tr><td colspan="3" style="color:#9aa4ae">No items yet.</td></tr>'}</tbody></table>
@@ -617,7 +618,7 @@ function renderAccount(){
    <div class="grid2"><div>
      <div class="card" style="margin-top:0"><h3>Digital account setup center</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Complete manufacturer onboarding online — paperwork only, no payment handling.</div>
        <div class="steps">
-         <div class="step done"><div class="sn">✓</div><div class="stx"><h4>Business profile</h4><p>${esc((PROFILE&&PROFILE.name)||"—")} · account ${esc((PROFILE&&PROFILE.hcps_account)||"—")}</p></div></div>
+         <div class="step done"><div class="sn">✓</div><div class="stx"><h4>Business profile</h4><p>${esc((PROFILE&&PROFILE.name)||"—")}</p></div></div>
          <div class="step ${resaleOn?"done":""}"><div class="sn">${resaleOn?"✓":"2"}</div><div class="stx"><h4>Resale / tax-exemption certificate</h4><p>${resaleOn?("On file"+(ACCOUNT.resale.reference?" · "+esc(ACCOUNT.resale.reference):"")+" — auto-attached to every application."):"Add your certificate reference, then email the file to HCPS to complete."}</p>
            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input id="resaleRef" placeholder="Certificate # / reference" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.reference)||"")}" style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><input id="resaleState" placeholder="State" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.state)||"")}" style="width:72px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><a class="btn nv" onclick="submitResale()">Save</a></div></div></div>
          <div class="step"><div class="sn">3</div><div class="stx"><h4>Manufacturer credit application</h4><p>Complete an electronic credit app for any HCPS line — submitted to the manufacturer with your resale certificate attached.</p>
