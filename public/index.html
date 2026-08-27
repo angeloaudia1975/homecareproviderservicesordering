@@ -3748,10 +3748,18 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   }catch(e){} return ""; }
 
   // ---------- Product detail (drill-in state of Shop) ----------
-  window.openProductDetail = function(code){
+  window.openProductDetail = async function(code){
     const p=(state.products||[]).find(x=>x.code===code);
     if(!p){ return; }
     const host=$q("#content");
+    // Curated cross-sell (accessories + cross-manufacturer alternatives) from Catalog Review.
+    let curatedAcc=[], curatedAlt=[];
+    try{
+      const H={apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON};
+      const rr=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_related?manufacturer=eq.${encodeURIComponent(p.manufacturer||'')}&code=eq.${encodeURIComponent(code)}&order=sort&select=related_manufacturer,related_code,related_name,related_image,related_category,kind`,{headers:H});
+      const cur=rr.ok?await rr.json():[];
+      (cur||[]).forEach(r=>{ (r.kind==='alternative'?curatedAlt:curatedAcc).push(r); });
+    }catch(e){}
     const media=Array.isArray(p.media)?p.media:[];
     const imgs=[...(p.image?[{url:p.image,title:p.name}]:[]), ...media.filter(m=>m.kind==="image"&&m.url)];
     const docs=media.filter(m=>(m.kind==="brochure"||m.kind==="link")&&m.url);
@@ -3810,7 +3818,12 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       ${sizingHtml}
       ${docs.length?`<div class="pd-sect"><h2>Documents &amp; resources</h2>${docs.map(dc=>`<div class="pd-doc"><div class="di"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="dn">${esc(dc.title||(dc.kind==="brochure"?"Brochure":"Link"))}</div><a class="dl" href="${esc(dc.url)}" target="_blank" rel="noopener">Open ↗</a></div>`).join("")}</div>`:""}
       ${videoHtml}
-      ${related.length?`<div class="pd-sect"><h2>Related products</h2><div class="pd-rel">${related.map(r=>{const rimg=r.image||((Array.isArray(r.media)?r.media.find(m=>m.kind==="image"&&m.url):null)||{}).url||"";const re=Number(unitPrice(r,1)||r.base_price||0);return `<div class="pd-relc" onclick="openProductDetail('${esc(r.code)}')"><div class="ri" style="background-image:url('${esc(rimg)}')"></div><div class="rb"><div class="rn">${esc(r.name)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;}).join("")}</div></div>`:""}
+      ${(curatedAcc.length||related.length)?`<div class="pd-sect"><h2>Related products</h2><div class="pd-rel">${
+        (curatedAcc.length
+          ? curatedAcc.map(r=>{const inLine=(state.products||[]).find(x=>x.code===r.related_code);const rimg=r.related_image||(inLine&&inLine.image)||"";const re=inLine?Number(unitPrice(inLine,1)||inLine.base_price||0):0;const click=inLine?`onclick="openProductDetail('${esc(r.related_code)}')" style="cursor:pointer"`:'';return `<div class="pd-relc" ${click}><div class="ri" style="background-image:url('${esc(rimg)}')"></div><div class="rb"><div class="rn">${esc(r.related_name||(inLine&&inLine.name)||r.related_code)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;})
+          : related.map(r=>{const rimg=r.image||((Array.isArray(r.media)?r.media.find(m=>m.kind==="image"&&m.url):null)||{}).url||"";const re=Number(unitPrice(r,1)||r.base_price||0);return `<div class="pd-relc" onclick="openProductDetail('${esc(r.code)}')"><div class="ri" style="background-image:url('${esc(rimg)}')"></div><div class="rb"><div class="rn">${esc(r.name)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;})
+        ).join("")}</div></div>`:""}
+      ${curatedAlt.length?`<div class="pd-sect"><h2>Also available from other HCPS manufacturers</h2><div class="pd-rel">${curatedAlt.map(r=>{const mn=((state.manufacturers||[]).find(x=>x.slug===r.related_manufacturer)||{}).name||r.related_manufacturer||"";return `<div class="pd-relc"><div class="ri" style="background-image:url('${esc(r.related_image||"")}')"></div><div class="rb"><div class="rn">${esc(r.related_name||r.related_code)}</div><div class="rp" style="font-weight:600;color:#6b7580;font-size:12px">${esc(mn)}</div></div></div>`;}).join("")}</div><div style="font-size:12px;color:#6b7580;margin-top:6px">Comparable options carried by HCPS — ask your rep about lines you don't yet have access to.</div></div>`:""}
     </div>`;
     if(typeof wireAdd==="function") wireAdd(host);
     window.scrollTo({top:0,behavior:"smooth"});
