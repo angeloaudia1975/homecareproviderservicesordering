@@ -1230,7 +1230,7 @@ async function mergeCatalogEdits(slug, prods){
   try{
     let pages=null;
     try{
-      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=eq.approved&select=page_key,name,tagline,description,features,clinical_applications,options,billing_codes,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label`,{headers:H}).then(x=>x.ok?x.json():null);
+      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=eq.approved&select=page_key,name,tagline,description,features,clinical_applications,options,billing_codes,specs,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label`,{headers:H}).then(x=>x.ok?x.json():null);
       if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); }
     }catch(e){}
     if(!pages){ // static fallback (same approved-only gate applied client-side)
@@ -1266,6 +1266,7 @@ async function mergeCatalogEdits(slug, prods){
             if(prim&&prim.url) p.image=prim.url;
             pg.images_gallery.forEach(g=>{ if(g&&g.url&&!(prim&&g.url===prim.url)&&!p.media.some(m=>m.url===g.url)) p.media.push({kind:'image',url:g.url,title:g.caption||''}); });
           } else if(pg.image){ p.image=pg.image; }
+          if(Array.isArray(pg.specs)&&pg.specs.length) p._specs=pg.specs.filter(s=>s&&(s.label||s.value));
           if(Array.isArray(pg.sizing_table)&&pg.sizing_table.length){ p._sizing=pg.sizing_table; if(pg.sizing_note) p._sizingNote=pg.sizing_note; }
           if(Array.isArray(pg.documents)&&pg.documents.length) p._documents=pg.documents;
           if(Array.isArray(pg.videos)&&pg.videos.length) p._videos=pg.videos;
@@ -3778,7 +3779,8 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const mainImg = imgs.length? `<img src="${esc(imgs[0].url)}" alt="${esc(p.name)}" onclick="openLightbox(this.src,this.alt)">` : `<span class="ph">No image</span>`;
     const thumbs = imgs.length>1 ? imgs.map((m,i)=>`<div class="pd-thumb${i===0?' on':''}" style="background-image:url('${esc(m.url)}')" onclick="pdSwap(this,'${esc(m.url)}')"></div>`).join("") : "";
     const [d,c]=eff.toFixed(2).split(".");
-    const specRows = (p.specs&&typeof p.specs==="object"&&!Array.isArray(p.specs)) ? Object.keys(p.specs).map(k=>`<tr><td class="k">${esc(k)}</td><td class="v">${esc(String(p.specs[k]))}</td></tr>`).join("") :
+    const specRows = (Array.isArray(p._specs)&&p._specs.length) ? p._specs.map(s=>`<tr><td class="k">${esc(s.label||s.name||"")}</td><td class="v">${esc(String(s.value||""))}</td></tr>`).join("") :
+      (p.specs&&typeof p.specs==="object"&&!Array.isArray(p.specs)) ? Object.keys(p.specs).map(k=>`<tr><td class="k">${esc(k)}</td><td class="v">${esc(String(p.specs[k]))}</td></tr>`).join("") :
       (Array.isArray(p.attributes)?p.attributes.map(a=>`<tr><td class="k">${esc(a.label||a.name||"")}</td><td class="v">${esc(String(a.value||""))}</td></tr>`).join(""):"");
     host.innerHTML = `<div class="pd">
       <div class="pd-crumb"><a onclick="renderProducts()">← ${esc(curLineName()||'Shop')}</a><span class="sep">/</span>${p.category?`<a onclick="renderProducts()">${esc(p.category)}</a><span class="sep">/</span>`:''}<span class="cur">${esc(p.name)}</span></div>
