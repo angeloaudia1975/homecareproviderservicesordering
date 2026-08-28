@@ -1249,19 +1249,22 @@ async function mergeCatalogEdits(slug, prods){
     const mm={}; (media||[]).forEach(m=>{ if(m&&m.code&&m.url){ (mm[m.code]=mm[m.code]||[]).push(m); } });
     prods.forEach(p=>{ if(mm[p.code]) p.media=mm[p.code]; });
   }catch(e){}
-  // ---- product-content enrichment layer (approved-only gate) ----
-  // Source of truth is Supabase product_content, filtered to status='approved' (RLS enforces this
-  // server-side too). Falls back to the static ./data/content file, respecting the same gate.
+  // ---- product-content enrichment layer (LIVE gate) ----
+  // Source of truth is Supabase product_content. "Live on Partner 360" is the PUBLISHED state:
+  // the enrichment tool's Approve = internal sign-off (not shown), Publish = live. So the shop
+  // loads status IN (published, active) — NOT 'approved', which is the internal review state.
+  // Falls back to the static ./data/content file, respecting the same gate.
+  const LIVE_STATUSES=['published','active'];
   try{
     let pages=null;
     try{
-      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=eq.approved&select=page_key,name,tagline,description,features,clinical_applications,options,billing_codes,specs,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label`,{headers:H}).then(x=>x.ok?x.json():null);
+      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${LIVE_STATUSES.join(',')})&select=page_key,name,tagline,description,features,clinical_applications,options,billing_codes,specs,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label`,{headers:H}).then(x=>x.ok?x.json():null);
       if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); }
     }catch(e){}
-    if(!pages){ // static fallback (same approved-only gate applied client-side)
+    if(!pages){ // static fallback (same live gate applied client-side)
       const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"});
       if(cr.ok){ const cj=await cr.json(); const pg=(cj&&cj.pages)||{}; pages={};
-        for(const k in pg){ const st=pg[k].status; if(!CONFIG.CONTENT_APPROVED_ONLY || st==='approved') pages[k]=pg[k]; } }
+        for(const k in pg){ const st=pg[k].status; if(!CONFIG.CONTENT_APPROVED_ONLY || LIVE_STATUSES.includes(st)) pages[k]=pg[k]; } }
     }
     if(pages){
       // Variant-aware routing: a product family (e.g. Gen 2 Walking Boot) can resolve into
