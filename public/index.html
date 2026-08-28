@@ -110,6 +110,12 @@ body:not(.p360on) #p360wrap{display:none!important;}
 .buy .qtyin{width:64px;padding:9px;text-align:center;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;}
 .addbtn{background:var(--navy);color:#fff;border:none;padding:10px 12px;border-radius:8px;font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;}
 .addbtn:hover{background:var(--orange);}
+.chooseBtn{grid-column:1/-1;text-align:center;background:var(--navy);color:#fff;padding:10px 12px;border-radius:8px;font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;}
+.card:hover .chooseBtn{background:var(--orange);}
+.pd-variants{margin:14px 0 4px;}
+.pd-variants label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7580;margin-bottom:5px;}
+.pd-varsel{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;background:#fff;color:var(--ink);cursor:pointer;}
+.pd-varsel:focus{outline:none;border-color:var(--orange);}
 
 /* EMPTY STATE */
 .empty{padding:70px 0;text-align:center;color:var(--gray);}
@@ -1698,6 +1704,31 @@ function filtered(){
     return `${p.code} ${p.name} ${p.category} ${p.subcategory} ${p.brand} ${p.description} ${p.hcpc}`.toLowerCase().includes(q);
   });
 }
+/* ---- Product grouping (Phase 2): collapse the flat catalog into ONE product per
+   `group`, with each size/color as a selectable variant. A dealer shops products,
+   not rows. The base rows stay in state.products (keyed by code) for cart & detail;
+   grouping is a display transform over the filtered list. ---- */
+function groupKeyOf(p){ return p.group || p.code; }
+function groupDisplayName(p){ if(!p) return ''; const g=String(p.group||''); const i=g.indexOf('::');
+  if(i>=0){ const n=g.slice(i+2).trim(); if(n) return n; } return p._gname || p.name || p.code || ''; }
+function variantLabel(v){ const gn=groupDisplayName(v); let lbl=String(v.name||'').trim();
+  if(gn && lbl.toLowerCase().startsWith(gn.toLowerCase())) lbl=lbl.slice(gn.length);
+  lbl=lbl.replace(/^[\s,;:·–—-]+/,'').trim(); return lbl || String(v.code||''); }
+function groupLeads(list){
+  const map=new Map();
+  for(const p of list){ const gk=groupKeyOf(p); if(!map.has(gk)) map.set(gk,[]); map.get(gk).push(p); }
+  const leads=[];
+  for(const items of map.values()){
+    const prices=items.map(x=>Number(unitPrice(x,1)||x.base_price||0)).filter(v=>v>0);
+    const pmin=prices.length?Math.min(...prices):0, pmax=prices.length?Math.max(...prices):0;
+    const lead=items.find(x=>x.image||(Array.isArray(x._features)&&x._features.length))||items[0];
+    const L=Object.assign({},lead);
+    L._variants=items; L._count=items.length; L._gname=groupDisplayName(lead);
+    L._priceMin=pmin; L._priceMax=pmax;
+    leads.push(L);
+  }
+  return leads;
+}
 function cardHtml(p){
   const media = Array.isArray(p.media)?p.media:[];
   const gimgs = media.filter(m=>m.kind==="image"&&m.url);
@@ -1705,30 +1736,36 @@ function cardHtml(p){
   const docs  = media.filter(m=>(m.kind==="brochure"||m.kind==="link")&&m.url);
   const imgList = [...(p.image?[{url:p.image}]:[]), ...gimgs];   // primary photo first, then gallery
   const mainUrl = imgList.length ? imgList[0].url : "";
+  const dispName = p._gname || p.name;
+  const multi = Array.isArray(p._variants) && p._variants.length>1;
   const img = mainUrl
-    ? `<img src="${esc(mainUrl)}" alt="${esc(p.name)}" loading="lazy" decoding="async" onclick="event.stopPropagation();openLightbox(this.src,this.alt)" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src=this.src.replace(/[^/]+$/,s=>s.toLowerCase());}else{this.style.display='none';this.parentElement.innerHTML='<span class=ph>No image</span>';}">`
+    ? `<img src="${esc(mainUrl)}" alt="${esc(dispName)}" loading="lazy" decoding="async" onclick="event.stopPropagation();openLightbox(this.src,this.alt)" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src=this.src.replace(/[^/]+$/,s=>s.toLowerCase());}else{this.style.display='none';this.parentElement.innerHTML='<span class=ph>No image</span>';}">`
     : `<span class="ph">No image</span>`;
   const thumbs = (imgList.length>1 || vids.length) ? `<div class="thumbs">
-      ${imgList.map((m,i)=>`<button class="thumb${i===0?' on':''}" data-src="${esc(m.url)}" title="${esc(m.title||p.name)}" style="background-image:url('${esc(m.url)}')" onclick="event.stopPropagation();galSwap(this)"></button>`).join("")}
-      ${vids.map(v=>`<button class="thumb vid" data-vid="${esc(v.url)}" data-cap="${esc(v.title||p.name)}" title="${esc(v.title||'Video')}" onclick="event.stopPropagation();openVideo(this.dataset.vid,this.dataset.cap)">▶</button>`).join("")}
+      ${imgList.map((m,i)=>`<button class="thumb${i===0?' on':''}" data-src="${esc(m.url)}" title="${esc(m.title||dispName)}" style="background-image:url('${esc(m.url)}')" onclick="event.stopPropagation();galSwap(this)"></button>`).join("")}
+      ${vids.map(v=>`<button class="thumb vid" data-vid="${esc(v.url)}" data-cap="${esc(v.title||dispName)}" title="${esc(v.title||'Video')}" onclick="event.stopPropagation();openVideo(this.dataset.vid,this.dataset.cap)">▶</button>`).join("")}
     </div>` : "";
   const resLinks = docs.length ? `<div class="reslinks">${docs.map(d=>`<a class="moreinfo" href="${esc(d.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${d.kind==="brochure"?"📄":"🔗"} ${esc(d.title||(d.kind==="brochure"?"Brochure":"Link"))}</a>`).join("")}</div>` : "";
+  const codeLine = multi ? `<div class="pcode">${p._count} sizes / options</div>` : `<div class="pcode">Item # ${esc(p.code)}</div>`;
+  const priceBlock = (multi && p._priceMin>0 && p._priceMin!==p._priceMax)
+    ? `<div class="prow"><div style="font-weight:800;font-size:18px;color:var(--ink)"><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">From </span>${money(p._priceMin)}</div></div>`
+    : `<div class="prow">${priceHtml(p)}</div>`;
+  const buy = multi
+    ? `<div class="buy"><div class="chooseBtn">Choose options →</div></div>`
+    : `<div class="buy"><input class="qtyin" type="number" min="1" value="1" aria-label="Qty"><button class="addbtn" data-code="${esc(p.code)}">Add to cart</button></div>`;
   return `<div class="card" data-code="${esc(p.code)}">
     <div class="img">${img}</div>
     <div class="cbody">
       ${thumbs}
       <div class="cat-tag">${esc(p.subcategory||p.category||"")}${p.brand?" · "+esc(p.brand):""}</div>
-      <div class="pname">${esc(p.name)}</div>
-      <div class="pcode">Item # ${esc(p.code)}</div>
+      <div class="pname">${esc(dispName)}</div>
+      ${codeLine}
       <div class="pdesc">${esc(p.description||"")}</div>
-      ${p.hcpc?`<div class="hcpc">HCPC ${esc(p.hcpc)}</div>`:""}
+      ${p.hcpc&&!multi?`<div class="hcpc">HCPC ${esc(p.hcpc)}</div>`:""}
       ${p.moreUrl?`<a class="moreinfo" href="${esc(p.moreUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📄 ${esc(p.moreLabel||"More Information")}</a>`:""}
       ${resLinks}
-      <div class="prow">${priceHtml(p)}</div>
-      <div class="buy">
-        <input class="qtyin" type="number" min="1" value="1" aria-label="Qty">
-        <button class="addbtn" data-code="${esc(p.code)}">Add to cart</button>
-      </div>
+      ${priceBlock}
+      ${buy}
     </div></div>`;
 }
 /* Progressive rendering: emit category/subcategory headers inline and render
@@ -1790,7 +1827,7 @@ function renderProducts(){
     host.innerHTML=`<div class="empty"><h3>Coming soon</h3><p>This manufacturer's products are being added to the portal.</p></div>`;
     return;
   }
-  const list=filtered();
+  const list=groupLeads(filtered());   // one card per product group (Phase 2)
   RENDER.list=list; RENDER.idx=0; RENDER.cat=null; RENDER.sub=null;
   host.innerHTML="";
   if(!list.length){ host.innerHTML=`<div class="empty"><h3>No matches</h3><p>Try a different search or filter.</p></div>`; return; }
@@ -3853,10 +3890,19 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   }catch(e){} return ""; }
 
   // ---------- Product detail (drill-in state of Shop) ----------
-  window.openProductDetail = async function(code){
+  window.openProductDetail = async function(code, opts){
+    opts=opts||{};
     const p=(state.products||[]).find(x=>x.code===code);
     if(!p){ return; }
     const host=$q("#content");
+    // Phase 2: this product's variants (same group) → a size/option selector.
+    const gk=(p.group||p.code);
+    const variants=(state.products||[]).filter(x=>((x.group||x.code)===gk));
+    const gname=groupDisplayName(p);
+    const variantSel = variants.length>1 ? `<div class="pd-variants"><label>Size / option</label>
+      <select class="pd-varsel" onchange="openProductDetail(this.value,{keepScroll:true})">${
+        variants.map(v=>{const ve=Number(unitPrice(v,1)||v.base_price||0);return `<option value="${esc(v.code)}"${v.code===p.code?' selected':''}>${esc(variantLabel(v))}${ve>0?' — '+money(ve):''}</option>`;}).join("")
+      }</select></div>` : "";
     // Curated cross-sell (accessories + cross-manufacturer alternatives) from Catalog Review.
     let curatedAcc=[], curatedAlt=[];
     try{
@@ -3879,7 +3925,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const cp=(typeof contractPrice==="function")?contractPrice(p):null;
     const msrp=(p.msrp!=null&&Number(p.msrp)>eff)?Number(p.msrp):null;
     const margin=msrp?(msrp-eff):null, marginPct=msrp?Math.round(margin/msrp*100):null;
-    const related=(state.products||[]).filter(x=>x.code!==p.code && ((x.category||"")===(p.category||""))).slice(0,4);
+    const related=(state.products||[]).filter(x=>x.code!==p.code && (x.group||x.code)!==gk && ((x.category||"")===(p.category||""))).slice(0,4);
     const mainImg = imgs.length? `<img src="${esc(imgs[0].url)}" alt="${esc(p.name)}" onclick="openLightbox(this.src,this.alt)">` : `<span class="ph">No image</span>`;
     const thumbs = imgs.length>1 ? imgs.map((m,i)=>`<div class="pd-thumb${i===0?' on':''}" style="background-image:url('${esc(m.url)}')" onclick="pdSwap(this,'${esc(m.url)}')"></div>`).join("") : "";
     const [d,c]=eff.toFixed(2).split(".");
@@ -3887,7 +3933,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       (p.specs&&typeof p.specs==="object"&&!Array.isArray(p.specs)) ? Object.keys(p.specs).map(k=>`<tr><td class="k">${esc(k)}</td><td class="v">${esc(String(p.specs[k]))}</td></tr>`).join("") :
       (Array.isArray(p.attributes)?p.attributes.map(a=>`<tr><td class="k">${esc(a.label||a.name||"")}</td><td class="v">${esc(String(a.value||""))}</td></tr>`).join(""):"");
     host.innerHTML = `<div class="pd">
-      <div class="pd-crumb"><a onclick="renderProducts()">← ${esc(curLineName()||'Shop')}</a><span class="sep">/</span>${p.category?`<a onclick="renderProducts()">${esc(p.category)}</a><span class="sep">/</span>`:''}<span class="cur">${esc(p.name)}</span></div>
+      <div class="pd-crumb"><a onclick="renderProducts()">← ${esc(curLineName()||'Shop')}</a><span class="sep">/</span>${p.category?`<a onclick="renderProducts()">${esc(p.category)}</a><span class="sep">/</span>`:''}<span class="cur">${esc(gname)}</span></div>
       <div class="pd-hero">
         <div class="pd-gal">
           ${thumbs?`<div class="pd-thumbs">${thumbs}</div>`:""}
@@ -3895,7 +3941,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
         </div>
         <div>
           <div class="pd-eyebrow">${esc(p.brand||curLineName()||"")}</div>
-          <h1>${esc(p.name)}</h1>
+          <h1>${esc(gname)}</h1>
           ${p._tagline?`<div class="pd-tagline">${esc(p._tagline)}</div>`:""}
           <div class="pd-code">Item # ${esc(p.code)}${p.category?" · "+esc(p.category):""}${p.hcpc?" · HCPC "+esc(p.hcpc):""}</div>
           ${(p._billing&&p._billing.length)?`<div class="pd-billing">HCPC / PDAC <b>${p._billing.map(esc).join(' · ')}</b></div>`:""}
@@ -3906,6 +3952,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
               ${msrp?`<div class="pd-msrp">MSRP ${money(msrp)}</div>`:""}
               ${margin?`<div class="pd-margin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Est. retail margin ${money(margin)}${marginPct?" · "+marginPct+"%":""}</div>`:""}`
               :`<div class="pd-plabel">Pricing</div><div class="pd-price" style="font-size:20px">${state.dealer?"Call for pricing":"Log in for pricing"}</div>`}
+            ${variantSel}
             <div class="pd-buy buy">
               <input class="qtyin" type="number" min="1" value="1" aria-label="Qty">
               <button class="addbtn" data-code="${esc(p.code)}">🛒 Add to cart</button>
@@ -3933,7 +3980,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       ${curatedAlt.length?`<div class="pd-sect"><h2>Also available from other HCPS manufacturers</h2><div class="pd-rel">${curatedAlt.map(r=>{const mn=((state.manufacturers||[]).find(x=>x.slug===r.related_manufacturer)||{}).name||r.related_manufacturer||"";return `<div class="pd-relc"><div class="ri" style="background-image:url('${esc(r.related_image||"")}')"></div><div class="rb"><div class="rn">${esc(r.related_name||r.related_code)}</div><div class="rp" style="font-weight:600;color:#6b7580;font-size:12px">${esc(mn)}</div></div></div>`;}).join("")}</div><div style="font-size:12px;color:#6b7580;margin-top:6px">Comparable options carried by HCPS — ask your rep about lines you don't yet have access to.</div></div>`:""}
     </div>`;
     if(typeof wireAdd==="function") wireAdd(host);
-    window.scrollTo({top:0,behavior:"smooth"});
+    if(!opts.keepScroll) window.scrollTo({top:0,behavior:"smooth"});
     try{ track&&track('product_view',p.manufacturer,p.code); }catch(e){}
   };
   window.pdSwap=function(el,url){ document.querySelectorAll('.pd-thumb').forEach(t=>t.classList.remove('on')); el.classList.add('on'); const m=$q('#pdMain'); if(m)m.innerHTML=`<img src="${url}" onclick="openLightbox(this.src,this.alt)">`; };
