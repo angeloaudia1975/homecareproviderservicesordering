@@ -430,6 +430,30 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .pd .addbtn:hover{filter:brightness(.97);transform:translateY(-1px);}
 .pd-sub{display:flex;gap:12px;margin-top:12px;}
 .pd-sub a{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:var(--navy);cursor:pointer;}
+.pd-sample{width:100%;margin-top:10px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--navy,#10263f);color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Archivo',sans-serif;font-weight:800;font-size:14px;letter-spacing:.2px;cursor:pointer;}
+.pd-sample:hover{filter:brightness(1.08);transform:translateY(-1px);}
+/* Request-a-Sample modal (self-contained overlay appended to <body>) */
+#sampleModal{position:fixed;inset:0;z-index:10060;display:flex;align-items:center;justify-content:center;background:rgba(16,38,63,.55);padding:20px;}
+.sm-box{background:#fff;max-width:530px;width:100%;border-radius:14px;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);max-height:92vh;overflow:auto;}
+.sm-head{background:#10263f;border-bottom:3px solid #ef6325;padding:15px 20px;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;}
+.sm-head .t{color:#fff;font-family:'Archivo',sans-serif;font-weight:800;font-size:16px;}
+.sm-head .k{color:#9fb0c4;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;}
+.sm-head .x{color:#fff;cursor:pointer;font-size:18px;line-height:1;}
+.sm-body{padding:16px 20px;}
+.sm-prod{background:#f6f7f5;border:1px solid #e6e2dc;border-radius:10px;padding:10px 12px;margin-bottom:14px;}
+.sm-prod .l{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;font-weight:700;}
+.sm-prod .n{font-weight:700;color:#10263f;}
+.sm-prod .c{font-size:12px;color:#6b7280;}
+.sm-lbl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#6b7280;margin:10px 0 4px;}
+.sm-in{width:100%;padding:10px 11px;border:1px solid var(--line,#d9dde3);border-radius:9px;font-family:inherit;font-size:14px;color:#10263f;box-sizing:border-box;background:#fff;}
+.sm-in:focus{outline:none;border-color:#ef6325;}
+.sm-two{display:flex;gap:10px;}.sm-two>div{flex:1;}
+.sm-msg{font-size:12.5px;margin-top:10px;min-height:16px;}
+.sm-msg.err{color:#b42323;font-weight:600;}.sm-msg.ok{color:#1a7f4b;font-weight:600;}
+.sm-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;}
+.sm-btn{border-radius:10px;padding:11px 18px;font-family:'Archivo',sans-serif;font-weight:800;font-size:14px;cursor:pointer;border:1px solid var(--line,#d9dde3);background:#fff;color:var(--navy,#10263f);}
+.sm-btn.pri{background:var(--grad,#ef6325);color:#141414;border:none;}
+.sm-btn[disabled]{opacity:.6;cursor:default;}
 .pd-sub a:hover{border-color:var(--navy);}
 .pd-sect{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px;margin-bottom:20px;}
 .pd-sect h2{font-family:'Archivo',sans-serif;font-weight:800;font-size:19px;color:var(--navy);margin-bottom:12px;}
@@ -1071,6 +1095,7 @@ header .htop{flex-wrap:nowrap;}
 const CONFIG = {
   DATA_SOURCE: "json",                 // "json" | "supabase" — stays "json" until the catalog-migration slice
   ORDER_ENDPOINT: "/.netlify/functions/submit-order",  // Resend order email (netlify/functions/submit-order.js)
+  SAMPLE_ENDPOINT: "/.netlify/functions/sample-request",  // Resend sample-request email (netlify/functions/sample-request.js)
   AUTH_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/dealer-auth", // dealer login backend (CORS-enabled)
   GOLDEN_BASE: "",                     // ← your Golden ordering platform base domain (e.g. https://order.golden-tech.com). Each dealer's /portal/… path is appended. Blank shows a "contact your rep" note.
   // ---- Stage 6: Golden integration (order Golden inside Partner 360 via Golden's OWN commerce API) ----
@@ -2647,6 +2672,82 @@ function openCart(){populateShipTo();$("#drawer").classList.add("open");$("#scri
 }
 function closeCart(){$("#drawer").classList.remove("open");$("#scrim").classList.remove("open");}
 
+/* ---------- Request a Sample (Ovation Medical) ----------
+   Product detail → confirm contact & shipping → POST /sample-request → Resend email to HCPS.
+   Reuses the dealer identity (AUTH.dealer) and the on-file address list (shipAddrList). */
+function isOvation(p){ if(!p) return false;
+  // Gate strictly on the product's OWN manufacturer/brand so the button never leaks onto
+  // another brand's product just because the Ovation line is being browsed.
+  const hay=[p.manufacturer,p.brand,p.manufacturer_name].filter(Boolean).join(' ').toLowerCase();
+  return /ovation/.test(hay); }
+let SAMPLE_ADDRS=[];
+function requestSample(code){
+  const p=(state.products||[]).find(x=>String(x.code)===String(code)); if(!p){ toast("Product not found"); return; }
+  if(AUTH.status!=='approved' || !AUTH.dealer){ toast("Log in to request a sample"); return; }
+  const d=AUTH.dealer||{};
+  SAMPLE_ADDRS=shipAddrList();
+  const a0=SAMPLE_ADDRS[0]||{address:d.address||"",city:d.city||"",state:d.state||"",zip:d.zip||""};
+  const opts=SAMPLE_ADDRS.map((a,i)=>`<option value="${i}">${esc((a.label?a.label+" — ":"")+fmtShipAddr(a))}</option>`).join("")
+    +`<option value="other">✏️ Ship to a different address…</option>`;
+  const wrap=document.createElement('div'); wrap.id='sampleModal';
+  wrap.onclick=e=>{ if(e.target===wrap) closeSampleModal(); };
+  wrap.innerHTML=`<div class="sm-box" role="dialog" aria-modal="true" aria-label="Request a sample">
+    <div class="sm-head"><div><div class="t">Request a Sample</div><div class="k">Ovation Medical</div></div><a class="x" onclick="closeSampleModal()" aria-label="Close">✕</a></div>
+    <div class="sm-body">
+      <div class="sm-prod"><div class="l">Sample requested</div><div class="n">${esc(p.name)}</div><div class="c">Item # ${esc(p.code)}${p.category?" · "+esc(p.category):""}</div></div>
+      <input type="hidden" id="sm_code" value="${esc(p.code)}"><input type="hidden" id="sm_product" value="${esc(p.name)}">
+      <div class="sm-two"><div><label class="sm-lbl">Company / Dealer</label><input class="sm-in" id="sm_biz" value="${esc(d.name||"")}"></div>
+        <div><label class="sm-lbl">HCPS Account #</label><input class="sm-in" id="sm_acct" value="${esc(d.hcps_account||"")}" placeholder="optional"></div></div>
+      <div class="sm-two"><div><label class="sm-lbl">Contact name</label><input class="sm-in" id="sm_contact" value="${esc(d.contact_name||"")}"></div>
+        <div><label class="sm-lbl">Email</label><input class="sm-in" id="sm_email" type="email" value="${esc(d.email||"")}"></div></div>
+      <label class="sm-lbl">Phone</label><input class="sm-in" id="sm_phone" value="${esc(d.phone||"")}" placeholder="optional">
+      <label class="sm-lbl">Ship sample to</label>
+      ${SAMPLE_ADDRS.length?`<select class="sm-in" id="sm_shipto" style="margin-bottom:8px" onchange="sampleApplyAddr()">${opts}</select>`:``}
+      <input class="sm-in" id="sm_addr" value="${esc(a0.address||"")}" placeholder="Shipping address" style="margin-bottom:8px">
+      <div class="sm-two"><div><input class="sm-in" id="sm_city" value="${esc(a0.city||"")}" placeholder="City"></div>
+        <div style="max-width:90px"><input class="sm-in" id="sm_state" value="${esc(a0.state||"")}" placeholder="State"></div>
+        <div style="max-width:120px"><input class="sm-in" id="sm_zip" value="${esc(a0.zip||"")}" placeholder="ZIP"></div></div>
+      <label class="sm-lbl">Note to HCPS (optional)</label>
+      <textarea class="sm-in" id="sm_note" rows="2" placeholder="Size/side needed, quantity, or anything HCPS should know"></textarea>
+      <div class="sm-msg" id="sm_msg"></div>
+      <div class="sm-actions"><button class="sm-btn" onclick="closeSampleModal()">Cancel</button>
+        <button class="sm-btn pri" id="sm_submit" onclick="submitSample()">Submit request</button></div>
+    </div></div>`;
+  document.body.appendChild(wrap);
+  const first=$("#sm_biz"); if(first) first.focus();
+  try{ if(typeof track==='function') track('sample_request_open', p.manufacturer||state.active||undefined, p.code); }catch(e){}
+}
+function sampleApplyAddr(){ const sel=$("#sm_shipto"); if(!sel) return; const v=sel.value;
+  const ro=(on)=>["sm_addr","sm_city","sm_state","sm_zip"].forEach(id=>{const el=$("#"+id); if(el) el.readOnly=!on;});
+  if(v==='other'){ ro(true); ["sm_addr","sm_city","sm_state","sm_zip"].forEach(id=>{const el=$("#"+id); if(el) el.value="";}); const a=$("#sm_addr"); if(a)a.focus(); return; }
+  const a=SAMPLE_ADDRS[+v]||{}; $("#sm_addr").value=a.address||""; $("#sm_city").value=a.city||""; $("#sm_state").value=a.state||""; $("#sm_zip").value=a.zip||""; ro(true); }
+function closeSampleModal(){ const m=$("#sampleModal"); if(m) m.remove(); }
+async function submitSample(){
+  if(PREVIEW){ toast("Read-only preview — sample requests are disabled for this dealer view."); return; }
+  const g=id=>((($("#"+id)||{}).value)||"").trim();
+  const msg=$("#sm_msg"); const set=(t,cls)=>{ if(msg){ msg.textContent=t; msg.className="sm-msg "+(cls||""); } };
+  const payload={
+    business:g("sm_biz"), account:g("sm_acct"), contact:g("sm_contact"), email:g("sm_email"), phone:g("sm_phone"),
+    product:g("sm_product"), product_code:g("sm_code"),
+    address:g("sm_addr"), city:g("sm_city"), state:g("sm_state"), zip:g("sm_zip"),
+    note:g("sm_note"), manufacturer_name:"Ovation Medical",
+    dealer_id:(AUTH.dealer&&AUTH.dealer.id)||"", submitted_at:new Date().toISOString()
+  };
+  if(!payload.business||!payload.contact||!payload.email){ set("Please fill company, contact, and email.","err"); return; }
+  if(!payload.address||!payload.city||!payload.state||!payload.zip){ set("Please complete the shipping address.","err"); return; }
+  const btn=$("#sm_submit"); if(btn){ btn.disabled=true; btn.textContent="Submitting…"; }
+  set("");
+  try{
+    const res=await fetch(CONFIG.SAMPLE_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const j=await res.json().catch(()=>({}));
+    if(!res.ok||!j.ok) throw new Error((j&&(j.error||j.message))||"send failed");
+    try{ if(typeof track==='function') track('sample_request_submit','ovation-medical',payload.product_code); }catch(e){}
+    set("Request sent to HCPS ✓","ok");
+    toast("Sample request sent ✓");
+    setTimeout(closeSampleModal,1200);
+  }catch(e){ set("Could not send the request — please try again.","err"); if(btn){ btn.disabled=false; btn.textContent="Submit request"; } }
+}
+
 /* ---------- init ---------- */
 $("#cartBtn").onclick=openCart; $("#closeCart").onclick=closeCart; $("#scrim").onclick=()=>{closeCart();};
 $("#clearCart").onclick=()=>{CART.clear();updateCart();toast("Cart cleared");};
@@ -3806,6 +3907,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
               <input class="qtyin" type="number" min="1" value="1" aria-label="Qty">
               <button class="addbtn" data-code="${esc(p.code)}">🛒 Add to cart</button>
             </div>
+            ${isOvation(p)?`<button class="pd-sample" onclick="requestSample('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Request a Sample</button>`:""}
             <div class="pd-sub">
               <a onclick="showP360&&showP360('quotes')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Add to a quote</a>
             </div>
