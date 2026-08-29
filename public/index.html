@@ -438,6 +438,8 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .pd-sub a{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:var(--navy);cursor:pointer;}
 .pd-sample{width:100%;margin-top:10px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--navy,#10263f);color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Archivo',sans-serif;font-weight:800;font-size:14px;letter-spacing:.2px;cursor:pointer;}
 .pd-sample:hover{filter:brightness(1.08);transform:translateY(-1px);}
+.pd-srclink{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 15px;font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:var(--navy);text-decoration:none;}
+.pd-srclink:hover{border-color:var(--orange);color:var(--orange);}
 /* Request-a-Sample modal (self-contained overlay appended to <body>) */
 #sampleModal{position:fixed;inset:0;z-index:10060;display:flex;align-items:center;justify-content:center;background:rgba(16,38,63,.55);padding:20px;}
 .sm-box{background:#fff;max-width:530px;width:100%;border-radius:14px;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);max-height:92vh;overflow:auto;}
@@ -1264,7 +1266,7 @@ async function mergeCatalogEdits(slug, prods){
   try{
     let pages=null;
     try{
-      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${LIVE_STATUSES.join(',')})&select=page_key,name,tagline,description,features,clinical_applications,options,billing_codes,specs,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label`,{headers:H}).then(x=>x.ok?x.json():null);
+      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${LIVE_STATUSES.join(',')})&select=page_key,name,tagline,description,features,clinical_applications,options,billing_codes,specs,warranty,source_url,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label`,{headers:H}).then(x=>x.ok?x.json():null);
       if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); }
     }catch(e){}
     if(!pages){ // static fallback (same live gate applied client-side)
@@ -1301,7 +1303,14 @@ async function mergeCatalogEdits(slug, prods){
             pg.images_gallery.forEach(g=>{ if(g&&g.url&&!(prim&&g.url===prim.url)&&!p.media.some(m=>m.url===g.url)) p.media.push({kind:'image',url:g.url,title:g.caption||''}); });
           } else if(pg.image){ p.image=pg.image; }
           if(Array.isArray(pg.specs)&&pg.specs.length) p._specs=pg.specs.filter(s=>s&&(s.label||s.value));
-          if(Array.isArray(pg.sizing_table)&&pg.sizing_table.length){ p._sizing=pg.sizing_table; if(pg.sizing_note) p._sizingNote=pg.sizing_note; }
+          // sizing_table is saved as {columns:[],rows:[]} by the enrichment tool; legacy rows may be
+          // a bare array. Accept BOTH — testing only for an array silently hid every sizing chart.
+          var _st=pg.sizing_table, _stRows=Array.isArray(_st)?_st:((_st&&Array.isArray(_st.rows))?_st.rows:[]);
+          if(_stRows.length){ p._sizing=_stRows;
+            if(_st&&Array.isArray(_st.columns)&&_st.columns.length) p._sizingCols=_st.columns;
+            if(pg.sizing_note) p._sizingNote=pg.sizing_note; }
+          if(pg.warranty) p._warranty=pg.warranty;
+          if(pg.source_url) p._sourceUrl=pg.source_url;
           if(Array.isArray(pg.documents)&&pg.documents.length) p._documents=pg.documents;
           if(Array.isArray(pg.videos)&&pg.videos.length) p._videos=pg.videos;
         }});
@@ -3915,9 +3924,10 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const imgs=[...(p.image?[{url:p.image,title:p.name}]:[]), ...media.filter(m=>m.kind==="image"&&m.url)];
     const docs=media.filter(m=>(m.kind==="brochure"||m.kind==="link")&&m.url);
     if(p.moreUrl) docs.push({url:p.moreUrl,title:p.moreLabel||"More information",kind:"link"});
+    if(p._sourceUrl) docs.push({url:p._sourceUrl,title:"Manufacturer product page",kind:"link"});
     if(Array.isArray(p._documents)) p._documents.forEach(dc=>{ if(dc&&dc.url) docs.push({url:dc.url,title:dc.title||dc.type||"Document",kind:"link"}); });
     const _sz=Array.isArray(p._sizing)?p._sizing:[];
-    const _szCols=_sz.length?Object.keys(_sz[0]):[];
+    const _szCols=(Array.isArray(p._sizingCols)&&p._sizingCols.length)?p._sizingCols:(_sz.length?Object.keys(_sz[0]):[]);
     const sizingHtml=_sz.length?`<div class="pd-sect"><h2>Sizing chart</h2><div style="overflow-x:auto"><table class="pd-spec"><thead><tr>${_szCols.map(c=>`<th style="text-align:left;padding:9px 12px;font-size:12px;color:#6b7580">${esc(c)}</th>`).join("")}</tr></thead><tbody>${_sz.map(r=>`<tr>${_szCols.map(c=>`<td class="v">${esc(String(r[c]!=null?r[c]:""))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${p._sizingNote?`<div style="font-size:12px;color:#6b7580;margin-top:6px">${esc(p._sizingNote)}</div>`:""}</div>`:"";
     const _vids=Array.isArray(p._videos)?p._videos:[];
     const videoHtml=_vids.length?`<div class="pd-sect"><h2>Videos</h2>${_vids.map(v=>{const em=ytEmbed(v.url);return em?`<div style="margin:0 0 14px">${em}</div>`:`<div class="pd-doc"><div class="dn">${esc(v.title||v.url)}</div><a class="dl" href="${esc(v.url)}" target="_blank" rel="noopener">Watch ↗</a></div>`;}).join("")}</div>`:"";
@@ -3925,7 +3935,16 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const cp=(typeof contractPrice==="function")?contractPrice(p):null;
     const msrp=(p.msrp!=null&&Number(p.msrp)>eff)?Number(p.msrp):null;
     const margin=msrp?(msrp-eff):null, marginPct=msrp?Math.round(margin/msrp*100):null;
-    const related=(state.products||[]).filter(x=>x.code!==p.code && (x.group||x.code)!==gk && ((x.category||"")===(p.category||""))).slice(0,4);
+    // Related = DIFFERENT products a dealer could consider — one card per product group, never the
+    // same item repeated in other sizes. Prefers the same subcategory, then the same category.
+    const relSeen=new Set([gk]);
+    const relPool=(state.products||[]).filter(x=>{
+      const xg=(x.group||x.code); if(relSeen.has(xg)) return false;
+      if((x.category||"")!==(p.category||"")) return false;
+      relSeen.add(xg); return true; });
+    const sameSub=relPool.filter(x=>(x.subcategory||"")&&(x.subcategory||"")===(p.subcategory||""));
+    const related=sameSub.concat(relPool.filter(x=>sameSub.indexOf(x)<0)).slice(0,4)
+      .map(x=>Object.assign({},x,{_relName:groupDisplayName(x)}));
     const mainImg = imgs.length? `<img src="${esc(imgs[0].url)}" alt="${esc(p.name)}" onclick="openLightbox(this.src,this.alt)">` : `<span class="ph">No image</span>`;
     const thumbs = imgs.length>1 ? imgs.map((m,i)=>`<div class="pd-thumb${i===0?' on':''}" style="background-image:url('${esc(m.url)}')" onclick="pdSwap(this,'${esc(m.url)}')"></div>`).join("") : "";
     const [d,c]=eff.toFixed(2).split(".");
@@ -3970,12 +3989,14 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       ${(p._clinical&&p._clinical.length)?`<div class="pd-sect"><h2>Clinical applications</h2>${p._clinical.map(x=>`<span class="pd-chip">${esc(x)}</span>`).join("")}</div>`:""}
       ${specRows?`<div class="pd-sect"><h2>Specifications</h2><table class="pd-spec">${specRows}</table></div>`:""}
       ${sizingHtml}
+      ${p._warranty?`<div class="pd-sect"><h2>Warranty</h2><p>${esc(p._warranty)}</p></div>`:""}
+      ${p._sourceUrl?`<div class="pd-sect"><h2>Manufacturer information</h2><a class="pd-srclink" href="${esc(p._sourceUrl)}" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>View this product on the ${esc(p.brand||curLineName()||"manufacturer")} website</a></div>`:""}
       ${docs.length?`<div class="pd-sect"><h2>Documents &amp; resources</h2>${docs.map(dc=>`<div class="pd-doc"><div class="di"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="dn">${esc(dc.title||(dc.kind==="brochure"?"Brochure":"Link"))}</div><a class="dl" href="${esc(dc.url)}" target="_blank" rel="noopener">Open ↗</a></div>`).join("")}</div>`:""}
       ${videoHtml}
       ${(curatedAcc.length||related.length)?`<div class="pd-sect"><h2>Related products</h2><div class="pd-rel">${
         (curatedAcc.length
           ? curatedAcc.map(r=>{const inLine=(state.products||[]).find(x=>x.code===r.related_code);const rimg=r.related_image||(inLine&&inLine.image)||"";const re=inLine?Number(unitPrice(inLine,1)||inLine.base_price||0):0;const click=inLine?`onclick="openProductDetail('${esc(r.related_code)}')" style="cursor:pointer"`:'';return `<div class="pd-relc" ${click}><div class="ri" style="background-image:url('${esc(rimg)}')"></div><div class="rb"><div class="rn">${esc(r.related_name||(inLine&&inLine.name)||r.related_code)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;})
-          : related.map(r=>{const rimg=r.image||((Array.isArray(r.media)?r.media.find(m=>m.kind==="image"&&m.url):null)||{}).url||"";const re=Number(unitPrice(r,1)||r.base_price||0);return `<div class="pd-relc" onclick="openProductDetail('${esc(r.code)}')"><div class="ri" style="background-image:url('${esc(rimg)}')"></div><div class="rb"><div class="rn">${esc(r.name)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;})
+          : related.map(r=>{const rimg=r.image||((Array.isArray(r.media)?r.media.find(m=>m.kind==="image"&&m.url):null)||{}).url||"";const re=Number(unitPrice(r,1)||r.base_price||0);return `<div class="pd-relc" onclick="openProductDetail('${esc(r.code)}')"><div class="ri" style="background-image:url('${esc(rimg)}')"></div><div class="rb"><div class="rn">${esc(r._relName||r.name)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;})
         ).join("")}</div></div>`:""}
       ${curatedAlt.length?`<div class="pd-sect"><h2>Also available from other HCPS manufacturers</h2><div class="pd-rel">${curatedAlt.map(r=>{const mn=((state.manufacturers||[]).find(x=>x.slug===r.related_manufacturer)||{}).name||r.related_manufacturer||"";return `<div class="pd-relc"><div class="ri" style="background-image:url('${esc(r.related_image||"")}')"></div><div class="rb"><div class="rn">${esc(r.related_name||r.related_code)}</div><div class="rp" style="font-weight:600;color:#6b7580;font-size:12px">${esc(mn)}</div></div></div>`;}).join("")}</div><div style="font-size:12px;color:#6b7580;margin-top:6px">Comparable options carried by HCPS — ask your rep about lines you don't yet have access to.</div></div>`:""}
     </div>`;
