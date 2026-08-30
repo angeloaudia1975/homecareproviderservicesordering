@@ -436,6 +436,20 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .pd .addbtn:hover{filter:brightness(.97);transform:translateY(-1px);}
 .pd-sub{display:flex;gap:12px;margin-top:12px;}
 .pd-sub a{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:var(--navy);cursor:pointer;}
+.pd-broch{width:100%;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid #d7dde4;background:#fff;color:#10263f;border-radius:10px;padding:11px 14px;font-weight:700;font-size:14px;cursor:pointer}
+.pd-broch:hover{border-color:#ef6325;color:#ef6325}
+.br-modal{position:fixed;inset:0;background:rgba(16,38,63,.55);display:flex;align-items:center;justify-content:center;z-index:900;padding:18px}
+.br-box{background:#fff;border-radius:14px;max-width:460px;width:100%;padding:20px 22px;box-shadow:0 24px 70px rgba(0,0,0,.3)}
+.br-box h3{margin:0 0 4px;font-size:17px;color:#10263f}
+.br-box .sub{font-size:13px;color:#6b7580;margin-bottom:14px}
+.br-row{display:flex;align-items:center;gap:9px;margin-bottom:11px;font-size:14px;color:#3c4855}
+.br-row input[type=email],.br-row textarea{flex:1;padding:9px 11px;border:1px solid #cfd6de;border-radius:8px;font:inherit;font-size:14px}
+.br-row textarea{min-height:70px;resize:vertical}
+.br-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.br-acts button{border:0;border-radius:9px;padding:10px 15px;font-weight:700;font-size:13.5px;cursor:pointer;background:#ef6325;color:#fff}
+.br-acts button.ghost{background:#eef1f4;color:#3c4855}
+.br-msg{font-size:13px;margin-top:10px;min-height:18px}
 .pd-sample{width:100%;margin-top:10px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--navy,#10263f);color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Archivo',sans-serif;font-weight:800;font-size:14px;letter-spacing:.2px;cursor:pointer;}
 .pd-sample:hover{filter:brightness(1.08);transform:translateY(-1px);}
 .pd-srclink{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 15px;font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:var(--navy);text-decoration:none;}
@@ -2730,6 +2744,143 @@ function openCart(){populateShipTo();$("#drawer").classList.add("open");$("#scri
 }
 function closeCart(){$("#drawer").classList.remove("open");$("#scrim").classList.remove("open");}
 
+/* ---------- Product brochure ------------------------------------------------
+   A customer-facing handout built from the SAME approved content this page is
+   already showing — so when someone updates images, features, specs or sizing in
+   Product Content Enrichment & Review, the brochure changes with it. There is no
+   second copy of the product data anywhere.
+
+   The layout lives on the server (netlify/functions/brochure.js), not here, because
+   the same document has to print AND email; two templates would drift. This sends
+   structured fields only, never HTML — which also means the send endpoint cannot be
+   used to mail arbitrary content from our domain.
+--------------------------------------------------------------------------- */
+function _brManufacturer(p){
+  const slug = p.manufacturer || state.line || '';
+  const m = (state.manufacturers||[]).find(x=>x.slug===slug) || {};
+  return { name: m.name || p.brand || curLineName() || '', logo: m.logo || '' };
+}
+function _brHcpsLogo(){
+  // The header logo is an inline base64 PNG, so the brochure carries it without
+  // depending on a second network fetch at print time.
+  const el = document.querySelector('.brand .logo');
+  return (el && el.src) || '';
+}
+// Everything the brochure needs, read off the product the page already rendered.
+function brochurePayload(code){
+  const p = (state.products||[]).find(x=>x.code===code); if(!p) return null;
+  const m = _brManufacturer(p);
+  const gal = (Array.isArray(p.media)?p.media.filter(x=>x.kind==='image'&&x.url).map(x=>x.url):[]);
+  const imgs = [p.image].concat(gal).filter(Boolean);
+  const seen = {}; const images = imgs.filter(u=>{ if(seen[u]) return false; seen[u]=1; return true; });
+  /* Sizing is held as an array of ROW OBJECTS keyed by column name, with the column
+     order in _sizingCols — the same shape the sizing chart on this page renders.
+     Reading it as {columns,rows} would have silently produced a brochure with no
+     sizing at all, which is the kind of gap nobody notices until a dealer prints one. */
+  const _sz = Array.isArray(p._sizing) ? p._sizing : [];
+  const _szCols = (Array.isArray(p._sizingCols) && p._sizingCols.length) ? p._sizingCols
+                : (_sz.length ? Object.keys(_sz[0]) : []);
+  const st = _sz.length && _szCols.length
+    ? { columns: _szCols, rows: _sz.map(r => _szCols.map(c => (r && r[c] != null) ? String(r[c]) : '')) }
+    : null;
+  return {
+    name: groupDisplayName ? groupDisplayName(p) : p.name,
+    code: p.code,
+    manufacturer: m.name,
+    manufacturer_logo: m.logo,
+    hcps_logo: _brHcpsLogo(),
+    tagline: p._tagline || '',
+    description: p.description || '',
+    images: images,
+    features: p._features || [],
+    clinical: p._clinical || [],
+    specs: Array.isArray(p._specs) ? p._specs : [],
+    sizing: st,
+    sizing_note: p._sizingNote || '',
+    warranty: p._warranty || '',
+    billing_codes: p._billing || [],
+    source_url: p._sourceUrl || '',
+    msrp: p.msrp || null,
+    // Dealer cost is deliberately NOT sent. A field that never leaves the page
+    // cannot leak onto a document a dealer hands to a patient.
+    quote_price: null,
+  };
+}
+let _brCode=null, _brMsrp=false;
+function openBrochure(code){
+  const pl = brochurePayload(code); if(!pl) return;
+  _brCode = code; _brMsrp = false;
+  const host = document.createElement('div');
+  host.className='br-modal'; host.id='brModal';
+  host.onclick = e => { if(e.target===host) closeBrochure(); };
+  host.innerHTML = `<div class="br-box">
+    <h3>Product brochure</h3>
+    <div class="sub">${esc(pl.name)}${pl.code?` · Item ${esc(pl.code)}`:''}</div>
+    <label class="br-row"><input type="checkbox" id="brMsrp"> Include MSRP on the brochure</label>
+    <div class="sub" style="margin:-6px 0 12px">Your dealer cost is never shown. Leave this unticked for a price-free handout.</div>
+    <div class="br-acts">
+      <button onclick="brochurePrint()">🖨 Print / Save as PDF</button>
+      <button class="ghost" onclick="brochureEmailForm()">✉ Email it</button>
+      <button class="ghost" onclick="closeBrochure()">Cancel</button>
+    </div>
+    <div class="br-msg" id="brMsg"></div>
+  </div>`;
+  document.body.appendChild(host);
+}
+function closeBrochure(){ const el=document.getElementById('brModal'); if(el) el.remove(); }
+function _brMsg(t,bad){ const el=document.getElementById('brMsg'); if(el) el.innerHTML='<span style="color:'+(bad?'#b22b2b':'#2d7d46')+'">'+esc(t)+'</span>'; }
+function _brPost(body){
+  return fetch('/.netlify/functions/brochure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(r=>r.json());
+}
+/* Print through a hidden same-origin iframe rather than a popup: popup blockers
+   silently kill window.open, and the failure looks like the button is broken. */
+function brochurePrint(){
+  const pl = brochurePayload(_brCode); if(!pl) return;
+  const msrp = !!(document.getElementById('brMsrp')||{}).checked;
+  _brMsg('Building brochure…');
+  _brPost({action:'html',product:pl,include_msrp:msrp}).then(d=>{
+    if(!d||!d.ok){ _brMsg((d&&d.error)||'Could not build the brochure.',true); return; }
+    const old=document.getElementById('brFrame'); if(old) old.remove();
+    const f=document.createElement('iframe');
+    f.id='brFrame'; f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0';
+    document.body.appendChild(f);
+    f.onload=function(){
+      try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){}
+      _brMsg('Brochure ready — choose “Save as PDF” in the print dialog to keep a copy.');
+    };
+    const doc=f.contentDocument||f.contentWindow.document;
+    doc.open(); doc.write(d.html); doc.close();
+  }).catch(()=>_brMsg('Could not build the brochure.',true));
+}
+function brochureEmailForm(){
+  const box=document.querySelector('#brModal .br-box'); if(!box) return;
+  const acts=box.querySelector('.br-acts');
+  if(document.getElementById('brTo')) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML = `<div class="br-row"><input type="email" id="brTo" placeholder="Send to (customer or referral email)"></div>
+    <div class="br-row"><textarea id="brNote" placeholder="Add a short note (optional)"></textarea></div>`;
+  acts.parentNode.insertBefore(wrap, acts);
+  acts.innerHTML = `<button onclick="brochureSend()">✉ Send brochure</button>
+    <button class="ghost" onclick="brochurePrint()">🖨 Print instead</button>
+    <button class="ghost" onclick="closeBrochure()">Cancel</button>`;
+  const t=document.getElementById('brTo'); if(t) t.focus();
+}
+function brochureSend(){
+  const pl = brochurePayload(_brCode); if(!pl) return;
+  const to=((document.getElementById('brTo')||{}).value||'').trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)){ _brMsg('Enter a valid email address.',true); return; }
+  const msrp = !!(document.getElementById('brMsrp')||{}).checked;
+  const note=((document.getElementById('brNote')||{}).value||'').trim();
+  _brMsg('Sending…');
+  _brPost({action:'email',product:pl,to:to,message:note,include_msrp:msrp,
+           reply_to:(state.dealer&&state.dealer.email)||''}).then(d=>{
+    if(!d||!d.ok){ _brMsg((d&&d.error)||'Could not send the brochure.',true); return; }
+    _brMsg('Sent to '+d.sent_to+'.');
+    setTimeout(closeBrochure,1600);
+  }).catch(()=>_brMsg('Could not send the brochure.',true));
+}
+
 /* ---------- Request a Sample (Ovation Medical) ----------
    Product detail → confirm contact & shipping → POST /sample-request → Resend email to HCPS.
    Reuses the dealer identity (AUTH.dealer) and the on-file address list (shipAddrList). */
@@ -3986,6 +4137,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
               <button class="addbtn" data-code="${esc(p.code)}">🛒 Add to cart</button>
             </div>
             ${isOvation(p)?`<button class="pd-sample" onclick="requestSample('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Request a Sample</button>`:""}
+            <button class="pd-broch" onclick="openBrochure('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>Print Brochure</button>
             <div class="pd-sub">
               <a onclick="showP360&&showP360('quotes')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Add to a quote</a>
             </div>
