@@ -1266,7 +1266,7 @@ async function mergeCatalogEdits(slug, prods){
   try{
     let pages=null;
     try{
-      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${LIVE_STATUSES.join(',')})&select=page_key,name,tagline,description,features,clinical_applications,options,billing_codes,specs,warranty,source_url,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label`,{headers:H}).then(x=>x.ok?x.json():null);
+      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${LIVE_STATUSES.join(',')})&select=page_key,skus,name,tagline,description,features,clinical_applications,options,billing_codes,specs,warranty,source_url,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label`,{headers:H}).then(x=>x.ok?x.json():null);
       if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); }
     }catch(e){}
     if(!pages){ // static fallback (same live gate applied client-side)
@@ -1282,10 +1282,19 @@ async function mergeCatalogEdits(slug, prods){
       // variant_group may hold ONE catalog group or a pipe-delimited list (e.g. a product that
       // spans "standard" + "(4XL)" groups). Register every listed group → this page_key.
       const variantByGroup={}; Object.keys(pages).forEach(k=>{ const vg=pages[k]&&pages[k].variant_group; if(!vg) return; String(vg).split('|').forEach(g=>{ g=g.trim(); if(g) variantByGroup[g]=k; }); });
+      // SKU index — the durable join. Both sides carry the same part number, so a content page
+      // that lists a SKU owns the catalog product with that code, whatever its page_key or image
+      // filename happens to be. This is what stops an enriched page from silently not rendering
+      // because its slug didn't match an image basename.
+      const pageBySku={}; Object.keys(pages).forEach(k=>{ const arr=pages[k]&&pages[k].skus;
+        if(!Array.isArray(arr)) return;
+        arr.forEach(sx=>{ const c=String((sx&&(sx.sku||sx.code))||'').trim().toUpperCase();
+          if(c && !pageBySku[c]) pageBySku[c]=k; }); });
       prods.forEach(p=>{
         const imgKey=(p.image||'').split('/').pop().replace(/\.(png|jpe?g|webp)$/i,'');
+        const sKey=pageBySku[String(p.code||'').trim().toUpperCase()];
         const vKey=p.group&&variantByGroup[p.group];
-        const key=(vKey&&pages[vKey])?vKey:imgKey;
+        const key=(sKey&&pages[sKey])?sKey:((vKey&&pages[vKey])?vKey:imgKey);
         const pg=key&&pages[key];
         if(pg){
           if(!p.description && pg.description) p.description=pg.description;
