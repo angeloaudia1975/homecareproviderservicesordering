@@ -1689,6 +1689,47 @@ async function renderHome(){
   </div>`;
 }
 // jump to a line and scroll/highlight a product
+/* ── Product deep links from HCPS emails ────────────────────────────────────
+   Held in sessionStorage rather than a variable so it survives the reload that a
+   sign-in or a registration causes. Cleared as soon as it is used, so it can never
+   hijack a later visit. */
+const PENDING_PRODUCT_KEY='hcps_pending_product';
+function capturePendingProduct(){
+  try{
+    const q=new URLSearchParams(location.search);
+    const code=(q.get('product')||'').trim();
+    if(!code) return;
+    const mfr=(q.get('mfr')||'').trim();
+    sessionStorage.setItem(PENDING_PRODUCT_KEY,JSON.stringify({code,mfr,at:Date.now()}));
+    // Take it out of the address bar so a refresh or a shared link doesn't repeat it.
+    try{ q.delete('product'); q.delete('mfr');
+      const qs=q.toString();
+      history.replaceState(null,'',location.pathname+(qs?'?'+qs:'')+location.hash); }catch(e){}
+  }catch(e){}
+}
+function consumePendingProduct(){
+  let it=null;
+  try{ const raw=sessionStorage.getItem(PENDING_PRODUCT_KEY); if(!raw) return;
+    it=JSON.parse(raw); sessionStorage.removeItem(PENDING_PRODUCT_KEY); }catch(e){ return; }
+  if(!it||!it.code) return;
+  // A dealer can only be sent to a line they are entitled to see.
+  const allowed=accessibleSlugs();
+  const asked=String(it.mfr||'').trim();
+  let slug='';
+  if(asked){
+    /* A named line the dealer isn't entitled to is a dead end, NOT a reason to drop them
+       somewhere else — sending them to a different line to look for a code it doesn't
+       contain is worse than saying nothing. */
+    if(allowed.indexOf(asked)<0){ toast&&toast('That product is on a line your account does not carry yet — ask your HCPS rep.'); return; }
+    slug=asked;
+  } else {
+    // No line named: only safe to resolve when the dealer has exactly one.
+    slug=allowed.length===1?allowed[0]:'';
+  }
+  if(!slug){ toast&&toast('Open your lines to find that product.'); return; }
+  setTimeout(()=>{ try{ gotoProduct(slug,it.code); }catch(e){} },250);
+}
+
 async function gotoProduct(slug,code){
   await selectManufacturer(slug);
   track(_repeatProduct(code)?'product_view_repeat':'product_view',slug,code);  // focused a specific product (+3, or +5 if repeat ≤14d)
@@ -3262,7 +3303,9 @@ function applyAuth(){
   if(!provisioned){document.body.classList.remove('home'); if(awaiting) renderPendingSetup(); else renderLocked(); return;}
   // Fully provisioned dealers land on their Partner 360 dashboard (concept home).
   document.body.classList.remove('locked');   // authenticated: unlock the persistent header/nav
-  showP360('dash');}
+  showP360('dash');
+  // A product link from an HCPS email lands here once the dealer is actually signed in.
+  consumePendingProduct();}
 // Signed in but not yet able to order: "under review" (registered, not approved) or
 // "being set up" (approved, but HCPS hasn't finished linking the dealer account / lines).
 function renderPendingSetup(){
@@ -3335,6 +3378,12 @@ $("#brandFilter").addEventListener("change",renderProducts);
       else{ showPreviewError(res.message); }
       return;
     }
+    /* Product deep link. A rep emails a dealer "?product=PR535&mfr=golden-technologies";
+       if they are signed in we open that product, and if they are not, the intent is
+       held while they sign in or register and honoured the moment they are through.
+       Without holding it, a dealer who had to register would land on the portal home
+       having lost the very product the email was about. */
+    capturePendingProduct();
     AUTH.session=loadStoredSession();
     await authMe();          // restore any signed-in dealer (refreshes the token if needed)
     applyAuth();             // gate: locked landing for guests, entitled lines for approved dealers
