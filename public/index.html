@@ -1865,14 +1865,16 @@ function renderBanner(){
   const subsByCat={};
   state.products.forEach(p=>{ const c=p.category, sc=p.subcategory;
     if(!c||!sc||sc===c) return; (subsByCat[c]=subsByCat[c]||new Set()).add(sc); });
+  /* One line per category, not two. An <optgroup> label repeated the category name above its
+     own children — the name appeared twice and only the lower one was even selectable. A bold
+     option carries the same grouping visually AND can be chosen, which is the whole point:
+     a dealer picks the body area first, then narrows. */
   cats.forEach(c=>{
-    const o=document.createElement("option"); o.value=c; o.textContent=c; cf.appendChild(o);
-    const subs=[...(subsByCat[c]||[])].sort();
-    if(!subs.length) return;
-    const g=document.createElement("optgroup"); g.label=c;
-    subs.forEach(sc=>{ const so=document.createElement("option");
-      so.value="sub:"+sc; so.textContent="   "+sc; g.appendChild(so); });
-    cf.appendChild(g);
+    const o=document.createElement("option"); o.value=c; o.textContent=c;
+    o.style.fontWeight="700"; cf.appendChild(o);
+    [...(subsByCat[c]||[])].sort().forEach(sc=>{
+      const so=document.createElement("option");
+      so.value="sub:"+sc; so.textContent="\u00A0\u00A0\u00A0\u00A0"+sc; cf.appendChild(so); });
   });
   const brands=[...new Set(state.products.map(p=>p.brand).filter(Boolean))].sort();
   const bf=$("#brandFilter"); bf.innerHTML='<option value="">All brands</option>';
@@ -1986,9 +1988,12 @@ function renderNextBatch(){
   const host=$("#content"); const {list}=RENDER;
   let curCat=RENDER.cat, curSub=RENDER.sub, openGrid=false, count=0;
   const parts=[];
-  while(RENDER.idx<list.length && count<RENDER_BATCH){
+  while(RENDER.idx<list.length){
     const p=list[RENDER.idx];
     const c=p.category||"Other", s=p.subcategory||"";
+    /* Stop only ON a section boundary. Breaking mid-section would close the grid and open a
+       new one for the same heading, leaving a half-empty row where the batch happened to end. */
+    if(count>=RENDER_BATCH && (c!==curCat || s!==curSub)) break;
     if(c!==curCat){
       if(openGrid){parts.push("</div>");openGrid=false;}
       parts.push(`<div class="cat-div"><div class="lbl">${esc(c).replace(/(\S+)\s*$/, '<span>$1</span>')}</div><div class="ln"></div></div>`);
@@ -2026,7 +2031,15 @@ function renderProducts(){
     host.innerHTML=`<div class="empty"><h3>Coming soon</h3><p>This manufacturer's products are being added to the portal.</p></div>`;
     return;
   }
-  const list=groupLeads(filtered());   // one card per product group (Phase 2)
+  /* SORT BEFORE SECTIONING. The renderer below starts a new heading and a new grid whenever
+     the category or subcategory CHANGES as it walks the list — a run-length grouping. Fed an
+     unsorted list it therefore printed "Ankle Stirrups" twice, and every run of one or two
+     products opened its own grid, so cards sat one per row instead of filling it. Sorting the
+     list first makes each section appear exactly once with all of its products in it. */
+  const list=groupLeads(filtered()).sort((a,b)=>
+       String(a.category||"Other").localeCompare(String(b.category||"Other"))
+    || String(a.subcategory||"").localeCompare(String(b.subcategory||""))
+    || String(a._gname||a.name||"").localeCompare(String(b._gname||b.name||"")));
   RENDER.list=list; RENDER.idx=0; RENDER.cat=null; RENDER.sub=null;
   host.innerHTML="";
   if(!list.length){ host.innerHTML=`<div class="empty"><h3>No matches</h3><p>Try a different search or filter.</p></div>`; return; }
