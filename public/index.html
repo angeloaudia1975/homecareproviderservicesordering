@@ -1266,6 +1266,9 @@ async function mergeCatalogEdits(slug, prods){
     const OV_KEYS=["name","category","description","price_note","base_price","msrp","tiers","image","group"];
     prods=prods.map(p=>{ const pa=om[p.code]; if(!pa) return p; const merged={...p};
       for(const k of OV_KEYS) if(k in pa && pa[k]!=null) merged[k]=pa[k];
+      /* A name typed in the admin is a deliberate decision and outranks the enrichment
+         record below; without this flag the enrichment layer would silently undo it. */
+      if(pa.name!=null && pa.name!=="") merged._nameFromOverride=true;
       if(pa.active===false) merged._hidden=true; return merged; }).filter(p=>!p._hidden);
     const have=new Set(prods.map(p=>p.code));
     /* An ADDED product had no way to carry a group at all, so every one of them rendered as
@@ -1313,10 +1316,13 @@ async function mergeCatalogEdits(slug, prods){
       // that lists a SKU owns the catalog product with that code, whatever its page_key or image
       // filename happens to be. This is what stops an enriched page from silently not rendering
       // because its slug didn't match an image basename.
-      const pageBySku={}; Object.keys(pages).forEach(k=>{ const arr=pages[k]&&pages[k].skus;
+      const pageBySku={}, skuEntry={};
+      Object.keys(pages).forEach(k=>{ const arr=pages[k]&&pages[k].skus;
         if(!Array.isArray(arr)) return;
         arr.forEach(sx=>{ const c=String((sx&&(sx.sku||sx.code))||'').trim().toUpperCase();
-          if(c && !pageBySku[c]) pageBySku[c]=k; }); });
+          if(!c) return;
+          if(!pageBySku[c]) pageBySku[c]=k;
+          if(!skuEntry[c]) skuEntry[c]=sx; }); });
       prods.forEach(p=>{
         const imgKey=(p.image||'').split('/').pop().replace(/\.(png|jpe?g|webp)$/i,'');
         const sKey=pageBySku[String(p.code||'').trim().toUpperCase()];
@@ -1324,6 +1330,16 @@ async function mergeCatalogEdits(slug, prods){
         const key=(sKey&&pages[sKey])?sKey:((vKey&&pages[vKey])?vKey:imgKey);
         const pg=key&&pages[key];
         if(pg){
+          /* THE APPROVED NAMES. Enrichment is where these products are actually named, and
+             none of it reached the shop: a card was titled from the catalog `group` string and
+             each option from the raw catalog name, so the reviewed names were never seen by a
+             dealer. Both levels now come from the enrichment record when it has one —
+             the per-SKU name for the option, the page name for the card — while a name typed
+             in the admin still wins over both. */
+          const _sx=skuEntry[String(p.code||'').trim().toUpperCase()];
+          const _sxName=_sx && String(_sx.name||'').trim();
+          if(_sxName && !p._nameFromOverride) p.name=_sxName;
+          if(pg.name) p._encPage=String(pg.name).trim();
           if(!p.description && pg.description) p.description=pg.description;
           if(pg.tagline) p._tagline=pg.tagline;
           /* The subcategory ("Thumb Spicas", "Wrist Braces") is the specific thing a dealer
@@ -1822,7 +1838,12 @@ function filtered(){
    not rows. The base rows stay in state.products (keyed by code) for cart & detail;
    grouping is a display transform over the filtered list. ---- */
 function groupKeyOf(p){ return p.group || p.code; }
-function groupDisplayName(p){ if(!p) return ''; const g=String(p.group||''); const i=g.indexOf('::');
+function groupDisplayName(p){ if(!p) return '';
+  /* The approved page name first. The group string is an internal catalog key that happens to
+     be human-readable; it is not what anyone reviewed, and where the two disagree the reviewed
+     name is the one that should reach a dealer. */
+  if(p._encPage) return p._encPage;
+  const g=String(p.group||''); const i=g.indexOf('::');
   if(i>=0){ const n=g.slice(i+2).trim(); if(n) return n; } return p._gname || p.name || p.code || ''; }
 function variantLabel(v){ const gn=groupDisplayName(v); let lbl=String(v.name||'').trim();
   if(gn && lbl.toLowerCase().startsWith(gn.toLowerCase())) lbl=lbl.slice(gn.length);
