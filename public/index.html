@@ -1310,8 +1310,12 @@ async function loadManufacturers(){
        all and gating them globally would empty them. */
     const em=Object.fromEntries((lg||[]).map(o=>[o.slug,o.enriched_only===true]));
     const co=Object.fromEntries((lg||[]).map(o=>[o.slug,Array.isArray(o.category_order)?o.category_order:null]));
+    /* subcategory → category, per line. Category used to be stored per product, which meant the
+       same fact lived in 308 places and every one of them had to be rewritten when a product
+       moved. Held as a map it is one fact, and moving a product is a single subcategory edit. */
+    const cm=Object.fromEntries((lg||[]).map(o=>[o.slug,(o.category_map&&typeof o.category_map==='object')?o.category_map:null]));
     state.manufacturers.forEach(m=>{ if(lm[m.slug]) m.logo=lm[m.slug]; m.enrichedOnly=!!em[m.slug];
-      m.categoryOrder=co[m.slug]||null; });
+      m.categoryOrder=co[m.slug]||null; m.categoryMap=cm[m.slug]||null; });
   }catch(e){}
 }
 // Merge all admin edits (images, per-product overrides + hide, custom/added products,
@@ -1349,6 +1353,7 @@ async function mergeCatalogEdits(slug, prods){
       /* A name typed in the admin is a deliberate decision and outranks the enrichment
          record below; without this flag the enrichment layer would silently undo it. */
       if(pa.name!=null && pa.name!=="") merged._nameFromOverride=true;
+      if(pa.category!=null && pa.category!=="") merged._catFromOverride=true;
       if(pa.active===false) merged._hidden=true; return merged; }).filter(p=>!p._hidden);
     const have=new Set(prods.map(p=>p.code));
     /* An ADDED product had no way to carry a group at all, so every one of them rendered as
@@ -1408,11 +1413,22 @@ async function mergeCatalogEdits(slug, prods){
          loaded at boot, so it is a data setting and not a code change per line. */
       const _mfr=(state.manufacturers||[]).find(m=>m.slug===slug);
       const enrichedOnly=!!(_mfr&&_mfr.enrichedOnly);
+      const catMap=(_mfr&&_mfr.categoryMap)||null;
+      /* IDENTITY IS DECLARED, NOT GUESSED.
+         A SKU belonged to an enrichment page by SKU list, then variant group, then — if both
+         missed — by IMAGE FILENAME. That last one is how "Ovation Pressure Relief Pad" came to
+         own 733-002-PRPSHOE: the page lists 733-002PRP, an entirely different part number, and
+         the two merely shared a photo. Editing the page then appeared to do nothing, because
+         the product it was steering was never the product on screen.
+
+         A page now owns a SKU only where someone SAID so — its SKU list, or a variant group,
+         both of which are curated fields. A SKU no page claims is left unlinked and reported,
+         instead of being quietly attached to whichever page happens to reuse its photograph. */
       prods.forEach(p=>{
-        const imgKey=(p.image||'').split('/').pop().replace(/\.(png|jpe?g|webp)$/i,'');
         const sKey=pageBySku[String(p.code||'').trim().toUpperCase()];
         const vKey=p.group&&variantByGroup[p.group];
-        const key=(sKey&&pages[sKey])?sKey:((vKey&&pages[vKey])?vKey:imgKey);
+        const key=(sKey&&pages[sKey])?sKey:((vKey&&pages[vKey])?vKey:null);
+        if(!key) p._unlinked=true;
         const pg=key&&pages[key];
         if(pg){
           /* THE APPROVED NAMES. Enrichment is where these products are actually named, and
@@ -1442,6 +1458,14 @@ async function mergeCatalogEdits(slug, prods){
              the catalog and its override layer, and enrichment must not quietly move a
              product out of the category someone put it in. */
           if(pg.subcategory && !p.subcategory) p.subcategory=pg.subcategory;
+          /* DERIVE the category from the subcategory. This is what makes one edit enough: change
+             a product's subcategory in enrichment and it moves to the right part of the shop,
+             with nothing else to update. A category typed directly in the admin still wins — the
+             map fills the answer, it does not overrule a decision. */
+          if(catMap && p.subcategory && !p._catFromOverride){
+            const mapped=catMap[p.subcategory];
+            if(mapped) p.category=mapped;
+          }
           const F=pg.features, C=pg.clinical_applications, O=pg.options, B=pg.billing_codes;
           if(Array.isArray(F)&&F.length) p._features=F;
           if(Array.isArray(C)&&C.length) p._clinical=C;
