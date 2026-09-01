@@ -1259,12 +1259,25 @@ async function mergeCatalogEdits(slug, prods){
     const im=Object.fromEntries((imgs||[]).map(o=>[o.code,o.url]));
     prods.forEach(p=>{ if(im[p.code]) p.image=im[p.code]; });
     const om=Object.fromEntries((overs||[]).map(o=>[o.code,o.patch||{}]));
+    /* `group` is now overridable. It decides whether several SKUs collapse into one product
+       card with a size picker or appear as separate cards, and it used to exist only in the
+       deployed catalog file — so a wrong grouping could not be corrected without a redeploy.
+       An admin edit now takes effect here immediately, like every other catalog edit. */
+    const OV_KEYS=["name","category","description","price_note","base_price","msrp","tiers","image","group"];
     prods=prods.map(p=>{ const pa=om[p.code]; if(!pa) return p; const merged={...p};
-      for(const k of ["name","category","description","price_note","base_price","msrp","tiers","image"]) if(k in pa && pa[k]!=null) merged[k]=pa[k];
+      for(const k of OV_KEYS) if(k in pa && pa[k]!=null) merged[k]=pa[k];
       if(pa.active===false) merged._hidden=true; return merged; }).filter(p=>!p._hidden);
     const have=new Set(prods.map(p=>p.code));
+    /* An ADDED product had no way to carry a group at all, so every one of them rendered as
+       its own card even when it was plainly a size of something already on the shelf. Added
+       products now read the same override layer, which is where their group can be set. */
     (cust||[]).forEach(c=>{ if(c.active===false||have.has(c.code)) return;
-      prods.push({code:c.code,name:c.name,category:c.category||"",base_price:c.base_price,msrp:c.msrp,image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",_custom:true}); });
+      const pa=om[c.code]||{};
+      if(pa.active===false) return;
+      const row={code:c.code,name:c.name,category:c.category||"",base_price:c.base_price,msrp:c.msrp,
+        image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",_custom:true};
+      for(const k of OV_KEYS) if(k in pa && pa[k]!=null) row[k]=pa[k];
+      prods.push(row); });
     const lm=Object.fromEntries((links||[]).map(l=>[l.code,l]));
     prods.forEach(p=>{ const L=lm[p.code]; if(L&&L.url){ p.moreUrl=L.url; p.moreLabel=L.label||"More Information"; } });
     // media gallery (extra images, videos, brochures, links) keyed by code
