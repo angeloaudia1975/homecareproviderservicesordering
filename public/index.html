@@ -69,28 +69,38 @@ body:not(.p360on) #p360wrap{display:none!important;}
 .tab .soon{font-size:9px;background:var(--light);color:var(--gray);padding:1px 6px;border-radius:999px;margin-left:6px;letter-spacing:.5px;}
 
 /* MFR BANNER + CONTROLS */
-.mbanner{background:linear-gradient(120deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;padding:26px 0;}
+.mbanner{background:linear-gradient(120deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;padding:18px 0 14px;}
 .mbanner h1{font-family:'Archivo',sans-serif;font-size:clamp(28px,4vw,44px);font-weight:900;line-height:1;letter-spacing:-.5px;}
 .mbanner h1 span{color:var(--gold);}
-.mbanner p{color:#a9bacd;font-size:14px;margin-top:6px;max-width:640px;}
-.mstat{display:flex;gap:26px;margin-top:16px;flex-wrap:wrap;}
+.mbanner p{color:#a9bacd;font-size:13px;margin-top:5px;max-width:720px;}
+/* Name and stats share one line. They used to stack, which cost a whole row of height for
+   two numbers — and height is the scarce thing in a header that stays pinned while shopping. */
+.mhead{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;}
+.mstat{display:flex;gap:24px;margin:0;flex-wrap:wrap;background:rgba(0,0,0,.22);
+  border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:9px 18px;}
 .mstat b{font-family:'Archivo',sans-serif;color:var(--orange);font-size:22px;display:block;line-height:1;}
 .mstat span{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#9fb0c4;}
 /* THE SHOP HEADER IS ONE PINNED UNIT — line name, manufacturer switcher, search, category
    and brand all stay reachable while scrolling a long line. They are wrapped together and
    stuck as a block so the filter row does not need to know how tall the banner is; that
    coupling is what makes a two-piece sticky header drift apart at some window sizes. */
-.shophead{position:sticky;top:57px;z-index:45;}
+/* The offset is measured from the real header at runtime (see setHeaderOffset). It was
+   hardcoded at 57px while the header is actually ~118px tall with its logo bar and nav row,
+   so the top of this block — including the manufacturer switcher — was pinned UNDERNEATH the
+   header and scrolled out of sight, which is exactly the "I lose the other manufacturers"
+   problem. A measured value also survives the header wrapping on a narrow window. */
+.shophead{position:sticky;top:var(--hdrH,57px);z-index:45;}
 .controls{background:var(--paper);border-bottom:1px solid var(--line);padding:12px 0;}
 
 /* Pinned, the banner condenses: the oversized title steps down and the description and
    stats fold away, giving back ~90px of shelf space while every control stays put. */
-.shophead .mbanner{padding:26px 0;transition:padding .18s ease;}
-.shophead.tight .mbanner{padding:10px 0;}
+.shophead .mbanner{transition:padding .18s ease;}
+.shophead.tight .mbanner{padding:8px 0 10px;}
 .shophead .mbanner h1{transition:font-size .18s ease;}
 .shophead.tight .mbanner h1{font-size:clamp(19px,2vw,24px);}
-.shophead.tight .mbanner p,
-.shophead.tight .mstat{display:none;}
+.shophead.tight .mbanner p{display:none;}
+.shophead.tight .mstat{padding:5px 12px;gap:16px;}
+.shophead.tight .mstat b{font-size:16px;}
 .shophead.tight .shopbar{padding-top:9px;}
 @media(max-width:760px){ .shophead{position:static;} }
 .controls .row{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:10px;}
@@ -981,7 +991,7 @@ header .htop{flex-wrap:nowrap;}
 /* Same rail as .wrap (1240px / 20px). It was 1360px with 22px padding, so the manufacturer
    row sat 60px wider than the title above it and the filters below — the whole header read
    as slightly crooked. Everything in the shop header now shares one measure. */
-.shopbar{max-width:1240px;margin:0 auto;padding:14px 20px 0;display:flex;gap:9px;flex-wrap:wrap;align-items:center;}
+.shopbar{max-width:1240px;margin:0 auto;padding:12px 20px 0;display:flex;gap:9px;flex-wrap:wrap;align-items:center;}
 .shopbar .lbl{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--gray);margin-right:4px;}
 /* Colour says whether the dealer HAS AN ACCOUNT with the line; the ring says which line
    they are looking at. Keeping those on separate channels means the current line is still
@@ -1076,14 +1086,15 @@ header .htop{flex-wrap:nowrap;}
 
 <div class="shophead" id="shophead">
 <div class="mbanner"><div class="wrap">
-  <h1 id="mfrName">Loading…</h1>
-  <p id="mfrSub">One portal for every HCPS manufacturer partner.</p>
-  <div class="mstat">
-    <div><b id="stProducts">0</b><span>Products</span></div>
-    <div><b id="stCats">0</b><span>Categories</span></div>
-    <div><b id="stAcct">Guest</b><span>Account</span></div>
+  <div class="mhead">
+    <h1 id="mfrName">Loading…</h1>
+    <div class="mstat">
+      <div><b id="stProducts">0</b><span>Products</span></div>
+      <div><b id="stCats">0</b><span>Categories</span></div>
+    </div>
   </div>
-  <div class="shopbar" id="shopLines" style="padding:18px 0 2px"></div>
+  <p id="mfrSub">One portal for every HCPS manufacturer partner.</p>
+  <div class="shopbar" id="shopLines"></div>
 </div></div>
 
 <div class="controls"><div class="wrap"><div class="row">
@@ -1899,13 +1910,14 @@ function renderBanner(){
   const cats=[...new Set(state.products.map(p=>p.category).filter(Boolean))].sort(compareCats);
   // Rebuild the stat strip each time — the home dashboard replaces this markup, so
   // recreate the line-view stats rather than assuming the spans still exist.
+  /* Products and categories only. The account number was a dash for most dealers on most
+     lines, so it spent a column to say nothing — account status is on the manufacturer chips
+     now, where it is a colour rather than a number. */
   document.querySelector(".mstat").innerHTML=
     `<div><b id="stProducts">0</b><span>Products</span></div>
-     <div><b id="stCats">0</b><span>Categories</span></div>
-     <div><b id="stAcct">Guest</b><span>Account</span></div>`;
+     <div><b id="stCats">0</b><span>Categories</span></div>`;
   $("#stProducts").textContent=state.products.length;
   $("#stCats").textContent=cats.length;
-  $("#stAcct").textContent = state.dealer ? (state.dealer.account||"—") : "Guest";
   $("#mfrSub").textContent = state.products.length
     ? `Browse and order the ${esc(m.name)} line — grouped by category. Add items to your cart and submit to HCPS.`
     : `Products for ${esc(m.name)} are being loaded into the portal.`;
@@ -1939,8 +1951,9 @@ function renderBanner(){
   const sl=$("#shopLines");
   if(sl){ const lines=entitledManufacturers().filter(x=>x.hasData);
     const owned=ownedSlugSet();
-    sl.innerHTML='<span class="lbl">Shop line</span>'
-      +lines.map(x=>{ const has=owned.has(x.slug);
+    /* No "Shop line" label. It ate the width of a chip and pushed the last manufacturer onto
+       a second row for the sake of two words nobody needs to read twice. */
+    sl.innerHTML=lines.map(x=>{ const has=owned.has(x.slug);
         return `<button class="shopchip${has?' acct':''}${x.slug===state.active?' on':''}"
           title="${has?'You have an account with this line':'No account with this line yet — ask HCPS to open one'}"
           onclick="showShop('${esc(x.slug)}')">${esc(x.name)}</button>`; }).join('')
@@ -2109,7 +2122,24 @@ function renderNextBatch(){
 /* Condense the pinned banner once the page has scrolled past it. The two thresholds are
    deliberately different: a single one makes the header flip back and forth when the page
    sits exactly on the boundary, because condensing changes the height that the test reads. */
+/* Measure the real header and hand it to CSS. Hardcoding this offset is what pinned the shop
+   header underneath the site header: the value was 57px against a header that is about twice
+   that, so the manufacturer switcher sat behind it and disappeared as soon as the page moved.
+   Measured, it stays correct when the header wraps, when the logo loads, or on any window. */
+function setHeaderOffset(){
+  const h=document.querySelector('header');
+  const px=h?Math.round(h.getBoundingClientRect().height):57;
+  document.documentElement.style.setProperty('--hdrH', px+'px');
+}
 function wireShopHeadCondense(){
+  setHeaderOffset();
+  if(!window.__hdrObs){
+    window.__hdrObs=1;
+    window.addEventListener('resize',setHeaderOffset,{passive:true});
+    window.addEventListener('load',setHeaderOffset);
+    try{ const h=document.querySelector('header');
+      if(h && window.ResizeObserver){ new ResizeObserver(setHeaderOffset).observe(h); } }catch(e){}
+  }
   if(window.__shopHeadWired) return; window.__shopHeadWired=true;
   const el=document.getElementById('shophead'); if(!el) return;
   let tight=false, ticking=false;
