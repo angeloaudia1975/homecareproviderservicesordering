@@ -3041,10 +3041,26 @@ function showPreviewError(message){
   if(el) el.innerHTML=`<div class="empty" style="max-width:560px;margin:60px auto;text-align:center"><h3>Preview unavailable</h3><p>${esc(message||'This preview link is invalid or has expired.')}</p><p style="margin-top:14px"><button class="pl-go" style="max-width:260px" onclick="exitPreview()">Close</button></p></div>`;
 }
 const _sbURL=CONFIG.SUPABASE_URL,_anon=CONFIG.SUPABASE_ANON;
-function saveSession(s){ if(s&&s.expires_in&&!s.expires_at) s.expires_at=Date.now()+(Number(s.expires_in)||3600)*1000;
+/* SECONDS vs MILLISECONDS — the reason every request was slow.
+   Supabase returns expires_at as a UNIX timestamp in SECONDS (~1.79e9). This code compared
+   it against Date.now(), which is MILLISECONDS (~1.79e12). A seconds value is never greater
+   than a milliseconds value, so the "token is still valid" test below could never pass, and
+   every single api() call refreshed the token before doing its own work — a full Supabase
+   round trip in front of every request the portal makes, forever.
+
+   The old guard `!s.expires_at` also never fired, because Supabase DOES send expires_at —
+   just in the other unit. Normalising here fixes it at the one place a session is written. */
+function expMs(v){ const n=Number(v)||0; return (n>0 && n<1e12) ? n*1000 : n; }
+function saveSession(s){
+  if(s){ s.expires_at = s.expires_at ? expMs(s.expires_at)
+                                     : Date.now()+(Number(s.expires_in)||3600)*1000; }
   AUTH.session=s;try{localStorage.setItem('hcps_session',JSON.stringify(s));}catch(e){}}
 function clearSession(){AUTH.session=null;try{localStorage.removeItem('hcps_session');}catch(e){}}
-function loadStoredSession(){try{return JSON.parse(localStorage.getItem('hcps_session')||'null');}catch(e){return null;}}
+/* Every browser already signed in has a seconds-valued expires_at stored from before this
+   fix, so it is normalised on the way out too — otherwise the bug would persist for existing
+   dealers until they next signed out and back in. */
+function loadStoredSession(){try{const s=JSON.parse(localStorage.getItem('hcps_session')||'null');
+  if(s&&s.expires_at) s.expires_at=expMs(s.expires_at); return s;}catch(e){return null;}}
 // Remember-me: persist the email so the login form prefills next visit.
 function rememberEmail(email){try{ if(email) localStorage.setItem('hcps_email',email); }catch(e){}}
 function forgetEmail(){try{localStorage.removeItem('hcps_email');}catch(e){}}
@@ -3054,10 +3070,22 @@ function savedEmail(){try{return localStorage.getItem('hcps_email')||'';}catch(e
 async function sbRefresh(refresh_token){
   const r=await fetch(`${_sbURL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{'content-type':'application/json',apikey:_anon},body:JSON.stringify({refresh_token})});
   const j=await r.json().catch(()=>({})); if(!r.ok||!j.access_token) throw new Error('refresh failed'); return j; }
+let _refreshing=null;
 async function ensureFreshSession(){
   const s=AUTH.session; if(!s||!s.refresh_token) return;
   if(s.expires_at && Date.now() < s.expires_at-90*1000) return;   // still valid (>90s left)
-  try{ const ns=await sbRefresh(s.refresh_token); saveSession(ns); }catch(e){ /* keep old; authMe will handle */ }
+  /* ONE refresh at a time. The page fires several api() calls at once on boot, and each used
+     to start its own refresh — eight of them on a cold load. That is not just wasted time:
+     a refresh ROTATES the refresh token, so every call after the first was spending a token
+     that had already been replaced, which is how a signed-in dealer gets logged out at
+     random. Concurrent callers now await the same refresh. */
+  if(_refreshing) return _refreshing;
+  _refreshing=(async()=>{
+    try{ const ns=await sbRefresh(s.refresh_token); saveSession(ns); }
+    catch(e){ /* keep old; authMe will handle */ }
+    finally{ _refreshing=null; }
+  })();
+  return _refreshing;
 }
 function openLogin(tab){renderLocked();authTab(tab||'signin');}
 function closeLogin(){/* login form is inline on the locked screen; nothing to close */}
@@ -3605,13 +3633,28 @@ const dateShort=d=>{if(!d)return"—";const t=String(d);if(/^\d{4}-\d{2}/.test(t
 
 /* ---- session (reads the portal's stored login; same origin) ---- */
 let SESSION=null, PROFILE=null;
-function loadSession(){try{return JSON.parse(localStorage.getItem("hcps_session")||"null");}catch(e){return null;}}
-function saveSession(s){SESSION=s;try{localStorage.setItem("hcps_session",JSON.stringify(s));}catch(e){}}
+/* The Business Hub keeps its own copy of the session logic and had both of the same bugs:
+   a seconds-vs-milliseconds comparison that made the token look permanently expired, and no
+   guard against concurrent refreshes. Same fix, applied here too — the two blocks share the
+   one stored session, so fixing only one would leave the other rewriting it wrongly. */
+function expMs(v){ const n=Number(v)||0; return (n>0 && n<1e12) ? n*1000 : n; }
+function loadSession(){try{const s=JSON.parse(localStorage.getItem("hcps_session")||"null");
+  if(s&&s.expires_at) s.expires_at=expMs(s.expires_at); return s;}catch(e){return null;}}
+function saveSession(s){
+  if(s){ s.expires_at = s.expires_at ? expMs(s.expires_at)
+                                     : Date.now()+(Number(s.expires_in)||3600)*1000; }
+  SESSION=s;try{localStorage.setItem("hcps_session",JSON.stringify(s));}catch(e){}}
+let _refreshingHub=null;
 async function refreshIfNeeded(){
   const s=SESSION; if(!s||!s.refresh_token) return;
   if(s.expires_at && Date.now() < s.expires_at-90000) return;
-  try{const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{method:"POST",headers:{"content-type":"application/json",apikey:SUPABASE_ANON},body:JSON.stringify({refresh_token:s.refresh_token})});
-    const j=await r.json().catch(()=>({}));if(r.ok&&j.access_token){if(j.expires_in&&!j.expires_at)j.expires_at=Date.now()+j.expires_in*1000;saveSession(j);}}catch(e){}
+  if(_refreshingHub) return _refreshingHub;
+  _refreshingHub=(async()=>{
+    try{const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{method:"POST",headers:{"content-type":"application/json",apikey:SUPABASE_ANON},body:JSON.stringify({refresh_token:s.refresh_token})});
+      const j=await r.json().catch(()=>({}));if(r.ok&&j.access_token){saveSession(j);}}catch(e){}
+    finally{ _refreshingHub=null; }
+  })();
+  return _refreshingHub;
 }
 function token(){ if(window.__PREVIEW__&&window.__PREVIEW__.token) return "preview:"+window.__PREVIEW__.token; return SESSION&&SESSION.access_token; }
 async function api(endpoint,body){
