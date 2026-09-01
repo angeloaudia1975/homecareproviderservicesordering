@@ -1769,8 +1769,25 @@ function renderBanner(){
     ? `Browse and order the ${esc(m.name)} line — grouped by category. Add items to your cart and submit to HCPS.`
     : `Products for ${esc(m.name)} are being loaded into the portal.`;
   // filters
+  /* CATEGORIES **AND** SUBCATEGORIES.
+     This listed categories only. Once a line was re-filed under broad clinical categories
+     ("Orthopedic Bracing & Supports"), the specific thing a dealer actually shops for —
+     thumb spicas, wrist braces — stopped existing as a filter, even though every record
+     carries it as a subcategory. Subcategories now appear nested under their parent, so the
+     enrichment work becomes navigation instead of being invisible. */
   const cf=$("#catFilter"); cf.innerHTML='<option value="">All categories</option>';
-  cats.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;cf.appendChild(o);});
+  const subsByCat={};
+  state.products.forEach(p=>{ const c=p.category, sc=p.subcategory;
+    if(!c||!sc||sc===c) return; (subsByCat[c]=subsByCat[c]||new Set()).add(sc); });
+  cats.forEach(c=>{
+    const o=document.createElement("option"); o.value=c; o.textContent=c; cf.appendChild(o);
+    const subs=[...(subsByCat[c]||[])].sort();
+    if(!subs.length) return;
+    const g=document.createElement("optgroup"); g.label=c;
+    subs.forEach(sc=>{ const so=document.createElement("option");
+      so.value="sub:"+sc; so.textContent="   "+sc; g.appendChild(so); });
+    cf.appendChild(g);
+  });
   const brands=[...new Set(state.products.map(p=>p.brand).filter(Boolean))].sort();
   const bf=$("#brandFilter"); bf.innerHTML='<option value="">All brands</option>';
   brands.forEach(b=>{const o=document.createElement("option");o.value=b;o.textContent=b;bf.appendChild(o);});
@@ -1784,7 +1801,9 @@ function renderBanner(){
 function filtered(){
   const q=$("#search").value.trim().toLowerCase(), cat=$("#catFilter").value, brand=$("#brandFilter").value;
   return state.products.filter(p=>{
-    if (cat && p.category!==cat) return false;
+    /* A "sub:" value filters on subcategory; anything else is a category, as before. */
+    if (cat){ if(cat.startsWith("sub:")){ if(p.subcategory!==cat.slice(4)) return false; }
+              else if(p.category!==cat) return false; }
     if (brand && p.brand!==brand) return false;
     if (!q) return true;
     return `${p.code} ${p.name} ${p.category} ${p.subcategory} ${p.brand} ${p.description} ${p.hcpc}`.toLowerCase().includes(q);
