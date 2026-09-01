@@ -1237,10 +1237,15 @@ async function loadManufacturers(){
   // admin-uploaded manufacturer logos (Supabase, public-read) — merged so they show
   // below the manufacturer name on the home cards + catalog header, no redeploy needed.
   try{
-    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url`,
+    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,enriched_only`,
       {headers:{apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON}}).then(x=>x.ok?x.json():[]);
     const lm=Object.fromEntries((lg||[]).map(o=>[o.slug,o.logo_url]));
-    state.manufacturers.forEach(m=>{ if(lm[m.slug]) m.logo=lm[m.slug]; });
+    /* Per-line listing mode. On a line whose enrichment is finished, the enrichment record is
+       the catalogue: a SKU with no page is not a product yet and is not offered. This is set
+       PER MANUFACTURER and defaults to off, because most lines have no enrichment pages at
+       all and gating them globally would empty them. */
+    const em=Object.fromEntries((lg||[]).map(o=>[o.slug,o.enriched_only===true]));
+    state.manufacturers.forEach(m=>{ if(lm[m.slug]) m.logo=lm[m.slug]; m.enrichedOnly=!!em[m.slug]; });
   }catch(e){}
 }
 // Merge all admin edits (images, per-product overrides + hide, custom/added products,
@@ -1263,7 +1268,7 @@ async function mergeCatalogEdits(slug, prods){
        card with a size picker or appear as separate cards, and it used to exist only in the
        deployed catalog file — so a wrong grouping could not be corrected without a redeploy.
        An admin edit now takes effect here immediately, like every other catalog edit. */
-    const OV_KEYS=["name","category","description","price_note","base_price","msrp","tiers","image","group"];
+    const OV_KEYS=["name","category","subcategory","description","price_note","base_price","msrp","tiers","image","group"];
     prods=prods.map(p=>{ const pa=om[p.code]; if(!pa) return p; const merged={...p};
       for(const k of OV_KEYS) if(k in pa && pa[k]!=null) merged[k]=pa[k];
       /* A name typed in the admin is a deliberate decision and outranks the enrichment
@@ -1304,6 +1309,7 @@ async function mergeCatalogEdits(slug, prods){
       if(cr.ok){ const cj=await cr.json(); const pg=(cj&&cj.pages)||{}; pages={};
         for(const k in pg){ const st=pg[k].status; if(!CONFIG.CONTENT_APPROVED_ONLY || LIVE_STATUSES.includes(st)) pages[k]=pg[k]; } }
     }
+    let _gated=0;
     if(pages){
       // Variant-aware routing: a product family (e.g. Gen 2 Walking Boot) can resolve into
       // multiple MODEL variants, each with its own page/images. A SKU is routed to its model
@@ -1323,6 +1329,10 @@ async function mergeCatalogEdits(slug, prods){
           if(!c) return;
           if(!pageBySku[c]) pageBySku[c]=k;
           if(!skuEntry[c]) skuEntry[c]=sx; }); });
+      /* Does this line list only what has been enriched? Read from the manufacturer record
+         loaded at boot, so it is a data setting and not a code change per line. */
+      const _mfr=(state.manufacturers||[]).find(m=>m.slug===slug);
+      const enrichedOnly=!!(_mfr&&_mfr.enrichedOnly);
       prods.forEach(p=>{
         const imgKey=(p.image||'').split('/').pop().replace(/\.(png|jpe?g|webp)$/i,'');
         const sKey=pageBySku[String(p.code||'').trim().toUpperCase()];
@@ -1336,6 +1346,13 @@ async function mergeCatalogEdits(slug, prods){
              dealer. Both levels now come from the enrichment record when it has one —
              the per-SKU name for the option, the page name for the card — while a name typed
              in the admin still wins over both. */
+          /* THE PRODUCT DEFINITION. An enrichment page IS a product: it is where someone
+             decided which SKUs belong together, what the product is called and what it says.
+             Recording the page a SKU resolved to lets the shop bundle exactly as designed,
+             instead of inferring product boundaries from the catalog `group` string — a
+             legacy key that splits one product across several cards and occasionally puts
+             two different products on one. */
+          p._pageKey=key;
           const _sx=skuEntry[String(p.code||'').trim().toUpperCase()];
           const _sxName=_sx && String(_sx.name||'').trim();
           if(_sxName && !p._nameFromOverride) p.name=_sxName;
@@ -1374,8 +1391,19 @@ async function mergeCatalogEdits(slug, prods){
           if(Array.isArray(pg.documents)&&pg.documents.length) p._documents=pg.documents;
           if(Array.isArray(pg.videos)&&pg.videos.length) p._videos=pg.videos;
         }});
+      /* THE LISTING GATE. Applied only after every page has had its chance to claim a SKU —
+         by SKU, by variant group, and by image key — so nothing is dropped merely because it
+         was matched late. A SKU no page claims is not a finished product on this line, so it
+         is not offered to dealers. It stays priced and intact in the Product Catalog and
+         reappears the moment a page lists it. */
+      if(enrichedOnly){
+        const before=prods.length;
+        prods=prods.filter(p=>p._pageKey && pages[p._pageKey]);
+        _gated=before-prods.length;
+      }
     }
   }catch(e){}
+  if(_gated) try{ console.log('[HCPS] '+slug+': '+_gated+' SKU(s) not listed — no enrichment page'); }catch(e){}
   return prods.map(fillMsrp);
 }
 async function loadProducts(slug){
@@ -1837,7 +1865,10 @@ function filtered(){
    `group`, with each size/color as a selectable variant. A dealer shops products,
    not rows. The base rows stay in state.products (keyed by code) for cart & detail;
    grouping is a display transform over the filtered list. ---- */
-function groupKeyOf(p){ return p.group || p.code; }
+/* Bundling order: the enrichment page first, because that is the product as it was
+   designed. The catalog `group` string stays as the fallback for a SKU no enrichment page
+   claims yet, and a lone SKU is its own card. */
+function groupKeyOf(p){ return p._pageKey || p.group || p.code; }
 function groupDisplayName(p){ if(!p) return '';
   /* The approved page name first. The group string is an internal catalog key that happens to
      be human-readable; it is not what anyone reviewed, and where the two disagree the reviewed
