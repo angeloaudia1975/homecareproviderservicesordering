@@ -1290,7 +1290,7 @@ async function loadManufacturers(){
   // admin-uploaded manufacturer logos (Supabase, public-read) — merged so they show
   // below the manufacturer name on the home cards + catalog header, no redeploy needed.
   try{
-    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,enriched_only`,
+    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,enriched_only,category_order`,
       {headers:{apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON}}).then(x=>x.ok?x.json():[]);
     const lm=Object.fromEntries((lg||[]).map(o=>[o.slug,o.logo_url]));
     /* Per-line listing mode. On a line whose enrichment is finished, the enrichment record is
@@ -1298,7 +1298,9 @@ async function loadManufacturers(){
        PER MANUFACTURER and defaults to off, because most lines have no enrichment pages at
        all and gating them globally would empty them. */
     const em=Object.fromEntries((lg||[]).map(o=>[o.slug,o.enriched_only===true]));
-    state.manufacturers.forEach(m=>{ if(lm[m.slug]) m.logo=lm[m.slug]; m.enrichedOnly=!!em[m.slug]; });
+    const co=Object.fromEntries((lg||[]).map(o=>[o.slug,Array.isArray(o.category_order)?o.category_order:null]));
+    state.manufacturers.forEach(m=>{ if(lm[m.slug]) m.logo=lm[m.slug]; m.enrichedOnly=!!em[m.slug];
+      m.categoryOrder=co[m.slug]||null; });
   }catch(e){}
 }
 // Merge all admin edits (images, per-product overrides + hide, custom/added products,
@@ -1894,7 +1896,7 @@ async function gotoProduct(slug,code){
 function renderBanner(){
   const m=state.manufacturers.find(x=>x.slug===state.active)||{};
   $("#mfrName").innerHTML = `${m.logo?`<img class="hdrlogo" src="${esc(m.logo)}" alt="${esc(m.name||'')} logo" onerror="this.style.display='none'">`:""}${esc(m.name||"—")}`;
-  const cats=[...new Set(state.products.map(p=>p.category).filter(Boolean))];
+  const cats=[...new Set(state.products.map(p=>p.category).filter(Boolean))].sort(compareCats);
   // Rebuild the stat strip each time — the home dashboard replaces this markup, so
   // recreate the line-view stats rather than assuming the spans still exist.
   document.querySelector(".mstat").innerHTML=
@@ -1965,6 +1967,21 @@ function filtered(){
    designed. The catalog `group` string stays as the fallback for a SKU no enrichment page
    claims yet, and a lone SKU is its own card. */
 function groupKeyOf(p){ return p._pageKey || p.group || p.code; }
+
+/* ONE ranking, used by the filter dropdown AND by the order sections scroll. They used to be
+   ordered independently — the dropdown by whatever sequence the catalog file listed products
+   in, the page alphabetically — so they disagreed, and neither was a decision anyone made.
+   A category that is not in the stored list still appears; it sorts after the placed ones,
+   alphabetically, so adding a category never makes it vanish. */
+function catOrder(){ const m=(state.manufacturers||[]).find(x=>x.slug===state.active);
+  return (m&&Array.isArray(m.categoryOrder))?m.categoryOrder:null; }
+function catRank(c){ const ord=catOrder(); if(!ord) return -1;
+  const i=ord.indexOf(String(c||"")); return i<0?ord.length:i; }
+function compareCats(a,b){
+  const ra=catRank(a), rb=catRank(b);
+  if(ra!==rb && ra>=0 && rb>=0) return ra-rb;
+  return String(a||"").localeCompare(String(b||""));
+}
 function groupDisplayName(p){ if(!p) return '';
   /* The approved page name first. The group string is an internal catalog key that happens to
      be human-readable; it is not what anyone reviewed, and where the two disagree the reviewed
@@ -2117,7 +2134,7 @@ function renderProducts(){
      products opened its own grid, so cards sat one per row instead of filling it. Sorting the
      list first makes each section appear exactly once with all of its products in it. */
   const list=groupLeads(filtered()).sort((a,b)=>
-       String(a.category||"Other").localeCompare(String(b.category||"Other"))
+       compareCats(a.category||"Other", b.category||"Other")
     || String(a.subcategory||"").localeCompare(String(b.subcategory||""))
     || String(a._gname||a.name||"").localeCompare(String(b._gname||b.name||"")));
   RENDER.list=list; RENDER.idx=0; RENDER.cat=null; RENDER.sub=null;
