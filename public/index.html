@@ -1264,6 +1264,15 @@ async function mergeCatalogEdits(slug, prods){
     const im=Object.fromEntries((imgs||[]).map(o=>[o.code,o.url]));
     prods.forEach(p=>{ if(im[p.code]) p.image=im[p.code]; });
     const om=Object.fromEntries((overs||[]).map(o=>[o.code,o.patch||{}]));
+    /* PRICE INDEX — built BEFORE anything is hidden, because the base part number a colour
+       variant inherits from is very often the retired one. 10002 is hidden and priced;
+       10002BLUE is what a dealer buys. Losing the hidden row would lose the fallback. */
+    const priceIndex={};
+    const noteP=(code,v)=>{ if(v==null||v==='') return; const num=Number(v);
+      if(isFinite(num)&&num>0){ const k=String(code).toUpperCase(); if(priceIndex[k]==null) priceIndex[k]=num; } };
+    (overs||[]).forEach(o=>noteP(o.code,(o.patch||{}).base_price));
+    (cust ||[]).forEach(c=>noteP(c.code,c.base_price));
+    prods.forEach(x=>noteP(x.code,x.base_price));
     /* `group` is now overridable. It decides whether several SKUs collapse into one product
        card with a size picker or appear as separate cards, and it used to exist only in the
        deployed catalog file — so a wrong grouping could not be corrected without a redeploy.
@@ -1290,7 +1299,7 @@ async function mergeCatalogEdits(slug, prods){
     prods.forEach(p=>{ const L=lm[p.code]; if(L&&L.url){ p.moreUrl=L.url; p.moreLabel=L.label||"More Information"; } });
     // media gallery (extra images, videos, brochures, links) keyed by code
     const mm={}; (media||[]).forEach(m=>{ if(m&&m.code&&m.url){ (mm[m.code]=mm[m.code]||[]).push(m); } });
-    prods.forEach(p=>{ if(mm[p.code]) p.media=mm[p.code]; });
+    prods.forEach(p=>{ if(mm[p.code]) p.media=mm[p.code]; p._priceIndex=priceIndex; });
   }catch(e){}
   // ---- product-content enrichment layer (LIVE gate) ----
   // Source of truth is Supabase product_content. "Live on Partner 360" is the PUBLISHED state:
@@ -1404,7 +1413,7 @@ async function mergeCatalogEdits(slug, prods){
     }
   }catch(e){}
   if(_gated) try{ console.log('[HCPS] '+slug+': '+_gated+' SKU(s) not listed — no enrichment page'); }catch(e){}
-  return prods.map(fillMsrp);
+  return prods.map(inheritColorPrice).map(fillMsrp);
 }
 async function loadProducts(slug){
   if(isGoldenSlug(slug)){
@@ -1422,6 +1431,31 @@ async function loadProducts(slug){
 }
 // If a product has no MSRP, suggest one at 2× the dealer price so dealers always have a
 // selling point (marked "suggested"). Never overrides a manufacturer-provided MSRP.
+/* COLOUR VARIANTS INHERIT THE BASE PART'S PRICE.
+   A colour is not a different product: 10002BLUE and 10002RED are the same brace in the same
+   size, and they cost what 10002 costs. Where a colour SKU carries no price of its own, the
+   base part number supplies it, so a dealer never sees "Call for pricing" on a boot whose
+   price is sitting one row away.
+
+   Only a recognised COLOUR token is stripped, never an arbitrary letter suffix. That
+   distinction matters: on other lines a trailing suffix marks a real variant — Strongback's
+   1007 and 1007AB are different products at different prices — and inheriting across those
+   would quietly mis-price a product. Anything inherited is marked, so the source is never a
+   mystery. */
+const COLOR_SUFFIX=/(BLUE|RED|GREY|GRAY|BLACK|WHITE|PINK|TAN|NAVY|GREEN|PURPLE|ORANGE|BEIGE|BK|WH|PK|DB|BL|GY|RD|NV|TN)$/;
+function inheritColorPrice(p){
+  const cur=Number(p.base_price);
+  if(p.base_price!=null && p.base_price!=='' && isFinite(cur) && cur>0) return p;
+  const idx=p._priceIndex; if(!idx) return p;
+  let code=String(p.code||'').toUpperCase();
+  const m=code.match(COLOR_SUFFIX); if(!m) return p;
+  for(const stem of [code.slice(0,m.index), code.slice(0,m.index).replace(/[-_\s]+$/,'')]){
+    if(!stem || stem===code) continue;
+    const v=idx[stem];
+    if(v!=null){ p.base_price=v; p._priceFromBase=stem; break; }
+  }
+  return p;
+}
 function fillMsrp(p){
   const base=Number(p.base_price);
   if((p.msrp==null||p.msrp==="") && base>0){ p.msrp=Math.round(base*2*100)/100; p._msrp_suggested=true; }
