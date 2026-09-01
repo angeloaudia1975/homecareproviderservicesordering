@@ -76,7 +76,23 @@ body:not(.p360on) #p360wrap{display:none!important;}
 .mstat{display:flex;gap:26px;margin-top:16px;flex-wrap:wrap;}
 .mstat b{font-family:'Archivo',sans-serif;color:var(--orange);font-size:22px;display:block;line-height:1;}
 .mstat span{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#9fb0c4;}
-.controls{position:sticky;top:57px;z-index:40;background:var(--paper);border-bottom:1px solid var(--line);padding:12px 0;}
+/* THE SHOP HEADER IS ONE PINNED UNIT — line name, manufacturer switcher, search, category
+   and brand all stay reachable while scrolling a long line. They are wrapped together and
+   stuck as a block so the filter row does not need to know how tall the banner is; that
+   coupling is what makes a two-piece sticky header drift apart at some window sizes. */
+.shophead{position:sticky;top:57px;z-index:45;}
+.controls{background:var(--paper);border-bottom:1px solid var(--line);padding:12px 0;}
+
+/* Pinned, the banner condenses: the oversized title steps down and the description and
+   stats fold away, giving back ~90px of shelf space while every control stays put. */
+.shophead .mbanner{padding:26px 0;transition:padding .18s ease;}
+.shophead.tight .mbanner{padding:10px 0;}
+.shophead .mbanner h1{transition:font-size .18s ease;}
+.shophead.tight .mbanner h1{font-size:clamp(19px,2vw,24px);}
+.shophead.tight .mbanner p,
+.shophead.tight .mstat{display:none;}
+.shophead.tight .shopbar{padding-top:9px;}
+@media(max-width:760px){ .shophead{position:static;} }
 .controls .row{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:10px;}
 .controls input,.controls select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;background:#fff;color:var(--navy);}
 .controls input:focus,.controls select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(22,129,194,.15);}
@@ -957,11 +973,24 @@ header .htop{flex-wrap:nowrap;}
 .navtab:hover{color:var(--navy);}
 .navtab.active{color:var(--navy);border-bottom-color:var(--orange);}
 /* line selector inside Shop */
-.shopbar{max-width:1360px;margin:0 auto;padding:14px 22px 0;display:flex;gap:9px;flex-wrap:wrap;align-items:center;}
+/* Same rail as .wrap (1240px / 20px). It was 1360px with 22px padding, so the manufacturer
+   row sat 60px wider than the title above it and the filters below — the whole header read
+   as slightly crooked. Everything in the shop header now shares one measure. */
+.shopbar{max-width:1240px;margin:0 auto;padding:14px 20px 0;display:flex;gap:9px;flex-wrap:wrap;align-items:center;}
 .shopbar .lbl{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--gray);margin-right:4px;}
-.shopchip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 15px;font-size:13px;font-weight:700;color:var(--navy);cursor:pointer;font-family:inherit;}
-.shopchip:hover{border-color:var(--navy);background:var(--paper);}
-.shopchip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+/* Colour says whether the dealer HAS AN ACCOUNT with the line; the ring says which line
+   they are looking at. Keeping those on separate channels means the current line is still
+   obvious without spending the colour that now carries real information. */
+.shopchip{border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);border-radius:999px;
+  padding:8px 15px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;
+  transition:background .15s,border-color .15s,box-shadow .15s;}
+.shopchip:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.5);}
+.shopchip.acct{background:var(--orange);border-color:var(--orange);color:#fff;}   /* account open */
+.shopchip.acct:hover{filter:brightness(1.07);}
+.shopchip.on{box-shadow:0 0 0 2px var(--navy),0 0 0 4px #fff;}                     /* the line in view */
+.shoplegend{display:flex;align-items:center;gap:6px;font-size:11px;color:#a9bacd;
+  text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-left:4px;}
+.shoplegend i{width:9px;height:9px;border-radius:50%;background:var(--orange);display:inline-block;}
 
 </style>
 <style id="p360-cart">
@@ -1040,6 +1069,7 @@ header .htop{flex-wrap:nowrap;}
   <div class="tabs" id="tabs"></div>
 </header>
 
+<div class="shophead" id="shophead">
 <div class="mbanner"><div class="wrap">
   <h1 id="mfrName">Loading…</h1>
   <p id="mfrSub">One portal for every HCPS manufacturer partner.</p>
@@ -1056,6 +1086,7 @@ header .htop{flex-wrap:nowrap;}
   <select id="catFilter"><option value="">All categories</option></select>
   <select id="brandFilter"><option value="">All brands</option></select>
 </div></div></div>
+</div>
 
 <div class="wrap"><div id="a4uBuilder"></div><div id="swBuilder"></div></div>
 <main class="wrap"><div id="content" class="section"></div><div id="sdScaffold" aria-hidden="true"><div class="nav-tabs" style="display:none"><button class="nav-tab" onclick="showSec('status',this)">status</button></div><div id="sec-chairs" class="section"></div><div id="sec-scooters" class="section"></div><div id="sec-pwc" class="section"></div><div id="sec-beds" class="section"></div><div id="sec-status" class="section"></div><div id="sec-queue" class="section"></div><div id="sec-consignment" class="section"></div><div id="sec-history" class="section"></div></div></main>
@@ -1880,9 +1911,16 @@ function renderBanner(){
   const bf=$("#brandFilter"); bf.innerHTML='<option value="">All brands</option>';
   brands.forEach(b=>{const o=document.createElement("option");o.value=b;o.textContent=b;bf.appendChild(o);});
   // Shop line selector (replaces the old per-manufacturer tabs)
+  wireShopHeadCondense();
   const sl=$("#shopLines");
   if(sl){ const lines=entitledManufacturers().filter(x=>x.hasData);
-    sl.innerHTML='<span class="lbl">Shop line</span>'+lines.map(x=>`<button class="shopchip${x.slug===state.active?' on':''}" onclick="showShop('${esc(x.slug)}')">${esc(x.name)}</button>`).join(''); }
+    const owned=ownedSlugSet();
+    sl.innerHTML='<span class="lbl">Shop line</span>'
+      +lines.map(x=>{ const has=owned.has(x.slug);
+        return `<button class="shopchip${has?' acct':''}${x.slug===state.active?' on':''}"
+          title="${has?'You have an account with this line':'No account with this line yet — ask HCPS to open one'}"
+          onclick="showShop('${esc(x.slug)}')">${esc(x.name)}</button>`; }).join('')
+      +(owned.size?'<span class="shoplegend"><i></i>Your accounts</span>':''); }
 }
 
 /* ---------- render products grouped by category ---------- */
@@ -2024,6 +2062,21 @@ function renderNextBatch(){
     RENDER.io.observe(sentinel);
   }
 }
+/* Condense the pinned banner once the page has scrolled past it. The two thresholds are
+   deliberately different: a single one makes the header flip back and forth when the page
+   sits exactly on the boundary, because condensing changes the height that the test reads. */
+function wireShopHeadCondense(){
+  if(window.__shopHeadWired) return; window.__shopHeadWired=true;
+  const el=document.getElementById('shophead'); if(!el) return;
+  let tight=false, ticking=false;
+  const apply=()=>{ ticking=false;
+    const y=window.scrollY||document.documentElement.scrollTop||0;
+    if(!tight && y>150){ tight=true; el.classList.add('tight'); }
+    else if(tight && y<90){ tight=false; el.classList.remove('tight'); } };
+  window.addEventListener('scroll',()=>{ if(!ticking){ ticking=true; requestAnimationFrame(apply); } },{passive:true});
+  apply();
+}
+
 function renderProducts(){
   const host=$("#content");
   if(RENDER.io){RENDER.io.disconnect();RENDER.io=null;}
