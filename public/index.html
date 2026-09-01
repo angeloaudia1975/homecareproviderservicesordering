@@ -1293,7 +1293,7 @@ async function mergeCatalogEdits(slug, prods){
   try{
     let pages=null;
     try{
-      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${LIVE_STATUSES.join(',')})&select=page_key,skus,name,tagline,description,features,clinical_applications,options,billing_codes,specs,warranty,source_url,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label`,{headers:H}).then(x=>x.ok?x.json():null);
+      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${LIVE_STATUSES.join(',')})&select=page_key,skus,name,tagline,description,features,clinical_applications,options,billing_codes,specs,warranty,source_url,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label,subcategory`,{headers:H}).then(x=>x.ok?x.json():null);
       if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); }
     }catch(e){}
     if(!pages){ // static fallback (same live gate applied client-side)
@@ -1326,6 +1326,14 @@ async function mergeCatalogEdits(slug, prods){
         if(pg){
           if(!p.description && pg.description) p.description=pg.description;
           if(pg.tagline) p._tagline=pg.tagline;
+          /* The subcategory ("Thumb Spicas", "Wrist Braces") is the specific thing a dealer
+             actually shops for. It is recorded during enrichment and was already shown on the
+             card, but it was never SELECTED from product_content, so every product arrived
+             without one and the category filter had nothing finer than the broad clinical
+             category to offer. Category itself is deliberately left alone — that belongs to
+             the catalog and its override layer, and enrichment must not quietly move a
+             product out of the category someone put it in. */
+          if(pg.subcategory && !p.subcategory) p.subcategory=pg.subcategory;
           const F=pg.features, C=pg.clinical_applications, O=pg.options, B=pg.billing_codes;
           if(Array.isArray(F)&&F.length) p._features=F;
           if(Array.isArray(C)&&C.length) p._clinical=C;
