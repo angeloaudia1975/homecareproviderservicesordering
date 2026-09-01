@@ -1307,6 +1307,7 @@ async function mergeCatalogEdits(slug, prods){
   // loads status IN (published, active) — NOT 'approved', which is the internal review state.
   // Falls back to the static ./data/content file, respecting the same gate.
   const LIVE_STATUSES=['published','active'];
+  let _gated=0;                 // declared here because it is read after the catch below
   try{
     let pages=null;
     try{
@@ -1318,7 +1319,6 @@ async function mergeCatalogEdits(slug, prods){
       if(cr.ok){ const cj=await cr.json(); const pg=(cj&&cj.pages)||{}; pages={};
         for(const k in pg){ const st=pg[k].status; if(!CONFIG.CONTENT_APPROVED_ONLY || LIVE_STATUSES.includes(st)) pages[k]=pg[k]; } }
     }
-    let _gated=0;
     if(pages){
       // Variant-aware routing: a product family (e.g. Gen 2 Walking Boot) can resolve into
       // multiple MODEL variants, each with its own page/images. A SKU is routed to its model
