@@ -1301,7 +1301,14 @@ async function loadManufacturers(){
   // admin-uploaded manufacturer logos (Supabase, public-read) — merged so they show
   // below the manufacturer name on the home cards + catalog header, no redeploy needed.
   try{
-    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,enriched_only,category_order`,
+    /* category_map HAS to be in this list. Everything downstream of it was built and shipped —
+       the admin writes the map, the merge below reads m.categoryMap, the derive step applies it —
+       but the column was never SELECTED, so o.category_map was always undefined, catMap was always
+       null, and the derive step never ran once. Every product kept whatever category the deployed
+       catalog file happened to carry, which is why the shop showed "Ankles" and "Backs" while the
+       admin showed "Foot & Ankle" and "Back & Spine". One missing word, and the two views of the
+       catalog disagreed for weeks. */
+    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,enriched_only,category_order,category_map`,
       {headers:{apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON}}).then(x=>x.ok?x.json():[]);
     const lm=Object.fromEntries((lg||[]).map(o=>[o.slug,o.logo_url]));
     /* Per-line listing mode. On a line whose enrichment is finished, the enrichment record is
@@ -1457,7 +1464,11 @@ async function mergeCatalogEdits(slug, prods){
              category to offer. Category itself is deliberately left alone — that belongs to
              the catalog and its override layer, and enrichment must not quietly move a
              product out of the category someone put it in. */
-          if(pg.subcategory && !p.subcategory) p.subcategory=pg.subcategory;
+          /* THE ENRICHMENT RECORD IS THE MASTER, so its subcategory wins outright. It used to
+             defer to whatever the catalog layer already held, which meant a subcategory changed
+             in the Structure Map could be silently ignored by the shop — the exact failure the
+             master-record rule exists to prevent. */
+          if(pg.subcategory) p.subcategory=pg.subcategory;
           /* DERIVE the category from the subcategory. This is what makes one edit enough: change
              a product's subcategory in enrichment and it moves to the right part of the shop,
              with nothing else to update. A category typed directly in the admin still wins — the
