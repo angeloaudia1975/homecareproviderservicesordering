@@ -1304,7 +1304,25 @@ function priceHtml(p){
     ? `<div class="pnote" style="color:#0a7f3f;font-weight:700">Your contract price${(Number(p.base_price)>cp+0.005)?` · <span style="color:#8a94a6;font-weight:600;text-decoration:line-through">List ${money(p.base_price)}</span>`:""}</div>`
     : "";
   const msrp = (cp==null && p.msrp!=null && Number(p.msrp)>Number(p.base_price)) ? `<div class="msrp">MSRP ${money(p.msrp)}${p._msrp_suggested?' <span class="sugg">suggested</span>':''}</div>` : "";
-  return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>${contractTag}${msrp}${p.price_note?`<div class="pnote">${esc(p.price_note)}</div>`:""}</div>`;
+  const note=dealerPriceNote(p.price_note);
+  return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>${contractTag}${msrp}${note?`<div class="pnote">${esc(note)}</div>`:""}</div>`;
+}
+/* THE DEALER NEVER SEES HOW THE PRICE GOT HERE.
+   price_note holds two unrelated things under one column: notes written FOR a dealer
+   ("Volume price (mix sizes): 2–5 $19.95 · 6–10 $17.95"), and a stamp the price importer
+   writes for whoever ran it ("eff. 2026-01-01 · ovation-import 2026 NEW UPDATEc.xlsx").
+   The second is operational provenance — an effective date and a filename off someone's
+   desktop — and it was being printed on the storefront under the price.
+
+   Segments are dropped, never the whole field: 309 of 369 Ovation products carry a note and
+   most of them are the volume pricing a dealer actually needs to place a sensible order.
+   Discarding the column to stop the leak would have cost them that. */
+const PRICE_NOTE_OPERATIONAL=/^\s*eff\.\s|\.(xlsx?|csv)\b|-import\b/i;
+function dealerPriceNote(note){
+  return String(note==null?'':note)
+    .split(/\s*·\s*/).map(s=>s.trim()).filter(Boolean)
+    .filter(s=>!PRICE_NOTE_OPERATIONAL.test(s))
+    .join(' · ');
 }
 
 /* ---------- data loading ---------- */
