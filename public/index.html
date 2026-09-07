@@ -2131,13 +2131,13 @@ function optionAxesOf(label){
   rest=rest.replace(/^[\s,;:·\u2013\u2014-]+/,'').replace(/[\s,;:·\u2013\u2014-]+$/,'').replace(/\s{2,}/g,' ').trim();
   const out={};
   if(rest && variantSizeRank(rest)<50) out.Size=rest;
-  else if(rest && !color && !side) out.Option=rest;
+  else if(rest && !color && !side) out.Variant=rest;
   else if(rest) out.Size=rest;
   if(color) out.Color=titleWord(color);
   if(side) out.Side=titleWord(side);
   return out;
 }
-const AXIS_ORDER=['Size','Color','Side','Option'];
+const AXIS_ORDER=['Size','Color','Side','Variant'];
 /* The axes a dealer may actually choose between, in a fixed order so the pickers do not
    reshuffle as the selection changes. Only axes that VARY are returned; an axis every SKU
    shares is reported separately as a fixed attribute of the model. */
@@ -2219,7 +2219,7 @@ function groupLeads(list){
   return leads;
 }
 /* The one-line description of what a product's SKUs let a dealer pick. */
-const AXIS_NOUN={Size:['size','sizes'],Color:['colour','colours'],Side:['side','sides'],Option:['option','options']};
+const AXIS_NOUN={Size:['size','sizes'],Color:['colour','colours'],Side:['side','sides'],Variant:['variant','variants']};
 function variantSummary(variants){
   const list=variants||[];
   if(list.length<2) return list.length?('Item # '+String((list[0]||{}).code||'')):'';
@@ -4706,7 +4706,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
           <select class="pd-varsel" data-axis="${esc(k)}" onchange="pickVariant(this)">${
             AX.varying[k].map(val=>`<option value="${esc(val)}"${String(here[k]||'')===val?' selected':''}>${esc(val)}</option>`).join("")
           }</select></div>`).join("")}</div>`
-      : `<div class="pd-variants"><label>${esc(axKeys[0]||'Size / option')}</label>
+      : `<div class="pd-variants"><label>${esc(axKeys[0]||'Variant')}</label>
       <select class="pd-varsel" onchange="openProductDetail(this.value,{keepScroll:true})">${
         variants.map(v=>{const ve=Number(unitPrice(v,1)||v.base_price||0);return `<option value="${esc(v.code)}"${v.code===p.code?' selected':''}>${esc(variantLabel(v))}${ve>0?' — '+money(ve):''}</option>`;}).join("")
       }</select></div>`;
