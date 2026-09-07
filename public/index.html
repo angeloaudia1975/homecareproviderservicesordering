@@ -155,6 +155,10 @@ body:not(.p360on) #p360wrap{display:none!important;}
 .pd-variants label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7580;margin-bottom:5px;}
 .pd-varsel{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;background:#fff;color:var(--ink);cursor:pointer;}
 .pd-varsel:focus{outline:none;border-color:var(--orange);}
+.pd-axes{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+.pd-axis label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7580;margin-bottom:5px;}
+.pd-chip.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700;}
+.pd-optnote{font-size:11px;color:#6b7580;margin-left:6px;align-self:center;}
 
 /* EMPTY STATE */
 .empty{padding:70px 0;text-align:center;color:var(--gray);}
@@ -1463,6 +1467,14 @@ async function mergeCatalogEdits(slug, prods){
           const _sx=skuEntry[String(p.code||'').trim().toUpperCase()];
           const _sxName=_sx && String(_sx.name||'').trim();
           if(_sxName && !p._nameFromOverride) p.name=_sxName;
+          /* THE OPTION TEXT IS AUTHORED, NOT DERIVED. Enrichment holds a per-SKU option
+             field ("X-Small Blue") next to the per-SKU name ("... - X-Small"), and only the
+             name reached the shop — so four colours of one size all rendered as the same
+             "X-Small" and a dealer had no way to tell them apart, or to know the colour they
+             had just added to the cart. The authored option now travels with the product and
+             is what every dealer-facing surface renders. */
+          const _sxOpt=_sx && String((_sx.size!=null?_sx.size:(_sx.option!=null?_sx.option:''))||'').trim();
+          if(_sxOpt) p._skuOption=_sxOpt;
           if(pg.name) p._encPage=String(pg.name).trim();
           if(!p.description && pg.description) p.description=pg.description;
           if(pg.tagline) p._tagline=pg.tagline;
@@ -2048,7 +2060,149 @@ function groupDisplayName(p){ if(!p) return '';
   if(i>=0){ const n=g.slice(i+2).trim(); if(n) return n; } return p._gname || p.name || p.code || ''; }
 function variantLabel(v){ const gn=groupDisplayName(v); let lbl=String(v.name||'').trim();
   if(gn && lbl.toLowerCase().startsWith(gn.toLowerCase())) lbl=lbl.slice(gn.length);
-  lbl=lbl.replace(/^[\s,;:·–—-]+/,'').trim(); return lbl || String(v.code||''); }
+  lbl=lbl.replace(/^[\s,;:·–—-]+/,'').trim();
+  /* Two places can describe one option: the authored option field and whatever trails the
+     product name. Take the one that CONTAINS the other, so neither a colour nor a size is
+     ever silently dropped; when they genuinely disagree, show both rather than pick a
+     winner and hide the conflict from the dealer buying it. */
+  const opt=String(v._skuOption||'').trim();
+  if(!opt) return lbl || String(v.code||'');
+  if(!lbl) return opt;
+  const n=x=>x.toLowerCase().replace(/[^a-z0-9]/g,'');
+  const a=n(opt), b=n(lbl);
+  if(a===b || a.indexOf(b)>=0) return opt;
+  if(b.indexOf(a)>=0) return lbl;
+  return opt+' · '+lbl; }
+/* Options are read in the order a person expects to find them: smallest size first, then
+   colour alphabetically. The list used to arrive in catalog order, which interleaved sizes
+   (Large, X-Large, Large, X-Large ...) and made a 20-option boot unreadable. Longest size
+   token first, so "X-Small" is never matched as "Small". */
+const VARIANT_SIZE_RANK=[["xxsmall",0],["xx-small",0],["2xs",0],["xxs",0],
+  ["x-small",1],["xsmall",1],["extra small",1],["xs",1],
+  ["small",2],["s",2],["medium",3],["med",3],["m",3],
+  ["x-large",5],["xlarge",5],["extra large",5],["xl",5],
+  ["xx-large",6],["xxlarge",6],["2xl",6],["xxl",6],
+  ["3xl",7],["4xl",8],["5xl",9],
+  ["large",4],["lg",4],["l",4],
+  ["universal",10],["one size",10],["osfa",10]];
+function variantSizeRank(label){
+  /* Both sides are folded the same way, so "X-Small", "x small" and "xsmall" are one token
+     and a hyphen can never decide where an option sorts. */
+  const fold=x=>' '+String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()+' ';
+  const t=fold(label);
+  for(const [word,rank] of VARIANT_SIZE_RANK){ if(t.indexOf(fold(word))>=0) return rank; }
+  return 50;
+}
+/* ===== OPTION AXES =====================================================================
+   A model's SKUs vary along axes — size, colour, side. Ovation's Gen 2 Tall Pneumatic has
+   twenty part numbers because it is five sizes IN four colours, and rendering that as one
+   flat list of twenty entries labelled "Large, X-Large, Large, X-Large..." is what made the
+   page unreadable and unshoppable.
+
+   The axes are DERIVED FROM THE SKUS THEMSELVES, never from a scraped attribute blob. A
+   scraped "Color: Blue" is a snapshot of one page taken once; the SKU list is the approved
+   record of what is actually orderable, and it is the only thing allowed to say what a
+   dealer can choose. An axis whose value VARIES across the SKUs becomes a picker; an axis
+   with one value throughout is not a choice at all — it is what this model IS, and belongs
+   in the description, not in a dropdown of one. */
+const OPTION_COLORS=['black','blue','grey','gray','red','white','pink','navy','tan','beige',
+  'green','purple','orange','camo','teal','charcoal','silver','gold','brown','yellow','ivory'];
+const OPTION_SIDES=['left','right','universal','bilateral'];
+function titleWord(w){ return String(w||'').replace(/\b[a-z]/g,c=>c.toUpperCase()); }
+/* One token of an option label, folded so "X-Small", "x small" and "XSMALL" are one thing. */
+function optionTokens(label){
+  return String(label||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().split(' ').filter(Boolean);
+}
+/* Split one SKU's option text into the axes it names. Colour and side are recognised by
+   vocabulary; size by the same rank table the sort uses, so the two can never disagree. */
+function optionAxesOf(label){
+  const raw=String(label||'').trim();
+  if(!raw) return {};
+  const toks=optionTokens(raw);
+  let color='', side='';
+  toks.forEach(t=>{ const c=(t==='gray')?'grey':t;
+    if(!color && OPTION_COLORS.indexOf(c)>=0) color=c;
+    if(!side && OPTION_SIDES.indexOf(c)>=0 && c!=='universal') side=c; });
+  /* Cut the recognised words OUT OF THE ORIGINAL TEXT rather than rebuilding from the folded
+     tokens, so what is left keeps the spelling a person typed — "X-Small", not "X Small". */
+  const cutWord=(str,w)=>w?str.replace(new RegExp('(^|[^A-Za-z0-9])'+w+'(?![A-Za-z0-9])','ig'),'$1'):str;
+  let rest=cutWord(raw, color==='grey'?'gr[ae]y':color);
+  rest=cutWord(rest, side);
+  rest=rest.replace(/^[\s,;:·\u2013\u2014-]+/,'').replace(/[\s,;:·\u2013\u2014-]+$/,'').replace(/\s{2,}/g,' ').trim();
+  const out={};
+  if(rest && variantSizeRank(rest)<50) out.Size=rest;
+  else if(rest && !color && !side) out.Option=rest;
+  else if(rest) out.Size=rest;
+  if(color) out.Color=titleWord(color);
+  if(side) out.Side=titleWord(side);
+  return out;
+}
+const AXIS_ORDER=['Size','Color','Side','Option'];
+/* The axes a dealer may actually choose between, in a fixed order so the pickers do not
+   reshuffle as the selection changes. Only axes that VARY are returned; an axis every SKU
+   shares is reported separately as a fixed attribute of the model. */
+function optionAxes(variants){
+  const seen={}, order=[];
+  (variants||[]).forEach(v=>{ const ax=optionAxesOf(variantLabel(v));
+    Object.keys(ax).forEach(k=>{ if(!seen[k]){seen[k]=[];order.push(k);} 
+      if(seen[k].indexOf(ax[k])<0) seen[k].push(ax[k]); }); });
+  const keys=order.slice().sort((a,b)=>{
+    const ia=AXIS_ORDER.indexOf(a), ib=AXIS_ORDER.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib) || order.indexOf(a)-order.indexOf(b); });
+  const varying={}, fixed={};
+  keys.forEach(k=>{ const vals=seen[k];
+    if(k==='Size') vals.sort((x,y)=>variantSizeRank(x)-variantSizeRank(y)||x.localeCompare(y));
+    else vals.sort((x,y)=>x.localeCompare(y));
+    (vals.length>1?varying:fixed)[k]=vals; });
+  return {varying:varying, fixed:fixed, keys:keys};
+}
+/* Which SKU does this combination of choices resolve to? Exact match first; if a dealer
+   changes one axis to a value the current combination does not exist in, fall back to the
+   nearest SKU that honours the axis they just touched, so the picker can never dead-end on
+   a blank page. */
+/* WHAT THE SKUS SAY, NOT WHAT A SCRAPE ONCE SAID. The options blob is written once, when a
+   product is first imported from a manufacturer page, and never again — so a four-colour
+   boot went on saying "Color: Blue" whichever colour a dealer had selected, because the
+   blob is page-level and cannot vary by SKU. Any axis the SKU list already answers is now
+   taken from the SKU list; the scraped blob is left to describe only what the SKUs are
+   silent about, which is the one thing it is actually good for. */
+function optionsPanelHtml(p, AX, here){
+  const rows=[];
+  const chip=(v,on)=>`<span class="pd-chip${on?' on':''}">${esc(v)}</span>`;
+  Object.keys(AX.varying).forEach(k=>{
+    rows.push({k:k, html:AX.varying[k].map(v=>chip(v,String(here[k]||'')===v)).join(''),
+      note:AX.varying[k].length+' to choose from'});
+  });
+  Object.keys(AX.fixed).forEach(k=>{ rows.push({k:k, html:AX.fixed[k].map(v=>chip(v,false)).join(''), note:''}); });
+  const claimed={}; rows.forEach(r=>{ claimed[r.k.toLowerCase()]=1; });
+  const O=(p._options&&typeof p._options==='object')?p._options:{};
+  Object.keys(O).forEach(k=>{ if(claimed[String(k).toLowerCase()]) return;   // the SKUs already answered this
+    const vals=Array.isArray(O[k])?O[k]:[O[k]];
+    if(!vals.length) return;
+    rows.push({k:k, html:vals.map(v=>chip(v,false)).join(''), note:''}); });
+  if(!rows.length) return "";
+  return `<div class="pd-sect"><h2>Options &amp; configurations</h2>${rows.map(r=>
+    `<div class="pd-opt"><div class="ol">${esc(r.k)}</div><div class="ov">${r.html}${
+      r.note?`<span class="pd-optnote">${esc(r.note)}</span>`:''}</div></div>`).join('')}</div>`;
+}
+function resolveVariant(variants, want, changed){
+  const list=variants||[];
+  const axOf=v=>optionAxesOf(variantLabel(v));
+  const exact=list.find(v=>{ const a=axOf(v);
+    return Object.keys(want).every(k=>String(a[k]||'')===String(want[k]||'')); });
+  if(exact) return exact;
+  if(changed){ const near=list.find(v=>String(axOf(v)[changed]||'')===String(want[changed]||''));
+    if(near) return near; }
+  return list[0]||null;
+}
+function sortVariants(list){
+  return list.map((v,i)=>({v:v,i:i,l:variantLabel(v)}))
+    .sort((a,b)=>{ const ra=variantSizeRank(a.l), rb=variantSizeRank(b.l);
+      if(ra!==rb) return ra-rb;
+      const c=a.l.localeCompare(b.l,undefined,{numeric:true,sensitivity:'base'});
+      return c || a.i-b.i; })
+    .map(x=>x.v);
+}
 function groupLeads(list){
   const map=new Map();
   for(const p of list){ const gk=groupKeyOf(p); if(!map.has(gk)) map.set(gk,[]); map.get(gk).push(p); }
@@ -2063,6 +2217,19 @@ function groupLeads(list){
     leads.push(L);
   }
   return leads;
+}
+/* The one-line description of what a product's SKUs let a dealer pick. */
+const AXIS_NOUN={Size:['size','sizes'],Color:['colour','colours'],Side:['side','sides'],Option:['option','options']};
+function variantSummary(variants){
+  const list=variants||[];
+  if(list.length<2) return list.length?('Item # '+String((list[0]||{}).code||'')):'';
+  const AX=optionAxes(list);
+  const keys=Object.keys(AX.varying);
+  if(!keys.length) return list.length+' options';
+  const parts=keys.map(k=>{ const n=AX.varying[k].length;
+    const noun=AXIS_NOUN[k]||[String(k).toLowerCase(),String(k).toLowerCase()+'s'];
+    return n+' '+(n===1?noun[0]:noun[1]); });
+  return parts.join(' · ');
 }
 function cardHtml(p){
   const media = Array.isArray(p.media)?p.media:[];
@@ -2086,7 +2253,9 @@ function cardHtml(p){
       vids.length ? `▶ ${vids.length} video${vids.length>1?'s':''}${imgList.length>1?' · ':''}` : ''
     }${imgList.length>1 ? `${imgList.length} photos` : ''}</div>` : "";
   const resLinks = docs.length ? `<div class="reslinks">${docs.map(d=>`<a class="moreinfo" href="${esc(d.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${d.kind==="brochure"?"📄":"🔗"} ${esc(d.title||(d.kind==="brochure"?"Brochure":"Link"))}</a>`).join("")}</div>` : "";
-  const codeLine = multi ? `<div class="pcode">${p._count} sizes / options</div>` : `<div class="pcode">Item # ${esc(p.code)}</div>`;
+  /* A card says what a dealer CHOOSES — "5 sizes · 4 colours" — not a bare count of part
+     numbers. "20 sizes / options" read as twenty different boots; it is one boot. */
+  const codeLine = multi ? `<div class="pcode">${esc(variantSummary(p._variants))}</div>` : `<div class="pcode">Item # ${esc(p.code)}</div>`;
   const priceBlock = (multi && p._priceMin>0 && p._priceMin!==p._priceMax)
     ? `<div class="prow"><div style="font-weight:800;font-size:18px;color:var(--ink)"><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">From </span>${money(p._priceMin)}</div></div>`
     : `<div class="prow">${priceHtml(p)}</div>`;
@@ -2308,7 +2477,7 @@ function renderCart(){
         : `<div class="cthumb"><span class="ph">No image</span></div>`;
       return `<div class="citem" data-k="${esc(cartKey(p))}">
         ${cimg}
-        <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)}${p.brand?" · "+esc(p.brand):""}</div>
+        <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)}${p._skuOption?" · "+esc(variantLabel(p)):""}${p.brand?" · "+esc(p.brand):""}</div>
         <div class="s">Unit ${u?money(u):"—"} · Line ${u?money(u*qty):"—"}${contractPrice(p)!=null?` · <span style="color:#0a7f3f;font-weight:700">contract</span>`:""}</div>${volNote}</div>
         <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
     }).join("");
@@ -3446,6 +3615,54 @@ function _repeatProduct(code){        // true if this code was viewed within 14 
     return last>0 && (now-last) <= 14*864e5;
   }catch(e){ return false; }
 }
+/* ===== SEARCH CAPTURE ===================================================================
+   What a dealer TYPES is the earliest and clearest statement of what they want, and it was
+   the one signal the portal threw away: both search boxes filtered the page in the browser
+   and told no one. A dealer who searched "lift recliner" four times and never ordered one
+   looked identical to a dealer who never opened the catalog.
+
+   Three rules keep this honest rather than noisy:
+     - Only a SETTLED query is recorded. The box filters as you type; a search is not the
+       prefix you passed through on the way to it, so nothing is sent until typing stops.
+     - The same query is not recorded twice in a minute, so a dealer flicking between two
+       products does not read as sustained demand for one.
+     - A query that finds NOTHING is recorded too. Those are the ones worth having: they are
+       demand for something the catalog does not carry, and no other signal captures them. */
+const SEARCH_SETTLE_MS=1200;     // typing has stopped, not merely paused between letters
+const SEARCH_MIN_LEN=2;
+const SEARCH_REPEAT_MS=60000;    // the same query again within a minute is the same search
+const SEARCH_MAX_Q=120;
+const _searchSent=new Map();
+const _searchTimers={};   // one per box: the global search must not cancel the catalog's
+function searchNorm(q){ return String(q==null?'':q).trim().toLowerCase().replace(/\s+/g,' '); }
+/* Should this settled query be recorded? Separated from the sending so it can be reasoned
+   about — and tested — without a network in the way. */
+function searchSendable(q,now){
+  const n=searchNorm(q);
+  if(n.length<SEARCH_MIN_LEN) return false;
+  const last=_searchSent.get(n)||0;
+  if(now-last < SEARCH_REPEAT_MS) return false;
+  _searchSent.set(n,now);
+  /* The map is a de-duplication window, not a history; it must not grow without bound in a
+     session someone leaves open all day. */
+  if(_searchSent.size>300){ const cut=now-SEARCH_REPEAT_MS;
+    for(const [k,t] of [..._searchSent]) if(t<cut) _searchSent.delete(k);
+    if(_searchSent.size>300) _searchSent.clear(); }
+  return true;
+}
+/* One settled search. `hits` is what the dealer actually saw; `slug`/`code` credit the line
+   and product the search landed on, so it joins the same per-product intent reporting the
+   view and cart signals already feed — rather than becoming a separate stream nothing reads. */
+function trackSearch(q,hits,slug,code,surface){
+  if(!searchSendable(q,Date.now())) return false;
+  /* `query` is the field name, not `q`: the reporting side decides a row is a search by
+     `meta.query` being present, so a different key here would file a perfectly good search
+     event that every report then ignores. */
+  track('search', slug||undefined, code||undefined,
+    {query:String(q).trim().slice(0,SEARCH_MAX_Q), hits:Number(hits)||0, surface:surface||'catalog'});
+  return true;
+}
+function searchSettle(key,fn){ clearTimeout(_searchTimers[key]); _searchTimers[key]=setTimeout(fn,SEARCH_SETTLE_MS); }
 function track(type,manufacturer,product,meta){
   if(AUTH.status!=='approved'||!AUTH.session||!AUTH.session.access_token) return;   // signed-in dealers only
   try{
@@ -3701,6 +3918,13 @@ lightbox.addEventListener("click",e=>{ if(e.target===lightbox || e.target.tagNam
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(lightbox.classList.contains("open")) closeLightbox(); closeVideo(); } });
 const debounce=(fn,ms=180)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
 $("#search").addEventListener("input",debounce(renderProducts,180));
+/* The same keystrokes that filter the page also state an intent. Recorded once typing has
+   settled, with the number of products the dealer was actually left looking at. */
+$("#search").addEventListener("input",function(){ searchSettle('catalog',function(){
+  const q=$("#search").value; if(!searchNorm(q)) return;
+  let hits=0, top=null; try{ const f=filtered(); hits=f.length; top=f[0]||null; }catch(e){}
+  trackSearch(q,hits,(top&&top.manufacturer)||state.active||undefined,(top&&top.code)||undefined,'catalog');
+}); });
 $("#catFilter").addEventListener("change",renderProducts);
 $("#brandFilter").addEventListener("change",renderProducts);
 
@@ -4468,12 +4692,32 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const host=$q("#content");
     // Phase 2: this product's variants (same group) → a size/option selector.
     const gk=(p.group||p.code);
-    const variants=(state.products||[]).filter(x=>((x.group||x.code)===gk));
+    const variants=sortVariants((state.products||[]).filter(x=>((x.group||x.code)===gk)));
     const gname=groupDisplayName(p);
-    const variantSel = variants.length>1 ? `<div class="pd-variants"><label>Size / option</label>
+    /* ONE PICKER PER AXIS. Twenty part numbers are five sizes in four colours, and that is
+       how a dealer shops them — pick the size, pick the colour — not by hunting through a
+       flat list where "Large" appears four times with nothing to tell the four apart. */
+    const AX=optionAxes(variants);
+    const axKeys=Object.keys(AX.varying);
+    const here=optionAxesOf(variantLabel(p));
+    const variantSel = variants.length<2 ? ""
+      : axKeys.length>=2
+      ? `<div class="pd-variants pd-axes">${axKeys.map(k=>`<div class="pd-axis"><label>${esc(k)}</label>
+          <select class="pd-varsel" data-axis="${esc(k)}" onchange="pickVariant(this)">${
+            AX.varying[k].map(val=>`<option value="${esc(val)}"${String(here[k]||'')===val?' selected':''}>${esc(val)}</option>`).join("")
+          }</select></div>`).join("")}</div>`
+      : `<div class="pd-variants"><label>${esc(axKeys[0]||'Size / option')}</label>
       <select class="pd-varsel" onchange="openProductDetail(this.value,{keepScroll:true})">${
         variants.map(v=>{const ve=Number(unitPrice(v,1)||v.base_price||0);return `<option value="${esc(v.code)}"${v.code===p.code?' selected':''}>${esc(variantLabel(v))}${ve>0?' — '+money(ve):''}</option>`;}).join("")
-      }</select></div>` : "";
+      }</select></div>`;
+    /* The pickers hand back a combination, not a part number; the SKU is looked up from it. */
+    window.__PDVARIANTS=variants;
+    window.pickVariant=function(sel){
+      const box=sel.closest('.pd-axes'); if(!box) return;
+      const want={}; box.querySelectorAll('select[data-axis]').forEach(s2=>{ want[s2.getAttribute('data-axis')]=s2.value; });
+      const hit=resolveVariant(window.__PDVARIANTS||[], want, sel.getAttribute('data-axis'));
+      if(hit) openProductDetail(hit.code,{keepScroll:true});
+    };
     // Curated cross-sell (accessories + cross-manufacturer alternatives) from Catalog Review.
     let curatedAcc=[], curatedAlt=[];
     try{
@@ -4525,7 +4769,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
           <div class="pd-eyebrow">${esc(p.brand||curLineName()||"")}</div>
           <h1>${esc(gname)}</h1>
           ${p._tagline?`<div class="pd-tagline">${esc(p._tagline)}</div>`:""}
-          <div class="pd-code">Item # ${esc(p.code)}${p.category?" · "+esc(p.category):""}${p.hcpc?" · HCPC "+esc(p.hcpc):""}</div>
+          <div class="pd-code">Item # ${esc(p.code)}${variants.length>1?" · "+esc(variantLabel(p)):""}${p.category?" · "+esc(p.category):""}${p.hcpc?" · HCPC "+esc(p.hcpc):""}</div>
           ${(p._billing&&p._billing.length)?`<div class="pd-billing">HCPC / PDAC <b>${p._billing.map(esc).join(' · ')}</b></div>`:""}
           <div class="pd-pricebox">
             ${eff>0?`<div class="pd-plabel">${cp!=null?"Your contract price":"Your dealer price"}</div>
@@ -4549,7 +4793,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       </div>
       ${p.description?`<div class="pd-sect"><h2>Overview</h2><p>${esc(p.description)}</p></div>`:""}
       ${(p._features&&p._features.length)?`<div class="pd-sect"><h2>Key features</h2><ul class="pd-feat">${p._features.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></div>`:""}
-      ${(p._options&&Object.keys(p._options).length)?`<div class="pd-sect"><h2>Options &amp; configurations</h2>${Object.keys(p._options).map(k=>`<div class="pd-opt"><div class="ol">${esc(k)}</div><div class="ov">${(p._options[k]||[]).map(v=>`<span class="pd-chip">${esc(v)}</span>`).join("")}</div></div>`).join("")}</div>`:""}
+      ${optionsPanelHtml(p,AX,here)}
       ${(p._clinical&&p._clinical.length)?`<div class="pd-sect"><h2>Clinical applications</h2>${p._clinical.map(x=>`<span class="pd-chip">${esc(x)}</span>`).join("")}</div>`:""}
       ${specRows?`<div class="pd-sect"><h2>Specifications</h2><table class="pd-spec">${specRows}</table></div>`:""}
       ${sizingHtml}
@@ -4594,8 +4838,14 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     if(q.length<2){ box.innerHTML=''; box.classList.remove('on'); return; }
     const all=await gsEnsure();
     const hits=all.filter(x=>((x.p.name||'').toLowerCase().includes(q))||((x.p.code||'').toLowerCase().includes(q))||((x.mname||'').toLowerCase().includes(q))).slice(0,8);
-    box.innerHTML = hits.length ? hits.map(x=>`<div class="gsr" onclick="openFromSearch('${esc(x.slug)}','${esc(x.p.code)}')"><b>${esc(x.p.name)}</b><span>${esc(x.mname)} · Item # ${esc(x.p.code)}</span></div>`).join('') : `<div class="gsr empty">No matches for &ldquo;${esc(q)}&rdquo;</div>`;
+    box.innerHTML = hits.length ? hits.map(x=>`<div class="gsr" onclick="openFromSearch('${esc(x.slug)}','${esc(x.p.code)}')"><b>${esc(x.p.name)}</b><span>${esc(x.mname)} · Item # ${esc(x.p.code)}${x.p._skuOption?" · "+esc(variantLabel(x.p)):""}</span></div>`).join('') : `<div class="gsr empty">No matches for &ldquo;${esc(q)}&rdquo;</div>`;
     box.classList.add('on');
+    /* The global box searches every line a dealer is entitled to, so a miss here is a miss
+       across the whole catalogue — the strongest "we do not carry this" signal there is. */
+    searchSettle('global',function(){
+      const top=hits[0]||null;
+      trackSearch(q,hits.length,(top&&top.slug)||undefined,(top&&top.p&&top.p.code)||undefined,'global');
+    });
   }
   window.openFromSearch=async function(slug,code){
     const box=$q('#gsresults'); if(box)box.classList.remove('on');
