@@ -2146,8 +2146,29 @@ function groupDisplayName(p){ if(!p) return '';
   if(p._encPage) return p._encPage;
   const g=String(p.group||''); const i=g.indexOf('::');
   if(i>=0){ const n=g.slice(i+2).trim(); if(n) return n; } return p._gname || p.name || p.code || ''; }
+/* REMOVE THE PRODUCT NAME FROM ITS OWN SKU NAMES, ON WHOLE WORDS.
+   This used to require an EXACT leading match, so a single character of drift left the whole
+   product name sitting inside every option: "Universal TLSO 456, 4XL" kept its name because
+   of the comma, and "Neoprene Hinged Knee Support – Small" kept its because the page is
+   called "…Support Hinged". Matching word by word on letters and digits only — so commas,
+   dashes and trademark symbols cannot break the run — clears both. Words are compared in
+   order and the strip stops at the first that differs, so a SKU whose name genuinely diverges
+   early (a mis-named record) keeps everything from that point and stays visible as a problem
+   rather than being silently truncated. */
+function stripProductPrefix(name, gn){
+  if(!gn) return String(name||'');
+  const parts=String(name||'').split(/\s+/);
+  const words=s=>{ const out=[];
+    String(s||'').split(/\s+/).forEach((w,i)=>{ const n=w.toLowerCase().replace(/[^a-z0-9]/g,'');
+      if(n) out.push({n:n,i:i}); });
+    return out; };
+  const N=words(name), G=words(gn);
+  let k=0; while(k<N.length && k<G.length && N[k].n===G[k].n) k++;
+  if(!k) return String(name||'');
+  return parts.slice(N[k-1].i+1).join(' ');
+}
 function variantLabel(v){ const gn=groupDisplayName(v); let lbl=String(v.name||'').trim();
-  if(gn && lbl.toLowerCase().startsWith(gn.toLowerCase())) lbl=lbl.slice(gn.length);
+  lbl=stripProductPrefix(lbl, gn);
   lbl=lbl.replace(/^[\s,;:·–—-]+/,'').trim();
   /* Two places can describe one option: the authored option field and whatever trails the
      product name. Take the one that CONTAINS the other, so neither a colour nor a size is
@@ -2175,6 +2196,11 @@ const VARIANT_SIZE_RANK=[["xxsmall",0],["xx-small",0],["2xs",0],["xxs",0],
   ["x-large",5],["xlarge",5],["extra large",5],["xl",5],
   ["xx-large",6],["xxlarge",6],["2xl",6],["xxl",6],
   ["3xl",7],["4xl",8],["5xl",9],
+  /* Spelled-out forms must appear BEFORE "large" below. "3X-Large" folds to "3x large", which
+     contains "large" but not "3xl", so without these three it scored 4 — the same rank as
+     Large — and the Neoprene Knee Support picker read Small, Medium, 3X-Large, 4X-Large,
+     Large, X-Large, XX-Large. */
+  ["3x-large",7],["4x-large",8],["5x-large",9],
   ["large",4],["lg",4],["l",4],
   ["universal",10],["one size",10],["osfa",10]];
 function variantSizeRank(label){
@@ -2256,6 +2282,17 @@ function optionAxes(variants){
   (variants||[]).forEach(v=>{ const ax=optionAxesOf(variantLabel(v));
     Object.keys(ax).forEach(k=>{ if(!seen[k]){seen[k]=[];order.push(k);} 
       if(seen[k].indexOf(ax[k])<0) seen[k].push(ax[k]); }); });
+  /* ONE PRODUCT, ONE AXIS NAME. optionAxesOf decides "Size" or "Variant" per SKU, from whether
+     that SKU's text happens to contain a recognisable size word. Two SKUs of the SAME product
+     can therefore land on different axes — "0637, 4XL" reads as Size, "30”-48”" reads as
+     Variant — and each sits alone on its own axis varying in nothing, so the picker vanishes
+     completely. That is what the Nu-Form 0637 card did: two buyable SKUs, no way to choose
+     between them. Merged here, in the one place that can see the whole variant set. */
+  if(seen.Size && seen.Variant){
+    seen.Variant.forEach(v=>{ if(seen.Size.indexOf(v)<0) seen.Size.push(v); });
+    delete seen.Variant;
+    const vi=order.indexOf('Variant'); if(vi>=0) order.splice(vi,1);
+  }
   const keys=order.slice().sort((a,b)=>{
     const ia=AXIS_ORDER.indexOf(a), ib=AXIS_ORDER.indexOf(b);
     return (ia<0?99:ia)-(ib<0?99:ib) || order.indexOf(a)-order.indexOf(b); });
