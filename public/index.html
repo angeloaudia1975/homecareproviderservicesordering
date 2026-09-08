@@ -1327,6 +1327,14 @@ function tierLadder(p){
     if(last&&last.qty===r.qty) out[out.length-1]=r; else out.push(r); }
   return out.length>1?out:[];
 }
+/* The quantity a row covers, as a dealer would say it out loud. A named function rather than
+   an expression inside the table template, because the one case that reads wrong — a single
+   unit between the base and a break at 2, which printed as "1–1" — is only catchable if the
+   rule can be tested on its own. */
+function tierRangeLabel(qty, nextQty){
+  if(nextQty==null) return `${qty}+`;
+  return nextQty>qty ? `${qty}–${nextQty}` : `${qty}`;
+}
 /* One line for the card: the breaks only, no arithmetic, no base price repeated. */
 function tierSummary(p){
   return tierLadder(p).filter(t=>t.qty>1).map(t=>`${t.qty}+ ${money(t.price)}`).join(' · ');
@@ -2152,7 +2160,11 @@ function variantLabel(v){ const gn=groupDisplayName(v); let lbl=String(v.name||'
   const a=n(opt), b=n(lbl);
   if(a===b || a.indexOf(b)>=0) return opt;
   if(b.indexOf(a)>=0) return lbl;
-  return opt+' · '+lbl; }
+  /* VARIANT 1 THEN VARIANT 2. The name/description is what a dealer recognises the item by
+     ("X-Small", "Dark Blue"); the authored size is the measurement that confirms the choice
+     ("9"- 11""). Reading them the other way round led with a number nobody shops by, so the
+     arm sling's picker opened on "9"- 11" · X-Small". One line, identity first. */
+  return lbl+' · '+opt; }
 /* Options are read in the order a person expects to find them: smallest size first, then
    colour alphabetically. The list used to arrive in catalog order, which interleaved sizes
    (Large, X-Large, Large, X-Large ...) and made a 20-option boot unreadable. Longest size
@@ -2187,6 +2199,12 @@ function variantSizeRank(label){
    in the description, not in a dropdown of one. */
 const OPTION_COLORS=['black','blue','grey','gray','red','white','pink','navy','tan','beige',
   'green','purple','orange','camo','teal','charcoal','silver','gold','brown','yellow','ivory'];
+/* TWO-WORD COLOURS, TESTED BEFORE SINGLE WORDS. "Dark Blue" tokenises to ["dark","blue"];
+   matching only "blue" cuts that one word and leaves "Dark" stranded in the size remainder,
+   which is why Casting Tape offered EIGHT sizes — 2" x 4 Yd and 2" x 4 Yd · Dark — where it
+   stocks four. Compounds are checked first so the longer name always wins. */
+const OPTION_COLOR_COMPOUNDS=['dark blue','light blue','royal blue','sky blue','navy blue',
+  'dark grey','dark gray','light grey','light gray','hot pink','forest green','olive green'];
 const OPTION_SIDES=['left','right','universal','bilateral'];
 function titleWord(w){ return String(w||'').replace(/\b[a-z]/g,c=>c.toUpperCase()); }
 /* One token of an option label, folded so "X-Small", "x small" and "XSMALL" are one thing. */
@@ -2200,14 +2218,26 @@ function optionAxesOf(label){
   if(!raw) return {};
   const toks=optionTokens(raw);
   let color='', side='';
+  const flat=' '+toks.join(' ')+' ';
+  for(const cc of OPTION_COLOR_COMPOUNDS){
+    if(flat.indexOf(' '+cc+' ')>=0){ color=cc.replace('gray','grey'); break; } }
   toks.forEach(t=>{ const c=(t==='gray')?'grey':t;
     if(!color && OPTION_COLORS.indexOf(c)>=0) color=c;
     if(!side && OPTION_SIDES.indexOf(c)>=0 && c!=='universal') side=c; });
   /* Cut the recognised words OUT OF THE ORIGINAL TEXT rather than rebuilding from the folded
      tokens, so what is left keeps the spelling a person typed — "X-Small", not "X Small". */
   const cutWord=(str,w)=>w?str.replace(new RegExp('(^|[^A-Za-z0-9])'+w+'(?![A-Za-z0-9])','ig'),'$1'):str;
-  let rest=cutWord(raw, color==='grey'?'gr[ae]y':color);
+  /* A compound is cut as a phrase with flexible spacing, so "Dark  Blue" and "Dark Blue" both
+     go, and nothing of the colour is left behind to be mistaken for a size. */
+  const colorPat = !color ? ''
+    : (color.indexOf(' ')>=0 ? color.replace(/\s+/g,'\\s+').replace('grey','gr[ae]y')
+                             : (color==='grey'?'gr[ae]y':color));
+  let rest=cutWord(raw, colorPat);
   rest=cutWord(rest, side);
+  /* Cutting a recognised word out of the middle of a bracket leaves the bracket behind:
+     "X-Small (Left)" minus the side is "X-Small ()", which is what the Classic Wrist Brace
+     and Thumb Spica pickers were offering. Empty brackets go before the edges are trimmed. */
+  rest=rest.replace(/\(\s*\)/g,'').replace(/\[\s*\]/g,'').replace(/\{\s*\}/g,'');
   rest=rest.replace(/^[\s,;:·\u2013\u2014-]+/,'').replace(/[\s,;:·\u2013\u2014-]+$/,'').replace(/\s{2,}/g,' ').trim();
   const out={};
   if(rest && variantSizeRank(rest)<50) out.Size=rest;
@@ -4883,7 +4913,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const tierSectHtml=_lad.length?`<div class="pd-sect"><h2>Volume pricing</h2>
       <div style="overflow-x:auto"><table class="pd-tier"><thead><tr><th>Quantity</th><th>Unit price</th><th>You save</th></tr></thead><tbody>${
         _lad.map((t,i)=>{ const top=_lad[0].price, save=top-t.price, nextQ=_lad[i+1]?_lad[i+1].qty-1:null;
-          const range=(t.qty===1)?(nextQ?`1–${nextQ}`:'1'):(nextQ?`${t.qty}–${nextQ}`:`${t.qty}+`);
+          const range=tierRangeLabel(t.qty, nextQ);
           return `<tr><td>${esc(range)}</td><td class="v">${money(t.price)}</td><td class="sv">${save>0.005?money(save)+' ea':'—'}</td></tr>`;
         }).join("")
       }</tbody></table></div>
