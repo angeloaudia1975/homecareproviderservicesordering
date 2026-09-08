@@ -539,6 +539,21 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .pd-spec{width:100%;border-collapse:collapse;}
 .pd-spec td{padding:10px 4px;border-top:1px solid var(--line);font-size:14px;}
 .pd-spec td.k{color:var(--gray);width:44%;}.pd-spec td.v{font-weight:600;color:var(--navy);}
+/* Volume pricing. The saving column is the reason the table exists, so it is the only thing
+   in it that carries colour; everything else stays quiet enough to scan down. */
+.pd-tier{width:100%;border-collapse:collapse;min-width:320px;}
+.pd-tier th{text-align:left;padding:8px 10px;font-size:11px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--gray);border-bottom:1px solid var(--line);white-space:nowrap;}
+.pd-tier td{padding:10px;border-top:1px solid var(--line);font-size:14px;white-space:nowrap;}
+.pd-tier td.v{font-weight:700;color:var(--navy);}
+.pd-tier td.sv{color:var(--green);font-weight:600;}
+.pd-tiernote{margin-top:9px;font-size:12px;color:var(--gray);line-height:1.5;}
+.pd-tiergain{margin-top:10px;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;
+  color:var(--green);background:rgba(28,122,68,.08);border:1px solid rgba(28,122,68,.22);}
+/* The card version: one quiet line under the price. It must not compete with the price
+   itself, so it is small, grey, and carries a single bold word to anchor the eye. */
+.tierhint{margin:5px 0 0;font-size:11px;color:var(--gray);line-height:1.45;}
+.tierhint b{color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:10px;}
 /* cart polish */
 .subbtn{background:var(--grad)!important;color:#141414!important;}
 
@@ -1294,6 +1309,41 @@ function unitPrice(p, qty){
   }
   return Number(p.base_price||0);
 }
+/* QUANTITY BREAKS A DEALER CAN ACTUALLY SEE.
+   unitPrice() has applied these all along, and on the FAMILY's combined quantity rather than
+   the single line — but nothing ever drew them, so the discount only reached a dealer who
+   happened to order enough by accident. Every surface that prints a price now prints the
+   ladder that price sits on. Shape is normalised here because the column has carried both
+   minQty and min_qty, and because a tier at qty 1 is the base price wearing a hat. */
+function tierLadder(p){
+  const base=Number(p&&p.base_price);
+  const rows=(Array.isArray(p&&p.tiers)?p.tiers:[])
+    .map(t=>({qty:Math.round(Number(t&&(t.minQty!=null?t.minQty:t.min_qty))||0), price:Number(t&&t.price)}))
+    .filter(t=>t.qty>1 && isFinite(t.price) && t.price>0)
+    .sort((a,b)=>a.qty-b.qty);
+  if(!rows.length) return [];
+  const out=(isFinite(base)&&base>0)?[{qty:1,price:base}]:[];
+  for(const r of rows){ const last=out[out.length-1];
+    if(last&&last.qty===r.qty) out[out.length-1]=r; else out.push(r); }
+  return out.length>1?out:[];
+}
+/* One line for the card: the breaks only, no arithmetic, no base price repeated. */
+function tierSummary(p){
+  return tierLadder(p).filter(t=>t.qty>1).map(t=>`${t.qty}+ ${money(t.price)}`).join(' · ');
+}
+/* What a dealer gains by adding a few more, phrased as the thing they would actually do.
+   Counts on the same combined-family quantity unitPrice() tiers on, so the nudge can never
+   promise a price the cart then refuses. A contract price already beats the ladder, so a
+   dealer who has one is not told to buy more to reach a worse number. */
+function nextTierGain(p, qty){
+  if(contractPrice(p)!=null) return null;
+  const lad=tierLadder(p); if(!lad.length) return null;
+  const q=tierQty(p, qty);
+  const nxt=lad.find(t=>t.qty>q); if(!nxt) return null;
+  const now=Number(unitPrice(p, qty));
+  if(!(now>nxt.price+0.005)) return null;
+  return {need:nxt.qty-q, at:nxt.qty, price:nxt.price, save:now-nxt.price};
+}
 function priceHtml(p){
   if (!state.dealer && p.base_price==null) return `<span class="price locked">Log in for pricing</span>`;
   if (p.base_price==null) return `<span class="price locked">Call for pricing</span>`;
@@ -1304,7 +1354,7 @@ function priceHtml(p){
     ? `<div class="pnote" style="color:#0a7f3f;font-weight:700">Your contract price${(Number(p.base_price)>cp+0.005)?` · <span style="color:#8a94a6;font-weight:600;text-decoration:line-through">List ${money(p.base_price)}</span>`:""}</div>`
     : "";
   const msrp = (cp==null && p.msrp!=null && Number(p.msrp)>Number(p.base_price)) ? `<div class="msrp">MSRP ${money(p.msrp)}${p._msrp_suggested?' <span class="sugg">suggested</span>':''}</div>` : "";
-  const note=dealerPriceNote(p.price_note);
+  const note=dealerPriceNote(p.price_note, p);
   return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>${contractTag}${msrp}${note?`<div class="pnote">${esc(note)}</div>`:""}</div>`;
 }
 /* THE DEALER NEVER SEES HOW THE PRICE GOT HERE.
@@ -1318,10 +1368,22 @@ function priceHtml(p){
    most of them are the volume pricing a dealer actually needs to place a sensible order.
    Discarding the column to stop the leak would have cost them that. */
 const PRICE_NOTE_OPERATIONAL=/^\s*eff\.\s|\.(xlsx?|csv)\b|-import\b/i;
-function dealerPriceNote(note){
-  return String(note==null?'':note)
+/* THE SAME LADDER TWICE IS WORSE THAN ONCE. 31 Ovation products carry a hand-typed copy of
+   their quantity breaks in price_note ("Volume price (mix sizes): 2–5 $15.95 · 6–10 $13.95
+   …"). Now that the breaks render from p.tiers, that text is a second, unmaintained copy of
+   the same numbers — the exact drift a master record is supposed to prevent — so it is
+   dropped, but ONLY where a real ladder exists to replace it. A product whose note is the
+   only record of its volume pricing keeps the note. The whole run goes together: the tail
+   segments ("6–10 $13.95") are meaningless once the head is removed. */
+const PRICE_NOTE_VOLUME=/^\s*volume price\b/i;
+const PRICE_NOTE_TIERISH=/^\s*\d+\s*(?:[–—-]\s*\d+|\+)\s*\$/;
+function dealerPriceNote(note, p){
+  const raw=String(note==null?'':note);
+  const supersededByLadder=tierLadder(p||{}).length>0 && PRICE_NOTE_VOLUME.test(raw);
+  return raw
     .split(/\s*·\s*/).map(s=>s.trim()).filter(Boolean)
     .filter(s=>!PRICE_NOTE_OPERATIONAL.test(s))
+    .filter(s=>!(supersededByLadder && (PRICE_NOTE_VOLUME.test(s)||PRICE_NOTE_TIERISH.test(s))))
     .join(' · ');
 }
 
@@ -2277,6 +2339,20 @@ function cardHtml(p){
   const priceBlock = (multi && p._priceMin>0 && p._priceMin!==p._priceMax)
     ? `<div class="prow"><div style="font-weight:800;font-size:18px;color:var(--ink)"><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">From </span>${money(p._priceMin)}</div></div>`
     : `<div class="prow">${priceHtml(p)}</div>`;
+  /* The card is where a dealer decides whether to open a product at all, so the quantity
+     break belongs here and not only on the detail page. On a multi-SKU card it is shown ONLY
+     when every variant carries the same ladder — otherwise "6+ $84.95" would be a promise
+     the other sizes do not keep, and a card is the worst place to learn that. */
+  const _tierSrc = multi ? (Array.isArray(p._variants)?p._variants:[]) : [p];
+  const _ladders = _tierSrc.map(v=>tierSummary(v));
+  const _tierLine = (_ladders.length && _ladders[0] && _ladders.every(l=>l===_ladders[0])) ? _ladders[0] : "";
+  /* 23 of 57 Ovation cards carry variants whose ladders genuinely differ, so no single line is
+     true for the card. Saying nothing would hide volume pricing from four cards in ten; saying
+     that it varies is short, honest, and sends the dealer to the table that IS true. */
+  const _anyTier = _ladders.some(Boolean);
+  const tierHtml = _tierLine
+    ? `<div class="tierhint"><b>Volume</b> ${esc(_tierLine)}</div>`
+    : (_anyTier ? `<div class="tierhint"><b>Volume</b> pricing varies by option — see details</div>` : "");
   const buy = multi
     ? `<div class="buy"><div class="chooseBtn">Choose options →</div></div>`
     : `<div class="buy"><input class="qtyin" type="number" min="1" value="1" aria-label="Qty"><button class="addbtn" data-code="${esc(p.code)}">Add to cart</button></div>`;
@@ -2292,6 +2368,7 @@ function cardHtml(p){
       ${p.moreUrl?`<a class="moreinfo" href="${esc(p.moreUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📄 ${esc(p.moreLabel||"More Information")}</a>`:""}
       ${resLinks}
       ${priceBlock}
+      ${tierHtml}
       ${buy}
     </div></div>`;
 }
@@ -4795,6 +4872,24 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const eff=Number(unitPrice(p,1)||p.base_price||0);
     const cp=(typeof contractPrice==="function")?contractPrice(p):null;
     const msrp=(p.msrp!=null&&Number(p.msrp)>eff)?Number(p.msrp):null;
+    /* THE LADDER, WRITTEN OUT. A dealer should not have to discover a break by typing a
+       bigger number into the qty box and watching the total move. The rows are ranges rather
+       than floors ("2–5", not "2+") because a floor read next to the row under it invites
+       the reader to think the cheaper price starts later than it does. Tiers count the
+       FAMILY's combined quantity, which is the one thing a table like this cannot leave
+       unsaid: mixing sizes still reaches the break, so the note says so out loud. */
+    const _lad=tierLadder(p);
+    const _gain=nextTierGain(p,1);
+    const tierSectHtml=_lad.length?`<div class="pd-sect"><h2>Volume pricing</h2>
+      <div style="overflow-x:auto"><table class="pd-tier"><thead><tr><th>Quantity</th><th>Unit price</th><th>You save</th></tr></thead><tbody>${
+        _lad.map((t,i)=>{ const top=_lad[0].price, save=top-t.price, nextQ=_lad[i+1]?_lad[i+1].qty-1:null;
+          const range=(t.qty===1)?(nextQ?`1–${nextQ}`:'1'):(nextQ?`${t.qty}–${nextQ}`:`${t.qty}+`);
+          return `<tr><td>${esc(range)}</td><td class="v">${money(t.price)}</td><td class="sv">${save>0.005?money(save)+' ea':'—'}</td></tr>`;
+        }).join("")
+      }</tbody></table></div>
+      ${(p.group&&_lad.length)?`<div class="pd-tiernote">Counts your combined quantity across every size on this page — mixing sizes still reaches the break.</div>`:""}
+      ${_gain?`<div class="pd-tiergain">Add ${_gain.need} more to reach ${_gain.at}+ and pay ${money(_gain.price)} each — ${money(_gain.save)} off every unit.</div>`:""}
+    </div>`:"";
     const margin=msrp?(msrp-eff):null, marginPct=msrp?Math.round(margin/msrp*100):null;
     // Related = DIFFERENT products a dealer could consider — one card per product group, never the
     // same item repeated in other sizes. Prefers the same subcategory, then the same category.
@@ -4846,6 +4941,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
           </div>
         </div>
       </div>
+      ${tierSectHtml}
       ${p.description?`<div class="pd-sect"><h2>Overview</h2><p>${esc(p.description)}</p></div>`:""}
       ${(p._features&&p._features.length)?`<div class="pd-sect"><h2>Key features</h2><ul class="pd-feat">${p._features.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></div>`:""}
       ${optionsPanelHtml(p,AX,here)}
