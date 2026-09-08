@@ -3743,16 +3743,26 @@ async function doRegister(){const msg=$("#rg_msg"),g=id=>($(id)?.value||"").trim
    never coming. Whether an account EXISTS stays vague, deliberately: anyone can open this
    page and that would leak who holds an account. A PROVIDER failure is not a secret. */
 async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg");if(!email){msg.textContent='Enter your email first, then click reset.';return;}
-  // Send the reset link to the dedicated reset page on THIS portal (not the public HCPS site).
-  // Supabase redirects there with a recovery token in the URL hash; reset.html sets the new password.
-  const redirectTo=location.origin+'/reset.html';
+  /* SENT BY HCPS, NOT BY SUPABASE.
+     This used to POST straight to Supabase's /auth/v1/recover, which mails its own message
+     from a supabase.co address with no mention of HomeCare Provider Services — the one email
+     a dealer is asked to trust completely, arriving from a domain they have never dealt with.
+     It now goes through our own function, which mints the link with the admin API and sends
+     it through Resend from hello@homecareproviderservices.us on the HCPS template.
+
+     The answer is also READ. The old version fired and printed "on its way" whatever came
+     back, so a rate limit and a genuine send looked identical. Whether the account EXISTS
+     stays vague — anyone can open this page — but a provider failure is not a secret. */
   msg.textContent='Sending…';
   try{
-    const r=await fetch(`${_sbURL}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`,{method:'POST',headers:{'content-type':'application/json',apikey:_anon},body:JSON.stringify({email})});
-    if(r.status===429){ msg.textContent='Too many reset requests just now — the mail service is rate-limiting them. Wait a few minutes and try again.'; return; }
-    if(!r.ok){ let d=''; try{ const j=await r.json(); d=String((j&&(j.msg||j.error_description||j.error))||''); }catch(e){}
-      msg.textContent='Could not send the reset email ('+r.status+')'+(d?' — '+d:'')+'. Nothing was sent; contact HCPS on (855) 400-0345.'; return; }
-    msg.innerHTML='If that email has an account, a secure password-reset link is on its way. Open it to choose a new password.<br><span style="opacity:.75">Nothing after a few minutes? Check spam, then call HCPS on (855) 400-0345.</span>';
+    const r=await fetch('/.netlify/functions/password-reset',{method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({action:'request',email,audience:'dealer'})});
+    const j=await r.json().catch(()=>null);
+    if(!r.ok||!j){ msg.textContent='Could not reach the sign-in service ('+r.status+'). Please try again, or call (855) 400-0345.'; return; }
+    if(j.ok===false){ msg.textContent=j.message||'Could not send the reset email.'; return; }
+    msg.innerHTML=esc(j.message||'If that email has a dealer account, a reset link is on its way.')
+      +'<br><span style="opacity:.75">It comes from hello@homecareproviderservices.us. Nothing after a few minutes? Check spam, then call (855) 400-0345.</span>';
   }catch(e){ msg.textContent='Could not reach the sign-in service. Check your connection and try again.'; }}
 function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];AUTH.prices={};state.dealer=null;
   SESSION_ID=null; if(_hbT){clearInterval(_hbT);_hbT=null;}                 // stop the activity heartbeat
