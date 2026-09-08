@@ -3584,7 +3584,7 @@ async function ensureFreshSession(){
   })();
   return _refreshing;
 }
-function openLogin(tab){renderLocked();authTab(tab||'signin');}
+function openLogin(tab){renderLocked();authTab(tab||'signin');wireRemember();}
 function closeLogin(){/* login form is inline on the locked screen; nothing to close */}
 function authTab(t){const r=t==='register';$("#atab_signin").classList.toggle('on',!r);$("#atab_register").classList.toggle('on',r);
   $("#pane_signin").style.display=r?'none':'';$("#pane_register").style.display=r?'':'none';}
@@ -3716,7 +3716,8 @@ async function sessionStart(){ if(AUTH.status!=='approved'||!AUTH.session||!AUTH
 async function sessionPing(){ if(!SESSION_ID||AUTH.status!=='approved'||!AUTH.session||!AUTH.session.access_token)return; try{ await authPost({action:'session_ping',session_id:SESSION_ID}); }catch(e){} }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') sessionPing(); });
 async function doSignin(){const msg=$("#si_msg"),email=$("#si_email").value.trim(),pass=$("#si_pass").value;
-  const remember=$("#si_remember")?$("#si_remember").checked:true;
+  const remember=$("#si_remember")?$("#si_remember").checked:rememberPref();
+  setRememberPref(remember);
   if(!email||!pass){msg.textContent='Enter your email and password.';return;}msg.textContent='Signing in…';
   if(remember) rememberEmail(email); else forgetEmail();
   try{const s=await sbToken(email,pass);saveSession(s);await authMe();
@@ -3735,12 +3736,24 @@ async function doRegister(){const msg=$("#rg_msg"),g=id=>($(id)?.value||"").trim
   try{const r=await fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json().catch(()=>({}));msg.innerHTML=esc(j.message||(j.ok?'Registration received — pending approval.':'Could not register.'));
   }catch(e){msg.textContent=String(e.message||e);}}
+/* THE ANSWER IS READ, NOT ASSUMED.
+   This fired the request, ignored the reply and printed "on its way" whatever came back —
+   so a rate limit (429), a redirect the project does not allow (400) and a genuine send all
+   looked identical, and the only way to tell them apart was to wait for an email that was
+   never coming. Whether an account EXISTS stays vague, deliberately: anyone can open this
+   page and that would leak who holds an account. A PROVIDER failure is not a secret. */
 async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg");if(!email){msg.textContent='Enter your email first, then click reset.';return;}
   // Send the reset link to the dedicated reset page on THIS portal (not the public HCPS site).
   // Supabase redirects there with a recovery token in the URL hash; reset.html sets the new password.
   const redirectTo=location.origin+'/reset.html';
-  try{await fetch(`${_sbURL}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`,{method:'POST',headers:{'content-type':'application/json',apikey:_anon},body:JSON.stringify({email})});
-    msg.innerHTML='If that email has an account, a secure password-reset link is on its way. Open it to choose a new password.';}catch(e){msg.textContent='Could not send reset email.';}}
+  msg.textContent='Sending…';
+  try{
+    const r=await fetch(`${_sbURL}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`,{method:'POST',headers:{'content-type':'application/json',apikey:_anon},body:JSON.stringify({email})});
+    if(r.status===429){ msg.textContent='Too many reset requests just now — the mail service is rate-limiting them. Wait a few minutes and try again.'; return; }
+    if(!r.ok){ let d=''; try{ const j=await r.json(); d=String((j&&(j.msg||j.error_description||j.error))||''); }catch(e){}
+      msg.textContent='Could not send the reset email ('+r.status+')'+(d?' — '+d:'')+'. Nothing was sent; contact HCPS on (855) 400-0345.'; return; }
+    msg.innerHTML='If that email has an account, a secure password-reset link is on its way. Open it to choose a new password.<br><span style="opacity:.75">Nothing after a few minutes? Check spam, then call HCPS on (855) 400-0345.</span>';
+  }catch(e){ msg.textContent='Could not reach the sign-in service. Check your connection and try again.'; }}
 function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];AUTH.prices={};state.dealer=null;
   SESSION_ID=null; if(_hbT){clearInterval(_hbT);_hbT=null;}                 // stop the activity heartbeat
   CART.clear(); for(const k in MFR) delete MFR[k];                          // local cart clears; the saved cart stays in the system
@@ -3796,6 +3809,20 @@ async function submitAccountChange(){
 }
 function prefillDealer(){const d=AUTH.dealer||{},set=(id,v)=>{const el=$(id);if(el&&!el.value&&v)el.value=v;};
   set('#f_biz',d.name);set('#f_acct',d.hcps_account);set('#f_contact',d.contact_name);set('#f_email',d.email);set('#f_phone',d.phone);set('#f_addr',d.address);set('#f_city',d.city);set('#f_state',d.state);set('#f_zip',d.zip);}
+/* REMEMBERED, AND ONLY THE EMAIL.
+   The box used to read "Keep me signed in", which was not what it did: the session is kept
+   alive by the token refresh whether it is ticked or not. All it has ever controlled is
+   whether the address is filled in next time. It now says so. A password is never stored —
+   that belongs to the browser's own password manager and nowhere else. */
+function rememberPref(){ try{ return localStorage.getItem('hcps_remember')!=='0'; }catch(e){ return true; } }
+function setRememberPref(on){ try{ localStorage.setItem('hcps_remember',on?'1':'0'); }catch(e){} }
+function wireRemember(){
+  try{ const box=document.getElementById('si_remember');
+    if(!box) return;
+    box.checked=rememberPref();
+    box.addEventListener('change',()=>{ setRememberPref(box.checked); if(!box.checked) forgetEmail(); });
+  }catch(e){}
+}
 function renderLocked(){$("#tabs").innerHTML=""; document.body.classList.add('locked');
   const eml=esc(savedEmail());
   const mailIcon=`<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>`;
@@ -3821,7 +3848,7 @@ function renderLocked(){$("#tabs").innerHTML=""; document.body.classList.add('lo
           <p class="pl-sub">Sign in to your dealer account to order, quote, and manage your business.</p>
           <div class="pl-field"><label>Email address</label><div class="pl-inwrap">${mailIcon}<input id="si_email" type="email" placeholder="you@dealer.com" autocomplete="username" value="${eml}"></div></div>
           <div class="pl-field"><label>Password</label><div class="pl-inwrap">${lockIcon}<input id="si_pass" type="password" placeholder="••••••••" autocomplete="current-password"></div></div>
-          <div class="pl-row"><label class="pl-remember"><input type="checkbox" id="si_remember" checked> Keep me signed in</label><button class="pl-forgot" onclick="doForgot()">Forgot password?</button></div>
+          <div class="pl-row"><label class="pl-remember"><input type="checkbox" id="si_remember"> Remember my email</label><button class="pl-forgot" onclick="doForgot()">Forgot password?</button></div>
           <button class="pl-go" onclick="doSignin()">Launch Partner 360 →</button>
           <div class="pl-authmsg" id="si_msg"></div>
           <div class="pl-divider">New to HCPS?</div>
@@ -3873,7 +3900,7 @@ function applyAuth(){
     : (awaiting ? `<span class="who">Signed in — ${approved?'account being set up':'application under review'}</span><button class="signout" id="outBtn">Sign out</button>` : '');
   if(provisioned){const ob=$("#outBtn");if(ob)ob.onclick=signOut;const ab=$("#acctBtn");if(ab)ab.onclick=openAccountEditor;prefillDealer();sessionStart();}
   else if(awaiting){const ob=$("#outBtn");if(ob)ob.onclick=signOut;}
-  if(!provisioned){document.body.classList.remove('home'); if(awaiting) renderPendingSetup(); else renderLocked(); return;}
+  if(!provisioned){document.body.classList.remove('home'); if(awaiting) renderPendingSetup(); else {renderLocked();wireRemember();} return;}
   // Fully provisioned dealers land on their Partner 360 dashboard (concept home).
   document.body.classList.remove('locked');   // authenticated: unlock the persistent header/nav
   showP360('dash');
