@@ -483,7 +483,12 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .pd-broch{width:100%;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;
   border:1px solid #d7dde4;background:#fff;color:#10263f;border-radius:10px;padding:11px 14px;font-weight:700;font-size:14px;cursor:pointer}
 .pd-broch:hover{border-color:#ef6325;color:#ef6325}
-.br-modal{position:fixed;inset:0;background:rgba(16,38,63,.55);display:flex;align-items:center;justify-content:center;z-index:900;padding:18px}
+/* z-index 10060, not 900. Every other overlay in this app sits far higher — the modal
+   overlays at 9999, the tour overlay at 10050 and its callout at 10051 — so at 900 the
+   brochure dialog opened UNDERNEATH any of them, which looks from the outside exactly like
+   the button doing nothing. Above the tour, still below the support chat widget, which parks
+   itself at the top of the stacking order and should stay reachable. */
+.br-modal{position:fixed;inset:0;background:rgba(16,38,63,.55);display:flex;align-items:center;justify-content:center;z-index:10060;padding:18px}
 .br-box{background:#fff;border-radius:14px;max-width:460px;width:100%;padding:20px 22px;box-shadow:0 24px 70px rgba(0,0,0,.3)}
 .br-box h3{margin:0 0 4px;font-size:17px;color:#10263f}
 .br-box .sub{font-size:13px;color:#6b7580;margin-bottom:14px}
@@ -3459,6 +3464,18 @@ function closeCart(){$("#drawer").classList.remove("open");$("#scrim").classList
    structured fields only, never HTML — which also means the send endpoint cannot be
    used to mail arbitrary content from our domain.
 --------------------------------------------------------------------------- */
+/* THE NAME OF THE LINE BEING BROWSED — ONE DEFINITION, AT TOP LEVEL.
+   This lived only inside the "Partner 360 Stage 3" IIFE further down the file, in a separate
+   <script> block, so _brManufacturer below could never see it. The call sits at the end of a
+   `||` chain, so it was only ever REACHED when both the manufacturer name and the product's
+   brand were empty — which is why Print Brochure worked on most products and threw
+   "curLineName is not defined" on 92 of 303, silently doing nothing at all: openBrochure()
+   builds its modal after this call, so the throw meant no modal, no error, no clue.
+   Declared here, before every caller, and the copy inside that IIFE now resolves to it. */
+function curLineName(){
+  try{ const m=(state.manufacturers||[]).find(x=>x.slug===state.active); return m?m.name:''; }
+  catch(e){ return ''; }
+}
 function _brManufacturer(p){
   const slug = p.manufacturer || state.line || '';
   const m = (state.manufacturers||[]).find(x=>x.slug===slug) || {};
@@ -4896,7 +4913,9 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
 /* ===== Partner 360 Stage 3 — product detail + global search ===== */
 (function(){
   function $q(s){return document.querySelector(s);}
-  function curLineName(){ try{ const m=(state.manufacturers||[]).find(x=>x.slug===state.active); return m?m.name:''; }catch(e){return '';} }
+  /* curLineName() is declared at top level now (see _brManufacturer) so the brochure code can
+     reach it too. The local copy that used to shadow it here has been removed deliberately —
+     two definitions of one thing is how they drift. */
   function ytEmbed(url){ try{ url=String(url||"");
     var yt=url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
     if(yt) return '<iframe width="100%" height="340" src="https://www.youtube.com/embed/'+yt[1]+'" title="video" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy" style="border-radius:12px;max-width:680px"></iframe>';
