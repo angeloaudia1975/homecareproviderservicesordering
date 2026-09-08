@@ -1339,6 +1339,27 @@ function tierRangeLabel(qty, nextQty){
 function tierSummary(p){
   return tierLadder(p).filter(t=>t.qty>1).map(t=>`${t.qty}+ ${money(t.price)}`).join(' · ');
 }
+/* ONE LINE FOR A WHOLE CARD, ACROSS EVERY VARIANT ON IT.
+   Takes the union of the break quantities and, at each one, the LOWEST price any variant
+   charges there — so the row is a floor, never a promise a particular size cannot keep. The
+   caller marks it "from" when the variants disagree. Variants with no ladder of their own are
+   left out of the minimum entirely: their price at qty 2 is simply their base price, and
+   folding that in would advertise a discount that product does not offer. */
+function tierSummaryAcross(variants){
+  const lads=(Array.isArray(variants)?variants:[]).map(tierLadder).filter(l=>l.length);
+  if(!lads.length) return null;
+  const qtys=[...new Set(lads.reduce((a,l)=>a.concat(l.filter(t=>t.qty>1).map(t=>t.qty)),[]))]
+    .sort((a,b)=>a-b);
+  if(!qtys.length) return null;
+  const priceAt=(lad,q)=>{ let p=null; for(const t of lad){ if(q>=t.qty) p=t.price; } return p; };
+  const rows=qtys.map(q=>{
+    const ps=lads.map(l=>priceAt(l,q)).filter(v=>v!=null&&isFinite(v));
+    return ps.length?{qty:q, price:Math.min.apply(null,ps)}:null; }).filter(Boolean);
+  if(!rows.length) return null;
+  const first=JSON.stringify(lads[0]);
+  const varies=lads.some(l=>JSON.stringify(l)!==first);
+  return { varies:varies, text:rows.map(r=>`${r.qty}+ ${money(r.price)}`).join(' · ') };
+}
 /* What a dealer gains by adding a few more, phrased as the thing they would actually do.
    Counts on the same combined-family quantity unitPrice() tiers on, so the nudge can never
    promise a price the cart then refuses. A contract price already beats the ladder, so a
@@ -2406,20 +2427,21 @@ function cardHtml(p){
   const priceBlock = (multi && p._priceMin>0 && p._priceMin!==p._priceMax)
     ? `<div class="prow"><div style="font-weight:800;font-size:18px;color:var(--ink)"><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">From </span>${money(p._priceMin)}</div></div>`
     : `<div class="prow">${priceHtml(p)}</div>`;
-  /* The card is where a dealer decides whether to open a product at all, so the quantity
-     break belongs here and not only on the detail page. On a multi-SKU card it is shown ONLY
-     when every variant carries the same ladder — otherwise "6+ $84.95" would be a promise
-     the other sizes do not keep, and a card is the worst place to learn that. */
+  /* The card is where a dealer decides whether to open a product at all, so the quantity break
+     belongs here and not only on the detail page.
+
+     This used to print "pricing varies by option — see details" whenever a card's variants did
+     not share one identical ladder, which was 21 cards in 60 — a disclaimer where a number
+     should be, and on Cloth Tape the entire disagreement was $14.65 against $14.60. The break
+     QUANTITIES are the same throughout (2+, 6+, 11+, 21+); only the prices move with the size.
+     So the card shows the real ladder at its lowest price per break and marks it "from", which
+     is the same convention the card's own headline price already uses. A number a dealer can
+     act on beats a sentence telling them to look elsewhere, and "from" keeps it true. */
   const _tierSrc = multi ? (Array.isArray(p._variants)?p._variants:[]) : [p];
-  const _ladders = _tierSrc.map(v=>tierSummary(v));
-  const _tierLine = (_ladders.length && _ladders[0] && _ladders.every(l=>l===_ladders[0])) ? _ladders[0] : "";
-  /* 23 of 57 Ovation cards carry variants whose ladders genuinely differ, so no single line is
-     true for the card. Saying nothing would hide volume pricing from four cards in ten; saying
-     that it varies is short, honest, and sends the dealer to the table that IS true. */
-  const _anyTier = _ladders.some(Boolean);
-  const tierHtml = _tierLine
-    ? `<div class="tierhint"><b>Volume</b> ${esc(_tierLine)}</div>`
-    : (_anyTier ? `<div class="tierhint"><b>Volume</b> pricing varies by option — see details</div>` : "");
+  const _tiers = tierSummaryAcross(_tierSrc);
+  const tierHtml = _tiers
+    ? `<div class="tierhint"><b>Volume${_tiers.varies?' from':''}</b> ${esc(_tiers.text)}</div>`
+    : "";
   const buy = multi
     ? `<div class="buy"><div class="chooseBtn">Choose options →</div></div>`
     : `<div class="buy"><input class="qtyin" type="number" min="1" value="1" aria-label="Qty"><button class="addbtn" data-code="${esc(p.code)}">Add to cart</button></div>`;
