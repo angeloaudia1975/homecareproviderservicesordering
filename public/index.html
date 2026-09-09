@@ -1499,7 +1499,11 @@ async function mergeCatalogEdits(slug, prods){
     (cust||[]).forEach(c=>{ if(c.active===false||have.has(c.code)) return;
       const pa=om[c.code]||{};
       if(pa.active===false) return;
+      /* map was SELECTED above but never copied onto the row, so an added product's MAP
+         reached the browser and was thrown away — the one layer where MAP is most often the
+         only place it is recorded. Every other price field was carried; this one was missed. */
       const row={code:c.code,name:c.name,category:c.category||"",base_price:c.base_price,msrp:c.msrp,
+        map:(c.map==null||c.map==="")?null:c.map,
         image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",_custom:true};
       for(const k of OV_KEYS) if(k in pa && pa[k]!=null) row[k]=pa[k];
       prods.push(row); });
