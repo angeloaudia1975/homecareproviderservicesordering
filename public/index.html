@@ -473,6 +473,7 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .pd-plabel{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--gray);}
 .pd-msrp{font-size:14px;color:var(--gray);}
 .pd-map{font-size:14px;font-weight:600;color:#8a5a00;}
+.cmap{font-size:12px;font-weight:700;color:#8a5a00;letter-spacing:.01em;}
 .pd-margin{display:inline-flex;align-items:center;gap:7px;background:rgba(28,122,68,.12);color:#1c7a44;font-weight:700;font-size:13px;padding:7px 13px;border-radius:999px;margin-top:12px;}
 .pd-contract{color:#0a7f3f;font-weight:700;font-size:12.5px;margin-top:6px;}
 .pd-buy{display:flex;gap:12px;align-items:center;margin-top:16px;}
@@ -1390,7 +1391,11 @@ function priceHtml(p){
     : "";
   const msrp = (cp==null && p.msrp!=null && Number(p.msrp)>Number(p.base_price)) ? `<div class="msrp">MSRP ${money(p.msrp)}${p._msrp_suggested?' <span class="sugg">suggested</span>':''}</div>` : "";
   const note=dealerPriceNote(p.price_note, p);
-  return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>${contractTag}${msrp}${note?`<div class="pnote">${esc(note)}</div>`:""}</div>`;
+  /* One line, from the field, for every product that has a MAP — instead of only the
+     ones somebody remembered to type it into. */
+  const mapv=(p.map!=null&&p.map!==''&&Number(p.map)>0)?Number(p.map):null;
+  const mapLine=(cp==null && mapv!=null) ? `<div class="cmap">MAP ${money(mapv)}</div>` : "";
+  return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>${contractTag}${msrp}${mapLine}${note?`<div class="pnote">${esc(note)}</div>`:""}</div>`;
 }
 /* THE DEALER NEVER SEES HOW THE PRICE GOT HERE.
    price_note holds two unrelated things under one column: notes written FOR a dealer
@@ -1412,13 +1417,23 @@ const PRICE_NOTE_OPERATIONAL=/^\s*eff\.\s|\.(xlsx?|csv)\b|-import\b/i;
    segments ("6–10 $13.95") are meaningless once the head is removed. */
 const PRICE_NOTE_VOLUME=/^\s*volume price\b/i;
 const PRICE_NOTE_TIERISH=/^\s*\d+\s*(?:[–—-]\s*\d+|\+)\s*\$/;
+/* MAP WAS BEING TYPED INTO THE NOTE BECAUSE THE CARD NEVER READ THE FIELD.
+   Three manufacturers each invented their own wording for the same number —
+   "MAP $8.64", "Dealer $47 · MAP $70.50", "Min. advertised (MAP): $1,999.99" —
+   and any product nobody typed it for simply had no MAP on the shelf. The card
+   now renders p.map itself, so a restatement of it in the note is a duplicate and
+   is dropped. Only a segment that is ENTIRELY the MAP figure goes; "6/pack" and
+   anything else a person wrote alongside it stays. */
+const PRICE_NOTE_MAP=/^\s*(?:min\.?\s*advertised[^$]*|map)\s*\$?\s*[\d,]+(?:\.\d+)?\s*$/i;
 function dealerPriceNote(note, p){
   const raw=String(note==null?'':note);
   const supersededByLadder=tierLadder(p||{}).length>0 && PRICE_NOTE_VOLUME.test(raw);
+  const mv=(p||{}).map; const hasMapField=(mv!=null && mv!=='' && Number(mv)>0);
   return raw
     .split(/\s*·\s*/).map(s=>s.trim()).filter(Boolean)
     .filter(s=>!PRICE_NOTE_OPERATIONAL.test(s))
     .filter(s=>!(supersededByLadder && (PRICE_NOTE_VOLUME.test(s)||PRICE_NOTE_TIERISH.test(s))))
+    .filter(s=>!(hasMapField && PRICE_NOTE_MAP.test(s)))
     .join(' · ');
 }
 
