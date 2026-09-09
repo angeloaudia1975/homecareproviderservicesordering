@@ -472,6 +472,7 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .pd-price sup{font-size:16px;}
 .pd-plabel{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--gray);}
 .pd-msrp{font-size:14px;color:var(--gray);}
+.pd-map{font-size:14px;font-weight:600;color:#8a5a00;}
 .pd-margin{display:inline-flex;align-items:center;gap:7px;background:rgba(28,122,68,.12);color:#1c7a44;font-weight:700;font-size:13px;padding:7px 13px;border-radius:999px;margin-top:12px;}
 .pd-contract{color:#0a7f3f;font-weight:700;font-size:12.5px;margin-top:6px;}
 .pd-buy{display:flex;gap:12px;align-items:center;margin-top:16px;}
@@ -1460,7 +1461,7 @@ async function mergeCatalogEdits(slug, prods){
   try{
     const [imgs,cust,links,overs,media] = await Promise.all([
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_images?manufacturer=eq.${encodeURIComponent(slug)}&select=code,url`,{headers:H}).then(x=>x.ok?x.json():[]),
-      fetch(`${CONFIG.SUPABASE_URL}/rest/v1/custom_products?manufacturer=eq.${encodeURIComponent(slug)}&select=code,name,category,base_price,msrp,image,description,active,tiers,price_note`,{headers:H}).then(x=>x.ok?x.json():[]),
+      fetch(`${CONFIG.SUPABASE_URL}/rest/v1/custom_products?manufacturer=eq.${encodeURIComponent(slug)}&select=code,name,category,base_price,msrp,map,image,description,active,tiers,price_note`,{headers:H}).then(x=>x.ok?x.json():[]),
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_links?manufacturer=eq.${encodeURIComponent(slug)}&select=code,label,url`,{headers:H}).then(x=>x.ok?x.json():[]),
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_overrides?manufacturer=eq.${encodeURIComponent(slug)}&select=code,patch`,{headers:H}).then(x=>x.ok?x.json():[]),
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_media?manufacturer=eq.${encodeURIComponent(slug)}&select=code,kind,url,title,sort&order=sort`,{headers:H}).then(x=>x.ok?x.json():[]),
@@ -1481,7 +1482,9 @@ async function mergeCatalogEdits(slug, prods){
        card with a size picker or appear as separate cards, and it used to exist only in the
        deployed catalog file — so a wrong grouping could not be corrected without a redeploy.
        An admin edit now takes effect here immediately, like every other catalog edit. */
-    const OV_KEYS=["name","category","subcategory","description","price_note","base_price","msrp","tiers","image","group"];
+    /* "map" belongs here for the same reason every other price field does: a MAP that can only
+   be fixed by redeploying the catalog file is a MAP that stays wrong. */
+    const OV_KEYS=["name","category","subcategory","description","price_note","base_price","msrp","map","tiers","image","group"];
     prods=prods.map(p=>{ const pa=om[p.code]; if(!pa) return p; const merged={...p};
       for(const k of OV_KEYS) if(k in pa && pa[k]!=null) merged[k]=pa[k];
       /* A name typed in the admin is a deliberate decision and outranks the enrichment
@@ -4980,6 +4983,13 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const eff=Number(unitPrice(p,1)||p.base_price||0);
     const cp=(typeof contractPrice==="function")?contractPrice(p):null;
     const msrp=(p.msrp!=null&&Number(p.msrp)>eff)?Number(p.msrp):null;
+    /* MINIMUM ADVERTISED PRICE. Three lines carry MAP today — Access4U, Climbing Steps and
+       PediFix — and a dealer who advertises below it puts the account at risk, so it belongs
+       next to the price they are reading, not buried in a PDF. Shown whenever the line has a
+       MAP programme and stays silent for the lines that do not, which is most of them. It is
+       deliberately NOT compared against the dealer cost: MAP is an advertising floor, not a
+       discount, and it can sit above or below what this dealer pays. */
+    const mapPrice=(p.map!=null&&p.map!==""&&Number(p.map)>0)?Number(p.map):null;
     /* THE LADDER, WRITTEN OUT. A dealer should not have to discover a break by typing a
        bigger number into the qty box and watching the total move. The rows are ranges rather
        than floors ("2–5", not "2+") because a floor read next to the row under it invites
@@ -5034,6 +5044,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
               <div class="pd-price"><sup>$</sup>${d}<sup>.${c}</sup></div>
               ${cp!=null?`<div class="pd-contract">Contract price set by HCPS${(p.base_price!=null&&Number(p.base_price)>eff)?` · <span style="color:#8a94a6;text-decoration:line-through;font-weight:600">List ${money(p.base_price)}</span>`:""}</div>`:""}
               ${msrp?`<div class="pd-msrp">MSRP ${money(msrp)}</div>`:""}
+              ${mapPrice?`<div class="pd-map" title="Minimum advertised price — do not advertise below this">MAP ${money(mapPrice)}</div>`:""}
               ${margin?`<div class="pd-margin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Est. retail margin ${money(margin)}${marginPct?" · "+marginPct+"%":""}</div>`:""}`
               :`<div class="pd-plabel">Pricing</div><div class="pd-price" style="font-size:20px">${state.dealer?"Call for pricing":"Log in for pricing"}</div>`}
             ${variantSel}
