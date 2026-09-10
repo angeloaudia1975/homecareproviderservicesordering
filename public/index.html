@@ -1671,7 +1671,124 @@ async function mergeCatalogEdits(slug, prods){
     }
   }catch(e){}
   if(_gated) try{ console.log('[HCPS] '+slug+': '+_gated+' SKU(s) not listed — no enrichment page'); }catch(e){}
-  return prods.map(inheritColorPrice).map(fillMsrp);
+  return await applyMasterPrices(slug, prods.map(inheritColorPrice).map(fillMsrp));
+}
+
+/* ═══ PHASE 5 — COMMERCIAL FIELDS FROM THE MASTER RECORD ════════════════════
+   Dealer price, MSRP, MAP and quantity breaks have a single home now:
+   product_skus, reached through the catalog-feed function. Everything else on
+   a product — its name, category, image, grouping, description — still comes
+   from where it has always come from, and this pass cannot touch any of it.
+
+   WHY THE LAYERS STILL WIN A DISAGREEMENT
+   The admin writes prices to custom_products and product_overrides. It does
+   NOT yet write to product_skus; that record is rebuilt from the layers when
+   the reconciler runs. So between reconciles the layers are the NEWER truth,
+   and a difference here almost always means somebody changed a price this
+   morning and the record has not caught up — not that the record is right and
+   the storefront is wrong.
+
+   Handing the record authority before the writes move would therefore quote a
+   dealer this month's price one day and last month's the next, depending on
+   when the reconciler last ran. So in Phase 5 the feed is read, compared, and
+   reported — and where the two disagree the layers stand. Authority transfers
+   in Phase 6, in the same change that moves the writes, by flipping the one
+   constant below. That ordering is the entire safety property; the flag is
+   deliberately not a setting anybody should turn on casually.
+
+   Nothing here can empty a catalog. Every failure — no session, feed down, a
+   line not yet migrated, a migrated line that answers with nothing — leaves
+   the products exactly as the layers built them, and says why in
+   window.CATALOG_SOURCE. */
+const MASTER_PRICES_AUTHORITATIVE = false;   // Phase 6 flips this, with the writes
+const CATALOG_SOURCE = {};
+try{ window.CATALOG_SOURCE = CATALOG_SOURCE; }catch(e){}
+
+/* The comparison itself: pure, so it can be tested against fixtures.
+   Mutates `prods` only when the record is authoritative; otherwise it looks
+   and reports and changes nothing. */
+function reconcileShopPrices(prods, rows, authoritative){
+  const norm = c => String(c == null ? "" : c).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const near = (a, b) => (a == null && b == null) ? true
+                       : (a == null || b == null) ? false
+                       : Math.abs(Number(a) - Number(b)) < 0.005;
+  const ladder = t => Array.isArray(t)
+    ? t.map(x => Math.round(Number(x.min_qty != null ? x.min_qty : x.minQty)) + ':' + Number(x.price))
+       .sort().join(',')
+    : '';
+
+  const by = {};
+  (rows || []).forEach(r => { by[norm(r.code)] = r; });
+
+  let matched = 0, unmatched = 0;
+  const diffs = [];
+  (prods || []).forEach(p => {
+    const m = by[norm(p.code)];
+    if(!m){ unmatched++; return; }
+    matched++;
+    ["base_price", "msrp", "map"].forEach(k => {
+      /* A field the record does not carry is never used to blank one the
+         storefront has. "The record says nothing" is not "the price is gone". */
+      if(m[k] == null) return;
+      if(!near(p[k], m[k])){
+        diffs.push({ code: p.code, field: k, layers: p[k], record: m[k] });
+        if(authoritative) p[k] = m[k];
+      }
+    });
+    if(m.tiers != null){
+      if(ladder(p.tiers) !== ladder(m.tiers)){
+        diffs.push({ code: p.code, field: "tiers", layers: ladder(p.tiers), record: ladder(m.tiers) });
+        if(authoritative) p.tiers = m.tiers;
+      }
+    }
+  });
+  return { matched, unmatched, diffs };
+}
+
+async function applyMasterPrices(slug, prods){
+  const settle = (source, reason, extra) => {
+    CATALOG_SOURCE[slug] = Object.assign(
+      { source, reason, products: prods.length, at: new Date().toISOString() }, extra || {});
+    return prods;
+  };
+  try{
+    const tok = (window.AUTH && AUTH.session && AUTH.session.access_token) || '';
+    if(!tok) return settle('layers', 'no signed-in session to authorise the feed');
+
+    let feed;
+    try{
+      const r = await fetch('/.netlify/functions/catalog-feed?manufacturer=' + encodeURIComponent(slug),
+                            { headers:{ authorization: 'Bearer ' + tok } });
+      if(!r.ok) return settle('layers', 'feed returned HTTP ' + r.status);
+      feed = await r.json();
+    }catch(err){ return settle('layers', 'feed unreachable: ' + ((err && err.message) || err)); }
+
+    if(!feed || feed.migrated !== true)
+      return settle('layers', 'this line has not been migrated to the master record yet');
+
+    const rows = Array.isArray(feed.skus) ? feed.skus : [];
+    /* A migrated line answering with nothing is far more likely to be a fault
+       than a manufacturer with no sellable products. Treated as a fault. */
+    if(!rows.length)
+      return settle('layers', 'migrated line answered with no sellable SKUs — treated as a fault');
+
+    const r = reconcileShopPrices(prods, rows, MASTER_PRICES_AUTHORITATIVE === true);
+    if(r.diffs.length) try{
+      console.warn('[HCPS] ' + slug + ': ' + r.diffs.length +
+        ' price difference(s) between the layers and the master record. ' +
+        (MASTER_PRICES_AUTHORITATIVE ? 'The record was used.' : 'The layers were used; run the reconciler.'),
+        r.diffs.slice(0, 20));
+    }catch(e){}
+
+    return settle(MASTER_PRICES_AUTHORITATIVE && r.diffs.length ? 'record' : 'layers',
+      MASTER_PRICES_AUTHORITATIVE ? 'master record is authoritative'
+                                  : 'compared against the master record; layers stand until Phase 6',
+      { compared: true, matched: r.matched, unmatched: r.unmatched,
+        differences: r.diffs.length, diffs: r.diffs.slice(0, 50),
+        feed_generated_at: feed.generated_at, superseded: (feed.superseded || []).length });
+  }catch(err){
+    return settle('layers', 'price comparison failed: ' + ((err && err.message) || err));
+  }
 }
 async function loadProducts(slug){
   if(isGoldenSlug(slug)){

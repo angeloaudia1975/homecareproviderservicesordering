@@ -150,6 +150,20 @@ exports.handler = async (event) => {
     if (!gate.ok) return json(gate.status, { error: gate.error });
 
     const e = encodeURIComponent;
+    /* HAS THIS LINE BEEN MIGRATED?
+       An empty answer and an unmigrated line look identical from the shop's
+       side, and getting that wrong would empty a manufacturer off the
+       storefront — PediFix has 497 SKUs and no rows here yet. So the feed says
+       so explicitly, and the presence of ANY row is what says it: the record
+       itself is the record of its own migration, rather than a second list
+       somewhere that has to be kept in step with it. */
+    const anyRow = await sb(`product_skus?manufacturer=eq.${e(slug)}&select=code&limit=1`).catch(() => []);
+    const migrated = Array.isArray(anyRow) && anyRow.length > 0;
+    if (!migrated) {
+      return json(200, { ok: true, manufacturer: slug, source: "product_skus",
+        generated_at: new Date().toISOString(), migrated: false, count: 0, skus: [], superseded: [] });
+    }
+
     const [active, dead] = await Promise.all([
       sb(`product_skus?manufacturer=eq.${e(slug)}&status=eq.active` +
          `&select=code,option_label,base_price,msrp,msrp_auto,map,tiers,price_note,uom,hcpcs,case_qty` +
@@ -167,6 +181,7 @@ exports.handler = async (event) => {
       manufacturer: slug,
       source: "product_skus",
       generated_at: new Date().toISOString(),
+      migrated: true,
       count: skus.length,
       skus,
       superseded: (dead || []).map(r => ({ code: String(r.code), superseded_by: String(r.superseded_by) })),
