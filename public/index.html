@@ -1389,7 +1389,17 @@ function priceHtml(p){
   const contractTag=(cp!=null)
     ? `<div class="pnote" style="color:#0a7f3f;font-weight:700">Your contract price${(Number(p.base_price)>cp+0.005)?` · <span style="color:#8a94a6;font-weight:600;text-decoration:line-through">List ${money(p.base_price)}</span>`:""}</div>`
     : "";
-  const msrp = (cp==null && p.msrp!=null && Number(p.msrp)>Number(p.base_price)) ? `<div class="msrp">MSRP ${money(p.msrp)}${p._msrp_suggested?' <span class="sugg">suggested</span>':''}</div>` : "";
+  /* ONE MSRP, WORDED ONE WAY.
+     This used to append "suggested" wherever the storefront had computed the
+     figure itself. The trouble was that it could only mark the ones IT had
+     computed on the spot — 33 of Ovation's 303 — while the other 270 were
+     derived by exactly the same rule years earlier and stored, so they showed
+     as plain MSRP. Dealers saw two labels for one thing, and the difference
+     between them was when the number happened to be worked out rather than
+     anything about the number. Every MSRP now reads the same. The record still
+     knows which figures were derived — msrp_auto — for anyone who needs to ask;
+     it is simply not a distinction a dealer is shown. */
+  const msrp = (cp==null && p.msrp!=null && Number(p.msrp)>Number(p.base_price)) ? `<div class="msrp">MSRP ${money(p.msrp)}</div>` : "";
   const note=dealerPriceNote(p.price_note, p);
   /* One line, from the field, for every product that has a MAP — instead of only the
      ones somebody remembered to type it into. */
@@ -1811,8 +1821,11 @@ async function loadProducts(slug){
   const prods = await r.json();
   state.products = await mergeCatalogEdits(slug, prods||[]);
 }
-// If a product has no MSRP, suggest one at 2× the dealer price so dealers always have a
-// selling point (marked "suggested"). Never overrides a manufacturer-provided MSRP.
+// If a product has no MSRP, derive one at 2× the dealer price so dealers always have a
+// selling point. Never overrides a manufacturer-provided MSRP. The _msrp_suggested flag it
+// sets is provenance only — no longer shown to dealers, since every MSRP now reads the same
+// way whether it was quoted or derived. The record carries the same fact as msrp_auto, and
+// after Phase 6 this function becomes redundant: the derivation already happened upstream.
 /* COLOUR VARIANTS INHERIT THE BASE PART'S PRICE.
    A colour is not a different product: 10002BLUE and 10002RED are the same brace in the same
    size, and they cost what 10002 costs. Where a colour SKU carries no price of its own, the
