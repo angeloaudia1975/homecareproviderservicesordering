@@ -1752,13 +1752,20 @@ async function applyMasterPrices(slug, prods){
     return prods;
   };
   try{
+    /* Two ways to be entitled to a price: a signed-in dealer, or staff viewing
+       as one. Preview deliberately never mints a dealer session, so it has no
+       JWT to send — and preview is how this storefront actually gets reviewed.
+       Leaving it on the old path would mean the view used to check the shop is
+       the one view that never exercises the new one. */
     const tok = (window.AUTH && AUTH.session && AUTH.session.access_token) || '';
-    if(!tok) return settle('layers', 'no signed-in session to authorise the feed');
+    const pv  = (typeof PREVIEW !== 'undefined' && PREVIEW && PREVIEW.token) ? PREVIEW.token : '';
+    if(!tok && !pv) return settle('layers', 'no dealer session or preview to authorise the feed');
 
     let feed;
     try{
+      const headers = tok ? { authorization: 'Bearer ' + tok } : { 'x-hcps-preview': pv };
       const r = await fetch('/.netlify/functions/catalog-feed?manufacturer=' + encodeURIComponent(slug),
-                            { headers:{ authorization: 'Bearer ' + tok } });
+                            { headers });
       if(!r.ok) return settle('layers', 'feed returned HTTP ' + r.status);
       feed = await r.json();
     }catch(err){ return settle('layers', 'feed unreachable: ' + ((err && err.message) || err)); }

@@ -65,6 +65,14 @@ function run(src){
     eq(authorize({}, 'ovation-medical').status, 401, 'status');
   });
 
+
+  t('a staff preview is a dealer caller with that dealer\'s lines', () => {
+    // previewMe() sets AUTH.status approved but never a session, so preview has
+    // no JWT. It must still be entitled to exactly the dealer's own lines.
+    eq(authorize({ kind:'dealer', dealer_id:'d1', lines:['climbing-steps'] }, 'climbing-steps'), { ok:true });
+    eq(authorize({ kind:'dealer', dealer_id:'d1', lines:['climbing-steps'] }, 'ovation-medical').status, 403, 'and no more than those');
+  });
+
   /* ---- what goes on the wire --------------------------------------------- */
   t('a full row survives intact', () => {
     const [r] = feedRows([{ code:'ST006SN', option_label:'Large', base_price:27.95, msrp:55.9,

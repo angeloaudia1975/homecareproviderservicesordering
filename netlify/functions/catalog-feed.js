@@ -57,7 +57,41 @@ async function sb(path) {
    that is read with the service role. Staff are recognised the same way the
    admin API recognises them, dealers the same way dealer-auth does, so there
    is no third notion of identity invented here. */
+/* Everything a dealer is allowed to see, given their id. Shared by the signed-in
+   path and the staff-preview path so both answer with exactly the same rules. */
+async function dealerCaller(dealer_id) {
+  const dm = await sb(
+    `dealer_manufacturers?dealer_id=eq.${encodeURIComponent(dealer_id)}&active=eq.true&select=manufacturer`
+  ).catch(() => []);
+  return { kind: "dealer", dealer_id, lines: (dm || []).map(x => String(x.manufacturer)) };
+}
+
 async function caller(event) {
+  /* STAFF PREVIEW — how the storefront is actually reviewed.
+     When staff open the portal "as" a dealer from Dealer 360, previewMe() sets
+     AUTH.status to approved but deliberately never mints a dealer session:
+     `AUTH.session = null; // never a dealer session in preview`. So a preview
+     has no JWT to present, and a feed that only accepted a JWT would fall back
+     to the old layers on every preview — meaning the one view used to review
+     the storefront is the one view that never exercises the new path. At
+     Phase 6, with the layers gone, preview would show no prices at all.
+
+     The preview token is therefore accepted as a credential in its own right,
+     validated exactly as dealer-auth validates it — the token must exist and
+     must not have expired — and it grants that dealer's lines and nothing
+     more. It arrives in a header rather than the query string: a credential in
+     a URL ends up in server logs and browser history. */
+  const preview = String(event.headers["x-hcps-preview"] || event.headers["X-HCPS-Preview"] || "").trim();
+  if (preview) {
+    const rows = await sb(
+      `dealer_preview_tokens?token=eq.${encodeURIComponent(preview)}&select=dealer_id,expires_at`
+    ).catch(() => []);
+    const t = rows && rows[0];
+    if (!t || !t.dealer_id) return null;
+    if (t.expires_at && new Date(t.expires_at).getTime() < Date.now()) return null;
+    return await dealerCaller(t.dealer_id);
+  }
+
   const auth = event.headers["authorization"] || event.headers["Authorization"] || "";
   const tok = auth.replace(/^Bearer\s+/i, "").trim();
   if (!tok) return null;
@@ -82,15 +116,7 @@ async function caller(event) {
   const du = await sb(`dealer_users?uid=eq.${encodeURIComponent(u.id)}&select=status,dealer_id`).catch(() => []);
   const d = du && du[0];
   if (!d || d.status !== "approved") return null;
-
-  const dm = await sb(
-    `dealer_manufacturers?dealer_id=eq.${encodeURIComponent(d.dealer_id)}&active=eq.true&select=manufacturer`
-  ).catch(() => []);
-  return {
-    kind: "dealer",
-    dealer_id: d.dealer_id,
-    lines: (dm || []).map(x => String(x.manufacturer)),
-  };
+  return await dealerCaller(d.dealer_id);
 }
 
 /* Pure: may this caller see this line? Split out so it can be tested without
