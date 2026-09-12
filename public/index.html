@@ -1497,12 +1497,25 @@ async function mergeCatalogEdits(slug, prods){
     /* PRICE INDEX — built BEFORE anything is hidden, because the base part number a colour
        variant inherits from is very often the retired one. 10002 is hidden and priced;
        10002BLUE is what a dealer buys. Losing the hidden row would lose the fallback. */
-    const priceIndex={};
-    const noteP=(code,v)=>{ if(v==null||v==='') return; const num=Number(v);
-      if(isFinite(num)&&num>0){ const k=String(code).toUpperCase(); if(priceIndex[k]==null) priceIndex[k]=num; } };
-    (overs||[]).forEach(o=>noteP(o.code,(o.patch||{}).base_price));
-    (cust ||[]).forEach(c=>noteP(c.code,c.base_price));
-    prods.forEach(x=>noteP(x.code,x.base_price));
+    /* THE LADDER TRAVELS WITH THE PRICE, FROM THE SAME ROW.
+       The index used to carry the base price alone, which is how sixty Gen 2 boots came to
+       show the right price on the card and then charge it at every quantity — 10002BLUE had a
+       ladder typed in by hand, BLACK/GREY/RED had none, and unitPrice() falls straight through
+       to base_price when p.tiers is empty. A dealer ordering 21 black paid $49.95 each where
+       21 blue cost $27.95.
+       Both facts are recorded together and only from the row that actually supplied the price.
+       Taking the price from one layer and the ladder from another would build a schedule that
+       never existed on anyone's price list. */
+    const priceIndex={}, tierIndex={};
+    const noteP=(code,v,tiers)=>{ if(v==null||v==='') return; const num=Number(v);
+      if(isFinite(num)&&num>0){ const k=String(code).toUpperCase();
+        if(priceIndex[k]==null){
+          priceIndex[k]=num;
+          tierIndex[k]=(Array.isArray(tiers)&&tiers.length)?tiers:null;
+        } } };
+    (overs||[]).forEach(o=>noteP(o.code,(o.patch||{}).base_price,(o.patch||{}).tiers));
+    (cust ||[]).forEach(c=>noteP(c.code,c.base_price,c.tiers));
+    prods.forEach(x=>noteP(x.code,x.base_price,x.tiers));
     /* `group` is now overridable. It decides whether several SKUs collapse into one product
        card with a size picker or appear as separate cards, and it used to exist only in the
        deployed catalog file — so a wrong grouping could not be corrected without a redeploy.
@@ -1536,7 +1549,7 @@ async function mergeCatalogEdits(slug, prods){
     prods.forEach(p=>{ const L=lm[p.code]; if(L&&L.url){ p.moreUrl=L.url; p.moreLabel=L.label||"More Information"; } });
     // media gallery (extra images, videos, brochures, links) keyed by code
     const mm={}; (media||[]).forEach(m=>{ if(m&&m.code&&m.url){ (mm[m.code]=mm[m.code]||[]).push(m); } });
-    prods.forEach(p=>{ if(mm[p.code]) p.media=mm[p.code]; p._priceIndex=priceIndex; });
+    prods.forEach(p=>{ if(mm[p.code]) p.media=mm[p.code]; p._priceIndex=priceIndex; p._tierIndex=tierIndex; });
   }catch(e){}
   // ---- product-content enrichment layer (LIVE gate) ----
   // Source of truth is Supabase product_content. "Live on Partner 360" is the PUBLISHED state:
@@ -1836,18 +1849,42 @@ async function loadProducts(slug){
    distinction matters: on other lines a trailing suffix marks a real variant — Strongback's
    1007 and 1007AB are different products at different prices — and inheriting across those
    would quietly mis-price a product. Anything inherited is marked, so the source is never a
-   mystery. */
+   mystery.
+
+   THE QUANTITY LADDER IS INHERITED ON THE SAME TERMS, and it is inherited separately: a SKU
+   can carry its own price and still have no ladder, which is the shape that went unnoticed
+   because the card looked right. Two guards keep this honest. The ladder is only taken when
+   the colour SKU ends up at the SAME price as the base part — a colour that genuinely costs
+   more is not entitled to the cheaper part's breaks, and a ladder pasted under a different
+   base price could easily read above it. And the rungs are copied, never shared: eighty boots
+   pointing at one array is a bug waiting for the first thing that edits a rung in place.
+
+   This is a fallback, not the source of truth. Where the record carries the ladder — which is
+   where it belongs — none of this runs, and after Phase 6 it should be dead code like the
+   MSRP derivation above it. It exists so that the next colour SKU added without a ladder is
+   merely redundant rather than silently charging list price at every quantity. */
 const COLOR_SUFFIX=/(BLUE|RED|GREY|GRAY|BLACK|WHITE|PINK|TAN|NAVY|GREEN|PURPLE|ORANGE|BEIGE|BK|WH|PK|DB|BL|GY|RD|NV|TN)$/;
 function inheritColorPrice(p){
   const cur=Number(p.base_price);
-  if(p.base_price!=null && p.base_price!=='' && isFinite(cur) && cur>0) return p;
+  const havePrice = p.base_price!=null && p.base_price!=='' && isFinite(cur) && cur>0;
+  const haveTiers = Array.isArray(p.tiers) && p.tiers.length>0;
+  if(havePrice && haveTiers) return p;
   const idx=p._priceIndex; if(!idx) return p;
+  const tdx=p._tierIndex||{};
   let code=String(p.code||'').toUpperCase();
   const m=code.match(COLOR_SUFFIX); if(!m) return p;
   for(const stem of [code.slice(0,m.index), code.slice(0,m.index).replace(/[-_\s]+$/,'')]){
     if(!stem || stem===code) continue;
     const v=idx[stem];
-    if(v!=null){ p.base_price=v; p._priceFromBase=stem; break; }
+    if(v==null) continue;
+    if(!havePrice){ p.base_price=v; p._priceFromBase=stem; }
+    const rungs=tdx[stem];
+    const samePrice=Math.abs(Number(p.base_price)-Number(v))<0.005;
+    if(!haveTiers && samePrice && Array.isArray(rungs) && rungs.length){
+      p.tiers=rungs.map(t=>Object.assign({},t));
+      p._tiersFromBase=stem;
+    }
+    break;
   }
   return p;
 }
