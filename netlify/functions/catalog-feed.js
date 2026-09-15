@@ -133,6 +133,27 @@ function authorize(who, slug) {
   return { ok: false, status: 401, error: "unauthorized" };
 }
 
+/* WHETHER THIS LINE'S PRICES COME FROM THE RECORD.
+   Three things have to be true, and only the first is the setting a person
+   turned on. The second is that the mirror from the legacy layers is healthy:
+   catalog-api stamps record_resync_error whenever it fails, and while that is
+   set these rows have stopped being updated — serving them would be serving a
+   price that froze at some point nobody noticed. The third is that we could
+   read the answer at all; an unreadable or missing meta row is not permission.
+   Every refusal says why, because "the layers were used" on its own has cost
+   more debugging time than any other sentence in this rebuild.
+   Pure and exported, so the decision can be tested without a database. */
+function recordAuthority(metaRows) {
+  const m = Array.isArray(metaRows) && metaRows[0] ? metaRows[0] : null;
+  if (!m) return { authoritative: false, note: "no manufacturer_meta row for this line" };
+  if (m.record_resync_error)
+    return { authoritative: false,
+             note: "the record is behind the layers: " + String(m.record_resync_error) };
+  if (m.record_authoritative !== true)
+    return { authoritative: false, note: "this line still prices from the legacy layers" };
+  return { authoritative: true, note: null };
+}
+
 /* Pure: the wire shape. Nulls are dropped rather than sent as null so the
    payload says what it knows and stays quiet about what it does not — and so
    a consumer cannot mistake "no MAP recorded" for "MAP is zero". */
@@ -187,8 +208,25 @@ exports.handler = async (event) => {
     const migrated = Array.isArray(anyRow) && anyRow.length > 0;
     if (!migrated) {
       return json(200, { ok: true, manufacturer: slug, source: "product_skus",
-        generated_at: new Date().toISOString(), migrated: false, count: 0, skus: [], superseded: [] });
+        generated_at: new Date().toISOString(), migrated: false, authoritative: false,
+        authority_note: "this line has not been migrated to the master record yet",
+        count: 0, skus: [], superseded: [] });
     }
+
+    /* DOES THIS LINE'S PRICING COME FROM HERE, OR IS IT STILL BEING COMPARED?
+       Authority is per manufacturer and it is the record's own answer to give —
+       the shop asking a hard-coded list would be a second place that has to be
+       kept in step with this one.
+       record_resync_error is half the answer. catalog-api mirrors the legacy
+       layers into product_skus after every commercial edit and records a failure
+       there; while it is set, these rows have stopped being updated and the only
+       safe thing to say is "not authoritative". The line falls back to the layers
+       by itself, which is the behaviour you want from a mirror that broke at 2am.
+       Unreadable meta is treated the same way, for the same reason. */
+    const meta = await sb(`manufacturer_meta?slug=eq.${e(slug)}&select=record_authoritative,record_resync_error`)
+      .catch(() => null);
+    const auth = recordAuthority(meta);
+    const authoritative = auth.authoritative;
 
     const [active, dead] = await Promise.all([
       sb(`product_skus?manufacturer=eq.${e(slug)}&status=eq.active` +
@@ -208,6 +246,10 @@ exports.handler = async (event) => {
       source: "product_skus",
       generated_at: new Date().toISOString(),
       migrated: true,
+      authoritative,
+      // Why authority was refused, when it was, so the storefront console says
+      // something better than "the layers were used" to whoever is looking.
+      authority_note: auth.note,
       count: skus.length,
       skus,
       superseded: (dead || []).map(r => ({ code: String(r.code), superseded_by: String(r.superseded_by) })),
@@ -220,3 +262,4 @@ exports.handler = async (event) => {
 // Exported for the test suite. The handler is what Netlify runs.
 module.exports.authorize = authorize;
 module.exports.feedRows = feedRows;
+module.exports.recordAuthority = recordAuthority;

@@ -1723,7 +1723,16 @@ async function mergeCatalogEdits(slug, prods){
    line not yet migrated, a migrated line that answers with nothing — leaves
    the products exactly as the layers built them, and says why in
    window.CATALOG_SOURCE. */
-const MASTER_PRICES_AUTHORITATIVE = false;   // Phase 6 flips this, with the writes
+/* PHASE 6 ARRIVED PER LINE, NOT ALL AT ONCE.
+   This was one constant because there was one decision to make. There isn't:
+   Bemis has nine SKUs whose every number is visible on one screen, PediFix has
+   497 that have not been migrated at all, and the honest state of the system is
+   that those two lines are in different phases. So authority is now the feed's
+   answer, per manufacturer, read from the record's own metadata — and this
+   constant becomes what it should always have been, a single switch that takes
+   every line back to the layers without a database change or a deploy of the
+   admin. Set it false and nothing below can transfer authority to anything. */
+const MASTER_PRICES_ENABLED = true;
 const CATALOG_SOURCE = {};
 try{ window.CATALOG_SOURCE = CATALOG_SOURCE; }catch(e){}
 
@@ -1802,18 +1811,25 @@ async function applyMasterPrices(slug, prods){
     if(!rows.length)
       return settle('layers', 'migrated line answered with no sellable SKUs — treated as a fault');
 
-    const r = reconcileShopPrices(prods, rows, MASTER_PRICES_AUTHORITATIVE === true);
+    /* The line's own answer, and the global switch can only ever take it away.
+       A feed that has not been redeployed yet simply omits the field, which
+       reads as false — an old feed keeps the old behaviour rather than silently
+       handing authority to a record nobody checked. */
+    const authoritative = MASTER_PRICES_ENABLED === true && feed.authoritative === true;
+
+    const r = reconcileShopPrices(prods, rows, authoritative);
     if(r.diffs.length) try{
       console.warn('[HCPS] ' + slug + ': ' + r.diffs.length +
         ' price difference(s) between the layers and the master record. ' +
-        (MASTER_PRICES_AUTHORITATIVE ? 'The record was used.' : 'The layers were used; run the reconciler.'),
+        (authoritative ? 'The record was used.' : 'The layers were used; run the reconciler.'),
         r.diffs.slice(0, 20));
     }catch(e){}
 
-    return settle(MASTER_PRICES_AUTHORITATIVE && r.diffs.length ? 'record' : 'layers',
-      MASTER_PRICES_AUTHORITATIVE ? 'master record is authoritative'
-                                  : 'compared against the master record; layers stand until Phase 6',
-      { compared: true, matched: r.matched, unmatched: r.unmatched,
+    return settle(authoritative ? 'record' : 'layers',
+      authoritative ? 'master record is authoritative for this line'
+                    : ('compared against the master record; layers stand — ' +
+                       (feed.authority_note || 'this line still prices from the legacy layers')),
+      { compared: true, authoritative, matched: r.matched, unmatched: r.unmatched,
         differences: r.diffs.length, diffs: r.diffs.slice(0, 50),
         feed_generated_at: feed.generated_at, superseded: (feed.superseded || []).length });
   }catch(err){
