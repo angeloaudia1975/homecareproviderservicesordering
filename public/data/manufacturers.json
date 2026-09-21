@@ -158,5 +158,14 @@
     "logo": "/assets/logos/gce.jpg",
     "hasData": true,
     "sort": 11
+  },
+  {
+    "slug": "dalton",
+    "name": "Dalton Medical",
+    "accent": "#1681c2",
+    "dark": "#0b0d0f",
+    "logo": "/assets/logos/dalton.jpg",
+    "hasData": true,
+    "sort": 12
   }
 ]
