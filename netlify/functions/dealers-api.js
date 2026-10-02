@@ -120,8 +120,12 @@ async function buildState(){
 
 exports.handler = async (event)=>{
   try{
-    const need=process.env.ANALYTICS_TOKEN;
-    if(need){const got=event.headers["x-analytics-token"]||(event.queryStringParameters||{}).token||""; if(got!==need) return json(401,{error:"unauthorized"});}
+    /* FAILS CLOSED. This legacy copy used to skip the check entirely when ANALYTICS_TOKEN was
+       unset, opening every dealer record to anonymous requests. It is still deployed on the
+       ordering site, so now a missing variable refuses everyone instead. */
+    const need=process.env.ANALYTICS_TOKEN||"";
+    const got=String(event.headers["x-analytics-token"]||(event.queryStringParameters||{}).token||"");
+    if(!need || got.length!==need.length || !require("crypto").timingSafeEqual(Buffer.from(got),Buffer.from(need))) return json(401,{error:"unauthorized"});
     if(!SUPABASE_URL||!SERVICE_ROLE) return json(500,{error:"Supabase env vars not set (SUPABASE_URL, SUPABASE_SERVICE_ROLE)"});
 
     if(event.httpMethod==="GET") return json(200, await buildState());
