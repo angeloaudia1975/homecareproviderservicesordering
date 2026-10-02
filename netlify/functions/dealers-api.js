@@ -34,6 +34,32 @@ async function sbSend(method,path,body,extraHeaders){
   const t=await r.text(); return t?JSON.parse(t):null;
 }
 const rpc=(fn,args)=>sbSend("POST",`rpc/${fn}`,args,{Prefer:"return=minimal"});
+/* Owner change from this (legacy) dealer editor. Mirrors setDealerOwner in the Sales admin's
+   _scope.js: one exact-name dealer -> write rep_name + rep_email (the staff member with that rep
+   name), and hand that dealer's open tasks/opportunities from the previous owner (or nobody) to the
+   new one. An unchanged owner writes nothing; a name that is no dealer stays a directory-only row. */
+async function setOwnerByName(name, rep){
+  const rows=await sbGet(`dealers?business_name=eq.${encodeURIComponent(name)}&select=id,rep_name,rep_email&limit=2`);
+  if(!rows||rows.length!==1) return null;
+  const d=rows[0]; const low=s=>String(s||"").trim().toLowerCase();
+  const staff=await sbGet("staff_users?select=email,rep_name").catch(()=>[]);
+  const hit=(staff||[]).filter(s=>s.email && rep && low(s.rep_name)===low(rep));
+  const email=hit.length===1?low(hit[0].email):null;
+  const prevByEmail=d.rep_email?((staff||[]).find(s=>low(s.email)===low(d.rep_email))||{}).rep_name:null;
+  const prev=String(prevByEmail||d.rep_name||"").trim();
+  if(low(prev)===low(rep) && low(d.rep_email)===low(email)) return {dealer_id:d.id,changed:false};
+  await sbSend("PATCH",`dealers?id=eq.${encodeURIComponent(d.id)}`,{rep_name:rep,rep_email:email},{Prefer:"return=minimal"});
+  const moved={tasks:0,opportunities:0};
+  if(rep && low(prev)!==low(rep)){
+    for(const p of (prev?[prev,""]:[""])){
+      const who=c=>p?`${c}=eq.${encodeURIComponent(p)}`:`${c}=is.null`;
+      const t=await sbSend("PATCH",`dealer_tasks?dealer_id=eq.${encodeURIComponent(d.id)}&status=eq.open&${who("assigned_rep")}&select=id`,{assigned_rep:rep},{Prefer:"return=representation"}).catch(()=>null);
+      const o=await sbSend("PATCH",`opportunities?dealer_id=eq.${encodeURIComponent(d.id)}&status=eq.open&${who("owner_rep")}&select=id`,{owner_rep:rep},{Prefer:"return=representation"}).catch(()=>null);
+      moved.tasks+=Array.isArray(t)?t.length:0; moved.opportunities+=Array.isArray(o)?o.length:0;
+    }
+  }
+  return {dealer_id:d.id,changed:true,rep_email:email,moved};
+}
 
 const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Supabase Auth admin API (create/update/delete auth users). Service-role only.
@@ -68,6 +94,9 @@ async function buildState(){
   const rows = await sbGetAll("monthly_sales?select=dealer_id,manufacturer,period,amount,commission,customer_name,customer_ref");
   const mfrName=Object.fromEntries(mfrs.map(m=>[m.slug,m.name]));
   const repByName=Object.fromEntries(dir.map(d=>[d.dealer_name,d.rep_name]));
+  // The dealer row's own owner wins over the legacy directory (Phase 0D), so this editor shows — and
+  // saves back — the real owner instead of a blank where the directory has no row.
+  const repById={}; try{ for(const x of (await sbGetAll("dealers?select=id,rep_name"))) if(x.rep_name) repById[x.id]=x.rep_name; }catch(e){}
   const aliByDealer=new Map(); for(const a of aliases){(aliByDealer.get(a.dealer_id)||aliByDealer.set(a.dealer_id,[]).get(a.dealer_id)).push(a.raw_name);}
   const accByDealer=new Map(); for(const x of dm){if(x.active!==false)(accByDealer.get(x.dealer_id)||accByDealer.set(x.dealer_id,[]).get(x.dealer_id)).push(x.manufacturer);}
   // aggregate sales per dealer_id
@@ -91,7 +120,7 @@ async function buildState(){
       id:d.id, name:d.business_name, hcps_account:d.hcps_account||"", status:d.status||"",
       contact_name:d.contact_name||"", email:d.email||"", phone:d.phone||"",
       address:d.address||"", city:d.city||"", state:d.state||"", zip:d.zip||"", notes:d.notes||"",
-      rep: repByName[d.business_name]||"",
+      rep: repById[d.id]||repByName[d.business_name]||"",
       aliases:(aliByDealer.get(d.id)||[]).filter((v,i,s)=>s.indexOf(v)===i).sort(),
       access:(accByDealer.get(d.id)||[]).slice().sort(),
       buysLines:[...a.lines].sort(),
@@ -168,8 +197,12 @@ exports.handler = async (event)=>{
       }
       if(act==="rep"){
         if(!b.dealer_name) return json(400,{error:"dealer_name required"});
-        await sbSend("POST","dealer_directory",{dealer_name:b.dealer_name,rep_name:(b.rep_name||"").trim()||null,updated_at:new Date().toISOString()},{Prefer:"resolution=merge-duplicates,return=minimal"});
-        return json(200,{ok:true});
+        const rep=(b.rep_name||"").trim()||null;
+        await sbSend("POST","dealer_directory",{dealer_name:b.dealer_name,rep_name:rep,updated_at:new Date().toISOString()},{Prefer:"resolution=merge-duplicates,return=minimal"});
+        // Phase 0D: the dealer row (rep_email + rep_name) is the owner every portal reads. Keep it in
+        // step with this directory write — the same rule as the Sales admin's setDealerOwner.
+        const owner=await setOwnerByName(b.dealer_name, rep).catch(()=>null);
+        return json(200,{ok:true,owner});
       }
       if(act==="nomerge"){
         if(!b.id_a||!b.id_b) return json(400,{error:"id_a + id_b required"});

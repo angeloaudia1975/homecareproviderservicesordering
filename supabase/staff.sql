@@ -4,12 +4,14 @@
 --
 -- Roles:  president  (full access, sees all money + every rep's notes/routes)
 --         rep        (own accounts only; can plan/save routes if can_travel)
---         relations  (own accounts only; no travel/route tools)
--- rep_name matches dealers.rep so each person's book scopes automatically.
+--         relations  (every dealer, no management powers — Phase 0K policy; see
+--                     netlify/functions/_scope.js in the Sales admin repo)
+-- A dealer's owner is dealers.rep_email (the person's sign-in email), Phase 0C/0D;
+-- rep_name is kept for display.
 --
--- No seeding needed: the FIRST person to sign in on Admin → Staff (while this
--- table is empty) is auto-created as President. After that, only the President
--- can add teammates.
+-- No seeding needed: on an EMPTY table, only the address named in the
+-- STAFF_BOOTSTRAP_EMAIL environment variable can sign in and become President
+-- (Phase 0B). After that, only the President can add teammates.
 -- ============================================================================
 
 create table if not exists staff_users (
