@@ -8,13 +8,20 @@
  * manufacturer to HCPS (orders@homecareproviderservices.us) via Resend on the
  * homecareproviderservices.us domain. reply_to is set to the dealer.
  *
- * A legacy single-order payload ({business, items, ...}) is also accepted.
+ * THE SERVER PRICES THE ORDER (Phase 2.7). This function no longer emails whatever prices
+ * the browser sent. It forwards the dealer's sign-in to orders-api "create", which re-prices
+ * every line with the storefront's own engine for this dealer and records the order. If those
+ * prices differ from what the dealer reviewed, nothing is recorded or emailed: the new prices
+ * go back to the browser (409 prices_changed) for the dealer to review. Otherwise the email
+ * carries the prices the server stored — never the browser's numbers.
+ *
  * No dependencies — uses the native fetch in the Netlify Node runtime.
  *
  * Env vars (Netlify → Site settings → Environment variables):
  *   RESEND_API_KEY  (required)  Resend key for homecareproviderservices.us
  *   ORDER_TO        (optional)  recipient(s), comma-separated.
  *                               default: orders@homecareproviderservices.us
+ *   ORDERS_API      (optional)  orders-api URL. default: the admin site's orders-api
  *   ORDER_FROM      (optional)  From header.
  *                               default: "HCPS Ordering Portal
  *                                         <orders@homecareproviderservices.us>"
@@ -22,6 +29,29 @@
 
 const DEFAULT_TO = "orders@homecareproviderservices.us";
 const DEFAULT_FROM = "HCPS Ordering Portal <orders@homecareproviderservices.us>";
+const DEFAULT_ORDERS_API = "https://homecareproviderservices.netlify.app/.netlify/functions/orders-api";
+const r2 = (n) => Math.round(Number(n) * 100) / 100;
+
+/* Replace every price on the emailed orders with what the server recorded. The browser keeps
+   the say over what is not a price (PO, notes, freight terms, display text). */
+function applyServerPrices(orders, recorded) {
+  const bySlug = {};
+  (recorded || []).forEach((r) => { if (r && r.manufacturer_slug) bySlug[r.manufacturer_slug] = r; });
+  return orders.map((o) => {
+    const rec = bySlug[o.manufacturer_slug];
+    if (!rec) throw new Error("no recorded order for " + (o.manufacturer_name || o.manufacturer_slug));
+    const units = {};
+    (rec.items || []).forEach((it) => { units[String(it.code)] = it; });
+    const items = (o.items || []).map((it) => {
+      const r = units[String(it.code)];
+      if (!r) throw new Error("recorded order is missing " + it.code);
+      return Object.assign({}, it, { qty: r.qty, unit: r.unit });
+    });
+    const sub = r2(rec.subtotal);
+    const fee = Number(o.freight_fee) > 0 ? Number(o.freight_fee) : 0;
+    return Object.assign({}, o, { items, items_subtotal: sub, estimated_total: r2(sub + fee), order_id: rec.order_id });
+  });
+}
 
 /* ---------- helpers ---------- */
 const esc = (s) =>
@@ -151,7 +181,7 @@ function buildEmail(dealer, order, submittedAt) {
       ${order.notes ? `<div style="margin-top:14px;padding:12px 14px;background:#f6f7f5;border-radius:8px;border:1px solid #e6e2dc;"><div style="font:700 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:4px;">Notes</div><div style="font:400 13px/1.5 Arial,sans-serif;color:#10263f;white-space:pre-wrap;">${esc(order.notes)}</div></div>` : ""}
 
       <div style="margin-top:18px;font:400 11px/1.5 Arial,sans-serif;color:#9aa2ac;">
-        Estimated totals use list pricing; account-specific pricing and final freight are confirmed by HCPS before the order is placed with the manufacturer. Reply to this email to reach the dealer directly.
+        Item prices are the dealer's account pricing as recorded by the server when the order was placed; final freight is confirmed by HCPS before the order is placed with the manufacturer. Reply to this email to reach the dealer directly.
       </div>
     </div>
   </div></body></html>`;
@@ -231,7 +261,13 @@ exports.handler = async (event) => {
   try { raw = JSON.parse(event.body || "{}"); }
   catch (e) { return json(400, { ok: false, error: "Invalid JSON body" }); }
 
-  const { dealer, orders, submitted_at } = normalize(raw);
+  /* The single flat payload predates server pricing and carries no line to price against. */
+  if (!Array.isArray(raw.orders)) return json(400, { ok: false, status: "reload", error: "This page is out of date — please reload Partner 360 and submit again." });
+  const auth = (event.headers && (event.headers.authorization || event.headers.Authorization)) || "";
+  if (!/^Bearer\s+\S+/i.test(auth)) return json(401, { ok: false, status: "unauthorized", error: "Please sign in again to submit this order." });
+
+  const { dealer, submitted_at } = normalize(raw);
+  let orders = raw.orders;
 
   if (!dealer.business || !dealer.contact || !dealer.email) {
     return json(400, { ok: false, error: "Missing required dealer fields (business, contact, email)." });
@@ -245,27 +281,63 @@ exports.handler = async (event) => {
     }
   }
 
+  /* VALIDATE → PERSIST → NOTIFY. The recorded order is the proof that an order exists; an email
+     never is. orders-api re-prices every line for this dealer and records the order with the
+     server's numbers. If a price moved since the dealer reviewed the cart, nothing is recorded
+     and nothing is emailed — the new prices go back for review. Only orders that were recorded
+     are emailed, and the email carries the recorded prices. */
+  const api = process.env.ORDERS_API || DEFAULT_ORDERS_API;
+  const callApi = (body) => fetch(api, { method: "POST", headers: { "content-type": "application/json", authorization: auth }, body: JSON.stringify(body) });
+  const notSubmitted = { ok: false, recorded: false, error: "Your order could not be confirmed, so nothing was submitted. Please try again." };
+  let rec;
+  try {
+    const res = await callApi({ action: "create", orders, dealer });
+    rec = await res.json().catch(() => null);
+    if (res.status === 409 && rec && rec.status === "prices_changed")
+      return json(409, { ok: false, recorded: false, status: "prices_changed", orders: rec.orders || [] });
+    if (rec && rec.status === "unauthorized") return json(401, { ok: false, recorded: false, status: "unauthorized", error: "Please sign in again to submit this order." });
+    if (!rec || !Array.isArray(rec.orders) || !rec.orders.length || (rec.status !== "recorded" && rec.status !== "partial"))
+      return json(503, Object.assign({}, notSubmitted, { status: (rec && rec.status) || "pricing_unavailable" }));
+  } catch (err) {
+    console.error("orders-api unreachable", err);
+    return json(503, Object.assign({}, notSubmitted, { status: "pricing_unavailable" }));
+  }
+  /* Only what was recorded goes any further. */
+  const recordedSlugs = new Set(rec.orders.map((r) => r.manufacturer_slug));
+  const notRecorded = orders.filter((o) => !recordedSlugs.has(o.manufacturer_slug)).map((o) => o.manufacturer_slug);
+  try { orders = applyServerPrices(orders.filter((o) => recordedSlugs.has(o.manufacturer_slug)), rec.orders); }
+  catch (err) {
+    console.error("recorded order did not match the submission", err);
+    try { await callApi({ action: "notification_failed", order_ids: rec.orders.map((r) => r.order_id) }); } catch (e) {}
+    return json(502, { ok: false, recorded: true, status: "email_failed", not_recorded: notRecorded, orders: rec.orders, error: String(err.message || err) });
+  }
+
   const to = (process.env.ORDER_TO || DEFAULT_TO).split(",").map((s) => s.trim()).filter(Boolean);
   const from = process.env.ORDER_FROM || DEFAULT_FROM;
 
+  /* A failed email never undoes a recorded order: it is retried once, then the order is flagged
+     for staff (admin_notes in Orders) and the dealer is told. */
   const results = [];
   for (const order of orders) {
-    try {
-      const built = buildEmail(dealer, order, submitted_at);
-      const r = await sendEmail(apiKey, from, to, dealer.email, built);
-      if (!r.ok) console.error("Resend error", order.manufacturer_name, r.status, r.detail);
-      results.push({ manufacturer: order.manufacturer_name, po: order.po, ok: r.ok, id: r.id });
-    } catch (err) {
-      console.error("send failed", order.manufacturer_name, err);
-      results.push({ manufacturer: order.manufacturer_name, po: order.po, ok: false, error: String(err) });
+    let r = null, err = null;
+    for (let attempt = 0; attempt < 2 && !(r && r.ok); attempt++) {
+      try { r = await sendEmail(apiKey, from, to, dealer.email, buildEmail(dealer, order, submitted_at)); err = null; }
+      catch (e) { err = e; r = null; }
+      if (r && !r.ok) console.error("Resend error", order.manufacturer_name, r.status, r.detail);
+      if (err) console.error("send failed", order.manufacturer_name, err);
     }
+    results.push({ manufacturer: order.manufacturer_name, po: order.po, order_id: order.order_id, ok: !!(r && r.ok), id: r && r.id });
   }
+  const unsent = results.filter((r) => !r.ok).map((r) => r.order_id).filter(Boolean);
+  if (unsent.length) { try { await callApi({ action: "notification_failed", order_ids: unsent }); } catch (e) { console.error("could not flag unsent orders", unsent, e); } }
 
-  const allOk = results.every((r) => r.ok);
-  const anyOk = results.some((r) => r.ok);
-  return json(allOk ? 200 : anyOk ? 207 : 502, { ok: allOk, sent: results.filter((r) => r.ok).length, total: results.length, results });
+  const allOk = !unsent.length && !notRecorded.length;
+  return json(allOk ? 200 : 207, { ok: allOk, recorded: true,
+    status: notRecorded.length ? "partial" : (unsent.length ? "email_failed" : "submitted"),
+    not_recorded: notRecorded, sent: results.filter((r) => r.ok).length, total: results.length, results, orders: rec.orders });
 };
 
 // Exported for local testing.
 exports._buildEmail = buildEmail;
 exports._normalize = normalize;
+exports._applyServerPrices = applyServerPrices;

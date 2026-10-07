@@ -180,6 +180,9 @@ body:not(.p360on) #p360wrap{display:none!important;}
 .citem .t{font-weight:700;font-size:13px;}
 .citem .s{color:var(--gray);font-size:11.5px;}
 .citem .volnote{color:#1c7a44;font-weight:600;}
+.citem .pricenote{color:#9a4b00;font-weight:600;}
+.citem .pricenote.gone{color:#b42318;}
+.pricebanner{background:#fff6e5;border:1px solid #f3c27a;color:#6b3d00;border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:13px;line-height:1.45;}
 .citem .r{display:grid;gap:6px;justify-items:end;}
 .citem .r input{width:64px;padding:7px;text-align:center;border:1px solid var(--line);border-radius:7px;}
 .citem .rm{border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 8px;font-size:11px;cursor:pointer;}
@@ -1160,7 +1163,7 @@ header .htop{flex-wrap:nowrap;}
             <div class="sumrow"><span class="muted">Estimated total (incl. freight)</span><b id="grandTotal">$0.00</b></div>
             <button class="subbtn" id="submitOrder">Place order →</button>
             <button class="clr" id="clearCart">Clear cart</button>
-            <div class="fineprint">A separate order goes to HCPS for each manufacturer. Estimated totals use list pricing; your account pricing &amp; final freight are confirmed by HCPS.</div>
+            <div class="fineprint">A separate order goes to HCPS for each manufacturer. Item prices are your account pricing, confirmed again when you place the order; final freight is confirmed by HCPS.</div>
           </div>
           <div class="cp-notebox">🔒 No card is stored or charged here. Credit lines bill on your terms; prepay lines are paid to the manufacturer directly. HCPS sends confirmations &amp; tracking.</div>
         </div>
@@ -2883,7 +2886,7 @@ function freightRowsHtml(f){
 function renderCart(){
   const host=$("#cartGroups"); const groups=groupCart();
   if(!groups.size){host.innerHTML='<div class="fineprint" style="margin-top:12px;">Your cart is empty.</div>';return;}
-  let html="";
+  let html=priceBannerHtml();
   for(const[slug,lines]of groups){
     const info=mfrInfo(slug), f=computeFreight(slug,lines), tot=f.itemsTotal+f.fee;
     const cnt=lines.reduce((n,{qty})=>n+qty,0);
@@ -2899,7 +2902,7 @@ function renderCart(){
       return `<div class="citem" data-k="${esc(cartKey(p))}">
         ${cimg}
         <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)}${p._skuOption?" · "+esc(variantLabel(p)):""}${p.brand?" · "+esc(p.brand):""}</div>
-        <div class="s">Unit ${u?money(u):"—"} · Line ${u?money(u*qty):"—"}${contractPrice(p)!=null?` · <span style="color:#0a7f3f;font-weight:700">contract</span>`:""}</div>${volNote}</div>
+        <div class="s">Unit ${u?money(u):"—"} · Line ${u?money(u*qty):"—"}${contractPrice(p)!=null?` · <span style="color:#0a7f3f;font-weight:700">contract</span>`:""}</div>${volNote}${priceNoteHtml(p)}</div>
         <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
     }).join("");
     const fields=MFR[slug]||(MFR[slug]={po:"",notes:""});
@@ -2922,8 +2925,8 @@ function renderCart(){
   host.innerHTML=html;
   host.querySelectorAll(".citem").forEach(row=>{
     const k=row.getAttribute("data-k");
-    row.querySelector("input").oninput=e=>{const q=clampInt(e.target.value,0);const it=CART.get(k);if(q<=0)CART.delete(k);else CART.set(k,{...it,qty:q});updateCart();};
-    row.querySelector(".rm").onclick=()=>{CART.delete(k);updateCart();};
+    row.querySelector("input").oninput=e=>{const q=clampInt(e.target.value,0);const it=CART.get(k);if(q<=0){CART.delete(k);PRICE_NOTES.delete(k);}else CART.set(k,{...it,qty:q});updateCart();};
+    row.querySelector(".rm").onclick=()=>{CART.delete(k);PRICE_NOTES.delete(k);updateCart();};
   });
   host.querySelectorAll(".mgroup").forEach(g=>{
     const slug=g.getAttribute("data-slug");
@@ -2938,6 +2941,79 @@ function updateCart(){
   $("#itemsTotal").textContent=cartCount();
   $("#grandTotal").textContent=money(grandTotal());
   scheduleCartSave();   // persist to the server so it survives logout/login (and admin can see it)
+}
+
+/* ---------- SERVER PRICING (Phase 2.7) ----------
+   The server is the final pricing authority. It re-prices the cart with this page's own engine
+   for this dealer, and the price it stores on the order is its own — never the number shown
+   here. This page's job is to make every difference VISIBLE before anything is submitted:
+     - a saved cart is re-priced when it is restored, and any line whose price moved says so
+       ("Price updated $old → $new") instead of being re-priced silently;
+     - just before submitting, the server checks again; if anything moved since the dealer last
+       looked, nothing is submitted, the new prices are shown, and the dealer submits again
+       once they have reviewed them;
+     - a line that is no longer offered must be removed before the order can go. */
+const PRICE_NOTES=new Map();   // cartKey -> {old, now, gone}
+function hcpsCartOrders(){
+  const out=[];
+  for(const[slug,lines]of groupCart()){
+    if(isGoldenSlug(slug)) continue;
+    out.push({manufacturer_slug:slug, items:lines.map(({p,qty})=>({code:p.code, family:p.family==null?undefined:p.family, qty, unit:unitPrice(p,qty)}))});
+  }
+  return out;
+}
+/* Ask the server what this cart costs now. null = the price could not be confirmed. */
+async function serverPriceCheck(){
+  const orders=hcpsCartOrders();
+  if(!orders.length) return {ok:true,changed:false,orders:[]};
+  if(!AUTH.session||!AUTH.session.access_token) return null;
+  try{
+    await ensureFreshSession();
+    const r=await fetch(CONFIG.ORDERS_ENDPOINT,{method:"POST",
+      headers:{"Content-Type":"application/json",authorization:"Bearer "+AUTH.session.access_token},
+      body:JSON.stringify({action:"price_check",orders})});
+    const j=await r.json().catch(()=>null);
+    return (r.ok&&j&&j.ok)?j:null;
+  }catch(e){ return null; }
+}
+/* Bring the cart's products up to the server's current commercial facts and record, per line,
+   what changed. Returns the number of lines whose price moved or that were withdrawn. */
+function applyServerPrices(res){
+  let n=0;
+  for(const o of (res&&res.orders)||[]){
+    for(const it of o.items||[]){
+      const k=o.manufacturer_slug+"::"+it.code; const line=CART.get(k); if(!line) continue;
+      const p=line.p;
+      if(it.available===false){ p._unavailable=true; PRICE_NOTES.set(k,{gone:true}); n++; continue; }
+      delete p._unavailable;
+      const c=it.commercial||{};
+      ["base_price","msrp","map","tiers","group","price_note"].forEach(f=>{ if(f in c) p[f]=c[f]; });
+      if(AUTH.prices){ if(it.contract!=null) AUTH.prices[k]=Number(it.contract); else delete AUTH.prices[k]; }
+      if(it.changed && it.client_unit!=null && Math.abs(Number(it.client_unit)-Number(it.unit))>=0.005){
+        const prev=PRICE_NOTES.get(k);
+        PRICE_NOTES.set(k,{old:(prev&&prev.old!=null)?prev.old:Number(it.client_unit), now:Number(it.unit)}); n++;
+      }
+    }
+  }
+  return n;
+}
+function priceNoteHtml(p){
+  const pn=PRICE_NOTES.get(cartKey(p)); if(!pn) return "";
+  if(pn.gone) return `<div class="s pricenote gone">No longer available — remove this item to place your order</div>`;
+  return `<div class="s pricenote">Price updated: <s>${money(pn.old)}</s> → <b>${money(pn.now)}</b></div>`;
+}
+function priceBannerHtml(){
+  if(!PRICE_NOTES.size) return "";
+  const gone=[...PRICE_NOTES.values()].some(x=>x.gone);
+  return `<div class="pricebanner"><b>Prices in your cart have changed.</b> ${gone?"Some items are no longer available. ":""}The lines marked below show the current price for your account; totals have been recalculated. Please review them before placing your order.</div>`;
+}
+/* A restored cart is re-priced in the open, never silently. */
+async function repriceSavedCart(){
+  if(!CART.size) return;
+  const res=await serverPriceCheck();
+  if(!res){ return; }        // checked again at submission; nothing is submitted unconfirmed
+  if(applyServerPrices(res)){ updateCart(); toast("Some prices in your saved cart have changed — see your cart"); }
+  else if(res.orders&&res.orders.length) updateCart();
 }
 
 /* ---------- submit (one order per manufacturer) ---------- */
@@ -2960,13 +3036,21 @@ async function submitOrder(){
       toast(`Enter a PO number for ${mfrInfo(slug).name}`); return;
     }
   }
+  if([...CART.values()].some(({p})=>p._unavailable)){ toast("Remove the items that are no longer available, then place your order"); return; }
+  const btn=$("#submitOrder"); btn.disabled=true; btn.textContent="Checking prices…";
+  try{
+    /* The server checks the price of every line before anything is submitted. */
+    const chk=await serverPriceCheck();
+    if(!chk){ toast("Pricing could not be confirmed right now — nothing was submitted. Please try again."); return; }
+    if(chk.changed){ applyServerPrices(chk); updateCart(); toast("Prices changed since you last reviewed your cart — review the updated totals, then place your order again"); return; }
+  } finally { btn.disabled=false; btn.textContent="Place order →"; }
   const orders=[];
   for(const[slug,lines]of groups){
     const f=computeFreight(slug,lines), info=mfrInfo(slug);
     orders.push({
       manufacturer_slug:slug, manufacturer_name:info.name,
       po:MFR[slug].po.trim(), notes:(MFR[slug].notes||"").trim(),
-      items:lines.map(({p,qty})=>({code:p.code,name:p.name,brand:p.brand||"",uom:p.uom||"",qty,unit:unitPrice(p,qty)})),
+      items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,name:p.name,brand:p.brand||"",uom:p.uom||"",qty,unit:unitPrice(p,qty)})),
       items_count:lines.reduce((n,{qty})=>n+qty,0),
       items_subtotal:Number(f.itemsTotal.toFixed(2)),
       freight_fee:Number(f.fee.toFixed(2)),
@@ -2978,33 +3062,51 @@ async function submitOrder(){
   const goldenOrders = orders.filter(o=>isGoldenSlug(o.manufacturer_slug));
   const hcpsOrders   = orders.filter(o=>!isGoldenSlug(o.manufacturer_slug));
   const payload={dealer, orders:hcpsOrders, submitted_at:new Date().toISOString()};
-  const btn=$("#submitOrder"); btn.disabled=true; btn.textContent="Submitting…";
+  btn.disabled=true; btn.textContent="Submitting…";
+  let emailWarn=false, keep=new Set();
   try{
-    // 1) HCPS lines -> HCPS submit-order (unchanged)
+    // 1) HCPS lines -> submit-order, which records the order at the SERVER's prices (orders-api)
+    //    and only then emails HCPS. If a price moved in the meantime, nothing is recorded or sent.
     if(hcpsOrders.length){
-      if(CONFIG.ORDER_ENDPOINT){
-        const res=await fetch(CONFIG.ORDER_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-        if(!res.ok) throw new Error("submit failed");
-      } else {
-        console.log("ORDERS (no endpoint wired yet):",payload);
-        await new Promise(r=>setTimeout(r,300));
+      await ensureFreshSession();
+      const res=await fetch(CONFIG.ORDER_ENDPOINT,{method:"POST",
+        headers:{"Content-Type":"application/json",authorization:"Bearer "+((AUTH.session&&AUTH.session.access_token)||"")},
+        body:JSON.stringify(payload)});
+      const j=await res.json().catch(()=>({}));
+      if(res.status===409 && j.status==="prices_changed"){
+        applyServerPrices(j); updateCart();
+        toast("Prices changed while you were checking out — review the updated totals, then place your order again");
+        return;
       }
+      if(!j.recorded){ toast(j.error||"Could not submit — nothing was placed. Please try again."); return; }
+      /* Recorded orders leave the cart. A manufacturer whose order could not be recorded stays
+         in the cart, untouched, to be placed again. */
+      (j.not_recorded||[]).forEach(sl=>keep.add(sl));
+      if(j.status==="email_failed") emailWarn=true;   // recorded at the server's prices; only the HCPS email failed (flagged for HCPS staff)
+      DASH.orders=null;             // invalidate cache so the dashboard refetches
     }
     // 2) Golden lines -> Golden's own API. Tags order_source, captures the shared order id.
     for(const go of goldenOrders){ await submitGoldenOrder(go, dealer); }
-    // 3) Record ALL into the Partner 360 order record (Golden ones tagged source='golden' with the shared id).
-    if(AUTH.status==='approved' && AUTH.session && AUTH.session.access_token){
+    // 3) Golden orders are recorded into the Partner 360 order record here (HCPS orders already were).
+    if(goldenOrders.length && AUTH.status==='approved' && AUTH.session && AUTH.session.access_token){
       try{ await fetch(CONFIG.ORDERS_ENDPOINT,{method:"POST",
         headers:{"Content-Type":"application/json",authorization:"Bearer "+AUTH.session.access_token},
-        body:JSON.stringify({action:"create",orders,dealer})});
-        DASH.orders=null;   // invalidate cache so the dashboard refetches
+        body:JSON.stringify({action:"create",orders:goldenOrders,dealer})});
+        DASH.orders=null;
       }catch(e){}
     }
     const parts=[]; if(hcpsOrders.length)parts.push(`${hcpsOrders.length} to HCPS`); if(goldenOrders.length)parts.push(`${goldenOrders.length} to Golden`);
-    toast(`Submitted ${parts.join(' + ')||'order'} ✓`);
-    CART.clear(); for(const k in MFR) delete MFR[k]; clearCartRemote(); updateCart(); closeCart();
+    if(keep.size){
+      for(const [k,it] of [...CART]) if(!keep.has(it.p.manufacturer)){ CART.delete(k); PRICE_NOTES.delete(k); }
+      for(const k in MFR) if(!keep.has(k)) delete MFR[k];
+      updateCart();
+      toast(`Some orders were placed, but ${[...keep].map(sl=>mfrInfo(sl).name).join(', ')} could not be recorded — still in your cart. Please place it again.`);
+      return;
+    }
+    toast(emailWarn?`Order recorded ✓ — HCPS has been flagged to confirm it with the manufacturer`:`Submitted ${parts.join(' + ')||'order'} ✓`);
+    CART.clear(); PRICE_NOTES.clear(); for(const k in MFR) delete MFR[k]; clearCartRemote(); updateCart(); closeCart();
   }catch(e){console.error(e);toast("Could not submit — please try again.");}
-  finally{btn.disabled=false;btn.textContent="Submit Order";}
+  finally{btn.disabled=false;btn.textContent="Place order →";}
 }
 /* ---- Stage 6: submit one Golden order through Golden's own commerce API ----
    Federation v1.2.0 §2: the Partner 360 front-end submits via Golden's endpoint (the same
@@ -3680,7 +3782,9 @@ function populateShipTo(){
   sel.onchange=()=>apply(sel.value);
   if(!sel.dataset.init){sel.dataset.init="1";apply("0");}
 }
+let _lastPriceCheck=0;
 function openCart(){populateShipTo();$("#drawer").classList.add("open");$("#scrim").classList.add("open");
+  if(CART.size && Date.now()-_lastPriceCheck>60000){ _lastPriceCheck=Date.now(); repriceSavedCart(); }
   if(CART.size) track('order_page',state.active&&state.active!==HOME?state.active:undefined);  // opened the cart to order (+10)
 }
 function closeCart(){$("#drawer").classList.remove("open");$("#scrim").classList.remove("open");}
@@ -4030,6 +4134,10 @@ function hydrateCart(saved){
   for(const it of saved.items){ if(it&&it.p&&it.p.code&&it.p.manufacturer&&Number(it.qty)>0) CART.set(cartKey(it.p),{p:it.p,qty:Number(it.qty)}); }
   for(const k in MFR) delete MFR[k];
   if(saved.mfr&&typeof saved.mfr==="object") Object.assign(MFR,saved.mfr);
+  PRICE_NOTES.clear();
+  /* A saved cart holds the prices it was built at. It is re-priced at today's prices for this
+     account, and every line that moved says so. */
+  repriceSavedCart();
 }
 /* ---- persistent cart + login activity (server-backed, so the admin can see open carts) ---- */
 let _cartSaveT=null, SESSION_ID=null, _hbT=null;
