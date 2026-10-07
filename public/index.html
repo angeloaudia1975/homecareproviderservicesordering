@@ -5147,8 +5147,16 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     if(!p){ return; }
     const host=$q("#content");
     // Phase 2: this product's variants (same group) → a size/option selector.
-    const gk=(p.group||p.code);
-    const variants=sortVariants((state.products||[]).filter(x=>((x.group||x.code)===gk)));
+    /* THE PICKER IS THE PRODUCT (Phase 2.6). The card bundles SKUs by their enrichment page
+       (groupKeyOf), but the picker used to collect them by the catalog `group` string — so a
+       card and the picker it opened disagreed: Casting Tape's black rolls carried their own
+       groups and could not be chosen from its picker, and the Hybrid Night Splint's accessory
+       strap shared the splints' group and appeared as one of their sizes. Both now use the
+       same key, so what a dealer can choose is exactly the product the page defines. Lines
+       without enrichment pages fall back to the group, as before. (Quantity-break families
+       still follow the catalog group — changing that changes prices, which is a decision.) */
+    const gk=groupKeyOf(p);
+    const variants=sortVariants((state.products||[]).filter(x=>groupKeyOf(x)===gk));
     const gname=groupDisplayName(p);
     /* ONE PICKER PER AXIS. Twenty part numbers are five sizes in four colours, and that is
        how a dealer shops them — pick the size, pick the colour — not by hunting through a
