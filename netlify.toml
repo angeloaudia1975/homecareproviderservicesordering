@@ -29,3 +29,71 @@
   to = "https://homecareproviderservices.netlify.app/admin/product-content-review.html"
   status = 301
   force = true
+
+# PHASE 2.8 — CONTAINMENT OF THE OLD PARTNER 360 ADMIN (2026-10-07).
+# These pages were the first admin, before Connect 360. Every one has a maintained replacement
+# on the main deploy, and several were still able to write catalog, dealer and home-page data
+# with a shared passcode and no change history. They are redirected (302 = temporary, while
+# usage is reviewed) to the closest current tool. The netlify/functions they called are NOT
+# removed here: that waits for the function logs to show nothing legitimate still calls them.
+# `force = true` because the old files still exist at these paths.
+[[redirects]]
+  from = "/admin"
+  to = "https://homecareproviderservices.netlify.app/admin/"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/"
+  to = "https://homecareproviderservices.netlify.app/admin/"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/index.html"
+  to = "https://homecareproviderservices.netlify.app/admin/"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/catalog.html"
+  to = "https://homecareproviderservices.netlify.app/admin/catalog.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/dealers.html"
+  to = "https://homecareproviderservices.netlify.app/admin/dealers.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/featured.html"
+  to = "https://homecareproviderservices.netlify.app/admin/featured.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/home-editor.html"
+  to = "https://homecareproviderservices.netlify.app/admin/home-editor.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/images.html"
+  to = "https://homecareproviderservices.netlify.app/admin/images.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/product-content-enrichment.html"
+  to = "https://homecareproviderservices.netlify.app/admin/product-content-review.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/website.html"
+  to = "https://homecareproviderservices.netlify.app/admin/website.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/analytics.html"
+  to = "https://homecareproviderservices.netlify.app/admin/analytics.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/analytics"
+  to = "https://homecareproviderservices.netlify.app/admin/analytics.html"
+  status = 302
+  force = true

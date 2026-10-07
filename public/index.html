@@ -1540,7 +1540,12 @@ async function mergeCatalogEdits(slug, prods){
       /* map was SELECTED above but never copied onto the row, so an added product's MAP
          reached the browser and was thrown away — the one layer where MAP is most often the
          only place it is recorded. Every other price field was carried; this one was missed. */
-      const row={code:c.code,name:c.name,category:c.category||"",base_price:c.base_price,msrp:c.msrp,
+      /* An ADDED product carries its line, like every catalog-file row does. It did not, so
+         added products (on Ovation that is 87, including every black, grey and red Gen 2 boot)
+         reached the cart with no manufacturer: the order grouped them under no line, their
+         contract prices ("slug::code") never matched, their quantity breaks pooled with any
+         other unlined item, and a saved cart silently dropped them on the next sign-in. */
+      const row={manufacturer:slug,code:c.code,name:c.name,category:c.category||"",base_price:c.base_price,msrp:c.msrp,
         map:(c.map==null||c.map==="")?null:c.map,
         image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",_custom:true};
       for(const k of OV_KEYS) if(k in pa && pa[k]!=null) row[k]=pa[k];
@@ -1581,11 +1586,15 @@ async function mergeCatalogEdits(slug, prods){
       // that lists a SKU owns the catalog product with that code, whatever its page_key or image
       // filename happens to be. This is what stops an enriched page from silently not rendering
       // because its slug didn't match an image basename.
-      const pageBySku={}, skuEntry={};
+      const pageBySku={}, skuEntry={}, skuOff={};
       Object.keys(pages).forEach(k=>{ const arr=pages[k]&&pages[k].skus;
         if(!Array.isArray(arr)) return;
         arr.forEach(sx=>{ const c=String((sx&&(sx.sku||sx.code))||'').trim().toUpperCase();
           if(!c) return;
+          /* "OFF" HIDES A SKU (Phase 2.5). The enrichment SKU table has an Off switch and a
+             per-SKU status, and neither did anything here. A SKU switched off, or marked
+             discontinued/hidden, on the page that owns it is not offered to dealers. */
+          if(!pageBySku[c] && sx && (sx.disabled===true || ['discontinued','hidden'].indexOf(String(sx.status||''))>=0)) skuOff[c]=true;
           if(!pageBySku[c]) pageBySku[c]=k;
           if(!skuEntry[c]) skuEntry[c]=sx; }); });
       /* Does this line list only what has been enriched? Read from the manufacturer record
@@ -1603,6 +1612,7 @@ async function mergeCatalogEdits(slug, prods){
          A page now owns a SKU only where someone SAID so — its SKU list, or a variant group,
          both of which are curated fields. A SKU no page claims is left unlinked and reported,
          instead of being quietly attached to whichever page happens to reuse its photograph. */
+      prods=prods.filter(p=>!skuOff[String(p.code||'').trim().toUpperCase()]);
       prods.forEach(p=>{
         const sKey=pageBySku[String(p.code||'').trim().toUpperCase()];
         const vKey=p.group&&variantByGroup[p.group];
@@ -1635,7 +1645,11 @@ async function mergeCatalogEdits(slug, prods){
           const _sxOpt=_sx && String((_sx.size!=null?_sx.size:(_sx.option!=null?_sx.option:''))||'').trim();
           if(_sxOpt) p._skuOption=_sxOpt;
           if(pg.name) p._encPage=String(pg.name).trim();
-          if(!p.description && pg.description) p.description=pg.description;
+          /* THE ENRICHMENT DESCRIPTION IS THE DESCRIPTION (Phase 2.5). It used to fill only a
+             blank, so wherever the catalog file carried its own text the approved description
+             never reached a dealer. Content belongs to enrichment; the catalog text is a
+             fallback for a SKU no page describes. */
+          if(pg.description) p.description=pg.description;
           if(pg.tagline) p._tagline=pg.tagline;
           /* The subcategory ("Thumb Spicas", "Wrist Braces") is the specific thing a dealer
              actually shops for. It is recorded during enrichment and was already shown on the
@@ -1674,8 +1688,10 @@ async function mergeCatalogEdits(slug, prods){
           // a bare array. Accept BOTH — testing only for an array silently hid every sizing chart.
           var _st=pg.sizing_table, _stRows=Array.isArray(_st)?_st:((_st&&Array.isArray(_st.rows))?_st.rows:[]);
           if(_stRows.length){ p._sizing=_stRows;
-            if(_st&&Array.isArray(_st.columns)&&_st.columns.length) p._sizingCols=_st.columns;
-            if(pg.sizing_note) p._sizingNote=pg.sizing_note; }
+            if(_st&&Array.isArray(_st.columns)&&_st.columns.length) p._sizingCols=_st.columns; }
+          /* A sizing note is content in its own right ("Measure the calf at its widest point")
+             and used to be dropped whenever there was no table to hang it under. */
+          if(pg.sizing_note) p._sizingNote=pg.sizing_note;
           if(pg.warranty) p._warranty=pg.warranty;
           if(pg.source_url) p._sourceUrl=pg.source_url;
           if(Array.isArray(pg.documents)&&pg.documents.length) p._documents=pg.documents;
@@ -5198,7 +5214,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     if(Array.isArray(p._documents)) p._documents.forEach(dc=>{ if(dc&&dc.url) docs.push({url:dc.url,title:dc.title||dc.type||"Document",kind:"link"}); });
     const _sz=Array.isArray(p._sizing)?p._sizing:[];
     const _szCols=(Array.isArray(p._sizingCols)&&p._sizingCols.length)?p._sizingCols:(_sz.length?Object.keys(_sz[0]):[]);
-    const sizingHtml=_sz.length?`<div class="pd-sect"><h2>Sizing chart</h2><div style="overflow-x:auto"><table class="pd-spec"><thead><tr>${_szCols.map(c=>`<th style="text-align:left;padding:9px 12px;font-size:12px;color:#6b7580">${esc(c)}</th>`).join("")}</tr></thead><tbody>${_sz.map(r=>`<tr>${_szCols.map(c=>`<td class="v">${esc(String(r[c]!=null?r[c]:""))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${p._sizingNote?`<div style="font-size:12px;color:#6b7580;margin-top:6px">${esc(p._sizingNote)}</div>`:""}</div>`:"";
+    const sizingHtml=_sz.length?`<div class="pd-sect"><h2>Sizing chart</h2><div style="overflow-x:auto"><table class="pd-spec"><thead><tr>${_szCols.map(c=>`<th style="text-align:left;padding:9px 12px;font-size:12px;color:#6b7580">${esc(c)}</th>`).join("")}</tr></thead><tbody>${_sz.map(r=>`<tr>${_szCols.map(c=>`<td class="v">${esc(String(r[c]!=null?r[c]:""))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${p._sizingNote?`<div style="font-size:12px;color:#6b7580;margin-top:6px">${esc(p._sizingNote)}</div>`:""}</div>`:(p._sizingNote?`<div class="pd-sect"><h2>Sizing</h2><div style="font-size:13px;color:#4b5563">${esc(p._sizingNote)}</div></div>`:"");
     const _vids=Array.isArray(p._videos)?p._videos:[];
     const videoHtml=_vids.length?`<div class="pd-sect"><h2>Videos</h2>${_vids.map(v=>{const em=ytEmbed(v.url);return em?`<div style="margin:0 0 14px">${em}</div>`:`<div class="pd-doc"><div class="dn">${esc(v.title||v.url)}</div><a class="dl" href="${esc(v.url)}" target="_blank" rel="noopener">Watch ↗</a></div>`;}).join("")}</div>`:"";
     const eff=Number(unitPrice(p,1)||p.base_price||0);
