@@ -1789,7 +1789,11 @@ async function applyMasterPrices(slug, prods){
        JWT to send — and preview is how this storefront actually gets reviewed.
        Leaving it on the old path would mean the view used to check the shop is
        the one view that never exercises the new one. */
-    const tok = (window.AUTH && AUTH.session && AUTH.session.access_token) || '';
+    /* AUTH is a top-level `const` in this script, and a `const` is never a
+       property of window — so `window.AUTH` was always undefined, every load
+       settled on "no dealer session", and the feed was never fetched at all.
+       Read the binding itself. typeof guards the page states before it exists. */
+    const tok = (typeof AUTH !== 'undefined' && AUTH && AUTH.session && AUTH.session.access_token) || '';
     const pv  = (typeof PREVIEW !== 'undefined' && PREVIEW && PREVIEW.token) ? PREVIEW.token : '';
     if(!tok && !pv) return settle('layers', 'no dealer session or preview to authorise the feed');
 
