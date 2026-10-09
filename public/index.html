@@ -182,6 +182,8 @@ body:not(.p360on) #p360wrap{display:none!important;}
 .citem .volnote{color:#1c7a44;font-weight:600;}
 .citem .pricenote{color:#9a4b00;font-weight:600;}
 .citem .pricenote.gone{color:#b42318;}
+.discbadge{display:inline-block;background:#f1f3f5;color:#5b6570;border:1px solid #d9dee3;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;}
+.pd-disc{background:#f6f7f8;border:1px solid #d9dee3;border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:#3a434c;margin-top:10px;}
 .pricebanner{background:#fff6e5;border:1px solid #f3c27a;color:#6b3d00;border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:13px;line-height:1.45;}
 .citem .r{display:grid;gap:6px;justify-items:end;}
 .citem .r input{width:64px;padding:7px;text-align:center;border:1px solid var(--line);border-radius:7px;}
@@ -542,7 +544,8 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .pd-rel{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
 .pd-relc{border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s;background:#fff;}
 .pd-relc:hover{transform:translateY(-3px);box-shadow:var(--shadow);}
-.pd-relc .ri{height:120px;background:#f5f2ee center/contain no-repeat;border-bottom:1px solid var(--line);}
+.pd-relc .ri{height:120px;background:#f5f2ee center/contain no-repeat;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;}
+.pd-relc .ri .ph{color:#b9bfc7;font-size:12px;}
 .pd-relc .rb{padding:12px 13px;}
 .pd-relc .rn{font-weight:700;font-size:13.5px;color:var(--navy);line-height:1.2;}
 .pd-relc .rp{font-family:'Archivo',sans-serif;font-weight:800;font-size:15px;color:var(--navy);margin-top:6px;}
@@ -1484,18 +1487,42 @@ async function loadManufacturers(){
 // Merge all admin edits (images, per-product overrides + hide, custom/added products,
 // More-Info links) over a line's raw catalog JSON. Shared by the catalog view AND the
 // home/featured cache so both see exactly the same products — no redeploy.
+/* Pure. The same rule as images-api.js normalizeGallery/resolveImage on the admin side — keep
+   them identical: this SKU's own photo → the gallery's flagged primary → (none flagged) the page
+   image, whether or not it is in the gallery → the gallery's first photo. */
+function pageImageFor(pg, sx){
+  const s=v=>String(v==null?'':v).trim();
+  const g=(Array.isArray(pg&&pg.images_gallery)?pg.images_gallery:[]).filter(x=>x&&s(x.url));
+  let i=g.findIndex(x=>x.primary===true);
+  if(i<0) i=g.findIndex(x=>s(x.url)===s(pg&&pg.image));
+  const primary=i>=0?s(g[i].url):(s(pg&&pg.image)||(g.length?s(g[0].url):''));
+  const hero=(sx&&s(sx.image))||primary;
+  const thumbs=g.filter(x=>s(x.url)!==hero).map(x=>({url:s(x.url),caption:x.caption||''}));
+  if(primary && primary!==hero && !thumbs.some(t=>t.url===primary)) thumbs.unshift({url:primary,caption:''});
+  return { hero, thumbs };
+}
+/* A picture that fails to load never ships as a broken image (standing rule): it is replaced
+   by the "No image" placeholder, and a broken thumbnail simply leaves the strip. */
+function imgFail(el, mode){
+  try{
+    if(mode==='thumb'){ const t=el.closest('.pd-thumb'); if(t) t.remove(); return; }
+    const ph=document.createElement('span'); ph.className='ph'; ph.textContent='No image';
+    el.replaceWith(ph);
+  }catch(e){}
+}
 async function mergeCatalogEdits(slug, prods){
   const H={apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON};
   try{
-    const [imgs,cust,links,overs,media] = await Promise.all([
-      fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_images?manufacturer=eq.${encodeURIComponent(slug)}&select=code,url`,{headers:H}).then(x=>x.ok?x.json():[]),
+    /* product_images is LEGACY (Phase 2.4): its rows were migrated into the one image
+       authority — the product page's gallery, a SKU's own photo, or the catalog override —
+       and the storefront no longer reads it (the table is kept, read-only, for one release).
+       One precedence, in one place: pageImageFor() below. */
+    const [cust,links,overs,media] = await Promise.all([
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/custom_products?manufacturer=eq.${encodeURIComponent(slug)}&select=code,name,category,base_price,msrp,map,image,description,active,tiers,price_note`,{headers:H}).then(x=>x.ok?x.json():[]),
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_links?manufacturer=eq.${encodeURIComponent(slug)}&select=code,label,url`,{headers:H}).then(x=>x.ok?x.json():[]),
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_overrides?manufacturer=eq.${encodeURIComponent(slug)}&select=code,patch`,{headers:H}).then(x=>x.ok?x.json():[]),
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_media?manufacturer=eq.${encodeURIComponent(slug)}&select=code,kind,url,title,sort&order=sort`,{headers:H}).then(x=>x.ok?x.json():[]),
     ]);
-    const im=Object.fromEntries((imgs||[]).map(o=>[o.code,o.url]));
-    prods.forEach(p=>{ if(im[p.code]) p.image=im[p.code]; });
     const om=Object.fromEntries((overs||[]).map(o=>[o.code,o.patch||{}]));
     /* PRICE INDEX — built BEFORE anything is hidden, because the base part number a colour
        variant inherits from is very often the retired one. 10002 is hidden and priced;
@@ -1565,17 +1592,22 @@ async function mergeCatalogEdits(slug, prods){
   // loads status IN (published, active) — NOT 'approved', which is the internal review state.
   // Falls back to the static ./data/content file, respecting the same gate.
   const LIVE_STATUSES=['published','active'];
+  /* VISIBLE ≠ SELLABLE (agreed 2026-10-08). A DISCONTINUED page stays on Partner 360 for
+     reference — its description, documents and a pointer to the current product — but nothing
+     on it can be ordered. hidden (or switched off) is the way to remove a page entirely. Server
+     pricing runs this same code, so an order for a discontinued product is refused there too. */
+  const VISIBLE_STATUSES=['published','active','discontinued'];
   let _gated=0;                 // declared here because it is read after the catch below
   try{
     let pages=null;
     try{
-      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${LIVE_STATUSES.join(',')})&select=page_key,skus,name,tagline,description,features,clinical_applications,options,billing_codes,specs,warranty,source_url,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label,subcategory`,{headers:H}).then(x=>x.ok?x.json():null);
+      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${VISIBLE_STATUSES.join(',')})&select=page_key,status,skus,name,tagline,description,features,clinical_applications,options,billing_codes,specs,warranty,source_url,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label,subcategory`,{headers:H}).then(x=>x.ok?x.json():null);
       if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); }
     }catch(e){}
     if(!pages){ // static fallback (same live gate applied client-side)
       const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"});
       if(cr.ok){ const cj=await cr.json(); const pg=(cj&&cj.pages)||{}; pages={};
-        for(const k in pg){ const st=pg[k].status; if(!CONFIG.CONTENT_APPROVED_ONLY || LIVE_STATUSES.includes(st)) pages[k]=pg[k]; } }
+        for(const k in pg){ const st=pg[k].status; if(pg[k].disabled===true) continue; if(!CONFIG.CONTENT_APPROVED_ONLY || VISIBLE_STATUSES.includes(st)) pages[k]=pg[k]; } }
     }
     if(pages){
       // Variant-aware routing: a product family (e.g. Gen 2 Walking Boot) can resolve into
@@ -1589,15 +1621,16 @@ async function mergeCatalogEdits(slug, prods){
       // that lists a SKU owns the catalog product with that code, whatever its page_key or image
       // filename happens to be. This is what stops an enriched page from silently not rendering
       // because its slug didn't match an image basename.
-      const pageBySku={}, skuEntry={}, skuOff={};
+      const pageBySku={}, skuEntry={}, skuOff={}, skuDisc={};
       Object.keys(pages).forEach(k=>{ const arr=pages[k]&&pages[k].skus;
         if(!Array.isArray(arr)) return;
         arr.forEach(sx=>{ const c=String((sx&&(sx.sku||sx.code))||'').trim().toUpperCase();
           if(!c) return;
-          /* "OFF" HIDES A SKU (Phase 2.5). The enrichment SKU table has an Off switch and a
-             per-SKU status, and neither did anything here. A SKU switched off, or marked
-             discontinued/hidden, on the page that owns it is not offered to dealers. */
-          if(!pageBySku[c] && sx && (sx.disabled===true || ['discontinued','hidden'].indexOf(String(sx.status||''))>=0)) skuOff[c]=true;
+          /* "OFF" HIDES A SKU (Phase 2.5). A SKU switched off, or marked hidden, on the page that
+             owns it is not shown. A SKU marked DISCONTINUED stays visible for reference and
+             cannot be ordered (visible ≠ sellable). */
+          if(!pageBySku[c] && sx && (sx.disabled===true || String(sx.status||'')==='hidden')) skuOff[c]=true;
+          if(!pageBySku[c] && sx && String(sx.status||'')==='discontinued') skuDisc[c]=true;
           if(!pageBySku[c]) pageBySku[c]=k;
           if(!skuEntry[c]) skuEntry[c]=sx; }); });
       /* Does this line list only what has been enriched? Read from the manufacturer record
@@ -1622,6 +1655,7 @@ async function mergeCatalogEdits(slug, prods){
         const key=(sKey&&pages[sKey])?sKey:((vKey&&pages[vKey])?vKey:null);
         if(!key) p._unlinked=true;
         const pg=key&&pages[key];
+        if(pg && (pg.status==='discontinued' || skuDisc[String(p.code||'').trim().toUpperCase()])) p._discontinued=true;
         if(pg){
           /* THE APPROVED NAMES. Enrichment is where these products are actually named, and
              none of it reached the shop: a card was titled from the catalog `group` string and
@@ -1679,13 +1713,13 @@ async function mergeCatalogEdits(slug, prods){
           if(Array.isArray(C)&&C.length) p._clinical=C;
           if(O&&typeof O==='object'&&Object.keys(O).length) p._options=O;
           if(Array.isArray(B)&&B.length) p._billing=B;
-          // approved images: primary → hero, others → thumbnails
-          if(Array.isArray(pg.images_gallery)&&pg.images_gallery.length){
-            p.media=Array.isArray(p.media)?p.media:[];
-            const prim=pg.images_gallery.find(g=>g&&g.primary);
-            if(prim&&prim.url) p.image=prim.url;
-            pg.images_gallery.forEach(g=>{ if(g&&g.url&&!(prim&&g.url===prim.url)&&!p.media.some(m=>m.url===g.url)) p.media.push({kind:'image',url:g.url,title:g.caption||''}); });
-          } else if(pg.image){ p.image=pg.image; }
+          /* THE ONE IMAGE RULE (Phase 2.4): this SKU's own photo → the page's primary photo
+             (none flagged: the page image, then the gallery's first photo) → the catalog layer
+             already on p. The rest of the gallery becomes thumbnails. */
+          { const pi=pageImageFor(pg,_sx);
+            if(pi.hero) p.image=pi.hero;
+            if(pi.thumbs.length){ p.media=Array.isArray(p.media)?p.media:[];
+              pi.thumbs.forEach(t=>{ if(!p.media.some(m=>m.url===t.url)) p.media.push({kind:'image',url:t.url,title:t.caption||''}); }); } }
           if(Array.isArray(pg.specs)&&pg.specs.length) p._specs=pg.specs.filter(s=>s&&(s.label||s.value));
           // sizing_table is saved as {columns:[],rows:[]} by the enrichment tool; legacy rows may be
           // a bare array. Accept BOTH — testing only for an array silently hid every sizing chart.
@@ -2062,7 +2096,7 @@ async function reorder(orderId){
   let added=0, missing=0;
   for(const it of (o.items||[])){
     const p=state.products.find(x=>x.code===it.code);
-    if(p){ const k=cartKey(p); const cur=CART.get(k); CART.set(k,{p,qty:(cur?cur.qty:0)+(Math.max(1,Math.round(Number(it.qty))||1))}); added++; }
+    if(p && !p._discontinued){ const k=cartKey(p); const cur=CART.get(k); CART.set(k,{p,qty:(cur?cur.qty:0)+(Math.max(1,Math.round(Number(it.qty))||1))}); added++; }
     else missing++;
   }
   updateCart();
@@ -2682,7 +2716,10 @@ function cardHtml(p){
   const tierHtml = _tiers
     ? `<div class="tierhint"><b>Volume${_tiers.varies?' from':''}</b> ${esc(_tiers.text)}</div>`
     : "";
-  const buy = multi
+  const _allDisc = multi ? (Array.isArray(p._variants)&&p._variants.length&&p._variants.every(v=>v._discontinued)) : !!p._discontinued;
+  const buy = _allDisc
+    ? `<div class="buy"><span class="discbadge">Discontinued — reference only</span></div>`
+    : multi
     ? `<div class="buy"><div class="chooseBtn">Choose options →</div></div>`
     : `<div class="buy"><input class="qtyin" type="number" min="1" value="1" aria-label="Qty"><button class="addbtn" data-code="${esc(p.code)}">Add to cart</button></div>`;
   return `<div class="card" data-code="${esc(p.code)}">
@@ -2814,6 +2851,7 @@ function renderProducts(){
 const cartKey=p=>`${p.manufacturer}::${p.code}`;
 const MFR={};                          // slug -> {po, notes}  (per-manufacturer order fields)
 function addToCart(p,qty){
+  if(p && p._discontinued){ toast(`${p.code} is discontinued — it is shown for reference and cannot be ordered`); return; }
   const k=cartKey(p); const cur=CART.get(k);
   CART.set(k,{p,qty:(cur?cur.qty:0)+qty});
   updateCart(); toast(`Added ${qty} × ${p.code}`);
@@ -4033,7 +4071,7 @@ async function previewMe(token){
     AUTH.status='approved'; AUTH.dealer=j.dealer;
     AUTH.lineObjs=(j.lines||[]); AUTH.lines=AUTH.lineObjs.map(l=>l.slug);
     AUTH.acctBySlug=Object.fromEntries(AUTH.lineObjs.map(l=>[l.slug,(l.account||'').trim()]));
-    AUTH.access=j.access||null; AUTH.prices=(j.prices&&typeof j.prices==='object')?j.prices:{};
+    AUTH.access=j.access||null; applyContractPrices(j);
     state.dealer={business:AUTH.dealer.name,account:AUTH.dealer.hcps_account||'',...AUTH.dealer};
     PREVIEW={token,dealer:j.dealer,lines:AUTH.lineObjs};
     window.__PREVIEW__=PREVIEW;         // bridge to the folded-in Business Hub script
@@ -4110,6 +4148,29 @@ function authTab(t){const r=t==='register';$("#atab_signin").classList.toggle('o
 async function sbToken(email,password){
   const r=await fetch(`${_sbURL}/auth/v1/token?grant_type=password`,{method:'POST',headers:{'content-type':'application/json',apikey:_anon},body:JSON.stringify({email,password})});
   const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error_description||j.msg||j.error||'Sign-in failed');return j;}
+/* Contract prices that could not be READ are not "no contract prices" (agreed 2026-10-09).
+   dealer-auth answers prices:null + prices_unavailable:true; the last prices this page had are
+   kept, and a notice says the prices on screen may not be this account's. Checkout re-prices on
+   the server either way, so an order can never be placed at a price that is not the dealer's. */
+function applyContractPrices(j){
+  if(j && j.prices_unavailable){
+    AUTH.pricesUnavailable=true;
+    if(!AUTH.prices||typeof AUTH.prices!=='object') AUTH.prices={};
+  } else {
+    AUTH.pricesUnavailable=false;
+    AUTH.prices=(j&&j.prices&&typeof j.prices==='object')?j.prices:{};
+  }
+  showPricesNotice(!!AUTH.pricesUnavailable);
+}
+function showPricesNotice(on){
+  let el=document.getElementById('pricesUnavailable');
+  if(!on){ if(el) el.remove(); return; }
+  if(el) return;
+  el=document.createElement('div'); el.id='pricesUnavailable'; el.setAttribute('role','status');
+  el.style.cssText='position:sticky;top:0;z-index:60;background:#fff4e5;color:#7a3d00;border-bottom:1px solid #f0c27b;padding:10px 16px;font-size:14px;line-height:1.4;text-align:center';
+  el.innerHTML='<b>Your account pricing could not be loaded just now.</b> Prices shown may not include your contract pricing — every price is checked again before your order is placed. <a href="#" style="color:inherit;text-decoration:underline;white-space:nowrap" onclick="event.preventDefault();location.reload()">Reload</a>';
+  document.body.insertBefore(el, document.body.firstChild);
+}
 async function authMe(){
   if(!AUTH.session||!AUTH.session.access_token){AUTH.status='anon';return;}
   await ensureFreshSession();
@@ -4119,7 +4180,7 @@ async function authMe(){
     AUTH.lines=AUTH.lineObjs.map(l=>l.slug);
     AUTH.acctBySlug=Object.fromEntries(AUTH.lineObjs.map(l=>[l.slug,(l.account||'').trim()]));
     AUTH.access=j.access||null;   // {your_accounts, available, golden:'Account|Prospect|None', ovation}
-    AUTH.prices=(j.prices&&typeof j.prices==='object')?j.prices:{};   // {"slug::code": contractPrice} — per-dealer
+    applyContractPrices(j);   // {"slug::code": contractPrice} — per-dealer; UNKNOWN is never shown as "none"
     if(AUTH.status==='approved'&&AUTH.dealer)state.dealer={business:AUTH.dealer.name,account:AUTH.dealer.hcps_account||'',...AUTH.dealer};else state.dealer=null;
     if(AUTH.status==='approved'&&AUTH.dealer&&window.HCPSChat){   // map this dealer's chat/visit to their CRM contact
       HCPSChat.identify({ name:AUTH.dealer.name, email:AUTH.dealer.email||'', dealerId:AUTH.dealer.id||'',
@@ -5296,7 +5357,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
           }</select></div>`).join("")}</div>`
       : `<div class="pd-variants"><label>${esc(axKeys[0]||'Variant')}</label>
       <select class="pd-varsel" onchange="openProductDetail(this.value,{keepScroll:true})">${
-        variants.map(v=>{const ve=Number(unitPrice(v,1)||v.base_price||0);return `<option value="${esc(v.code)}"${v.code===p.code?' selected':''}>${esc(variantLabel(v))}${ve>0?' — '+money(ve):''}</option>`;}).join("")
+        variants.map(v=>{const ve=Number(unitPrice(v,1)||v.base_price||0);return `<option value="${esc(v.code)}"${v.code===p.code?' selected':''}>${esc(variantLabel(v))}${v._discontinued?' (discontinued)':(ve>0?' — '+money(ve):'')}</option>`;}).join("")
       }</select></div>`;
     /* The pickers hand back a combination, not a part number; the SKU is looked up from it. */
     window.__PDVARIANTS=variants;
@@ -5364,9 +5425,10 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const sameSub=relPool.filter(x=>(x.subcategory||"")&&(x.subcategory||"")===(p.subcategory||""));
     const related=sameSub.concat(relPool.filter(x=>sameSub.indexOf(x)<0)).slice(0,4)
       .map(x=>Object.assign({},x,{_relName:groupDisplayName(x)}));
-    const mainImg = imgs.length? `<img src="${esc(imgUrl(imgs[0].url,900))}" alt="${esc(p.name)}" decoding="async" onclick="openLightbox('${esc(imgs[0].url)}',this.alt)">` : `<span class="ph">No image</span>`;
-    /* Gallery thumbs at thumbnail size. The lightbox still opens the full-resolution original. */
-    const thumbs = imgs.length>1 ? imgs.map((m,i)=>`<div class="pd-thumb${i===0?' on':''}" style="background-image:url('${esc(imgUrl(m.url,120))}')" onclick="pdSwap(this,'${esc(imgUrl(m.url,900))}')"></div>`).join("") : "";
+    const mainImg = imgs.length? `<img src="${esc(imgUrl(imgs[0].url,900))}" alt="${esc(p.name)}" decoding="async" onclick="openLightbox('${esc(imgs[0].url)}',this.alt)" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='${esc(imgs[0].url)}';}else{imgFail(this)}">` : `<span class="ph">No image</span>`;
+    /* Gallery thumbs at thumbnail size. The lightbox still opens the full-resolution original.
+       A real <img> (not a CSS background) so a photo that fails to load can be taken out. */
+    const thumbs = imgs.length>1 ? imgs.map((m,i)=>`<div class="pd-thumb${i===0?' on':''}" onclick="pdSwap(this,'${esc(imgUrl(m.url,900))}')"><img src="${esc(imgUrl(m.url,120))}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain;border-radius:10px" onerror="imgFail(this,'thumb')"></div>`).join("") : "";
     const [d,c]=eff.toFixed(2).split(".");
     const specRows = (Array.isArray(p._specs)&&p._specs.length) ? p._specs.map(s=>`<tr><td class="k">${esc(s.label||s.name||"")}</td><td class="v">${esc(String(s.value||""))}</td></tr>`).join("") :
       (p.specs&&typeof p.specs==="object"&&!Array.isArray(p.specs)) ? Object.keys(p.specs).map(k=>`<tr><td class="k">${esc(k)}</td><td class="v">${esc(String(p.specs[k]))}</td></tr>`).join("") :
@@ -5393,10 +5455,12 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
               ${margin?`<div class="pd-margin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Est. retail margin ${money(margin)}${marginPct?" · "+marginPct+"%":""}</div>`:""}`
               :`<div class="pd-plabel">Pricing</div><div class="pd-price" style="font-size:20px">${state.dealer?"Call for pricing":"Log in for pricing"}</div>`}
             ${variantSel}
-            <div class="pd-buy buy">
+            ${p._discontinued
+              ? `<div class="pd-disc"><b>Discontinued</b> — this item is shown for reference and can no longer be ordered.${(variants||[]).some(v=>!v._discontinued)?' Choose a current option above, or see related products below.':' See related products below, or ask your HCPS rep for the current replacement.'}</div>`
+              : `<div class="pd-buy buy">
               <input class="qtyin" type="number" min="1" value="1" aria-label="Qty">
               <button class="addbtn" data-code="${esc(p.code)}">🛒 Add to cart</button>
-            </div>
+            </div>`}
             ${isOvation(p)?`<button class="pd-sample" onclick="requestSample('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Request a Sample</button>`:""}
             <button class="pd-broch" onclick="openBrochure('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>Print Brochure</button>
             <div class="pd-sub">
@@ -5418,16 +5482,16 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       ${videoHtml}
       ${(curatedAcc.length||related.length)?`<div class="pd-sect"><h2>Related products</h2><div class="pd-rel">${
         (curatedAcc.length
-          ? curatedAcc.map(r=>{const inLine=(state.products||[]).find(x=>x.code===r.related_code);const rimg=r.related_image||(inLine&&inLine.image)||"";const re=inLine?Number(unitPrice(inLine,1)||inLine.base_price||0):0;const click=inLine?`onclick="openProductDetail('${esc(r.related_code)}')" style="cursor:pointer"`:'';return `<div class="pd-relc" ${click}><div class="ri" style="background-image:url('${esc(rimg)}')"></div><div class="rb"><div class="rn">${esc(r.related_name||(inLine&&inLine.name)||r.related_code)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;})
-          : related.map(r=>{const rimg=r.image||((Array.isArray(r.media)?r.media.find(m=>m.kind==="image"&&m.url):null)||{}).url||"";const re=Number(unitPrice(r,1)||r.base_price||0);return `<div class="pd-relc" onclick="openProductDetail('${esc(r.code)}')"><div class="ri" style="background-image:url('${esc(rimg)}')"></div><div class="rb"><div class="rn">${esc(r._relName||r.name)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;})
+          ? curatedAcc.map(r=>{const inLine=(state.products||[]).find(x=>x.code===r.related_code);const rimg=r.related_image||(inLine&&inLine.image)||"";const re=inLine?Number(unitPrice(inLine,1)||inLine.base_price||0):0;const click=inLine?`onclick="openProductDetail('${esc(r.related_code)}')" style="cursor:pointer"`:'';return `<div class="pd-relc" ${click}><div class="ri">${rimg?`<img src="${esc(rimg)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain" onerror="imgFail(this)">`:'<span class="ph">No image</span>'}</div><div class="rb"><div class="rn">${esc(r.related_name||(inLine&&inLine.name)||r.related_code)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;})
+          : related.map(r=>{const rimg=r.image||((Array.isArray(r.media)?r.media.find(m=>m.kind==="image"&&m.url):null)||{}).url||"";const re=Number(unitPrice(r,1)||r.base_price||0);return `<div class="pd-relc" onclick="openProductDetail('${esc(r.code)}')"><div class="ri">${rimg?`<img src="${esc(rimg)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain" onerror="imgFail(this)">`:'<span class="ph">No image</span>'}</div><div class="rb"><div class="rn">${esc(r._relName||r.name)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;})
         ).join("")}</div></div>`:""}
-      ${curatedAlt.length?`<div class="pd-sect"><h2>Also available from other HCPS manufacturers</h2><div class="pd-rel">${curatedAlt.map(r=>{const mn=((state.manufacturers||[]).find(x=>x.slug===r.related_manufacturer)||{}).name||r.related_manufacturer||"";return `<div class="pd-relc"><div class="ri" style="background-image:url('${esc(r.related_image||"")}')"></div><div class="rb"><div class="rn">${esc(r.related_name||r.related_code)}</div><div class="rp" style="font-weight:600;color:#6b7580;font-size:12px">${esc(mn)}</div></div></div>`;}).join("")}</div><div style="font-size:12px;color:#6b7580;margin-top:6px">Comparable options carried by HCPS — ask your rep about lines you don't yet have access to.</div></div>`:""}
+      ${curatedAlt.length?`<div class="pd-sect"><h2>Also available from other HCPS manufacturers</h2><div class="pd-rel">${curatedAlt.map(r=>{const mn=((state.manufacturers||[]).find(x=>x.slug===r.related_manufacturer)||{}).name||r.related_manufacturer||"";return `<div class="pd-relc"><div class="ri">${r.related_image?`<img src="${esc(r.related_image)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain" onerror="imgFail(this)">`:'<span class="ph">No image</span>'}</div><div class="rb"><div class="rn">${esc(r.related_name||r.related_code)}</div><div class="rp" style="font-weight:600;color:#6b7580;font-size:12px">${esc(mn)}</div></div></div>`;}).join("")}</div><div style="font-size:12px;color:#6b7580;margin-top:6px">Comparable options carried by HCPS — ask your rep about lines you don't yet have access to.</div></div>`:""}
     </div>`;
     if(typeof wireAdd==="function") wireAdd(host);
     if(!opts.keepScroll) window.scrollTo({top:0,behavior:"smooth"});
     try{ track&&track('product_view',p.manufacturer,p.code); }catch(e){}
   };
-  window.pdSwap=function(el,url){ document.querySelectorAll('.pd-thumb').forEach(t=>t.classList.remove('on')); el.classList.add('on'); const m=$q('#pdMain'); if(m)m.innerHTML=`<img src="${url}" onclick="openLightbox(this.src,this.alt)">`; };
+  window.pdSwap=function(el,url){ document.querySelectorAll('.pd-thumb').forEach(t=>t.classList.remove('on')); el.classList.add('on'); const m=$q('#pdMain'); if(m)m.innerHTML=`<img src="${url}" onclick="openLightbox(this.src,this.alt)" onerror="imgFail(this)">`; };
 
   // ---------- card click -> open detail (delegated, survives re-renders) ----------
   (function(){
