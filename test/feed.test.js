@@ -102,10 +102,16 @@ function run(src){
     eq(r.base_price, 0, 'base_price');
   });
 
-  t('msrp_auto false is left off — only a derived MSRP announces itself', () => {
+  /* Superseded 2026-10-09 (MSRP has three states): msrp_auto:false is a FACT the storefront needs —
+     with no MSRP it means "none, never derive one" — so it is sent, not dropped. Unset stays unset. */
+  t('msrp_auto false is sent; unset is still left off', () => {
     const [r] = feedRows([{ code:'A1', msrp:30, msrp_auto:false }]);
-    eq('msrp_auto' in r, false, 'msrp_auto');
+    eq(r.msrp_auto, false, 'msrp_auto');
     eq(r.msrp, 30, 'msrp');
+    const [n] = feedRows([{ code:'A2', msrp:null, msrp_auto:false }]);
+    eq([('msrp' in n), n.msrp_auto], [false, false], 'no MSRP, flagged');
+    const [u] = feedRows([{ code:'A3', msrp:30 }]);
+    eq('msrp_auto' in u, false, 'unset');
   });
 
   t('an empty or malformed ladder does not become an empty array', () => {

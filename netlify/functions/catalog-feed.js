@@ -166,6 +166,7 @@ function feedRows(rows) {
     if (n(r.base_price) != null) o.base_price = n(r.base_price);
     if (n(r.msrp) != null) o.msrp = n(r.msrp);
     if (r.msrp_auto === true) o.msrp_auto = true;
+    else if (r.msrp_auto === false) o.msrp_auto = false;   // "no MSRP" is a fact, not an absence (2026-10-09)
     if (n(r.map) != null) o.map = n(r.map);
     if (Array.isArray(r.tiers) && r.tiers.length) {
       o.tiers = r.tiers

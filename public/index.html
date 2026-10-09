@@ -1386,6 +1386,17 @@ function nextTierGain(p, qty){
   if(!(now>nxt.price+0.005)) return null;
   return {need:nxt.qty-q, at:nxt.qty, price:nxt.price, save:now-nxt.price};
 }
+/* PACK UNITS (agreed 2026-10-09, Strongback A1005). When a SKU is sold in packs, the dealer's
+   order quantity counts PACKS and the price is per pack; a MAP the manufacturer quotes per piece
+   is labelled "each". Two different units are never shown side by side as if they were one.
+   A product carries this only from its master record (uom + case_qty). */
+function packOf(p){
+  const n=Number(p&&p.case_qty);
+  if(!(n>1)) return null;
+  const u=String((p&&p.uom)||'').trim();
+  return { n, label: u || (n+'-pack') };
+}
+function packNote(p){ const k=packOf(p); return k ? `Dealer order unit = 1 ${k.label} (${k.n} each)` : ""; }
 function priceHtml(p){
   if (!state.dealer && p.base_price==null) return `<span class="price locked">Log in for pricing</span>`;
   if (p.base_price==null) return `<span class="price locked">Call for pricing</span>`;
@@ -1410,8 +1421,9 @@ function priceHtml(p){
   /* One line, from the field, for every product that has a MAP — instead of only the
      ones somebody remembered to type it into. */
   const mapv=(p.map!=null&&p.map!==''&&Number(p.map)>0)?Number(p.map):null;
-  const mapLine=(cp==null && mapv!=null) ? `<div class="cmap">MAP ${money(mapv)}</div>` : "";
-  return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>${contractTag}${msrp}${mapLine}${note?`<div class="pnote">${esc(note)}</div>`:""}</div>`;
+  const mapLine=(cp==null && mapv!=null) ? `<div class="cmap">MAP ${money(mapv)}${packOf(p)?" each":""}</div>` : "";
+  const pack=packOf(p) ? `<div class="pnote" style="font-weight:700">${esc(packNote(p))}</div>` : "";
+  return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup>${packOf(p)?` <span class="pnote">per ${esc(packOf(p).label)}</span>`:""}</div>${pack}${contractTag}${msrp}${mapLine}${note?`<div class="pnote">${esc(note)}</div>`:""}</div>`;
 }
 /* THE DEALER NEVER SEES HOW THE PRICE GOT HERE.
    price_note holds two unrelated things under one column: notes written FOR a dealer
@@ -1510,6 +1522,20 @@ function imgFail(el, mode){
     el.replaceWith(ph);
   }catch(e){}
 }
+/* MSRP: THREE STATES, NOT TWO (agreed 2026-10-09).
+     msrp populated                 -> shown as the manufacturer's MSRP
+     msrp empty + msrp_auto not false -> derived (2x dealer price), as every line always has been
+     msrp empty + msrp_auto === false -> NO MSRP. The source has none, and none is invented.
+   The signal is EXPLICIT: a saved edit (override patch) or the master record saying msrp_auto:false.
+   The added-product table's msrp_auto column is NOT read for this — false is its default, so it
+   cannot tell "no MSRP on purpose" from "nobody set it" (28 live Ovation rows would lose an MSRP).
+   A layer that says msrp_auto:false with no MSRP of its own clears any MSRP a lower layer carried. */
+function noMsrpRule(row, layer){
+  if(!layer || layer.msrp_auto!==false) return row;
+  row.msrp_auto=false;
+  if(layer.msrp==null || layer.msrp==="") row.msrp=null;
+  return row;
+}
 async function mergeCatalogEdits(slug, prods){
   const H={apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON};
   try{
@@ -1555,6 +1581,7 @@ async function mergeCatalogEdits(slug, prods){
     const OV_KEYS=["name","category","subcategory","description","price_note","base_price","msrp","map","tiers","image","group"];
     prods=prods.map(p=>{ const pa=om[p.code]; if(!pa) return p; const merged={...p};
       for(const k of OV_KEYS) if(k in pa && pa[k]!=null) merged[k]=pa[k];
+      noMsrpRule(merged, pa);
       /* A name typed in the admin is a deliberate decision and outranks the enrichment
          record below; without this flag the enrichment layer would silently undo it. */
       if(pa.name!=null && pa.name!=="") merged._nameFromOverride=true;
@@ -1579,6 +1606,7 @@ async function mergeCatalogEdits(slug, prods){
         map:(c.map==null||c.map==="")?null:c.map,
         image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",_custom:true};
       for(const k of OV_KEYS) if(k in pa && pa[k]!=null) row[k]=pa[k];
+      noMsrpRule(row, pa);
       prods.push(row); });
     const lm=Object.fromEntries((links||[]).map(l=>[l.code,l]));
     prods.forEach(p=>{ const L=lm[p.code]; if(L&&L.url){ p.moreUrl=L.url; p.moreLabel=L.label||"More Information"; } });
@@ -1820,6 +1848,15 @@ function reconcileShopPrices(prods, rows, authoritative){
         if(authoritative) p[k] = m[k];
       }
     });
+    /* The record says this SKU has NO MSRP (msrp empty, msrp_auto false). The storefront may
+       already have derived or inherited one; that is a difference, and on an authoritative line
+       the record's "none" wins. */
+    /* The unit a dealer orders in comes from the record too (A1005: 1 = one 4-pack). */
+    if(authoritative){ if(m.uom != null && m.uom !== "") p.uom = m.uom; if(m.case_qty != null) p.case_qty = Number(m.case_qty); }
+    if(m.msrp_auto === false && m.msrp == null && p.msrp != null && p.msrp !== ""){
+      diffs.push({ code: p.code, field: "msrp", layers: p.msrp, record: null });
+      if(authoritative){ p.msrp = null; p.msrp_auto = false; delete p._msrp_suggested; }
+    }
     if(m.tiers != null){
       if(ladder(p.tiers) !== ladder(m.tiers)){
         diffs.push({ code: p.code, field: "tiers", layers: ladder(p.tiers), record: ladder(m.tiers) });
@@ -1963,6 +2000,7 @@ function inheritColorPrice(p){
 }
 function fillMsrp(p){
   const base=Number(p.base_price);
+  if(p.msrp_auto===false) return p;     // MSRP deliberately absent — never fabricated (agreed 2026-10-09)
   if((p.msrp==null||p.msrp==="") && base>0){ p.msrp=Math.round(base*2*100)/100; p._msrp_suggested=true; }
   return p;
 }
@@ -2940,7 +2978,7 @@ function renderCart(){
       return `<div class="citem" data-k="${esc(cartKey(p))}">
         ${cimg}
         <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)}${p._skuOption?" · "+esc(variantLabel(p)):""}${p.brand?" · "+esc(p.brand):""}</div>
-        <div class="s">Unit ${u?money(u):"—"} · Line ${u?money(u*qty):"—"}${contractPrice(p)!=null?` · <span style="color:#0a7f3f;font-weight:700">contract</span>`:""}</div>${volNote}${priceNoteHtml(p)}</div>
+        <div class="s">${packOf(p)?`${qty} × ${esc(packOf(p).label)} = ${qty*packOf(p).n} each · `:""}Unit ${u?money(u):"—"}${packOf(p)?" per "+esc(packOf(p).label):""} · Line ${u?money(u*qty):"—"}${contractPrice(p)!=null?` · <span style="color:#0a7f3f;font-weight:700">contract</span>`:""}</div>${volNote}${priceNoteHtml(p)}</div>
         <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
     }).join("");
     const fields=MFR[slug]||(MFR[slug]={po:"",notes:""});
@@ -3088,7 +3126,7 @@ async function submitOrder(){
     orders.push({
       manufacturer_slug:slug, manufacturer_name:info.name,
       po:MFR[slug].po.trim(), notes:(MFR[slug].notes||"").trim(),
-      items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,name:p.name,brand:p.brand||"",uom:p.uom||"",qty,unit:unitPrice(p,qty)})),
+      items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,name:p.name,brand:p.brand||"",uom:p.uom||"",case_qty:(packOf(p)?packOf(p).n:undefined),qty,unit:unitPrice(p,qty)})),
       items_count:lines.reduce((n,{qty})=>n+qty,0),
       items_subtotal:Number(f.itemsTotal.toFixed(2)),
       freight_fee:Number(f.fee.toFixed(2)),

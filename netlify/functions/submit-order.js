@@ -98,11 +98,19 @@ function freightTermsHtml(o) {
 }
 
 /* ---------- item rows ---------- */
+/* The unit the quantity counts (agreed 2026-10-09): "4-pack (4 each)" for a pack SKU, so
+   "1 x A1005" can never be read as one cane holder. */
+function unitLabel(it) {
+  const n = Number(it && it.case_qty);
+  const u = String((it && it.uom) || "").trim();
+  if (n > 1) return `${u || n + "-pack"} (${n} each)`;
+  return u;
+}
 function itemsHtml(items) {
   return (items || []).map((it) => {
     const unit = Number(it.unit);
     const line = Number.isFinite(unit) ? unit * Number(it.qty || 0) : null;
-    const codeUom = esc(it.code) + (it.uom ? ` · ${esc(it.uom)}` : "");
+    const codeUom = esc(it.code) + (unitLabel(it) ? ` · ${esc(unitLabel(it))}` : "");
     return `<tr>
       <td style="padding:8px 10px;border-bottom:1px solid #e6e2dc;font:400 13px Arial,sans-serif;color:#10263f;">${esc(it.name)}${it.brand ? `<div style="font:400 11px Arial,sans-serif;color:#9aa2ac;">${esc(it.brand)}</div>` : ""}</td>
       <td style="padding:8px 10px;border-bottom:1px solid #e6e2dc;font:400 12px Arial,sans-serif;color:#6b7280;white-space:nowrap;">${codeUom}</td>
@@ -116,7 +124,7 @@ function itemsText(items) {
   return (items || []).map((it) => {
     const unit = Number(it.unit);
     const line = Number.isFinite(unit) ? unit * Number(it.qty || 0) : null;
-    return `  ${it.qty} x ${it.name} (${it.code}${it.uom ? ", " + it.uom : ""})` +
+    return `  ${it.qty} x ${it.name} (${it.code}${unitLabel(it) ? ", " + unitLabel(it) : ""})` +
       (Number.isFinite(unit) ? ` @ ${money(unit)} = ${money(line)}` : "");
   }).join("\n");
 }
