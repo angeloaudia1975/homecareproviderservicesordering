@@ -17,11 +17,18 @@
     "hasData": true,
     "sort": 2,
     "freight": {
-      "summary": "Free freight on all Strongback orders.",
+      "summary": "Wheelchairs, ErgoSteel and the SEATA rollator ship free. Accessories add one $15 shipping & handling charge per order, whatever the number of accessories.",
       "actualNote": "",
       "groups": [
         {
-          "label": "All Strongback items",
+          "label": "Strongback accessories — shipping & handling",
+          "categories": [
+            "Accessories"
+          ],
+          "flatFee": 15
+        },
+        {
+          "label": "Strongback models — shipping included",
           "brandKeywords": [
             "*"
           ],

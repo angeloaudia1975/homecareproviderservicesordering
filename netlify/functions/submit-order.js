@@ -48,8 +48,12 @@ function applyServerPrices(orders, recorded) {
       return Object.assign({}, it, { qty: r.qty, unit: r.unit });
     });
     const sub = r2(rec.subtotal);
-    const fee = Number(o.freight_fee) > 0 ? Number(o.freight_fee) : 0;
-    return Object.assign({}, o, { items, items_subtotal: sub, estimated_total: r2(sub + fee), order_id: rec.order_id });
+    /* Freight is the server's too when it worked it out (2026-10-09): the HCPS email carries the
+       freight stored on the order, never a figure the browser sent. */
+    const serverFreight = rec.freight_fee != null && Number.isFinite(Number(rec.freight_fee));
+    const fee = serverFreight ? r2(rec.freight_fee) : (Number(o.freight_fee) > 0 ? Number(o.freight_fee) : 0);
+    const extra = serverFreight ? { freight_fee: fee, freight_lines: rec.freight_lines || o.freight_lines || [] } : {};
+    return Object.assign({}, o, extra, { items, items_subtotal: sub, estimated_total: r2(sub + fee), order_id: rec.order_id });
   });
 }
 

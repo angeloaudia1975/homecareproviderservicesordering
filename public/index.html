@@ -1316,8 +1316,18 @@ function unitPrice(p, qty){
   // Quantity-break tiers apply when present.
   if(Array.isArray(p.tiers)&&p.tiers.length){
     const q=tierQty(p,qty);
+    /* THRESHOLD-SPECIFIC POOLING (agreed 2026-10-09, Strongback Rev C). A break that names a pool
+       ("strongback-models") qualifies on the combined cart quantity of every product of the same line
+       whose breaks name that pool; a break without one qualifies exactly as before (this SKU, or its
+       catalog group). 1×1003AB + 1×R0001 → both reach 2+; 4×1003AB + 4×1017 never reach 8+. */
+    const poolQty=name=>{ let n=0, seen=false;
+      for(const {p:cp,qty:cq} of CART.values()){
+        if(cp.manufacturer===p.manufacturer && Array.isArray(cp.tiers) && cp.tiers.some(r=>r&&r.pool===name)){
+          n+=(parseInt(cq)||0); if(cp.code===p.code) seen=true; } }
+      if(!seen) n+=(parseInt(qty)||1);
+      return Math.max(1,n); };
     let price=null;
-    for(const t of p.tiers){ const mq=(t.minQty??t.min_qty??1); if(q>=mq && t.price!=null) price=Number(t.price); }
+    for(const t of p.tiers){ const mq=(t.minQty??t.min_qty??1); const tq=(t&&t.pool)?poolQty(t.pool):q; if(tq>=mq && t.price!=null) price=Number(t.price); }
     if(price!=null) return price;
   }
   return Number(p.base_price||0);
@@ -1331,7 +1341,7 @@ function unitPrice(p, qty){
 function tierLadder(p){
   const base=Number(p&&p.base_price);
   const rows=(Array.isArray(p&&p.tiers)?p.tiers:[])
-    .map(t=>({qty:Math.round(Number(t&&(t.minQty!=null?t.minQty:t.min_qty))||0), price:Number(t&&t.price)}))
+    .map(t=>({qty:Math.round(Number(t&&(t.minQty!=null?t.minQty:t.min_qty))||0), price:Number(t&&t.price), pool:(t&&t.pool)||null}))
     .filter(t=>t.qty>1 && isFinite(t.price) && t.price>0)
     .sort((a,b)=>a.qty-b.qty);
   if(!rows.length) return [];
@@ -1350,7 +1360,7 @@ function tierRangeLabel(qty, nextQty){
 }
 /* One line for the card: the breaks only, no arithmetic, no base price repeated. */
 function tierSummary(p){
-  return tierLadder(p).filter(t=>t.qty>1).map(t=>`${t.qty}+ ${money(t.price)}`).join(' · ');
+  return tierLadder(p).filter(t=>t.qty>1).map(t=>`${t.qty}+ ${money(t.price)}${t.pool?' (mix models)':''}`).join(' · ');
 }
 /* ONE LINE FOR A WHOLE CARD, ACROSS EVERY VARIANT ON IT.
    Takes the union of the break quantities and, at each one, the LOWEST price any variant
@@ -1826,7 +1836,7 @@ function reconcileShopPrices(prods, rows, authoritative){
                        : (a == null || b == null) ? false
                        : Math.abs(Number(a) - Number(b)) < 0.005;
   const ladder = t => Array.isArray(t)
-    ? t.map(x => Math.round(Number(x.min_qty != null ? x.min_qty : x.minQty)) + ':' + Number(x.price))
+    ? t.map(x => Math.round(Number(x.min_qty != null ? x.min_qty : x.minQty)) + ':' + Number(x.price) + (x.pool ? '@' + x.pool : ''))
        .sort().join(',')
     : '';
 
@@ -2920,9 +2930,15 @@ function computeFreight(slug,lines){
   const assigned=new Set(); const rows=[]; let fee=0; let anyActual=false;
   for(const g of (cfg.groups||[])){
     let sub=0;
+    /* A group may select its lines by CATEGORY — the canonical classification Partner 360 files a
+       product under (agreed 2026-10-09: Strongback accessories pay one $15 shipping & handling per
+       order). A category group never falls back to brand matching. */
+    const cats=(Array.isArray(g.categories)?g.categories:[]).map(c=>String(c).trim().toLowerCase()).filter(Boolean);
+    const kws=Array.isArray(g.brandKeywords)?g.brandKeywords:[];
     for(const ln of lines){
       const b=(ln.p.brand||"").toLowerCase();
-      const match=g.brandKeywords.includes("*")||g.brandKeywords.some(k=>b.includes(k));
+      const match=cats.length ? cats.includes(String(ln.p.category||"").trim().toLowerCase())
+                              : (kws.includes("*")||kws.some(k=>b.includes(k)));
       if(match&&!assigned.has(ln)){sub+=unitPrice(ln.p,ln.qty)*ln.qty;assigned.add(ln);}
     }
     if(sub<=0) continue;
