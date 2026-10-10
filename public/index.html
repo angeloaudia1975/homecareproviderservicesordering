@@ -1426,7 +1426,13 @@ function priceHtml(p){
      anything about the number. Every MSRP now reads the same. The record still
      knows which figures were derived — msrp_auto — for anyone who needs to ask;
      it is simply not a distinction a dealer is shown. */
-  const msrp = (cp==null && p.msrp!=null && Number(p.msrp)>Number(p.base_price)) ? `<div class="msrp">MSRP ${money(p.msrp)}</div>` : "";
+  /* MSRP PER PIECE ON A PACK (agreed 2026-10-10, Bemis). Manufacturers differ: Ovation quotes a
+     pack's MSRP for the whole pack, Bemis quotes MSRP per piece next to a per-Case dealer price. A
+     row says which with msrp_each:true; only then is the MSRP labelled "each" and weighed against
+     the per-piece dealer price (case price / case qty) when deciding whether to show it. */
+  const msrpPack=packOf(p), msrpEach=!!(msrpPack && p.msrp_each===true);
+  const msrpFloor=msrpEach ? Number(p.base_price)/msrpPack.n : Number(p.base_price);
+  const msrp = (cp==null && p.msrp!=null && Number(p.msrp)>msrpFloor) ? `<div class="msrp">MSRP ${money(p.msrp)}${msrpEach?" each":""}</div>` : "";
   const note=dealerPriceNote(p.price_note, p);
   /* One line, from the field, for every product that has a MAP — instead of only the
      ones somebody remembered to type it into. */

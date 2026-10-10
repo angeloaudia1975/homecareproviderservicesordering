@@ -8,19 +8,20 @@
     "brand": "BEMIS",
     "description": "Raised 3\" with the Stay-Tite installation system. 1000 lb seat capacity. Support arms sold separately.",
     "hcpc": "",
-    "uom": "2/CS",
-    "base_price": 109.99,
-    "price_note": "Case of 2 · $54.99/unit · MSRP $109.99/unit",
+    "uom": "Case",
+    "base_price": 109.98,
+    "price_note": "",
     "image": "/assets/products/bemis/7YR05310TSS.jpg",
     "tiers": [
       {
         "minQty": 1,
-        "price": 109.99
+        "price": 109.98
       }
     ],
-    "case_qty": "2/CS",
-    "unit_cost": 54.99,
+    "case_qty": 2,
     "msrp": 109.99,
+    "map": 109.99,
+    "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/assurance/"
   },
@@ -33,19 +34,20 @@
     "brand": "BEMIS",
     "description": "Raised 3\" with the Stay-Tite installation system. 1000 lb seat capacity. Support arms sold separately.",
     "hcpc": "",
-    "uom": "2/CS",
-    "base_price": 109.99,
-    "price_note": "Case of 2 · $54.99/unit · MSRP $109.99/unit",
+    "uom": "Case",
+    "base_price": 109.98,
+    "price_note": "",
     "image": "/assets/products/bemis/7YE05310TSS.jpg",
     "tiers": [
       {
         "minQty": 1,
-        "price": 109.99
+        "price": 109.98
       }
     ],
-    "case_qty": "2/CS",
-    "unit_cost": 54.99,
+    "case_qty": 2,
     "msrp": 109.99,
+    "map": 109.99,
+    "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/assurance/"
   },
@@ -58,9 +60,9 @@
     "brand": "BEMIS",
     "description": "For the Assurance toilet seats. 350 lb capacity per arm. Gray frame with white grips. Sold as a set of 2.",
     "hcpc": "",
-    "uom": "4/CS",
+    "uom": "Case",
     "base_price": 119.96,
-    "price_note": "Case of 4 · $29.99/unit · MSRP $59.99/unit",
+    "price_note": "",
     "image": "/assets/products/bemis/7YA05313GRY.jpg",
     "tiers": [
       {
@@ -68,9 +70,10 @@
         "price": 119.96
       }
     ],
-    "case_qty": "4/CS",
-    "unit_cost": 29.99,
+    "case_qty": 4,
     "msrp": 59.99,
+    "map": 59.99,
+    "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/assurance/"
   },
@@ -83,9 +86,9 @@
     "brand": "BEMIS",
     "description": "For the Assurance toilet seats. 350 lb capacity per arm. Black frame with white grips. Sold as a set of 2.",
     "hcpc": "",
-    "uom": "4/CS",
+    "uom": "Case",
     "base_price": 119.96,
-    "price_note": "Case of 4 · $29.99/unit · MSRP $59.99/unit",
+    "price_note": "",
     "image": "/assets/products/bemis/7YA05313BLK.jpg",
     "tiers": [
       {
@@ -93,9 +96,10 @@
         "price": 119.96
       }
     ],
-    "case_qty": "4/CS",
-    "unit_cost": 29.99,
+    "case_qty": 4,
     "msrp": 59.99,
+    "map": 59.99,
+    "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/assurance/"
   },
@@ -108,9 +112,9 @@
     "brand": "BEMIS",
     "description": "Personal-wash bidet attachment made exclusively for the Assurance toilet seat.",
     "hcpc": "",
-    "uom": "2/CS",
+    "uom": "Case",
     "base_price": 74.98,
-    "price_note": "Case of 2 · $37.49/unit · MSRP $74.99/unit",
+    "price_note": "",
     "image": "/assets/products/bemis/7YA06303TWA.jpg",
     "tiers": [
       {
@@ -118,9 +122,10 @@
         "price": 74.98
       }
     ],
-    "case_qty": "2/CS",
-    "unit_cost": 37.49,
+    "case_qty": 2,
     "msrp": 74.99,
+    "map": 74.99,
+    "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/assurance/"
   },
@@ -133,9 +138,9 @@
     "brand": "BEMIS",
     "description": "Adjustable base fits both round and elongated toilets. Includes security arms and dual-lock. 300 lb capacity.",
     "hcpc": "",
-    "uom": "3/CS",
+    "uom": "Case",
     "base_price": 119.97,
-    "price_note": "Case of 3 · $39.99/unit · MSRP $79.99/unit",
+    "price_note": "",
     "image": "/assets/products/bemis/7YA04505T.jpg",
     "tiers": [
       {
@@ -143,9 +148,10 @@
         "price": 119.97
       }
     ],
-    "case_qty": "3/CS",
-    "unit_cost": 39.99,
+    "case_qty": 3,
     "msrp": 79.99,
+    "map": 79.99,
+    "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/p/4-5-inch-raised-toilet-seat-with-dual-lock-and-security-arms/"
   },
@@ -158,19 +164,20 @@
     "brand": "BEMIS",
     "description": "Premium toilet seat with arms and Stay-Tite installation. 500 lb capacity.",
     "hcpc": "",
-    "uom": "2/CS",
-    "base_price": 99.99,
-    "price_note": "Case of 2 · $49.99/unit · MSRP $99.99/unit",
+    "uom": "Case",
+    "base_price": 99.98,
+    "price_note": "",
     "image": "/assets/products/bemis/7YA0AS100.jpg",
     "tiers": [
       {
         "minQty": 1,
-        "price": 99.99
+        "price": 99.98
       }
     ],
-    "case_qty": "2/CS",
-    "unit_cost": 49.99,
+    "case_qty": 2,
     "msrp": 99.99,
+    "map": 99.99,
+    "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/bemis-assist/"
   },
@@ -185,7 +192,7 @@
     "hcpc": "",
     "uom": "Each",
     "base_price": 54.99,
-    "price_note": "MSRP $109.99",
+    "price_note": "",
     "image": "/assets/products/bemis/7YE82350TC.jpg",
     "tiers": [
       {
@@ -194,8 +201,8 @@
       }
     ],
     "case_qty": "1",
-    "unit_cost": 54.99,
     "msrp": 109.99,
+    "map": 109.99,
     "upc": "",
     "details_url": "BEMIS Product Catalog"
   },
