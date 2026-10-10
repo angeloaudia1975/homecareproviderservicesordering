@@ -4853,6 +4853,12 @@ const TOOLS_ENDPOINT=API_BASE+"/dealer-tools-api";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money=n=>"$"+Math.round(Number(n)||0).toLocaleString();
+/* An ORDER's amount is shown to the cent and includes the freight the server stored on it (agreed
+   2026-10-09): My Orders and the dashboard's recent orders read the same total as the dealer's
+   confirmation email. Purchase KPIs and reports stay on merchandise (`cost`). */
+const cents=n=>"$"+(Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const orderTotal=o=>Number(o&&o.total!=null?o.total:(o&&o.cost))||0;
+const freightNote=o=>(o&&Number(o.freight)>0)?`<div class="m" style="font-weight:400;font-size:11px;color:var(--muted,#667085)">incl. ${cents(o.freight)} freight</div>`:"";
 const num=n=>Math.round(Number(n)||0).toLocaleString();
 const MONS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const monthLbl=ym=>{const[y,m]=String(ym||"").split("-");return m?MONS[(+m)-1]+" "+y:ym;};
@@ -4938,7 +4944,7 @@ async function loadDash(){
   const recent=(d.recent||[]);
   const recentHtml=recent.length?recent.map(o=>`<div class="rl">
       <div class="b"><div class="n">${esc(o.manufacturerName)} ${srcPill(o.source)}</div><div class="m">${dateShort(o.date)} · ${o.itemsCount} item${o.itemsCount!==1?"s":""} · ${o.units} units${o.preview&&o.preview.length?" · "+esc(o.preview.join(", ")):""}</div></div>
-      <div class="amt tnum">${money(o.cost)}</div></div>`).join(""):`<div class="empty">No orders on file yet.</div>`;
+      <div class="amt tnum">${cents(orderTotal(o))}${freightNote(o)}</div></div>`).join(""):`<div class="empty">No orders on file yet.</div>`;
   $("#view-dash").innerHTML=`
     <div class="ph"><div><h1>Welcome back${PROFILE&&PROFILE.name?", "+esc(PROFILE.name):""}</h1><div class="sub">Your HCPS purchases across every line</div></div>
       <div><a class="btn nv" href="/">Start an order</a> <a class="btn pri" onclick="showView('orders')">View all orders →</a></div></div>
@@ -4977,15 +4983,15 @@ async function loadOrders(){
   const rows=HISTORY.map(o=>{
     const canTrack=(o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="delivered";
     const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
-    return `<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b></td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${money(o.cost)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
+    return `<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b></td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${cents(orderTotal(o))}${freightNote(o)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
   }).join("");
-  const total=HISTORY.reduce((s,o)=>s+(Number(o.cost)||0),0);
+  const total=HISTORY.reduce((s,o)=>s+orderTotal(o),0);
   $("#view-orders").innerHTML=`
     <div class="ph"><div><h1>My Orders</h1><div class="sub">Consolidated history — imported sales, portal &amp; Golden · ${HISTORY.length} records</div></div>
       <div><a class="btn gh" onclick="exportHistoryCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a> <a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
     <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Date</th><th>Source</th><th>Manufacturer</th><th>Items</th><th class="n">Units</th><th class="n">Amount</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows||`<tr><td colspan="8" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
-      ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total purchases</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${money(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
+      ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total (incl. freight)</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${cents(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
     </table></div>
     <div class="lead-note">"Request tracking" asks the manufacturer to send shipment tracking to you and to HCPS. Retail uses MSRP on file, or 2× dealer cost where none is on file.</div>`;
 }
@@ -5084,7 +5090,8 @@ function dl(filename,text,mime){const blob=new Blob(["﻿"+text],{type:mime||'te
 function csvCell(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
 function toCSV(rows){return rows.map(r=>r.map(csvCell).join(',')).join('\r\n');}
 function exportHistoryCSV(){const rows=[['Date','Source','Manufacturer','Item #','Product','Qty','Unit','Line total','Status']];
-  for(const o of (HISTORY||[])){for(const l of (o.lines||[])){const qty=Number(l.qty)||0;const line=Number(l.line!=null?l.line:l.cost)||0;rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,l.code,l.name,qty,qty?(line/qty).toFixed(2):line.toFixed(2),line.toFixed(2),o.status]);}}
+  for(const o of (HISTORY||[])){for(const l of (o.lines||[])){const qty=Number(l.qty)||0;const line=Number(l.line!=null?l.line:l.cost)||0;rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,l.code,l.name,qty,qty?(line/qty).toFixed(2):line.toFixed(2),line.toFixed(2),o.status]);}
+    if(Number(o.freight)>0) rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,'','Freight / shipping & handling',1,Number(o.freight).toFixed(2),Number(o.freight).toFixed(2),o.status]);}
   dl('hcps-order-history.csv',toCSV(rows));}
 function exportReportCSV(){const year=REPORT_YEAR||String(new Date().getFullYear());const a=reportAgg(year);
   const rows=[['HCPS Purchase Report',year==='all'?'All time':year],[],['Manufacturer','Spend','Retail','Margin']];
