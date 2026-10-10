@@ -117,7 +117,7 @@
     "hasData": true,
     "sort": 9,
     "freight": {
-      "summary": "Free shipping on orders $500 or more; a $40 flat freight fee applies to orders under $500.",
+      "summary": "Prepaid freight on orders of $500 or more; $40 shipping & handling on orders under $500.",
       "actualNote": "",
       "groups": [
         {
@@ -126,7 +126,9 @@
             "*"
           ],
           "freeAt": 500,
-          "flatUnder": 40
+          "flatUnder": 40,
+          "freeLabel": "Prepaid freight",
+          "flatLabel": "shipping & handling"
         }
       ],
       "elseActual": false

@@ -79,9 +79,11 @@ const json = (statusCode, body) => ({
 /* ---------- freight summary ---------- */
 function freightShort(o) {
   const lines = o.freight_lines || [];
-  if (Number(o.freight_fee) > 0) return money(o.freight_fee) + " flat";
+  /* A manufacturer's own words travel on the freight row (freeLabel/flatLabel, 2026-10-10 Bemis). */
+  const flat = lines.find((r) => r.status === "flat" && r.flatLabel), free = lines.find((r) => r.status === "free" && r.freeLabel);
+  if (Number(o.freight_fee) > 0) return money(o.freight_fee) + " " + (flat ? flat.flatLabel : "flat");
   if (lines.some((r) => r.status === "actual")) return "actual freight (confirmed by manufacturer)";
-  if (lines.length) return "FREE";
+  if (lines.length) return free ? free.freeLabel : "FREE";
   return "—";
 }
 function freightTermsHtml(o) {
@@ -89,11 +91,11 @@ function freightTermsHtml(o) {
   if (!lines.length && !o.freight_note) return "";
   let rows = lines.map((r) => {
     let right =
-      r.status === "free" ? "FREE freight"
-      : r.status === "flat" ? money(r.fee) + " freight"
+      r.status === "free" ? (r.freeLabel || "FREE freight")
+      : r.status === "flat" ? money(r.fee) + " " + (r.flatLabel || "freight")
       : "actual freight";
-    let sub = r.remaining > 0 && r.freeAt ? ` (add ${money(r.remaining)} to reach free freight at ${money(r.freeAt)})` : "";
-    return `<tr><td style="padding:2px 10px 2px 0;font:400 12px Arial,sans-serif;color:#4b5563;">${esc(r.label)}${sub}</td><td style="padding:2px 0;font:600 12px Arial,sans-serif;color:#10263f;text-align:right;white-space:nowrap;">${right}</td></tr>`;
+    let sub = r.remaining > 0 && r.freeAt ? ` (add ${money(r.remaining)} to reach ${r.freeLabel ? r.freeLabel.toLowerCase() : "free freight"} at ${money(r.freeAt)})` : "";
+    return `<tr><td style="padding:2px 10px 2px 0;font:400 12px Arial,sans-serif;color:#4b5563;">${esc(r.label)}${sub}</td><td style="padding:2px 0;font:600 12px Arial,sans-serif;color:#10263f;text-align:right;white-space:nowrap;">${esc(right)}</td></tr>`;
   }).join("");
   const note = o.freight_note ? `<div style="font:italic 11px Arial,sans-serif;color:#9aa2ac;margin-top:4px;">${esc(o.freight_note)}</div>` : "";
   return `<div style="margin-top:10px;padding:8px 10px;background:#f6f7f5;border:1px solid #e6e2dc;border-radius:8px;">
