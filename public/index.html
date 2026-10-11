@@ -1502,7 +1502,7 @@ async function loadManufacturers(){
        catalog file happened to carry, which is why the shop showed "Ankles" and "Backs" while the
        admin showed "Foot & Ankle" and "Back & Spine". One missing word, and the two views of the
        catalog disagreed for weeks. */
-    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,enriched_only,category_order,category_map`,
+    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,enriched_only,category_order,category_map,freight_terms`,
       {headers:{apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON}}).then(x=>x.ok?x.json():[]);
     const lm=Object.fromEntries((lg||[]).map(o=>[o.slug,o.logo_url]));
     /* Per-line listing mode. On a line whose enrichment is finished, the enrichment record is
@@ -1515,8 +1515,12 @@ async function loadManufacturers(){
        same fact lived in 308 places and every one of them had to be rewritten when a product
        moved. Held as a map it is one fact, and moving a product is a single subcategory edit. */
     const cm=Object.fromEntries((lg||[]).map(o=>[o.slug,(o.category_map&&typeof o.category_map==='object')?o.category_map:null]));
+    /* Freight terms as data (Phase 5): the record's terms when present and valid, else the file's. */
+    const fm=Object.fromEntries((lg||[]).map(o=>[o.slug,o.freight_terms==null?null:o.freight_terms]));
     state.manufacturers.forEach(m=>{ if(lm[m.slug]) m.logo=lm[m.slug]; m.enrichedOnly=!!em[m.slug];
-      m.categoryOrder=co[m.slug]||null; m.categoryMap=cm[m.slug]||null; });
+      m.categoryOrder=co[m.slug]||null; m.categoryMap=cm[m.slug]||null;
+      const ft=freightTermsFor(m.freight, fm[m.slug]); m.freight=ft.freight; m.freightSource=ft.source;
+      if(ft.invalid) try{ console.warn('[HCPS] '+m.slug+': freight_terms on the record are not valid; the manufacturers.json freight rule is used.'); }catch(e){} });
   }catch(e){}
 }
 // Merge all admin edits (images, per-product overrides + hide, custom/added products,
@@ -2927,6 +2931,39 @@ function mfrInfo(slug){ if(isGoldenSlug(slug)){ return state.manufacturers.find(
 function groupCart(){const g=new Map();for(const it of CART.values()){const s=it.p.manufacturer;if(!g.has(s))g.set(s,[]);g.get(s).push(it);}return g;}
 function linesSubtotal(lines){let t=0;for(const{p,qty}of lines)t+=unitPrice(p,qty)*qty;return t;}
 
+/* FREIGHT TERMS AS DATA (Manufacturer Center Phase 5, 2026-10-10).
+   A line's freight rule comes from manufacturer_meta.freight_terms when that record is present AND
+   valid; otherwise from its manufacturers.json "freight" entry, exactly as before; with neither, the
+   line has no freight rule. The record replaces the file entry WHOLE — fields are never mixed — so a
+   partial or broken record can never combine with the file into a rule nobody wrote, and a missing,
+   empty or malformed record can never wipe a rule: it is ignored and the file stands. The record's
+   "trace" (where the terms came from) is provenance and never reaches computeFreight. */
+function validFreightTerms(t){
+  const isObj=v=>v!=null&&typeof v==='object'&&!Array.isArray(v);
+  const num=v=>v==null||(typeof v==='number'&&isFinite(v)&&v>=0);
+  const str=v=>v==null||typeof v==='string';
+  const list=a=>Array.isArray(a)&&a.length>0&&a.every(x=>typeof x==='string'&&x.trim()!=='');
+  if(!isObj(t)) return false;
+  if(!str(t.summary)||!str(t.actualNote)||!str(t.otherLabel)) return false;
+  if(t.elseActual!=null&&typeof t.elseActual!=='boolean') return false;
+  if(t.mode!=null) return t.mode==='per_item' && num(t.threshold);
+  if(!Array.isArray(t.groups)) return false;
+  for(const g of t.groups){
+    if(!isObj(g)||typeof g.label!=='string'||g.label.trim()==='') return false;
+    if(!(list(g.categories)||list(g.brandKeywords))) return false;
+    if((g.categories!=null&&!list(g.categories))||(g.brandKeywords!=null&&!list(g.brandKeywords))) return false;
+    if(!num(g.freeAt)||!num(g.flatUnder)||!num(g.flatFee)||!num(g.flatBelow)) return false;
+    if(!str(g.freeLabel)||!str(g.flatLabel)) return false;
+  }
+  return t.groups.length>0 || t.elseActual===true;
+}
+function freightTermsFor(fileFreight, terms){
+  const file=fileFreight||null;
+  if(terms==null) return {freight:file, source:file?'file':'none', invalid:false};
+  if(!validFreightTerms(terms)) return {freight:file, source:file?'file':'none', invalid:true};
+  const f=JSON.parse(JSON.stringify(terms)); delete f.trace;
+  return {freight:f, source:'record', invalid:false};
+}
 /* freight: partition a manufacturer's lines into brand groups and apply each rule */
 function computeFreight(slug,lines){
   const cfg=mfrInfo(slug).freight; const itemsTotal=linesSubtotal(lines);
