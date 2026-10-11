@@ -1407,6 +1407,13 @@ function packOf(p){
   return { n, label: u || (n+'-pack') };
 }
 function packNote(p){ const k=packOf(p); return k ? `Dealer order unit = 1 ${k.label} (${k.n} each)` : ""; }
+/* MSRP / MAP BASIS FROM THE RECORD (Manufacturer Center Phase 4, 2026-10-10). On a pack SKU the
+   manufacturer quotes MSRP and MAP either per piece ("each") or for the order unit. The master record
+   says which in msrp_basis / map_basis; an empty basis keeps the rule the storefront has always used
+   (MSRP "each" only where the catalog row says msrp_each:true, MAP always "each" on a pack). A single
+   item (no pack) never gets a basis label. Any other value is ignored rather than guessed at. */
+function msrpIsEach(p){ if(!packOf(p)) return false; const b=p&&p.msrp_basis; return (b==='each'||b==='order_unit') ? b==='each' : p.msrp_each===true; }
+function mapIsEach(p){ if(!packOf(p)) return false; const b=p&&p.map_basis; return (b==='each'||b==='order_unit') ? b==='each' : true; }
 function priceHtml(p){
   if (!state.dealer && p.base_price==null) return `<span class="price locked">Log in for pricing</span>`;
   if (p.base_price==null) return `<span class="price locked">Call for pricing</span>`;
@@ -1430,14 +1437,14 @@ function priceHtml(p){
      pack's MSRP for the whole pack, Bemis quotes MSRP per piece next to a per-Case dealer price. A
      row says which with msrp_each:true; only then is the MSRP labelled "each" and weighed against
      the per-piece dealer price (case price / case qty) when deciding whether to show it. */
-  const msrpPack=packOf(p), msrpEach=!!(msrpPack && p.msrp_each===true);
+  const msrpPack=packOf(p), msrpEach=msrpIsEach(p);
   const msrpFloor=msrpEach ? Number(p.base_price)/msrpPack.n : Number(p.base_price);
   const msrp = (cp==null && p.msrp!=null && Number(p.msrp)>msrpFloor) ? `<div class="msrp">MSRP ${money(p.msrp)}${msrpEach?" each":""}</div>` : "";
   const note=dealerPriceNote(p.price_note, p);
   /* One line, from the field, for every product that has a MAP — instead of only the
      ones somebody remembered to type it into. */
   const mapv=(p.map!=null&&p.map!==''&&Number(p.map)>0)?Number(p.map):null;
-  const mapLine=(cp==null && mapv!=null) ? `<div class="cmap">MAP ${money(mapv)}${packOf(p)?" each":""}</div>` : "";
+  const mapLine=(cp==null && mapv!=null) ? `<div class="cmap">MAP ${money(mapv)}${mapIsEach(p)?" each":""}</div>` : "";
   const pack=packOf(p) ? `<div class="pnote" style="font-weight:700">${esc(packNote(p))}</div>` : "";
   return `<div><div class="price"><sup>$</sup>${d}<sup>.${c}</sup>${packOf(p)?` <span class="pnote">per ${esc(packOf(p).label)}</span>`:""}</div>${pack}${contractTag}${msrp}${mapLine}${note?`<div class="pnote">${esc(note)}</div>`:""}</div>`;
 }
@@ -1869,6 +1876,10 @@ function reconcileShopPrices(prods, rows, authoritative){
        the record's "none" wins. */
     /* The unit a dealer orders in comes from the record too (A1005: 1 = one 4-pack). */
     if(authoritative){ if(m.uom != null && m.uom !== "") p.uom = m.uom; if(m.case_qty != null) p.case_qty = Number(m.case_qty); }
+    /* MSRP / MAP basis (Phase 4): the record's word on an authoritative line; an empty basis leaves
+       the storefront's own rule in place (see msrpIsEach / mapIsEach). */
+    if(authoritative){ if(m.msrp_basis === "each" || m.msrp_basis === "order_unit") p.msrp_basis = m.msrp_basis;
+                       if(m.map_basis === "each" || m.map_basis === "order_unit") p.map_basis = m.map_basis; }
     if(m.msrp_auto === false && m.msrp == null && p.msrp != null && p.msrp !== ""){
       diffs.push({ code: p.code, field: "msrp", layers: p.msrp, record: null });
       if(authoritative){ p.msrp = null; p.msrp_auto = false; delete p._msrp_suggested; }

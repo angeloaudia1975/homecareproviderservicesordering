@@ -180,6 +180,9 @@ function feedRows(rows) {
     if (r.uom) o.uom = r.uom;
     if (r.hcpcs) o.hcpcs = r.hcpcs;
     if (n(r.case_qty) != null) o.case_qty = n(r.case_qty);
+    // MSRP / MAP basis on a pack (Manufacturer Center Phase 4): only the two known words travel.
+    if (r.msrp_basis === "each" || r.msrp_basis === "order_unit") o.msrp_basis = r.msrp_basis;
+    if (r.map_basis === "each" || r.map_basis === "order_unit") o.map_basis = r.map_basis;
     out.push(o);
   });
   out.sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
@@ -232,7 +235,7 @@ exports.handler = async (event) => {
 
     const [active, dead] = await Promise.all([
       sb(`product_skus?manufacturer=eq.${e(slug)}&status=eq.active` +
-         `&select=code,option_label,base_price,msrp,msrp_auto,map,tiers,price_note,uom,hcpcs,case_qty` +
+         `&select=code,option_label,base_price,msrp,msrp_auto,map,tiers,price_note,uom,hcpcs,case_qty,msrp_basis,map_basis` +
          `&order=code&limit=5000`),
       /* Retired part numbers a dealer may still order by. Carries the pointer
          and nothing else — no price, because the order line already stores the
