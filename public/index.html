@@ -1656,7 +1656,11 @@ async function mergeCatalogEdits(slug, prods){
   try{
     let pages=null;
     try{
-      const rows=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${VISIBLE_STATUSES.join(',')})&select=page_key,status,skus,name,tagline,description,features,clinical_applications,options,billing_codes,specs,warranty,source_url,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label,subcategory`,{headers:H}).then(x=>x.ok?x.json():null);
+      const PC_URL=`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${VISIBLE_STATUSES.join(',')})&select=page_key,status,skus,name,tagline,description,features,clinical_applications,options,billing_codes,specs,warranty,source_url,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label,subcategory`;
+      /* card_image (2026-10-12): the catalog-card photo the President chose for a grouped page. Until the
+         database has the column, the pages are read without it — exactly as before. */
+      let rows=await fetch(PC_URL+',card_image',{headers:H}).then(x=>x.ok?x.json():null);
+      if(rows==null) rows=await fetch(PC_URL,{headers:H}).then(x=>x.ok?x.json():null);
       if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); }
     }catch(e){}
     if(!pages){ // static fallback (same live gate applied client-side)
@@ -1771,6 +1775,12 @@ async function mergeCatalogEdits(slug, prods){
           /* THE ONE IMAGE RULE (Phase 2.4): this SKU's own photo → the page's primary photo
              (none flagged: the page image, then the gallery's first photo) → the catalog layer
              already on p. The rest of the gallery becomes thumbnails. */
+          /* THE CATALOG-CARD PHOTO IS CHOSEN, NOT INFERRED (2026-10-12). A grouped page's card used the
+             first option that had a photo — so the order of the catalog file decided what every dealer saw
+             before choosing a shape or size. The President now chooses it (an option's photo, another
+             approved photo, or "none" for no photo); groupLeads() puts it on the card. Presentation only:
+             no option, price, order or grouping changes. */
+          if(pg.card_image) p._cardImage=String(pg.card_image).trim();
           { const pi=pageImageFor(pg,_sx);
             if(pi.hero) p.image=pi.hero;
             if(pi.thumbs.length){ p.media=Array.isArray(p.media)?p.media:[];
@@ -2723,6 +2733,11 @@ function groupLeads(list){
     const pmin=prices.length?Math.min(...prices):0, pmax=prices.length?Math.max(...prices):0;
     const lead=items.find(x=>x.image||(Array.isArray(x._features)&&x._features.length))||items[0];
     const L=Object.assign({},lead);
+    /* The card's photo, when the page has one chosen (see mergeCatalogEdits: _cardImage): that photo, or
+       none ("none" → the "No image" placeholder). The lead's own gallery photos are not shown on the card
+       then, so no option's picture stands in for the whole product. */
+    const _ci=(items.find(x=>x._cardImage)||{})._cardImage;
+    if(_ci){ L.image=(_ci==='none')?'':_ci; L.media=(Array.isArray(L.media)?L.media:[]).filter(m=>m&&m.kind!=='image'); }
     L._variants=items; L._count=items.length; L._gname=groupDisplayName(lead);
     L._priceMin=pmin; L._priceMax=pmax;
     leads.push(L);
