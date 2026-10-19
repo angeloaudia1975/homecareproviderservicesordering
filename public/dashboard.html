@@ -159,6 +159,7 @@
     <a class="soon" title="Coming in a later phase">My Manufacturers</a>
     <a onclick="showView('resources')">Resources</a>
     <a onclick="showView('account')">Account &amp; Pricing</a>
+    <a id="academyLink" style="display:none" href="#" title="HCPS Training &amp; Certification Academy">Training</a>
   </div></div>
 </div>
 <div class="page">
@@ -221,7 +222,30 @@ async function boot(){
   $("#signout").style.display="";$("#signout").onclick=()=>{try{localStorage.removeItem("hcps_session");}catch(e){}location.href="/";};
   await loadBranding(); applyBranding();
   loadDash();
+  academyEntry();
 }
+/* ---- HCPS Academy entry (A2B handoff). The Academy decides whether this login may use it (switches + pilot gate);
+   the button appears only when it says so. A click asks for a single-use, 60-second link and opens it; the Partner 360
+   token is only used to say who is signed in. ---- */
+const ACADEMY_HANDOFF="https://www.homecareproviderservices.org/.netlify/functions/academy-handoff";
+async function academyEntry(){
+  const a=$("#academyLink"); if(!a) return;
+  try{
+    await refreshIfNeeded();
+    const r=await fetch(ACADEMY_HANDOFF,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+(token()||"")},body:JSON.stringify({action:"status"})});
+    const j=await r.json().catch(()=>({})); if(!r.ok||j.enabled!==true) return;
+  }catch(e){ return; }
+  a.style.display="";
+  a.onclick=async ev=>{ ev.preventDefault(); a.textContent="Opening Training…";
+    try{ await refreshIfNeeded();
+      const r=await fetch(ACADEMY_HANDOFF,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+(token()||"")},body:JSON.stringify({action:"mint"})});
+      const j=await r.json().catch(()=>({}));
+      if(r.ok&&j.url&&/^https:\/\/www\.homecareproviderservices\.org\/academy\/#handoff=/.test(j.url)){ location.href=j.url; return; }
+      alertMsg(j.message||"Training could not be opened just now. Please try again.");
+    }catch(e){ alertMsg("Training could not be opened just now. Please try again."); }
+    a.textContent="Training"; };
+}
+function alertMsg(m){ const g=$("#gate"); if(g){ g.innerHTML=`<div class="msg">${String(m).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}</div>`; window.scrollTo(0,0); } }
 function gate(status){
   $("#gate").innerHTML=`<div class="gate"><div class="lm">H</div><h2>Sign in to your Business Hub</h2>
     <p>${status==="pending"?"Your account is pending HCPS approval. You'll get access as soon as it's approved.":"Sign in on the ordering portal, then return here to see your consolidated purchases, reports and tools."}</p>
