@@ -1572,6 +1572,53 @@ function noMsrpRule(row, layer){
    restoreCatalogFile() is the same text as netlify/functions/_catalog_commercial.js (drift-tested):
    a commercial key still on a public row is dropped, never trusted; a missing row is a mismatch. */
 const CATALOG_COMMERCIAL_KEYS=["base_price","tiers","dealer_price","tier_prices","msrp","map","price_note","unit_cost","shipping"];
+/* ROW IDENTITY (P0 review, 2026-10-23). A commercial row is attached to a public row ONLY when the
+   public row is exactly the row it was made for: every commercial entry carries `h`, the SHA-256 of
+   its public row's non-commercial fields (canonical JSON, keys sorted), and the whole line carries
+   its identity — the SHA-256 of those fingerprints in file order. A reordered duplicate part number,
+   a changed name / family / group / image with the same part numbers and row count, a public file
+   newer or older than the commercial record, or an entry with no fingerprint: refused, never matched
+   by position. Pure JS (sync, no crypto API) so the browser, the server engine copy and the tools
+   compute the same value. */
+function catalogSha256(str){
+  const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const m=new TextEncoder().encode(String(str)), l=m.length, n=((l+9+63)>>6)<<6, b=new Uint8Array(n);
+  b.set(m); b[l]=0x80;
+  const dv=new DataView(b.buffer); dv.setUint32(n-8,Math.floor(l/0x20000000)); dv.setUint32(n-4,(l*8)>>>0);
+  const H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19], w=new Array(64);
+  for(let o=0;o<n;o+=64){
+    for(let i=0;i<16;i++) w[i]=dv.getUint32(o+i*4);
+    for(let i=16;i<64;i++){ const x=w[i-15], y=w[i-2];
+      w[i]=(w[i-16]+(((x>>>7)|(x<<25))^((x>>>18)|(x<<14))^(x>>>3))+w[i-7]+(((y>>>17)|(y<<15))^((y>>>19)|(y<<13))^(y>>>10)))|0; }
+    let a=H[0],c1=H[1],c2=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+    for(let i=0;i<64;i++){
+      const t1=(h+(((e>>>6)|(e<<26))^((e>>>11)|(e<<21))^((e>>>25)|(e<<7)))+((e&f)^(~e&g))+K[i]+w[i])|0;
+      const t2=((((a>>>2)|(a<<30))^((a>>>13)|(a<<19))^((a>>>22)|(a<<10)))+((a&c1)^(a&c2)^(c1&c2)))|0;
+      h=g; g=f; f=e; e=(d+t1)|0; d=c2; c2=c1; c1=a; a=(t1+t2)|0;
+    }
+    H[0]=(H[0]+a)|0; H[1]=(H[1]+c1)|0; H[2]=(H[2]+c2)|0; H[3]=(H[3]+d)|0; H[4]=(H[4]+e)|0; H[5]=(H[5]+f)|0; H[6]=(H[6]+g)|0; H[7]=(H[7]+h)|0;
+  }
+  return H.map(x=>('00000000'+(x>>>0).toString(16)).slice(-8)).join('');
+}
+function catalogCanon(v){
+  if(Array.isArray(v)) return '['+v.map(catalogCanon).join(',')+']';
+  if(v && typeof v==='object') return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+catalogCanon(v[k])).join(',')+'}';
+  return JSON.stringify(v===undefined?null:v);
+}
+/* A row's identity fingerprint: its non-commercial fields only (the public half — the same value
+   whether the row still carries prices or not). */
+function catalogRowPrint(r){
+  const p={};
+  if(r && typeof r==='object' && !Array.isArray(r)) Object.keys(r).forEach(k=>{ if(CATALOG_COMMERCIAL_KEYS.indexOf(k)<0) p[k]=r[k]; });
+  return catalogSha256(catalogCanon(p));
+}
+/* A catalog file's identity (its version): the fingerprints of its rows, in file order. */
+function catalogIdentity(rows){
+  return catalogSha256((Array.isArray(rows)?rows:[]).map(catalogRowPrint).join('\n'));
+}
 function restoreCatalogFile(rows, overlay){
   if(!Array.isArray(rows)) throw new Error('catalog_file_mismatch: the public catalog file is not a list');
   if(!Array.isArray(overlay) || overlay.length!==rows.length)
@@ -1584,6 +1631,8 @@ function restoreCatalogFile(rows, overlay){
     const c=String(r&&r.code!=null?r.code:''); const n=seen[c]=(seen[c]||0)+1; const k=c+'#'+(n-1);
     const o=by[k];
     if(!o) throw new Error('catalog_file_mismatch: no commercial row for '+k);
+    if(typeof o.h!=='string' || !/^[0-9a-f]{64}$/.test(o.h)) throw new Error('catalog_file_mismatch: the commercial row for '+k+' has no identity fingerprint');
+    if(catalogRowPrint(r)!==o.h) throw new Error('catalog_file_mismatch: '+k+' is not the catalog row its commercial row was made for');
     const f=(o.f && typeof o.f==='object') ? o.f : {};
     const out={};
     (Array.isArray(o.order)?o.order:[]).forEach(key=>{
@@ -1596,24 +1645,27 @@ function restoreCatalogFile(rows, overlay){
   });
 }
 /* The line's commercial layers, for the signed-in dealer or the staff preview — nobody else.
-   Throws on anything but a complete answer: the caller fails closed. */
-async function commercialLayers(slug){
+   Asks for the version that belongs to THIS public file (its identity) and refuses an answer for any
+   other. Throws on anything but a complete answer: the caller fails closed. */
+async function commercialLayers(slug, rows){
+  const identity = catalogIdentity(rows||[]);
   const jwt = (typeof AUTH !== 'undefined' && AUTH && AUTH.session && AUTH.session.access_token) || '';
   const pvt = (typeof PREVIEW !== 'undefined' && PREVIEW && PREVIEW.token) ? PREVIEW.token : '';
   if(!jwt && !pvt) throw new Error('no dealer session or preview to authorise pricing');
   const hdr = jwt ? { authorization: 'Bearer ' + jwt } : { 'x-hcps-preview': pvt };
-  const r = await fetch('/.netlify/functions/catalog-layers?manufacturer=' + encodeURIComponent(slug), { headers: hdr, cache: 'no-store' });
+  const r = await fetch('/.netlify/functions/catalog-layers?manufacturer=' + encodeURIComponent(slug) + '&identity=' + identity, { headers: hdr, cache: 'no-store' });
   if(!r.ok) throw new Error('catalog-layers returned HTTP ' + r.status);
   const j = await r.json();
   if(!j || j.ok!==true || !Array.isArray(j.file_overlay) || !Array.isArray(j.custom_products) || !Array.isArray(j.product_overrides))
     throw new Error('catalog-layers answered without its layers');
+  if(j.identity_sha256!==identity) throw new Error('catalog-layers answered for another version of the catalog file');
   return j;
 }
 async function mergeCatalogEdits(slug, prods){
   /* FAILS CLOSED. Without the line's commercial layers nothing is listed: a product the saved
      edits had hidden would otherwise reappear, and there is no public price left to show. */
   let layers;
-  try{ layers=await commercialLayers(slug); prods=restoreCatalogFile(prods||[], layers.file_overlay); }
+  try{ layers=await commercialLayers(slug, prods||[]); prods=restoreCatalogFile(prods||[], layers.file_overlay); }
   catch(err){
     CATALOG_SOURCE[slug]={ source:'unavailable', reason:'pricing unavailable: '+((err&&err.message)||err), products:0, at:new Date().toISOString() };
     try{ console.warn('[HCPS] '+slug+': pricing unavailable — '+((err&&err.message)||err)); }catch(e){}
@@ -5158,9 +5210,10 @@ async function loadPricing(){
         let priced=false;
         if(hdr && carried.has(m.slug)){
           try{
-            const r=await fetch('/.netlify/functions/catalog-layers?manufacturer='+encodeURIComponent(m.slug),{headers:hdr,cache:'no-store'});
+            const id=catalogIdentity(items);
+            const r=await fetch('/.netlify/functions/catalog-layers?manufacturer='+encodeURIComponent(m.slug)+'&identity='+id,{headers:hdr,cache:'no-store'});
             const j=r.ok?await r.json():null;
-            if(j&&j.ok===true&&Array.isArray(j.file_overlay)){ items=restoreCatalogFile(items,j.file_overlay); priced=true; }
+            if(j&&j.ok===true&&j.identity_sha256===id&&Array.isArray(j.file_overlay)){ items=restoreCatalogFile(items,j.file_overlay); priced=true; }
           }catch(e){}
         }
         if(!priced) items=items.map(p=>Object.assign({},p,{base_price:null,msrp:null,map:null}));

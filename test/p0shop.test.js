@@ -23,7 +23,8 @@ const FULL = [
   { manufacturer: 'L', code: 'H1', name: 'Hidden by an edit', base_price: 5 },
 ];
 const SPLIT = CC.splitCatalogFile(FULL);
-const LAYERS = () => ({ ok: true, manufacturer: 'L', file_overlay: copy(SPLIT.overlay),
+const IDENT = CC.catalogIdentity(SPLIT.public);
+const LAYERS = () => ({ ok: true, manufacturer: 'L', identity_sha256: IDENT, file_overlay: copy(SPLIT.overlay),
   custom_products: [{ code: 'ADD1', name: 'Added', base_price: 30, active: true }],
   product_overrides: [{ code: 'H1', patch: { active: false } }, { code: 'A2', patch: { base_price: 11 } }] });
 
@@ -55,7 +56,7 @@ const commercialRest = c => c.some(x => /rest\/v1\/(custom_products|product_over
   await t('signed-in dealer: layers asked with the dealer token, never cached, and never the public tables', async () => {
     const N = net(); const E = engine(html, { fetch: N.f, auth: signedIn });
     await E.mergeCatalogEdits('L', copy(SPLIT.public));
-    const c = N.calls.find(x => /catalog-layers\?manufacturer=L$/.test(x.url));
+    const c = N.calls.find(x => /catalog-layers\?manufacturer=L&identity=[0-9a-f]{64}$/.test(x.url));
     ok(c, 'layers asked'); eq(c.headers.authorization, 'Bearer tok-1', 'token'); ok(!('x-hcps-preview' in c.headers), 'no preview header'); eq(c.cache, 'no-store', 'cache');
     ok(!commercialRest(N.calls), 'the public key never reads custom_products / product_overrides');
   });
@@ -93,6 +94,27 @@ const commercialRest = c => c.some(x => /rest\/v1\/(custom_products|product_over
     const i = html.indexOf('function renderProducts(){'); const body = html.slice(i, html.indexOf('renderNextBatch();', i));
     ok(/_cs\.source==='unavailable'/.test(body) && /Pricing could not be loaded/.test(body), 'message');
   });
+  /* P0 review — version integrity in the browser. */
+  await t('the shop asks for the version of the EXACT public file it loaded (its identity)', async () => {
+    const N = net(); const E = engine(html, { fetch: N.f, auth: signedIn });
+    await E.mergeCatalogEdits('L', copy(SPLIT.public));
+    const c = N.calls.find(x => /catalog-layers/.test(x.url)); ok(c && c.url.endsWith('&identity=' + IDENT), 'identity sent: ' + (c && c.url));
+  });
+  for (const [why, over, file] of [
+    ['an answer for another version of the file', { layers: () => Object.assign(LAYERS(), { identity_sha256: 'e'.repeat(64) }) }],
+    ['an answer with no identity', { layers: () => { const l = LAYERS(); delete l.identity_sha256; return l; } }],
+    ['swapped duplicate-code rows in the public file', null, () => { const p = copy(SPLIT.public); p[1].code = 'A1'; p[0].code = 'A1'; return p; }],
+    ['a public row changed since the record (same code, same count)', null, () => { const p = copy(SPLIT.public); p[0].name = 'Alpha (new)'; return p; }],
+    ['an overlay entry without its fingerprint', { layers: () => { const l = LAYERS(); delete l.file_overlay[0].h; return l; } }]]) {
+    await t(`fails closed on ${why}: nothing listed, no price`, async () => {
+      const N = net(over || {}); const E = engine(html, { fetch: N.f, auth: signedIn });
+      const p = file ? file() : copy(SPLIT.public);
+      const l0 = file ? Object.assign(LAYERS(), { identity_sha256: CC.catalogIdentity(p) }) : null;
+      const N2 = file ? net({ layers: () => l0 }) : N, E2 = file ? engine(html, { fetch: N2.f, auth: signedIn }) : E;
+      const out = await E2.mergeCatalogEdits('L', p);
+      eq(out, [], 'products'); eq(E2.CATALOG_SOURCE.L.source, 'unavailable', 'source');
+    });
+  }
   await t('nothing in the shop page reads custom_products or product_overrides with the public key any more', async () => {
     ok(!/rest\/v1\/custom_products/.test(html) && !/rest\/v1\/product_overrides/.test(html), 'a public read remains');
     ok(!/rest\/v1\/custom_products|rest\/v1\/product_overrides/.test(hubHtml), 'Business Hub still reads them');
@@ -103,13 +125,13 @@ const commercialRest = c => c.some(x => /rest\/v1\/(custom_products|product_over
     ['shop page Business Hub', html, s => s.slice(s.indexOf('const CATALOG_COMMERCIAL_KEYS='), s.indexOf('\n}\n', s.indexOf('function restoreCatalogFile(')) + 3)
                                          + s.slice(s.indexOf('/* The credential catalog-layers accepts'), s.indexOf('function retailUnit('))],
     ['dashboard.html', hubHtml, s => s.slice(s.indexOf('const CATALOG_COMMERCIAL_KEYS='), s.indexOf('function retailUnit('))]]) {
-    const run = async ({ session, preview, lines, layersStatus }) => {
+    const run = async ({ session, preview, lines, layersStatus, layers }) => {
       const calls = [];
       const files = { 'manufacturers.json': [{ slug: 'L', name: 'Line L', hasData: true }, { slug: 'M', name: 'Line M', hasData: true }],
                       'L.json': copy(SPLIT.public), 'M.json': [{ manufacturer: 'M', code: 'M1', name: 'Other line', base_price: 77, msrp: 154 }] };
       const fetch = async (url, opts) => { const u = String(url); calls.push({ url: u, headers: (opts && opts.headers) || {} });
         if (u.startsWith('/data/')) return { ok: true, status: 200, json: async () => copy(files[u.slice(6)]) };
-        if (u.startsWith('/.netlify/functions/catalog-layers')) return layersStatus ? { ok: false, status: layersStatus, json: async () => ({}) } : { ok: true, status: 200, json: async () => LAYERS() };
+        if (u.startsWith('/.netlify/functions/catalog-layers')) return layersStatus ? { ok: false, status: layersStatus, json: async () => ({}) } : { ok: true, status: 200, json: async () => (layers ? layers() : LAYERS()) };
         throw new Error('unexpected ' + u); };
       const window = { __PREVIEW__: preview || null };
       const f = new Function('fetch', 'window', 'SESSION', 'LINES', 'refreshIfNeeded',
@@ -120,7 +142,7 @@ const commercialRest = c => c.some(x => /rest\/v1\/(custom_products|product_over
     await t(`${label}: a carried line is priced from catalog-layers with the dealer token`, async () => {
       const r = await run({ session: { access_token: 'tok-1' }, lines: [{ slug: 'L' }] });
       eq([r.PRICE['L|A1'].cost, r.PRICE['L|A1'].map, r.PRICE['L|A1'].msrp], [10, 19.5, 25], 'A1');
-      const c = r.calls.find(x => /catalog-layers\?manufacturer=L$/.test(x.url)); eq(c && c.headers.authorization, 'Bearer tok-1');
+      const c = r.calls.find(x => /catalog-layers\?manufacturer=L&identity=[0-9a-f]{64}$/.test(x.url)); eq(c && c.headers.authorization, 'Bearer tok-1');
     });
     await t(`${label}: a line the dealer does not carry lists names only — no price, and its layers are never asked for`, async () => {
       const r = await run({ session: { access_token: 'tok-1' }, lines: [{ slug: 'L' }] });
@@ -130,6 +152,15 @@ const commercialRest = c => c.some(x => /rest\/v1\/(custom_products|product_over
     await t(`${label}: pricing that cannot be loaded lists names only`, async () => {
       const r = await run({ session: { access_token: 'tok-1' }, lines: [{ slug: 'L' }], layersStatus: 503 });
       eq(r.PRICE['L|A1'].cost, null); eq(r.PRICE['L|A1'].name, 'Alpha');
+    });
+    await t(`${label}: an answer for another version of the file, or a fingerprint mismatch, lists names only`, async () => {
+      for (const layers of [() => Object.assign(LAYERS(), { identity_sha256: 'e'.repeat(64) }),
+                            () => { const l = LAYERS(); l.file_overlay[0].h = l.file_overlay[1].h; return l; }]) {
+        const r = await run({ session: { access_token: 'tok-1' }, lines: [{ slug: 'L' }], layers });
+        eq(r.PRICE['L|A1'].cost, null, 'priced'); eq(r.PRICE['L|A1'].msrp, null); eq(r.PRICE['L|A1'].name, 'Alpha');
+      }
+      const r = await run({ session: { access_token: 'tok-1' }, lines: [{ slug: 'L' }] });
+      ok(r.calls.some(x => x.url.endsWith('&identity=' + IDENT)), 'identity of the loaded file sent');
     });
     await t(`${label}: signed out, nothing is priced and nothing is asked`, async () => {
       const r = await run({ lines: [{ slug: 'L' }] });

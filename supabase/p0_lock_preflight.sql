@@ -9,6 +9,6 @@ select 'grant', table_name, grantee, string_agg(privilege_type, ',' order by pri
    and grantee in ('PUBLIC', 'anon', 'authenticated', 'service_role')
  group by table_name, grantee
 union all
-select 'rows', 'catalog_file_commercial', manufacturer, row_count::text || ' rows, ' || left(rows_sha256, 16)
+select 'rows', 'catalog_file_commercial', manufacturer, 'identity ' || left(identity_sha256, 16) || ', ' || row_count::text || ' rows, ' || left(rows_sha256, 16) || ', seeded from ' || source_ref || ' at ' || to_char(updated_at, 'YYYY-MM-DD HH24:MI')
   from public.catalog_file_commercial
 order by 1, 2, 3;

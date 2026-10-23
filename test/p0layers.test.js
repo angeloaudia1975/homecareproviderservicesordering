@@ -7,6 +7,17 @@ const FN = path.join(__dirname, '..', 'netlify', 'functions');
 const LAYERS_SRC = fs.readFileSync(process.argv[2] || process.env.CATALOG_LAYERS || path.join(FN, 'catalog-layers.js'), 'utf8');
 const FEED_SRC = fs.readFileSync(process.argv[3] || process.env.CATALOG_FEED || path.join(FN, 'catalog-feed.js'), 'utf8');
 const URL = 'https://db.test', KEY = 'service-key';
+const CC = require(process.env.CC_MODULE || path.join(FN, '_catalog_commercial.js'));
+/* P0 review: every stored record is a version of ONE public file — its identity and per-row fingerprints. */
+const FILES = {
+  'bemis': [{ code: '7Y1', name: 'Seat', base_price: 12.34 }],
+  'strongback-mobility': [{ code: 'SB1', base_price: 5.67, tiers: [{ min_qty: 2, price: 5 }] }],
+  'ovation-medical': [],
+};
+const PUB = slug => CC.splitCatalogFile(FILES[slug]).public;
+const IDENT = slug => CC.catalogIdentity(PUB(slug));
+const rec = slug => { const s = CC.splitCatalogFile(FILES[slug]); return { manufacturer: slug, identity_sha256: IDENT(slug), rows: s.overlay }; };
+const Q = slug => ({ manufacturer: slug, identity: IDENT(slug) });
 const PRICE_KEYS = ['base_price', 'tiers', 'dealer_price', 'tier_prices', 'msrp', 'map', 'price_note', 'unit_cost', 'shipping', 'patch'];
 
 function world(over) {
@@ -19,15 +30,11 @@ function world(over) {
                            { dealer_id: 'D2', manufacturer: 'strongback-mobility', active: true }],
     dealer_preview_tokens: [{ token: 'pv-d2', dealer_id: 'D2', expires_at: '2999-01-01T00:00:00Z' },
                             { token: 'pv-old', dealer_id: 'D1', expires_at: '2000-01-01T00:00:00Z' }],
-    catalog_file_commercial: [
-      { manufacturer: 'bemis', rows: [{ k: '7Y1#0', order: ['code', 'name', 'base_price'], f: { base_price: 109.98 } }] },
-      { manufacturer: 'strongback-mobility', rows: [{ k: 'SB1#0', order: ['code', 'base_price', 'tiers'], f: { base_price: 7.7, tiers: [{ min_qty: 2, price: 7 }] } }] },
-      { manufacturer: 'ovation-medical', rows: [] },
-      { manufacturer: 'broken-line', rows: [{ k: 'X#0' }] },
-    ],
-    custom_products: [{ manufacturer: 'bemis', code: '444DISPLAY', name: 'Display', base_price: 634.86, active: true },
+    catalog_file_commercial: [rec('bemis'), rec('strongback-mobility'), rec('ovation-medical'),
+      { manufacturer: 'broken-line', identity_sha256: 'a'.repeat(64), rows: [{ k: 'X#0' }] }],
+    custom_products: [{ manufacturer: 'bemis', code: '444DISPLAY', name: 'Display', base_price: 23.45, active: true },
                       { manufacturer: 'strongback-mobility', code: 'A1005', name: 'Pack', base_price: 50, active: true }],
-    product_overrides: [{ manufacturer: 'bemis', code: '7Y1', patch: { base_price: 109.98, name: 'Seat' } }],
+    product_overrides: [{ manufacturer: 'bemis', code: '7Y1', patch: { base_price: 12.34, name: 'Seat' } }],
   }, over && over.db || {});
   const users = { 'jwt-dealer': { id: 'u-ok', email: 'buyer@dealer.test' }, 'jwt-pending': { id: 'u-pend', email: 'p@dealer.test' },
                   'jwt-two': { id: 'u-two', email: 'two@dealer.test' }, 'jwt-boss': { id: 'u-boss', email: 'boss@hcps.test' },
@@ -60,7 +67,7 @@ function world(over) {
   const load = (src, req) => { const mod = { exports: {} };
     new Function('module', 'exports', 'require', 'process', 'fetch', src)(mod, mod.exports, req, proc, fetch); return mod.exports; };
   const feed = load(FEED_SRC, require);
-  const layers = load(LAYERS_SRC, n => (/catalog-feed(\.js)?$/.test(n) ? feed : require(n)));
+  const layers = load(LAYERS_SRC, n => (/catalog-feed(\.js)?$/.test(n) ? feed : /_catalog_commercial(\.js)?$/.test(n) ? CC : require(n)));
   const call = async (q, headers, method) => {
     const r = await layers.handler({ httpMethod: method || 'GET', queryStringParameters: q || {}, headers: headers || {} });
     let body = null; try { body = JSON.parse(r.body || 'null'); } catch (e) {}
@@ -74,7 +81,7 @@ async function t(name, fn) { try { await fn(); pass++; console.log('ok   ' + nam
 const ok = (c, m) => { if (!c) throw new Error(m); };
 const eq = (a, b, m) => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error((m || '') + ' got ' + JSON.stringify(a) + ' expected ' + JSON.stringify(b)); };
 const noPrices = (r, m) => { const s = JSON.stringify(r.json || {}); PRICE_KEYS.forEach(k => ok(!s.includes('"' + k + '"'), (m || '') + ' leaked ' + k)); };
-const BEMIS = { manufacturer: 'bemis' };
+const BEMIS = Q('bemis');
 
 (async () => {
   await t('anonymous request: 401, no layers, no commercial field', async () => {
@@ -94,16 +101,16 @@ const BEMIS = { manufacturer: 'bemis' };
     const r = await world().call(BEMIS, { authorization: 'Bearer jwt-nobody' }); eq(r.statusCode, 401); noPrices(r);
   });
   await t('an approved dealer asking for a line they do not carry: 403, nothing read', async () => {
-    const W = world(); const r = await W.call({ manufacturer: 'strongback-mobility' }, { authorization: 'Bearer jwt-dealer' });
+    const W = world(); const r = await W.call(Q('strongback-mobility'), { authorization: 'Bearer jwt-dealer' });
     eq(r.statusCode, 403); noPrices(r); ok(!W.calls.some(u => /catalog_file_commercial|custom_products|product_overrides/.test(u)), 'no layer read');
   });
   await t('an inactive line assignment does not entitle: 403', async () => {
-    const r = await world().call({ manufacturer: 'ovation-medical' }, { authorization: 'Bearer jwt-dealer' }); eq(r.statusCode, 403); noPrices(r);
+    const r = await world().call(Q('ovation-medical'), { authorization: 'Bearer jwt-dealer' }); eq(r.statusCode, 403); noPrices(r);
   });
   await t('an entitled dealer gets exactly that line\'s layers', async () => {
     const r = await world().call(BEMIS, { authorization: 'Bearer jwt-dealer' });
     eq(r.statusCode, 200, 'status'); eq(r.json.ok, true); eq(r.json.manufacturer, 'bemis');
-    eq(r.json.file_overlay, [{ k: '7Y1#0', order: ['code', 'name', 'base_price'], f: { base_price: 109.98 } }], 'overlay');
+    eq(r.json.file_overlay, rec('bemis').rows, 'overlay'); eq(r.json.identity_sha256, IDENT('bemis'), 'the version asked for');
     eq(r.json.custom_products.map(c => c.code), ['444DISPLAY'], 'only this line\'s added products');
     eq(r.json.product_overrides.map(c => c.code), ['7Y1'], 'only this line\'s overrides');
     ok(!JSON.stringify(r.json).includes('A1005') && !JSON.stringify(r.json).includes('SB1'), 'no other line leaks in');
@@ -115,7 +122,7 @@ const BEMIS = { manufacturer: 'bemis' };
   });
   await t('staff preview = the previewed dealer\'s lines only', async () => {
     const W = world();
-    const a = await W.call({ manufacturer: 'strongback-mobility' }, { 'x-hcps-preview': 'pv-d2' });
+    const a = await W.call(Q('strongback-mobility'), { 'x-hcps-preview': 'pv-d2' });
     eq(a.statusCode, 200, 'previewed dealer line'); eq(a.json.custom_products.map(c => c.code), ['A1005']);
     const b = await W.call(BEMIS, { 'x-hcps-preview': 'pv-d2' });
     eq(b.statusCode, 403, 'a line the previewed dealer does not carry'); noPrices(b);
@@ -129,7 +136,7 @@ const BEMIS = { manufacturer: 'bemis' };
     eq((await W.call(BEMIS, { 'x-hcps-preview': 'nope' })).statusCode, 401, 'unknown');
   });
   await t('an HCPS administrator signed in as staff may verify any line', async () => {
-    const r = await world().call({ manufacturer: 'strongback-mobility' }, { authorization: 'Bearer jwt-boss' }); eq(r.statusCode, 200);
+    const r = await world().call(Q('strongback-mobility'), { authorization: 'Bearer jwt-boss' }); eq(r.statusCode, 200);
   });
   await t('other staff roles are refused (they review through a dealer preview)', async () => {
     const r = await world().call(BEMIS, { authorization: 'Bearer jwt-rep' }); eq(r.statusCode, 403); noPrices(r);
@@ -147,16 +154,52 @@ const BEMIS = { manufacturer: 'bemis' };
     const r = await world({ db: { catalog_file_commercial: [] } }).call(BEMIS, { authorization: 'Bearer jwt-dealer' });
     eq(r.statusCode, 503); eq(r.json.error, 'pricing_unavailable'); noPrices(r);
   });
+  /* P0 review — version integrity. */
+  await t('identity is required: a request without the public file\'s identity is refused (400), nothing read', async () => {
+    const W = world();
+    for (const q of [{ manufacturer: 'bemis' }, { manufacturer: 'bemis', identity: 'abc' }, { manufacturer: 'bemis', identity: 'A'.repeat(64) }]) {
+      const r = await W.call(q, { authorization: 'Bearer jwt-dealer' }); eq(r.statusCode, 400, JSON.stringify(q)); noPrices(r);
+    }
+    ok(!W.calls.some(u => /catalog_file_commercial/.test(u)), 'nothing read');
+  });
+  await t('out-of-sync deploy: a public file NEWER than every stored record is not priced (503 catalog_version_not_seeded)', async () => {
+    const newer = CC.catalogIdentity([{ code: '7Y1', name: 'Seat (renamed)' }]);
+    const r = await world().call({ manufacturer: 'bemis', identity: newer }, { authorization: 'Bearer jwt-dealer' });
+    eq(r.statusCode, 503); eq(r.json.reason, 'catalog_version_not_seeded'); noPrices(r);
+  });
+  await t('out-of-sync deploy: a public file OLDER than the stored record (only the new version seeded) is not priced', async () => {
+    const old = [{ code: '7Y1', name: 'Seat (old)', base_price: 1 }], s = CC.splitCatalogFile(old);
+    const r = await world().call({ manufacturer: 'bemis', identity: CC.catalogIdentity(s.public) }, { authorization: 'Bearer jwt-dealer' });
+    eq(r.statusCode, 503); eq(r.json.reason, 'catalog_version_not_seeded'); noPrices(r);
+  });
+  await t('two versions side by side (seed-before-deploy): each public file gets exactly its own version', async () => {
+    const next = [{ code: '7Y1', name: 'Seat v2', base_price: 13.57 }], s = CC.splitCatalogFile(next), id2 = CC.catalogIdentity(s.public);
+    const W = world({ db: { catalog_file_commercial: [rec('bemis'), { manufacturer: 'bemis', identity_sha256: id2, rows: s.overlay }] } });
+    const a = await W.call(BEMIS, { authorization: 'Bearer jwt-dealer' });
+    const b = await W.call({ manufacturer: 'bemis', identity: id2 }, { authorization: 'Bearer jwt-dealer' });
+    eq(a.statusCode, 200); eq(b.statusCode, 200);
+    eq(a.json.file_overlay[0].f.base_price, 12.34, 'old file → old version'); eq(b.json.file_overlay[0].f.base_price, 13.57, 'new file → new version');
+  });
+  await t('a record without row fingerprints (legacy shape) fails closed: 503', async () => {
+    const r0 = rec('bemis'); r0.rows = r0.rows.map(o => ({ k: o.k, order: o.order, f: o.f }));
+    const r = await world({ db: { catalog_file_commercial: [r0] } }).call(BEMIS, { authorization: 'Bearer jwt-dealer' });
+    eq(r.statusCode, 503); noPrices(r);
+  });
+  await t('a record whose identity does not match its own fingerprints fails closed: 503', async () => {
+    const r0 = rec('bemis'); r0.rows[0].h = 'b'.repeat(64);
+    const r = await world({ db: { catalog_file_commercial: [r0] } }).call(BEMIS, { authorization: 'Bearer jwt-dealer' });
+    eq(r.statusCode, 503); noPrices(r);
+  });
   await t('a malformed commercial record fails closed: 503', async () => {
     const W = world({ db: { dealer_manufacturers: [{ dealer_id: 'D1', manufacturer: 'broken-line', active: true }] } });
-    const r = await W.call({ manufacturer: 'broken-line' }, { authorization: 'Bearer jwt-dealer' }); eq(r.statusCode, 503); noPrices(r);
+    const r = await W.call({ manufacturer: 'broken-line', identity: 'a'.repeat(64) }, { authorization: 'Bearer jwt-dealer' }); eq(r.statusCode, 503); noPrices(r);
   });
   await t('an empty (but present) record is a real answer: 200 with no rows', async () => {
     const W = world({ db: { dealer_manufacturers: [{ dealer_id: 'D1', manufacturer: 'ovation-medical', active: true }] } });
-    const r = await W.call({ manufacturer: 'ovation-medical' }, { authorization: 'Bearer jwt-dealer' }); eq(r.statusCode, 200); eq(r.json.file_overlay, []);
+    const r = await W.call(Q('ovation-medical'), { authorization: 'Bearer jwt-dealer' }); eq(r.statusCode, 200); eq(r.json.file_overlay, []);
   });
   await t('a slug that is not a slug is refused before any read', async () => {
-    const W = world(); const r = await W.call({ manufacturer: 'bemis&select=*' }, { authorization: 'Bearer jwt-boss' });
+    const W = world(); const r = await W.call({ manufacturer: 'bemis&select=*', identity: IDENT('bemis') }, { authorization: 'Bearer jwt-boss' });
     eq(r.statusCode, 400); ok(!W.calls.some(u => /catalog_file_commercial/.test(u)), 'nothing read');
   });
   await t('only GET', async () => {

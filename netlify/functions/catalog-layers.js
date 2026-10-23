@@ -1,6 +1,6 @@
 // HCPS Partner 360 — CATALOG LAYERS. The commercial half of a line's catalog, for someone entitled to it.
 //
-//   GET /.netlify/functions/catalog-layers?manufacturer=<slug>
+//   GET /.netlify/functions/catalog-layers?manufacturer=<slug>&identity=<sha256 of the public file's rows>
 //   Authorization: Bearer <supabase JWT>      (a signed-in, APPROVED dealer)
 //   — or — X-HCPS-Preview: <preview token>     (HCPS staff viewing the shop as ONE dealer)
 //
@@ -26,9 +26,18 @@
 // answer. The storefront then shows no prices for that line; there is no public copy left to
 // fall back to.
 //
+// VERSION-EXACT (P0 review, 2026-10-23). The browser sends the identity of the public catalog file it
+// actually loaded (catalogIdentity: the SHA-256 of its rows' identity fingerprints). Only the stored
+// commercial record with that SAME identity is answered — several versions may sit side by side while
+// a new catalog file is being rolled out (seed first, deploy second, prune last). A public file newer
+// or older than every stored record: 503 catalog_version_not_seeded, never the nearest version. The
+// record is checked internally (validOverlayRecord: every entry fingerprinted, identity recomputed),
+// and the browser then checks every row's fingerprint again as it restores.
+//
 // Never cached: private, no-store, and it varies on the credential. No CORS: only the
 // storefront's own origin calls it.
 const FEED = require("./catalog-feed.js");
+const CC = require("./_catalog_commercial.js");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
@@ -39,8 +48,11 @@ const LAYER_SELECT = {
   custom_products: "code,name,category,base_price,msrp,map,image,description,active,tiers,price_note",
   product_overrides: "code,patch",
 };
+/* Every stored version of the line — the right one is picked by identity below (never by position). */
+const COMMERCIAL_SELECT = "manufacturer,identity_sha256,rows";
 const STAFF_ROLES = ["president", "admin", "owner"];
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const HEX64 = /^[0-9a-f]{64}$/;
 
 const HEADERS = {
   "content-type": "application/json",
@@ -72,10 +84,19 @@ function authorizeLayers(who, slug) {
   return { ok: false, status: 401, error: "unauthorized" };
 }
 
-/* Pure: is this a well-formed commercial record? (one entry per row: {k, order, f}) */
-function validOverlay(rows) {
-  if (!Array.isArray(rows)) return false;
-  return rows.every(o => o && typeof o.k === "string" && Array.isArray(o.order) && o.f && typeof o.f === "object" && !Array.isArray(o.f));
+/* Pure: is this a well-formed commercial record? One entry per row {k, h, order, f}, every entry
+   fingerprinted, and the record's identity equal to its fingerprints (shared rule, _catalog_commercial.js). */
+function validOverlay(rows, identity) {
+  return CC.validOverlayRecord({ rows, identity_sha256: identity });
+}
+/* Pure: of a line's stored versions, the one for the public file the browser holds — or why not. */
+function pickVersion(recs, identity) {
+  const list = Array.isArray(recs) ? recs : [];
+  if (!list.length) return { error: "this line has no commercial record yet" };
+  const row = list.find(r => r && r.identity_sha256 === identity);
+  if (!row) return { error: "catalog_version_not_seeded" };
+  if (!validOverlay(row.rows, row.identity_sha256)) return { error: "this line's commercial record is malformed" };
+  return { row };
 }
 
 exports.handler = async (event) => {
@@ -86,21 +107,23 @@ exports.handler = async (event) => {
     const who = await FEED.caller(event);
     const gate = authorizeLayers(who, slug);
     if (!gate.ok) return json(gate.status, { error: gate.error });
+    const identity = String((event.queryStringParameters || {}).identity || "").trim();
+    if (!HEX64.test(identity)) return json(400, { error: "identity required (the public catalog file's identity)" });
 
     const e = encodeURIComponent;
     let rec, custom, overrides;
     try {
       [rec, custom, overrides] = await Promise.all([
-        sb(`catalog_file_commercial?manufacturer=eq.${e(slug)}&select=manufacturer,rows`),
+        sb(`catalog_file_commercial?manufacturer=eq.${e(slug)}&select=${COMMERCIAL_SELECT}`),
         sb(`custom_products?manufacturer=eq.${e(slug)}&select=${LAYER_SELECT.custom_products}`),
         sb(`product_overrides?manufacturer=eq.${e(slug)}&select=${LAYER_SELECT.product_overrides}`),
       ]);
     } catch (err) {
       return json(503, { error: "pricing_unavailable", reason: "a pricing layer could not be read" });
     }
-    const row = Array.isArray(rec) && rec[0];
-    if (!row) return json(503, { error: "pricing_unavailable", reason: "this line has no commercial record yet" });
-    if (!validOverlay(row.rows)) return json(503, { error: "pricing_unavailable", reason: "this line's commercial record is malformed" });
+    const v = pickVersion(rec, identity);
+    if (!v.row) return json(503, { error: "pricing_unavailable", reason: v.error });
+    const row = v.row;
     if (!Array.isArray(custom) || !Array.isArray(overrides))
       return json(503, { error: "pricing_unavailable", reason: "a pricing layer could not be read" });
 
@@ -108,6 +131,7 @@ exports.handler = async (event) => {
       ok: true,
       manufacturer: slug,
       generated_at: new Date().toISOString(),
+      identity_sha256: row.identity_sha256,
       file_overlay: row.rows,
       custom_products: custom,
       product_overrides: overrides,
@@ -119,4 +143,6 @@ exports.handler = async (event) => {
 
 module.exports.authorizeLayers = authorizeLayers;
 module.exports.validOverlay = validOverlay;
+module.exports.pickVersion = pickVersion;
+module.exports.COMMERCIAL_SELECT = COMMERCIAL_SELECT;
 module.exports.LAYER_SELECT = LAYER_SELECT;

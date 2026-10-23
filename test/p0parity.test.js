@@ -83,9 +83,14 @@ const sha = v => crypto.createHash('sha256').update(JSON.stringify(canon(v))).di
     const fetch = async (url) => { const u = String(url); calls.push(u);
       if (/rest\/v1\/(custom_products|product_overrides|catalog_file_commercial)/.test(u)) throw new Error('the new page read a commercial table with the public key: ' + u);
       if (u.startsWith('https://db.test/rest/v1/')) return { ok: true, status: 200, json: async () => restAnswer(u) };
-      if (u.startsWith('/.netlify/functions/catalog-layers')) return { ok: true, status: 200, json: async () => ({ ok: true, manufacturer: slug, file_overlay: copy(overlay),
+      if (u.startsWith('/.netlify/functions/catalog-layers')) {
+        /* The REAL version pick of catalog-layers, against the record exactly as the seed stores it. */
+        const asked = new URLSearchParams(u.split('?')[1]).get('identity');
+        const v = LAYERS.pickVersion([{ manufacturer: slug, identity_sha256: CC.catalogIdentity(CC.splitCatalogFile(full).public), rows: copy(overlay) }], asked);
+        if (!v.row) return { ok: false, status: 503, json: async () => ({ error: 'pricing_unavailable', reason: v.error }) };
+        return { ok: true, status: 200, json: async () => ({ ok: true, manufacturer: slug, identity_sha256: v.row.identity_sha256, file_overlay: v.row.rows,
         custom_products: restAnswer(`https://db.test/rest/v1/custom_products?manufacturer=eq.${slug}&select=${LAYERS.LAYER_SELECT.custom_products}`),
-        product_overrides: restAnswer(`https://db.test/rest/v1/product_overrides?manufacturer=eq.${slug}&select=${LAYERS.LAYER_SELECT.product_overrides}`) }) };
+        product_overrides: restAnswer(`https://db.test/rest/v1/product_overrides?manufacturer=eq.${slug}&select=${LAYERS.LAYER_SELECT.product_overrides}`) }) }; }
       if (u.startsWith('/.netlify/functions/catalog-feed')) return { ok: true, status: 200, json: async () => feedFor(mode, full.map(r => r.code)) };
       if (u.startsWith('./data/content/')) return { ok: false, status: 404, json: async () => null };
       throw new Error('new path unexpected ' + u); };

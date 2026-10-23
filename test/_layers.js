@@ -11,8 +11,10 @@ module.exports = function withLayers(tables) {
   return {
     answer(url) {
       if (!/\/\.netlify\/functions\/catalog-layers\?/.test(String(url))) return null;
-      return { ok: true, status: 200, json: async () => ({ ok: true,
-        file_overlay: CC.splitCatalogFile(st.file).overlay,
+      const s = CC.splitCatalogFile(st.file), id = CC.catalogIdentity(s.public);
+      if (new URLSearchParams(String(url).split('?')[1]).get('identity') !== id) return { ok: false, status: 503, json: async () => ({ error: 'pricing_unavailable', reason: 'catalog_version_not_seeded' }) };
+      return { ok: true, status: 200, json: async () => ({ ok: true, identity_sha256: id,
+        file_overlay: s.overlay,
         custom_products: copy((tables || {}).custom_products || []),
         product_overrides: copy((tables || {}).product_overrides || []) }) };
     },

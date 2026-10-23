@@ -12,6 +12,7 @@ begin
   end if;
 end $$;
 drop table if exists public.catalog_file_commercial;
-drop function if exists public.catalog_file_commercial_touch();
+drop function if exists public.catalog_file_commercial_guard();
+drop function if exists public.catalog_file_commercial_touch();   -- the earlier draft's trigger function, if it was ever installed
 commit;
 select to_regclass('public.catalog_file_commercial') is null as table_gone;

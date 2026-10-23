@@ -20,7 +20,7 @@ function liftRestore(src) {
   if (a < 0 || b < 0) throw new Error('restoreCatalogFile not found in the page');
   const code = src.slice(a, b + 2);
   const mod = { exports: {} };
-  new Function('module', code + '\n;module.exports={restoreCatalogFile,CATALOG_COMMERCIAL_KEYS};')(mod);
+  new Function('module', code + '\n;module.exports={restoreCatalogFile,CATALOG_COMMERCIAL_KEYS,catalogSha256,catalogIdentity,catalogRowPrint};')(mod);
   return { code, ...mod.exports };
 }
 const PAGE = liftRestore(html);
@@ -57,8 +57,42 @@ for (const [label, restore] of [['page', PAGE.restoreCatalogFile], ['module', CC
     const s = CC.splitCatalogFile(full()); s.overlay[0].f.name = 'HIJACK'; s.overlay[0].f.image = 'x'; s.overlay[0].order.push('evil'); s.overlay[0].f.evil = 1;
     const r = restore(s.public, s.overlay)[0]; eq(r.name, 'Alpha'); eq(r.image, '/a.jpg'); ok(!('evil' in r), 'unknown key injected');
   });
-  t(`${label}: a public field added after the split still comes through`, () => {
-    const s = CC.splitCatalogFile(full()); s.public[0].subcategory = 'New'; eq(restore(s.public, s.overlay)[0].subcategory, 'New');
+  t(`${label}: a public field added after the split is a NEW version — refused until the line is re-seeded`, () => {
+    const s = CC.splitCatalogFile(full()); s.public[0].subcategory = 'New'; throws(() => restore(s.public, s.overlay), /A1#0 is not the catalog row/);
+  });
+  /* P0 review — row identity. Never a positional match across versions. */
+  t(`${label}: swapped duplicate-code variants (SR3#0 ↔ SR3#1) are refused, never priced with each other's price`, () => {
+    const s = CC.splitCatalogFile(full()); const pub = [s.public[0], s.public[2], s.public[1]];
+    throws(() => restore(pub, s.overlay), /SR3#0 is not the catalog row/);
+  });
+  t(`${label}: same part numbers, same row count, another non-commercial field changed (family) — refused`, () => {
+    const s = CC.splitCatalogFile(full()); s.public[1].family = 'f2'; s.public[2].family = 'f1';
+    throws(() => restore(s.public, s.overlay), /catalog_file_mismatch: SR3#0/);
+  });
+  t(`${label}: a changed name / image / group with an unchanged part number — refused`, () => {
+    for (const [k, v] of [['name', 'Alpha 2'], ['image', '/b.jpg'], ['group', 'G']]) {
+      const s = CC.splitCatalogFile(full()); s.public[0][k] = v; throws(() => restore(s.public, s.overlay), /A1#0 is not the catalog row/, k);
+    }
+  });
+  t(`${label}: a non-commercial field removed from the public row — refused`, () => {
+    const s = CC.splitCatalogFile(full()); delete s.public[0].image; throws(() => restore(s.public, s.overlay), /A1#0 is not the catalog row/);
+  });
+  t(`${label}: a commercial entry with no fingerprint, or a malformed one, is refused (fail closed)`, () => {
+    for (const h of [undefined, '', 'abc', 'A'.repeat(64), 7]) {
+      const s = CC.splitCatalogFile(full()); if (h === undefined) delete s.overlay[1].h; else s.overlay[1].h = h;
+      throws(() => restore(s.public, s.overlay), /SR3#0 has no identity fingerprint/, String(h));
+    }
+  });
+  t(`${label}: another row's fingerprint on an entry is refused`, () => {
+    const s = CC.splitCatalogFile(full()); s.overlay[1].h = s.overlay[2].h; throws(() => restore(s.public, s.overlay), /SR3#0 is not the catalog row/);
+  });
+  t(`${label}: key ORDER inside a public row does not change its identity (only content does)`, () => {
+    const f = full(), s = CC.splitCatalogFile(f); const r0 = s.public[0], re = {}; Object.keys(r0).reverse().forEach(k => { re[k] = r0[k]; });
+    eq(JSON.stringify(restore([re, s.public[1], s.public[2]], s.overlay)), JSON.stringify(f));
+  });
+  t(`${label}: a stale commercial value on a public row does not change its identity (prices are not part of it)`, () => {
+    const s = CC.splitCatalogFile(full()); const a = CC.catalogRowPrint(s.public[0]); s.public[0].base_price = 999; s.public[0].tiers = [];
+    eq(CC.catalogRowPrint(s.public[0]), a);
   });
   t(`${label}: one row too few or too many in the overlay is a mismatch`, () => {
     const s = CC.splitCatalogFile(full());
@@ -80,12 +114,40 @@ for (const [label, restore] of [['page', PAGE.restoreCatalogFile], ['module', CC
   });
 }
 
-t('the page and the module carry the same commercial keys and the same restore text', () => {
+t('the page and the module carry the same commercial keys, identity helpers and restore text', () => {
   eq(PAGE.CATALOG_COMMERCIAL_KEYS, CC.CATALOG_COMMERCIAL_KEYS, 'keys');
   const modSrc = fs.readFileSync(MOD_PATH, 'utf8');
-  const a = modSrc.indexOf('function restoreCatalogFile('), b = modSrc.indexOf('\n}\n', a);
-  const pa = PAGE.code.indexOf('function restoreCatalogFile(');
-  eq(PAGE.code.slice(pa), modSrc.slice(a, b + 2), 'restoreCatalogFile text');
+  const a = modSrc.indexOf('const CATALOG_COMMERCIAL_KEYS='), b = modSrc.indexOf('\n}\n', modSrc.indexOf('function restoreCatalogFile(', a));
+  eq(PAGE.code, modSrc.slice(a, b + 2), 'shared block text (keys → sha256 → canon → row print → identity → restore)');
+});
+t('the pure-JS SHA-256 equals node:crypto on 2,000 random strings (ASCII + multi-byte) and the block boundaries', () => {
+  const c = require('crypto'); let bad = 0;
+  const strs = ['', 'abc', 'a'.repeat(55), 'a'.repeat(56), 'a'.repeat(63), 'a'.repeat(64), 'a'.repeat(65), 'é😀中'];
+  for (let i = 0; i < 2000; i++) { let x = ''; const L = (i * 7919) % 400; for (let j = 0; j < L; j++) x += String.fromCodePoint(((i + 1) * (j + 3) * 2654435761 % 0x2fff) + 32); strs.push(x); }
+  for (const x of strs) if (PAGE.catalogSha256(x) !== c.createHash('sha256').update(x, 'utf8').digest('hex') || CC.catalogSha256(x) !== PAGE.catalogSha256(x)) bad++;
+  eq(bad, 0, 'mismatching digests');
+});
+t('identity: one changed row changes the line identity; identical files share it; the split file and the full file share it', () => {
+  const f = [{ code: 'A', name: 'x', base_price: 1 }, { code: 'B', name: 'y' }], s = CC.splitCatalogFile(f);
+  eq(CC.catalogIdentity(f), CC.catalogIdentity(s.public), 'prices are not part of identity');
+  ok(CC.catalogIdentity([{ code: 'A', name: 'x' }, { code: 'B', name: 'y!' }]) !== CC.catalogIdentity(s.public), 'changed row');
+  ok(CC.catalogIdentity([s.public[1], s.public[0]]) !== CC.catalogIdentity(s.public), 'reordered rows');
+  eq(PAGE.catalogIdentity(s.public), CC.catalogIdentity(s.public), 'page = module');
+});
+t('validOverlayRecord: identity must equal the entries\' fingerprints in order; every entry fingerprinted; one per key', () => {
+  const s = CC.splitCatalogFile([{ code: 'A', base_price: 1 }, { code: 'A', base_price: 2, name: 'b' }]);
+  const rec = { rows: s.overlay, identity_sha256: CC.catalogIdentity(s.public) };
+  ok(CC.validOverlayRecord(rec), 'good record');
+  ok(!CC.validOverlayRecord({ rows: s.overlay.slice().reverse(), identity_sha256: rec.identity_sha256 }), 'reordered entries');
+  ok(!CC.validOverlayRecord({ rows: s.overlay, identity_sha256: 'c'.repeat(64) }), 'wrong identity');
+  ok(!CC.validOverlayRecord({ rows: s.overlay.map(o => ({ k: o.k, order: o.order, f: o.f })), identity_sha256: rec.identity_sha256 }), 'no fingerprints');
+  ok(!CC.validOverlayRecord({ rows: [s.overlay[0], Object.assign({}, s.overlay[1], { k: s.overlay[0].k })], identity_sha256: rec.identity_sha256 }), 'duplicate key');
+  ok(!CC.validOverlayRecord({ rows: s.overlay }), 'no identity');
+  { const rows = s.overlay.map((o, i) => (i ? o : { k: o.k, order: o.order, f: o.f }));
+    ok(!CC.validOverlayRecord({ rows, identity_sha256: CC.catalogSha256(rows.map(o => o.h).join('\n')) }), 'an entry without a fingerprint, identity computed over the blank'); }
+  ok(!CC.validOverlayRecord(null) && !CC.validOverlayRecord({ rows: {}, identity_sha256: rec.identity_sha256 }), 'not a record');
+  const pick = CC.recordForFile(s.public, [{ identity_sha256: 'd'.repeat(64) }, rec]);
+  eq(pick.record, rec, 'recordForFile picks the matching version'); eq(CC.recordForFile([{ code: 'Z' }], [rec]).record, null, 'no version for another file');
 });
 t('the Business Hub page carries the same restore text', () => {
   const hub = liftRestore(fs.readFileSync(HUB, 'utf8'));
@@ -116,6 +178,21 @@ if (!originals) {
       const f = JSON.parse(txt), s = CC.splitCatalogFile(f);
       eq(JSON.stringify(PAGE.restoreCatalogFile(s.public, s.overlay)), JSON.stringify(f));
       eq(CC.commercialKeysIn(s.public), [], 'public half still commercial');
+    });
+    t(`real file ${slug}: every row fingerprinted; the identity of the public file in this tree = the seeded record's`, () => {
+      const f = applyScrubs(slug, JSON.parse(txt)), s = CC.splitCatalogFile(f);
+      ok(s.overlay.every(o => /^[0-9a-f]{64}$/.test(o.h)), 'fingerprint missing');
+      const cur = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'data', slug + '.json'), 'utf8'));
+      eq(PAGE.catalogIdentity(cur), CC.catalogIdentity(s.public), 'identity');
+      ok(CC.validOverlayRecord({ rows: s.overlay, identity_sha256: CC.catalogIdentity(cur) }), 'record');
+      eq(JSON.stringify(PAGE.restoreCatalogFile(cur, s.overlay)), JSON.stringify(f), 'the deployed public file + its record = the original');
+      const dup = {}; cur.forEach((r, i) => { (dup[r.code] = dup[r.code] || []).push(i); });
+      Object.values(dup).filter(ix => ix.length > 1).forEach(ix => ok(new Set(ix.map(i => CC.catalogRowPrint(cur[i]))).size === ix.length,
+        'two rows with the same part number are publicly identical — their commercial rows could not be told apart: ' + cur[ix[0]].code));
+      Object.values(dup).filter(ix => ix.length > 1).slice(0, 5).forEach(ix => {
+        const sw = cur.slice(); [sw[ix[0]], sw[ix[1]]] = [sw[ix[1]], sw[ix[0]]];
+        if (CC.catalogRowPrint(sw[ix[0]]) !== CC.catalogRowPrint(cur[ix[0]])) throws(() => PAGE.restoreCatalogFile(sw, s.overlay), /catalog_file_mismatch/, 'swapped duplicates priced');
+      });
     });
     t(`real file ${slug}: the stripped file in this tree equals the public half (nothing else changed)`, () => {
       const p = path.join(ROOT, 'public', 'data', slug + '.json');

@@ -36,13 +36,13 @@ alter table public.custom_products enable row level security;
 alter table public.product_overrides enable row level security;
 create policy custom_products_read on public.custom_products for select to public using (true);
 create policy product_overrides_read on public.product_overrides for select to public using (true);
-insert into public.custom_products (manufacturer, code, name, base_price) values ('bemis', '444DISPLAY', 'Display', 634.86);
-insert into public.product_overrides (manufacturer, code, patch) values ('bemis', '7Y1', '{"base_price": 109.98}');
+insert into public.custom_products (manufacturer, code, name, base_price) values ('bemis', '444DISPLAY', 'Display', 23.45);
+insert into public.product_overrides (manufacturer, code, patch) values ('bemis', '7Y1', '{"base_price": 12.34}');
 `);
 
 t('before: the public key (anon) reads every added product price and every saved edit — the exposure', () => {
   const a = as('anon', 'select base_price from public.custom_products; select patch->>\'base_price\' from public.product_overrides;');
-  ok(a.ok && /634\.86/.test(a.out) && /109\.98/.test(a.out), 'expected the pre-fix exposure to reproduce: ' + a.out);
+  ok(a.ok && /23\.45/.test(a.out) && /12\.34/.test(a.out), 'expected the pre-fix exposure to reproduce: ' + a.out);
 });
 
 const CF = file('p0_catalog_file_commercial.sql');
@@ -53,9 +53,18 @@ t('p0_catalog_file_commercial.sql installs and every install check reads true', 
 t('it is idempotent (a second run changes nothing and still checks true)', () => {
   ok(/^t(\|t)+$/.test(psql(CF).trim().split('\n').pop()), 'second run');
 });
-const ROW = `insert into public.catalog_file_commercial (manufacturer, rows, row_count, rows_sha256, public_sha256, source_ref)
-  values ('bemis', '[{"k":"7Y1#0","order":["code","base_price"],"f":{"base_price":109.98}}]', 1, repeat('a',64), repeat('b',64), '4b1bad3')
-  on conflict (manufacturer) do update set rows = excluded.rows, row_count = excluded.row_count;`;
+/* A record exactly as the seed script builds it (the module computes the fingerprints and identity). */
+const CC = require(path.join(__dirname, '..', 'netlify', 'functions', '_catalog_commercial.js'));
+const recSql = (slug, full, opts) => {
+  const o = opts || {}, sp = CC.splitCatalogFile(full), rows = o.rows || sp.overlay;
+  const id = o.identity || CC.catalogIdentity(sp.public);
+  const lit = v => "'" + String(v).replace(/'/g, "''") + "'";
+  return `insert into public.catalog_file_commercial (manufacturer, identity_sha256, rows, row_count, rows_sha256, public_sha256, source_ref)
+  values (${lit(slug)}, ${lit(id)}, ${lit(JSON.stringify(rows))}::jsonb, ${rows.length}, repeat('a',64), repeat('b',64), '4b1bad3')
+  on conflict (manufacturer, identity_sha256) do update set rows = excluded.rows, row_count = excluded.row_count;`;
+};
+const V1 = [{ code: '7Y1', name: 'Seat', base_price: 12.34 }], V2 = [{ code: '7Y1', name: 'Seat v2', base_price: 13.57 }];
+const ROW = recSql('bemis', V1);
 t('service_role writes and reads the commercial table (upsert, as the seed script does)', () => {
   const r = as('service_role', ROW + ' select row_count from public.catalog_file_commercial;');
   ok(r.ok && /^1$/m.test(r.out), r.out);
@@ -74,14 +83,52 @@ t('Supabase\'s default grants were really revoked (a GRANT re-added for anon sti
   psql('revoke all on public.catalog_file_commercial from anon;');
   ok(r.ok && /^0$/m.test(r.out), 'RLS with no policy must answer nothing: ' + r.out);
 });
-t('constraints refuse a malformed record (count mismatch, bad slug, bad fingerprint)', () => {
+const EMPTY_ID = CC.catalogIdentity([]);
+t('constraints refuse a malformed record (count mismatch, bad slug, bad fingerprint, bad identity)', () => {
   for (const bad of [
-    `insert into public.catalog_file_commercial values ('x', '[]', 1, repeat('a',64), repeat('b',64), 'r');`,
-    `insert into public.catalog_file_commercial values ('Bad Slug', '[]', 0, repeat('a',64), repeat('b',64), 'r');`,
-    `insert into public.catalog_file_commercial values ('y', '{}', 0, repeat('a',64), repeat('b',64), 'r');`,
-    `insert into public.catalog_file_commercial values ('z', '[]', 0, 'short', repeat('b',64), 'r');`]) {
-    const r = as('service_role', bad); ok(!r.ok && /violates check constraint|cannot get array length/.test(r.out), 'accepted: ' + bad);
+    `insert into public.catalog_file_commercial (manufacturer, identity_sha256, rows, row_count, rows_sha256, public_sha256, source_ref) values ('x', '${EMPTY_ID}', '[]', 1, repeat('a',64), repeat('b',64), 'r');`,
+    `insert into public.catalog_file_commercial (manufacturer, identity_sha256, rows, row_count, rows_sha256, public_sha256, source_ref) values ('Bad Slug', '${EMPTY_ID}', '[]', 0, repeat('a',64), repeat('b',64), 'r');`,
+    `insert into public.catalog_file_commercial (manufacturer, identity_sha256, rows, row_count, rows_sha256, public_sha256, source_ref) values ('y', '${EMPTY_ID}', '{}', 0, repeat('a',64), repeat('b',64), 'r');`,
+    `insert into public.catalog_file_commercial (manufacturer, identity_sha256, rows, row_count, rows_sha256, public_sha256, source_ref) values ('z', '${EMPTY_ID}', '[]', 0, 'short', repeat('b',64), 'r');`,
+    `insert into public.catalog_file_commercial (manufacturer, identity_sha256, rows, row_count, rows_sha256, public_sha256, source_ref) values ('w', 'NOTHEX', '[]', 0, repeat('a',64), repeat('b',64), 'r');`]) {
+    const r = as('service_role', bad); ok(!r.ok && /violates check constraint|cannot get array length|rows must be a list|catalog_file_commercial: identity_sha256/.test(r.out), 'accepted: ' + bad + ' → ' + r.out);
   }
+});
+/* P0 review — version integrity enforced by the database itself. */
+t('the database computes the same identity as the browser / server code (sha256 of the fingerprints)', () => {
+  const r = as('service_role', recSql('fp-line', [{ code: 'A', name: 'a', base_price: 1 }, { code: 'A', name: 'b', base_price: 2 }, { code: 'é', name: '😀' }]));
+  ok(r.ok, r.out);
+  const e = as('service_role', recSql('fp-empty', []) + ' select count(*) from public.catalog_file_commercial where manufacturer = \'fp-empty\';');
+  ok(e.ok && /^1$/m.test(e.out), 'an empty line (identity of no rows) is accepted: ' + e.out);
+});
+t('the guard refuses entries without a fingerprint, a malformed fingerprint, a repeated key, or a wrong identity', () => {
+  const sp = CC.splitCatalogFile(V1);
+  for (const [why, rows, identity] of [
+    ['no fingerprint', sp.overlay.map(o => ({ k: o.k, order: o.order, f: o.f })), null],
+    ['malformed fingerprint', [Object.assign({}, sp.overlay[0], { h: 'XYZ' })], null],
+    ['no key', [{ h: sp.overlay[0].h, order: [], f: {} }], null],
+    ['fields not an object', [Object.assign({}, sp.overlay[0], { f: [] })], null],
+    ['repeated key', CC.splitCatalogFile([{ code: 'A', name: 'x' }, { code: 'B', name: 'y' }]).overlay.map(o => Object.assign(o, { k: 'A#0' })), CC.catalogIdentity([{ code: 'A', name: 'x' }, { code: 'B', name: 'y' }])],
+    ['identity of another file', sp.overlay, CC.catalogIdentity(CC.splitCatalogFile(V2).public)]]) {
+    const r = as('service_role', recSql('bemis-g', V1, { rows, identity: identity || undefined }));
+    ok(!r.ok && /catalog_file_commercial:/.test(r.out), why + ' accepted: ' + r.out);
+  }
+  const u = as('service_role', ROW + ` update public.catalog_file_commercial set identity_sha256 = repeat('c',64) where manufacturer = 'bemis';`);
+  ok(!u.ok && /identity_sha256 is not the identity/.test(u.out), 'an UPDATE that breaks the identity is refused too: ' + u.out);
+});
+t('two versions of one line side by side (seed before deploy); the same version twice is one row', () => {
+  const r = as('service_role', recSql('bemis-v', V1) + recSql('bemis-v', V2) + recSql('bemis-v', V1) +
+    ` select count(*) from public.catalog_file_commercial where manufacturer = 'bemis-v';`);
+  ok(r.ok && /^2$/m.test(r.out), r.out);
+  psql(`delete from public.catalog_file_commercial where manufacturer in ('bemis-v', 'bemis-g', 'fp-line', 'fp-empty');`);
+});
+t('an earlier draft of the table (no identity column) is refused, never silently kept by "if not exists"', () => {
+  const D = 'p0_draft_shape_test';
+  psql(`drop database if exists ${D}; create database ${D};`, 'postgres');
+  psql(`create table public.catalog_file_commercial (manufacturer text primary key, rows jsonb);`, D);
+  let err = null; try { psql(CF, D); } catch (e) { err = String(e.stderr || e.message); }
+  psql(`drop database if exists ${D};`, 'postgres');
+  ok(err && /earlier draft shape/.test(err), 'draft shape accepted: ' + err);
 });
 t('its rollback refuses while a row exists, and runs once the table is empty', () => {
   const RB = file('p0_catalog_file_commercial_rollback.sql');
@@ -109,7 +156,7 @@ for (const role of ['anon', 'authenticated']) {
 t('after the lock: the service role still reads and writes both tables (admin site, catalog-layers)', () => {
   const r = as('service_role', `select base_price from public.custom_products; select patch from public.product_overrides;
     insert into public.product_overrides (manufacturer, code, patch) values ('bemis','NEW','{}');`);
-  ok(r.ok && /634\.86/.test(r.out), r.out);
+  ok(r.ok && /23\.45/.test(r.out), r.out);
 });
 t('a second policy for every role (any name) is dropped too; owner-only policies are left alone', () => {
   psql(`create policy extra_read on public.custom_products for select to anon using (true);
