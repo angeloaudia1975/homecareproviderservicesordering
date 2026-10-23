@@ -7,13 +7,12 @@ sales analytics only; no inventory, stock, or shipment tracking.
 ## Status
 - **Phase 1 (this build):** HCPS-branded portal front end. Manufacturer tabs, category
   browsing, product cards, cart, and an order form. Data comes from `public/data/*.json`.
-  Complete Medical Supplies is loaded with the full catalog — 473 products across 17
-  categories with quantity-tier pricing (plus `tiers`, `upc`, and `msrp` carried in the
-  JSON for the Phase-2 `price_tiers` import). Other manufacturers show a "soon" tab until
-  their product data is loaded. Product images live in
-  `public/assets/products/complete-medical-supplies/`; the portal retries a lowercased
-  filename on load error, so image paths resolve whether the files are upper- or
-  lowercase in the repo.
+  Each represented manufacturer's catalog lives in `public/data/<slug>.json` and its images in
+  `public/assets/products/<slug>/`; the portal retries a lowercased filename on load error, so
+  image paths resolve whether the files are upper- or lowercase in the repo.
+  Complete Medical Supplies is no longer an HCPS partner (removed 2026-10-23): its catalog file
+  and images are gone from the portal, and `supabase/retire_complete_medical.sql` removes its
+  ordering grants and catalog customizations. Historical orders, sales and commissions are kept.
 - **Phase 2 (next):** Supabase back end — products/pricing in the database, dealer logins
   (Supabase Auth), per-dealer custom pricing (Row-Level Security), and order submission
   writing to the DB. Set `CONFIG.DATA_SOURCE="supabase"` in `index.html` and fill the keys.
@@ -95,8 +94,7 @@ Per group: items are matched by `brandKeywords` (substring match on the product'
 `flatUnder` value (e.g. Bemis `40`) is added as a flat fee below the threshold; otherwise
 the group ships at **actual freight** (no fee added, shown with `actualNote`). The dealer
 sees free-freight progress ("add $X to reach free"), and any flat fee is included in the
-estimated total. Complete Medical uses brand-group thresholds (Blue Jay $400, Drive+Compass
-$750, everything else actual); Bemis is free at $500 / $40 flat under. MSRP is shown on
+estimated total. Bemis is free at $500 / $40 flat under. MSRP is shown on
 product cards wherever a `msrp` value is present.
 
 ## Supabase (Phase 2 setup)
