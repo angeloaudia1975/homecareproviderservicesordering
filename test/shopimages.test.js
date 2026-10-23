@@ -1,6 +1,7 @@
 /* 2.4b — the storefront's image rule. Executes the REAL mergeCatalogEdits (and everything it
    calls through applyMasterPrices) lifted from the shop page, with Supabase answered by a stub. */
 const fs=require('fs');
+const withLayers=require('./_layers.js');   // P0: commercial layers come from catalog-layers
 const SRC=process.argv[2]||process.env.SHOP||require('path').join(__dirname,'..','public','index.html');
 const html=fs.readFileSync(SRC,'utf8');
 const a1=html.indexOf('/* Pure. The same rule as images-api.js'), a1b=html.indexOf('async function mergeCatalogEdits(slug, prods){');
@@ -9,16 +10,17 @@ const c1=html.indexOf('const COLOR_SUFFIX='), c2=html.indexOf('/* ---------- ren
 if(start<0||end<0||c1<0||c2<0) { console.log('LIFT FAILED'); process.exit(2); }
 const body=html.slice(start,end)+'\n'+html.slice(c1,c2);
 function shop(tables){
+  const L=withLayers(tables);
   const calls=[];
-  const fetchStub=async(url)=>{ url=String(url); calls.push(url);
+  const fetchStub=async(url)=>{ url=String(url); calls.push(url); const la=L.answer(url); if(la) return la;
     const m=/rest\/v1\/([a-z_]+)\?/.exec(url); const t=m&&m[1];
     return {ok:true,status:200,json:async()=>JSON.parse(JSON.stringify((tables||{})[t]||[]))}; };
   const f=new Function('fetch','window','console','document',
     `const CONFIG={SUPABASE_URL:'https://db.test',SUPABASE_ANON:'anon',CONTENT_APPROVED_ONLY:true};
-     const state={manufacturers:[{slug:'ovation-medical'}]}; const AUTH={session:null,status:'anon'}; const PREVIEW=null;
+     const state={manufacturers:[{slug:'ovation-medical'}]}; const AUTH={session:{access_token:'dealer-token'},status:'approved'}; const PREVIEW=null;
      ${body}
      return {mergeCatalogEdits, pageImageFor:typeof pageImageFor==='function'?pageImageFor:null};`);
-  return Object.assign(f(fetchStub,{},{warn(){},log(){}},{}),{calls});
+  const S=f(fetchStub,{},{warn(){},log(){}},{}); return Object.assign(S,{calls,mergeCatalogEdits:L.wrap(S.mergeCatalogEdits)});
 }
 let fail=0; const ok=(c,m)=>{ console.log((c?'ok  ':'FAIL')+' '+m); if(!c) fail++; };
 const pg=(k,skus,x)=>Object.assign({page_key:k,status:'published',name:k,skus:skus.map(s=>typeof s==='string'?{sku:s}:s),image:null,images_gallery:[]},x||{});

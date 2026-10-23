@@ -327,6 +327,37 @@ async function reqTracking(id,mfr,summary){ try{ await api(TOOLS_ENDPOINT,{actio
 
 /* ================= PHASE 2: pricing map, reports, exports ================= */
 let PRICE=null, PRICELIST=null;
+/* P0 (2026-10-23): the same restore as the storefront page (public/index.html) — drift-tested. */
+const CATALOG_COMMERCIAL_KEYS=["base_price","tiers","dealer_price","tier_prices","msrp","map","price_note","unit_cost","shipping"];
+function restoreCatalogFile(rows, overlay){
+  if(!Array.isArray(rows)) throw new Error('catalog_file_mismatch: the public catalog file is not a list');
+  if(!Array.isArray(overlay) || overlay.length!==rows.length)
+    throw new Error('catalog_file_mismatch: '+rows.length+' public row(s), '+(Array.isArray(overlay)?overlay.length:'no')+' commercial row(s)');
+  const by={};
+  overlay.forEach(o=>{ if(o && o.k!=null) by[String(o.k)]=o; });
+  if(Object.keys(by).length!==overlay.length) throw new Error('catalog_file_mismatch: the commercial rows are not one per catalog row');
+  const seen={};
+  return rows.map(r=>{
+    const c=String(r&&r.code!=null?r.code:''); const n=seen[c]=(seen[c]||0)+1; const k=c+'#'+(n-1);
+    const o=by[k];
+    if(!o) throw new Error('catalog_file_mismatch: no commercial row for '+k);
+    const f=(o.f && typeof o.f==='object') ? o.f : {};
+    const out={};
+    (Array.isArray(o.order)?o.order:[]).forEach(key=>{
+      if(CATALOG_COMMERCIAL_KEYS.indexOf(key)>=0){ if(key in f) out[key]=f[key]; }
+      else if(r && key in r) out[key]=r[key];
+    });
+    Object.keys(r||{}).forEach(key=>{ if(!(key in out) && CATALOG_COMMERCIAL_KEYS.indexOf(key)<0) out[key]=r[key]; });
+    Object.keys(f).forEach(key=>{ if(!(key in out) && CATALOG_COMMERCIAL_KEYS.indexOf(key)>=0) out[key]=f[key]; });
+    return out;
+  });
+}
+/* The credential catalog-layers accepts: the preview's token, or the signed-in dealer's session. */
+async function layersHeaders(){
+  if(window.__PREVIEW__&&window.__PREVIEW__.token) return {'x-hcps-preview':window.__PREVIEW__.token};
+  await refreshIfNeeded();
+  return (SESSION&&SESSION.access_token)?{authorization:'Bearer '+SESSION.access_token}:null;
+}
 async function loadPricing(){
   if(PRICE) return;
   PRICE={}; PRICELIST=[];
@@ -334,10 +365,24 @@ async function loadPricing(){
     const mf=await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]);
     MFRLIST=(mf||[]).map(m=>({slug:m.slug,name:m.name}));
     const withData=(mf||[]).filter(m=>m.hasData!==false);
+    /* P0 (2026-10-23): the public files carry no prices. A line this dealer carries is priced from
+       catalog-layers (the signed-in dealer, or the preview's one dealer); every other line lists
+       names only — never a price. A line whose pricing cannot be loaded lists names only too. */
+    const carried=new Set((LINES||[]).map(l=>String((l&&l.slug)||l)));
+    const hdr=await layersHeaders();
     await Promise.all(withData.map(async m=>{
       try{
         const d=await fetch('/data/'+m.slug+'.json').then(r=>r.json());
-        const items=Array.isArray(d)?d:(d.products||[]);
+        let items=Array.isArray(d)?d:(d.products||[]);
+        let priced=false;
+        if(hdr && carried.has(m.slug)){
+          try{
+            const r=await fetch('/.netlify/functions/catalog-layers?manufacturer='+encodeURIComponent(m.slug),{headers:hdr,cache:'no-store'});
+            const j=r.ok?await r.json():null;
+            if(j&&j.ok===true&&Array.isArray(j.file_overlay)){ items=restoreCatalogFile(items,j.file_overlay); priced=true; }
+          }catch(e){}
+        }
+        if(!priced) items=items.map(p=>Object.assign({},p,{base_price:null,msrp:null,map:null}));
         for(const p of items){
           const code=String(p.code||'').trim(); if(!code) continue;
           const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(p.map!=null?Number(p.map):null),cost:(p.base_price!=null?Number(p.base_price):null),category:p.category||'',name:p.name||'',mfrName:m.name};
