@@ -11,8 +11,10 @@ sales analytics only; no inventory, stock, or shipment tracking.
   `public/assets/products/<slug>/`; the portal retries a lowercased filename on load error, so
   image paths resolve whether the files are upper- or lowercase in the repo.
   Complete Medical Supplies is no longer an HCPS partner (removed 2026-10-23): its catalog file
-  and images are gone from the portal, and `supabase/retire_complete_medical.sql` removes its
-  ordering grants and catalog customizations. Historical orders, sales and commissions are kept.
+  and images are gone from the portal. Historical orders, sales, commissions and dealer account
+  numbers are kept. `supabase/retire_complete_medical.sql` is NOT part of this retirement and
+  MUST NOT be run: it would delete the dealers' Complete Medical account records
+  (`dealer_manufacturers`), which are history.
 - **Phase 2 (next):** Supabase back end — products/pricing in the database, dealer logins
   (Supabase Auth), per-dealer custom pricing (Row-Level Security), and order submission
   writing to the DB. Set `CONFIG.DATA_SOURCE="supabase"` in `index.html` and fill the keys.
