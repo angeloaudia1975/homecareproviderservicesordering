@@ -9,24 +9,7 @@
     "description": "STRONGBACK Excursion : 8 Transport Wheelchair. Seat width 18\" · 8\" rear wheels · 17.6 lbs · attendant brake: no.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 473.0,
-    "price_note": "Volume (mix & match): 2+ $443 · 8+ $433",
     "image": "/assets/products/strongback-mobility/1002.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 473.0
-      },
-      {
-        "minQty": 2,
-        "price": 443.0
-      },
-      {
-        "minQty": 8,
-        "price": 433.0
-      }
-    ],
-    "msrp": 779.0,
     "upc": "",
     "attributes": {
       "Attendant Brake (AB)": "NO",
@@ -46,24 +29,7 @@
     "description": "STRONGBACK Mobility - 12+AB Transport Wheelchair. Seat width 18\" · 12\" rear wheels · 21.9 lbs · attendant brake: yes.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 527.0,
-    "price_note": "Volume (mix & match): 2+ $497 · 8+ $487",
     "image": "/assets/products/strongback-mobility/1003AB.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 527.0
-      },
-      {
-        "minQty": 2,
-        "price": 497.0
-      },
-      {
-        "minQty": 8,
-        "price": 487.0
-      }
-    ],
-    "msrp": 889.0,
     "upc": "",
     "attributes": {
       "Attendant Brake (AB)": "YES",
@@ -83,24 +49,7 @@
     "description": "STRONGBACK Mobility - 12+AB Transport Wheelchair. Seat width 20\" · 12\" rear wheels · 22.3 lbs · attendant brake: yes.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 546.0,
-    "price_note": "Volume (mix & match): 2+ $516 · 8+ $506",
     "image": "/assets/products/strongback-mobility/1012AB.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 546.0
-      },
-      {
-        "minQty": 2,
-        "price": 516.0
-      },
-      {
-        "minQty": 8,
-        "price": 506.0
-      }
-    ],
-    "msrp": 929.0,
     "upc": "",
     "attributes": {
       "Attendant Brake (AB)": "YES",
@@ -120,24 +69,7 @@
     "description": "STRONGBACK 12S+AB Transport Wheelchair. Seat width 16\" · 12\" rear wheels · 20.3 lbs · attendant brake: yes.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 527.0,
-    "price_note": "Volume (mix & match): 2+ $497 · 8+ $487",
     "image": "/assets/products/strongback-mobility/1016AB.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 527.0
-      },
-      {
-        "minQty": 2,
-        "price": 497.0
-      },
-      {
-        "minQty": 8,
-        "price": 487.0
-      }
-    ],
-    "msrp": 889.0,
     "upc": "",
     "attributes": {
       "Attendant Brake (AB)": "YES",
@@ -157,24 +89,7 @@
     "description": "STRONGBACK Comfort : 24 Wheelchair. Seat width 18\" · 24\" rear wheels · 15.9 lbs · attendant brake: no.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 536.0,
-    "price_note": "Volume (mix & match): 2+ $516 · 8+ $506",
     "image": "/assets/products/strongback-mobility/1007.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 536.0
-      },
-      {
-        "minQty": 2,
-        "price": 516.0
-      },
-      {
-        "minQty": 8,
-        "price": 506.0
-      }
-    ],
-    "msrp": 909.0,
     "upc": "",
     "attributes": {
       "Attendant Brake (AB)": "NO",
@@ -194,24 +109,7 @@
     "description": "STRONGBACK Comfort : 24+AB Wheelchair. Seat width 18\" · 24\" rear wheels · 16.6 lbs · attendant brake: yes.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 556.0,
-    "price_note": "Volume (mix & match): 2+ $536 · 8+ $526",
     "image": "/assets/products/strongback-mobility/1007AB.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 556.0
-      },
-      {
-        "minQty": 2,
-        "price": 536.0
-      },
-      {
-        "minQty": 8,
-        "price": 526.0
-      }
-    ],
-    "msrp": 949.0,
     "upc": "",
     "attributes": {
       "Attendant Brake (AB)": "YES",
@@ -231,24 +129,7 @@
     "description": "STRONGBACK Comfort : 24 Wheelchair. Seat width 20\" · 24\" rear wheels · 16.3 lbs · attendant brake: no.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 551.0,
-    "price_note": "Volume (mix & match): 2+ $531 · 8+ $521",
     "image": "/assets/products/strongback-mobility/1010.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 551.0
-      },
-      {
-        "minQty": 2,
-        "price": 531.0
-      },
-      {
-        "minQty": 8,
-        "price": 521.0
-      }
-    ],
-    "msrp": 939.0,
     "upc": "",
     "attributes": {
       "Attendant Brake (AB)": "NO",
@@ -268,24 +149,7 @@
     "description": "STRONGBACK Comfort : 24+AB Wheelchair. Seat width 20\" · 24\" rear wheels · 17 lbs · attendant brake: yes.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 576.0,
-    "price_note": "Volume (mix & match): 2+ $556 · 8+ $546",
     "image": "/assets/products/strongback-mobility/1010AB.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 576.0
-      },
-      {
-        "minQty": 2,
-        "price": 556.0
-      },
-      {
-        "minQty": 8,
-        "price": 546.0
-      }
-    ],
-    "msrp": 989.0,
     "upc": "",
     "attributes": {
       "Attendant Brake (AB)": "YES",
@@ -305,24 +169,7 @@
     "description": "STRONGBACK Comfort Small : 22S Wheelchair. Seat width 16\" · 22\" rear wheels · 15 lbs · attendant brake: no.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 536.0,
-    "price_note": "Volume (mix & match): 2+ $506 · 8+ $496",
     "image": "/assets/products/strongback-mobility/1017.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 536.0
-      },
-      {
-        "minQty": 2,
-        "price": 506.0
-      },
-      {
-        "minQty": 8,
-        "price": 496.0
-      }
-    ],
-    "msrp": 909.0,
     "upc": "",
     "attributes": {
       "Attendant Brake (AB)": "NO",
@@ -342,24 +189,7 @@
     "description": "STRONGBACK Comfort : 24 Flip Wheelchair. Seat width 18\" · 24\" rear wheels · 16.1 lbs · attendant brake: no.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 581.0,
-    "price_note": "Volume (mix & match): 2+ $561 · 8+ $551",
     "image": "/assets/products/strongback-mobility/1019.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 581.0
-      },
-      {
-        "minQty": 2,
-        "price": 561.0
-      },
-      {
-        "minQty": 8,
-        "price": 551.0
-      }
-    ],
-    "msrp": 999.0,
     "upc": "",
     "attributes": {
       "Attendant Brake (AB)": "NO",
@@ -379,24 +209,7 @@
     "description": "STRONGBACK Mobility - 24+AB PLUS. Seat width 22\" · 24\" rear wheels · 35.9 lbs · attendant brake: yes.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 800.0,
-    "price_note": "Volume (mix & match): 2+ $770 · 8+ $760",
     "image": "/assets/products/strongback-mobility/1036DB.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 800.0
-      },
-      {
-        "minQty": 2,
-        "price": 770.0
-      },
-      {
-        "minQty": 8,
-        "price": 760.0
-      }
-    ],
-    "msrp": 1199.0,
     "upc": "",
     "attributes": {
       "Attendant Brake (AB)": "YES",
@@ -416,24 +229,7 @@
     "description": "The World's Most Comfortable Rollator: SEATA. Seat width 19\" · 12\" rear wheels · 20 lbs · attendant brake: no.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 320.0,
-    "price_note": "Volume (mix & match): 2+ $295 · 8+ $285",
     "image": "/assets/products/strongback-mobility/SEATA.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 320.0
-      },
-      {
-        "minQty": 2,
-        "price": 295.0
-      },
-      {
-        "minQty": 8,
-        "price": 285.0
-      }
-    ],
-    "msrp": 495.0,
     "upc": "",
     "attributes": {
       "Attendant Brake (AB)": "NO",

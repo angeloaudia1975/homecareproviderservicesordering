@@ -1,6 +1,7 @@
 /* Visible ≠ sellable (agreed 2026-10-08), shop side. Runs the REAL mergeCatalogEdits and
    addToCart lifted from the shop page with Supabase answered by a stub. */
 const fs=require('fs');
+const withLayers=require('./_layers.js');   // P0: commercial layers come from catalog-layers
 const SRC=process.argv[2]||process.env.SHOP||require('path').join(__dirname,'..','public','index.html');
 const html=fs.readFileSync(SRC,'utf8');
 const a1=html.indexOf('/* Pure. The same rule as images-api.js'), a1b=html.indexOf('async function mergeCatalogEdits(slug, prods){');
@@ -9,19 +10,20 @@ const c1=html.indexOf('const COLOR_SUFFIX='), c2=html.indexOf('/* ---------- ren
 const add=html.slice(html.indexOf('function addToCart(p,qty){'), html.indexOf('function cartCount(){'));
 const body=html.slice(start,end)+'\n'+html.slice(c1,c2)+'\nconst cartKey=p=>`${p.manufacturer}::${p.code}`;\n'+add;
 function shop(tables, mfr){
+  const L=withLayers(tables);
   const toasts=[], CART=new Map();
   const f=new Function('fetch','window','console','document','toast','CART','updateCart','track',
     `const CONFIG={SUPABASE_URL:'https://db.test',SUPABASE_ANON:'anon',CONTENT_APPROVED_ONLY:true};
-     const state={manufacturers:[${JSON.stringify(mfr||{slug:'L'})}]}; const AUTH={session:null,status:'anon'}; const PREVIEW=null;
+     const state={manufacturers:[${JSON.stringify(mfr||{slug:'L'})}]}; const AUTH={session:{access_token:'dealer-token'},status:'approved'}; const PREVIEW=null;
      ${body}
      return {mergeCatalogEdits, addToCart};`);
   const asked=[];
-  const fetchStub=async(url)=>{ const u=String(url); asked.push(u); const m=/rest\/v1\/([a-z_]+)\?/.exec(u); const t=m&&m[1];
+  const fetchStub=async(url)=>{ const u=String(url); asked.push(u); const la=L.answer(u); if(la) return la; const m=/rest\/v1\/([a-z_]+)\?/.exec(u); const t=m&&m[1];
     let rows=JSON.parse(JSON.stringify((tables||{})[t]||[]));
     const st=/status=in\.\(([^)]*)\)/.exec(u); if(t==='product_content' && st){ const ok=st[1].split(','); rows=rows.filter(r=>ok.includes(r.status)); }
     return {ok:true,status:200,json:async()=>rows}; };
   const S=f(fetchStub,{},{warn(){},log(){}},{},m=>toasts.push(m),CART,()=>{},()=>{});
-  return Object.assign(S,{toasts,CART,asked});
+  return Object.assign(S,{toasts,CART,asked,mergeCatalogEdits:L.wrap(S.mergeCatalogEdits)});
 }
 let fail=0; const ok=(c,m)=>{ console.log((c?'ok  ':'FAIL')+' '+m); if(!c) fail++; };
 const pg=(k,status,skus,x)=>Object.assign({page_key:k,status,name:k,skus,image:null,images_gallery:[]},x||{});
