@@ -170,10 +170,21 @@ SQL files and their SHA-256 (as committed, LF line endings):
 | `supabase/p0_lock_layer_reads_rollback.sql` (unchanged) | `ff6454f1960975ec1d084934e97008f805131b92370c98042a9e4bf3f178bb0b` |
 
 **0. Before anything (owner gates).**
-- **Protect old deploy permalinks AHEAD of the release** (Netlify → Site configuration → Access & security →
-  Visitor access: password / SSO protection for *deploy permalinks and branch / preview deploys*, production
-  unaffected) — once on, the priced files of every older deploy stop being reachable at
-  `<deploy-id>--<site>.netlify.app`. Doing it first also covers the rollback window below.
+- **Old deploys — VERIFIED audit (2026-10-24 ~04:40 UTC, read-only GETs from outside, no sign-in; §5.1 has the
+  table).** Storefront `hcpsonlineordering`: Visitor access = *Production public / Deploy Preview **private***. Every
+  deploy preview, PR deploy-ID link and **every superseded production deploy permalink** answers **401** (pages,
+  `/data/*.json` and functions alike); only the CURRENT production deploy is public — it is the live site. So once
+  the P0 storefront deploy is published, the price-bearing deploy before it becomes 401 automatically: **no storefront
+  setting needs changing, and the dealer storefront stays fully available.** The one way to re-expose it is
+  **"Publish deploy" on an old deploy** (a rollback) — do not roll the storefront back to a pre-P0 deploy; roll forward.
+  Admin `homecareproviderservices`: Visitor access = *Production public / Deploy Preview **public***. Every old
+  production deploy permalink and every deploy preview answers publicly and **runs that deploy's OLD functions with
+  today's production environment variables** (e.g. `orders-api` answers 405 on deploys from before #37 — before the
+  Complete Medical guard and before the P0 version check). **Owner action before the P0 release: set the admin
+  site's Deploy Preview visibility to Private** (Project configuration → General → Visitor access → Edit visibility).
+  Production (`www.homecareproviderservices.org`, `homecareproviderservices.netlify.app`, the Academy, Connect 360) is
+  unaffected; deploy previews then need a Netlify team sign-in to view. Re-run §5.1 afterwards: every old admin
+  permalink must answer 401.
 - Decide on the dealers the review found **approved but with no active `dealer_manufacturers` line**: after the
   release they can browse but price and order nothing (403). Confirm that is intended, or assign their lines first.
 - Merge order with PR ordering#4 / admin#37 (retire Complete Medical): either order works (tested both ways, §7);
@@ -221,13 +232,30 @@ SQL files and their SHA-256 (as committed, LF line endings):
      re-priced by the server (409 `prices_changed`).
 6. **Legacy-table lockdown**: run `supabase/p0_lock_layer_reads.sql` (checks all true); probe again →
    `custom_products` / `product_overrides` denied to the public key; the storefront still prices.
-7. **Old immutable deploys**: confirm the permalink protection from step 0 is on (or delete the deploys made before
-   step 4); fetch one old permalink's `/data/bemis.json` → protected / 404.
+7. **Old immutable deploys**: re-run the §5.1 audit — the storefront deploy published just before step 4 (main@6223f69,
+   `6adbdc184cdbafce5de2a220`) must now answer 401 for `/data/bemis.json`; every old admin permalink 401 (after the
+   admin Deploy Preview visibility is Private). Never "Publish deploy" a pre-P0 storefront deploy.
 8. **Final verification**: `mc_verify` on Climbing Steps, Strongback, Ovation, Bemis → Gold Standard fingerprints
    unchanged (Bemis: its current Gold Standard after the Assurance correction; decisions #908–#911 and their dry-run
    plan are not touched by this release — no product_content, decision or approval row is written).
    After the release: `node scripts/p0-seed-catalog-commercial.js --prune <slug> --live <storefront URL>` is not
    needed (one version per line).
+
+### 5.1 Historical-deploy audit (re-run before and after the release)
+Outside, no sign-in, GET only. 200 = public, 401 = protected by Visitor access, 404 = no such deploy / file.
+
+| Site | URL kind (example) | Result 2026-10-24 |
+|---|---|---|
+| storefront | production `hcpsonlineordering.netlify.app/data/bemis.json` | 200 — prices served (P0 not yet deployed) |
+| storefront | current production permalink `6adbdc18…--hcpsonlineordering.netlify.app` (main@6223f69) | 200 (= live site) |
+| storefront | older production permalinks main@4b1bad3, 68126df, edc7fbf, 4bd73fb — pages, `/data/*.json`, functions | **401** |
+| storefront | deploy previews 3, 4 and their deploy-ID links | **401** |
+| storefront | branch subdomain `main--…` | 200 (follows production) |
+| admin | current + older production permalinks main@872f637, 546ba46, a5758a0, 6411112 | **200 — functions run (orders-api 405)** |
+| admin | deploy previews 36, 38 (and a 2026-10-20 preview deploy-ID link) | **200** |
+
+Commands: `curl -s -o /dev/null -w '%{http_code}' https://<deploy-id>--<site>.netlify.app/<path>`. Deploy IDs come from
+the site's Deploys list (Production filter) and from the Netlify bot's PR comments.
 
 ### 5.2 Re-seeding after a legacy static catalog edit (from now on)
 A public catalog file edited in git is a NEW version: until its record exists, that line fails closed
