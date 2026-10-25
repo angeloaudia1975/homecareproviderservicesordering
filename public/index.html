@@ -1450,7 +1450,7 @@ function priceHtml(p){
 }
 /* THE DEALER NEVER SEES HOW THE PRICE GOT HERE.
    price_note holds two unrelated things under one column: notes written FOR a dealer
-   ("Volume price (mix sizes): 2–5 $19.95 · 6–10 $17.95"), and a stamp the price importer
+   ("Volume price (mix sizes): 2–5 $X · 6–10 $Y"), and a stamp the price importer
    writes for whoever ran it ("eff. 2026-01-01 · ovation-import 2026 NEW UPDATEc.xlsx").
    The second is operational provenance — an effective date and a filename off someone's
    desktop — and it was being printed on the storefront under the price.
@@ -1460,17 +1460,17 @@ function priceHtml(p){
    Discarding the column to stop the leak would have cost them that. */
 const PRICE_NOTE_OPERATIONAL=/^\s*eff\.\s|\.(xlsx?|csv)\b|-import\b/i;
 /* THE SAME LADDER TWICE IS WORSE THAN ONCE. 31 Ovation products carry a hand-typed copy of
-   their quantity breaks in price_note ("Volume price (mix sizes): 2–5 $15.95 · 6–10 $13.95
+   their quantity breaks in price_note ("Volume price (mix sizes): 2–5 $X · 6–10 $Y
    …"). Now that the breaks render from p.tiers, that text is a second, unmaintained copy of
    the same numbers — the exact drift a master record is supposed to prevent — so it is
    dropped, but ONLY where a real ladder exists to replace it. A product whose note is the
    only record of its volume pricing keeps the note. The whole run goes together: the tail
-   segments ("6–10 $13.95") are meaningless once the head is removed. */
+   segments ("6–10 $Y") are meaningless once the head is removed. */
 const PRICE_NOTE_VOLUME=/^\s*volume price\b/i;
 const PRICE_NOTE_TIERISH=/^\s*\d+\s*(?:[–—-]\s*\d+|\+)\s*\$/;
 /* MAP WAS BEING TYPED INTO THE NOTE BECAUSE THE CARD NEVER READ THE FIELD.
    Three manufacturers each invented their own wording for the same number —
-   "MAP $8.64", "Dealer $47 · MAP $70.50", "Min. advertised (MAP): $1,999.99" —
+   "MAP $X", "Dealer $Y · MAP $Z", "Min. advertised (MAP): $X" —
    and any product nobody typed it for simply had no MAP on the shelf. The card
    now renders p.map itself, so a restatement of it in the note is a duplicate and
    is dropped. Only a segment that is ENTIRELY the MAP figure goes; "6/pack" and
@@ -1563,7 +1563,131 @@ function noMsrpRule(row, layer){
   if(layer.msrp==null || layer.msrp==="") row.msrp=null;
   return row;
 }
+/* P0 SECURITY (2026-10-23, issue #2) — NO WHOLESALE PRICE IS PUBLIC ANY MORE.
+   The static catalog file now carries only what is not commercial; its prices, breaks, MAP, MSRP,
+   price notes (and Access4U's dealer/tier prices, Corsicana's per-item shipping) live in a private
+   table, and the added products (custom_products) and saved edits (product_overrides) are no
+   longer readable with the public key. All three reach the shop ONLY through catalog-layers, which
+   checks the signed-in dealer's entitlement (or the staff preview's ONE dealer) on the server.
+   restoreCatalogFile() is the same text as netlify/functions/_catalog_commercial.js (drift-tested):
+   a commercial key still on a public row is dropped, never trusted; a missing row is a mismatch. */
+const CATALOG_COMMERCIAL_KEYS=["base_price","tiers","dealer_price","tier_prices","msrp","map","price_note","unit_cost","shipping"];
+/* ROW IDENTITY (P0 review, 2026-10-23). A commercial row is attached to a public row ONLY when the
+   public row is exactly the row it was made for: every commercial entry carries `h`, the SHA-256 of
+   its public row's non-commercial fields (canonical JSON, keys sorted), and the whole line carries
+   its identity — the SHA-256 of those fingerprints in file order. A reordered duplicate part number,
+   a changed name / family / group / image with the same part numbers and row count, a public file
+   newer or older than the commercial record, or an entry with no fingerprint: refused, never matched
+   by position. Pure JS (sync, no crypto API) so the browser, the server engine copy and the tools
+   compute the same value. */
+function catalogSha256(str){
+  const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const m=new TextEncoder().encode(String(str)), l=m.length, n=((l+9+63)>>6)<<6, b=new Uint8Array(n);
+  b.set(m); b[l]=0x80;
+  const dv=new DataView(b.buffer); dv.setUint32(n-8,Math.floor(l/0x20000000)); dv.setUint32(n-4,(l*8)>>>0);
+  const H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19], w=new Array(64);
+  for(let o=0;o<n;o+=64){
+    for(let i=0;i<16;i++) w[i]=dv.getUint32(o+i*4);
+    for(let i=16;i<64;i++){ const x=w[i-15], y=w[i-2];
+      w[i]=(w[i-16]+(((x>>>7)|(x<<25))^((x>>>18)|(x<<14))^(x>>>3))+w[i-7]+(((y>>>17)|(y<<15))^((y>>>19)|(y<<13))^(y>>>10)))|0; }
+    let a=H[0],c1=H[1],c2=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+    for(let i=0;i<64;i++){
+      const t1=(h+(((e>>>6)|(e<<26))^((e>>>11)|(e<<21))^((e>>>25)|(e<<7)))+((e&f)^(~e&g))+K[i]+w[i])|0;
+      const t2=((((a>>>2)|(a<<30))^((a>>>13)|(a<<19))^((a>>>22)|(a<<10)))+((a&c1)^(a&c2)^(c1&c2)))|0;
+      h=g; g=f; f=e; e=(d+t1)|0; d=c2; c2=c1; c1=a; a=(t1+t2)|0;
+    }
+    H[0]=(H[0]+a)|0; H[1]=(H[1]+c1)|0; H[2]=(H[2]+c2)|0; H[3]=(H[3]+d)|0; H[4]=(H[4]+e)|0; H[5]=(H[5]+f)|0; H[6]=(H[6]+g)|0; H[7]=(H[7]+h)|0;
+  }
+  return H.map(x=>('00000000'+(x>>>0).toString(16)).slice(-8)).join('');
+}
+function catalogCanon(v){
+  if(Array.isArray(v)) return '['+v.map(catalogCanon).join(',')+']';
+  if(v && typeof v==='object') return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+catalogCanon(v[k])).join(',')+'}';
+  return JSON.stringify(v===undefined?null:v);
+}
+/* A row's identity fingerprint: its non-commercial fields only (the public half — the same value
+   whether the row still carries prices or not). */
+function catalogRowPrint(r){
+  const p={};
+  if(r && typeof r==='object' && !Array.isArray(r)) Object.keys(r).forEach(k=>{ if(CATALOG_COMMERCIAL_KEYS.indexOf(k)<0) p[k]=r[k]; });
+  return catalogSha256(catalogCanon(p));
+}
+/* A catalog file's identity (its version): the fingerprints of its rows, in file order. */
+function catalogIdentity(rows){
+  return catalogSha256((Array.isArray(rows)?rows:[]).map(catalogRowPrint).join('\n'));
+}
+/* Key order inside nested commercial objects (2026-10-25). A record read back from Postgres jsonb keeps
+   every value but reorders the keys of nested objects (a tier {minQty, price} comes back {price, minQty};
+   Corsicana's shipping {white_glove, ups, ltl} comes back {ltl, ups, white_glove}). Values are unchanged, but
+   anything that compares text — the Gold Standard fingerprint — would see a change no dealer can. Every
+   priced catalog file uses one key order per nested object (verified on 4b1bad3: tiers always minQty, price;
+   shipping always white_glove, ups, ltl), so restore puts those keys back in that order, then any other key in
+   its stored order. Only key order changes, never a value; a restore from an in-memory overlay is unchanged. */
+const NESTED_KEY_ORDER=['minQty','min_qty','price','pool','white_glove','ups','ltl'];
+function nestedOrder(v){
+  if(Array.isArray(v)) return v.map(nestedOrder);
+  if(!v || typeof v!=='object') return v;
+  const out={};
+  NESTED_KEY_ORDER.forEach(k=>{ if(Object.prototype.hasOwnProperty.call(v,k)) out[k]=nestedOrder(v[k]); });
+  Object.keys(v).forEach(k=>{ if(!Object.prototype.hasOwnProperty.call(out,k)) out[k]=nestedOrder(v[k]); });
+  return out;
+}
+
+function restoreCatalogFile(rows, overlay){
+  if(!Array.isArray(rows)) throw new Error('catalog_file_mismatch: the public catalog file is not a list');
+  if(!Array.isArray(overlay) || overlay.length!==rows.length)
+    throw new Error('catalog_file_mismatch: '+rows.length+' public row(s), '+(Array.isArray(overlay)?overlay.length:'no')+' commercial row(s)');
+  const by={};
+  overlay.forEach(o=>{ if(o && o.k!=null) by[String(o.k)]=o; });
+  if(Object.keys(by).length!==overlay.length) throw new Error('catalog_file_mismatch: the commercial rows are not one per catalog row');
+  const seen={};
+  return rows.map(r=>{
+    const c=String(r&&r.code!=null?r.code:''); const n=seen[c]=(seen[c]||0)+1; const k=c+'#'+(n-1);
+    const o=by[k];
+    if(!o) throw new Error('catalog_file_mismatch: no commercial row for '+k);
+    if(typeof o.h!=='string' || !/^[0-9a-f]{64}$/.test(o.h)) throw new Error('catalog_file_mismatch: the commercial row for '+k+' has no identity fingerprint');
+    if(catalogRowPrint(r)!==o.h) throw new Error('catalog_file_mismatch: '+k+' is not the catalog row its commercial row was made for');
+    const f=(o.f && typeof o.f==='object') ? o.f : {};
+    const out={};
+    (Array.isArray(o.order)?o.order:[]).forEach(key=>{
+      if(CATALOG_COMMERCIAL_KEYS.indexOf(key)>=0){ if(key in f) out[key]=nestedOrder(f[key]); }
+      else if(r && key in r) out[key]=r[key];
+    });
+    Object.keys(r||{}).forEach(key=>{ if(!(key in out) && CATALOG_COMMERCIAL_KEYS.indexOf(key)<0) out[key]=r[key]; });
+    Object.keys(f).forEach(key=>{ if(!(key in out) && CATALOG_COMMERCIAL_KEYS.indexOf(key)>=0) out[key]=nestedOrder(f[key]); });
+    return out;
+  });
+}
+/* The line's commercial layers, for the signed-in dealer or the staff preview — nobody else.
+   Asks for the version that belongs to THIS public file (its identity) and refuses an answer for any
+   other. Throws on anything but a complete answer: the caller fails closed. */
+async function commercialLayers(slug, rows){
+  const identity = catalogIdentity(rows||[]);
+  const jwt = (typeof AUTH !== 'undefined' && AUTH && AUTH.session && AUTH.session.access_token) || '';
+  const pvt = (typeof PREVIEW !== 'undefined' && PREVIEW && PREVIEW.token) ? PREVIEW.token : '';
+  if(!jwt && !pvt) throw new Error('no dealer session or preview to authorise pricing');
+  const hdr = jwt ? { authorization: 'Bearer ' + jwt } : { 'x-hcps-preview': pvt };
+  const r = await fetch('/.netlify/functions/catalog-layers?manufacturer=' + encodeURIComponent(slug) + '&identity=' + identity, { headers: hdr, cache: 'no-store' });
+  if(!r.ok) throw new Error('catalog-layers returned HTTP ' + r.status);
+  const j = await r.json();
+  if(!j || j.ok!==true || !Array.isArray(j.file_overlay) || !Array.isArray(j.custom_products) || !Array.isArray(j.product_overrides))
+    throw new Error('catalog-layers answered without its layers');
+  if(j.identity_sha256!==identity) throw new Error('catalog-layers answered for another version of the catalog file');
+  return j;
+}
 async function mergeCatalogEdits(slug, prods){
+  /* FAILS CLOSED. Without the line's commercial layers nothing is listed: a product the saved
+     edits had hidden would otherwise reappear, and there is no public price left to show. */
+  let layers;
+  try{ layers=await commercialLayers(slug, prods||[]); prods=restoreCatalogFile(prods||[], layers.file_overlay); }
+  catch(err){
+    CATALOG_SOURCE[slug]={ source:'unavailable', reason:'pricing unavailable: '+((err&&err.message)||err), products:0, at:new Date().toISOString() };
+    try{ console.warn('[HCPS] '+slug+': pricing unavailable — '+((err&&err.message)||err)); }catch(e){}
+    return [];
+  }
   const H={apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON};
   try{
     /* product_images is LEGACY (Phase 2.4): its rows were migrated into the one image
@@ -1571,9 +1695,9 @@ async function mergeCatalogEdits(slug, prods){
        and the storefront no longer reads it (the table is kept, read-only, for one release).
        One precedence, in one place: pageImageFor() below. */
     const [cust,links,overs,media] = await Promise.all([
-      fetch(`${CONFIG.SUPABASE_URL}/rest/v1/custom_products?manufacturer=eq.${encodeURIComponent(slug)}&select=code,name,category,base_price,msrp,map,image,description,active,tiers,price_note`,{headers:H}).then(x=>x.ok?x.json():[]),
+      Promise.resolve(layers.custom_products),
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_links?manufacturer=eq.${encodeURIComponent(slug)}&select=code,label,url`,{headers:H}).then(x=>x.ok?x.json():[]),
-      fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_overrides?manufacturer=eq.${encodeURIComponent(slug)}&select=code,patch`,{headers:H}).then(x=>x.ok?x.json():[]),
+      Promise.resolve(layers.product_overrides),
       fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_media?manufacturer=eq.${encodeURIComponent(slug)}&select=code,kind,url,title,sort&order=sort`,{headers:H}).then(x=>x.ok?x.json():[]),
     ]);
     const om=Object.fromEntries((overs||[]).map(o=>[o.code,o.patch||{}]));
@@ -1584,8 +1708,8 @@ async function mergeCatalogEdits(slug, prods){
        The index used to carry the base price alone, which is how sixty Gen 2 boots came to
        show the right price on the card and then charge it at every quantity — 10002BLUE had a
        ladder typed in by hand, BLACK/GREY/RED had none, and unitPrice() falls straight through
-       to base_price when p.tiers is empty. A dealer ordering 21 black paid $49.95 each where
-       21 blue cost $27.95.
+       to base_price when p.tiers is empty. A dealer ordering 21 black paid the single-unit price each where
+       21 blue cost the 21+ price.
        Both facts are recorded together and only from the row that actually supplied the price.
        Taking the price from one layer and the ladder from another would build a schedule that
        never existed on anyone's price list. */
@@ -2790,7 +2914,7 @@ function cardHtml(p){
 
      This used to print "pricing varies by option — see details" whenever a card's variants did
      not share one identical ladder, which was 21 cards in 60 — a disclaimer where a number
-     should be, and on Cloth Tape the entire disagreement was $14.65 against $14.60. The break
+     should be, and on Cloth Tape the entire disagreement was five cents. The break
      QUANTITIES are the same throughout (2+, 6+, 11+, 21+); only the prices move with the size.
      So the card shows the real ladder at its lowest price per break and marks it "from", which
      is the same convention the card's own headline price already uses. A number a dealer can
@@ -2913,6 +3037,11 @@ function renderProducts(){
   const host=$("#content");
   if(RENDER.io){RENDER.io.disconnect();RENDER.io=null;}
   if (!state.products.length){
+    const _cs=(typeof CATALOG_SOURCE!=='undefined'&&CATALOG_SOURCE[state.active])||null;
+    if(_cs && _cs.source==='unavailable'){
+      host.innerHTML=`<div class="empty"><h3>Pricing could not be loaded</h3><p>Your account pricing for this line could not be loaded just now. Nothing is shown rather than an out-of-date price. <a href="#" onclick="event.preventDefault();location.reload()">Reload</a></p></div>`;
+      return;
+    }
     host.innerHTML=`<div class="empty"><h3>Coming soon</h3><p>This manufacturer's products are being added to the portal.</p></div>`;
     return;
   }
@@ -5073,6 +5202,12 @@ async function reqTracking(id,mfr,summary){ try{ await api(TOOLS_ENDPOINT,{actio
 
 /* ================= PHASE 2: pricing map, reports, exports ================= */
 let PRICE=null, PRICELIST=null;
+/* The credential catalog-layers accepts: the preview's token, or the signed-in dealer's session. */
+async function layersHeaders(){
+  if(window.__PREVIEW__&&window.__PREVIEW__.token) return {'x-hcps-preview':window.__PREVIEW__.token};
+  await refreshIfNeeded();
+  return (SESSION&&SESSION.access_token)?{authorization:'Bearer '+SESSION.access_token}:null;
+}
 async function loadPricing(){
   if(PRICE) return;
   PRICE={}; PRICELIST=[];
@@ -5080,10 +5215,25 @@ async function loadPricing(){
     const mf=await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]);
     MFRLIST=(mf||[]).map(m=>({slug:m.slug,name:m.name}));
     const withData=(mf||[]).filter(m=>m.hasData!==false);
+    /* P0 (2026-10-23): the public files carry no prices. A line this dealer carries is priced from
+       catalog-layers (the signed-in dealer, or the preview's one dealer); every other line lists
+       names only — never a price. A line whose pricing cannot be loaded lists names only too. */
+    const carried=new Set((LINES||[]).map(l=>String((l&&l.slug)||l)));
+    const hdr=await layersHeaders();
     await Promise.all(withData.map(async m=>{
       try{
         const d=await fetch('/data/'+m.slug+'.json').then(r=>r.json());
-        const items=Array.isArray(d)?d:(d.products||[]);
+        let items=Array.isArray(d)?d:(d.products||[]);
+        let priced=false;
+        if(hdr && carried.has(m.slug)){
+          try{
+            const id=catalogIdentity(items);
+            const r=await fetch('/.netlify/functions/catalog-layers?manufacturer='+encodeURIComponent(m.slug)+'&identity='+id,{headers:hdr,cache:'no-store'});
+            const j=r.ok?await r.json():null;
+            if(j&&j.ok===true&&j.identity_sha256===id&&Array.isArray(j.file_overlay)){ items=restoreCatalogFile(items,j.file_overlay); priced=true; }
+          }catch(e){}
+        }
+        if(!priced) items=items.map(p=>Object.assign({},p,{base_price:null,msrp:null,map:null}));
         for(const p of items){
           const code=String(p.code||'').trim(); if(!code) continue;
           const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(p.map!=null?Number(p.map):null),cost:(p.base_price!=null?Number(p.base_price):null),category:p.category||'',name:p.name||'',mfrName:m.name};

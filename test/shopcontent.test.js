@@ -1,6 +1,7 @@
 /* 2.5 (shop) — identity/content rules. Runs the REAL mergeCatalogEdits (through applyMasterPrices)
    lifted from the shop page with Supabase answered by a stub. */
 const fs=require('fs');
+const withLayers=require('./_layers.js');   // P0: commercial layers come from catalog-layers
 const SRC=process.argv[2]||process.env.SHOP||require('path').join(__dirname,'..','public','index.html');
 const html=fs.readFileSync(SRC,'utf8');
 const a1=html.indexOf('/* Pure. The same rule as images-api.js'), a1b=html.indexOf('async function mergeCatalogEdits(slug, prods){');
@@ -8,14 +9,15 @@ const start=a1>=0?a1:a1b, end=html.indexOf('async function loadProducts(slug){')
 const c1=html.indexOf('const COLOR_SUFFIX='), c2=html.indexOf('/* ---------- render tabs');
 const body=html.slice(start,end)+'\n'+html.slice(c1,c2);
 function shop(tables, mfr){
+  const L=withLayers(tables);
   const f=new Function('fetch','window','console','document',
     `const CONFIG={SUPABASE_URL:'https://db.test',SUPABASE_ANON:'anon',CONTENT_APPROVED_ONLY:true};
-     const state={manufacturers:[${JSON.stringify(mfr||{slug:'L'})}]}; const AUTH={session:null,status:'anon'}; const PREVIEW=null;
+     const state={manufacturers:[${JSON.stringify(mfr||{slug:'L'})}]}; const AUTH={session:{access_token:'dealer-token'},status:'approved'}; const PREVIEW=null;
      ${body}
      return {mergeCatalogEdits};`);
-  const fetchStub=async(url)=>{ const m=/rest\/v1\/([a-z_]+)\?/.exec(String(url)); const t=m&&m[1];
+  const fetchStub=async(url)=>{ const la=L.answer(url); if(la) return la; const m=/rest\/v1\/([a-z_]+)\?/.exec(String(url)); const t=m&&m[1];
     return {ok:true,status:200,json:async()=>JSON.parse(JSON.stringify((tables||{})[t]||[]))}; };
-  return f(fetchStub,{},{warn(){},log(){}},{});
+  const S=f(fetchStub,{},{warn(){},log(){}},{}); return {mergeCatalogEdits:L.wrap(S.mergeCatalogEdits)};
 }
 let fail=0; const ok=(c,m)=>{ console.log((c?'ok  ':'FAIL')+' '+m); if(!c) fail++; };
 const pg=(k,skus,x)=>Object.assign({page_key:k,status:'published',name:k,skus,image:null,images_gallery:[]},x||{});

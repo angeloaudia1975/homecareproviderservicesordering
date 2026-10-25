@@ -9,24 +9,7 @@
     "description": "Complete EPAP starter kit — includes carry case, dryer stand, optional head strap, and sizes SM, MD, LG & XL.",
     "hcpc": "",
     "uom": "Kit",
-    "base_price": 139.0,
-    "price_note": "Volume (mix & match): 10-19 $129 · 20+ $119",
     "image": "/assets/products/airavant-bongorx/BNG500.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 139
-      },
-      {
-        "minQty": 10,
-        "price": 129
-      },
-      {
-        "minQty": 20,
-        "price": 119
-      }
-    ],
-    "msrp": 199.0,
     "upc": "",
     "details_url": "https://www.bongorx.com"
   },
@@ -40,24 +23,7 @@
     "description": "Annual replenishment pack: 4 × Extra Small (XS) Bongo Rx EPAP devices. Mix and match sizes for volume pricing.",
     "hcpc": "",
     "uom": "Pack of 4",
-    "base_price": 209.0,
-    "price_note": "Volume (mix & match): 10-19 $194 · 20+ $179",
     "image": "/assets/products/airavant-bongorx/BNG501.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 209
-      },
-      {
-        "minQty": 10,
-        "price": 194
-      },
-      {
-        "minQty": 20,
-        "price": 179
-      }
-    ],
-    "msrp": 299.0,
     "upc": "",
     "details_url": "https://www.bongorx.com"
   },
@@ -71,24 +37,7 @@
     "description": "Annual replenishment pack: 4 × Small (SM) Bongo Rx EPAP devices. Mix and match sizes for volume pricing.",
     "hcpc": "",
     "uom": "Pack of 4",
-    "base_price": 209.0,
-    "price_note": "Volume (mix & match): 10-19 $194 · 20+ $179",
     "image": "/assets/products/airavant-bongorx/BNG502.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 209
-      },
-      {
-        "minQty": 10,
-        "price": 194
-      },
-      {
-        "minQty": 20,
-        "price": 179
-      }
-    ],
-    "msrp": 299.0,
     "upc": "",
     "details_url": "https://www.bongorx.com"
   },
@@ -102,24 +51,7 @@
     "description": "Annual replenishment pack: 4 × Medium (MD) Bongo Rx EPAP devices. Mix and match sizes for volume pricing.",
     "hcpc": "",
     "uom": "Pack of 4",
-    "base_price": 209.0,
-    "price_note": "Volume (mix & match): 10-19 $194 · 20+ $179",
     "image": "/assets/products/airavant-bongorx/BNG503.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 209
-      },
-      {
-        "minQty": 10,
-        "price": 194
-      },
-      {
-        "minQty": 20,
-        "price": 179
-      }
-    ],
-    "msrp": 299.0,
     "upc": "",
     "details_url": "https://www.bongorx.com"
   },
@@ -133,24 +65,7 @@
     "description": "Annual replenishment pack: 4 × Large (LG) Bongo Rx EPAP devices. Mix and match sizes for volume pricing.",
     "hcpc": "",
     "uom": "Pack of 4",
-    "base_price": 209.0,
-    "price_note": "Volume (mix & match): 10-19 $194 · 20+ $179",
     "image": "/assets/products/airavant-bongorx/BNG504.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 209
-      },
-      {
-        "minQty": 10,
-        "price": 194
-      },
-      {
-        "minQty": 20,
-        "price": 179
-      }
-    ],
-    "msrp": 299.0,
     "upc": "",
     "details_url": "https://www.bongorx.com"
   },
@@ -164,24 +79,7 @@
     "description": "Annual replenishment pack: 4 × Extra Large (XL) Bongo Rx EPAP devices. Mix and match sizes for volume pricing.",
     "hcpc": "",
     "uom": "Pack of 4",
-    "base_price": 209.0,
-    "price_note": "Volume (mix & match): 10-19 $194 · 20+ $179",
     "image": "/assets/products/airavant-bongorx/BNG505.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 209
-      },
-      {
-        "minQty": 10,
-        "price": 194
-      },
-      {
-        "minQty": 20,
-        "price": 179
-      }
-    ],
-    "msrp": 299.0,
     "upc": "",
     "details_url": "https://www.bongorx.com"
   },
@@ -195,24 +93,7 @@
     "description": "Single Bongo Rx EPAP unit — 1 × Extra Small (XS), includes optional head strap. Mix and match for volume pricing.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 69.0,
-    "price_note": "Volume (mix & match): 10-19 $64 · 20+ $59",
     "image": "/assets/products/airavant-bongorx/BNG511.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 69
-      },
-      {
-        "minQty": 10,
-        "price": 64
-      },
-      {
-        "minQty": 20,
-        "price": 59
-      }
-    ],
-    "msrp": 99.0,
     "upc": "",
     "details_url": "https://www.bongorx.com"
   },
@@ -226,24 +107,7 @@
     "description": "Single Bongo Rx EPAP unit — 1 × Small (SM), includes optional head strap. Mix and match for volume pricing.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 69.0,
-    "price_note": "Volume (mix & match): 10-19 $64 · 20+ $59",
     "image": "/assets/products/airavant-bongorx/BNG512.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 69
-      },
-      {
-        "minQty": 10,
-        "price": 64
-      },
-      {
-        "minQty": 20,
-        "price": 59
-      }
-    ],
-    "msrp": 99.0,
     "upc": "",
     "details_url": "https://www.bongorx.com"
   },
@@ -257,24 +121,7 @@
     "description": "Single Bongo Rx EPAP unit — 1 × Medium (MD), includes optional head strap. Mix and match for volume pricing.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 69.0,
-    "price_note": "Volume (mix & match): 10-19 $64 · 20+ $59",
     "image": "/assets/products/airavant-bongorx/BNG513.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 69
-      },
-      {
-        "minQty": 10,
-        "price": 64
-      },
-      {
-        "minQty": 20,
-        "price": 59
-      }
-    ],
-    "msrp": 99.0,
     "upc": "",
     "details_url": "https://www.bongorx.com"
   },
@@ -288,24 +135,7 @@
     "description": "Single Bongo Rx EPAP unit — 1 × Large (LG), includes optional head strap. Mix and match for volume pricing.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 69.0,
-    "price_note": "Volume (mix & match): 10-19 $64 · 20+ $59",
     "image": "/assets/products/airavant-bongorx/BNG514.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 69
-      },
-      {
-        "minQty": 10,
-        "price": 64
-      },
-      {
-        "minQty": 20,
-        "price": 59
-      }
-    ],
-    "msrp": 99.0,
     "upc": "",
     "details_url": "https://www.bongorx.com"
   },
@@ -319,24 +149,7 @@
     "description": "Single Bongo Rx EPAP unit — 1 × Extra Large (XL), includes optional head strap. Mix and match for volume pricing.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 69.0,
-    "price_note": "Volume (mix & match): 10-19 $64 · 20+ $59",
     "image": "/assets/products/airavant-bongorx/BNG515.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 69
-      },
-      {
-        "minQty": 10,
-        "price": 64
-      },
-      {
-        "minQty": 20,
-        "price": 59
-      }
-    ],
-    "msrp": 99.0,
     "upc": "",
     "details_url": "https://www.bongorx.com"
   },
@@ -350,20 +163,7 @@
     "description": "Replacement head strap accessory for Bongo Rx.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 15.0,
-    "price_note": "Volume (mix & match): 20+ $14",
     "image": "/assets/products/airavant-bongorx/BNG530.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 15
-      },
-      {
-        "minQty": 20,
-        "price": 14
-      }
-    ],
-    "msrp": 24.0,
     "upc": "",
     "details_url": "https://www.bongorx.com"
   }

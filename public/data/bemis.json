@@ -9,18 +9,8 @@
     "description": "Raised 3\" with the Stay-Tite installation system. 1000 lb seat capacity. Support arms sold separately.",
     "hcpc": "",
     "uom": "Case",
-    "base_price": 109.98,
-    "price_note": "",
     "image": "/assets/products/bemis/7YR05310TSS.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 109.98
-      }
-    ],
     "case_qty": 2,
-    "msrp": 109.99,
-    "map": 109.99,
     "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/assurance/"
@@ -35,18 +25,8 @@
     "description": "Raised 3\" with the Stay-Tite installation system. 1000 lb seat capacity. Support arms sold separately.",
     "hcpc": "",
     "uom": "Case",
-    "base_price": 109.98,
-    "price_note": "",
     "image": "/assets/products/bemis/7YE05310TSS.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 109.98
-      }
-    ],
     "case_qty": 2,
-    "msrp": 109.99,
-    "map": 109.99,
     "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/assurance/"
@@ -61,18 +41,8 @@
     "description": "For the Assurance toilet seats. 350 lb capacity per arm. Gray frame with white grips. Sold as a set of 2.",
     "hcpc": "",
     "uom": "Case",
-    "base_price": 119.96,
-    "price_note": "",
     "image": "/assets/products/bemis/7YA05313GRY.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 119.96
-      }
-    ],
     "case_qty": 4,
-    "msrp": 59.99,
-    "map": 59.99,
     "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/assurance/"
@@ -87,18 +57,8 @@
     "description": "For the Assurance toilet seats. 350 lb capacity per arm. Black frame with white grips. Sold as a set of 2.",
     "hcpc": "",
     "uom": "Case",
-    "base_price": 119.96,
-    "price_note": "",
     "image": "/assets/products/bemis/7YA05313BLK.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 119.96
-      }
-    ],
     "case_qty": 4,
-    "msrp": 59.99,
-    "map": 59.99,
     "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/assurance/"
@@ -113,18 +73,8 @@
     "description": "Personal-wash bidet attachment made exclusively for the Assurance toilet seat.",
     "hcpc": "",
     "uom": "Case",
-    "base_price": 74.98,
-    "price_note": "",
     "image": "/assets/products/bemis/7YA06303TWA.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 74.98
-      }
-    ],
     "case_qty": 2,
-    "msrp": 74.99,
-    "map": 74.99,
     "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/assurance/"
@@ -139,18 +89,8 @@
     "description": "Adjustable base fits both round and elongated toilets. Includes security arms and dual-lock. 300 lb capacity.",
     "hcpc": "",
     "uom": "Case",
-    "base_price": 119.97,
-    "price_note": "",
     "image": "/assets/products/bemis/7YA04505T.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 119.97
-      }
-    ],
     "case_qty": 3,
-    "msrp": 79.99,
-    "map": 79.99,
     "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/p/4-5-inch-raised-toilet-seat-with-dual-lock-and-security-arms/"
@@ -165,18 +105,8 @@
     "description": "Premium toilet seat with arms and Stay-Tite installation. 500 lb capacity.",
     "hcpc": "",
     "uom": "Case",
-    "base_price": 99.98,
-    "price_note": "",
     "image": "/assets/products/bemis/7YA0AS100.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 99.98
-      }
-    ],
     "case_qty": 2,
-    "msrp": 99.99,
-    "map": 99.99,
     "msrp_each": true,
     "upc": "",
     "details_url": "https://www.toiletseats.com/bemis-assist/"
@@ -191,18 +121,8 @@
     "description": "Open-front ring, raised 3\", with the Stay-Tite installation system.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 54.99,
-    "price_note": "",
     "image": "/assets/products/bemis/7YE82350TC.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 54.99
-      }
-    ],
     "case_qty": "1",
-    "msrp": 109.99,
-    "map": 109.99,
     "upc": "",
     "details_url": "BEMIS Product Catalog"
   },
@@ -216,18 +136,8 @@
     "description": "Floor display program: 4 Assurance Round seats, 4 Elongated seats, 4 Support Arm sets (gray), and 2 Bidet attachments, plus the floor base display and a display toilet.",
     "hcpc": "",
     "uom": "Each",
-    "base_price": 634.86,
-    "price_note": "MSRP $1,269.72",
     "image": "/assets/products/bemis/DO5300RD444.jpg",
-    "tiers": [
-      {
-        "minQty": 1,
-        "price": 634.86
-      }
-    ],
     "case_qty": "1",
-    "unit_cost": 634.86,
-    "msrp": 1269.72,
     "upc": "",
     "details_url": "https://6980302-860447796248001271.preview.editmysite.com/uploads/6/9/8/0/6980302/bemis_assurance_bath_safety_display_program_2026.pdf"
   }

@@ -268,3 +268,5 @@ exports.handler = async (event) => {
 module.exports.authorize = authorize;
 module.exports.feedRows = feedRows;
 module.exports.recordAuthority = recordAuthority;
+// The caller rules are shared with catalog-layers.js (P0, 2026-10-23), so the two answer alike.
+module.exports.caller = caller;

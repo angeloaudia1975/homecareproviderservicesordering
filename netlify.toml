@@ -97,3 +97,42 @@
   to = "https://homecareproviderservices.netlify.app/admin/analytics.html"
   status = 302
   force = true
+
+# P0 SECURITY (2026-10-23, issue #2): Netlify also serves every page above WITHOUT its .html
+# ("pretty URLs") — /admin/catalog, /admin/product-content-enrichment … answered 200 although the
+# .html paths were redirected. The extensionless paths go to the same place.
+[[redirects]]
+  from = "/admin/catalog"
+  to = "https://homecareproviderservices.netlify.app/admin/catalog.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/dealers"
+  to = "https://homecareproviderservices.netlify.app/admin/dealers.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/featured"
+  to = "https://homecareproviderservices.netlify.app/admin/featured.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/home-editor"
+  to = "https://homecareproviderservices.netlify.app/admin/home-editor.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/images"
+  to = "https://homecareproviderservices.netlify.app/admin/images.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/product-content-enrichment"
+  to = "https://homecareproviderservices.netlify.app/admin/product-content-review.html"
+  status = 302
+  force = true
+[[redirects]]
+  from = "/admin/website"
+  to = "https://homecareproviderservices.netlify.app/admin/website.html"
+  status = 302
+  force = true
