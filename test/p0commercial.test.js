@@ -201,4 +201,20 @@ if (!originals) {
     });
   }
 }
+/* 2026-10-25: a record read back from Postgres jsonb reorders keys inside nested objects (tiers, shipping).
+   Restore must still give the priced file back byte for byte — module AND page copy (the Gold Standard
+   fingerprint compares text). Synthetic rows; no real price. */
+t('a jsonb-reordered overlay (nested keys re-sorted) restores byte for byte — module and page', () => {
+  const full = [
+    { code: 'A1', name: 'Alpha', base_price: 1.5, tiers: [{ minQty: 1, price: 1.5 }, { minQty: 5, price: 1.25 }], image: 'a.jpg' },
+    { code: 'B2', name: 'Beta', base_price: 9, shipping: { white_glove: null, ups: 3, ltl: 4 }, tiers: [{ minQty: 1, price: 9 }] },
+  ];
+  const s = CC.splitCatalogFile(full);
+  const jsonbish = v => Array.isArray(v) ? v.map(jsonbish) : (v && typeof v === 'object')
+    ? Object.keys(v).sort((a, b) => a.length - b.length || (a < b ? -1 : 1)).reduce((o, k) => (o[k] = jsonbish(v[k]), o), {}) : v;
+  const back = jsonbish(JSON.parse(JSON.stringify(s.overlay)));
+  ok(JSON.stringify(back[0].f.tiers[0]) === '{"price":1.5,"minQty":1}', 'jsonb model did not reorder');
+  ok(JSON.stringify(CC.restoreCatalogFile(s.public, back)) === JSON.stringify(full), 'module restore not byte-identical');
+  ok(JSON.stringify(PAGE.restoreCatalogFile(s.public, back)) === JSON.stringify(full), 'page restore not byte-identical');
+});
 console.log(`\np0 commercial split/restore: ${pass} passed, ${fail} failed`); process.exitCode = fail ? 1 : 0;

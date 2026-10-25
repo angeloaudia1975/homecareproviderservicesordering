@@ -128,7 +128,7 @@ t('guard trigger disabled → refused', () => {
   psql('alter table public.catalog_file_commercial disable trigger user;');
   const r = tryPsql(SEED); ok(!r.ok && /guard trigger/.test(r.out), r.out.slice(0, 200)); ok(state() === '0|0', state());
 });
-t('the stored records restore the priced files of the ref: every value, every row, row key order', () => {
+t('the stored records (read back from jsonb) restore the priced files of the ref byte for byte', () => {
   reset(); psql(SEED);
   const CC = require(path.join(ROOT, 'netlify', 'functions', '_catalog_commercial.js'));
   const { applyScrubs } = require(path.join(ROOT, 'scripts', 'p0-scrubs.js'));
@@ -136,11 +136,9 @@ t('the stored records restore the priced files of the ref: every value, every ro
   got.forEach(g => {
     const pub = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'data', g.m + '.json'), 'utf8'));
     const full = applyScrubs(g.m, JSON.parse(execFileSync('git', ['-C', ROOT, 'show', `${REF}:public/data/${g.m}.json`], { encoding: 'utf8', maxBuffer: 64 << 20 })));
-    /* jsonb keeps every value but reorders keys inside nested objects (tiers, shipping): compare canonically,
-       and separately prove the top-level row key order is restored exactly. */
-    const back = CC.restoreCatalogFile(pub, g.rows);
-    ok(CC.catalogCanon(back) === CC.catalogCanon(full), g.m + ' does not restore (values)');
-    ok(back.every((r, i) => JSON.stringify(Object.keys(r)) === JSON.stringify(Object.keys(full[i]))), g.m + ' row key order');
+    /* jsonb reorders keys inside nested objects; restore puts them back in the files' one convention
+       (_catalog_commercial.js nestedOrder), so the priced file comes back BYTE FOR BYTE. */
+    ok(JSON.stringify(CC.restoreCatalogFile(pub, g.rows)) === JSON.stringify(full), g.m + ' does not restore byte for byte');
   });
 });
 
