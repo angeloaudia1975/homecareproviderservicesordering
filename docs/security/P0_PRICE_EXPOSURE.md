@@ -213,6 +213,22 @@ SQL files and their SHA-256 (as committed, LF line endings):
    Then the same command with `--apply` and `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE` in the environment (never in a
    file); it reads every record back and checks it. `supabase/p0_lock_preflight.sql` then lists 10 versions with
    these identities.
+   **Without a service key (2026-10-25):** `node scripts/p0-seed-catalog-commercial.js --ref 4b1bad3 --export-sql
+   <absolute path outside every git repository>` writes the same verified records (after the same refusals) as ONE
+   SQL transaction for the Supabase SQL editor — the file holds prices: mode 0600, never overwritten, never committed,
+   posted or pasted anywhere else; the CLI prints only counts, size and the file's SHA-256. The transaction keeps
+   records already stored when they equal the plan exactly (rows as jsonb, row_count, rows_sha256, public_sha256),
+   inserts only the missing ones, and raises — writing nothing — if a stored record differs, a stored record is not in
+   the plan (another line or version, e.g. a retired line), RLS is off, the guard trigger is missing / disabled, the
+   table has a policy, or anon / authenticated can read it; afterwards it requires exactly 10 records / 1,120 rows. No
+   UPDATE / DELETE. Its final SELECT lists each line's identity / overlay / public prefixes and row counts with
+   `versions = 10`, `total_rows = 1120`, `rls_on = t`, `anon_denied = t` — never a price. Tests:
+   `test/p0seed-export.pg.test.js` (14, real 4b1bad3 plan in a scratch Supabase-shaped database).
+   State 2026-10-25: 5 records stored (bemis, dalton, airavant-bongorx, corsicana, climbing-steps — 58 rows); the
+   transaction adds access4u, gce, ovation-medical, pedifix, strongback-mobility.
+   Note: jsonb reorders keys inside nested objects (tiers, shipping) — values are unchanged and consumers validate
+   records by the per-row fingerprints and identity, never by `rows_sha256`; the `--apply` read-back compares
+   canonically.
 3. **Admin deploy** (homecareproviderservices#36). The live storefront still serves priced files; the server's
    identity of a priced file equals the stripped one (prices are not part of identity), so it prices from the
    record either way (tested). Re-run `mc_verify` (no save) for the four frozen lines → Gold Standard fingerprints

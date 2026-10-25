@@ -9,6 +9,10 @@
       Reads every priced file from git history, splits it, REFUSES unless the public half equals the file in
       this working tree exactly, and stores one record per line keyed by the public file's identity.
 
+      Without a service key: add --export-sql <absolute path outside every git repository> to write the same
+      verified records as ONE idempotent, fail-closed SQL transaction for the Supabase SQL editor (keeps the
+      records already stored when they match exactly; refuses on any difference). The file holds prices.
+
    2. RE-SEED for a later edit of a static catalog file (legacy line, public file changed in git):
         node scripts/p0-seed-catalog-commercial.js --reseed <slug> --base <deployed git ref>
              [--supply <private JSON outside this repository>] [--apply]
@@ -58,7 +62,9 @@ async function writeAndVerify(D, recs) {
   const got = await D.all(); let bad = 0;
   for (const r of recs) {
     const g = (got || []).find(x => x.manufacturer === r.manufacturer && x.identity_sha256 === r.identity_sha256);
-    const ok = g && sha(JSON.stringify(g.rows)) === r.rows_sha256 && g.rows_sha256 === r.rows_sha256 && CC.validOverlayRecord(g);
+    /* jsonb reorders keys inside nested objects (tiers, shipping), so the read-back is compared canonically
+       (values and row order exact, object key order ignored); rows_sha256 is the hash of the planned text. */
+    const ok = g && CC.catalogCanon(g.rows) === CC.catalogCanon(r.rows) && g.rows_sha256 === r.rows_sha256 && CC.validOverlayRecord(g);
     if (!ok) bad++; console.log(`${ok ? 'stored  ' : 'MISMATCH'} ${r.manufacturer.padEnd(28)} identity ${short(r.identity_sha256)}`);
   }
   if (bad) die(`${bad} record(s) did not read back identically`);
@@ -85,6 +91,23 @@ async function writeAndVerify(D, recs) {
       console.log(`${p.ok ? 'ok      ' : 'BAD     '} ${slug.padEnd(28)} rows ${String(p.record.row_count).padStart(4)}  identity ${short(p.record.identity_sha256)}  overlay ${short(p.record.rows_sha256)}  public ${short(p.record.public_sha256)}${p.ok ? '' : '  (' + p.problems.join('; ') + ')'}`);
     }
     if (bad) die(`\n${bad} line(s) refused — nothing written.`);
+    const exportPath = arg('--export-sql');
+    if (exportPath) {
+      /* Private SQL for the Supabase SQL editor (no service key). It holds prices: written only to an absolute
+         path outside every git work tree, created fresh (never overwritten), mode 0600; only counts and
+         hashes are printed. */
+      if (apply) die('--export-sql and --apply are exclusive', 2);
+      if (!path.isAbsolute(exportPath)) die('--export-sql needs an absolute path', 2);
+      const dir = path.dirname(exportPath);
+      if (!fs.existsSync(dir)) die('--export-sql: the folder does not exist', 2);
+      let inGit = true; try { execFileSync('git', ['-C', dir, 'rev-parse', '--is-inside-work-tree'], { stdio: 'ignore' }); } catch (e) { inGit = false; }
+      if (inGit || !path.relative(ROOT, exportPath).startsWith('..')) die('--export-sql must be OUTSIDE every git repository (the file holds prices)', 2);
+      const ex = L.exportSql(plans.map(p => p.record), { ref });
+      fs.writeFileSync(exportPath, ex.sql, { mode: 0o600, flag: 'wx' });
+      console.log(`\nWrote private seed SQL: ${ex.lines} line(s), ${ex.rows} row(s), ${Buffer.byteLength(ex.sql)} bytes, sha256 ${sha(ex.sql)}`);
+      console.log('It holds prices: run it only in the Supabase SQL editor; never commit, post or share it.');
+      return;
+    }
     if (!apply) { console.log(`\nDry run: ${plans.length} line(s) ready. Re-run with --apply to write.`); return; }
     await writeAndVerify(db(), plans.map(p => p.record));
     console.log(`\n${plans.length} line(s) stored and verified.`); return;
