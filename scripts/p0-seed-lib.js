@@ -161,4 +161,51 @@ end $p0$;`);
   return { sql: out.join('\n') + '\n', lines: recs.length, rows: total };
 }
 
-module.exports = { planInitial, planReseed, record, exportSql };
+/* ADD ONE VERSION of one line beside the versions already stored (a reviewed catalog update of a legacy line,
+   e.g. Access4U Fall 2026, owner 2026-10-27), as ONE fail-closed SQL transaction for the Supabase SQL editor.
+   Keeps the deployed version (the storefront still prices from it until the new public file is deployed); refuses
+   when the line has no stored version, when this identity is stored with different rows, or when the table's
+   protections are not in place. Prune the old version only after the new storefront is live and verified. */
+function exportAddVersionSql(r, opts) {
+  const HEX = /^[0-9a-f]{64}$/, SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/, REF = /^[A-Za-z0-9._\/-]{1,80}$/;
+  if (!r || !SLUG.test(r.manufacturer) || !HEX.test(r.identity_sha256) || !HEX.test(r.rows_sha256) || !HEX.test(r.public_sha256)
+      || !REF.test(r.source_ref) || !Array.isArray(r.rows) || r.rows.length !== r.row_count || !CC.validOverlayRecord(r))
+    throw new Error('record is not exportable (invalid shape)');
+  if (sha(JSON.stringify(r.rows)) !== r.rows_sha256) throw new Error('rows do not match rows_sha256');
+  const body = JSON.stringify(r.rows);
+  let tag = 'p0v' + crypto.randomBytes(6).toString('hex');
+  while (body.indexOf('$' + tag + '$') >= 0) tag = 'p0v' + crypto.randomBytes(6).toString('hex');
+  const q = s => "'" + s + "'";
+  const out = [];
+  out.push('-- Catalog version add — CONTAINS WHOLESALE PRICES. Never commit, post, or paste anywhere but the Supabase SQL');
+  out.push('-- editor of the HCPS Ordering project. ' + r.manufacturer + ' version ' + r.identity_sha256.slice(0, 16) + ' (' + r.row_count + ' rows), from ' + ((opts && opts.ref) || '?') + '.');
+  out.push('-- Adds the version beside the stored ones; idempotent; refuses (writes nothing) on any difference.');
+  out.push('begin;');
+  out.push(`do $p0$
+declare n integer; before integer;
+begin
+  if to_regclass('public.catalog_file_commercial') is null then raise exception 'catalog_file_commercial is not installed'; end if;
+  if not (select relrowsecurity from pg_class where oid = 'public.catalog_file_commercial'::regclass) then raise exception 'RLS is off — refusing'; end if;
+  if exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'catalog_file_commercial') then raise exception 'a policy exists — refusing'; end if;
+  if has_table_privilege('anon', 'public.catalog_file_commercial', 'select') or has_table_privilege('authenticated', 'public.catalog_file_commercial', 'select') then
+    raise exception 'anon or authenticated can read catalog_file_commercial — refusing'; end if;
+  select count(*) into before from public.catalog_file_commercial where manufacturer = ${q(r.manufacturer)};
+  if before < 1 then raise exception 'no stored version of ${r.manufacturer} — this adds a version beside the deployed one, nothing written'; end if;
+  if exists (select 1 from public.catalog_file_commercial where manufacturer = ${q(r.manufacturer)} and identity_sha256 = ${q(r.identity_sha256)}
+             and (rows_sha256 <> ${q(r.rows_sha256)} or public_sha256 <> ${q(r.public_sha256)} or row_count <> ${r.row_count})) then
+    raise exception 'this version is stored with DIFFERENT rows — nothing written'; end if;
+  insert into public.catalog_file_commercial (manufacturer, identity_sha256, rows, row_count, rows_sha256, public_sha256, source_ref)
+  select ${q(r.manufacturer)}, ${q(r.identity_sha256)}, $${tag}$${body}$${tag}$::jsonb, ${r.row_count}, ${q(r.rows_sha256)}, ${q(r.public_sha256)}, ${q(r.source_ref)}
+   where not exists (select 1 from public.catalog_file_commercial where manufacturer = ${q(r.manufacturer)} and identity_sha256 = ${q(r.identity_sha256)});
+  if not exists (select 1 from public.catalog_file_commercial where manufacturer = ${q(r.manufacturer)} and identity_sha256 = ${q(r.identity_sha256)}
+                 and rows_sha256 = ${q(r.rows_sha256)} and row_count = ${r.row_count} and encode(sha256(convert_to(rows::text,'UTF8')),'hex') is not null) then
+    raise exception 'the new version did not store as planned'; end if;
+  select count(*) into n from public.catalog_file_commercial where manufacturer = ${q(r.manufacturer)};
+  if n < before then raise exception 'a stored version disappeared'; end if;
+end $p0$;`);
+  out.push('commit;');
+  out.push(`select manufacturer, left(identity_sha256, 16) as identity, left(rows_sha256, 16) as overlay, row_count, source_ref, updated_at
+  from public.catalog_file_commercial where manufacturer = ${q(r.manufacturer)} order by updated_at;`);
+  return { sql: out.join('\n') + '\n', rows: r.row_count };
+}
+module.exports = { planInitial, planReseed, record, exportSql, exportAddVersionSql };

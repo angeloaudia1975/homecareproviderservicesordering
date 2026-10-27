@@ -7,12 +7,12 @@ const H=fs.readFileSync(process.env.SHOP_HTML||path.join(__dirname,'..','public'
 const D=fs.readFileSync(path.join(__dirname,'..','public','dashboard.html'),'utf8');
 let pass=0,fail=0; const t=(n,f)=>{ try{f();pass++;console.log('ok   '+n);}catch(e){fail++;console.log('FAIL '+n+'\n     '+e.message);} };
 const eq=(x,y,w)=>{ if(JSON.stringify(x)!==JSON.stringify(y)) throw new Error((w||'')+' got '+JSON.stringify(x)+' expected '+JSON.stringify(y)); };
-const NAMES=['const money','function esc','function packOf','function packNote','function msrpIsEach','function mapIsEach','function dealerPriceNote',
-  'function familyQty','function tierQty','function tierLadder','function tierRangeLabel','function tierSummary','function nextTierGain','function contractPrice','function lineRatePrice','function unitPrice','function priceHtml','function dealerCostOf'];
+const NAMES=['const money','const esc = ','function packOf','function packNote','function msrpIsEach','function mapIsEach','function dealerPriceNote',
+  'function familyQty','function tierQty','function tierLadder','function tierRangeLabel','function tierSummary','function nextTierGain','function contractPrice','function lineRatePrice','function withUpgrade','function upgradeAddPurchase','function unitPrice','function priceHtml','function dealerCostOf','function upgradeSelectHtml'];
 function page(AUTH){
-  const ctx={AUTH,CART:new Map(),state:{dealer:{id:'d'}},console}; vm.createContext(ctx);
+  const ctx={AUTH,CART:new Map(),state:{dealer:{id:'d'}},console,esc:s=>String(s==null?'':s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';')}; vm.createContext(ctx);
   const src=NAMES.map(n=>{ try{ return grabDecl(H,n); }catch(e){ return ''; } }).join('\n');
-  vm.runInContext(src+';this.api={unitPrice,priceHtml,dealerCostOf,lineRatePrice};',ctx);
+  vm.runInContext(src+';this.api={unitPrice,priceHtml,dealerCostOf,lineRatePrice,withUpgrade,upgradeSelectHtml};',ctx);
   return ctx.api;
 }
 const L='access4u';
@@ -53,5 +53,22 @@ t('sign-in and server re-pricing keep AUTH.rates current; unreadable keeps the l
 t('the ramp builder totals and options use this dealer\'s price, never a hard-coded 15%',()=>{
   eq(/Your Price \(15%\)/.test(H),false,'label'); eq(/y\+=\(Number\(unitPrice\(p,qty\)\)\|\|0\)\*qty/.test(H),true,'your total');
   eq(/\(\$\{money\(p\.base_price\)\}\)<\/option>/.test(H),false,'options');
+});
+t('railing upgrades: the choice shows THIS dealer\'s add-on; the configured line keeps its own MSRP/MAP',()=>{
+  const U=()=>Object.assign(P(),{code:'RS1',dealer_price:200,base_price:170,msrp:300,map:210,upgrades:[{label:'Picket',price_add:40},{label:'Guardrail',price_add:20}]});
+  const a=page({prices:{},rates:{}}), b=page({prices:{},rates:{[L]:20}});
+  const ha=a.upgradeSelectHtml(U()), hb=b.upgradeSelectHtml(U());
+  eq([/Picket \(\+\$34\.00\)/.test(ha),/Guardrail \(\+\$17\.00\)/.test(ha)],[true,true],'default dealer adds 85%: '+ha);
+  eq([/Picket \(\+\$32\.00\)/.test(hb)],[true],'20% dealer adds 80%: '+hb);
+  const q=a.withUpgrade(U(),'Picket'); eq([q._upgrade,q.dealer_price,q.base_price,q.msrp,q.map,q.code],['Picket',240,204,360,252,'RS1']);
+  eq([a.unitPrice(q,1),b.unitPrice(b.withUpgrade(U(),'Picket'),1)],[204,192],'purchase differs by dealer');
+  eq(a.withUpgrade(U(),'Nope'),null,'only listed upgrades'); eq(a.upgradeSelectHtml(P()),'','no upgrades, no choice');
+});
+t('cart, server re-pricing, checkout and reorder carry the upgrade',()=>{
+  eq(/const cartKey=p=>`\$\{p\.manufacturer\}::\$\{p\.code\}`\+\(p\.family!=null&&p\.family!==""\?`::\$\{p\.family\}`:""\)\+\(p\._upgrade\?`::u=\$\{p\._upgrade\}`:""\);/.test(H),true,'cart key');
+  eq((H.match(/upgrade:p\._upgrade\|\|undefined/g)||[]).length,2,'price check + order payloads');
+  eq(/\+\(it\.upgrade\?"::u="\+it\.upgrade:""\)/.test(grabDecl(H,'function applyServerPrices')),true,'server answer maps back');
+  eq(/ — \(\.\+\) upgrade\$/.test(H.slice(H.indexOf('async function reorder('),H.indexOf('function orderCardHtml('))),true,'reorder rebuilds the configured line from the stored name');
+  const w=grabDecl(H,'function wireAdd'); eq(/data-family/.test(w)&&/withUpgrade\(p,lab\)/.test(w),true,'add button: family + upgrade');
 });
 console.log(`shop line discount: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);

@@ -146,6 +146,7 @@ body:not(.p360on) #p360wrap{display:none!important;}
 .pnote{font-size:11px;color:var(--gray);}
 .price.locked{font-size:14px;color:var(--gray);font-family:'Inter',sans-serif;font-weight:600;}
 .buy{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-top:4px;}
+.upgr{margin-top:8px;display:flex;gap:8px;align-items:center;}.upgr .upsel{flex:1;min-width:0;padding:9px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:16px;background:#fff;color:var(--navy);}
 .buy .qtyin{width:64px;padding:9px;text-align:center;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;}
 .addbtn{background:var(--navy);color:#fff;border:none;padding:10px 12px;border-radius:8px;font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;}
 .addbtn:hover{background:var(--orange);}
@@ -1306,6 +1307,36 @@ function lineRatePrice(p){
   if(Array.isArray(p.tiers) && p.tiers.length) return null;
   return Math.round(Number((list*(100-rate)).toFixed(6)))/100;
 }
+/* RAILING UPGRADES (owner, 2026-10-27; Access4U Fall 2026). A product may list manufacturer upgrades
+   [{label, price_add}] — the Picket / Commercial / Guardrail columns of the list, priced as an add-on to the
+   standard (2-rail) dealer list. A configured line is the same part number with ONE upgrade chosen: its standard
+   list is list + add, so the dealer's discount, MSRP and MAP follow from the configured list exactly as from the
+   plain one (MSRP and MAP keep the line's own ratios to the list; never the dealer's discount). A contract price
+   covers the plain part; the upgrade is then added at the dealer's rate (or the line's default discount). */
+function withUpgrade(p, label){
+  const u=(Array.isArray(p&&p.upgrades)?p.upgrades:[]).find(x=>x&&x.label===label);
+  if(!u) return null;
+  const add=Number(u.price_add), list=Number(p.dealer_price), base=Number(p.base_price);
+  if(!(isFinite(add)&&add>0&&isFinite(list)&&list>0&&isFinite(base)&&base>0)) return null;
+  const r2=v=>Math.round(Number((v*100).toFixed(6)))/100;
+  /* The line's own ratios, read back to 0.01% (they were rounded to the cent): default discount 15.00%,
+     MSRP 1.5000 x list, MAP 0.7000 x MSRP — so a configured line is exactly what the rule gives its list. */
+  const ratio=(a,b)=>Math.round(a/b*10000)/10000;
+  const d0=Math.round((1-base/list)*10000)/100;
+  const cl=r2(list+add);
+  const q=Object.assign({},p,{_upgrade:String(label),_upgradeAdd:add,_defaultPct:d0,
+    name:String(p.name||p.code)+' — '+label+' upgrade', dealer_price:cl, base_price:r2(cl*(100-d0)/100)});
+  const msrp=Number(p.msrp), map=Number(p.map);
+  if(isFinite(msrp)&&msrp>0){ q.msrp=r2(cl*ratio(msrp,list)); delete q._msrp_suggested; }
+  if(isFinite(map)&&map>0) q.map=(q.msrp!=null&&isFinite(msrp)&&msrp>0) ? r2(q.msrp*ratio(map,msrp)) : r2(cl*ratio(map,list));
+  return q;
+}
+function upgradeAddPurchase(p){
+  const add=Number(p&&p._upgradeAdd); if(!(add>0)) return 0;
+  const r=(AUTH&&AUTH.rates)?Number(AUTH.rates[p.manufacturer||""]):NaN;
+  if(isFinite(r)&&r>0&&r<100) return Math.round(Number((add*(100-r)).toFixed(6)))/100;
+  return Math.round(Number((add*(100-Number(p._defaultPct||0))).toFixed(6)))/100;
+}
 /* SERVE THE SIZE THAT IS ACTUALLY DRAWN.
    The product photos are 1536x1920 and 1920x1920 originals. A card draws one at 150x150 and a
    thumbnail at 44x44 — so the browser downloaded, decoded and held a ~1.9 megapixel bitmap to
@@ -1333,7 +1364,7 @@ function dealerCostOf(p, slug){
 function unitPrice(p, qty){
   // Per-dealer contract price (set by HCPS) wins over list price and quantity tiers.
   const cp=contractPrice(p);
-  if(cp!=null) return cp;
+  if(cp!=null) return (p&&p._upgrade) ? Math.round(Number(((cp+upgradeAddPurchase(p))*100).toFixed(6)))/100 : cp;
   // The dealer's own line discount off the standard list (never stacked on a contract price).
   const lr=lineRatePrice(p);
   if(lr!=null) return lr;
@@ -1438,6 +1469,18 @@ function packNote(p){ const k=packOf(p); return k ? `Dealer order unit = 1 ${k.l
    item (no pack) never gets a basis label. Any other value is ignored rather than guessed at. */
 function msrpIsEach(p){ if(!packOf(p)) return false; const b=p&&p.msrp_basis; return (b==='each'||b==='order_unit') ? b==='each' : p.msrp_each===true; }
 function mapIsEach(p){ if(!packOf(p)) return false; const b=p&&p.map_basis; return (b==='each'||b==='order_unit') ? b==='each' : true; }
+/* The railing upgrades a product offers, as a choice next to Add to cart. Each option shows what it adds to
+   THIS dealer's price (his discount applied), never a list figure. */
+function upgradeSelectHtml(p){
+  const ups=(Array.isArray(p&&p.upgrades)?p.upgrades:[]).filter(u=>u&&u.label);
+  if(!ups.length||p.base_price==null) return "";
+  const basePrice=Number(unitPrice(p,1))||0;
+  const opts=ups.map(u=>{ const q=withUpgrade(p,u.label); if(!q) return "";
+    const d=Math.round((Number(unitPrice(q,1))-basePrice)*100)/100;
+    return `<option value="${esc(u.label)}">${esc(u.label)} (+${money(d)})</option>`; }).join("");
+  if(!opts) return "";
+  return `<div class="upgr"><label class="pnote" style="font-weight:700">Railing</label> <select class="upsel" aria-label="Railing upgrade"><option value="">Standard (2 rail)</option>${opts}</select></div>`;
+}
 function priceHtml(p){
   if (!state.dealer && p.base_price==null) return `<span class="price locked">Log in for pricing</span>`;
   if (p.base_price==null) return `<span class="price locked">Call for pricing</span>`;
@@ -1596,7 +1639,7 @@ function noMsrpRule(row, layer){
    checks the signed-in dealer's entitlement (or the staff preview's ONE dealer) on the server.
    restoreCatalogFile() is the same text as netlify/functions/_catalog_commercial.js (drift-tested):
    a commercial key still on a public row is dropped, never trusted; a missing row is a mismatch. */
-const CATALOG_COMMERCIAL_KEYS=["base_price","tiers","dealer_price","tier_prices","msrp","map","price_note","unit_cost","shipping"];
+const CATALOG_COMMERCIAL_KEYS=["base_price","tiers","dealer_price","tier_prices","msrp","map","price_note","unit_cost","shipping","upgrades"];
 /* ROW IDENTITY (P0 review, 2026-10-23). A commercial row is attached to a public row ONLY when the
    public row is exactly the row it was made for: every commercial entry carries `h`, the SHA-256 of
    its public row's non-commercial fields (canonical JSON, keys sorted), and the whole line carries
@@ -2336,7 +2379,10 @@ async function reorder(orderId){
   for(const it of (o.items||[])){
     /* A code listed in two families at different prices cannot be told apart from an old order line — never guessed. */
     const same=state.products.filter(x=>x.code===it.code);
-    const p=same.length>1&&new Set(same.map(x=>x.base_price)).size>1?null:same[0];
+    let p=same.length>1&&new Set(same.map(x=>x.base_price)).size>1?null:same[0];
+    /* a configured line (railing upgrade) is told by its stored name; never reordered as the plain part */
+    const um=/ — (.+) upgrade$/.exec(String(it.name||""));
+    if(p && um){ p=withUpgrade(p,um[1]); }
     if(p && !p._discontinued){ const k=cartKey(p); const cur=CART.get(k); CART.set(k,{p,qty:(cur?cur.qty:0)+(Math.max(1,Math.round(Number(it.qty))||1))}); added++; }
     else missing++;
   }
@@ -2967,7 +3013,7 @@ function cardHtml(p){
     ? `<div class="buy"><span class="discbadge">Discontinued — reference only</span></div>`
     : multi
     ? `<div class="buy"><div class="chooseBtn">Choose options →</div></div>`
-    : `<div class="buy"><input class="qtyin" type="number" min="1" value="1" aria-label="Qty"><button class="addbtn" data-code="${esc(p.code)}">Add to cart</button></div>`;
+    : `${upgradeSelectHtml(p)}<div class="buy"><input class="qtyin" type="number" min="1" value="1" aria-label="Qty"><button class="addbtn" data-code="${esc(p.code)}" data-family="${esc(p.family==null?"":p.family)}">Add to cart</button></div>`;
   return `<div class="card" data-code="${esc(p.code)}">
     <div class="img">${img}</div>
     <div class="cbody">
@@ -2992,10 +3038,16 @@ const RENDER = { list:[], idx:0, cat:null, sub:null, io:null };
 function wireAdd(scope){
   scope.querySelectorAll(".addbtn").forEach(btn=>{
     btn.onclick=()=>{
-      const code=btn.getAttribute("data-code");
-      const p=state.products.find(x=>x.code===code);
+      const code=btn.getAttribute("data-code"), fam=btn.getAttribute("data-family");
+      /* the family the button belongs to (one code can sit in two ramp families at different prices) */
+      const p=state.products.find(x=>x.code===code&&(fam==null||fam===""||String(x.family==null?"":x.family)===fam))||state.products.find(x=>x.code===code);
       const qty=clampInt(btn.closest(".buy").querySelector(".qtyin").value);
-      addToCart(p,qty);
+      /* a chosen railing upgrade turns the line into the configured product (same part number) */
+      const sel=btn.closest(".buy").parentElement.querySelector(".upsel");
+      const lab=sel&&sel.value;
+      const q=lab?withUpgrade(p,lab):p;
+      if(lab&&!q){ toast("That upgrade is not available for "+code); return; }
+      addToCart(q,qty);
     };
   });
 }
@@ -3101,7 +3153,7 @@ function renderProducts(){
 /* ---------- cart ---------- */
 /* A code sold in two families on one line (Access4U SR3 / PRK in Stock Orders and in the Modular System, at two
    prices) is two cart lines — the family is part of the key, so adding one never re-prices the other (2026-10-27). */
-const cartKey=p=>`${p.manufacturer}::${p.code}`+(p.family!=null&&p.family!==""?`::${p.family}`:"");
+const cartKey=p=>`${p.manufacturer}::${p.code}`+(p.family!=null&&p.family!==""?`::${p.family}`:"")+(p._upgrade?`::u=${p._upgrade}`:"");
 const MFR={};                          // slug -> {po, notes}  (per-manufacturer order fields)
 function addToCart(p,qty){
   if(p && p._discontinued){ toast(`${p.code} is discontinued — it is shown for reference and cannot be ordered`); return; }
@@ -3293,7 +3345,7 @@ function hcpsCartOrders(){
   const out=[];
   for(const[slug,lines]of groupCart()){
     if(isGoldenSlug(slug)) continue;
-    out.push({manufacturer_slug:slug, items:lines.map(({p,qty})=>({code:p.code, family:p.family==null?undefined:p.family, qty, unit:unitPrice(p,qty)}))});
+    out.push({manufacturer_slug:slug, items:lines.map(({p,qty})=>({code:p.code, family:p.family==null?undefined:p.family, upgrade:p._upgrade||undefined, qty, unit:unitPrice(p,qty)}))});
   }
   return out;
 }
@@ -3317,7 +3369,7 @@ function applyServerPrices(res){
   let n=0;
   for(const o of (res&&res.orders)||[]){
     for(const it of o.items||[]){
-      const ck=o.manufacturer_slug+"::"+it.code, k=ck+(it.family!=null&&it.family!==""?"::"+it.family:""); const line=CART.get(k); if(!line) continue;
+      const ck=o.manufacturer_slug+"::"+it.code, k=ck+(it.family!=null&&it.family!==""?"::"+it.family:"")+(it.upgrade?"::u="+it.upgrade:""); const line=CART.get(k); if(!line) continue;
       const p=line.p;
       if(it.available===false){ p._unavailable=true; PRICE_NOTES.set(k,{gone:true}); n++; continue; }
       delete p._unavailable;
@@ -3387,7 +3439,7 @@ async function submitOrder(){
     orders.push({
       manufacturer_slug:slug, manufacturer_name:info.name,
       po:MFR[slug].po.trim(), notes:(MFR[slug].notes||"").trim(),
-      items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,name:p.name,brand:p.brand||"",uom:p.uom||"",case_qty:(packOf(p)?packOf(p).n:undefined),qty,unit:unitPrice(p,qty)})),
+      items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,upgrade:p._upgrade||undefined,name:p.name,brand:p.brand||"",uom:p.uom||"",case_qty:(packOf(p)?packOf(p).n:undefined),qty,unit:unitPrice(p,qty)})),
       items_count:lines.reduce((n,{qty})=>n+qty,0),
       items_subtotal:Number(f.itemsTotal.toFixed(2)),
       freight_fee:Number(f.fee.toFixed(2)),
@@ -3528,8 +3580,9 @@ function renderA4U(){
   if((!A4U.hubMode && state.active!=="access4u") || !a4uProd("SR3")){ host.innerHTML=""; return; }
   const bom=a4uBom(), t=a4uTotals(bom);
   const alumSur=Math.round(t.dealer*0.23*100)/100;   // aluminum surcharge: 23% of STANDARD dealer rate
-  const estShip=bom.length?400:0;                     // flat estimated shipping per quote
-  const estTotal=Math.round((t.your+alumSur+estShip)*100)/100;
+  /* Access4U has no free shipping: freight is charged at actual cost by order size and weight and confirmed by HCPS
+     (owner, 2026-10-27). No flat figure is quoted here — it would be a number nobody stated. */
+  const estTotal=Math.round((t.your+alumSur)*100)/100;
   const phys=a4uPhysical();
   const ada=a4uAda(phys.map(x=>x.p), A4U.rise);
   const rrOpts=a4uFam("RR").filter(p=>/^RR\d+x36$/.test(p.code)).map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(unitPrice(p,1))})</option>`).join("");
@@ -3582,8 +3635,8 @@ function renderA4U(){
       </div>
       <div class="totgrid est">
         <div class="tot"><div class="l">Aluminum surcharge <span class="fineprint">est · 23% of dealer</span></div><div class="v">${money(alumSur)}</div></div>
-        <div class="tot"><div class="l">Estimated shipping</div><div class="v">${money(estShip)}</div></div>
-        <div class="tot your"><div class="l">Est. total <span class="fineprint">Your Price + surcharge + shipping</span></div><div class="v">${money(estTotal)}</div></div>
+        <div class="tot"><div class="l">Freight</div><div class="v" style="font-size:13px">Actual cost (size &amp; weight) — confirmed by HCPS</div></div>
+        <div class="tot your"><div class="l">Est. total <span class="fineprint">Your Price + surcharge, before freight</span></div><div class="v">${money(estTotal)}</div></div>
       </div>
       <div class="aacts">
         <button class="go" onclick="a4uToCart()">Add configuration to cart</button>
@@ -3808,7 +3861,7 @@ function a4uSheetHtml(bom,t,phys){
   const diagram=a4uDiagram(seq);
   const plan=a4uPlanDiagram(phys);
   const dateStr=(new Date()).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
-  const alumSur=Math.round(t.dealer*0.23*100)/100, estShip=bom.length?400:0, estTotal=Math.round((t.your+alumSur+estShip)*100)/100;
+  const alumSur=Math.round(t.dealer*0.23*100)/100, estTotal=Math.round((t.your+alumSur)*100)/100;   // no flat freight: actual cost (owner 2026-10-27)
   return `<!doctype html><html><head><meta charset="utf-8"><title>Access4U Modular Ramp — Layout & Quote</title>
 <style>
   *{box-sizing:border-box} html,body{margin:0;padding:0;background:#eef2f6;color:#10263f;font-family:Arial,Helvetica,sans-serif}
@@ -3882,11 +3935,11 @@ function a4uSheetHtml(bom,t,phys){
     <div class="pc map"><div class="l">MAP (advertised)</div><div class="v">${fmt(t.map)}</div></div>
     <div class="pc dealer"><div class="l">Dealer cost</div><div class="v">${fmt(t.dealer)}</div></div>
   </div>
-  <div class="dlabel" style="margin-top:12px">Estimated add-ons — 23% aluminum surcharge on the standard dealer rate + flat freight estimate</div>
+  <div class="dlabel" style="margin-top:12px">Estimated add-ons — 23% aluminum surcharge on the standard dealer rate. Freight is charged at actual cost (size &amp; weight) and confirmed by HCPS — no free shipping</div>
   <div class="pricebox">
     <div class="pc"><div class="l">Aluminum surcharge (est.)</div><div class="v">${fmt(alumSur)}</div></div>
-    <div class="pc"><div class="l">Estimated shipping</div><div class="v">${fmt(estShip)}</div></div>
-    <div class="pc dealer"><div class="l">Est. total (Your Price + add-ons)</div><div class="v">${fmt(estTotal)}</div></div>
+    <div class="pc"><div class="l">Freight</div><div class="v" style="font-size:12px">Actual cost — confirmed by HCPS</div></div>
+    <div class="pc dealer"><div class="l">Est. total (Your Price + surcharge, before freight)</div><div class="v">${fmt(estTotal)}</div></div>
   </div>
 
   <div class="note">
@@ -5787,9 +5840,9 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
             ${variantSel}
             ${p._discontinued
               ? `<div class="pd-disc"><b>Discontinued</b> — this item is shown for reference and can no longer be ordered.${(variants||[]).some(v=>!v._discontinued)?' Choose a current option above, or see related products below.':' See related products below, or ask your HCPS rep for the current replacement.'}</div>`
-              : `<div class="pd-buy buy">
+              : `${upgradeSelectHtml(p)}<div class="pd-buy buy">
               <input class="qtyin" type="number" min="1" value="1" aria-label="Qty">
-              <button class="addbtn" data-code="${esc(p.code)}">🛒 Add to cart</button>
+              <button class="addbtn" data-code="${esc(p.code)}" data-family="${esc(p.family==null?"":p.family)}">🛒 Add to cart</button>
             </div>`}
             ${isOvation(p)?`<button class="pd-sample" onclick="requestSample('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Request a Sample</button>`:""}
             <button class="pd-broch" onclick="openBrochure('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>Print Brochure</button>

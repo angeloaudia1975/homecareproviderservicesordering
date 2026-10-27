@@ -6,7 +6,14 @@
     "dark": "#0f2942",
     "logo": "/assets/logos/access4u.jpg",
     "hasData": true,
-    "sort": 1
+    "sort": 1,
+    "freight": {
+      "summary": "No free shipping on Access4U. Freight is charged at actual cost, based on each order's size and weight, and is confirmed by HCPS on your order.",
+      "actualNote": "Access4U freight is charged at actual cost (order size and weight) and confirmed by HCPS on your order — there is no free shipping.",
+      "groups": [],
+      "elseActual": true,
+      "otherLabel": "Access4U freight — actual cost (size & weight)"
+    }
   },
   {
     "slug": "strongback-mobility",
