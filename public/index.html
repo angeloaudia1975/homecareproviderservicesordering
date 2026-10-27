@@ -2309,7 +2309,9 @@ async function reorder(orderId){
   await selectManufacturer(slug);   // loads state.products for the line + leaves the home view
   let added=0, missing=0;
   for(const it of (o.items||[])){
-    const p=state.products.find(x=>x.code===it.code);
+    /* A code listed in two families at different prices cannot be told apart from an old order line — never guessed. */
+    const same=state.products.filter(x=>x.code===it.code);
+    const p=same.length>1&&new Set(same.map(x=>x.base_price)).size>1?null:same[0];
     if(p && !p._discontinued){ const k=cartKey(p); const cur=CART.get(k); CART.set(k,{p,qty:(cur?cur.qty:0)+(Math.max(1,Math.round(Number(it.qty))||1))}); added++; }
     else missing++;
   }
@@ -3072,7 +3074,9 @@ function renderProducts(){
 }
 
 /* ---------- cart ---------- */
-const cartKey=p=>`${p.manufacturer}::${p.code}`;
+/* A code sold in two families on one line (Access4U SR3 / PRK in Stock Orders and in the Modular System, at two
+   prices) is two cart lines — the family is part of the key, so adding one never re-prices the other (2026-10-27). */
+const cartKey=p=>`${p.manufacturer}::${p.code}`+(p.family!=null&&p.family!==""?`::${p.family}`:"");
 const MFR={};                          // slug -> {po, notes}  (per-manufacturer order fields)
 function addToCart(p,qty){
   if(p && p._discontinued){ toast(`${p.code} is discontinued — it is shown for reference and cannot be ordered`); return; }
@@ -3288,13 +3292,13 @@ function applyServerPrices(res){
   let n=0;
   for(const o of (res&&res.orders)||[]){
     for(const it of o.items||[]){
-      const k=o.manufacturer_slug+"::"+it.code; const line=CART.get(k); if(!line) continue;
+      const ck=o.manufacturer_slug+"::"+it.code, k=ck+(it.family!=null&&it.family!==""?"::"+it.family:""); const line=CART.get(k); if(!line) continue;
       const p=line.p;
       if(it.available===false){ p._unavailable=true; PRICE_NOTES.set(k,{gone:true}); n++; continue; }
       delete p._unavailable;
       const c=it.commercial||{};
       ["base_price","msrp","map","tiers","group","price_note"].forEach(f=>{ if(f in c) p[f]=c[f]; });
-      if(AUTH.prices){ if(it.contract!=null) AUTH.prices[k]=Number(it.contract); else delete AUTH.prices[k]; }
+      if(AUTH.prices){ if(it.contract!=null) AUTH.prices[ck]=Number(it.contract); else delete AUTH.prices[ck]; }
       if(it.changed && it.client_unit!=null && Math.abs(Number(it.client_unit)-Number(it.unit))>=0.005){
         const prev=PRICE_NOTES.get(k);
         PRICE_NOTES.set(k,{old:(prev&&prev.old!=null)?prev.old:Number(it.client_unit), now:Number(it.unit)}); n++;
