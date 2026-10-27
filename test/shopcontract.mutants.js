@@ -1,7 +1,7 @@
 const fs=require('fs'),path=require('path'),os=require('os'),{execFileSync}=require('child_process');
 const SRC=path.join(__dirname,'..','public','index.html'), src=fs.readFileSync(SRC,'utf8');
 const M=[
- ['unknown wiped to none', "    if(!AUTH.prices||typeof AUTH.prices!=='object') AUTH.prices={};\n  } else {", "    AUTH.prices={};\n  } else {"],
+ ['unknown wiped to none', "    if(!AUTH.prices||typeof AUTH.prices!=='object') AUTH.prices={};\n    if(!AUTH.rates", "    AUTH.prices={};\n    if(!AUTH.rates"],
  ['flag ignored', "  if(j && j.prices_unavailable){", "  if(false){"],
  ['notice never shown', "  showPricesNotice(!!AUTH.pricesUnavailable);\n}", "}"],
  ['notice never cleared', "  if(!on){ if(el) el.remove(); return; }", "  if(!on){ return; }"],
