@@ -146,6 +146,7 @@ body:not(.p360on) #p360wrap{display:none!important;}
 .pnote{font-size:11px;color:var(--gray);}
 .price.locked{font-size:14px;color:var(--gray);font-family:'Inter',sans-serif;font-weight:600;}
 .buy{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-top:4px;}
+.upgr{margin-top:8px;display:flex;gap:8px;align-items:center;}.upgr .upsel{flex:1;min-width:0;padding:9px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:16px;background:#fff;color:var(--navy);}
 .buy .qtyin{width:64px;padding:9px;text-align:center;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;}
 .addbtn{background:var(--navy);color:#fff;border:none;padding:10px 12px;border-radius:8px;font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;}
 .addbtn:hover{background:var(--orange);}
@@ -1306,6 +1307,36 @@ function lineRatePrice(p){
   if(Array.isArray(p.tiers) && p.tiers.length) return null;
   return Math.round(Number((list*(100-rate)).toFixed(6)))/100;
 }
+/* RAILING UPGRADES (owner, 2026-10-27; Access4U Fall 2026). A product may list manufacturer upgrades
+   [{label, price_add}] — the Picket / Commercial / Guardrail columns of the list, priced as an add-on to the
+   standard (2-rail) dealer list. A configured line is the same part number with ONE upgrade chosen: its standard
+   list is list + add, so the dealer's discount, MSRP and MAP follow from the configured list exactly as from the
+   plain one (MSRP and MAP keep the line's own ratios to the list; never the dealer's discount). A contract price
+   covers the plain part; the upgrade is then added at the dealer's rate (or the line's default discount). */
+function withUpgrade(p, label){
+  const u=(Array.isArray(p&&p.upgrades)?p.upgrades:[]).find(x=>x&&x.label===label);
+  if(!u) return null;
+  const add=Number(u.price_add), list=Number(p.dealer_price), base=Number(p.base_price);
+  if(!(isFinite(add)&&add>0&&isFinite(list)&&list>0&&isFinite(base)&&base>0)) return null;
+  const r2=v=>Math.round(Number((v*100).toFixed(6)))/100;
+  /* The line's own ratios, read back to 0.01% (they were rounded to the cent): default discount 15.00%,
+     MSRP 1.5000 x list, MAP 0.7000 x MSRP — so a configured line is exactly what the rule gives its list. */
+  const ratio=(a,b)=>Math.round(a/b*10000)/10000;
+  const d0=Math.round((1-base/list)*10000)/100;
+  const cl=r2(list+add);
+  const q=Object.assign({},p,{_upgrade:String(label),_upgradeAdd:add,_defaultPct:d0,
+    name:String(p.name||p.code)+' — '+label+' upgrade', dealer_price:cl, base_price:r2(cl*(100-d0)/100)});
+  const msrp=Number(p.msrp), map=Number(p.map);
+  if(isFinite(msrp)&&msrp>0){ q.msrp=r2(cl*ratio(msrp,list)); delete q._msrp_suggested; }
+  if(isFinite(map)&&map>0) q.map=(q.msrp!=null&&isFinite(msrp)&&msrp>0) ? r2(q.msrp*ratio(map,msrp)) : r2(cl*ratio(map,list));
+  return q;
+}
+function upgradeAddPurchase(p){
+  const add=Number(p&&p._upgradeAdd); if(!(add>0)) return 0;
+  const r=(AUTH&&AUTH.rates)?Number(AUTH.rates[p.manufacturer||""]):NaN;
+  if(isFinite(r)&&r>0&&r<100) return Math.round(Number((add*(100-r)).toFixed(6)))/100;
+  return Math.round(Number((add*(100-Number(p._defaultPct||0))).toFixed(6)))/100;
+}
 /* SERVE THE SIZE THAT IS ACTUALLY DRAWN.
    The product photos are 1536x1920 and 1920x1920 originals. A card draws one at 150x150 and a
    thumbnail at 44x44 — so the browser downloaded, decoded and held a ~1.9 megapixel bitmap to
@@ -1333,7 +1364,7 @@ function dealerCostOf(p, slug){
 function unitPrice(p, qty){
   // Per-dealer contract price (set by HCPS) wins over list price and quantity tiers.
   const cp=contractPrice(p);
-  if(cp!=null) return cp;
+  if(cp!=null) return (p&&p._upgrade) ? Math.round(Number(((cp+upgradeAddPurchase(p))*100).toFixed(6)))/100 : cp;
   // The dealer's own line discount off the standard list (never stacked on a contract price).
   const lr=lineRatePrice(p);
   if(lr!=null) return lr;
@@ -1438,6 +1469,18 @@ function packNote(p){ const k=packOf(p); return k ? `Dealer order unit = 1 ${k.l
    item (no pack) never gets a basis label. Any other value is ignored rather than guessed at. */
 function msrpIsEach(p){ if(!packOf(p)) return false; const b=p&&p.msrp_basis; return (b==='each'||b==='order_unit') ? b==='each' : p.msrp_each===true; }
 function mapIsEach(p){ if(!packOf(p)) return false; const b=p&&p.map_basis; return (b==='each'||b==='order_unit') ? b==='each' : true; }
+/* The railing upgrades a product offers, as a choice next to Add to cart. Each option shows what it adds to
+   THIS dealer's price (his discount applied), never a list figure. */
+function upgradeSelectHtml(p){
+  const ups=(Array.isArray(p&&p.upgrades)?p.upgrades:[]).filter(u=>u&&u.label);
+  if(!ups.length||p.base_price==null) return "";
+  const basePrice=Number(unitPrice(p,1))||0;
+  const opts=ups.map(u=>{ const q=withUpgrade(p,u.label); if(!q) return "";
+    const d=Math.round((Number(unitPrice(q,1))-basePrice)*100)/100;
+    return `<option value="${esc(u.label)}">${esc(u.label)} (+${money(d)})</option>`; }).join("");
+  if(!opts) return "";
+  return `<div class="upgr"><label class="pnote" style="font-weight:700">Railing</label> <select class="upsel" aria-label="Railing upgrade"><option value="">Standard (2 rail)</option>${opts}</select></div>`;
+}
 function priceHtml(p){
   if (!state.dealer && p.base_price==null) return `<span class="price locked">Log in for pricing</span>`;
   if (p.base_price==null) return `<span class="price locked">Call for pricing</span>`;
@@ -1596,7 +1639,7 @@ function noMsrpRule(row, layer){
    checks the signed-in dealer's entitlement (or the staff preview's ONE dealer) on the server.
    restoreCatalogFile() is the same text as netlify/functions/_catalog_commercial.js (drift-tested):
    a commercial key still on a public row is dropped, never trusted; a missing row is a mismatch. */
-const CATALOG_COMMERCIAL_KEYS=["base_price","tiers","dealer_price","tier_prices","msrp","map","price_note","unit_cost","shipping"];
+const CATALOG_COMMERCIAL_KEYS=["base_price","tiers","dealer_price","tier_prices","msrp","map","price_note","unit_cost","shipping","upgrades"];
 /* ROW IDENTITY (P0 review, 2026-10-23). A commercial row is attached to a public row ONLY when the
    public row is exactly the row it was made for: every commercial entry carries `h`, the SHA-256 of
    its public row's non-commercial fields (canonical JSON, keys sorted), and the whole line carries
@@ -2335,8 +2378,13 @@ async function reorder(orderId){
   let added=0, missing=0;
   for(const it of (o.items||[])){
     /* A code listed in two families at different prices cannot be told apart from an old order line — never guessed. */
-    const same=state.products.filter(x=>x.code===it.code);
-    const p=same.length>1&&new Set(same.map(x=>x.base_price)).size>1?null:same[0];
+    let same=state.products.filter(x=>x.code===it.code);
+    /* a part number the manufacturer re-spelled (e.g. "TRR 1" -> "TRR1") is matched only when exactly one product has it */
+    if(!same.length){ const nc=s=>String(s==null?"":s).toUpperCase().replace(/[^A-Z0-9]/g,""); const m=state.products.filter(x=>nc(x.code)===nc(it.code)); if(m.length===1) same=m; }
+    let p=same.length>1&&new Set(same.map(x=>x.base_price)).size>1?null:same[0];
+    /* a configured line (railing upgrade) is told by its stored name; never reordered as the plain part */
+    const um=/ — (.+) upgrade$/.exec(String(it.name||""));
+    if(p && um){ p=withUpgrade(p,um[1]); }
     if(p && !p._discontinued){ const k=cartKey(p); const cur=CART.get(k); CART.set(k,{p,qty:(cur?cur.qty:0)+(Math.max(1,Math.round(Number(it.qty))||1))}); added++; }
     else missing++;
   }
@@ -2967,7 +3015,7 @@ function cardHtml(p){
     ? `<div class="buy"><span class="discbadge">Discontinued — reference only</span></div>`
     : multi
     ? `<div class="buy"><div class="chooseBtn">Choose options →</div></div>`
-    : `<div class="buy"><input class="qtyin" type="number" min="1" value="1" aria-label="Qty"><button class="addbtn" data-code="${esc(p.code)}">Add to cart</button></div>`;
+    : `${upgradeSelectHtml(p)}<div class="buy"><input class="qtyin" type="number" min="1" value="1" aria-label="Qty"><button class="addbtn" data-code="${esc(p.code)}" data-family="${esc(p.family==null?"":p.family)}">Add to cart</button></div>`;
   return `<div class="card" data-code="${esc(p.code)}">
     <div class="img">${img}</div>
     <div class="cbody">
@@ -2992,10 +3040,16 @@ const RENDER = { list:[], idx:0, cat:null, sub:null, io:null };
 function wireAdd(scope){
   scope.querySelectorAll(".addbtn").forEach(btn=>{
     btn.onclick=()=>{
-      const code=btn.getAttribute("data-code");
-      const p=state.products.find(x=>x.code===code);
+      const code=btn.getAttribute("data-code"), fam=btn.getAttribute("data-family");
+      /* the family the button belongs to (one code can sit in two ramp families at different prices) */
+      const p=state.products.find(x=>x.code===code&&(fam==null||fam===""||String(x.family==null?"":x.family)===fam))||state.products.find(x=>x.code===code);
       const qty=clampInt(btn.closest(".buy").querySelector(".qtyin").value);
-      addToCart(p,qty);
+      /* a chosen railing upgrade turns the line into the configured product (same part number) */
+      const sel=btn.closest(".buy").parentElement.querySelector(".upsel");
+      const lab=sel&&sel.value;
+      const q=lab?withUpgrade(p,lab):p;
+      if(lab&&!q){ toast("That upgrade is not available for "+code); return; }
+      addToCart(q,qty);
     };
   });
 }
@@ -3101,7 +3155,7 @@ function renderProducts(){
 /* ---------- cart ---------- */
 /* A code sold in two families on one line (Access4U SR3 / PRK in Stock Orders and in the Modular System, at two
    prices) is two cart lines — the family is part of the key, so adding one never re-prices the other (2026-10-27). */
-const cartKey=p=>`${p.manufacturer}::${p.code}`+(p.family!=null&&p.family!==""?`::${p.family}`:"");
+const cartKey=p=>`${p.manufacturer}::${p.code}`+(p.family!=null&&p.family!==""?`::${p.family}`:"")+(p._upgrade?`::u=${p._upgrade}`:"");
 const MFR={};                          // slug -> {po, notes}  (per-manufacturer order fields)
 function addToCart(p,qty){
   if(p && p._discontinued){ toast(`${p.code} is discontinued — it is shown for reference and cannot be ordered`); return; }
@@ -3293,7 +3347,7 @@ function hcpsCartOrders(){
   const out=[];
   for(const[slug,lines]of groupCart()){
     if(isGoldenSlug(slug)) continue;
-    out.push({manufacturer_slug:slug, items:lines.map(({p,qty})=>({code:p.code, family:p.family==null?undefined:p.family, qty, unit:unitPrice(p,qty)}))});
+    out.push({manufacturer_slug:slug, items:lines.map(({p,qty})=>({code:p.code, family:p.family==null?undefined:p.family, upgrade:p._upgrade||undefined, qty, unit:unitPrice(p,qty)}))});
   }
   return out;
 }
@@ -3317,7 +3371,7 @@ function applyServerPrices(res){
   let n=0;
   for(const o of (res&&res.orders)||[]){
     for(const it of o.items||[]){
-      const ck=o.manufacturer_slug+"::"+it.code, k=ck+(it.family!=null&&it.family!==""?"::"+it.family:""); const line=CART.get(k); if(!line) continue;
+      const ck=o.manufacturer_slug+"::"+it.code, k=ck+(it.family!=null&&it.family!==""?"::"+it.family:"")+(it.upgrade?"::u="+it.upgrade:""); const line=CART.get(k); if(!line) continue;
       const p=line.p;
       if(it.available===false){ p._unavailable=true; PRICE_NOTES.set(k,{gone:true}); n++; continue; }
       delete p._unavailable;
@@ -3387,7 +3441,7 @@ async function submitOrder(){
     orders.push({
       manufacturer_slug:slug, manufacturer_name:info.name,
       po:MFR[slug].po.trim(), notes:(MFR[slug].notes||"").trim(),
-      items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,name:p.name,brand:p.brand||"",uom:p.uom||"",case_qty:(packOf(p)?packOf(p).n:undefined),qty,unit:unitPrice(p,qty)})),
+      items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,upgrade:p._upgrade||undefined,name:p.name,brand:p.brand||"",uom:p.uom||"",case_qty:(packOf(p)?packOf(p).n:undefined),qty,unit:unitPrice(p,qty)})),
       items_count:lines.reduce((n,{qty})=>n+qty,0),
       items_subtotal:Number(f.itemsTotal.toFixed(2)),
       freight_fee:Number(f.fee.toFixed(2)),
@@ -3471,22 +3525,25 @@ async function submitGoldenOrder(order, dealer){
 }
 
 /* ---------- Access4U modular ramp quote builder ---------- */
-const A4U={items:[], open:false, rise:0, hubMode:false, host:null, project:null};          // items: ordered [{code,fam,qty,turn?}]; PRK auto-added per platform; turn on PS platforms
-// Codes SR3 & PRK exist in two families (RS single-fold ramps vs RR modular Ramp Run) at different prices.
-// The modular configurator is the RR (Ramp Run) system, so it always resolves parts to their family.
+const A4U={items:[], open:false, rise:0, width:36, hubMode:false, host:null, project:null};          // items: ordered [{code,fam,qty,turn?}]; PRK<width> auto-added per platform; turn on PS platforms
+/* Built from the Access4U Fall 2026 list (owner 2026-10-27 17:40): starter SR3x<w>, ramp sections RS<n>x<w>
+   (1–7 ft at 36", 1–6 ft at 48"), rest section RRS5x36 (36" only), platforms PS, Platform to Ramp Kit PRK<w>. */
+function a4uIsRun(p){ return !!p && p.family==="RS" && !/^PRK/i.test(p.code); }
+function a4uIsStarter(p){ return !!p && /^SR3x/i.test(p.code); }
 function a4uProd(code,fam){return state.products.find(p=>p.code===code && (!fam||p.family===fam));}
 function a4uFam(fam){return state.products.filter(p=>p.family===fam);}
 function a4uKey(code,fam){return (fam||"")+"::"+code;}
 function a4uAddRamp(){
-  const L=clampInt($("#a4uLen").value,1,300);
-  if(!A4U.items.some(it=>it.code==="SR3")) A4U.items.push({code:"SR3",fam:"RR",qty:1}); // one ground starter per ramp
-  let rem=L-3;
-  while(rem>0){ const seg=Math.min(rem,30); const rr="RR"+seg+"x36"; if(a4uProd(rr,"RR")) A4U.items.push({code:rr,fam:"RR",qty:1}); rem-=seg; }
+  const L=clampInt($("#a4uLen").value,1,300), w=A4U.width===48?48:36, sr="SR3x"+w;
+  if(!A4U.items.some(it=>it.code===sr) && a4uProd(sr,"RS")) A4U.items.push({code:sr,fam:"RS",qty:1}); // one ground starter per ramp
+  const maxSec=w===48?6:7; let rem=L-3;
+  while(rem>0){ const seg=Math.min(rem,maxSec); const rs="RS"+seg+"x"+w; if(a4uProd(rs,"RS")) A4U.items.push({code:rs,fam:"RS",qty:1}); rem-=seg; }
   renderA4U();
 }
 function a4uAdd(sel,fam){ const code=$(sel).value; if(code&&a4uProd(code,fam)){A4U.items.push(fam==="PS"?{code,fam,qty:1,turn:(/PS45/i.test(code)?"right45":"straight")}:{code,fam,qty:1}); renderA4U();} }
 function a4uRemove(i){ A4U.items.splice(i,1); renderA4U(); }
 function a4uSetTurn(i,val){ if(A4U.items[i]){ A4U.items[i].turn=val; renderA4U(); } }
+function a4uSetWidth(v){ A4U.width=Number(v)===48?48:36; renderA4U(); }
 function a4uSetRise(v){ A4U.rise=Math.max(0,parseFloat(v)||0); a4uRefreshAda(); }
 // Physical, in-order component list with per-platform turn, for the plan diagram & ADA math.
 function a4uPhysical(){
@@ -3496,9 +3553,9 @@ function a4uPhysical(){
 }
 // ADA slope check from a total project rise (inches). 1:12 => needed run feet == rise inches.
 function a4uAda(seq, riseIn){
-  const runFt=seq.filter(p=>p.family==="RR"&&p.length_ft).reduce((n,p)=>n+p.length_ft,0);
+  const runFt=seq.filter(p=>a4uIsRun(p)&&p.length_ft).reduce((n,p)=>n+p.length_ft,0);
   // longest single ramp leg (run between platforms) — ADA wants a rest landing within 30 ft
-  let leg=0,maxLeg=0; for(const p of seq){ if(p.family==="PS"){maxLeg=Math.max(maxLeg,leg);leg=0;} else if(p.family==="RR"&&p.length_ft){leg+=p.length_ft;} } maxLeg=Math.max(maxLeg,leg);
+  let leg=0,maxLeg=0; for(const p of seq){ if(p.family==="PS"){maxLeg=Math.max(maxLeg,leg);leg=0;} else if(a4uIsRun(p)&&p.length_ft){leg+=p.length_ft;} } maxLeg=Math.max(maxLeg,leg);
   if(!riseIn||riseIn<=0) return {rise:0,runFt,maxLeg,state:"none",msg:"Enter total rise to check ADA slope",ratio:null};
   const ratio=runFt>0?runFt*12/riseIn:0;   // slope denominator X in 1:X (≥12 is compliant)
   const needFt=Math.max(0,Math.ceil(riseIn-runFt));
@@ -3508,12 +3565,13 @@ function a4uAda(seq, riseIn){
 }
 function a4uRefreshAda(){ const el=$("#a4uAda"); if(!el) return; const seq=a4uPhysical().map(x=>x.p); const a=a4uAda(seq,A4U.rise); el.className="ada "+a.state; el.innerHTML=`${a.state==="pass"?"✅":a.state==="fail"?"⛔":a.state==="warn"?"⚠️":"📏"} ${esc(a.msg)}`; }
 function a4uBom(){
-  // merge duplicate (code,family) preserving first-seen order; auto-add PRK = one per platform unit (RR family)
+  // merge duplicate (code,family) preserving first-seen order; auto-add PRK<width> = one per platform unit
   const order=[]; const q=new Map(); const meta=new Map();
   for(const it of A4U.items){ const k=a4uKey(it.code,it.fam); if(!q.has(k)){order.push(k);meta.set(k,it);} q.set(k,(q.get(k)||0)+it.qty); }
   const platQty=A4U.items.filter(it=>{const p=a4uProd(it.code,it.fam);return p&&p.family==="PS";}).reduce((n,it)=>n+it.qty,0);
-  if(platQty>0){ const pk=a4uKey("PRK","RR"); if(!q.has(pk)){order.push(pk);meta.set(pk,{code:"PRK",fam:"RR"});} q.set(pk,platQty); }
-  return order.map(k=>{const m=meta.get(k);return {p:a4uProd(m.code,m.fam),fam:m.fam,qty:q.get(k),auto:(m.code==="PRK"&&platQty>0)};}).filter(x=>x.p);
+  const prk="PRK"+(A4U.width===48?48:36);
+  if(platQty>0){ const pk=a4uKey(prk,"RS"); if(!q.has(pk)){order.push(pk);meta.set(pk,{code:prk,fam:"RS"});} q.set(pk,platQty); }
+  return order.map(k=>{const m=meta.get(k);return {p:a4uProd(m.code,m.fam),fam:m.fam,qty:q.get(k),auto:(/^PRK/.test(m.code)&&platQty>0)};}).filter(x=>x.p);
 }
 function a4uTotals(bom){let d=0,y=0,mp=0,ma=0;for(const{p,qty}of bom){d+=(p.dealer_price||0)*qty;y+=(Number(unitPrice(p,qty))||0)*qty;mp+=(p.msrp||0)*qty;ma+=(p.map||0)*qty;}return{dealer:d,your:y,msrp:mp,map:ma};}
 function a4uOpts(fam,ph){
@@ -3525,14 +3583,14 @@ const A4U_TURNS45=[["straight","Straight ↑"],["left45","45° left ↖"],["righ
 function a4uTurnsFor(code){ return /PS45/i.test(code)? A4U_TURNS45 : A4U_TURNS; }
 function renderA4U(){
   const host=$(A4U.host||"#a4uBuilder"); if(!host) return;
-  if((!A4U.hubMode && state.active!=="access4u") || !a4uProd("SR3")){ host.innerHTML=""; return; }
+  if((!A4U.hubMode && state.active!=="access4u") || !a4uProd("SR3x36","RS")){ host.innerHTML=""; return; }
   const bom=a4uBom(), t=a4uTotals(bom);
-  const alumSur=Math.round(t.dealer*0.23*100)/100;   // aluminum surcharge: 23% of STANDARD dealer rate
-  const estShip=bom.length?400:0;                     // flat estimated shipping per quote
-  const estTotal=Math.round((t.your+alumSur+estShip)*100)/100;
+  /* Access4U has no free shipping: the actual freight from Access4U's order confirmation is added after the order is
+     placed (owner, 2026-10-27). No freight figure and no surcharge is shown — the Fall 2026 list states neither. */
   const phys=a4uPhysical();
   const ada=a4uAda(phys.map(x=>x.p), A4U.rise);
-  const rrOpts=a4uFam("RR").filter(p=>/^RR\d+x36$/.test(p.code)).map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(unitPrice(p,1))})</option>`).join("");
+  const W4=A4U.width===48?48:36;
+  const rrOpts=a4uFam("RS").filter(p=>a4uIsRun(p)&&new RegExp("x"+W4+"$").test(p.code)&&!a4uIsStarter(p)).map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(unitPrice(p,1))})</option>`).join("");
   const platCount=A4U.items.filter(it=>it.fam==="PS").reduce((n,it)=>n+(it.qty||1),0);
   // interactive, ordered build steps (real A4U.items indices) + platform turn selectors
   const stepRows = A4U.items.length? A4U.items.map((it,i)=>{
@@ -3548,7 +3606,7 @@ function renderA4U(){
       <td class="r"><button class="rm" onclick="a4uRemove(${i})">Remove</button></td></tr>`;
   }).join("")
     : `<tr><td colspan="7" class="empty">No components yet. Enter a ramp length or add platforms, gates, or stairs above.</td></tr>`;
-  const prkRow = platCount>0? `<tr class="auto"><td class="idx">+</td><td>PRK</td><td>Platform To Ramp Kit 36</td><td class="r">${platCount}</td><td class="turn"><span class="fineprint">auto</span></td><td class="r">${money((Number(unitPrice(a4uProd("PRK","RR"),platCount))||0)*platCount)}</td><td class="r"><span class="fineprint">auto</span></td></tr>` : "";
+  const prkRow = platCount>0? `<tr class="auto"><td class="idx">+</td><td>PRK${W4}</td><td>Platform to Ramp Kit ${W4}</td><td class="r">${platCount}</td><td class="turn"><span class="fineprint">auto</span></td><td class="r">${money((Number(unitPrice(a4uProd("PRK"+W4,"RS"),platCount))||0)*platCount)}</td><td class="r"><span class="fineprint">auto</span></td></tr>` : "";
   const plan=a4uPlanDiagram(phys);
   host.innerHTML=`<div class="a4u ${A4U.open?'open':''}">
     <div class="ahead" onclick="A4U.open=!A4U.open;renderA4U()">
@@ -3558,9 +3616,9 @@ function renderA4U(){
     <div class="abody">
       <div class="arow">
         <div class="fld"><label>Total ramp length (feet) — builds starter + run sections</label>
-          <div class="in"><input id="a4uLen" type="number" min="4" step="1" placeholder="e.g. 10" value="10"><button class="ab" onclick="a4uAddRamp()">Add Ramp</button></div></div>
-        <div class="fld"><label>or add a single run section</label>
-          <div class="in"><select id="a4uRR"><option value="">Select run…</option>${rrOpts}</select><button class="ab sm" onclick="a4uAdd('#a4uRR','RR')">Add</button></div></div>
+          <div class="in"><select id="a4uW" aria-label="Ramp width" onchange="a4uSetWidth(this.value)"><option value="36" ${W4===36?'selected':''}>36″ wide</option><option value="48" ${W4===48?'selected':''}>48″ wide</option></select><input id="a4uLen" type="number" min="4" step="1" placeholder="e.g. 10" value="10"><button class="ab" onclick="a4uAddRamp()">Add Ramp</button></div></div>
+        <div class="fld"><label>or add a single ramp section</label>
+          <div class="in"><select id="a4uRR"><option value="">Select section…</option>${rrOpts}</select><button class="ab sm" onclick="a4uAdd('#a4uRR','RS')">Add</button></div></div>
         <div class="fld"><label>Total project rise (inches) — for ADA check</label>
           <div class="in"><input id="a4uRise" type="number" min="0" step="0.5" placeholder="e.g. 20" value="${A4U.rise||''}" onchange="a4uSetRise(this.value)"></div></div>
       </div>
@@ -3581,15 +3639,13 @@ function renderA4U(){
         <div class="tot"><div class="l">MAP</div><div class="v">${money(t.map)}</div></div>
       </div>
       <div class="totgrid est">
-        <div class="tot"><div class="l">Aluminum surcharge <span class="fineprint">est · 23% of dealer</span></div><div class="v">${money(alumSur)}</div></div>
-        <div class="tot"><div class="l">Estimated shipping</div><div class="v">${money(estShip)}</div></div>
-        <div class="tot your"><div class="l">Est. total <span class="fineprint">Your Price + surcharge + shipping</span></div><div class="v">${money(estTotal)}</div></div>
+        <div class="tot"><div class="l">Freight</div><div class="v" style="font-size:13px">Actual cost from Access4U's order confirmation — added after the order is placed</div></div>
       </div>
       <div class="aacts">
         <button class="go" onclick="a4uToCart()">Add configuration to cart</button>
         <button class="ab" onclick="a4uLayoutSheet()">🖨 Layout &amp; spec sheet</button>
         <button class="clr" onclick="A4U.items=[];A4U.rise=0;renderA4U()">Clear</button>
-        <span class="fineprint" style="align-self:center;">Your Price shown at the 15% tier; per-dealer tiers apply once dealer logins are set up. Freight is FOB Access4U, quoted by HCPS. The Aluminum surcharge and estimated shipping rates vary. This is only an estimated amount for quote purposes.</span>
+        <span class="fineprint" style="align-self:center;">Your Price is your account price for Access4U. No free freight and no advance freight quote: the actual freight on Access4U's order confirmation is added after the order is placed. This is an estimate for quote purposes.</span>
       </div>
     </div></div>`;
 }
@@ -3613,7 +3669,7 @@ function a4uDiagram(seq){
   const W=760,H=250,padL=46,padR=22,padT=26,padB=58;
   const segs=seq.map(p=>{
     const f=p.family; let type,len;
-    if(f==="RR"){ type=(p.code==="SR3")?"start":"ramp"; len=Math.max(p.length_ft||1,1); }
+    if(a4uIsRun(p)){ type=a4uIsStarter(p)?"start":"ramp"; len=Math.max(p.length_ft||1,1); }
     else if(f==="PS"){ type="platform"; len=Math.max(Math.min((p.width_in||48)/12,(p.length_ft||48)/12),3); } // platform depth ≈ shorter footprint dim
     else if(f==="GP"){ type="ground"; len=2.5; }
     else if(f==="STP"){ type="stairs"; len=2.5; }
@@ -3672,7 +3728,7 @@ function a4uDiagram(seq){
 // applies its turn (straight / left 90° / right 90° / U-turn) so the true L/U/switchback shape is drawn.
 function a4uPlanDiagram(phys){
   if(!phys.length) return "";
-  const RW=3;                                   // 36" ramp width, in feet
+  const RW=(A4U.width===48?48:36)/12;           // ramp width (36" or 48"), in feet
   const S2=Math.SQRT1_2;
   // 8 compass headings 45° apart (screen coords, y-down): 0=E 1=SE 2=S 3=SW 4=W 5=NW 6=N 7=NE
   const H=[[1,0],[S2,S2],[0,1],[-S2,S2],[-1,0],[-S2,-S2],[0,-1],[S2,-S2]];
@@ -3714,9 +3770,9 @@ function a4uPlanDiagram(phys){
         hi=nhi;
       }
     } else {
-      const L = f==="RR"?Math.max(p.length_ft||1,1) : f==="GP"?Math.max((p.width_in||48)/12,3) : f==="STP"?3 : RW;
+      const L = a4uIsRun(p)?Math.max(p.length_ft||1,1) : f==="GP"?Math.max((p.width_in||48)/12,3) : f==="STP"?3 : RW;
       const cs={x:pos.x,y:pos.y}, ce={x:pos.x+Hv[0]*L,y:pos.y+Hv[1]*L}, pp=perpV;
-      const kind=f==="RR"?'ramp':f==="GP"?'ground':f==="STP"?'stairs':'gate';
+      const kind=a4uIsRun(p)?'ramp':f==="GP"?'ground':f==="STP"?'stairs':'gate';
       shapes.push({kind,label:p.code,dir:hi,cs,ce,L,pts:[add(cs,pp,RW/2),add(ce,pp,RW/2),add(ce,pp,-RW/2),add(cs,pp,-RW/2)]});
       pos=ce;
     }
@@ -3756,7 +3812,7 @@ function a4uPlanDiagram(phys){
   }
   const first=shapes.find(s=>s.kind!=='plat'); if(first){ svg+=`<circle cx="${X(first.cs.x)}" cy="${Y(first.cs.y)}" r="4" fill="#10263f"/><text x="${X(first.cs.x)}" y="${Y(first.cs.y)-8}" text-anchor="middle" font-size="9" font-weight="bold" fill="#10263f">ENTRY</text>`; }
   const barFt=5, bx=offX, by=Hpx-12, bw=barFt*scale;
-  svg+=`<line x1="${bx}" y1="${by}" x2="${bx+bw}" y2="${by}" stroke="#33475b" stroke-width="1.6"/><line x1="${bx}" y1="${by-4}" x2="${bx}" y2="${by+4}" stroke="#33475b" stroke-width="1.6"/><line x1="${bx+bw}" y1="${by-4}" x2="${bx+bw}" y2="${by+4}" stroke="#33475b" stroke-width="1.6"/><text x="${bx+bw+6}" y="${by+3}" font-size="9" fill="#33475b">5 ft · drawn to scale (36&quot; ramp width)</text>`;
+  svg+=`<line x1="${bx}" y1="${by}" x2="${bx+bw}" y2="${by}" stroke="#33475b" stroke-width="1.6"/><line x1="${bx}" y1="${by-4}" x2="${bx}" y2="${by+4}" stroke="#33475b" stroke-width="1.6"/><line x1="${bx+bw}" y1="${by-4}" x2="${bx+bw}" y2="${by+4}" stroke="#33475b" stroke-width="1.6"/><text x="${bx+bw+6}" y="${by+3}" font-size="9" fill="#33475b">5 ft · drawn to scale (${A4U.width===48?48:36}&quot; ramp width)</text>`;
   svg+=`</svg>`;
   return svg;
 }
@@ -3765,7 +3821,7 @@ function a4uSheetHtml(bom,t,phys){
   const fmt=n=>"$"+(Number(n)||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
   const esc2=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   // specs
-  const rampFeet=seq.filter(p=>p.family==="RR"&&p.length_ft).reduce((n,p)=>n+(p.length_ft||0),0);
+  const rampFeet=seq.filter(p=>a4uIsRun(p)&&p.length_ft).reduce((n,p)=>n+(p.length_ft||0),0);
   const platforms=seq.filter(p=>p.family==="PS").length;
   const stairs=seq.filter(p=>p.family==="STP").length;
   const gates=seq.filter(p=>p.family==="GATE").length;
@@ -3781,7 +3837,7 @@ function a4uSheetHtml(bom,t,phys){
     ["Actual slope", (A4U.rise&&rampFeet)? "1:"+ada.ratio.toFixed(1)+" (ADA min 1:12)":"—"],
     ["ADA slope check", adaLabel],
     ["Serves vertical rise up to", rampFeet? "≈ "+servedRise+' in at ADA 1:12 slope':"—"],
-    ["Usable width", "36 in clear"],
+    ["Ramp width", (A4U.width===48?48:36)+" in"],
     ["Rest / turn platforms", platforms||"0"],
     ["Ground platforms", groundP||"0"],
     ["Stair units", stairs||"0"],
@@ -3792,7 +3848,7 @@ function a4uSheetHtml(bom,t,phys){
   const compRows=bom.map(b=>{
     // Ramp/starter sections carry a true length in feet; platforms/others store inches, so show width only and let the name convey footprint.
     let dims;
-    if(b.p.family==="RR" && b.p.length_ft){ dims=b.p.length_ft+"' L × "+(b.p.width_in||36)+'" W'; }
+    if(a4uIsRun(b.p) && b.p.length_ft){ dims=b.p.length_ft+"' L × "+(b.p.width_in||36)+'" W'; }
     else if(b.p.width_in){ dims=b.p.width_in+'" W'; }
     else { dims="—"; }
     return `<tr>
@@ -3808,7 +3864,7 @@ function a4uSheetHtml(bom,t,phys){
   const diagram=a4uDiagram(seq);
   const plan=a4uPlanDiagram(phys);
   const dateStr=(new Date()).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
-  const alumSur=Math.round(t.dealer*0.23*100)/100, estShip=bom.length?400:0, estTotal=Math.round((t.your+alumSur+estShip)*100)/100;
+  /* no surcharge and no freight figure: the Fall 2026 list states neither; actual freight comes on Access4U's confirmation */
   return `<!doctype html><html><head><meta charset="utf-8"><title>Access4U Modular Ramp — Layout & Quote</title>
 <style>
   *{box-sizing:border-box} html,body{margin:0;padding:0;background:#eef2f6;color:#10263f;font-family:Arial,Helvetica,sans-serif}
@@ -3882,18 +3938,13 @@ function a4uSheetHtml(bom,t,phys){
     <div class="pc map"><div class="l">MAP (advertised)</div><div class="v">${fmt(t.map)}</div></div>
     <div class="pc dealer"><div class="l">Dealer cost</div><div class="v">${fmt(t.dealer)}</div></div>
   </div>
-  <div class="dlabel" style="margin-top:12px">Estimated add-ons — 23% aluminum surcharge on the standard dealer rate + flat freight estimate</div>
-  <div class="pricebox">
-    <div class="pc"><div class="l">Aluminum surcharge (est.)</div><div class="v">${fmt(alumSur)}</div></div>
-    <div class="pc"><div class="l">Estimated shipping</div><div class="v">${fmt(estShip)}</div></div>
-    <div class="pc dealer"><div class="l">Est. total (Your Price + add-ons)</div><div class="v">${fmt(estTotal)}</div></div>
-  </div>
+  <div class="dlabel" style="margin-top:12px">Freight — no free freight and no advance quote: the actual freight on Access4U's order confirmation is added after the order is placed.</div>
 
   <div class="note">
-    The top view is drawn to scale from the component dimensions (36&quot; ramp width and platform footprints), per the scale bar; the side elevation exaggerates height for readability. Turn directions reflect the configurator selections — verify final orientation, clearances, and site fit against field measurements.
+    The top view is drawn to scale from the component dimensions (${A4U.width===48?48:36}&quot; ramp width and platform footprints), per the scale bar; the side elevation exaggerates height for readability. Turn directions reflect the configurator selections — verify final orientation, clearances, and site fit against field measurements.
     ADA guidance: 1:12 maximum slope (1&quot; of rise per 12&quot; of ramp run); a 30&quot; rise or 30&#39; run should include an intermediate rest platform.
     Prices are per the current Access4U list. <b>Dealer cost is the HCPS/dealer figure — for your records, not for the customer.</b>
-    Freight is FOB Access4U and quoted separately by HCPS. <b>The Aluminum surcharge and estimated shipping rates vary. This is only an estimated amount for quote purposes.</b> Configuration and pricing subject to final measurement and confirmation. Not a contract.
+    Freight: the actual cost on Access4U's order confirmation, added after the order is placed. <b>This is an estimated amount for quote purposes.</b> Configuration and pricing subject to final measurement and confirmation. Not a contract.
   </div>
 </div>
 </body></html>`;
@@ -5787,9 +5838,9 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
             ${variantSel}
             ${p._discontinued
               ? `<div class="pd-disc"><b>Discontinued</b> — this item is shown for reference and can no longer be ordered.${(variants||[]).some(v=>!v._discontinued)?' Choose a current option above, or see related products below.':' See related products below, or ask your HCPS rep for the current replacement.'}</div>`
-              : `<div class="pd-buy buy">
+              : `${upgradeSelectHtml(p)}<div class="pd-buy buy">
               <input class="qtyin" type="number" min="1" value="1" aria-label="Qty">
-              <button class="addbtn" data-code="${esc(p.code)}">🛒 Add to cart</button>
+              <button class="addbtn" data-code="${esc(p.code)}" data-family="${esc(p.family==null?"":p.family)}">🛒 Add to cart</button>
             </div>`}
             ${isOvation(p)?`<button class="pd-sample" onclick="requestSample('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Request a Sample</button>`:""}
             <button class="pd-broch" onclick="openBrochure('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>Print Brochure</button>

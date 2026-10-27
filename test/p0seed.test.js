@@ -80,10 +80,10 @@ function runSeed(root) {
 let gitOk = true; try { execFileSync('git', ['-C', ROOT, 'cat-file', '-e', (process.env.P0_BASE_REF || '4b1bad3') + '^{commit}']); } catch (e) { gitOk = false; }
 if (!gitOk) t('the base commit is readable', () => { throw new Error('git ref unavailable — fetch it or set P0_BASE_REF'); });
 else {
-  const lines = out => Object.fromEntries(out.split('\n').filter(l => /^(ok|BAD|skip|retired)\s/.test(l)).map(l => { const [st, slug] = l.trim().split(/\s+/); return [slug, st]; }));
+  const lines = out => Object.fromEntries(out.split('\n').filter(l => /^(ok|BAD|skip|retired|updated)\s/.test(l)).map(l => { const [st, slug] = l.trim().split(/\s+/); return [slug, st]; }));
   t('seed dry run on THIS tree: every current line ok, retired lines reported and never seeded', () => {
     const r = lines(runSeed(ROOT));
-    LINES.currentLines(ROOT).forEach(s => ok(r[s] === 'ok' || r[s] === 'skip', s + ' ' + r[s]));
+    LINES.currentLines(ROOT).forEach(s => ok(r[s] === 'ok' || r[s] === 'skip' || (r[s] === 'updated' && !!LINES.UPDATED[s]), s + ' ' + r[s]));
     LINES.RETIRED.forEach(s => ok(r[s] === 'retired' || r[s] === undefined, s + ' would be seeded: ' + r[s]));
     ok(!Object.values(r).includes('BAD'), 'a BAD line');
   });

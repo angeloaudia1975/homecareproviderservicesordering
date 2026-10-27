@@ -10,4 +10,10 @@ function currentLines(root) {
   const p = path.join(root || ROOT, 'public', 'data', 'manufacturers.json');
   return JSON.parse(fs.readFileSync(p, 'utf8')).map(m => String(m.slug));
 }
-module.exports = { currentLines, RETIRED };
+/* Lines whose public file was changed AFTER the P0 seed by a reviewed catalog update (a new private version added with
+   --add-version and run by Angelo). The P0 tests compare these against the identity registered here instead of the
+   pre-strip base, so the file still cannot change silently: any other edit fails. */
+const UPDATED = {
+  access4u: { identity: '0e3a114ddff153a95a00fa601a6d88e23db52ed3b1b43e1536b38b9cfc1b51ec', note: 'Access4U Fall 2026 list = the whole active line (owner source-of-truth 2026-10-27 17:40)' },
+};
+module.exports = { currentLines, RETIRED, UPDATED };

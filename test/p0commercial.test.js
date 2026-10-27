@@ -172,8 +172,12 @@ if (!originals) {
   if (process.env.P0_ALLOW_NO_GIT === '1') console.log('skip real files (P0_ALLOW_NO_GIT=1): git ref ' + BASE_REF + ' unavailable');
   else t('the pre-strip catalog files are readable from git ' + BASE_REF, () => { throw new Error('git show failed — fetch the base commit or set P0_BASE_REF'); });
 } else {
+  const UPD = require('../scripts/p0-lines.js').UPDATED;
   for (const slug of Object.keys(originals)) {
     const txt = originals[slug]; if (txt == null) continue;
+    if (UPD[slug]) { t(`real file ${slug}: updated after P0 (${UPD[slug].note}) — the tree file is exactly the registered version`, () => {
+      const cur = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'data', slug + '.json'), 'utf8'));
+      eq(PAGE.catalogIdentity(cur), UPD[slug].identity, 'identity'); eq(CC.commercialKeysIn(cur), [], 'commercial field in the public file'); }); continue; }
     t(`real file ${slug}: split → restore (page code) is byte-identical to the original`, () => {
       const f = JSON.parse(txt), s = CC.splitCatalogFile(f);
       eq(JSON.stringify(PAGE.restoreCatalogFile(s.public, s.overlay)), JSON.stringify(f));

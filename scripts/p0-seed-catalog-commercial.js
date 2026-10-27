@@ -72,9 +72,26 @@ async function writeAndVerify(D, recs) {
 
 (async () => {
   const ref = arg('--ref'), reseed = arg('--reseed'), prune = arg('--prune');
-  if ([ref, reseed, prune].filter(Boolean).length !== 1)
-    die('usage: --ref <git ref> | --reseed <slug> --base <git ref> [--supply <file>] | --prune <slug> --live <url>   [--apply]', 2);
+  if ([ref, reseed, prune, arg('--add-version')].filter(Boolean).length !== 1)
+    die('usage: --ref <git ref> | --reseed <slug> --base <git ref> [--supply <file>] | --prune <slug> --live <url> | --add-version <slug> --full <file> --export-sql <file>   [--apply]', 2);
 
+  /* 4. ADD A REVIEWED VERSION without a service key (Angelo runs the SQL):
+        node scripts/p0-seed-catalog-commercial.js --add-version <slug> --full <private priced file> --export-sql <abs path>
+     The public file in this tree must equal the split of the private priced file exactly. */
+  const addv = arg('--add-version');
+  if (addv) {
+    const fullPath = arg('--full'), exportPath = arg('--export-sql');
+    if (!fullPath || !exportPath) die('--add-version needs --full <private priced file> and --export-sql <absolute path>', 2);
+    for (const pth of [fullPath, exportPath]) if (!path.isAbsolute(pth) || !path.relative(ROOT, pth).startsWith('..')) die('--full and --export-sql must be absolute paths OUTSIDE this repository (they hold prices)', 2);
+    const full = JSON.parse(fs.readFileSync(fullPath, 'utf8')), current = readTree(addv);
+    if (!current) die(`public/data/${addv}.json is missing in this tree`);
+    const p = L.planInitial(addv, full, current, `add-version/${addv}`);
+    if (!p.ok) die('REFUSED — nothing written:\n  ' + p.problems.join('\n  '));
+    const x = L.exportAddVersionSql(p.record, { ref: 'tree' });
+    fs.writeFileSync(exportPath, x.sql, { mode: 0o600 });
+    console.log(`${addv}: version ${short(p.record.identity_sha256)} · overlay ${short(p.record.rows_sha256)} · ${x.rows} rows → ${exportPath} (sha256 ${short(sha(x.sql))})`);
+    return;
+  }
   if (ref) {
     /* Only CURRENT lines (listed in this tree's manufacturers.json) are seeded; a file at the ref for a line
        that is no longer listed (retired, e.g. Complete Medical Supplies) is reported and never seeded. */
@@ -84,6 +101,9 @@ async function writeAndVerify(D, recs) {
       .filter(s => !current.has(s)).sort().forEach(s => console.log(`retired  ${s.padEnd(28)} (not in manufacturers.json — no commercial record is seeded)`));
     const plans = []; let bad = 0;
     for (const slug of [...current].sort()) {
+      if (LINES.UPDATED[slug]) { const cur = readTree(slug), id = cur ? CC.catalogIdentity(cur) : null, okId = id === LINES.UPDATED[slug].identity;
+        if (!okId) bad++;
+        console.log(`${okId ? 'updated ' : 'BAD     '} ${slug.padEnd(28)} (${LINES.UPDATED[slug].note} — its version is added with --add-version, not from ${ref}${okId ? '' : '; the tree file is NOT the registered version'})`); continue; }
       const txt = gitShow(ref, `public/data/${slug}.json`), cur = readTree(slug);
       if (txt == null || cur == null) { console.log(`skip     ${slug.padEnd(28)} (${txt == null ? 'not in ' + ref : 'not in this tree'})`); continue; }
       const p = L.planInitial(slug, applyScrubs(slug, JSON.parse(txt)), cur, ref);

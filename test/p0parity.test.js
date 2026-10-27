@@ -123,6 +123,8 @@ const sha = v => crypto.createHash('sha256').update(JSON.stringify(canon(v))).di
     const SLUGS = MFRS.filter(m => m.hasData).map(m => m.slug);
     for (const mode of ['none', 'record']) {
       for (const slug of SLUGS) {
+        /* a line updated after P0 by a reviewed catalog update is checked by p0commercial against its registered version */
+        if (require('../scripts/p0-lines.js').UPDATED[slug]) continue;
         let full; try { full = JSON.parse(git(`public/data/${slug}.json`)); } catch (e) { continue; }
         const strippedNow = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'data', slug + '.json'), 'utf8'));
         const contract = {}; full.slice(0, 3).forEach((r, i) => { contract[`${slug}::${r.code}`] = 5 + i; });
