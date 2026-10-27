@@ -26,9 +26,46 @@ t('widths and families of the new identifiers are right',()=>{
   eq([...new Set(F.filter(r=>/^RS\dx48$/.test(r.code)).map(r=>r.family))],['RS'],'RS family');
   eq([...new Set(F.filter(r=>/^STP/.test(r.code)).map(r=>r.family))],['STP'],'STP family');
 });
-t('items held for the owner are not added; SR3 and PRK keep both their ramp families',()=>{
-  eq(['AST24x30','SR3x36','SR3x48','PRK36','PRK48','RRS5x36','GP5x3.5','PS4x5','PS4x6','TRR3','TRR312'].map(count),[0,0,0,0,0,0,0,0,0,0,0]);
-  eq(F.filter(r=>r.code==='SR3').map(r=>r.family),['RS','RR']); eq(F.filter(r=>r.code==='PRK').map(r=>r.family),['RS','RR']);
+t('the Fall 2026 list is the whole active line: only PRK (= PRK36? open question) held; legacy-only items gone',()=>{
+  eq(['AST24x30','SR3x36','SR3x48','PRK36','PRK48','RRS5x36','GP5x3.5','PS4x5','PS4x6','TRR3','TRR312'].map(count),[1,1,1,1,1,1,1,1,1,1,1]);
+  eq(['PRK','SR3','STRA12x30','MR24x30','RR1x36','GRR R1','CP5x4','CR1x36','MRS2x36','Gate48','GP 5x3 1/2','RS8x36'].map(count),[0,0,0,0,0,0,0,0,0,0,0,0]);
+  eq(F.length,125,'rows');
+  const d={}; F.forEach(r=>{ d[norm(r.code)]=(d[norm(r.code)]||0)+1; }); eq(Object.keys(d).filter(k=>d[k]>1),[],'one row per part number');
+});
+t('three ramp categories with the listed widths (threshold and assist 30/36, portable 30 only)',()=>{
+  const fam=re=>F.filter(r=>re.test(r.code));
+  const cat=(re,c,s)=>{ for(const r of fam(re)){ eq([r.category,r.subcategory],[c,s],r.code); } };
+  cat(/^STR\d/,'Threshold Ramps','Supported Threshold Ramp – Fixed Rise'); cat(/^TR\d/,'Threshold Ramps','Threshold Ramp');
+  cat(/^ATR/,'Threshold Ramps','Adjustable Threshold Ramp'); cat(/^TRR/,'Threshold Ramps','Threshold Rubber Ramp');
+  cat(/^AST\d/,'Assist Ramps','Assist Ramps with Handrails'); cat(/^ASTNR/,'Assist Ramps','Assist Ramps without Handrails');
+  cat(/^PFR/,'Portable Ramps','Portable Folding Ramps');
+  for(const [re,ws,n] of [[/^(STR|TR\d|ATR)/,[30,36],32],[/^AST\d/,[30,36],14],[/^ASTNR/,[30,36],14],[/^PFR/,[30],5]]){
+    const rows=fam(re); eq(rows.length,n,String(re)); eq([...new Set(rows.map(r=>r.width_in))].sort(),ws,String(re)+' widths');
+  }
+  eq(fam(/^PFR.*x36$/).length,0,'no 36" portable (X on the list)');
+});
+t('a width-column row names its width and the printed list reference (no invented base code)',()=>{
+  for(const r of F.filter(r=>/^(STR|TR\d|ATR|AST)/.test(r.code))){
+    eq(new RegExp('x'+r.width_in+'$').test(r.code),true,r.code+' code width');
+    eq(r.name.includes(r.width_in+'″ width'),true,r.code+' name');
+    eq(/x3W$/.test(r.mfr_ref)&&r.code.replace(/x3\d$/,'')===r.mfr_ref.replace(/x3W$/,''),true,r.code+' ref '+r.mfr_ref);
+  }
+});
+t('reorder matches a re-spelled part number only when exactly one product has it',()=>{
+  eq(/nc\(x\.code\)===nc\(it\.code\)\); if\(m\.length===1\) same=m;/.test(H),true);
+});
+t('the modular ramp builder uses the Fall 2026 parts: SR3x<w> starter, RS sections, PRK<w> per platform',()=>{
+  const ctx={state:{products:F.map(r=>Object.assign({},r,{manufacturer:'access4u'}))}}; vm.createContext(ctx);
+  const names=['function a4uProd','function a4uFam','function a4uKey','function a4uIsRun','function a4uIsStarter','function a4uAddRamp','function a4uBom','function a4uAda','function a4uSetWidth'];
+  vm.runInContext('const A4U={items:[],open:false,rise:0,width:36};let LEN=10;const $=()=>({value:LEN});const clampInt=(v,a,b)=>Math.max(a,Math.min(b,Math.round(Number(v))));const renderA4U=()=>{};'
+    +names.map(n=>grabDecl(H,n)).join('\n')+';this.A4U=A4U;this.setLen=v=>{LEN=v};this.add=a4uAddRamp;this.bom=a4uBom;this.ada=a4uAda;this.w=a4uSetWidth;this.prod=a4uProd;',ctx);
+  ctx.add(); eq(ctx.A4U.items.map(i=>i.code),['SR3x36','RS7x36'],'10 ft at 36"');
+  eq(ctx.ada([ctx.prod('SR3x36','RS'),ctx.prod('RS7x36','RS')],10).state,'pass','10 ft run serves 10" rise');
+  ctx.A4U.items=[]; ctx.w(48); ctx.setLen(10); ctx.add(); eq(ctx.A4U.items.map(i=>i.code),['SR3x48','RS6x48','RS1x48'],'10 ft at 48"');
+  ctx.A4U.items.push({code:'PS5x5',fam:'PS',qty:2}); const b=ctx.bom();
+  eq(b.filter(x=>x.auto).map(x=>[x.p.code,x.qty]),[['PRK48',2]],'one PRK48 per platform');
+  eq(b.every(x=>!!x.p),true,'every part resolves');
+  eq(/alumSur|Aluminum surcharge|FOB Access4U/.test(H),false,'no surcharge or FOB quote wording left (not on the Fall list)');
 });
 t('the public file carries no commercial field (prices and upgrade prices are private)',()=>{
   eq(CC.commercialKeysIn(F),[]); eq(CC.CATALOG_COMMERCIAL_KEYS.includes('upgrades'),true,'upgrades are commercial');

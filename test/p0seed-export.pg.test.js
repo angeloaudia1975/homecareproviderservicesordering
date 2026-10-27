@@ -49,8 +49,10 @@ const preload = slugs => psql(SEED.split('\ndo $p0$')[0] + `
   commit;`);
 const FIVE = ['bemis', 'dalton', 'airavant-bongorx', 'corsicana', 'climbing-steps'];
 
-t('the export plans exactly the runbook: 10 lines, 1120 rows, Complete Medical excluded', () => {
-  ok(LINES === 10 && ROWS === 1120, `${LINES} / ${ROWS}`);
+/* Access4U left the initial seed (UPDATED in scripts/p0-lines.js): its Fall 2026 version goes in through --add-version. */
+const EXP = '9|890';
+t('the export plans exactly the runbook: 9 lines, 890 rows (Access4U by version-add), Complete Medical excluded', () => {
+  ok(`${LINES}|${ROWS}` === EXP, `${LINES} / ${ROWS}`);
   ok(!/complete-medical/.test(SEED.split('\ndo $p0$')[0].replace(/\$p0j[0-9a-f]+\$[\s\S]*?\$p0j[0-9a-f]+\$/g, '')), 'retired line in the plan');
 });
 t('the file is private: mode 0600, outside the repository, no UPDATE / DELETE statement', () => {
@@ -68,19 +70,19 @@ t('the CLI refuses a path inside a git repository and never overwrites', () => {
 });
 
 reset();
-t('fresh table → exactly the plan (10 / 1120), summary shows RLS on and anon denied', () => {
-  const out = psql(SEED); ok(state() === '10|1120', state());
-  const last = out.trim().split('\n'); ok(last.length === 10 && last.every(l => /\|10\|1120\|t\|t$/.test(l)), last.slice(-1)[0]);
+t('fresh table → exactly the plan (9 / 890), summary shows RLS on and anon denied', () => {
+  const out = psql(SEED); ok(state() === EXP, state());
+  const last = out.trim().split('\n'); ok(last.length === 9 && last.every(l => l.endsWith('|' + EXP + '|t|t')), last.slice(-1)[0]);
 });
 t('a second run is a no-op (idempotent; nothing rewritten)', () => {
-  const before = stamps(); psql(SEED); ok(state() === '10|1120' && stamps() === before, 'changed');
+  const before = stamps(); psql(SEED); ok(state() === EXP && stamps() === before, 'changed');
 });
 
 reset();
 t('the five records already stored are kept untouched; the other five are added', () => {
   preload(FIVE); ok(state() === '5|58', 'preload ' + state());
   const before = stamps().split(',');
-  psql(SEED); ok(state() === '10|1120', state());
+  psql(SEED); ok(state() === EXP, state());
   const after = stamps().split(',');
   ok(before.every(b => after.indexOf(b) >= 0), 'an existing record was rewritten');
 });
