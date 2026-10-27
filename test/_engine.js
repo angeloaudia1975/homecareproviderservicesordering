@@ -6,7 +6,7 @@ const fs = require('fs'), path = require('path');
 const { grabDecl } = require('./extract-picker.js');
 function slice(src, a, b) { const i = src.indexOf(a), j = src.indexOf(b, i); if (i < 0 || j < 0) throw new Error('anchor not found: ' + (i < 0 ? a : b)); return src.slice(i, j); }
 function extract(src) {
-  const pricing = ['function familyQty', 'function tierQty', 'function contractPrice', 'function unitPrice', 'function linesSubtotal', 'function validFreightTerms', 'function freightTermsFor', 'function computeFreight'].map(a => grabDecl(src, a)).join('\n');
+  const pricing = ['function familyQty', 'function tierQty', 'function contractPrice','function lineRatePrice', 'function unitPrice', 'function linesSubtotal', 'function validFreightTerms', 'function freightTermsFor', 'function computeFreight'].map(a => { try { return grabDecl(src, a); } catch (e) { if (a === 'function lineRatePrice') return ''; throw e; } }).join('\n');   // lineRatePrice: added 2026-10-27, absent from older pages
   const startA = src.indexOf('/* Pure. The same rule as images-api.js') >= 0 ? '/* Pure. The same rule as images-api.js' : 'async function mergeCatalogEdits(slug, prods){';
   return pricing + '\n' + slice(src, startA, 'async function loadProducts(slug){') + '\n' + slice(src, 'const COLOR_SUFFIX=', '/* ---------- render tabs');
 }

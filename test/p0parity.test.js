@@ -29,6 +29,7 @@ const LAYERS = require(path.join(ROOT, 'netlify', 'functions', 'catalog-layers.j
 const { applyScrubs } = require(path.join(ROOT, 'scripts', 'p0-scrubs.js'));
 const FROZEN = ['climbing-steps', 'strongback-mobility', 'ovation-medical', 'bemis'];
 
+const { undoLineDiscount } = require('./_line_discount_undo.js');
 let pass = 0, fail = 0;
 async function t(name, fn) { try { await fn(); pass++; console.log('ok   ' + name); } catch (e) { fail++; console.log('FAIL ' + name + '\n     ' + (e && e.message)); } }
 const ok = (c, m) => { if (!c) throw new Error(m); };
@@ -109,7 +110,10 @@ const sha = v => crypto.createHash('sha256').update(JSON.stringify(canon(v))).di
       'function groupLeads', 'function addToCart', 'function familyQty', 'function tierQty', 'function contractPrice', 'function unitPrice', 'function linesSubtotal',
       'function computeFreight', 'function freightTermsFor', 'function validFreightTerms', 'function inheritColorPrice', 'function fillMsrp', 'function noMsrpRule',
       'function reconcileShopPrices', 'function pageImageFor', 'function renderCart', 'function cartCount', 'function renderTabs'];
-    const changed = names.filter(n => { let a = null, b = null; try { a = grabDecl(OLD_HTML, n); } catch (e) {} try { b = grabDecl(NEW_HTML, n); } catch (e) {} return a == null || a !== b; });
+    /* The one approved change since P0 (owner policy 2026-10-27): the dealer's line discount. It is taken back out
+       of the new page here, exactly and only as written, so ANY other change to this code still fails. */
+    const NEW_P0 = undoLineDiscount(NEW_HTML);
+    const changed = names.filter(n => { let a = null, b = null; try { a = grabDecl(OLD_HTML, n); } catch (e) {} try { b = grabDecl(NEW_P0, n); } catch (e) {} return a == null || a !== b; });
     ok(!changed.length, 'changed or not found: ' + changed.join(', '));
     const amp = h => h.slice(h.indexOf('async function applyMasterPrices('), h.indexOf('async function loadProducts(slug){'));
     ok(amp(OLD_HTML).length > 1000 && amp(OLD_HTML) === amp(NEW_HTML), 'applyMasterPrices / master-record path changed');

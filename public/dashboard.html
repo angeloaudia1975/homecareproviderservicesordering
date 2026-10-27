@@ -210,6 +210,15 @@ async function api(endpoint,body){
   return r.json().catch(()=>({}));
 }
 
+/* What this dealer pays for one unit (owner policy 2026-10-27): contract price → the dealer's line discount off the
+   standard list (dealer_price, no quantity breaks) → the line's default price. MSRP and MAP never change with it. */
+let ME_PRICES={}, ME_RATES={};
+function dealerCostOf(p, slug){
+  const cp=ME_PRICES[slug+'::'+(p&&p.code)]; if(cp!=null&&isFinite(Number(cp))) return Number(cp);
+  const r=Number(ME_RATES[slug]), list=Number(p&&p.dealer_price);
+  if(isFinite(r)&&r>0&&r<100&&isFinite(list)&&list>0&&!(Array.isArray(p.tiers)&&p.tiers.length)) return Math.round(Number((list*(100-r)).toFixed(6)))/100;
+  const b=Number(p&&p.base_price); return isFinite(b)?b:null;
+}
 /* ---- boot ---- */
 async function boot(){
   document.getElementById("foot").textContent="HCPS Dealer Business Hub — Phases 1–5 · order history, reports & margin math, exports, favorites, branded quotes, showroom builder, literature requests & shipment tracking, account setup (credit apps, resale cert & terms) and purchase-data intelligence.";
@@ -218,6 +227,7 @@ async function boot(){
   const me=await api(AUTH_ENDPOINT,{action:"me"}).catch(()=>({}));
   if(!me||me.status!=="approved"||!me.dealer){ return gate(me&&me.status); }
   PROFILE=me.dealer; LINES=(me.lines||[]);
+  ME_PRICES=(me.prices&&typeof me.prices==='object')?me.prices:{}; ME_RATES=(me.rates&&typeof me.rates==='object')?me.rates:{};
   $("#dealerChip").style.display="";$("#dealerName").textContent=PROFILE.name||"Dealer";
   $("#signout").style.display="";$("#signout").onclick=()=>{try{localStorage.removeItem("hcps_session");}catch(e){}location.href="/";};
   await loadBranding(); applyBranding();
@@ -452,7 +462,7 @@ async function loadPricing(){
         if(!priced) items=items.map(p=>Object.assign({},p,{base_price:null,msrp:null,map:null}));
         for(const p of items){
           const code=String(p.code||'').trim(); if(!code) continue;
-          const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(p.map!=null?Number(p.map):null),cost:(p.base_price!=null?Number(p.base_price):null),category:p.category||'',name:p.name||'',mfrName:m.name};
+          const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(p.map!=null?Number(p.map):null),cost:(p.base_price!=null?(typeof dealerCostOf==='function'?dealerCostOf(p,m.slug):Number(p.base_price)):null),category:p.category||'',name:p.name||'',mfrName:m.name};
           PRICE[m.slug+'|'+code]=rec;
           PRICELIST.push({code,mfr:m.slug,mfrName:m.name,name:p.name||'',cost:rec.cost,map:rec.map,msrp:rec.msrp,category:p.category||''});
         }

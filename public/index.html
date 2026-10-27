@@ -1292,6 +1292,20 @@ function contractPrice(p){
   if(AUTH && AUTH.prices){ const k=(p.manufacturer||"")+"::"+(p.code||""); if(AUTH.prices[k]!=null) return Number(AUTH.prices[k]); }
   return null;
 }
+/* THE DEALER'S LINE DISCOUNT (owner policy, 2026-10-27, Access4U). A line that prints a standard dealer list
+   (`dealer_price`) prices a dealer at that list less HIS discount rate for the line (10, 15, 20 or another approved
+   %, from dealer_line_discounts via the sign-in). No rate on file = the line's default purchase price (base_price,
+   which already is the default discount). ONLY the purchase price moves: MSRP and MAP are never touched here. A
+   product with quantity breaks is left to its breaks, and a contract price (checked first) is never discounted
+   again. Rounded to the cent from the list in cents, so 628 at 15% is 533.80 exactly. */
+function lineRatePrice(p){
+  if(!(AUTH && AUTH.rates)) return null;
+  const r=AUTH.rates[p.manufacturer||""]; if(r==null || r==="") return null;
+  const rate=Number(r); if(!isFinite(rate) || rate<=0 || rate>=100) return null;
+  const list=Number(p.dealer_price); if(!isFinite(list) || list<=0) return null;
+  if(Array.isArray(p.tiers) && p.tiers.length) return null;
+  return Math.round(Number((list*(100-rate)).toFixed(6)))/100;
+}
 /* SERVE THE SIZE THAT IS ACTUALLY DRAWN.
    The product photos are 1536x1920 and 1920x1920 originals. A card draws one at 150x150 and a
    thumbnail at 44x44 — so the browser downloaded, decoded and held a ~1.9 megapixel bitmap to
@@ -1309,10 +1323,20 @@ function imgUrl(url, w){
   return path.replace('/storage/v1/object/public/','/storage/v1/render/image/public/')
        + '?width='+w+'&resize=contain&quality=75' + (q?'&'+q:'');
 }
+/* What THIS dealer pays for one unit, for the dashboard tools that list a line outside the shop
+   (price list, showroom designer): contract price → line discount → default price. MSRP / MAP untouched. */
+function dealerCostOf(p, slug){
+  const q=Object.assign({}, p, {manufacturer:(p&&p.manufacturer)||slug});
+  try{ const v=Number(unitPrice(q,1)); if(isFinite(v)&&v>0) return v; }catch(e){}
+  const b=Number(p&&p.base_price); return isFinite(b)?b:null;
+}
 function unitPrice(p, qty){
   // Per-dealer contract price (set by HCPS) wins over list price and quantity tiers.
   const cp=contractPrice(p);
   if(cp!=null) return cp;
+  // The dealer's own line discount off the standard list (never stacked on a contract price).
+  const lr=lineRatePrice(p);
+  if(lr!=null) return lr;
   // Quantity-break tiers apply when present.
   if(Array.isArray(p.tiers)&&p.tiers.length){
     const q=tierQty(p,qty);
@@ -1418,11 +1442,12 @@ function priceHtml(p){
   if (!state.dealer && p.base_price==null) return `<span class="price locked">Log in for pricing</span>`;
   if (p.base_price==null) return `<span class="price locked">Call for pricing</span>`;
   const cp=contractPrice(p);
-  const eff=(cp!=null)?cp:Number(p.base_price);
+  const lr=(cp==null && typeof lineRatePrice==='function')?lineRatePrice(p):null;   // absent in the server's no-dealer render
+  const eff=(cp!=null)?cp:(lr!=null?lr:Number(p.base_price));
   const [d,c]=Number(eff).toFixed(2).split(".");
   const contractTag=(cp!=null)
     ? `<div class="pnote" style="color:#0a7f3f;font-weight:700">Your contract price${(Number(p.base_price)>cp+0.005)?` · <span style="color:#8a94a6;font-weight:600;text-decoration:line-through">List ${money(p.base_price)}</span>`:""}</div>`
-    : "";
+    : (lr!=null ? `<div class="pnote" style="color:#0a7f3f;font-weight:700">Your account price</div>` : "");
   /* ONE MSRP, WORDED ONE WAY.
      This used to append "suggested" wherever the storefront had computed the
      figure itself. The trouble was that it could only mark the ones IT had
@@ -2450,7 +2475,7 @@ async function renderHome(){
     const mfr=state.manufacturers.find(m=>m.slug===f.manufacturer)||{};
     const img=prod.image?`<img src="${esc(prod.image)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:'No image'}))">`:`<span class="ph">No image</span>`;
     const nm=esc(prod.name||f.name||f.code);
-    const price=(prod.base_price!=null)?`<div class="fpr">${money(prod.base_price)}</div>`:'';
+    const price=(prod.base_price!=null)?`<div class="fpr">${money(unitPrice(prod,1))}</div>`:'';
     const msrp=(prod.msrp!=null&&Number(prod.msrp)>Number(prod.base_price))?`<div class="fmsrp">MSRP ${money(prod.msrp)}</div>`:'';
     const note=f.note?`<div class="fnt">${esc(f.note)}</div>`:'';
     return `<div class="fcard" onclick="gotoProduct('${esc(f.manufacturer)}','${esc(f.code)}')">
@@ -3297,8 +3322,10 @@ function applyServerPrices(res){
       if(it.available===false){ p._unavailable=true; PRICE_NOTES.set(k,{gone:true}); n++; continue; }
       delete p._unavailable;
       const c=it.commercial||{};
-      ["base_price","msrp","map","tiers","group","price_note"].forEach(f=>{ if(f in c) p[f]=c[f]; });
+      ["base_price","dealer_price","msrp","map","tiers","group","price_note"].forEach(f=>{ if(f in c) p[f]=c[f]; });
       if(AUTH.prices){ if(it.contract!=null) AUTH.prices[ck]=Number(it.contract); else delete AUTH.prices[ck]; }
+      /* The dealer's line discount travels back the same way (owner policy 2026-10-27). */
+      if("rate" in it){ if(!AUTH.rates||typeof AUTH.rates!=="object") AUTH.rates={}; if(it.rate!=null) AUTH.rates[o.manufacturer_slug]=Number(it.rate); else delete AUTH.rates[o.manufacturer_slug]; }
       if(it.changed && it.client_unit!=null && Math.abs(Number(it.client_unit)-Number(it.unit))>=0.005){
         const prev=PRICE_NOTES.get(k);
         PRICE_NOTES.set(k,{old:(prev&&prev.old!=null)?prev.old:Number(it.client_unit), now:Number(it.unit)}); n++;
@@ -3488,10 +3515,10 @@ function a4uBom(){
   if(platQty>0){ const pk=a4uKey("PRK","RR"); if(!q.has(pk)){order.push(pk);meta.set(pk,{code:"PRK",fam:"RR"});} q.set(pk,platQty); }
   return order.map(k=>{const m=meta.get(k);return {p:a4uProd(m.code,m.fam),fam:m.fam,qty:q.get(k),auto:(m.code==="PRK"&&platQty>0)};}).filter(x=>x.p);
 }
-function a4uTotals(bom){let d=0,y=0,mp=0,ma=0;for(const{p,qty}of bom){d+=(p.dealer_price||0)*qty;y+=(p.base_price||0)*qty;mp+=(p.msrp||0)*qty;ma+=(p.map||0)*qty;}return{dealer:d,your:y,msrp:mp,map:ma};}
+function a4uTotals(bom){let d=0,y=0,mp=0,ma=0;for(const{p,qty}of bom){d+=(p.dealer_price||0)*qty;y+=(Number(unitPrice(p,qty))||0)*qty;mp+=(p.msrp||0)*qty;ma+=(p.map||0)*qty;}return{dealer:d,your:y,msrp:mp,map:ma};}
 function a4uOpts(fam,ph){
   const items=a4uFam(fam).filter(p=>p.family===fam);
-  return `<option value="">${ph}</option>`+items.map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(p.base_price)})</option>`).join("");
+  return `<option value="">${ph}</option>`+items.map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(unitPrice(p,1))})</option>`).join("");
 }
 const A4U_TURNS=[["straight","Straight ↑"],["left","Left 90° ↰"],["right","Right 90° ↱"],["u","U-turn ↺"]];
 const A4U_TURNS45=[["straight","Straight ↑"],["left45","45° left ↖"],["right45","45° right ↗"]];
@@ -3505,7 +3532,7 @@ function renderA4U(){
   const estTotal=Math.round((t.your+alumSur+estShip)*100)/100;
   const phys=a4uPhysical();
   const ada=a4uAda(phys.map(x=>x.p), A4U.rise);
-  const rrOpts=a4uFam("RR").filter(p=>/^RR\d+x36$/.test(p.code)).map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(p.base_price)})</option>`).join("");
+  const rrOpts=a4uFam("RR").filter(p=>/^RR\d+x36$/.test(p.code)).map(p=>`<option value="${esc(p.code)}">${esc(p.code)} — ${esc(p.name)} (${money(unitPrice(p,1))})</option>`).join("");
   const platCount=A4U.items.filter(it=>it.fam==="PS").reduce((n,it)=>n+(it.qty||1),0);
   // interactive, ordered build steps (real A4U.items indices) + platform turn selectors
   const stepRows = A4U.items.length? A4U.items.map((it,i)=>{
@@ -3517,11 +3544,11 @@ function renderA4U(){
       <td>${esc(p.code)}</td><td>${esc(p.name)}</td>
       <td class="r">${it.qty||1}</td>
       <td class="turn">${turnSel}</td>
-      <td class="r">${money((p.base_price||0)*(it.qty||1))}</td>
+      <td class="r">${money((Number(unitPrice(p,it.qty||1))||0)*(it.qty||1))}</td>
       <td class="r"><button class="rm" onclick="a4uRemove(${i})">Remove</button></td></tr>`;
   }).join("")
     : `<tr><td colspan="7" class="empty">No components yet. Enter a ramp length or add platforms, gates, or stairs above.</td></tr>`;
-  const prkRow = platCount>0? `<tr class="auto"><td class="idx">+</td><td>PRK</td><td>Platform To Ramp Kit 36</td><td class="r">${platCount}</td><td class="turn"><span class="fineprint">auto</span></td><td class="r">${money((a4uProd("PRK","RR").base_price||0)*platCount)}</td><td class="r"><span class="fineprint">auto</span></td></tr>` : "";
+  const prkRow = platCount>0? `<tr class="auto"><td class="idx">+</td><td>PRK</td><td>Platform To Ramp Kit 36</td><td class="r">${platCount}</td><td class="turn"><span class="fineprint">auto</span></td><td class="r">${money((Number(unitPrice(a4uProd("PRK","RR"),platCount))||0)*platCount)}</td><td class="r"><span class="fineprint">auto</span></td></tr>` : "";
   const plan=a4uPlanDiagram(phys);
   host.innerHTML=`<div class="a4u ${A4U.open?'open':''}">
     <div class="ahead" onclick="A4U.open=!A4U.open;renderA4U()">
@@ -3549,7 +3576,7 @@ function renderA4U(){
         <tbody>${stepRows}${prkRow}</tbody></table>
       <div class="totgrid">
         <div class="tot"><div class="l">Dealer</div><div class="v">${money(t.dealer)}</div></div>
-        <div class="tot your"><div class="l">Your Price (15%)</div><div class="v">${money(t.your)}</div></div>
+        <div class="tot your"><div class="l">Your Price</div><div class="v">${money(t.your)}</div></div>
         <div class="tot msrp"><div class="l">MSRP (customer)</div><div class="v">${money(t.msrp)}</div></div>
         <div class="tot"><div class="l">MAP</div><div class="v">${money(t.map)}</div></div>
       </div>
@@ -3950,7 +3977,7 @@ function swListHtml(){
   if(!cap.length) return `<div class="pitem"><div class="nm">No products match — clear the search or category.</div></div>`;
   const rows=cap.map(p=>{ const src=swImg(p,false);
     const pic=src?`<img src="${esc(src)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:'No image'}))">`:`<span class="ph">No image</span>`;
-    return `<div class="pitem ${SW.armed===p.code?'on':''}" onclick="swArm('${esc(p.code)}')">${pic}<div class="nm">${esc(p.name)}<b>#${esc(p.code)} · ${esc(p.category||"")}</b></div><div class="pr">${p.base_price!=null?money(p.base_price):"—"}</div></div>`;
+    return `<div class="pitem ${SW.armed===p.code?'on':''}" onclick="swArm('${esc(p.code)}')">${pic}<div class="nm">${esc(p.name)}<b>#${esc(p.code)} · ${esc(p.category||"")}</b></div><div class="pr">${p.base_price!=null?money(unitPrice(p,1)):"—"}</div></div>`;
   }).join("");
   const more=list.length>cap.length?`<div class="pitem"><div class="nm" style="color:var(--gray)">+${list.length-cap.length} more — refine with search or category.</div></div>`:"";
   return rows+more;
@@ -4429,9 +4456,11 @@ function applyContractPrices(j){
   if(j && j.prices_unavailable){
     AUTH.pricesUnavailable=true;
     if(!AUTH.prices||typeof AUTH.prices!=='object') AUTH.prices={};
+    if(!AUTH.rates||typeof AUTH.rates!=='object') AUTH.rates={};
   } else {
     AUTH.pricesUnavailable=false;
     AUTH.prices=(j&&j.prices&&typeof j.prices==='object')?j.prices:{};
+    AUTH.rates=(j&&j.rates&&typeof j.rates==='object')?j.rates:{};
   }
   showPricesNotice(!!AUTH.pricesUnavailable);
 }
@@ -4621,7 +4650,7 @@ async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg
     msg.innerHTML=esc(j.message||'If that email has a dealer account, a reset link is on its way.')
       +'<br><span style="opacity:.75">It comes from hello@homecareproviderservices.us. Nothing after a few minutes? Check spam, then call (855) 400-0345.</span>';
   }catch(e){ msg.textContent='Could not reach the sign-in service. Check your connection and try again.'; }}
-function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];AUTH.prices={};state.dealer=null;
+function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];AUTH.prices={};AUTH.rates={};state.dealer=null;
   SESSION_ID=null; if(_hbT){clearInterval(_hbT);_hbT=null;}                 // stop the activity heartbeat
   CART.clear(); for(const k in MFR) delete MFR[k];                          // local cart clears; the saved cart stays in the system
   if(window.HCPSChat) HCPSChat.reset();                                     // clear chat identity so a shared machine doesn't leak
@@ -5252,7 +5281,7 @@ async function loadPricing(){
         if(!priced) items=items.map(p=>Object.assign({},p,{base_price:null,msrp:null,map:null}));
         for(const p of items){
           const code=String(p.code||'').trim(); if(!code) continue;
-          const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(p.map!=null?Number(p.map):null),cost:(p.base_price!=null?Number(p.base_price):null),category:p.category||'',name:p.name||'',mfrName:m.name};
+          const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(p.map!=null?Number(p.map):null),cost:(p.base_price!=null?(typeof dealerCostOf==='function'?dealerCostOf(p,m.slug):Number(p.base_price)):null),category:p.category||'',name:p.name||'',mfrName:m.name};
           PRICE[m.slug+'|'+code]=rec;
           PRICELIST.push({code,mfr:m.slug,mfrName:m.name,name:p.name||'',cost:rec.cost,map:rec.map,msrp:rec.msrp,category:p.category||''});
         }
@@ -6037,7 +6066,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       for(var j=0;j<prods.length;j++){
         var p=prods[j]; if(!p||!p.code) continue;
         var cat=catOf({category:p.category,name:p.name,family:p.family,manufacturer:m.slug,mname:m.name});
-        var cost=Number(p.base_price)||null;
+        var cost=(p.base_price!=null?dealerCostOf(p,m.slug):null)||null;
         var retail=Number(p.msrp)|| (cost?Math.round(cost*2):null);
         catBy[p.code]=cat;
         if(p.image) imgBy[p.code]=p.image;
