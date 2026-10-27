@@ -2096,19 +2096,30 @@ async function applyMasterPrices(slug, prods){
   }
 }
 async function loadProducts(slug){
+  const seq=++_loadSeq;
+  const set=list=>{ if(seq!==_loadSeq) return false; state.products=list; return true; };
   if(isGoldenSlug(slug)){
     // Golden catalog (shared commerce engine's product data) — shopped in-platform, ordered via Golden's API.
     const url=CONFIG.GOLDEN_CATALOG||('./data/'+CONFIG.GOLDEN_SLUG+'.json');
-    try{ const r=await fetch(url,{cache:"no-store"}); let prods=(await r.json())||[]; prods.forEach(p=>{ p.manufacturer=p.manufacturer||CONFIG.GOLDEN_SLUG; }); state.products=await mergeCatalogEdits(CONFIG.GOLDEN_SLUG, prods); }
-    catch(e){ state.products=[]; }
-    return;
+    try{ const r=await fetch(url,{cache:"no-store"}); let prods=(await r.json())||[]; prods.forEach(p=>{ p.manufacturer=p.manufacturer||CONFIG.GOLDEN_SLUG; }); return set(await mergeCatalogEdits(CONFIG.GOLDEN_SLUG, prods)); }
+    catch(e){ return set([]); }
   }
   const mfr = state.manufacturers.find(m=>m.slug===slug);
-  if (!mfr || !mfr.hasData){ state.products=[]; return; }
-  const r = await fetch(`./data/${slug}.json`,{cache:"no-store"});
-  const prods = await r.json();
-  state.products = await mergeCatalogEdits(slug, prods||[]);
+  if (!mfr || !mfr.hasData){ return set([]); }
+  let prods;
+  try{ const r = await fetch(`./data/${slug}.json`,{cache:"no-store"}); if(!r.ok) throw new Error('catalog '+r.status); prods = await r.json(); }
+  catch(e){ return set([]); }
+  if(seq!==_loadSeq) return false;
+  return set(await mergeCatalogEdits(slug, prods||[]));
 }
+/* ONE CATALOG ON SCREEN — THE LAST ONE ASKED FOR (2026-10-26, ABM regression).
+   Loading a line is slow (catalog file + the authenticated catalog layers). Clicking Strongback and then
+   an empty line (ABM) used to let Strongback's load finish LAST and write its products over the empty
+   line, so ABM showed Strongback's catalog. Every load now carries a sequence number: only the newest
+   load may set state.products, and it answers whether it was still the newest, so the caller renders
+   only a current result. A catalog file that cannot be read empties the line instead of leaving the
+   previous line's products on screen. */
+let _loadSeq=0;
 // If a product has no MSRP, derive one at 2× the dealer price so dealers always have a
 // selling point. Never overrides a manufacturer-provided MSRP. The _msrp_suggested flag it
 // sets is provenance only — no longer shown to dealers, since every MSRP now reads the same
@@ -4048,12 +4059,13 @@ async function selectManufacturer(slug){
   document.body.classList.remove('p360on'); var _pw=document.getElementById('p360wrap'); if(_pw)_pw.style.display='none';
   A4U.hubMode=false; A4U.host=null; document.body.classList.remove('hubon','sdon','locked');
   if(slug===HOME){
-    state.active=HOME; document.body.classList.add('home'); renderTabs();
+    _loadSeq++; state.active=HOME; document.body.classList.add('home'); renderTabs();
     await renderHome(); window.scrollTo({top:0,behavior:"smooth"}); return;
   }
   document.body.classList.remove('home');
   state.active=slug; renderTabs();
-  await loadProducts(slug);
+  const current=await loadProducts(slug);
+  if(!current || state.active!==slug) return;   // a newer line was chosen while this one loaded
   renderBanner(); renderProducts(); renderA4U(); renderSW();
   window.scrollTo({top:0,behavior:"smooth"});
   if(slug && !_viewedLines.has(slug)){ _viewedLines.add(slug); track('product_view',slug); }  // viewed a line's catalog (+3)
