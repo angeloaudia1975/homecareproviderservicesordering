@@ -97,7 +97,7 @@
     "freight": {
       "mode": "per_item",
       "threshold": 2500,
-      "summary": "Delivery billed per item: orders under $2,500 ship UPS/FedEx, orders $2,500+ ship LTL freight. White Glove delivery is available on select items — request it in your notes. Final freight is confirmed by HCPS."
+      "summary": "Delivery charges per item from Corsicana's 2026 price list: merchandise under $2,500 ships UPS/FedEx; $2,500 or more ships LTL. An item with its own or included delivery charge keeps it. Freight Corsicana lists as TBD (CorsicanaCare Bed Booster) is pending until Corsicana's order confirmation. White Glove delivery is available on select items — request it in your notes."
     }
   },
   {
