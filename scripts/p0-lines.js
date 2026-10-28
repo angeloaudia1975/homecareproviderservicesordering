@@ -19,5 +19,6 @@ const UPDATED = {
   'abm-respiratory-care': { identity: 'de0548731a75f324941bdf00ef468710961a5418dcf61be96c3fe4b26511adb4', note: 'ABM Respiratory Care 2026 — new line, first version (BiWaze Clear + Cough schedules, owner 2026-10-27)', new_line: true },
   'airavant-bongorx': { identity: 'c0f492e4e3845f9f18e1e667f4fe6c67ab834f28aee48e378479152df159fa81', note: 'Bongo Rx Price List 2026 (18023 Rev F): MAP, section mix-and-match pools (owner 2026-10-27)' },
   pedifix: { identity: '158233406b5bbef820baf0fc05f9080f63e837ef6b33255a4b86b514bd1ecbe4', note: 'PediFix 2025 Retail Order Form REV1025 (OTC, eff. 7/1/25; row 543 REV0725) = the whole active line (owner 2026-10-27)' },
+  dalton: { identity: '04d3bd510304a5717a29b074d6b6b14ef66fc5023f54d24e6a8e401ba5dde201', note: 'Dalton Dealer Price List Nov 2026 REVa (owner, tracker #42)' },
 };
 module.exports = { currentLines, RETIRED, UPDATED };
