@@ -15,5 +15,6 @@ function currentLines(root) {
    pre-strip base, so the file still cannot change silently: any other edit fails. */
 const UPDATED = {
   access4u: { identity: '0e3a114ddff153a95a00fa601a6d88e23db52ed3b1b43e1536b38b9cfc1b51ec', note: 'Access4U Fall 2026 list = the whole active line (owner source-of-truth 2026-10-27 17:40)' },
+  'airavant-bongorx': { identity: 'c0f492e4e3845f9f18e1e667f4fe6c67ab834f28aee48e378479152df159fa81', note: 'Bongo Rx Price List 2026 (18023 Rev F): MAP, section mix-and-match pools (owner 2026-10-27)' },
 };
 module.exports = { currentLines, RETIRED, UPDATED };

@@ -6,7 +6,9 @@ const SNIPPETS = [
   [/\n  if\(cp!=null\) return \(p&&p\._upgrade\) \? [^\n]*/, '\n  if(cp!=null) return cp;'],
   [/\n  \/\/ The dealer's own line discount off the standard list \(never stacked on a contract price\)\.\n  const lr=lineRatePrice\(p\);\n  if\(lr!=null\) return lr;/, ''],
   [/\n  const lr=\(cp==null && typeof lineRatePrice==='function'\)\?lineRatePrice\(p\):null;[^\n]*\n  const eff=\(cp!=null\)\?cp:\(lr!=null\?lr:Number\(p\.base_price\)\);/, '\n  const eff=(cp!=null)?cp:Number(p.base_price);'],
-  [/\n    : \(lr!=null \? `<div class="pnote" style="color:#0a7f3f;font-weight:700">Your account price<\/div>` : ""\);/, '\n    : "";'],
+  [/\n    : \(lr!=null \? `<div class="pnote" style="color:#0a7f3f;font-weight:700">Your account price<\/div>` : ""\);/, '\n    : "";'],  /* BongoRx free standard shipping by qualifying order quantity (owner, 2026-10-27). */
+  [/\n  \/\* FREE STANDARD SHIPPING BY ORDER QUANTITY[\s\S]*?\n  if\(cfg\.mode==="qty_threshold"\)\{[\s\S]*?\n  \}/, ''],
+  [/\$\{r\.qtyRemaining>0\?` <span class="prog">· add \$\{r\.qtyRemaining\} more qualifying unit[^\n]*?\(\$\{r\.freeAtQty\}\+\)<\/span>`:""\}/, ''],
 ];
 function undoLineDiscount(html) {
   let s = String(html);
