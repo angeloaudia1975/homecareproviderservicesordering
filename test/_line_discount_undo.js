@@ -16,7 +16,7 @@ const SNIPPETS = [
    '\n  CART.set(k,{p,qty:(cur?cur.qty:0)+qty});\n  updateCart(); toast(`Added ${qty} × ${p.code}`);'],
   [/\n\/\* ORDER RULES PRINTED ON A MANUFACTURER'S LIST[\s\S]*?\nfunction cartRuleProblems\(\)\{[\s\S]*?\n  return out;\n\}/, ''],
   [/\n        \$\{cartRuleProblems\(\)[^\n]*/, ''],
-  [/\n    : \(lr!=null \? `<div class="pnote" style="color:#0a7f3f;font-weight:700">Your account price<\/div>` : ""\);/, '\n    : "";'],  /* BongoRx free standard shipping by qualifying order quantity (owner, 2026-10-27). */
+  /* BongoRx free standard shipping by qualifying order quantity (owner, 2026-10-27). */
   [/\n  \/\* FREE STANDARD SHIPPING BY ORDER QUANTITY[\s\S]*?\n  if\(cfg\.mode==="qty_threshold"\)\{[\s\S]*?\n  \}/, ''],
   [/\$\{r\.qtyRemaining>0\?` <span class="prog">· add \$\{r\.qtyRemaining\} more qualifying unit[^\n]*?\(\$\{r\.freeAtQty\}\+\)<\/span>`:""\}/, ''],
 ];
