@@ -50,8 +50,11 @@ const preload = slugs => psql(SEED.split('\ndo $p0$')[0] + `
 const FIVE = ['bemis', 'dalton', 'airavant-bongorx', 'corsicana', 'climbing-steps'];
 
 /* Access4U left the initial seed (UPDATED in scripts/p0-lines.js): its Fall 2026 version goes in through --add-version. */
-const EXP = '9|890';
-t('the export plans exactly the runbook: 9 lines, 890 rows (Access4U by version-add), Complete Medical excluded', () => {
+/* Expected = the 10 seeded lines / 1,120 rows minus every line later moved to --add-version (UPDATED), counted from REF. */
+const UPD = Object.keys(require('../scripts/p0-lines.js').UPDATED);
+const updRows = UPD.reduce((n, s) => n + JSON.parse(execFileSync('git', ['-C', ROOT, 'show', `${REF}:public/data/${s}.json`], { encoding: 'utf8', maxBuffer: 1 << 26 })).length, 0);
+const EXP = `${10 - UPD.length}|${1120 - updRows}`;
+t('the export plans exactly the runbook: 10 lines / 1,120 rows minus the version-added lines, Complete Medical excluded', () => {
   ok(`${LINES}|${ROWS}` === EXP, `${LINES} / ${ROWS}`);
   ok(!/complete-medical/.test(SEED.split('\ndo $p0$')[0].replace(/\$p0j[0-9a-f]+\$[\s\S]*?\$p0j[0-9a-f]+\$/g, '')), 'retired line in the plan');
 });
@@ -70,9 +73,9 @@ t('the CLI refuses a path inside a git repository and never overwrites', () => {
 });
 
 reset();
-t('fresh table → exactly the plan (9 / 890), summary shows RLS on and anon denied', () => {
+t('fresh table → exactly the plan (seed minus version-added lines), summary shows RLS on and anon denied', () => {
   const out = psql(SEED); ok(state() === EXP, state());
-  const last = out.trim().split('\n'); ok(last.length === 9 && last.every(l => l.endsWith('|' + EXP + '|t|t')), last.slice(-1)[0]);
+  const last = out.trim().split('\n'); ok(last.length === 10 - UPD.length && last.every(l => l.endsWith('|' + EXP + '|t|t')), last.slice(-1)[0]);
 });
 t('a second run is a no-op (idempotent; nothing rewritten)', () => {
   const before = stamps(); psql(SEED); ok(state() === EXP && stamps() === before, 'changed');
