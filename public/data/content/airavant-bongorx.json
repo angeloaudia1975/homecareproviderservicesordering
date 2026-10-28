@@ -10,10 +10,18 @@
   "bongo-rx-annual-replenishment-pack-extra-large-xl": {
    "manufacturer": "airavant-bongorx",
    "page_key": "bongo-rx-annual-replenishment-pack-extra-large-xl",
-   "name": "Bongo Rx Annual Replenishment Pack — Extra Large (XL)",
+   "name": "Bongo Rx Annual Replenishment Pack \u2014 Extra Large (XL)",
    "status": "published",
-   "description": "Annual replenishment pack: 4 × Extra Large (XL) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4.",
-   "features": [],
+   "description": "Annual replenishment pack: 4 \u00d7 Extra Large (XL) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4.",
+   "features": [
+    "No machine, no masks, no hoses and no power needed (manufacturer description)",
+    "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
+    "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
+    "Quiet \u2014 allows sleeping in virtually any position",
+    "Reusable and easy to clean; small enough to fit in a pocket",
+    "Designed and made in the USA",
+    "Prescription device"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Bongo Rx EPAP Therapy",
@@ -22,7 +30,7 @@
    "skus": [
     {
      "sku": "BNG505",
-     "name": "Bongo Rx Annual Replenishment Pack — Extra Large (XL)",
+     "name": "Bongo Rx Annual Replenishment Pack \u2014 Extra Large (XL)",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -39,8 +47,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "manufacturer page \u2014 https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
    },
    "image": "/assets/products/airavant-bongorx/gallery/54f43bd06ea767bc0d0c.jpg",
    "images_gallery": [
@@ -61,10 +70,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Annual replenishment pack: 4 × Extra Large (XL) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4."
+       "evidence": "Annual replenishment pack: 4 \u00d7 Extra Large (XL) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4."
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -98,10 +107,18 @@
   "bongo-rx-annual-replenishment-pack-extra-small-xs": {
    "manufacturer": "airavant-bongorx",
    "page_key": "bongo-rx-annual-replenishment-pack-extra-small-xs",
-   "name": "Bongo Rx Annual Replenishment Pack — Extra Small (XS)",
+   "name": "Bongo Rx Annual Replenishment Pack \u2014 Extra Small (XS)",
    "status": "published",
-   "description": "Annual replenishment pack: 4 × Extra Small (XS) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4.",
-   "features": [],
+   "description": "Annual replenishment pack: 4 \u00d7 Extra Small (XS) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4.",
+   "features": [
+    "No machine, no masks, no hoses and no power needed (manufacturer description)",
+    "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
+    "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
+    "Quiet \u2014 allows sleeping in virtually any position",
+    "Reusable and easy to clean; small enough to fit in a pocket",
+    "Designed and made in the USA",
+    "Prescription device"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Bongo Rx EPAP Therapy",
@@ -110,7 +127,7 @@
    "skus": [
     {
      "sku": "BNG501",
-     "name": "Bongo Rx Annual Replenishment Pack — Extra Small (XS)",
+     "name": "Bongo Rx Annual Replenishment Pack \u2014 Extra Small (XS)",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -127,8 +144,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "manufacturer page \u2014 https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
    },
    "image": "/assets/products/airavant-bongorx/gallery/54f43bd06ea767bc0d0c.jpg",
    "images_gallery": [
@@ -149,10 +167,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Annual replenishment pack: 4 × Extra Small (XS) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4."
+       "evidence": "Annual replenishment pack: 4 \u00d7 Extra Small (XS) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4."
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -186,10 +204,18 @@
   "bongo-rx-annual-replenishment-pack-large-lg": {
    "manufacturer": "airavant-bongorx",
    "page_key": "bongo-rx-annual-replenishment-pack-large-lg",
-   "name": "Bongo Rx Annual Replenishment Pack — Large (LG)",
+   "name": "Bongo Rx Annual Replenishment Pack \u2014 Large (LG)",
    "status": "published",
-   "description": "Annual replenishment pack: 4 × Large (LG) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4.",
-   "features": [],
+   "description": "Annual replenishment pack: 4 \u00d7 Large (LG) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4.",
+   "features": [
+    "No machine, no masks, no hoses and no power needed (manufacturer description)",
+    "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
+    "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
+    "Quiet \u2014 allows sleeping in virtually any position",
+    "Reusable and easy to clean; small enough to fit in a pocket",
+    "Designed and made in the USA",
+    "Prescription device"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Bongo Rx EPAP Therapy",
@@ -198,7 +224,7 @@
    "skus": [
     {
      "sku": "BNG504",
-     "name": "Bongo Rx Annual Replenishment Pack — Large (LG)",
+     "name": "Bongo Rx Annual Replenishment Pack \u2014 Large (LG)",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -215,8 +241,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "manufacturer page \u2014 https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
    },
    "image": "/assets/products/airavant-bongorx/gallery/54f43bd06ea767bc0d0c.jpg",
    "images_gallery": [
@@ -244,10 +271,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Annual replenishment pack: 4 × Large (LG) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4."
+       "evidence": "Annual replenishment pack: 4 \u00d7 Large (LG) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4."
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -256,7 +283,7 @@
      },
      "conflicts": [],
      "notes": [
-      "The line's landing page mentions it (https://bongorx.com/frequently-asked-questions/) — not product-specific; not used as its description."
+      "The line's landing page mentions it (https://bongorx.com/frequently-asked-questions/) \u2014 not product-specific; not used as its description."
      ],
      "group_reason": "one SKU",
      "bundle": false,
@@ -283,10 +310,18 @@
   "bongo-rx-annual-replenishment-pack-medium-md": {
    "manufacturer": "airavant-bongorx",
    "page_key": "bongo-rx-annual-replenishment-pack-medium-md",
-   "name": "Bongo Rx Annual Replenishment Pack — Medium (MD)",
+   "name": "Bongo Rx Annual Replenishment Pack \u2014 Medium (MD)",
    "status": "published",
-   "description": "Annual replenishment pack: 4 × Medium (MD) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4.",
-   "features": [],
+   "description": "Annual replenishment pack: 4 \u00d7 Medium (MD) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4.",
+   "features": [
+    "No machine, no masks, no hoses and no power needed (manufacturer description)",
+    "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
+    "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
+    "Quiet \u2014 allows sleeping in virtually any position",
+    "Reusable and easy to clean; small enough to fit in a pocket",
+    "Designed and made in the USA",
+    "Prescription device"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Bongo Rx EPAP Therapy",
@@ -295,7 +330,7 @@
    "skus": [
     {
      "sku": "BNG503",
-     "name": "Bongo Rx Annual Replenishment Pack — Medium (MD)",
+     "name": "Bongo Rx Annual Replenishment Pack \u2014 Medium (MD)",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -312,8 +347,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "manufacturer page \u2014 https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
    },
    "image": "/assets/products/airavant-bongorx/gallery/54f43bd06ea767bc0d0c.jpg",
    "images_gallery": [
@@ -341,10 +377,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Annual replenishment pack: 4 × Medium (MD) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4."
+       "evidence": "Annual replenishment pack: 4 \u00d7 Medium (MD) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4."
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -353,7 +389,7 @@
      },
      "conflicts": [],
      "notes": [
-      "The line's landing page mentions it (https://bongorx.com/frequently-asked-questions/) — not product-specific; not used as its description."
+      "The line's landing page mentions it (https://bongorx.com/frequently-asked-questions/) \u2014 not product-specific; not used as its description."
      ],
      "group_reason": "one SKU",
      "bundle": false,
@@ -380,10 +416,18 @@
   "bongo-rx-annual-replenishment-pack-small-sm": {
    "manufacturer": "airavant-bongorx",
    "page_key": "bongo-rx-annual-replenishment-pack-small-sm",
-   "name": "Bongo Rx Annual Replenishment Pack — Small (SM)",
+   "name": "Bongo Rx Annual Replenishment Pack \u2014 Small (SM)",
    "status": "published",
-   "description": "Annual replenishment pack: 4 × Small (SM) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4.",
-   "features": [],
+   "description": "Annual replenishment pack: 4 \u00d7 Small (SM) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4.",
+   "features": [
+    "No machine, no masks, no hoses and no power needed (manufacturer description)",
+    "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
+    "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
+    "Quiet \u2014 allows sleeping in virtually any position",
+    "Reusable and easy to clean; small enough to fit in a pocket",
+    "Designed and made in the USA",
+    "Prescription device"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Bongo Rx EPAP Therapy",
@@ -392,7 +436,7 @@
    "skus": [
     {
      "sku": "BNG502",
-     "name": "Bongo Rx Annual Replenishment Pack — Small (SM)",
+     "name": "Bongo Rx Annual Replenishment Pack \u2014 Small (SM)",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -409,8 +453,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "manufacturer page \u2014 https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
    },
    "image": "/assets/products/airavant-bongorx/gallery/54f43bd06ea767bc0d0c.jpg",
    "images_gallery": [
@@ -438,10 +483,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Annual replenishment pack: 4 × Small (SM) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4."
+       "evidence": "Annual replenishment pack: 4 \u00d7 Small (SM) Bongo Rx devices, with a headgear, travel case and drying stand. One order unit = one pack of 4."
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -450,7 +495,7 @@
      },
      "conflicts": [],
      "notes": [
-      "The line's landing page mentions it (https://bongorx.com/frequently-asked-questions/) — not product-specific; not used as its description."
+      "The line's landing page mentions it (https://bongorx.com/frequently-asked-questions/) \u2014 not product-specific; not used as its description."
      ],
      "group_reason": "one SKU",
      "bundle": false,
@@ -506,7 +551,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": "/assets/products/airavant-bongorx/gallery/218f1280b33fc921ef45.jpg",
@@ -531,7 +576,7 @@
        "evidence": "Replacement headgear accessory for Bongo Rx."
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -565,10 +610,18 @@
   "bongo-rx-single-replenishment-unit-extra-large-xl": {
    "manufacturer": "airavant-bongorx",
    "page_key": "bongo-rx-single-replenishment-unit-extra-large-xl",
-   "name": "Bongo Rx Single Replenishment Unit — Extra Large (XL)",
+   "name": "Bongo Rx Single Replenishment Unit \u2014 Extra Large (XL)",
    "status": "published",
-   "description": "Single replenishment unit: 1 × Extra Large (XL) Bongo Rx device and a headgear only.",
-   "features": [],
+   "description": "Single replenishment unit: 1 \u00d7 Extra Large (XL) Bongo Rx device and a headgear only.",
+   "features": [
+    "No machine, no masks, no hoses and no power needed (manufacturer description)",
+    "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
+    "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
+    "Quiet \u2014 allows sleeping in virtually any position",
+    "Reusable and easy to clean; small enough to fit in a pocket",
+    "Designed and made in the USA",
+    "Prescription device"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Bongo Rx EPAP Therapy",
@@ -577,7 +630,7 @@
    "skus": [
     {
      "sku": "BNG515",
-     "name": "Bongo Rx Single Replenishment Unit — Extra Large (XL)",
+     "name": "Bongo Rx Single Replenishment Unit \u2014 Extra Large (XL)",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -594,8 +647,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "manufacturer page \u2014 https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
    },
    "image": "/assets/products/airavant-bongorx/gallery/a9309947626c93339314.jpg",
    "images_gallery": [
@@ -623,10 +677,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Single replenishment unit: 1 × Extra Large (XL) Bongo Rx device and a headgear only."
+       "evidence": "Single replenishment unit: 1 \u00d7 Extra Large (XL) Bongo Rx device and a headgear only."
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -635,7 +689,7 @@
      },
      "conflicts": [],
      "notes": [
-      "The line's landing page mentions it (https://www.bongorx.com) — not product-specific; not used as its description."
+      "The line's landing page mentions it (https://www.bongorx.com) \u2014 not product-specific; not used as its description."
      ],
      "group_reason": "one SKU",
      "bundle": false,
@@ -662,10 +716,18 @@
   "bongo-rx-single-replenishment-unit-extra-small-xs": {
    "manufacturer": "airavant-bongorx",
    "page_key": "bongo-rx-single-replenishment-unit-extra-small-xs",
-   "name": "Bongo Rx Single Replenishment Unit — Extra Small (XS)",
+   "name": "Bongo Rx Single Replenishment Unit \u2014 Extra Small (XS)",
    "status": "published",
-   "description": "Single replenishment unit: 1 × Extra Small (XS) Bongo Rx device and a headgear only.",
-   "features": [],
+   "description": "Single replenishment unit: 1 \u00d7 Extra Small (XS) Bongo Rx device and a headgear only.",
+   "features": [
+    "No machine, no masks, no hoses and no power needed (manufacturer description)",
+    "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
+    "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
+    "Quiet \u2014 allows sleeping in virtually any position",
+    "Reusable and easy to clean; small enough to fit in a pocket",
+    "Designed and made in the USA",
+    "Prescription device"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Bongo Rx EPAP Therapy",
@@ -674,7 +736,7 @@
    "skus": [
     {
      "sku": "BNG511",
-     "name": "Bongo Rx Single Replenishment Unit — Extra Small (XS)",
+     "name": "Bongo Rx Single Replenishment Unit \u2014 Extra Small (XS)",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -691,8 +753,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "manufacturer page \u2014 https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
    },
    "image": "/assets/products/airavant-bongorx/gallery/a9309947626c93339314.jpg",
    "images_gallery": [
@@ -720,10 +783,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Single replenishment unit: 1 × Extra Small (XS) Bongo Rx device and a headgear only."
+       "evidence": "Single replenishment unit: 1 \u00d7 Extra Small (XS) Bongo Rx device and a headgear only."
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -732,7 +795,7 @@
      },
      "conflicts": [],
      "notes": [
-      "The line's landing page mentions it (https://www.bongorx.com) — not product-specific; not used as its description."
+      "The line's landing page mentions it (https://www.bongorx.com) \u2014 not product-specific; not used as its description."
      ],
      "group_reason": "one SKU",
      "bundle": false,
@@ -759,10 +822,18 @@
   "bongo-rx-single-replenishment-unit-large-lg": {
    "manufacturer": "airavant-bongorx",
    "page_key": "bongo-rx-single-replenishment-unit-large-lg",
-   "name": "Bongo Rx Single Replenishment Unit — Large (LG)",
+   "name": "Bongo Rx Single Replenishment Unit \u2014 Large (LG)",
    "status": "published",
-   "description": "Single replenishment unit: 1 × Large (LG) Bongo Rx device and a headgear only.",
-   "features": [],
+   "description": "Single replenishment unit: 1 \u00d7 Large (LG) Bongo Rx device and a headgear only.",
+   "features": [
+    "No machine, no masks, no hoses and no power needed (manufacturer description)",
+    "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
+    "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
+    "Quiet \u2014 allows sleeping in virtually any position",
+    "Reusable and easy to clean; small enough to fit in a pocket",
+    "Designed and made in the USA",
+    "Prescription device"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Bongo Rx EPAP Therapy",
@@ -771,7 +842,7 @@
    "skus": [
     {
      "sku": "BNG514",
-     "name": "Bongo Rx Single Replenishment Unit — Large (LG)",
+     "name": "Bongo Rx Single Replenishment Unit \u2014 Large (LG)",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -788,8 +859,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "manufacturer page \u2014 https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
    },
    "image": "/assets/products/airavant-bongorx/gallery/a9309947626c93339314.jpg",
    "images_gallery": [
@@ -817,10 +889,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Single replenishment unit: 1 × Large (LG) Bongo Rx device and a headgear only."
+       "evidence": "Single replenishment unit: 1 \u00d7 Large (LG) Bongo Rx device and a headgear only."
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -829,7 +901,7 @@
      },
      "conflicts": [],
      "notes": [
-      "The line's landing page mentions it (https://www.bongorx.com) — not product-specific; not used as its description."
+      "The line's landing page mentions it (https://www.bongorx.com) \u2014 not product-specific; not used as its description."
      ],
      "group_reason": "one SKU",
      "bundle": false,
@@ -856,10 +928,18 @@
   "bongo-rx-single-replenishment-unit-medium-md": {
    "manufacturer": "airavant-bongorx",
    "page_key": "bongo-rx-single-replenishment-unit-medium-md",
-   "name": "Bongo Rx Single Replenishment Unit — Medium (MD)",
+   "name": "Bongo Rx Single Replenishment Unit \u2014 Medium (MD)",
    "status": "published",
-   "description": "Single replenishment unit: 1 × Medium (MD) Bongo Rx device and a headgear only.",
-   "features": [],
+   "description": "Single replenishment unit: 1 \u00d7 Medium (MD) Bongo Rx device and a headgear only.",
+   "features": [
+    "No machine, no masks, no hoses and no power needed (manufacturer description)",
+    "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
+    "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
+    "Quiet \u2014 allows sleeping in virtually any position",
+    "Reusable and easy to clean; small enough to fit in a pocket",
+    "Designed and made in the USA",
+    "Prescription device"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Bongo Rx EPAP Therapy",
@@ -868,7 +948,7 @@
    "skus": [
     {
      "sku": "BNG513",
-     "name": "Bongo Rx Single Replenishment Unit — Medium (MD)",
+     "name": "Bongo Rx Single Replenishment Unit \u2014 Medium (MD)",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -885,8 +965,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "manufacturer page \u2014 https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
    },
    "image": "/assets/products/airavant-bongorx/gallery/a9309947626c93339314.jpg",
    "images_gallery": [
@@ -914,10 +995,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Single replenishment unit: 1 × Medium (MD) Bongo Rx device and a headgear only."
+       "evidence": "Single replenishment unit: 1 \u00d7 Medium (MD) Bongo Rx device and a headgear only."
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -926,7 +1007,7 @@
      },
      "conflicts": [],
      "notes": [
-      "The line's landing page mentions it (https://www.bongorx.com) — not product-specific; not used as its description."
+      "The line's landing page mentions it (https://www.bongorx.com) \u2014 not product-specific; not used as its description."
      ],
      "group_reason": "one SKU",
      "bundle": false,
@@ -953,10 +1034,18 @@
   "bongo-rx-single-replenishment-unit-small-sm": {
    "manufacturer": "airavant-bongorx",
    "page_key": "bongo-rx-single-replenishment-unit-small-sm",
-   "name": "Bongo Rx Single Replenishment Unit — Small (SM)",
+   "name": "Bongo Rx Single Replenishment Unit \u2014 Small (SM)",
    "status": "published",
-   "description": "Single replenishment unit: 1 × Small (SM) Bongo Rx device and a headgear only.",
-   "features": [],
+   "description": "Single replenishment unit: 1 \u00d7 Small (SM) Bongo Rx device and a headgear only.",
+   "features": [
+    "No machine, no masks, no hoses and no power needed (manufacturer description)",
+    "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
+    "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
+    "Quiet \u2014 allows sleeping in virtually any position",
+    "Reusable and easy to clean; small enough to fit in a pocket",
+    "Designed and made in the USA",
+    "Prescription device"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Bongo Rx EPAP Therapy",
@@ -965,7 +1054,7 @@
    "skus": [
     {
      "sku": "BNG512",
-     "name": "Bongo Rx Single Replenishment Unit — Small (SM)",
+     "name": "Bongo Rx Single Replenishment Unit \u2014 Small (SM)",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -982,8 +1071,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "manufacturer page \u2014 https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
    },
    "image": "/assets/products/airavant-bongorx/gallery/a9309947626c93339314.jpg",
    "images_gallery": [
@@ -1011,10 +1101,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Single replenishment unit: 1 × Small (SM) Bongo Rx device and a headgear only."
+       "evidence": "Single replenishment unit: 1 \u00d7 Small (SM) Bongo Rx device and a headgear only."
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1023,7 +1113,7 @@
      },
      "conflicts": [],
      "notes": [
-      "The line's landing page mentions it (https://www.bongorx.com) — not product-specific; not used as its description."
+      "The line's landing page mentions it (https://www.bongorx.com) \u2014 not product-specific; not used as its description."
      ],
      "group_reason": "one SKU",
      "bundle": false,
@@ -1053,7 +1143,15 @@
    "name": "Bongo Rx Four-Size Starter Kit",
    "status": "published",
    "description": "Four-size starter kit: 1 each of sizes SM, MD, LG and XL, a headgear, travel case and drying stand.",
-   "features": [],
+   "features": [
+    "No machine, no masks, no hoses and no power needed (manufacturer description)",
+    "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
+    "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
+    "Quiet \u2014 allows sleeping in virtually any position",
+    "Reusable and easy to clean; small enough to fit in a pocket",
+    "Designed and made in the USA",
+    "Prescription device"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Bongo Rx EPAP Therapy",
@@ -1079,8 +1177,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "manufacturer page \u2014 https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
    },
    "image": "/assets/products/airavant-bongorx/gallery/2a1c6da01019d6d0e28a.jpg",
    "images_gallery": [
@@ -1104,7 +1203,7 @@
        "evidence": "Four-size starter kit: 1 each of sizes SM, MD, LG and XL, a headgear, travel case and drying stand."
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1113,7 +1212,7 @@
      },
      "conflicts": [],
      "notes": [],
-     "group_reason": "a display or bundle — never merged on its own; your call",
+     "group_reason": "a display or bundle \u2014 never merged on its own; your call",
      "bundle": true,
      "image_candidates": [
       {
