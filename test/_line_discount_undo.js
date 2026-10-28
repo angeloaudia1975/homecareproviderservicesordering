@@ -11,6 +11,11 @@ const SNIPPETS = [
   [/\n    \/\* An item whose delivery charge the manufacturer lists as TBD[\s\S]*?free or \$0 \(owner, 2026-10-27\)\. \*\/\n    let note = cfg\.summary\|\|""; if\(tbd\) note \+= " Freight for some items is pending[^\n]*\n    return \{rows:\[Object\.assign\(\{label,status:"peritem",fee\}, tbd\?\{pending:true\}:\{\}\)\], fee, itemsTotal, actualNote:note\};/,
    '\n    let note = cfg.summary||""; if(tbd) note += " Some items\' freight is confirmed by HCPS.";\n    return {rows:[{label,status:"peritem",fee}], fee, itemsTotal, actualNote:note};'],
   [/<span>\$\{r\.pending\?\(r\.fee>0\?money\(r\.fee\)\+" \+ pending":"pending"\):\(r\.fee>0\?money\(r\.fee\):"included"\)\}<\/span>/, '<span>${r.fee>0?money(r.fee):"included"}</span>'],
+  /* Order rules printed on a manufacturer's list (ABM 2026 MOQ + extended-warranty rule, owner 2026-10-27). */
+  [/\n  const m=minOrderQty\(p\); const nq=Math\.max\(\(cur\?cur\.qty:0\)\+qty, m\);\n  CART\.set\(k,\{p,qty:nq\}\);\n  updateCart\(\); toast\([^\n]*\);/,
+   '\n  CART.set(k,{p,qty:(cur?cur.qty:0)+qty});\n  updateCart(); toast(`Added ${qty} × ${p.code}`);'],
+  [/\n\/\* ORDER RULES PRINTED ON A MANUFACTURER'S LIST[\s\S]*?\nfunction cartRuleProblems\(\)\{[\s\S]*?\n  return out;\n\}/, ''],
+  [/\n        \$\{cartRuleProblems\(\)[^\n]*/, ''],
 ];
 function undoLineDiscount(html) {
   let s = String(html);

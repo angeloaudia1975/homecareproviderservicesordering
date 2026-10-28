@@ -179,7 +179,8 @@ function exportAddVersionSql(r, opts) {
   const out = [];
   out.push('-- Catalog version add — CONTAINS WHOLESALE PRICES. Never commit, post, or paste anywhere but the Supabase SQL');
   out.push('-- editor of the HCPS Ordering project. ' + r.manufacturer + ' version ' + r.identity_sha256.slice(0, 16) + ' (' + r.row_count + ' rows), from ' + ((opts && opts.ref) || '?') + '.');
-  out.push('-- Adds the version beside the stored ones; idempotent; refuses (writes nothing) on any difference.');
+  out.push((opts && opts.first) ? '-- FIRST version of a NEW line (no stored version may exist); idempotent re-run refused; refuses (writes nothing) on any difference.'
+                                : '-- Adds the version beside the stored ones; idempotent; refuses (writes nothing) on any difference.');
   out.push('begin;');
   out.push(`do $p0$
 declare n integer; before integer;
@@ -190,7 +191,9 @@ begin
   if has_table_privilege('anon', 'public.catalog_file_commercial', 'select') or has_table_privilege('authenticated', 'public.catalog_file_commercial', 'select') then
     raise exception 'anon or authenticated can read catalog_file_commercial — refusing'; end if;
   select count(*) into before from public.catalog_file_commercial where manufacturer = ${q(r.manufacturer)};
-  if before < 1 then raise exception 'no stored version of ${r.manufacturer} — this adds a version beside the deployed one, nothing written'; end if;
+  ${(opts && opts.first)
+    ? `if before <> 0 then raise exception 'a version of ${r.manufacturer} is already stored — a FIRST version is only for a new line, nothing written'; end if;`
+    : `if before < 1 then raise exception 'no stored version of ${r.manufacturer} — this adds a version beside the deployed one, nothing written'; end if;`}
   if exists (select 1 from public.catalog_file_commercial where manufacturer = ${q(r.manufacturer)} and identity_sha256 = ${q(r.identity_sha256)}
              and (rows_sha256 <> ${q(r.rows_sha256)} or public_sha256 <> ${q(r.public_sha256)} or row_count <> ${r.row_count})) then
     raise exception 'this version is stored with DIFFERENT rows — nothing written'; end if;
