@@ -28,6 +28,14 @@
  * ==========================================================================*/
 
 const DEFAULT_TO = "orders@homecareproviderservices.us";
+/* Every HCPS dealer order reaches the owner's intake mailbox (owner, 2026-10-27), whatever ORDER_TO adds.
+   Orders are NEVER sent to a manufacturer: HCPS reviews each one and places it with the manufacturer itself. */
+const OWNER_INTAKE = "angelo@homecareproviderservices.us";
+function recipients(envTo) {
+  const list = String(envTo || DEFAULT_TO).split(",").map((s) => s.trim()).filter(Boolean);
+  if (!list.some((a) => a.toLowerCase() === OWNER_INTAKE)) list.push(OWNER_INTAKE);
+  return [...new Map(list.map((a) => [a.toLowerCase(), a])).values()];
+}
 const DEFAULT_FROM = "HCPS Ordering Portal <orders@homecareproviderservices.us>";
 const DEFAULT_ORDERS_API = "https://homecareproviderservices.netlify.app/.netlify/functions/orders-api";
 const r2 = (n) => Math.round(Number(n) * 100) / 100;
@@ -40,12 +48,15 @@ function applyServerPrices(orders, recorded) {
   return orders.map((o) => {
     const rec = bySlug[o.manufacturer_slug];
     if (!rec) throw new Error("no recorded order for " + (o.manufacturer_name || o.manufacturer_slug));
+    /* One part number can be on an order twice (plain and with a railing upgrade, or in two ramp families):
+       a recorded line is matched by code + family + upgrade, never by code alone. */
+    const keyOf = (it) => [String(it.code), it.family == null ? "" : String(it.family), it.upgrade == null ? "" : String(it.upgrade)].join("::");
     const units = {};
-    (rec.items || []).forEach((it) => { units[String(it.code)] = it; });
+    (rec.items || []).forEach((it) => { (units[keyOf(it)] = units[keyOf(it)] || []).push(it); });
     const items = (o.items || []).map((it) => {
-      const r = units[String(it.code)];
+      const r = (units[keyOf(it)] || []).shift();
       if (!r) throw new Error("recorded order is missing " + it.code);
-      return Object.assign({}, it, { qty: r.qty, unit: r.unit });
+      return Object.assign({}, it, { qty: r.qty, unit: r.unit, name: r.name || it.name });
     });
     const sub = r2(rec.subtotal);
     /* Freight is the server's too when it worked it out (2026-10-09): the HCPS email carries the
@@ -82,7 +93,7 @@ function freightShort(o) {
   /* A manufacturer's own words travel on the freight row (freeLabel/flatLabel, 2026-10-10 Bemis). */
   const flat = lines.find((r) => r.status === "flat" && r.flatLabel), free = lines.find((r) => r.status === "free" && r.freeLabel);
   if (Number(o.freight_fee) > 0) return money(o.freight_fee) + " " + (flat ? flat.flatLabel : "flat");
-  if (lines.some((r) => r.status === "actual")) return "actual freight (confirmed by manufacturer)";
+  if (lines.some((r) => r.status === "actual")) return "PENDING — actual freight from the manufacturer's confirmation, after HCPS places the order";
   if (lines.length) return free ? free.freeLabel : "FREE";
   return "—";
 }
@@ -93,7 +104,7 @@ function freightTermsHtml(o) {
     let right =
       r.status === "free" ? (r.freeLabel || "FREE freight")
       : r.status === "flat" ? money(r.fee) + " " + (r.flatLabel || "freight")
-      : "actual freight";
+      : "actual freight — pending";
     let sub = r.remaining > 0 && r.freeAt ? ` (add ${money(r.remaining)} to reach ${r.freeLabel ? r.freeLabel.toLowerCase() : "free freight"} at ${money(r.freeAt)})` : "";
     return `<tr><td style="padding:2px 10px 2px 0;font:400 12px Arial,sans-serif;color:#4b5563;">${esc(r.label)}${sub}</td><td style="padding:2px 0;font:600 12px Arial,sans-serif;color:#10263f;text-align:right;white-space:nowrap;">${esc(right)}</td></tr>`;
   }).join("");
@@ -149,6 +160,7 @@ function buildEmail(dealer, order, submittedAt) {
   const field = (label, val) =>
     `<tr><td style="padding:3px 12px 3px 0;font:600 12px Arial,sans-serif;color:#6b7280;white-space:nowrap;vertical-align:top;">${esc(label)}</td><td style="padding:3px 0;font:400 13px Arial,sans-serif;color:#10263f;">${esc(val || "—")}</td></tr>`;
 
+  const pending = !(Number(order.freight_fee) > 0) && (order.freight_lines || []).some((r) => r.status === "actual");
   const feeRow = Number(order.freight_fee) > 0
     ? `<tr><td colspan="4" style="padding:4px 10px;text-align:right;font:400 12px Arial,sans-serif;color:#6b7280;">Freight</td><td style="padding:4px 10px;text-align:right;font:600 12px Arial,sans-serif;color:#10263f;white-space:nowrap;">${money(order.freight_fee)}</td></tr>`
     : "";
@@ -159,6 +171,7 @@ function buildEmail(dealer, order, submittedAt) {
       <div style="font:800 20px Arial,sans-serif;color:#fff;letter-spacing:.5px;">HomeCare Provider Services</div>
       <div style="font:600 11px Arial,sans-serif;color:#9fb0c4;letter-spacing:2px;text-transform:uppercase;">New Dealer Order — ${esc(order.manufacturer_name)}</div>
     </div>
+    <div style="background:#fff7e6;border-bottom:1px solid #f1d9a6;padding:10px 22px;font:600 12px Arial,sans-serif;color:#8a5a00;">Received by HCPS — NOT yet placed with ${esc(order.manufacturer_name)}. Nothing was sent to the manufacturer; HCPS places this order and sends the dealer the confirmation.</div>
     <div style="padding:22px;">
       <table style="border-collapse:collapse;width:100%;margin-bottom:8px;">
         ${field("Manufacturer", order.manufacturer_name)}
@@ -170,6 +183,8 @@ function buildEmail(dealer, order, submittedAt) {
         ${field("Phone", dealer.phone)}
         ${field("Ship to", shipping)}
         ${field("Submitted", submittedStr)}
+        ${field("HCPS order ID", order.order_id)}
+        ${field("Status", "Received by HCPS (not yet placed with the manufacturer)")}
       </table>
 
       <table style="border-collapse:collapse;width:100%;margin-top:14px;">
@@ -185,7 +200,7 @@ function buildEmail(dealer, order, submittedAt) {
           <tr><td colspan="4" style="padding:8px 10px 2px;text-align:right;font:400 12px Arial,sans-serif;color:#6b7280;">Subtotal (${esc(order.items_count)} item${Number(order.items_count) === 1 ? "" : "s"})</td>
               <td style="padding:8px 10px 2px;text-align:right;font:600 12px Arial,sans-serif;color:#10263f;white-space:nowrap;">${money(order.items_subtotal)}</td></tr>
           ${feeRow}
-          <tr><td colspan="4" style="padding:6px 10px;text-align:right;font:700 13px Arial,sans-serif;color:#10263f;border-top:1px solid #e6e2dc;">Estimated total</td>
+          <tr><td colspan="4" style="padding:6px 10px;text-align:right;font:700 13px Arial,sans-serif;color:#10263f;border-top:1px solid #e6e2dc;">${pending ? "Merchandise total — freight pending" : "Estimated total"}</td>
               <td style="padding:6px 10px;text-align:right;font:800 15px Arial,sans-serif;color:#ef6325;white-space:nowrap;border-top:1px solid #e6e2dc;">${money(order.estimated_total)}</td></tr>
         </tfoot>
       </table>
@@ -195,7 +210,7 @@ function buildEmail(dealer, order, submittedAt) {
       ${order.notes ? `<div style="margin-top:14px;padding:12px 14px;background:#f6f7f5;border-radius:8px;border:1px solid #e6e2dc;"><div style="font:700 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:4px;">Notes</div><div style="font:400 13px/1.5 Arial,sans-serif;color:#10263f;white-space:pre-wrap;">${esc(order.notes)}</div></div>` : ""}
 
       <div style="margin-top:18px;font:400 11px/1.5 Arial,sans-serif;color:#9aa2ac;">
-        Item prices are the dealer's account pricing as recorded by the server when the order was placed; final freight is confirmed by HCPS before the order is placed with the manufacturer. Reply to this email to reach the dealer directly.
+        Item prices are the dealer's account pricing as recorded by the server when the order was submitted. ${pending ? "Freight is pending: add the actual freight from the manufacturer's order confirmation (Order Review &amp; Fulfillment → Record manufacturer confirmation). " : ""}Reply to this email to reach the dealer directly.
       </div>
     </div>
   </div></body></html>`;
@@ -212,6 +227,8 @@ function buildEmail(dealer, order, submittedAt) {
     `Phone             : ${dealer.phone || "—"}`,
     `Ship to           : ${shipping}`,
     `Submitted         : ${submittedStr}`,
+    `HCPS order ID     : ${order.order_id || "—"}`,
+    "STATUS: Received by HCPS — NOT yet placed with the manufacturer. Nothing was sent to the manufacturer.",
     "",
     "ITEMS",
     "=====",
@@ -219,7 +236,7 @@ function buildEmail(dealer, order, submittedAt) {
     "",
     `Subtotal (${order.items_count} item${Number(order.items_count) === 1 ? "" : "s"}): ${money(order.items_subtotal)}`,
     `Freight: ${freightShort(order)}`,
-    `Estimated total: ${money(order.estimated_total)}`,
+    pending ? `Merchandise total: ${money(order.items_subtotal)} + freight (pending)` : `Estimated total: ${money(order.estimated_total)}`,
     order.freight_note ? `\n${order.freight_note}` : "",
     order.notes ? `\nNOTES\n-----\n${order.notes}` : "",
   ].join("\n");
@@ -326,7 +343,7 @@ exports.handler = async (event) => {
     return json(502, { ok: false, recorded: true, status: "email_failed", not_recorded: notRecorded, orders: rec.orders, error: String(err.message || err) });
   }
 
-  const to = (process.env.ORDER_TO || DEFAULT_TO).split(",").map((s) => s.trim()).filter(Boolean);
+  const to = recipients(process.env.ORDER_TO);
   const from = process.env.ORDER_FROM || DEFAULT_FROM;
 
   /* A failed email never undoes a recorded order: it is retried once, then the order is flagged
@@ -355,3 +372,4 @@ exports.handler = async (event) => {
 exports._buildEmail = buildEmail;
 exports._normalize = normalize;
 exports._applyServerPrices = applyServerPrices;
+exports._recipients = recipients;
