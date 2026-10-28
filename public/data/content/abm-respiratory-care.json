@@ -10,9 +10,9 @@
   "aerogen-power-cable": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "aerogen-power-cable",
-   "name": "Aerogen® Power Cable",
+   "name": "Aerogen\u00ae Power Cable",
    "status": "published",
-   "description": "Aerogen® Solo nebulizer power cable",
+   "description": "Aerogen\u00ae Solo nebulizer power cable",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -22,7 +22,7 @@
    "skus": [
     {
      "sku": "BK389",
-     "name": "Aerogen® Power Cable",
+     "name": "Aerogen\u00ae Power Cable",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -39,7 +39,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -54,10 +54,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Aerogen® Solo nebulizer power cable"
+       "evidence": "Aerogen\u00ae Solo nebulizer power cable"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -112,7 +112,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -130,7 +130,7 @@
        "evidence": "Replacement air inlet filters for BiWaze Clear (Pack of 3)"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -158,7 +158,7 @@
    "page_key": "australia-power-cord",
    "name": "Australia Power Cord",
    "status": "published",
-   "description": "Power Cord – Australia",
+   "description": "Power Cord \u2013 Australia",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -185,7 +185,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -200,10 +200,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Power Cord – Australia"
+       "evidence": "Power Cord \u2013 Australia"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -258,7 +258,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -276,7 +276,7 @@
        "evidence": "Rechargeable lithium-ion battery for the BiWaze platform systems"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -302,9 +302,9 @@
   "biwaze-clear-dual-lumen-child-face-mask": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-clear-dual-lumen-child-face-mask",
-   "name": "BiWaze Clear Dual Lumen – Child Face Mask",
+   "name": "BiWaze Clear Dual Lumen \u2013 Child Face Mask",
    "status": "published",
-   "description": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Child Face Mask",
+   "description": "Dual-Lumen Bacterial/Viral Filter, 2 \u2013 Corrugated Dual-Lumen\u00ae Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Child Face Mask",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -314,7 +314,7 @@
    "skus": [
     {
      "sku": "BK291",
-     "name": "BiWaze Clear Dual Lumen – Child Face Mask",
+     "name": "BiWaze Clear Dual Lumen \u2013 Child Face Mask",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -331,7 +331,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -346,10 +346,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Child Face Mask"
+       "evidence": "Dual-Lumen Bacterial/Viral Filter, 2 \u2013 Corrugated Dual-Lumen\u00ae Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Child Face Mask"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -375,9 +375,9 @@
   "biwaze-clear-dual-lumen-mouthpiece": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-clear-dual-lumen-mouthpiece",
-   "name": "BiWaze Clear Dual Lumen – Mouthpiece",
+   "name": "BiWaze Clear Dual Lumen \u2013 Mouthpiece",
    "status": "published",
-   "description": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Mouthpiece",
+   "description": "Dual-Lumen Bacterial/Viral Filter, 2 \u2013 Corrugated Dual-Lumen\u00ae Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Mouthpiece",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -387,7 +387,7 @@
    "skus": [
     {
      "sku": "BK280",
-     "name": "BiWaze Clear Dual Lumen – Mouthpiece",
+     "name": "BiWaze Clear Dual Lumen \u2013 Mouthpiece",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -404,11 +404,19 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "images": "manufacturer photos \u2014 https://abmrc.com/ product carousel (manufacturer photo)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/6ef97f8306e640b41751.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/6ef97f8306e640b41751.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "https://abmrc.com/ product carousel (manufacturer photo) \u2014 Dual-Lumen-Breathing-Circuit-with-Mouthpiece.jpg"
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -419,10 +427,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Mouthpiece"
+       "evidence": "Dual-Lumen Bacterial/Viral Filter, 2 \u2013 Corrugated Dual-Lumen\u00ae Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Mouthpiece"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -448,9 +456,9 @@
   "biwaze-clear-dual-lumen-trach": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-clear-dual-lumen-trach",
-   "name": "BiWaze Clear Dual Lumen – Trach",
+   "name": "BiWaze Clear Dual Lumen \u2013 Trach",
    "status": "published",
-   "description": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Flexible Trach Adaptor",
+   "description": "Dual-Lumen Bacterial/Viral Filter, 2 \u2013 Corrugated Dual-Lumen\u00ae Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Flexible Trach Adaptor",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -460,7 +468,7 @@
    "skus": [
     {
      "sku": "BK293",
-     "name": "BiWaze Clear Dual Lumen – Trach",
+     "name": "BiWaze Clear Dual Lumen \u2013 Trach",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -477,11 +485,19 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "images": "manufacturer photos \u2014 https://abmrc.com/ product carousel (manufacturer photo)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/a9f0de12e0d4bee4c6d4.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/a9f0de12e0d4bee4c6d4.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "https://abmrc.com/ product carousel (manufacturer photo) \u2014 Dual-Lumen-Breathing-Circuit-with-Trach-Adapter.jpg"
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -492,10 +508,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Flexible Trach Adaptor"
+       "evidence": "Dual-Lumen Bacterial/Viral Filter, 2 \u2013 Corrugated Dual-Lumen\u00ae Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Flexible Trach Adaptor"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -523,7 +539,7 @@
    "page_key": "biwaze-clear-extended-warranty",
    "name": "BiWaze Clear Extended Warranty",
    "status": "published",
-   "description": "One-year extended warranty, available only at the time of device purchase (added onto the standard one-year manufacturer warranty) – Max 2 additional years",
+   "description": "One-year extended warranty, available only at the time of device purchase (added onto the standard one-year manufacturer warranty) \u2013 Max 2 additional years",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -550,7 +566,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -565,10 +581,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "One-year extended warranty, available only at the time of device purchase (added onto the standard one-year manufacturer warranty) – Max 2 additional years"
+       "evidence": "One-year extended warranty, available only at the time of device purchase (added onto the standard one-year manufacturer warranty) \u2013 Max 2 additional years"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -623,7 +639,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -641,7 +657,7 @@
        "evidence": "Quick Reference Guide for home care use of BiWaze Clear"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -667,7 +683,7 @@
   "biwaze-clear-system-home-care-usa": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-clear-system-home-care-usa",
-   "name": "BiWaze Clear System – Home Care USA",
+   "name": "BiWaze Clear System \u2013 Home Care USA",
    "status": "published",
    "description": "Control Unit, Internal Battery, User Manual, Home Care QRG, Power Cord - USA, Carrying Bag, Dual-Lumen Breathing Circuit - Mouthpiece",
    "features": [],
@@ -679,7 +695,7 @@
    "skus": [
     {
      "sku": "BK367",
-     "name": "BiWaze Clear System – Home Care USA",
+     "name": "BiWaze Clear System \u2013 Home Care USA",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -696,8 +712,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "images": "manufacturer photos \u2014 https://abmrc.com/ product carousel (manufacturer photo)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/2fb20960b10dcbf1e33c.jpg",
    "images_gallery": [
@@ -706,6 +723,36 @@
      "primary": true,
      "caption": "",
      "source": "current catalog photo"
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/d631282a7278a8095755.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "https://abmrc.com/ product carousel (manufacturer photo) \u2014 BiWaze-Clear_Front-2.jpg"
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/398fe0bc2a030e6e410d.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "https://abmrc.com/ product carousel (manufacturer photo) \u2014 BiWaze-Clear_Side-View-2.jpg"
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/db6d7d129ae8a063f625.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "https://abmrc.com/ product carousel (manufacturer photo) \u2014 BiWaze-Clear_4.jpg"
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/042cd0b5460b077f1937.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "https://abmrc.com/ product carousel (manufacturer photo) \u2014 BiWaze-Clear-group-screen-on-4.jpg"
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/b83ca7d55e176493ceb3.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "https://abmrc.com/ product carousel (manufacturer photo) \u2014 BiWaze-Clear_2.jpg"
     }
    ],
    "enrichment_flags": {
@@ -728,7 +775,7 @@
        "evidence": "Control Unit, Internal Battery, User Manual, Home Care QRG, Power Cord - USA, Carrying Bag, Dual-Lumen Breathing Circuit - Mouthpiece"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -737,7 +784,7 @@
      },
      "conflicts": [],
      "notes": [
-      "The line's landing page mentions it (https://abmrc.com/biwaze-clear-home-care-2/) — not product-specific; not used as its description."
+      "The line's landing page mentions it (https://abmrc.com/biwaze-clear-home-care-2/) \u2014 not product-specific; not used as its description."
      ],
      "group_reason": "one SKU",
      "bundle": false,
@@ -766,7 +813,7 @@
    "page_key": "biwaze-clear-user-manual",
    "name": "BiWaze Clear User Manual",
    "status": "published",
-   "description": "User Manual – English (USA)",
+   "description": "User Manual \u2013 English (USA)",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -793,7 +840,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -808,10 +855,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "User Manual – English (USA)"
+       "evidence": "User Manual \u2013 English (USA)"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -866,7 +913,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -884,7 +931,7 @@
        "evidence": "Quick reference guide for health care professionals in the acute care environment"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -910,7 +957,7 @@
   "biwaze-cough-dual-lumen-circuit-adult-face-mask": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-cough-dual-lumen-circuit-adult-face-mask",
-   "name": "BiWaze Cough Dual Lumen Circuit – Adult Face Mask",
+   "name": "BiWaze Cough Dual Lumen Circuit \u2013 Adult Face Mask",
    "status": "published",
    "description": "Dual Lumen adult small patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, adult small face mask)",
    "features": [],
@@ -928,7 +975,7 @@
    "skus": [
     {
      "sku": "BC23406",
-     "name": "BiWaze Cough Dual Lumen Circuit – Adult Small Face Mask",
+     "name": "BiWaze Cough Dual Lumen Circuit \u2013 Adult Small Face Mask",
      "size": "Small",
      "status": "active",
      "disabled": false,
@@ -938,7 +985,7 @@
     },
     {
      "sku": "BC23412",
-     "name": "BiWaze Cough Dual Lumen Circuit – Adult Medium Face Mask",
+     "name": "BiWaze Cough Dual Lumen Circuit \u2013 Adult Medium Face Mask",
      "size": "Medium",
      "status": "active",
      "disabled": false,
@@ -948,7 +995,7 @@
     },
     {
      "sku": "BC23418",
-     "name": "BiWaze Cough Dual Lumen Circuit – Adult Large Face Mask",
+     "name": "BiWaze Cough Dual Lumen Circuit \u2013 Adult Large Face Mask",
      "size": "Large",
      "status": "active",
      "disabled": false,
@@ -965,7 +1012,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -983,7 +1030,7 @@
        "evidence": "Dual Lumen adult small patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, adult small face mask)"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1009,7 +1056,7 @@
   "biwaze-cough-dual-lumen-circuit-child-face-mask": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-cough-dual-lumen-circuit-child-face-mask",
-   "name": "BiWaze Cough Dual Lumen Circuit – Child Face Mask",
+   "name": "BiWaze Cough Dual Lumen Circuit \u2013 Child Face Mask",
    "status": "published",
    "description": "Dual Lumen child patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, child face mask)",
    "features": [],
@@ -1021,7 +1068,7 @@
    "skus": [
     {
      "sku": "BC23400",
-     "name": "BiWaze Cough Dual Lumen Circuit – Child Face Mask",
+     "name": "BiWaze Cough Dual Lumen Circuit \u2013 Child Face Mask",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -1038,7 +1085,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -1056,7 +1103,7 @@
        "evidence": "Dual Lumen child patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, child face mask)"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1082,7 +1129,7 @@
   "biwaze-cough-dual-lumen-circuit-mouthpiece": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-cough-dual-lumen-circuit-mouthpiece",
-   "name": "BiWaze Cough Dual Lumen Circuit – Mouthpiece",
+   "name": "BiWaze Cough Dual Lumen Circuit \u2013 Mouthpiece",
    "status": "published",
    "description": "Dual Lumen mouthpiece patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, mouthpiece)",
    "features": [],
@@ -1094,7 +1141,7 @@
    "skus": [
     {
      "sku": "BC23387",
-     "name": "BiWaze Cough Dual Lumen Circuit – Mouthpiece",
+     "name": "BiWaze Cough Dual Lumen Circuit \u2013 Mouthpiece",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -1111,7 +1158,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -1129,7 +1176,7 @@
        "evidence": "Dual Lumen mouthpiece patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, mouthpiece)"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1155,7 +1202,7 @@
   "biwaze-cough-dual-lumen-circuit-trach": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-cough-dual-lumen-circuit-trach",
-   "name": "BiWaze Cough Dual Lumen Circuit – Trach",
+   "name": "BiWaze Cough Dual Lumen Circuit \u2013 Trach",
    "status": "published",
    "description": "Dual Lumen trach patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, trach adapter)",
    "features": [],
@@ -1167,7 +1214,7 @@
    "skus": [
     {
      "sku": "BC23394",
-     "name": "BiWaze Cough Dual Lumen Circuit – Trach",
+     "name": "BiWaze Cough Dual Lumen Circuit \u2013 Trach",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -1184,7 +1231,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -1202,7 +1249,7 @@
        "evidence": "Dual Lumen trach patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, trach adapter)"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1257,7 +1304,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -1275,7 +1322,7 @@
        "evidence": "BiWaze Cough one-year extended warranty after manufacturer 1 year (maximum 2 years extended)"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1330,7 +1377,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -1348,7 +1395,7 @@
        "evidence": "Quick reference guide for patients in the home care environment"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1374,7 +1421,7 @@
   "biwaze-cough-standard-circuit-adult-face-mask": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-cough-standard-circuit-adult-face-mask",
-   "name": "BiWaze Cough Standard Circuit – Adult Face Mask",
+   "name": "BiWaze Cough Standard Circuit \u2013 Adult Face Mask",
    "status": "published",
    "description": "Standard adult small patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, adult small face mask)",
    "features": [],
@@ -1392,7 +1439,7 @@
    "skus": [
     {
      "sku": "BC21088",
-     "name": "BiWaze Cough Standard Circuit – Adult Small Face Mask",
+     "name": "BiWaze Cough Standard Circuit \u2013 Adult Small Face Mask",
      "size": "Small",
      "status": "active",
      "disabled": false,
@@ -1402,7 +1449,7 @@
     },
     {
      "sku": "BC21089",
-     "name": "BiWaze Cough Standard Circuit – Adult Medium Face Mask",
+     "name": "BiWaze Cough Standard Circuit \u2013 Adult Medium Face Mask",
      "size": "Medium",
      "status": "active",
      "disabled": false,
@@ -1412,7 +1459,7 @@
     },
     {
      "sku": "BC21273",
-     "name": "BiWaze Cough Standard Circuit – Adult Large Face Mask",
+     "name": "BiWaze Cough Standard Circuit \u2013 Adult Large Face Mask",
      "size": "Large",
      "status": "active",
      "disabled": false,
@@ -1429,7 +1476,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -1447,7 +1494,7 @@
        "evidence": "Standard adult small patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, adult small face mask)"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1473,7 +1520,7 @@
   "biwaze-cough-standard-circuit-child-face-mask": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-cough-standard-circuit-child-face-mask",
-   "name": "BiWaze Cough Standard Circuit – Child Face Mask",
+   "name": "BiWaze Cough Standard Circuit \u2013 Child Face Mask",
    "status": "published",
    "description": "Standard child patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, child face mask)",
    "features": [],
@@ -1485,7 +1532,7 @@
    "skus": [
     {
      "sku": "BC21087",
-     "name": "BiWaze Cough Standard Circuit – Child Face Mask",
+     "name": "BiWaze Cough Standard Circuit \u2013 Child Face Mask",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -1502,7 +1549,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -1520,7 +1567,7 @@
        "evidence": "Standard child patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, child face mask)"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1546,7 +1593,7 @@
   "biwaze-cough-standard-circuit-mouthpiece": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-cough-standard-circuit-mouthpiece",
-   "name": "BiWaze Cough Standard Circuit – Mouthpiece",
+   "name": "BiWaze Cough Standard Circuit \u2013 Mouthpiece",
    "status": "published",
    "description": "Standard mouthpiece patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, mouthpiece)",
    "features": [],
@@ -1558,7 +1605,7 @@
    "skus": [
     {
      "sku": "BC21092",
-     "name": "BiWaze Cough Standard Circuit – Mouthpiece",
+     "name": "BiWaze Cough Standard Circuit \u2013 Mouthpiece",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -1575,7 +1622,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -1593,7 +1640,7 @@
        "evidence": "Standard mouthpiece patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, mouthpiece)"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1619,7 +1666,7 @@
   "biwaze-cough-standard-circuit-trach": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-cough-standard-circuit-trach",
-   "name": "BiWaze Cough Standard Circuit – Trach",
+   "name": "BiWaze Cough Standard Circuit \u2013 Trach",
    "status": "published",
    "description": "Standard trach patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, trach adapter)",
    "features": [],
@@ -1631,7 +1678,7 @@
    "skus": [
     {
      "sku": "BC21090",
-     "name": "BiWaze Cough Standard Circuit – Trach",
+     "name": "BiWaze Cough Standard Circuit \u2013 Trach",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -1648,7 +1695,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -1666,7 +1713,7 @@
        "evidence": "Standard trach patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, trach adapter)"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1692,7 +1739,7 @@
   "biwaze-cough-system-usa-home-care": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-cough-system-usa-home-care",
-   "name": "BiWaze Cough System – USA Home Care",
+   "name": "BiWaze Cough System \u2013 USA Home Care",
    "status": "published",
    "description": "Standard USA (includes control unit, internal battery, carrying bag, English user manual, power cord, filter adapter, single path circuit)",
    "features": [],
@@ -1704,7 +1751,7 @@
    "skus": [
     {
      "sku": "BC20113",
-     "name": "BiWaze Cough System – USA Home Care",
+     "name": "BiWaze Cough System \u2013 USA Home Care",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -1721,8 +1768,9 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "images": "manufacturer photos \u2014 https://abmrc.com/ product carousel (manufacturer photo)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/de15b42c01cac214f7a2.jpg",
    "images_gallery": [
@@ -1731,6 +1779,30 @@
      "primary": true,
      "caption": "",
      "source": "current catalog photo"
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/5d2dd570a47ca732ae0c.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "https://abmrc.com/ product carousel (manufacturer photo) \u2014 BiWaze-Cough_Top-View-01.jpg"
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/ccd0537717acf1330081.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "https://abmrc.com/ product carousel (manufacturer photo) \u2014 BiWaze-Cough-tilted-02.jpg"
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/a00e0d4053b9a99445db.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "https://abmrc.com/ product carousel (manufacturer photo) \u2014 BiWaze-Cough-with-bag-and-circuit-04.jpg"
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/a08c8cd5748f7eee7d51.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "https://abmrc.com/ product carousel (manufacturer photo) \u2014 BiWaze-Cough_with-stand-and-circuit-05.jpg"
     }
    ],
    "enrichment_flags": {
@@ -1753,7 +1825,7 @@
        "evidence": "Standard USA (includes control unit, internal battery, carrying bag, English user manual, power cord, filter adapter, single path circuit)"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1762,7 +1834,7 @@
      },
      "conflicts": [],
      "notes": [
-      "The line's landing page mentions it (https://abmrc.com/biwaze-cough-home/) — not product-specific; not used as its description."
+      "The line's landing page mentions it (https://abmrc.com/biwaze-cough-home/) \u2014 not product-specific; not used as its description."
      ],
      "group_reason": "one SKU",
      "bundle": false,
@@ -1818,7 +1890,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -1836,7 +1908,7 @@
        "evidence": "BiWaze Cough User Manual USA - English"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1862,9 +1934,9 @@
   "biwaze-dual-lumen-adult-face-mask": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-dual-lumen-adult-face-mask",
-   "name": "BiWaze Dual Lumen – Adult Face Mask",
+   "name": "BiWaze Dual Lumen \u2013 Adult Face Mask",
    "status": "published",
-   "description": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Adult Small Face Mask",
+   "description": "Dual-Lumen Bacterial/Viral Filter, 2 \u2013 Corrugated Dual-Lumen\u00ae Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Adult Small Face Mask",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -1880,7 +1952,7 @@
    "skus": [
     {
      "sku": "BK289",
-     "name": "BiWaze Clear Dual Lumen – Adult Small Face Mask",
+     "name": "BiWaze Clear Dual Lumen \u2013 Adult Small Face Mask",
      "size": "Small",
      "status": "active",
      "disabled": false,
@@ -1890,7 +1962,7 @@
     },
     {
      "sku": "BK287",
-     "name": "BiWaze Clear Dual Lumen – Adult Medium Face Mask",
+     "name": "BiWaze Clear Dual Lumen \u2013 Adult Medium Face Mask",
      "size": "Medium",
      "status": "active",
      "disabled": false,
@@ -1900,7 +1972,7 @@
     },
     {
      "sku": "BK285",
-     "name": "BiWaze Clear Dual Lumen – Adult Large Face Mask",
+     "name": "BiWaze Clear Dual Lumen \u2013 Adult Large Face Mask",
      "size": "Large",
      "status": "active",
      "disabled": false,
@@ -1917,11 +1989,19 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "warranty": "not stated by the source \u2014 left blank",
+    "category": "HCPS catalog (what dealers see today)",
+    "images": "manufacturer photos \u2014 https://abmrc.com/ product carousel (manufacturer photo)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/490f148a99c297b3e29b.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/490f148a99c297b3e29b.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "https://abmrc.com/ product carousel (manufacturer photo) \u2014 Dual-Lumen-with-Face-Mask-scaled-1.jpg"
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -1932,10 +2012,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Adult Small Face Mask"
+       "evidence": "Dual-Lumen Bacterial/Viral Filter, 2 \u2013 Corrugated Dual-Lumen\u00ae Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Adult Small Face Mask"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -1990,7 +2070,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -2008,7 +2088,7 @@
        "evidence": "Soft sided carrying bag with ABM Respiratory Care logo"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -2036,7 +2116,7 @@
    "page_key": "dual-lumen-b-v-filter",
    "name": "Dual Lumen B/V Filter",
    "status": "published",
-   "description": "Dual lumen bacteria/viral filters designed for the BiWaze platform systems – MOQ = 20",
+   "description": "Dual lumen bacteria/viral filters designed for the BiWaze platform systems \u2013 MOQ = 20",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -2063,7 +2143,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -2078,10 +2158,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Dual lumen bacteria/viral filters designed for the BiWaze platform systems – MOQ = 20"
+       "evidence": "Dual lumen bacteria/viral filters designed for the BiWaze platform systems \u2013 MOQ = 20"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -2136,7 +2216,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -2154,7 +2234,7 @@
        "evidence": "Mobile cart includes 5 caster wheels (3 locking), telescoping pole, and a basket"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -2198,7 +2278,7 @@
    "skus": [
     {
      "sku": "BK373",
-     "name": "Nonin Sensor – Small",
+     "name": "Nonin Sensor \u2013 Small",
      "size": "Small",
      "status": "active",
      "disabled": false,
@@ -2208,7 +2288,7 @@
     },
     {
      "sku": "BK372",
-     "name": "Nonin Sensor – Medium",
+     "name": "Nonin Sensor \u2013 Medium",
      "size": "Medium",
      "status": "active",
      "disabled": false,
@@ -2218,7 +2298,7 @@
     },
     {
      "sku": "BK374",
-     "name": "Nonin Sensor – Large",
+     "name": "Nonin Sensor \u2013 Large",
      "size": "Large",
      "status": "active",
      "disabled": false,
@@ -2235,7 +2315,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -2253,7 +2333,7 @@
        "evidence": "8000SS - Small Soft Sensor, 1 meter cable"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -2308,7 +2388,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -2326,7 +2406,7 @@
        "evidence": "Nonin Xpod 3012 LP with USB Connector Data Format 2, 1 meter cable"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -2381,7 +2461,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -2399,7 +2479,7 @@
        "evidence": "Adapter for a standard circuit to the BiWaze Cough control unit"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -2427,7 +2507,7 @@
    "page_key": "power-cord",
    "name": "Power Cord",
    "status": "published",
-   "description": "Standard power cord – USA",
+   "description": "Standard power cord \u2013 USA",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -2454,7 +2534,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -2469,10 +2549,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Standard power cord – USA"
+       "evidence": "Standard power cord \u2013 USA"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -2500,7 +2580,7 @@
    "page_key": "standard-filter-trap",
    "name": "Standard Filter Trap",
    "status": "published",
-   "description": "Standard 22mm b/v filter used as a moisture trap with BiWaze Clear – MOQ = 20",
+   "description": "Standard 22mm b/v filter used as a moisture trap with BiWaze Clear \u2013 MOQ = 20",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -2527,7 +2607,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -2542,10 +2622,10 @@
       "description": {
        "source": "HCPS catalog line only (no product-specific manufacturer source)",
        "url": null,
-       "evidence": "Standard 22mm b/v filter used as a moisture trap with BiWaze Clear – MOQ = 20"
+       "evidence": "Standard 22mm b/v filter used as a moisture trap with BiWaze Clear \u2013 MOQ = 20"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
@@ -2600,7 +2680,7 @@
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
-    "warranty": "not stated by the source — left blank",
+    "warranty": "not stated by the source \u2014 left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
    "image": null,
@@ -2618,7 +2698,7 @@
        "evidence": "Power Cord - Switzerland"
       },
       "warranty": {
-       "source": "not stated by the source — left blank",
+       "source": "not stated by the source \u2014 left blank",
        "url": null
       },
       "features_list": [],
