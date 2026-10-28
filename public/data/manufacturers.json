@@ -51,8 +51,15 @@
     "accent": "#1fa8c6",
     "dark": "#3c4a52",
     "logo": "/assets/logos/abm-respiratory-care.jpg",
-    "hasData": false,
-    "sort": 3
+    "hasData": true,
+    "sort": 3,
+    "freight": {
+      "summary": "Actual shipping charges apply to all orders.",
+      "actualNote": "Actual shipping charges apply to all orders.",
+      "groups": [],
+      "elseActual": true,
+      "otherLabel": "ABM Respiratory Care — actual shipping"
+    }
   },
   {
     "slug": "airavant-bongorx",

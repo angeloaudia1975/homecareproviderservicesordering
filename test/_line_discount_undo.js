@@ -7,6 +7,11 @@ const SNIPPETS = [
   [/\n  \/\/ The dealer's own line discount off the standard list \(never stacked on a contract price\)\.\n  const lr=lineRatePrice\(p\);\n  if\(lr!=null\) return lr;/, ''],
   [/\n  const lr=\(cp==null && typeof lineRatePrice==='function'\)\?lineRatePrice\(p\):null;[^\n]*\n  const eff=\(cp!=null\)\?cp:\(lr!=null\?lr:Number\(p\.base_price\)\);/, '\n  const eff=(cp!=null)?cp:Number(p.base_price);'],
   [/\n    : \(lr!=null \? `<div class="pnote" style="color:#0a7f3f;font-weight:700">Your account price<\/div>` : ""\);/, '\n    : "";'],
+  /* Order rules printed on a manufacturer's list (ABM 2026 MOQ + extended-warranty rule, owner 2026-10-27). */
+  [/\n  const m=minOrderQty\(p\); const nq=Math\.max\(\(cur\?cur\.qty:0\)\+qty, m\);\n  CART\.set\(k,\{p,qty:nq\}\);\n  updateCart\(\); toast\([^\n]*\);/,
+   '\n  CART.set(k,{p,qty:(cur?cur.qty:0)+qty});\n  updateCart(); toast(`Added ${qty} × ${p.code}`);'],
+  [/\n\/\* ORDER RULES PRINTED ON A MANUFACTURER'S LIST[\s\S]*?\nfunction cartRuleProblems\(\)\{[\s\S]*?\n  return out;\n\}/, ''],
+  [/\n        \$\{cartRuleProblems\(\)[^\n]*/, ''],
 ];
 function undoLineDiscount(html) {
   let s = String(html);

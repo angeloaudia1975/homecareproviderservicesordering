@@ -2994,7 +2994,9 @@ function cardHtml(p){
   const codeLine = multi ? `<div class="pcode">${esc(variantSummary(p._variants))}</div>` : `<div class="pcode">Item # ${esc(p.code)}</div>`;
   const priceBlock = (multi && p._priceMin>0 && p._priceMin!==p._priceMax)
     ? `<div class="prow"><div style="font-weight:800;font-size:18px;color:var(--ink)"><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">From </span>${money(p._priceMin)}</div></div>`
-    : `<div class="prow">${priceHtml(p)}</div>`;
+    : `<div class="prow">${priceHtml(p)}</div>`
+      +(minOrderQty(p)>1?`<div class="pcode" style="font-weight:700">Minimum order: ${minOrderQty(p)}</div>`:"")
+      +(p.requires&&p.requires.code?`<div class="pcode">Ordered with ${esc(p.requires.code)} only · max ${esc(p.requires.max_per||1)} per unit</div>`:"");
   /* The card is where a dealer decides whether to open a product at all, so the quantity break
      belongs here and not only on the detail page.
 
@@ -3160,9 +3162,29 @@ const MFR={};                          // slug -> {po, notes}  (per-manufacturer
 function addToCart(p,qty){
   if(p && p._discontinued){ toast(`${p.code} is discontinued — it is shown for reference and cannot be ordered`); return; }
   const k=cartKey(p); const cur=CART.get(k);
-  CART.set(k,{p,qty:(cur?cur.qty:0)+qty});
-  updateCart(); toast(`Added ${qty} × ${p.code}`);
+  const m=minOrderQty(p); const nq=Math.max((cur?cur.qty:0)+qty, m);
+  CART.set(k,{p,qty:nq});
+  updateCart(); toast(m>1&&nq>(cur?cur.qty:0)+qty?`Added ${nq} × ${p.code} (minimum order ${m})`:`Added ${qty} × ${p.code}`);
   track('pricing_view',p&&p.manufacturer,p&&p.code);   // added a priced item to cart — strong buying intent (+8)
+}
+/* ORDER RULES PRINTED ON A MANUFACTURER'S LIST (ABM 2026, owner 2026-10-27) — product data, never per-line code:
+   min_order_qty  — the list's MOQ ("MOQ = 20"): a line below it cannot be ordered;
+   requires       — {code, max_per}: orderable only with that product in the same order, at most max_per for each
+                    one ordered (ABM BiWaze Clear extended warranty: "available only at the time of device purchase …
+                    Max 2 additional years"). The order server applies the same two rules. */
+function minOrderQty(p){ const n=Math.round(Number(p&&p.min_order_qty)); return n>1?n:1; }
+function cartRuleProblems(){
+  const out=[]; const qtyOf={};
+  for(const {p,qty} of CART.values()){ const k=p.manufacturer+"::"+p.code; qtyOf[k]=(qtyOf[k]||0)+qty; }
+  for(const [k,{p,qty}] of CART){
+    const m=minOrderQty(p);
+    if(qty<m) out.push({k, msg:`${p.code}: minimum order is ${m}`});
+    const r=p.requires;
+    if(r&&r.code){ const have=qtyOf[p.manufacturer+"::"+r.code]||0, per=Math.max(1,Math.round(Number(r.max_per))||1);
+      if(!have) out.push({k, msg:`${p.code} can only be ordered together with ${r.code} in the same order`});
+      else if(qty>have*per) out.push({k, msg:`${p.code}: at most ${per} per ${r.code} ordered (${have} in this order)`}); }
+  }
+  return out;
 }
 function cartCount(){let n=0;for(const{qty}of CART.values())n+=qty;return n;}
 function mfrInfo(slug){ if(isGoldenSlug(slug)){ return state.manufacturers.find(m=>isGoldenSlug(m.slug))||{slug:CONFIG.GOLDEN_SLUG,name:'Golden Technologies',golden:true}; } return state.manufacturers.find(m=>m.slug===slug)||{slug,name:slug};}
@@ -3291,6 +3313,7 @@ function renderCart(){
       return `<div class="citem" data-k="${esc(cartKey(p))}">
         ${cimg}
         <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)}${p._skuOption?" · "+esc(variantLabel(p)):""}${p.brand?" · "+esc(p.brand):""}</div>
+        ${cartRuleProblems().filter(x=>x.k===cartKey(p)).map(x=>`<div class="s" style="color:#b42323;font-weight:700">${esc(x.msg)}</div>`).join("")}
         <div class="s">${packOf(p)?`${qty} × ${esc(packOf(p).label)} = ${qty*packOf(p).n} each · `:""}Unit ${u?money(u):"—"}${packOf(p)?" per "+esc(packOf(p).label):""} · Line ${u?money(u*qty):"—"}${contractPrice(p)!=null?` · <span style="color:#0a7f3f;font-weight:700">contract</span>`:""}</div>${volNote}${priceNoteHtml(p)}</div>
         <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
     }).join("");
@@ -3428,6 +3451,7 @@ async function submitOrder(){
     }
   }
   if([...CART.values()].some(({p})=>p._unavailable)){ toast("Remove the items that are no longer available, then place your order"); return; }
+  { const rp=cartRuleProblems(); if(rp.length){ toast(rp[0].msg); return; } }
   const btn=$("#submitOrder"); btn.disabled=true; btn.textContent="Checking prices…";
   try{
     /* The server checks the price of every line before anything is submitted. */
