@@ -3227,6 +3227,7 @@ function validFreightTerms(t){
   if(!isObj(t)) return false;
   if(!str(t.summary)||!str(t.actualNote)||!str(t.otherLabel)) return false;
   if(t.elseActual!=null&&typeof t.elseActual!=='boolean') return false;
+  if(t.mode==='qty_threshold') return typeof t.freeAtQty==='number'&&isFinite(t.freeAtQty)&&t.freeAtQty>=1&&list(t.qualifyingCodes)&&str(t.label)&&str(t.freeLabel);
   if(t.mode!=null) return t.mode==='per_item' && num(t.threshold);
   if(!Array.isArray(t.groups)) return false;
   for(const g of t.groups){
@@ -3349,7 +3350,7 @@ function renderCart(){
       return `<div class="citem" data-k="${esc(cartKey(p))}">
         ${cimg}
         <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)}${p._skuOption?" · "+esc(variantLabel(p)):""}${p.brand?" · "+esc(p.brand):""}</div>
-        ${cartRuleProblems().filter(x=>x.k===cartKey(p)).map(x=>`<div class="s" style="color:#b42323;font-weight:700">${esc(x.msg)}</div>`).join("")}
+        ${(typeof cartRuleProblems==="function"?cartRuleProblems():[]).filter(x=>x.k===cartKey(p)).map(x=>`<div class="s" style="color:#b42323;font-weight:700">${esc(x.msg)}</div>`).join("")}
         <div class="s">${packOf(p)?`${qty} × ${esc(packOf(p).label)} = ${qty*packOf(p).n} each · `:""}Unit ${u?money(u):"—"}${packOf(p)?" per "+esc(packOf(p).label):""} · Line ${u?money(u*qty):"—"}${contractPrice(p)!=null?` · <span style="color:#0a7f3f;font-weight:700">contract</span>`:""}</div>${volNote}${priceNoteHtml(p)}</div>
         <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
     }).join("");
@@ -3414,7 +3415,7 @@ function hcpsCartOrders(){
 async function serverPriceCheck(){
   const orders=hcpsCartOrders();
   if(!orders.length) return {ok:true,changed:false,orders:[]};
-  if(STAGING) return stagingCall("preview_price_check",{orders});
+  if(typeof STAGING!=="undefined"&&STAGING) return stagingCall("preview_price_check",{orders});
   if(!AUTH.session||!AUTH.session.access_token) return null;
   try{
     await ensureFreshSession();
@@ -3518,7 +3519,7 @@ function ensureStagingBar(){
 }
 /* ---------- submit (one order per manufacturer) ---------- */
 async function submitOrder(){
-  if(PREVIEW && !STAGING){ toast("Read-only preview — ordering is disabled for this dealer view."); return; }
+  if(PREVIEW && !(typeof STAGING!=="undefined"&&STAGING)){ toast("Read-only preview — ordering is disabled for this dealer view."); return; }
   if(!CART.size){toast("Cart is empty");return;}
   const dealer={
     business:$("#f_biz").value.trim(), account:$("#f_acct").value.trim()||(state.dealer?state.dealer.account:""),
@@ -3537,7 +3538,7 @@ async function submitOrder(){
     }
   }
   if([...CART.values()].some(({p})=>p._unavailable)){ toast("Remove the items that are no longer available, then place your order"); return; }
-  { const rp=cartRuleProblems(); if(rp.length){ toast(rp[0].msg); return; } }
+  if(typeof cartRuleProblems==="function"){ const rp=cartRuleProblems(); if(rp.length){ toast(rp[0].msg); return; } }
   const btn=$("#submitOrder"); btn.disabled=true; btn.textContent="Checking prices…";
   try{
     /* The server checks the price of every line before anything is submitted. */
@@ -3563,7 +3564,7 @@ async function submitOrder(){
   const goldenOrders = orders.filter(o=>isGoldenSlug(o.manufacturer_slug));
   const hcpsOrders   = orders.filter(o=>!isGoldenSlug(o.manufacturer_slug));
   const payload={dealer, orders:hcpsOrders, submitted_at:new Date().toISOString()};
-  if(STAGING){ return stagingSubmit(payload,btn); }
+  if(typeof STAGING!=="undefined"&&STAGING){ return stagingSubmit(payload,btn); }
   btn.disabled=true; btn.textContent="Submitting…";
   let emailWarn=false, keep=new Set();
   try{

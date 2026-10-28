@@ -15,8 +15,9 @@ const SNIPPETS = [
   [/\n  const m=minOrderQty\(p\); const nq=Math\.max\(\(cur\?cur\.qty:0\)\+qty, m\);\n  CART\.set\(k,\{p,qty:nq\}\);\n  updateCart\(\); toast\([^\n]*\);/,
    '\n  CART.set(k,{p,qty:(cur?cur.qty:0)+qty});\n  updateCart(); toast(`Added ${qty} × ${p.code}`);'],
   [/\n\/\* ORDER RULES PRINTED ON A MANUFACTURER'S LIST[\s\S]*?\nfunction cartRuleProblems\(\)\{[\s\S]*?\n  return out;\n\}/, ''],
-  [/\n        \$\{cartRuleProblems\(\)[^\n]*/, ''],
+  [/\n        \$\{\(typeof cartRuleProblems==="function"\?cartRuleProblems\(\):\[\]\)[^\n]*/, ''],
   /* BongoRx free standard shipping by qualifying order quantity (owner, 2026-10-27). */
+  [/\n  if\(t\.mode==='qty_threshold'\) return [^\n]*/, ''],
   [/\n  \/\* FREE STANDARD SHIPPING BY ORDER QUANTITY[\s\S]*?\n  if\(cfg\.mode==="qty_threshold"\)\{[\s\S]*?\n  \}/, ''],
   [/\$\{r\.qtyRemaining>0\?` <span class="prog">· add \$\{r\.qtyRemaining\} more qualifying unit[^\n]*?\(\$\{r\.freeAtQty\}\+\)<\/span>`:""\}/, ''],
 ];
