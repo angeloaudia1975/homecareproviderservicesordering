@@ -2397,7 +2397,7 @@ function orderCardHtml(o){
   const dt=o.submitted_at? new Date(o.submitted_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
   const st=(o.status||"submitted"); const stColor= st==="placed"?"#1A7A4A":st==="reviewed"?"#2B4071":st==="cancelled"?"#B91C1C":"#F5821F";
   return `<div class="ordrow">
-    <div class="ordmain"><div class="ordtop"><b>${esc(name)}</b><span class="ordstat" style="background:${stColor}1a;color:${stColor}">${esc(st)}</span></div>
+    <div class="ordmain"><div class="ordtop"><b>${esc(name)}</b><span class="ordstat" style="background:${stColor}1a;color:${stColor}">${esc(ORDER_STATUS_LABEL[st]||st)}</span></div>
       <div class="ordsub">${dt}${o.po?` · PO ${esc(o.po)}`:""} · ${o.items_count} item${o.items_count===1?"":"s"} · ${money(o.subtotal)}</div></div>
     <button class="reord" onclick="reorder('${esc(o.id)}')">Reorder</button></div>`;
 }
@@ -5273,7 +5273,9 @@ async function loadDash(){
   ensureCatalogFav().then(loadDashExtras);
 }
 function srcPill(s){return s==="golden"?'<span class="pill gold">Golden</span>':s==="portal"?'<span class="pill portal">Portal</span>':'<span class="pill imported">Imported</span>';}
-function statPill(s){s=String(s||"").toLowerCase();return s==="delivered"?'<span class="pill done">Delivered</span>':(s==="submitted"||s==="open")?'<span class="pill open">Submitted</span>':'<span class="pill portal">'+esc(s||"—")+'</span>';}
+const ORDER_STATUS_LABEL={submitted:"Received by HCPS",open:"Received by HCPS",placed:"Placed with manufacturer by HCPS",confirmed:"Confirmed by manufacturer",shipped:"Shipped",completed:"Completed",delivered:"Delivered",cancelled:"Cancelled"};
+/* Order statuses say what actually happened (owner, 2026-10-27): HCPS receives the order and places it with the manufacturer itself. */
+function statPill(s){s=String(s||"").toLowerCase();const l=ORDER_STATUS_LABEL[s]||s||"—";return s==="delivered"||s==="completed"?'<span class="pill done">'+esc(l)+'</span>':(s==="submitted"||s==="open")?'<span class="pill open">'+esc(l)+'</span>':'<span class="pill portal">'+esc(l)+'</span>';}
 
 /* ---- my orders (full consolidated history) ---- */
 let HISTORY=null;
@@ -5294,7 +5296,7 @@ async function loadOrders(){
     </table></div>
     <div class="lead-note">"Request tracking" asks the manufacturer to send shipment tracking to you and to HCPS. Retail uses MSRP on file, or 2× dealer cost where none is on file.</div>`;
 }
-async function reqTracking(id,mfr,summary){ try{ await api(TOOLS_ENDPOINT,{action:"tracking_request",order_ref:id,manufacturer:mfr,summary}); }catch(e){} alert("Tracking request sent — the manufacturer will send tracking to you and HCPS."); }
+async function reqTracking(id,mfr,summary){ try{ await api(TOOLS_ENDPOINT,{action:"tracking_request",order_ref:id,manufacturer:mfr,summary}); }catch(e){} alert("Tracking request sent to HCPS — we'll get the tracking from the manufacturer and send it to you."); }
 
 /* ================= PHASE 2: pricing map, reports, exports ================= */
 let PRICE=null, PRICELIST=null;
@@ -5638,7 +5640,7 @@ function renderAccount(){
          <div class="step done"><div class="sn">✓</div><div class="stx"><h4>Business profile</h4><p>${esc((PROFILE&&PROFILE.name)||"—")}</p></div></div>
          <div class="step ${resaleOn?"done":""}"><div class="sn">${resaleOn?"✓":"2"}</div><div class="stx"><h4>Resale / tax-exemption certificate</h4><p>${resaleOn?("On file"+(ACCOUNT.resale.reference?" · "+esc(ACCOUNT.resale.reference):"")+" — auto-attached to every application."):"Add your certificate reference, then email the file to HCPS to complete."}</p>
            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input id="resaleRef" placeholder="Certificate # / reference" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.reference)||"")}" style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><input id="resaleState" placeholder="State" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.state)||"")}" style="width:72px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><a class="btn nv" onclick="submitResale()">Save</a></div></div></div>
-         <div class="step"><div class="sn">3</div><div class="stx"><h4>Manufacturer credit application</h4><p>Complete an electronic credit app for any HCPS line — submitted to the manufacturer with your resale certificate attached.</p>
+         <div class="step"><div class="sn">3</div><div class="stx"><h4>Manufacturer credit application</h4><p>Complete an electronic credit app for any HCPS line — sent to HCPS with your resale certificate, and HCPS submits it to the manufacturer.</p>
            <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
              <label class="fld2" style="margin:0"><span style="font-size:11px;font-weight:800;color:var(--navy)">Line</span><select id="caMfr">${lineOpts}</select></label>
              <label class="fld2" style="margin:0"><span style="font-size:11px;font-weight:800;color:var(--navy)">Requested terms</span><select id="caTerms"><option>Net 30</option><option>Net 45</option><option>Net 60</option><option>Prepay</option></select></label>
