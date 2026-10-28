@@ -3437,6 +3437,8 @@ async function stagingCall(action,body){
   try{
     const r=await fetch(CONFIG.ORDERS_ENDPOINT,{method:"POST",headers:hdr,body:JSON.stringify(Object.assign({action,catalog_files:pick(RAW.files),content_files:pick(RAW.content),manufacturers:RAW.manufacturers},body))});
     const j=await r.json().catch(()=>null);
+    /* the staff preview session ended (4 hours): say so instead of showing an empty catalog */
+    if(r.status===401&&window.__PREVIEW__&&window.__PREVIEW__.token){ showPreviewError("This preview session has ended. Open it again from Connect 360 → Commerce → Catalog Preview."); return null; }
     if(action==="preview_order") return {status:r.status,body:j};
     return (r.ok&&j&&j.ok)?j:null;
   }catch(e){ return null; }
@@ -4547,7 +4549,7 @@ function ensurePreviewBar(){
   if(document.getElementById('previewbar')) return;
   const dn=(PREVIEW&&PREVIEW.dealer&&PREVIEW.dealer.name)||'this dealer';
   const bar=document.createElement('div'); bar.id='previewbar';
-  bar.innerHTML=`<span class="pv-l"><span class="pv-dot">🔎</span> Previewing as <b>${esc(dn)}</b> · read-only staff preview — ordering &amp; account changes are disabled</span><button class="pv-x" onclick="exitPreview()">Exit preview →</button>`;
+  bar.innerHTML=`<span class="pv-l"><span class="pv-dot">🔎</span> Previewing as <b>${esc(dn)}</b> · ${(typeof STAGING!=="undefined"&&STAGING)?'staff catalog preview — checkout shows the order emails, nothing is recorded':'read-only staff preview — ordering &amp; account changes are disabled'}</span><button class="pv-x" onclick="exitPreview()">Exit preview →</button>`;
   document.body.insertBefore(bar,document.body.firstChild);
   document.body.classList.add('previewing');
 }
