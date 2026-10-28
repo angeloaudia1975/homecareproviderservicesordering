@@ -328,6 +328,16 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .ordrow .ordmain{flex:1;min-width:0;}
 .ordrow .ordtop{display:flex;align-items:center;gap:8px;font-size:13.5px;}
 .ordrow .ordtop b{color:var(--navy);}
+#stagingbar{position:sticky;top:0;z-index:9999;background:#8a5a00;color:#fff;font:700 12.5px Arial,sans-serif;text-align:center;padding:8px 12px}
+.pvorder{position:fixed;inset:0;background:rgba(10,20,35,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:12px}
+.pvbox{background:#fff;border-radius:14px;width:min(920px,100%);height:min(88vh,900px);display:flex;flex-direction:column;overflow:hidden}
+.pvhead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e6e2dc}
+.pvhead button{border:0;background:none;font-size:20px;min-width:44px;min-height:44px;cursor:pointer}
+.pvnote{padding:8px 16px;font-size:12.5px;color:#8a5a00;background:#fff7e6}
+.pvtabs{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid #eee}
+.pvtabs button{border:1px solid #cfd8e3;background:#fff;border-radius:8px;padding:8px 12px;min-height:44px;font:600 13px Arial;cursor:pointer}
+.pvtabs button.on{background:#10263f;color:#fff;border-color:#10263f}
+.pvframe{flex:1;border:0;width:100%}
 .ordrow .ordstat{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:7px;}
 .ordrow .ordsub{font-size:12px;color:var(--gray);margin-top:2px;}
 .ordrow .reord{background:#fff;border:1.5px solid var(--navy);color:var(--navy);border-radius:8px;padding:7px 14px;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;white-space:nowrap;}
@@ -1557,9 +1567,16 @@ function dealerPriceNote(note, p){
 }
 
 /* ---------- data loading ---------- */
+/* PRIVATE CATALOG PREVIEW (owner, 2026-10-27). On a Netlify deploy preview / branch deploy of this site the shop runs the
+   unpublished catalogs: their static content files are shown first, prices are checked by the server's preview actions
+   (which receive the files this page loaded) and checkout records NOTHING — it shows both order emails instead.
+   Never true on the live site. */
+const STAGING=/^(deploy-preview-\d{1,5}|[a-z0-9-]{1,40})--hcpsonlineordering\.netlify\.app$/.test(location.hostname)&&!/^main--/.test(location.hostname);
+const RAW={files:{},content:{},manufacturers:null};
 async function loadManufacturers(){
   const r = await fetch("./data/manufacturers.json",{cache:"no-store"});
   state.manufacturers = await r.json();
+  try{ RAW.manufacturers=JSON.parse(JSON.stringify(state.manufacturers)); }catch(e){}
   // admin-uploaded manufacturer logos (Supabase, public-read) — merged so they show
   // below the manufacturer name on the home cards + catalog header, no redeploy needed.
   try{
@@ -1847,7 +1864,10 @@ async function mergeCatalogEdits(slug, prods){
   let _gated=0;                 // declared here because it is read after the catch below
   try{
     let pages=null;
-    try{
+    /* the preview's own enrichment (static content file) comes first on a staging deploy */
+    if(typeof STAGING!=="undefined"&&STAGING){ try{ const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"}); if(cr.ok){ const cj=await cr.json(); RAW.content[slug]=cj; const pg=(cj&&cj.pages)||{};
+      const keys=Object.keys(pg).filter(k=>pg[k].disabled!==true&&VISIBLE_STATUSES.includes(pg[k].status)); if(keys.length){ pages={}; keys.forEach(k=>{ pages[k]=pg[k]; }); } } }catch(e){} }
+    if(!pages) try{
       const PC_URL=`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${VISIBLE_STATUSES.join(',')})&select=page_key,status,skus,name,tagline,description,features,clinical_applications,options,billing_codes,specs,warranty,source_url,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label,subcategory`;
       /* card_image (2026-10-12): the catalog-card photo the President chose for a grouped page. Until the
          database has the column, the pages are read without it — exactly as before. */
@@ -2177,6 +2197,7 @@ async function loadProducts(slug){
   let prods;
   try{ const r = await fetch(`./data/${slug}.json`,{cache:"no-store"}); if(!r.ok) throw new Error('catalog '+r.status); prods = await r.json(); }
   catch(e){ return set([]); }
+  if(typeof STAGING!=="undefined"&&STAGING){ try{ RAW.files[slug]=JSON.parse(JSON.stringify(prods)); }catch(e){} }
   if(seq!==_loadSeq) return false;
   return set(await mergeCatalogEdits(slug, prods||[]));
 }
@@ -3355,6 +3376,7 @@ function hcpsCartOrders(){
 async function serverPriceCheck(){
   const orders=hcpsCartOrders();
   if(!orders.length) return {ok:true,changed:false,orders:[]};
+  if(STAGING) return stagingCall("preview_price_check",{orders});
   if(!AUTH.session||!AUTH.session.access_token) return null;
   try{
     await ensureFreshSession();
@@ -3362,6 +3384,21 @@ async function serverPriceCheck(){
       headers:{"Content-Type":"application/json",authorization:"Bearer "+AUTH.session.access_token},
       body:JSON.stringify({action:"price_check",orders})});
     const j=await r.json().catch(()=>null);
+    return (r.ok&&j&&j.ok)?j:null;
+  }catch(e){ return null; }
+}
+/* The preview's server calls: the dealer's session (or the staff view-as-dealer token) plus the files this page loaded. */
+async function stagingCall(action,body){
+  const slugs=[...new Set((body.orders||[]).map(o=>o.manufacturer_slug))];
+  const pick=src=>Object.fromEntries(slugs.filter(s=>src[s]!==undefined).map(s=>[s,src[s]]));
+  const hdr={"Content-Type":"application/json"};
+  if(window.__PREVIEW__&&window.__PREVIEW__.token) hdr["x-hcps-preview"]=window.__PREVIEW__.token;
+  else if(AUTH.session&&AUTH.session.access_token){ try{ await ensureFreshSession(); }catch(e){} hdr.authorization="Bearer "+AUTH.session.access_token; }
+  else return null;
+  try{
+    const r=await fetch(CONFIG.ORDERS_ENDPOINT,{method:"POST",headers:hdr,body:JSON.stringify(Object.assign({action,catalog_files:pick(RAW.files),content_files:pick(RAW.content),manufacturers:RAW.manufacturers},body))});
+    const j=await r.json().catch(()=>null);
+    if(action==="preview_order") return {status:r.status,body:j};
     return (r.ok&&j&&j.ok)?j:null;
   }catch(e){ return null; }
 }
@@ -3407,9 +3444,43 @@ async function repriceSavedCart(){
   else if(res.orders&&res.orders.length) updateCart();
 }
 
+/* PREVIEW CHECKOUT: nothing is recorded, nothing reaches the dealer or a manufacturer. The server prices the order
+   exactly as a real one, renders the dealer's acknowledgment and the HCPS intake email, and sends one copy of the HCPS
+   email to the owner marked CATALOG PREVIEW — NOT AN ORDER. The cart is kept. */
+async function stagingSubmit(payload,btn){
+  if(!payload.orders.length){ toast("The preview checks HCPS lines only."); return; }
+  btn.disabled=true; btn.textContent="Pricing the preview order…";
+  try{
+    const r=await stagingCall("preview_order",payload);
+    const j=r&&r.body;
+    if(r&&r.status===409&&j&&j.status==="prices_changed"){ applyServerPrices(j); updateCart(); toast("Prices changed — review the cart, then try again"); return; }
+    if(!j||!j.ok){ toast((j&&(j.error||j.status))||"The preview order could not be priced."); return; }
+    showPreviewOrder(j);
+  } finally { btn.disabled=false; btn.textContent="Place order →"; }
+}
+function showPreviewOrder(j){
+  let m=document.getElementById("pvOrder"); if(m) m.remove();
+  m=document.createElement("div"); m.id="pvOrder"; m.className="pvorder";
+  const tabs=[["dealer","Dealer's acknowledgment"]].concat((j.hcps_emails||[]).map((e,i)=>["hcps"+i,"HCPS intake — "+(mfrInfo(e.slug).name||e.slug)]),[["sheet","Order sheet (admin)"]]);
+  const sheet=(j.summaries||[]).map(s=>`<h3>${esc(s.line)} · PO ${esc(s.po||"—")}</h3><table><tr><th>Item #</th><th>Description</th><th>Qty</th><th>Unit</th><th>Line</th></tr>${(s.items||[]).map(it=>`<tr><td>${esc(it.code)}</td><td>${esc(it.name)}${it.unit_label?` <i>(${esc(it.unit_label)})</i>`:""}</td><td>${it.qty}</td><td>${money(it.unit_price)}</td><td>${money(it.line_total)}</td></tr>`).join("")}</table><p>Merchandise ${money(s.subtotal)}${Number(s.freight_fee)>0?` · Freight ${money(s.freight_fee)} · Total ${money(s.estimated_total)}`:((s.freight_lines||[]).some(x=>x.status==="actual")?" · Freight pending (actual, from the manufacturer's confirmation)":(s.freight_lines||[]).length?" · Freight: free":"")}</p><p>Status in Order Review: <b>Received by HCPS</b> → Placed with manufacturer → Confirmed by manufacturer</p>`).join("");
+  const docs={dealer:(j.dealer_email&&j.dealer_email.html)||"",sheet:`<html><body style="font:13px Arial;color:#10263f;padding:14px">${sheet}<style>table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ddd;padding:5px;text-align:left}</style></body></html>`};
+  (j.hcps_emails||[]).forEach((e,i)=>{ docs["hcps"+i]=e.html; });
+  m.innerHTML=`<div class="pvbox" role="dialog" aria-label="Preview order"><div class="pvhead"><b>Preview order — NOT recorded, NOT sent</b><button onclick="document.getElementById('pvOrder').remove()" aria-label="Close">✕</button></div>
+    <div class="pvnote">Nothing was saved and nothing went to the dealer or a manufacturer. ${j.owner_copies?`A copy of the HCPS email went to angelo@homecareproviderservices.us marked CATALOG PREVIEW — NOT AN ORDER.`:""}</div>
+    <div class="pvtabs">${tabs.map((t,i)=>`<button class="${i?"":"on"}" data-k="${t[0]}">${esc(t[1])}</button>`).join("")}</div><iframe class="pvframe" title="Preview document"></iframe></div>`;
+  document.body.appendChild(m);
+  const fr=m.querySelector("iframe"); const show=k=>{ fr.srcdoc=docs[k]||"<p>—</p>"; m.querySelectorAll(".pvtabs button").forEach(b=>b.classList.toggle("on",b.dataset.k===k)); };
+  m.querySelectorAll(".pvtabs button").forEach(b=>b.onclick=()=>show(b.dataset.k)); show("dealer");
+}
+function ensureStagingBar(){
+  if(!STAGING||document.getElementById("stagingbar")) return;
+  const bar=document.createElement("div"); bar.id="stagingbar";
+  bar.textContent="PRIVATE CATALOG PREVIEW — not published. Orders placed here are not recorded and are never sent to a manufacturer.";
+  document.body.insertBefore(bar,document.body.firstChild);
+}
 /* ---------- submit (one order per manufacturer) ---------- */
 async function submitOrder(){
-  if(PREVIEW){ toast("Read-only preview — ordering is disabled for this dealer view."); return; }
+  if(PREVIEW && !STAGING){ toast("Read-only preview — ordering is disabled for this dealer view."); return; }
   if(!CART.size){toast("Cart is empty");return;}
   const dealer={
     business:$("#f_biz").value.trim(), account:$("#f_acct").value.trim()||(state.dealer?state.dealer.account:""),
@@ -3453,6 +3524,7 @@ async function submitOrder(){
   const goldenOrders = orders.filter(o=>isGoldenSlug(o.manufacturer_slug));
   const hcpsOrders   = orders.filter(o=>!isGoldenSlug(o.manufacturer_slug));
   const payload={dealer, orders:hcpsOrders, submitted_at:new Date().toISOString()};
+  if(STAGING){ return stagingSubmit(payload,btn); }
   btn.disabled=true; btn.textContent="Submitting…";
   let emailWarn=false, keep=new Set();
   try{
@@ -4833,6 +4905,7 @@ function applyAuth(){
   // Authentication is resolved — safe to reveal the correct screen. Drop the boot cover.
   const _bc=document.getElementById('bootcover'); if(_bc) _bc.remove();
   if(PREVIEW) ensurePreviewBar();     // staff previewing a dealer — pin the read-only banner
+  ensureStagingBar();
   const approved=AUTH.status==='approved';
   const awaiting=approved||AUTH.status==='pending';   // signed in but not yet able to order
   const provisioned=isProvisioned();
