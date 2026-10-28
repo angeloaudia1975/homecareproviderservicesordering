@@ -17,5 +17,6 @@ const UPDATED = {
   access4u: { identity: '0e3a114ddff153a95a00fa601a6d88e23db52ed3b1b43e1536b38b9cfc1b51ec', note: 'Access4U Fall 2026 list = the whole active line (owner source-of-truth 2026-10-27 Angelo 2026-10-27 17:40)' },
   corsicana: { identity: 'eb940470e93a9643d9a5e744fef02b4bda0bb4841952906f390a120fc6a7244e', note: 'Corsicana Healthcare 2026 rev workbook (owner 2026-10-27): MSRP as listed, SB10MATPRON1-TL case of 10, LBHR/LBCW official photos' },
   'abm-respiratory-care': { identity: 'de0548731a75f324941bdf00ef468710961a5418dcf61be96c3fe4b26511adb4', note: 'ABM Respiratory Care 2026 — new line, first version (BiWaze Clear + Cough schedules, owner 2026-10-27)', new_line: true },
+  'airavant-bongorx': { identity: 'c0f492e4e3845f9f18e1e667f4fe6c67ab834f28aee48e378479152df159fa81', note: 'Bongo Rx Price List 2026 (18023 Rev F): MAP, section mix-and-match pools (owner 2026-10-27)' },
 };
 module.exports = { currentLines, RETIRED, UPDATED };

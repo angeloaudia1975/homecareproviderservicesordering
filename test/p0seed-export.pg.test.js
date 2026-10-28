@@ -52,7 +52,7 @@ const preload = slugs => psql(SEED.split('\ndo $p0$')[0] + `
    minus each updated line's rows at the ref. Test lines are picked among the lines still in the seed. */
 const { UPDATED } = require('../scripts/p0-lines.js');
 const refRows = slug => JSON.parse(execFileSync('git', ['-C', ROOT, 'show', `${REF}:public/data/${slug}.json`], { encoding: 'utf8', maxBuffer: 1 << 26 })).length;
-const UPD = Object.keys(UPDATED);
+const UPD = Object.keys(UPDATED).filter(k => !UPDATED[k].new_line);   // a new line (ABM) was never in the seed
 const EXP = `${10 - UPD.length}|${1120 - UPD.reduce((n, s) => n + refRows(s), 0)}`;
 const SEEDED = ['bemis', 'dalton', 'airavant-bongorx', 'corsicana', 'climbing-steps', 'strongback-mobility', 'ovation-medical', 'pedifix', 'gce'].filter(s => !UPD.includes(s));
 const FIVE = SEEDED.slice(0, 5);

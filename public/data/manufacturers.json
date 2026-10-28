@@ -68,7 +68,28 @@
     "dark": "#003f67",
     "logo": "/assets/logos/airavant-bongorx.jpg",
     "hasData": true,
-    "sort": 5
+    "sort": 5,
+    "freight": {
+      "mode": "qty_threshold",
+      "freeAtQty": 10,
+      "qualifyingCodes": [
+        "BNG500",
+        "BNG501",
+        "BNG502",
+        "BNG503",
+        "BNG504",
+        "BNG505",
+        "BNG511",
+        "BNG512",
+        "BNG513",
+        "BNG514",
+        "BNG515"
+      ],
+      "label": "BongoRx standard shipping",
+      "freeLabel": "FREE standard shipping",
+      "summary": "Free standard shipping on orders with 10 or more Bongo Rx kits, replenishment packs or single replenishment units (mix and match). Replacement headgear does not count toward the 10, but ships free in a qualifying order. Below 10, actual standard shipping applies.",
+      "actualNote": "Below 10 qualifying Bongo Rx units: actual standard shipping is added from the confirmed order — no flat amount is quoted."
+    }
   },
   {
     "slug": "climbing-steps",

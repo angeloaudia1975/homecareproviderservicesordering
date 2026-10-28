@@ -3265,6 +3265,18 @@ function computeFreight(slug,lines){
     let note = cfg.summary||""; if(tbd) note += " Freight for some items is pending — the actual charge comes from the manufacturer's order confirmation.";
     return {rows:[Object.assign({label,status:"peritem",fee}, tbd?{pending:true}:{})], fee, itemsTotal, actualNote:note};
   }
+  /* FREE STANDARD SHIPPING BY ORDER QUANTITY (owner, 2026-10-27, AirAvant / BongoRx). An order whose QUALIFYING
+     lines (the part numbers listed in qualifyingCodes — kits and replenishment units) add up to freeAtQty or more
+     ORDER units ships free, accessories included; below that, every line — accessory-only orders too — pays
+     actual shipping (no flat amount is ever quoted). Units are order quantities: a pack of 4 counts once. */
+  if(cfg.mode==="qty_threshold"){
+    const codes=(Array.isArray(cfg.qualifyingCodes)?cfg.qualifyingCodes:[]).map(c=>String(c).trim().toUpperCase());
+    const at=Math.max(1,Math.round(Number(cfg.freeAtQty))||1);
+    let n=0; for(const {p,qty} of lines){ if(codes.includes(String(p.code||"").trim().toUpperCase())) n+=Math.max(0,parseInt(qty)||0); }
+    const label=cfg.label||"Standard shipping";
+    if(n>=at) return {rows:[Object.assign({label,status:"free",qualifyingQty:n,freeAtQty:at},cfg.freeLabel?{freeLabel:String(cfg.freeLabel)}:{})], fee:0, itemsTotal, actualNote:""};
+    return {rows:[{label,status:"actual",qualifyingQty:n,freeAtQty:at,qtyRemaining:at-n}], fee:0, itemsTotal, actualNote:cfg.actualNote||""};
+  }
   const assigned=new Set(); const rows=[]; let fee=0; let anyActual=false;
   for(const g of (cfg.groups||[])){
     let sub=0;
@@ -3313,7 +3325,7 @@ function freightRowsHtml(f){
                  : (r.freeRemaining>0 ? `· add ${money(r.freeRemaining)} for free` : "");
       h+=`<div class="frow"><span>${esc(r.label)}${prog?` <span class="prog">${prog}</span>`:""}</span><span>${money(r.fee)} ${esc(r.flatLabel||"freight")}</span></div>`;
     }
-    else h+=`<div class="frow"><span>${esc(r.label)}${r.freeRemaining>0?` <span class="prog">· add ${money(r.freeRemaining)} to reach free (${money(r.freeAt)})</span>`:""}</span><span>actual freight</span></div>`;
+    else h+=`<div class="frow"><span>${esc(r.label)}${r.freeRemaining>0?` <span class="prog">· add ${money(r.freeRemaining)} to reach free (${money(r.freeAt)})</span>`:""}${r.qtyRemaining>0?` <span class="prog">· add ${r.qtyRemaining} more qualifying unit${r.qtyRemaining===1?"":"s"} for free standard shipping (${r.freeAtQty}+)</span>`:""}</span><span>actual freight</span></div>`;
   }
   if(f.actualNote) h+=`<div class="fnote">${esc(f.actualNote)}</div>`;
   return h;
