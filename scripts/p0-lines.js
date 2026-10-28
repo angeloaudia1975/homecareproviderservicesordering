@@ -14,6 +14,7 @@ function currentLines(root) {
    --add-version and run by Angelo). The P0 tests compare these against the identity registered here instead of the
    pre-strip base, so the file still cannot change silently: any other edit fails. */
 const UPDATED = {
+  dalton: { identity: '04d3bd510304a5717a29b074d6b6b14ef66fc5023f54d24e6a8e401ba5dde201', note: 'Dalton Dealer Price List Nov 2026 REVa (owner, tracker #42)' },
   access4u: { identity: '0e3a114ddff153a95a00fa601a6d88e23db52ed3b1b43e1536b38b9cfc1b51ec', note: 'Access4U Fall 2026 list = the whole active line (owner source-of-truth 2026-10-27 17:40)' },
 };
 module.exports = { currentLines, RETIRED, UPDATED };

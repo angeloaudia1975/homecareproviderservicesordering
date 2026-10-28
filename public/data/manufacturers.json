@@ -182,6 +182,13 @@
     "dark": "#0b0d0f",
     "logo": "/assets/logos/dalton.jpg",
     "hasData": true,
-    "sort": 12
+    "sort": 12,
+    "freight": {
+      "summary": "Dalton LTL freight policy (effective Nov 1, 2026): orders $0–$999 25% of the order value, $1,000–$1,999 15%, $2,000 and up free. Lift gate $45; inside delivery $50 (only if selected on the order). The actual freight is added from Dalton’s order confirmation after HCPS places the order.",
+      "actualNote": "Dalton freight is not calculated at checkout: the actual charge comes from Dalton’s order confirmation (LTL policy: $0–$999 25%, $1,000–$1,999 15%, $2,000+ free; lift gate $45, inside delivery $50 if selected).",
+      "groups": [],
+      "elseActual": true,
+      "otherLabel": "Dalton freight — per Dalton’s Nov 1, 2026 LTL policy"
+    }
   }
 ]
