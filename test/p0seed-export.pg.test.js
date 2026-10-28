@@ -47,11 +47,18 @@ const preload = slugs => psql(SEED.split('\ndo $p0$')[0] + `
   select manufacturer, identity_sha256, rows, row_count, rows_sha256, public_sha256, source_ref from _p0_seed
    where manufacturer in (${slugs.map(s => `'${s}'`).join(',')});
   commit;`);
-const FIVE = ['bemis', 'dalton', 'airavant-bongorx', 'corsicana', 'climbing-steps'];
-
-/* Access4U left the initial seed (UPDATED in scripts/p0-lines.js): its Fall 2026 version goes in through --add-version. */
-const EXP = '9|890';
-t('the export plans exactly the runbook: 9 lines, 890 rows (Access4U by version-add), Complete Medical excluded', () => {
+/* Lines updated after the seed (UPDATED in scripts/p0-lines.js — Access4U Fall 2026, Corsicana 2026, …) left the initial
+   seed: their new versions go in through --add-version. The runbook was 10 lines / 1,120 rows at the ref; the plan is that
+   minus each updated line's rows at the ref. Test lines are picked among the lines still in the seed. */
+const { UPDATED } = require('../scripts/p0-lines.js');
+const refRows = slug => JSON.parse(execFileSync('git', ['-C', ROOT, 'show', `${REF}:public/data/${slug}.json`], { encoding: 'utf8', maxBuffer: 1 << 26 })).length;
+const UPD = Object.keys(UPDATED);
+const EXP = `${10 - UPD.length}|${1120 - UPD.reduce((n, s) => n + refRows(s), 0)}`;
+const SEEDED = ['bemis', 'dalton', 'airavant-bongorx', 'corsicana', 'climbing-steps', 'strongback-mobility', 'ovation-medical', 'pedifix', 'gce'].filter(s => !UPD.includes(s));
+const FIVE = SEEDED.slice(0, 5);
+const FIVE_EXP = `${FIVE.length}|${FIVE.reduce((n, s) => n + refRows(s), 0)}`;
+const FP = SEEDED.find(s => s !== 'bemis');
+t(`the export plans exactly the runbook minus updated lines (${EXP}), Complete Medical excluded`, () => {
   ok(`${LINES}|${ROWS}` === EXP, `${LINES} / ${ROWS}`);
   ok(!/complete-medical/.test(SEED.split('\ndo $p0$')[0].replace(/\$p0j[0-9a-f]+\$[\s\S]*?\$p0j[0-9a-f]+\$/g, '')), 'retired line in the plan');
 });
@@ -70,17 +77,17 @@ t('the CLI refuses a path inside a git repository and never overwrites', () => {
 });
 
 reset();
-t('fresh table → exactly the plan (9 / 890), summary shows RLS on and anon denied', () => {
+t('fresh table → exactly the plan, summary shows RLS on and anon denied', () => {
   const out = psql(SEED); ok(state() === EXP, state());
-  const last = out.trim().split('\n'); ok(last.length === 9 && last.every(l => l.endsWith('|' + EXP + '|t|t')), last.slice(-1)[0]);
+  const last = out.trim().split('\n'); ok(last.length === +EXP.split('|')[0] && last.every(l => l.endsWith('|' + EXP + '|t|t')), last.slice(-1)[0]);
 });
 t('a second run is a no-op (idempotent; nothing rewritten)', () => {
   const before = stamps(); psql(SEED); ok(state() === EXP && stamps() === before, 'changed');
 });
 
 reset();
-t('the five records already stored are kept untouched; the other five are added', () => {
-  preload(FIVE); ok(state() === '5|58', 'preload ' + state());
+t('the five records already stored are kept untouched; the others are added', () => {
+  preload(FIVE); ok(state() === FIVE_EXP, 'preload ' + state());
   const before = stamps().split(',');
   psql(SEED); ok(state() === EXP, state());
   const after = stamps().split(',');
@@ -97,11 +104,11 @@ t('a stored record that differs (one price changed) → refused, nothing written
 });
 reset();
 t('a stored record with the right rows but another fingerprint → refused', () => {
-  preload(['corsicana']);
+  preload([FP]);
   psql(`alter table public.catalog_file_commercial disable trigger user;
-        update public.catalog_file_commercial set public_sha256 = repeat('0', 64) where manufacturer = 'corsicana';
+        update public.catalog_file_commercial set public_sha256 = repeat('0', 64) where manufacturer = '${FP}';
         alter table public.catalog_file_commercial enable trigger user;`);
-  const r = tryPsql(SEED); ok(!r.ok && /differs/.test(r.out), r.out.slice(0, 200)); ok(state() === '1|14', state());
+  const r = tryPsql(SEED); ok(!r.ok && /differs/.test(r.out), r.out.slice(0, 200)); ok(state() === `1|${refRows(FP)}`, state());
 });
 reset();
 t('a stored record for a line or version outside the plan (e.g. a retired line) → refused', () => {

@@ -81,6 +81,9 @@ function freightShort(o) {
   const lines = o.freight_lines || [];
   /* A manufacturer's own words travel on the freight row (freeLabel/flatLabel, 2026-10-10 Bemis). */
   const flat = lines.find((r) => r.status === "flat" && r.flatLabel), free = lines.find((r) => r.status === "free" && r.freeLabel);
+  /* Per-item delivery (Corsicana): the listed charges, "included", or PENDING for a TBD item — never "FREE". */
+  const per = lines.find((r) => r.status === "peritem");
+  if (per) return (Number(o.freight_fee) > 0 ? money(o.freight_fee) + " " + per.label : (per.pending ? "" : "included (" + per.label + ")")) + (per.pending ? (Number(o.freight_fee) > 0 ? " + " : "") + "pending (actual from the manufacturer's confirmation)" : "");
   if (Number(o.freight_fee) > 0) return money(o.freight_fee) + " " + (flat ? flat.flatLabel : "flat");
   if (lines.some((r) => r.status === "actual")) return "actual freight (confirmed by manufacturer)";
   if (lines.length) return free ? free.freeLabel : "FREE";
@@ -91,7 +94,8 @@ function freightTermsHtml(o) {
   if (!lines.length && !o.freight_note) return "";
   let rows = lines.map((r) => {
     let right =
-      r.status === "free" ? (r.freeLabel || "FREE freight")
+      r.status === "peritem" ? (r.pending ? (Number(r.fee) > 0 ? money(r.fee) + " + pending" : "pending") : (Number(r.fee) > 0 ? money(r.fee) : "included"))
+      : r.status === "free" ? (r.freeLabel || "FREE freight")
       : r.status === "flat" ? money(r.fee) + " " + (r.flatLabel || "freight")
       : "actual freight";
     let sub = r.remaining > 0 && r.freeAt ? ` (add ${money(r.remaining)} to reach ${r.freeLabel ? r.freeLabel.toLowerCase() : "free freight"} at ${money(r.freeAt)})` : "";

@@ -14,6 +14,7 @@ function currentLines(root) {
    --add-version and run by Angelo). The P0 tests compare these against the identity registered here instead of the
    pre-strip base, so the file still cannot change silently: any other edit fails. */
 const UPDATED = {
-  access4u: { identity: '0e3a114ddff153a95a00fa601a6d88e23db52ed3b1b43e1536b38b9cfc1b51ec', note: 'Access4U Fall 2026 list = the whole active line (owner source-of-truth 2026-10-27 17:40)' },
+  access4u: { identity: '0e3a114ddff153a95a00fa601a6d88e23db52ed3b1b43e1536b38b9cfc1b51ec', note: 'Access4U Fall 2026 list = the whole active line (owner source-of-truth 2026-10-27 Angelo 2026-10-27 17:40)' },
+  corsicana: { identity: 'eb940470e93a9643d9a5e744fef02b4bda0bb4841952906f390a120fc6a7244e', note: 'Corsicana Healthcare 2026 rev workbook (owner 2026-10-27): MSRP as listed, SB10MATPRON1-TL case of 10, LBHR/LBCW official photos' },
 };
 module.exports = { currentLines, RETIRED, UPDATED };
