@@ -4835,11 +4835,16 @@
      "sku": "P3069-PACKET-100",
      "name": "Deep-Healing Foot Cream™ Packets (100/pk) — 5 ml",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+      "decided": "2026-10-29",
+      "ref": "HCPS Master Tracker #42"
+     }
     }
    ],
    "sku_count": 1,
@@ -11947,13 +11952,14 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": "/assets/products/pedifix/gallery/999fe11d66173b3173ca.jpg",
+   "image": "/assets/products/pedifix/gallery/e53975488210ca4c1537.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/pedifix/gallery/999fe11d66173b3173ca.jpg",
+     "url": "/assets/products/pedifix/gallery/e53975488210ca4c1537.jpg",
      "primary": true,
      "caption": "",
-     "source": "current catalog photo"
+     "source": "owner-supplied image (keep: 5100-C-L/5100CL.jpg, matched by folder)",
+     "note": ""
     }
    ],
    "enrichment_flags": {
@@ -12041,31 +12047,46 @@
      "sku": "5100-S",
      "name": "GelStep® Heel Pad with Soft Spur Spot — Small Uncovered",
      "size": "Small",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+      "decided": "2026-10-29",
+      "ref": "HCPS Master Tracker #42"
+     }
     },
     {
      "sku": "5100-M",
      "name": "GelStep® Heel Pad with Soft Spur Spot — Medium Uncovered",
      "size": "Medium",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+      "decided": "2026-10-29",
+      "ref": "HCPS Master Tracker #42"
+     }
     },
     {
      "sku": "5100-L",
      "name": "GelStep® Heel Pad with Soft Spur Spot — Large Uncovered",
      "size": "Large",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+      "decided": "2026-10-29",
+      "ref": "HCPS Master Tracker #42"
+     }
     }
    ],
    "sku_count": 3,
@@ -19183,11 +19204,16 @@
      "sku": "P3310-PACKET-100",
      "name": "Podiatrists' Choice® Callus Control Cream™ Packets (100/pk) — 5 ml",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+      "decided": "2026-10-29",
+      "ref": "HCPS Master Tracker #42"
+     }
     }
    ],
    "sku_count": 1,
@@ -29138,11 +29164,16 @@
      "sku": "R819",
      "name": "Visco-GEL® Medicated Round Callus Removers",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+      "decided": "2026-10-29",
+      "ref": "HCPS Master Tracker #42"
+     }
     }
    ],
    "sku_count": 1,
@@ -31251,11 +31282,16 @@
      "sku": "P2831-S",
      "name": "Visco-GEL® Toe Spacers & Toe Separators (2 each) — Small",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+      "decided": "2026-10-29",
+      "ref": "HCPS Master Tracker #42"
+     }
     }
    ],
    "sku_count": 1,

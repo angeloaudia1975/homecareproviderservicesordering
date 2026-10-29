@@ -1978,6 +1978,64 @@
     "source": "https://www.pedifix.com/products/pedi-gel-metatarsal-support-pads-p8208-1",
     "note": "Package, One Size Fits Most [listed in pedifix.com/products.json; product page itself returns 404]"
    }
+  ],
+  "5100-C-L": [
+   {
+    "url": "/assets/products/pedifix/gallery/e53975488210ca4c1537.jpg",
+    "source": "owner-supplied image (keep: 5100-C-L/5100CL.jpg, matched by folder)",
+    "note": ""
+   }
+  ],
+  "5100-C-M": [
+   {
+    "url": "/assets/products/pedifix/gallery/e53975488210ca4c1537.jpg",
+    "source": "owner-supplied image (keep: 5100-C-M/5100CM.jpg, matched by folder)",
+    "note": ""
+   }
+  ],
+  "5100-C-S": [
+   {
+    "url": "/assets/products/pedifix/gallery/e53975488210ca4c1537.jpg",
+    "source": "owner-supplied image (keep: 5100-C-S/5100CS.jpg, matched by folder)",
+    "note": ""
+   }
   ]
+ },
+ "_retired": {
+  "5100-L": {
+   "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+   "decided": "2026-10-29",
+   "ref": "HCPS Master Tracker #42"
+  },
+  "5100-M": {
+   "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+   "decided": "2026-10-29",
+   "ref": "HCPS Master Tracker #42"
+  },
+  "5100-S": {
+   "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+   "decided": "2026-10-29",
+   "ref": "HCPS Master Tracker #42"
+  },
+  "P2831-S": {
+   "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+   "decided": "2026-10-29",
+   "ref": "HCPS Master Tracker #42"
+  },
+  "P3069-PACKET-100": {
+   "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+   "decided": "2026-10-29",
+   "ref": "HCPS Master Tracker #42"
+  },
+  "P3310-PACKET-100": {
+   "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+   "decided": "2026-10-29",
+   "ref": "HCPS Master Tracker #42"
+  },
+  "R819": {
+   "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
+   "decided": "2026-10-29",
+   "ref": "HCPS Master Tracker #42"
+  }
  }
 }
