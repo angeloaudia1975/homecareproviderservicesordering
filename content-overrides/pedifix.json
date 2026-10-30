@@ -2036,6 +2036,16 @@
    "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-29)",
    "decided": "2026-10-29",
    "ref": "HCPS Master Tracker #42"
+  },
+  "P3306": {
+   "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-30)",
+   "decided": "2026-10-30",
+   "ref": "HCPS Master Tracker #42"
+  },
+  "P3306-PACKET-100": {
+   "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-30)",
+   "decided": "2026-10-30",
+   "ref": "HCPS Master Tracker #42"
   }
  }
 }

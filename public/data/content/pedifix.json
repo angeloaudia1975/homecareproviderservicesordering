@@ -33683,6 +33683,43 @@
      "status": "needs_grouping"
     }
    }
+  },
+  "retired-skus": {
+   "page_key": "retired-skus",
+   "name": "Retired SKUs (not shown)",
+   "status": "published",
+   "disabled": false,
+   "description": "",
+   "features": [],
+   "specs": [],
+   "images_gallery": [],
+   "image": null,
+   "skus": [
+    {
+     "sku": "P3306",
+     "name": "",
+     "status": "hidden",
+     "disabled": true,
+     "image": "",
+     "retired": {
+      "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-30)",
+      "decided": "2026-10-30",
+      "ref": "HCPS Master Tracker #42"
+     }
+    },
+    {
+     "sku": "P3306-PACKET-100",
+     "name": "",
+     "status": "hidden",
+     "disabled": true,
+     "image": "",
+     "retired": {
+      "reason": "Removed from the active PediFix catalog by the owner (image review 2026-10-30)",
+      "decided": "2026-10-30",
+      "ref": "HCPS Master Tracker #42"
+     }
+    }
+   ]
   }
  }
 }
