@@ -2243,5 +2243,551 @@
     "note": "Rubber threshold ramp at an interior doorway"
    }
   ]
- }
+ },
+ "_families": [
+  {
+   "key": "assist-ramp-with-handrails",
+   "name": "Assist Ramp With Handrails",
+   "match": {
+    "family": [
+     "AST"
+    ]
+   },
+   "content_from": "assist-ramp-24-x-30-30-in-width",
+   "axes": [
+    {
+     "name": "Length",
+     "on": "code",
+     "re": "^AST(\\d+)x",
+     "fmt": "{ft1} ft ({1}\")"
+    },
+    {
+     "name": "Width",
+     "on": "code",
+     "re": "x(\\d+)$",
+     "fmt": "{1}\" wide"
+    }
+   ],
+   "specs": [
+    {
+     "label": "Length",
+     "on": "code",
+     "re": "^AST(\\d+)x",
+     "fmt": "{1}\" ({ft1} ft)"
+    },
+    {
+     "label": "Width",
+     "field": "width_in",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Rise",
+     "field": "rise",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Access4U list reference",
+     "field": "mfr_ref"
+    }
+   ]
+  },
+  {
+   "key": "assist-ramp-no-rail",
+   "name": "Assist Ramp No Rail",
+   "match": {
+    "family": [
+     "ASTNR"
+    ]
+   },
+   "content_from": "assist-ramp-no-rail-24-x-30-30-in-width",
+   "description": "Assist Ramp without handrails, as listed on the Access4U Fall 2026 dealer price list (Assist Ramp No Rail). Choose the length and width; each combination is its own Access4U part.",
+   "axes": [
+    {
+     "name": "Length",
+     "on": "code",
+     "re": "^ASTNR(\\d+)x",
+     "fmt": "{ft1} ft ({1}\")"
+    },
+    {
+     "name": "Width",
+     "on": "code",
+     "re": "x(\\d+)$",
+     "fmt": "{1}\" wide"
+    }
+   ],
+   "specs": [
+    {
+     "label": "Length",
+     "on": "code",
+     "re": "^ASTNR(\\d+)x",
+     "fmt": "{1}\" ({ft1} ft)"
+    },
+    {
+     "label": "Width",
+     "field": "width_in",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Handrails",
+     "on": "code",
+     "re": "^(ASTNR)",
+     "fmt": "None (no-rail version)"
+    },
+    {
+     "label": "Access4U list reference",
+     "field": "mfr_ref"
+    }
+   ]
+  },
+  {
+   "key": "ground-platforms",
+   "name": "Ground Platform",
+   "match": {
+    "family": [
+     "GP"
+    ]
+   },
+   "content_from": "ground-platform-4x4",
+   "axes": [
+    {
+     "name": "Size",
+     "on": "code",
+     "re": "^GP([\\d.]+)x([\\d.]+)$",
+     "fmt": "{1}' x {2}'"
+    }
+   ],
+   "specs": [
+    {
+     "label": "Size",
+     "on": "code",
+     "re": "^GP([\\d.]+)x([\\d.]+)$",
+     "fmt": "{1}' x {2}'"
+    },
+    {
+     "label": "Height",
+     "field": "rise",
+     "fmt": "{v}\""
+    }
+   ]
+  },
+  {
+   "key": "platforms",
+   "name": "Platform",
+   "match": {
+    "family": [
+     "PS"
+    ]
+   },
+   "content_from": "platform-4-x-4",
+   "axes": [
+    {
+     "name": "Size",
+     "on": "code",
+     "re": "^PS(\\d+)x(\\d+)$",
+     "fmt": "{1}' x {2}'"
+    }
+   ],
+   "specs": [
+    {
+     "label": "Size",
+     "on": "code",
+     "re": "^PS(\\d+)x(\\d+)$",
+     "fmt": "{1}' x {2}'"
+    },
+    {
+     "label": "Sections",
+     "on": "name",
+     "re": "(2) Sections",
+     "fmt": "{1}"
+    }
+   ]
+  },
+  {
+   "key": "platform-to-ramp-kits",
+   "name": "Platform to Ramp Kit",
+   "match": {
+    "code_re": "^PRK\\d"
+   },
+   "content_from": "platform-to-ramp-kit-36",
+   "axes": [
+    {
+     "name": "Width",
+     "on": "code",
+     "re": "^PRK(\\d+)$",
+     "fmt": "{1}\" wide"
+    }
+   ],
+   "specs": [
+    {
+     "label": "Width",
+     "on": "code",
+     "re": "^PRK(\\d+)$",
+     "fmt": "{1}\""
+    }
+   ]
+  },
+  {
+   "key": "portable-folding-ramps",
+   "name": "Portable Folding Ramp",
+   "match": {
+    "family": [
+     "PFR"
+    ]
+   },
+   "content_from": "portable-folding-ramp-2-x-30",
+   "axes": [
+    {
+     "name": "Length",
+     "on": "code",
+     "re": "^PFR(\\d+)x",
+     "fmt": "{ft1} ft ({1}\")"
+    }
+   ],
+   "specs": [
+    {
+     "label": "Length",
+     "on": "code",
+     "re": "^PFR(\\d+)x",
+     "fmt": "{1}\" ({ft1} ft)"
+    },
+    {
+     "label": "Width",
+     "field": "width_in",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Rise",
+     "field": "rise",
+     "fmt": "{v}\""
+    }
+   ]
+  },
+  {
+   "key": "modular-ramp-sections",
+   "name": "Modular Ramp Section",
+   "match": {
+    "code_re": "^RS\\d"
+   },
+   "content_from": "ramp-section-1-x-36",
+   "axes": [
+    {
+     "name": "Length",
+     "on": "code",
+     "re": "^RS(\\d+)x",
+     "fmt": "{1} ft"
+    },
+    {
+     "name": "Width",
+     "on": "code",
+     "re": "x(\\d+)$",
+     "fmt": "{1}\" wide"
+    }
+   ],
+   "specs": [
+    {
+     "label": "Length",
+     "on": "code",
+     "re": "^RS(\\d+)x",
+     "fmt": "{1} ft"
+    },
+    {
+     "label": "Width",
+     "field": "width_in",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Rise",
+     "field": "rise",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Weight",
+     "field": "weight_lb",
+     "fmt": "{v} lb"
+    }
+   ]
+  },
+  {
+   "key": "starter-ramps",
+   "name": "Starter Ramp",
+   "match": {
+    "code_re": "^SR\\d"
+   },
+   "content_from": "starter-ramp-3-x-36",
+   "axes": [
+    {
+     "name": "Width",
+     "on": "code",
+     "re": "x(\\d+)$",
+     "fmt": "{1}\" wide"
+    }
+   ],
+   "specs": [
+    {
+     "label": "Length",
+     "on": "code",
+     "re": "^SR(\\d+)x",
+     "fmt": "{1} ft"
+    },
+    {
+     "label": "Width",
+     "field": "width_in",
+     "fmt": "{v}\""
+    }
+   ]
+  },
+  {
+   "key": "rest-ramp-section",
+   "name": "Rest Ramp Section",
+   "match": {
+    "code_re": "^RRS\\d"
+   },
+   "content_from": "ramp-section-1-x-36",
+   "axes": [],
+   "specs": [
+    {
+     "label": "Length",
+     "on": "code",
+     "re": "^RRS(\\d+)x",
+     "fmt": "{1} ft"
+    },
+    {
+     "label": "Width",
+     "field": "width_in",
+     "fmt": "{v}\""
+    }
+   ]
+  },
+  {
+   "key": "stairs",
+   "name": "Modular Stairs",
+   "match": {
+    "family": [
+     "STP"
+    ]
+   },
+   "content_from": "stair-2-rise-1-tread-x-36-in-wide",
+   "axes": [
+    {
+     "name": "Steps",
+     "on": "name",
+     "re": "(\\d+) Rise (\\d+) Tread",
+     "fmt": "{1} rise / {2} tread"
+    },
+    {
+     "name": "Width",
+     "on": "code",
+     "re": "x(\\d+)$",
+     "fmt": "{1}\" wide"
+    }
+   ],
+   "specs": [
+    {
+     "label": "Rises / treads",
+     "on": "name",
+     "re": "(\\d+) Rise (\\d+) Tread",
+     "fmt": "{1} rise, {2} tread"
+    },
+    {
+     "label": "Height range",
+     "field": "rise",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Width",
+     "field": "width_in",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Construction",
+     "on": "name",
+     "re": "(2 Section)",
+     "fmt": "2 sections"
+    }
+   ]
+  },
+  {
+   "key": "adjustable-threshold-ramps",
+   "name": "Adjustable Threshold Ramp",
+   "match": {
+    "family": [
+     "ATR"
+    ]
+   },
+   "content_from": "adjustable-threshold-ramp-30-x-30-30-in-width",
+   "axes": [
+    {
+     "name": "Length",
+     "on": "code",
+     "re": "^ATR(\\d+)x",
+     "fmt": "{1}\""
+    },
+    {
+     "name": "Width",
+     "on": "code",
+     "re": "x(\\d+)$",
+     "fmt": "{1}\" wide"
+    }
+   ],
+   "specs": [
+    {
+     "label": "Length",
+     "on": "code",
+     "re": "^ATR(\\d+)x",
+     "fmt": "{1}\""
+    },
+    {
+     "label": "Width",
+     "field": "width_in",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Rise (adjustable)",
+     "field": "rise",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Access4U list reference",
+     "field": "mfr_ref"
+    }
+   ]
+  },
+  {
+   "key": "supported-threshold-ramps",
+   "name": "Supported Threshold Ramp",
+   "match": {
+    "family": [
+     "STR"
+    ]
+   },
+   "content_from": "supported-threshold-12-x-30-30-in-width-3",
+   "axes": [
+    {
+     "name": "Length",
+     "on": "code",
+     "re": "^STR0?(\\d+)x",
+     "fmt": "{1}\""
+    },
+    {
+     "name": "Width",
+     "on": "code",
+     "re": "x(\\d+)$",
+     "fmt": "{1}\" wide"
+    }
+   ],
+   "specs": [
+    {
+     "label": "Length",
+     "on": "code",
+     "re": "^STR0?(\\d+)x",
+     "fmt": "{1}\""
+    },
+    {
+     "label": "Width",
+     "field": "width_in",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Rise",
+     "field": "rise",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Access4U list reference",
+     "field": "mfr_ref"
+    }
+   ]
+  },
+  {
+   "key": "basic-threshold-ramps",
+   "name": "Basic Threshold Ramp",
+   "match": {
+    "family": [
+     "TR"
+    ]
+   },
+   "content_from": "basic-threshold-ramp-24-x-30-30-in-width",
+   "axes": [
+    {
+     "name": "Length",
+     "on": "code",
+     "re": "^TR(\\d+)x",
+     "fmt": "{1}\""
+    },
+    {
+     "name": "Width",
+     "on": "code",
+     "re": "x(\\d+)$",
+     "fmt": "{1}\" wide"
+    }
+   ],
+   "specs": [
+    {
+     "label": "Length",
+     "on": "code",
+     "re": "^TR(\\d+)x",
+     "fmt": "{1}\""
+    },
+    {
+     "label": "Width",
+     "field": "width_in",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Rise",
+     "field": "rise",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Access4U list reference",
+     "field": "mfr_ref"
+    }
+   ]
+  },
+  {
+   "key": "composite-rubber-threshold-ramps",
+   "name": "Composite Rubber Threshold Ramp",
+   "match": {
+    "family": [
+     "TRR"
+    ]
+   },
+   "content_from": "composite-modular-ramp-3-1-2-in-10",
+   "axes": [
+    {
+     "name": "Rise",
+     "on": "name",
+     "re": "Ramp (\\d+(?: \\d/\\d)?|\\d/\\d)\"",
+     "fmt": "{1}\"",
+     "labels": {
+      "TRR3": "3\" (modular)",
+      "TRR312": "3 1/2\" (modular)"
+     }
+    }
+   ],
+   "specs": [
+    {
+     "label": "Rise",
+     "field": "rise",
+     "fmt": "{v}"
+    },
+    {
+     "label": "Width",
+     "field": "width_in",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Depth",
+     "field": "length_ft",
+     "fmt": "{v}\""
+    },
+    {
+     "label": "Type",
+     "on": "name",
+     "re": "(Modular)",
+     "fmt": "Modular"
+    }
+   ]
+  }
+ ]
 }

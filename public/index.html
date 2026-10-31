@@ -1952,6 +1952,11 @@ async function mergeCatalogEdits(slug, prods){
              is what every dealer-facing surface renders. */
           const _sxOpt=_sx && String((_sx.size!=null?_sx.size:(_sx.option!=null?_sx.option:''))||'').trim();
           if(_sxOpt) p._skuOption=_sxOpt;
+          /* PARENT FAMILIES (owner, 2026-10-31, Access4U). A family page may name each SKU's choices as axes —
+             {Length:"4 ft (48\")", Width:"36\" wide"} — and its own specification rows. The pickers then offer one
+             control per axis, and each combination is exactly one SKU from the price list. */
+          if(_sx && _sx.axes && typeof _sx.axes==='object' && !Array.isArray(_sx.axes) && Object.keys(_sx.axes).length) p._axes=Object.assign({},_sx.axes);
+          if(_sx && Array.isArray(_sx.specs) && _sx.specs.length) p._skuSpecs=_sx.specs.filter(r=>r&&r.label&&r.value!=null&&r.value!=='');
           if(pg.name) p._encPage=String(pg.name).trim();
           /* THE ENRICHMENT DESCRIPTION IS THE DESCRIPTION (Phase 2.5). It used to fill only a
              blank, so wherever the catalog file carried its own text the approved description
@@ -2879,12 +2884,15 @@ function optionAxesOf(label){
   return out;
 }
 const AXIS_ORDER=['Size','Color','Side','Variant'];
+/* A SKU's choices: the axes its family page names (authored, exact), else what its option text says. */
+function axesOf(v){ return (v&&v._axes&&Object.keys(v._axes).length)?v._axes:optionAxesOf(variantLabel(v)); }
 /* The axes a dealer may actually choose between, in a fixed order so the pickers do not
    reshuffle as the selection changes. Only axes that VARY are returned; an axis every SKU
    shares is reported separately as a fixed attribute of the model. */
 function optionAxes(variants){
   const seen={}, order=[];
-  (variants||[]).forEach(v=>{ const ax=optionAxesOf(variantLabel(v));
+  const authored=(variants||[]).length>0 && (variants||[]).every(v=>v&&v._axes&&Object.keys(v._axes).length);
+  (variants||[]).forEach(v=>{ const ax=axesOf(v);
     Object.keys(ax).forEach(k=>{ if(!seen[k]){seen[k]=[];order.push(k);} 
       if(seen[k].indexOf(ax[k])<0) seen[k].push(ax[k]); }); });
   /* ONE PRODUCT, ONE AXIS NAME. optionAxesOf decides "Size" or "Variant" per SKU, from whether
@@ -2903,7 +2911,9 @@ function optionAxes(variants){
     return (ia<0?99:ia)-(ib<0?99:ib) || order.indexOf(a)-order.indexOf(b); });
   const varying={}, fixed={};
   keys.forEach(k=>{ const vals=seen[k];
-    if(k==='Size') vals.sort((x,y)=>variantSizeRank(x)-variantSizeRank(y)||x.localeCompare(y));
+    /* authored axes keep the family's own order (the SKUs arrive sorted by length, width, rise …) */
+    if(authored){ /* first-seen order */ }
+    else if(k==='Size') vals.sort((x,y)=>variantSizeRank(x)-variantSizeRank(y)||x.localeCompare(y));
     else vals.sort((x,y)=>x.localeCompare(y));
     (vals.length>1?varying:fixed)[k]=vals; });
   return {varying:varying, fixed:fixed, keys:keys};
@@ -2939,7 +2949,7 @@ function optionsPanelHtml(p, AX, here){
 }
 function resolveVariant(variants, want, changed){
   const list=variants||[];
-  const axOf=v=>optionAxesOf(variantLabel(v));
+  const axOf=v=>axesOf(v);
   const exact=list.find(v=>{ const a=axOf(v);
     return Object.keys(want).every(k=>String(a[k]||'')===String(want[k]||'')); });
   if(exact) return exact;
@@ -2976,7 +2986,7 @@ function groupLeads(list){
   return leads;
 }
 /* The one-line description of what a product's SKUs let a dealer pick. */
-const AXIS_NOUN={Size:['size','sizes'],Color:['colour','colours'],Side:['side','sides'],Variant:['variant','variants']};
+const AXIS_NOUN={Size:['size','sizes'],Color:['colour','colours'],Side:['side','sides'],Variant:['variant','variants'],Length:['length','lengths'],Width:['width','widths'],Steps:['stair height','stair heights'],Rise:['rise','rises']};
 function variantSummary(variants){
   const list=variants||[];
   if(list.length<2) return list.length?('Item # '+String((list[0]||{}).code||'')):'';
@@ -5846,16 +5856,20 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
        flat list where "Large" appears four times with nothing to tell the four apart. */
     const AX=optionAxes(variants);
     const axKeys=Object.keys(AX.varying);
-    const here=optionAxesOf(variantLabel(p));
+    const here=axesOf(p);
+    /* A value that does not exist with the other choices made (a 7 ft ramp section comes only 36" wide) is still
+       offered — picking it moves to the nearest real SKU — but it says so, so no combination is ever implied that
+       the price list does not have. */
+    const _avail=(k,val)=>variants.some(v=>{ const a=axesOf(v); return String(a[k]||'')===val && axKeys.every(o=>o===k||String(a[o]||'')===String(here[o]||'')); });
     const variantSel = variants.length<2 ? ""
       : axKeys.length>=2
       ? `<div class="pd-variants pd-axes">${axKeys.map(k=>`<div class="pd-axis"><label>${esc(k)}</label>
           <select class="pd-varsel" data-axis="${esc(k)}" onchange="pickVariant(this)">${
-            AX.varying[k].map(val=>`<option value="${esc(val)}"${String(here[k]||'')===val?' selected':''}>${esc(val)}</option>`).join("")
+            AX.varying[k].map(val=>`<option value="${esc(val)}"${String(here[k]||'')===val?' selected':''}>${esc(val)}${_avail(k,val)?'':' — not offered with this '+esc(axKeys.filter(o=>o!==k).map(o=>String(here[o]||'')).join(' / '))}</option>`).join("")
           }</select></div>`).join("")}</div>`
       : `<div class="pd-variants"><label>${esc(axKeys[0]||'Variant')}</label>
       <select class="pd-varsel" onchange="openProductDetail(this.value,{keepScroll:true})">${
-        variants.map(v=>{const ve=Number(unitPrice(v,1)||v.base_price||0);return `<option value="${esc(v.code)}"${v.code===p.code?' selected':''}>${esc(variantLabel(v))}${v._discontinued?' (discontinued)':(ve>0?' — '+money(ve):'')}</option>`;}).join("")
+        variants.map(v=>{const ve=Number(unitPrice(v,1)||v.base_price||0);return `<option value="${esc(v.code)}"${v.code===p.code?' selected':''}>${esc(v._axes?Object.values(v._axes).join(' · '):variantLabel(v))}${v._discontinued?' (discontinued)':(ve>0?' — '+money(ve):'')}</option>`;}).join("")
       }</select></div>`;
     /* The pickers hand back a combination, not a part number; the SKU is looked up from it. */
     window.__PDVARIANTS=variants;
@@ -5928,9 +5942,10 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
        A real <img> (not a CSS background) so a photo that fails to load can be taken out. */
     const thumbs = imgs.length>1 ? imgs.map((m,i)=>`<div class="pd-thumb${i===0?' on':''}" onclick="pdSwap(this,'${esc(imgUrl(m.url,900))}')"><img src="${esc(imgUrl(m.url,120))}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain;border-radius:10px" onerror="imgFail(this,'thumb')"></div>`).join("") : "";
     const [d,c]=eff.toFixed(2).split(".");
-    const specRows = (Array.isArray(p._specs)&&p._specs.length) ? p._specs.map(s=>`<tr><td class="k">${esc(s.label||s.name||"")}</td><td class="v">${esc(String(s.value||""))}</td></tr>`).join("") :
+    const skuSpecRows = (Array.isArray(p._skuSpecs)&&p._skuSpecs.length) ? `<tr><td class="k">Item #</td><td class="v">${esc(p.code)}</td></tr>`+p._skuSpecs.map(s=>`<tr><td class="k">${esc(s.label)}</td><td class="v">${esc(String(s.value))}</td></tr>`).join("") : "";
+    const specRows = skuSpecRows + ((Array.isArray(p._specs)&&p._specs.length) ? p._specs.map(s=>`<tr><td class="k">${esc(s.label||s.name||"")}</td><td class="v">${esc(String(s.value||""))}</td></tr>`).join("") :
       (p.specs&&typeof p.specs==="object"&&!Array.isArray(p.specs)) ? Object.keys(p.specs).map(k=>`<tr><td class="k">${esc(k)}</td><td class="v">${esc(String(p.specs[k]))}</td></tr>`).join("") :
-      (Array.isArray(p.attributes)?p.attributes.map(a=>`<tr><td class="k">${esc(a.label||a.name||"")}</td><td class="v">${esc(String(a.value||""))}</td></tr>`).join(""):"");
+      (Array.isArray(p.attributes)?p.attributes.map(a=>`<tr><td class="k">${esc(a.label||a.name||"")}</td><td class="v">${esc(String(a.value||""))}</td></tr>`).join(""):""));
     host.innerHTML = `<div class="pd">
       <div class="pd-crumb"><a onclick="renderProducts()">← ${esc(curLineName()||'Shop')}</a><span class="sep">/</span>${p.category?`<a onclick="renderProducts()">${esc(p.category)}</a><span class="sep">/</span>`:''}<span class="cur">${esc(gname)}</span></div>
       <div class="pd-hero">
@@ -5942,7 +5957,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
           <div class="pd-eyebrow">${esc(p.brand||curLineName()||"")}</div>
           <h1>${esc(gname)}</h1>
           ${p._tagline?`<div class="pd-tagline">${esc(p._tagline)}</div>`:""}
-          <div class="pd-code">Item # ${esc(p.code)}${variants.length>1?" · "+esc(variantLabel(p)):""}${p.category?" · "+esc(p.category):""}${p.hcpc?" · HCPC "+esc(p.hcpc):""}</div>
+          <div class="pd-code">Item # ${esc(p.code)}${variants.length>1?" · "+esc(p._axes?Object.values(p._axes).join(' · '):variantLabel(p)):""}${p.category?" · "+esc(p.category):""}${p.hcpc?" · HCPC "+esc(p.hcpc):""}</div>
           ${(p._billing&&p._billing.length)?`<div class="pd-billing">HCPC / PDAC <b>${p._billing.map(esc).join(' · ')}</b></div>`:""}
           <div class="pd-pricebox">
             ${eff>0?`<div class="pd-plabel">${cp!=null?"Your contract price":"Your dealer price"}</div>
