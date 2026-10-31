@@ -31,3 +31,31 @@ original file name + SHA-256 is recorded in `content-overrides/abm-respiratory-c
 | BiWaze Trach Adapter.jpg | 1024×1024 | `a289948e08b4cf28` | — | Held (component) | A trach adapter on its own — a part of the trach circuits, not a catalog part. Not used as a circuit photo; similarly named circuits are not assumed to use the same adapter. |
 | Trach Adapter.jpg | 1024×1024 | `a289948e08b4cf28` | — | Duplicate | Byte-identical to BiWaze Trach Adapter.jpg. |
 | BiWaze-Mouthpiece.jpg | 1024×1024 | `1f3731a96ee2a439` | — | Held (component) | A mouthpiece on its own — part of the mouthpiece circuits, not a catalog part. Not used as a circuit photo. |
+
+## Image exception register (owner decisions 2026-10-31 15:39 CT)
+
+ABM is approved with these exceptions. Every SKU below stays orderable: its card shows the standard placeholder (no broken
+image, no borrowed photo). A held file is assigned only after it is identified from an official ABM source — never guessed.
+Status is kept current here; sourcing continues from official ABM material only.
+
+| SKU | Item | Status | What closes it |
+|---|---|---|---|
+| BK389 | Aerogen® Power Cable | Open — held candidates | Two different "Aerogen power cable" photos in the library (grey, beige). Not assigned until ABM confirms which is BK389. |
+| BK281 | Dual Lumen B/V Filter | Open — held candidate | "BV Filter.jpg" is low resolution and could be BK281 or BC22480. Not assigned until identified. |
+| BC22480 | Standard Filter Trap | Open — held candidate | As BK281. |
+| BK291 | BiWaze Clear Dual Lumen – Child Face Mask | Open | Official photo of the child mask circuit. |
+| BK373 / BK372 / BK374 | Nonin Sensor – Small / Medium / Large | Open | Official photo of the Nonin sensor (one photo may serve all three sizes if ABM's own photo shows the sensor family). |
+| BK381 | BiWaze Clear User Manual | Open | Cover of the current BiWaze Clear user manual (the item is the document). |
+| BC21095 | Battery | Open | Official battery photo. |
+| BC23400 / BC23406 / BC23412 / BC23418 / BC23387 / BC23394 | BiWaze Cough Dual Lumen Circuits (child, adult S/M/L face mask, mouthpiece, trach) | Open | Official photos of the Cough dual-lumen circuit; the standard (single-lumen) circuit photo is not used on them. |
+| BC2396 / BC23966 | Switzerland / Australia Power Cord | Open | Official photo of each country cord (the USA cord photo is not reused). |
+| BK536 / BC21275 | BiWaze Clear / Cough Extended Warranty | Not applicable | A service, not a physical product — placeholder by design. |
+
+Other decisions recorded with this register:
+- **BK388** keeps the ABM price-list name and description ("BiWaze Clear Home Care QRG"). Its photo is page 1 of the guide printed
+  "BK388 Rev 5.0 SEP-2025", which ABM titles "Hospital and Long-Term Care" — the title difference is on the open questions
+  list for ABM; the price-list wording stands until it is reconciled.
+- **BC21275** has no purchase restriction (none is printed on ABM's list). **BK536** keeps the printed rule (only with a
+  BK367, at most 2 per system).
+- **Extended warranties** keep the documented maximum ("maximum 2 years extended"); clarification of the terms is on the
+  open questions list for ABM.
