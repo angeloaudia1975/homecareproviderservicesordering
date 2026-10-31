@@ -3401,6 +3401,9 @@ function cvLeads(list){
   else leads.sort((a,b)=>compareCats(a.category||"Other", b.category||"Other")
     || String(a.subcategory||"").localeCompare(String(b.subcategory||""))
     || name(a).localeCompare(name(b)));
+  /* an exact part number comes first, whatever the sort: "BC2396" must not show "BC23966" above it */
+  if(q){ const exact=L=>(L._variants||[L]).some(v=>cvNorm(v.code)===q);
+    const ex=leads.filter(exact); if(ex.length) return ex.concat(leads.filter(L=>!exact(L))); }
   return leads;
 }
 function cvShell(m){

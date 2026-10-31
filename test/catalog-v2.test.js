@@ -41,6 +41,8 @@ t('a SKU search keeps its family whole and opens on that SKU', () => {
   eq(leads.length, 1); eq(leads[0]._variants.map(v => v.code), ['A1', 'A2', 'A3']); eq(leads[0]._openCode, 'A2');
   const W2 = world(CAT, { q: 'dloop' }); const l2 = W2.cvLeads(W2.cvBase()); eq(l2[0]._openCode, 'DLOOP'); eq(l2[0]._variants.length, 2);
   const W3 = world(CAT, { q: 'nothing-like-this' }); eq(W3.cvLeads(W3.cvBase()).length, 0);
+  const W5 = world(CAT.concat([P('A20', 'x20', 'Zeta', '', 5)]), { q: 'a2' }); eq(W5.cvLeads(W5.cvBase())[0]._openCode, 'A2', 'exact part number first');
+  const W6 = world(CAT.concat([P('AA2', 'aaa', 'Aardvark', '', 5)]), { q: 'a2' }); eq(W6.cvLeads(W6.cvBase())[0].code === 'A1' || W6.cvLeads(W6.cvBase())[0]._openCode === 'A2', true, 'exact before a longer code that sorts first');
   const W4 = world(CAT, { q: 'acme' }); eq(W4.cvLeads(W4.cvBase()).length, 5, 'the manufacturer name finds the line');
 });
 t('category counts are cards; subcategory and uncategorised filters', () => {
