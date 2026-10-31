@@ -1956,6 +1956,7 @@ async function mergeCatalogEdits(slug, prods){
              {Length:"4 ft (48\")", Width:"36\" wide"} — and its own specification rows. The pickers then offer one
              control per axis, and each combination is exactly one SKU from the price list. */
           if(_sx && _sx.axes && typeof _sx.axes==='object' && !Array.isArray(_sx.axes) && Object.keys(_sx.axes).length) p._axes=Object.assign({},_sx.axes);
+          if(p._axes){ const _ix=(pg.skus||[]).indexOf(_sx); if(_ix>=0) p._axisOrder=_ix; }
           if(_sx && Array.isArray(_sx.specs) && _sx.specs.length) p._skuSpecs=_sx.specs.filter(r=>r&&r.label&&r.value!=null&&r.value!=='');
           if(pg.name) p._encPage=String(pg.name).trim();
           /* THE ENRICHMENT DESCRIPTION IS THE DESCRIPTION (Phase 2.5). It used to fill only a
@@ -2953,11 +2954,21 @@ function resolveVariant(variants, want, changed){
   const exact=list.find(v=>{ const a=axOf(v);
     return Object.keys(want).every(k=>String(a[k]||'')===String(want[k]||'')); });
   if(exact) return exact;
-  if(changed){ const near=list.find(v=>String(axOf(v)[changed]||'')===String(want[changed]||''));
-    if(near) return near; }
+  if(changed){
+    /* the nearest real SKU that keeps the choice just made: most other choices kept, then the closest value on each
+       (a 7 ft section switched to 48" lands on the 6 ft 48", not on the 1 ft) */
+    const cands=list.filter(v=>String(axOf(v)[changed]||'')===String(want[changed]||''));
+    if(cands.length){
+      const pos={}; list.forEach(v=>{ const a=axOf(v); Object.keys(a).forEach(k=>{ pos[k]=pos[k]||[]; if(pos[k].indexOf(a[k])<0) pos[k].push(a[k]); }); });
+      const score=v=>{ const a=axOf(v); let keep=0, dist=0; Object.keys(want).forEach(k=>{ if(k===changed) return;
+        if(String(a[k]||'')===String(want[k]||'')) keep++; else dist+=Math.abs((pos[k]||[]).indexOf(a[k])-(pos[k]||[]).indexOf(want[k])); }); return [keep,dist]; };
+      return cands.slice().sort((x,y)=>{ const sx=score(x), sy=score(y); return (sy[0]-sx[0])||(sx[1]-sy[1]); })[0];
+    } }
   return list[0]||null;
 }
 function sortVariants(list){
+  /* a family page's own order (length, width, rise …), when every SKU has one */
+  if(list.length && list.every(v=>typeof v._axisOrder==='number')) return list.slice().sort((a,b)=>a._axisOrder-b._axisOrder);
   return list.map((v,i)=>({v:v,i:i,l:variantLabel(v)}))
     .sort((a,b)=>{ const ra=variantSizeRank(a.l), rb=variantSizeRank(b.l);
       if(ra!==rb) return ra-rb;
