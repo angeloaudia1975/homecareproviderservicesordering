@@ -1271,7 +1271,8 @@ body.shopv2 .section{padding-top:18px;}
   .cv2-grid.list .cv2-act{grid-row:2;grid-column:1/-1;border-left:0;border-top:1px solid var(--line);}
   .cv2-bar{align-items:flex-start;}
   .cv2-tools{width:100%;justify-content:space-between;}
-  .cv2-sort select{max-width:58vw;}
+  .cv2-sort select{max-width:62vw;}
+  .cv2-sortl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
   .cv2-chip,.cv2-view button{min-height:44px;}
   .cv2-view button{width:44px;height:44px;}
   .cv2-act .buy .addbtn,.cv2-act .buy .qtyin{min-height:44px;}
@@ -3527,7 +3528,7 @@ function renderProducts(){
   const sorts=[['relevance','Relevance'],['name','Name A–Z'],['name_desc','Name Z–A']].concat(priced?[['price','Price: low to high'],['price_desc','Price: high to low']]:[]);
   const active=[cvQuery()?`“${cvQuery()}”`:'', catLabel, brand, (CUI.pmin||CUI.pmax)?`${CUI.pmin?'$'+CUI.pmin:'any'}–${CUI.pmax?'$'+CUI.pmax:'any'}`:''].filter(Boolean);
   $("#cv2Bar").innerHTML=`<div class="cv2-count"><b>${leads.length} product${leads.length===1?'':'s'}</b><span>${skuN} SKU${skuN===1?'':'s'}${leads.length?` · Showing ${from}–${to} of ${leads.length}`:''}</span>${active.length?`<span class="cv2-active">${active.map(esc).join(' · ')} <button type="button" data-cv="clear">Clear</button></span>`:''}</div>
-    <div class="cv2-tools"><label class="cv2-sort">Sort by <select id="cv2Sort">${sorts.map(s=>`<option value="${s[0]}"${CUI.sort===s[0]?' selected':''}>${s[1]}</option>`).join('')}</select></label>
+    <div class="cv2-tools"><label class="cv2-sort"><span class="cv2-sortl">Sort by</span> <select id="cv2Sort">${sorts.map(s=>`<option value="${s[0]}"${CUI.sort===s[0]?' selected':''}>${s[1]}</option>`).join('')}</select></label>
     <div class="cv2-view" role="group" aria-label="View"><button type="button" data-cv="view" data-v="grid" class="${CUI.view==='grid'?'on':''}" aria-pressed="${CUI.view==='grid'}" title="Grid view">▦<span class="sr">Grid view</span></button><button type="button" data-cv="view" data-v="list" class="${CUI.view==='list'?'on':''}" aria-pressed="${CUI.view==='list'}" title="List view">☰<span class="sr">List view</span></button></div></div>`;
   /* the grid */
   const g=$("#cv2Grid"); g.className='cv2-grid'+(CUI.view==='list'?' list':'');
