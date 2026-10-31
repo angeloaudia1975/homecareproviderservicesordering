@@ -1174,7 +1174,11 @@ body.shopv2 .section{padding-top:18px;}
 .cv2-titlerow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 10px;}
 .cv2-title{font-family:'Archivo',sans-serif;font-weight:900;font-size:clamp(21px,2vw,27px);color:var(--navy);letter-spacing:-.01em;}
 .cv2-filterbtn{display:none;}
-.cv2-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;scrollbar-width:thin;}
+.cv2-chipwrap{display:flex;align-items:center;gap:6px;}
+.cv2-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;scrollbar-width:none;flex:1;min-width:0;}
+.cv2-chips::-webkit-scrollbar{display:none;}
+.cv2-chipnext{flex:none;width:38px;height:38px;margin-bottom:8px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--navy);font-size:22px;line-height:1;cursor:pointer;}
+.cv2-chipnext:hover{border-color:var(--navy);}
 .cv2-chip{flex:none;border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:999px;padding:7px 14px;min-height:36px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
 .cv2-chip:hover{border-color:var(--navy);}
 .cv2-chip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
@@ -1272,7 +1276,19 @@ body.shopv2 .section{padding-top:18px;}
   .cv2-view button{width:44px;height:44px;}
   .cv2-act .buy .addbtn,.cv2-act .buy .qtyin{min-height:44px;}
   body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner p{display:none;}
-  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner h1 .hdrlogo{height:36px;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner h1 .hdrlogo{height:32px;padding:4px 7px;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner{padding:10px 0;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner h1{font-size:20px;gap:10px;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mhead{gap:8px;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mstat{padding:5px 10px;gap:12px;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mstat b{font-size:16px;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mstat span{font-size:9.5px;}
+  .cv2-titlerow{margin:2px 0 8px;}
+  .cv2-title{font-size:20px;}
+  .cv2-bar{gap:6px;padding:8px 0;}
+  .cv2-count{gap:2px 8px;}
+  .cv2-count span{font-size:12px;}
+  .cv2-chipnext{display:none;}
 }
 @media (max-width:420px){
   .cv2-grid:not(.list) .cv2-card{grid-template-columns:38% minmax(0,1fr);}
@@ -3402,7 +3418,7 @@ function cvShell(m){
       <div class="cv2-crumb" id="cv2Crumb"></div>
       <div class="cv2-titlerow"><h2 class="cv2-title">${esc(m.name||'')} Catalog</h2>
         <button class="cv2-filterbtn" type="button" data-cv="open" aria-controls="cv2Side">☰ Filters &amp; categories</button></div>
-      <div class="cv2-chips" id="cv2Chips" role="list"></div>
+      <div class="cv2-chipwrap"><div class="cv2-chips" id="cv2Chips" role="list"></div><button type="button" class="cv2-chipnext" data-cv="chipnext" aria-label="More categories" hidden>›</button></div>
       <div class="cv2-bar" id="cv2Bar"></div>
       <div id="cv2Grid" class="cv2-grid"></div>
       <nav class="cv2-pager" id="cv2Pager" aria-label="Pages"></nav>
@@ -3426,6 +3442,7 @@ function cvWire(host){
     else if(a==='view'){ CUI.view=v; try{localStorage.setItem('hcps_cat_view',v);}catch(err){} renderProducts(); }
     else if(a==='price'){ cvPrice(); }
     else if(a==='open'){ cvDrawer(true); }
+    else if(a==='chipnext'){ const c=$("#cv2Chips"); if(c){ const end=c.scrollLeft+c.clientWidth>=c.scrollWidth-4; c.scrollTo({left:end?0:c.scrollLeft+c.clientWidth*0.8,behavior:'smooth'}); } }
     else if(a==='close'){ cvDrawer(false); }
   });
   host.addEventListener('change', function(e){
@@ -3502,6 +3519,7 @@ function renderProducts(){
   $("#cv2Crumb").innerHTML=`<a href="#" data-cv="cat" data-v="">${esc(m.name||'Shop')}</a>${catOf&&cat.startsWith('sub:')?`<span>›</span><a href="#" data-cv="cat" data-v="${esc(catOf)}">${esc(catOf)}</a>`:''}${catLabel?`<span>›</span><b>${esc(catLabel)}</b>`:''}`;
   $("#cv2Chips").innerHTML=(tree.length>1||cat)?[`<button type="button" role="listitem" class="cv2-chip${!cat?' on':''}" data-cv="cat" data-v="">All Products (${cvFamilies(base)})</button>`]
     .concat(tree.map(t=>`<button type="button" role="listitem" class="cv2-chip${catOf===t.c?' on':''}" data-cv="cat" data-v="${esc(t.c)}">${esc(t.c)} (${t.n})</button>`)).join(''):'';
+  { const c=$("#cv2Chips"), nb=document.querySelector('.cv2-chipnext'); if(c&&nb) requestAnimationFrame(()=>{ nb.hidden=!(c.scrollWidth>c.clientWidth+4); }); }
   /* toolbar */
   const pages=Math.max(1,Math.ceil(leads.length/CUI.per)); if(CUI.page>pages) CUI.page=pages;
   const from=leads.length?(CUI.page-1)*CUI.per+1:0, to=Math.min(leads.length,CUI.page*CUI.per);
