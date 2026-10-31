@@ -51,8 +51,15 @@
     "accent": "#1fa8c6",
     "dark": "#3c4a52",
     "logo": "/assets/logos/abm-respiratory-care.jpg",
-    "hasData": false,
-    "sort": 3
+    "hasData": true,
+    "sort": 3,
+    "freight": {
+      "summary": "Actual shipping charges apply to all orders.",
+      "actualNote": "Actual shipping charges apply to all orders.",
+      "groups": [],
+      "elseActual": true,
+      "otherLabel": "ABM Respiratory Care — actual shipping"
+    }
   },
   {
     "slug": "airavant-bongorx",
@@ -61,7 +68,28 @@
     "dark": "#003f67",
     "logo": "/assets/logos/airavant-bongorx.jpg",
     "hasData": true,
-    "sort": 5
+    "sort": 5,
+    "freight": {
+      "mode": "qty_threshold",
+      "freeAtQty": 10,
+      "qualifyingCodes": [
+        "BNG500",
+        "BNG501",
+        "BNG502",
+        "BNG503",
+        "BNG504",
+        "BNG505",
+        "BNG511",
+        "BNG512",
+        "BNG513",
+        "BNG514",
+        "BNG515"
+      ],
+      "label": "BongoRx standard shipping",
+      "freeLabel": "FREE standard shipping",
+      "summary": "Free standard shipping on orders with 10 or more Bongo Rx kits, replenishment packs or single replenishment units (mix and match). Replacement headgear does not count toward the 10, but ships free in a qualifying order. Below 10, actual standard shipping applies.",
+      "actualNote": "Below 10 qualifying Bongo Rx units: actual standard shipping is added from the confirmed order — no flat amount is quoted."
+    }
   },
   {
     "slug": "climbing-steps",
@@ -97,7 +125,7 @@
     "freight": {
       "mode": "per_item",
       "threshold": 2500,
-      "summary": "Delivery billed per item: orders under $2,500 ship UPS/FedEx, orders $2,500+ ship LTL freight. White Glove delivery is available on select items — request it in your notes. Final freight is confirmed by HCPS."
+      "summary": "Delivery charges per item from Corsicana's 2026 price list: merchandise under $2,500 ships UPS/FedEx; $2,500 or more ships LTL. An item with its own or included delivery charge keeps it. Freight Corsicana lists as TBD (CorsicanaCare Bed Booster) is pending until Corsicana's order confirmation. White Glove delivery is available on select items — request it in your notes."
     }
   },
   {
@@ -183,6 +211,13 @@
     "dark": "#0b0d0f",
     "logo": "/assets/logos/dalton.jpg",
     "hasData": true,
-    "sort": 12
+    "sort": 12,
+    "freight": {
+      "summary": "Dalton LTL freight policy (effective Nov 1, 2026): orders $0–$999 25% of the order value, $1,000–$1,999 15%, $2,000 and up free. Lift gate $45; inside delivery $50 (only if selected on the order). The actual freight is added from Dalton’s order confirmation after HCPS places the order.",
+      "actualNote": "Dalton freight is not calculated at checkout: the actual charge comes from Dalton’s order confirmation (LTL policy: $0–$999 25%, $1,000–$1,999 15%, $2,000+ free; lift gate $45, inside delivery $50 if selected).",
+      "groups": [],
+      "elseActual": true,
+      "otherLabel": "Dalton freight — per Dalton’s Nov 1, 2026 LTL policy"
+    }
   }
 ]

@@ -7,6 +7,19 @@ const SNIPPETS = [
   [/\n  \/\/ The dealer's own line discount off the standard list \(never stacked on a contract price\)\.\n  const lr=lineRatePrice\(p\);\n  if\(lr!=null\) return lr;/, ''],
   [/\n  const lr=\(cp==null && typeof lineRatePrice==='function'\)\?lineRatePrice\(p\):null;[^\n]*\n  const eff=\(cp!=null\)\?cp:\(lr!=null\?lr:Number\(p\.base_price\)\);/, '\n  const eff=(cp!=null)?cp:Number(p.base_price);'],
   [/\n    : \(lr!=null \? `<div class="pnote" style="color:#0a7f3f;font-weight:700">Your account price<\/div>` : ""\);/, '\n    : "";'],
+  /* Corsicana per-item freight PENDING for a TBD item (owner 2026-10-27): taken back out the same way. */
+  [/\n    \/\* An item whose delivery charge the manufacturer lists as TBD[\s\S]*?free or \$0 \(owner, 2026-10-27\)\. \*\/\n    let note = cfg\.summary\|\|""; if\(tbd\) note \+= " Freight for some items is pending[^\n]*\n    return \{rows:\[Object\.assign\(\{label,status:"peritem",fee\}, tbd\?\{pending:true\}:\{\}\)\], fee, itemsTotal, actualNote:note\};/,
+   '\n    let note = cfg.summary||""; if(tbd) note += " Some items\' freight is confirmed by HCPS.";\n    return {rows:[{label,status:"peritem",fee}], fee, itemsTotal, actualNote:note};'],
+  [/<span>\$\{r\.pending\?\(r\.fee>0\?money\(r\.fee\)\+" \+ pending":"pending"\):\(r\.fee>0\?money\(r\.fee\):"included"\)\}<\/span>/, '<span>${r.fee>0?money(r.fee):"included"}</span>'],
+  /* Order rules printed on a manufacturer's list (ABM 2026 MOQ + extended-warranty rule, owner 2026-10-27). */
+  [/\n  const m=minOrderQty\(p\); const nq=Math\.max\(\(cur\?cur\.qty:0\)\+qty, m\);\n  CART\.set\(k,\{p,qty:nq\}\);\n  updateCart\(\); toast\([^\n]*\);/,
+   '\n  CART.set(k,{p,qty:(cur?cur.qty:0)+qty});\n  updateCart(); toast(`Added ${qty} × ${p.code}`);'],
+  [/\n\/\* ORDER RULES PRINTED ON A MANUFACTURER'S LIST[\s\S]*?\nfunction cartRuleProblems\(\)\{[\s\S]*?\n  return out;\n\}/, ''],
+  [/\n        \$\{\(typeof cartRuleProblems==="function"\?cartRuleProblems\(\):\[\]\)[^\n]*/, ''],
+  /* BongoRx free standard shipping by qualifying order quantity (owner, 2026-10-27). */
+  [/\n  if\(t\.mode==='qty_threshold'\) return [^\n]*/, ''],
+  [/\n  \/\* FREE STANDARD SHIPPING BY ORDER QUANTITY[\s\S]*?\n  if\(cfg\.mode==="qty_threshold"\)\{[\s\S]*?\n  \}/, ''],
+  [/\$\{r\.qtyRemaining>0\?` <span class="prog">· add \$\{r\.qtyRemaining\} more qualifying unit[^\n]*?\(\$\{r\.freeAtQty\}\+\)<\/span>`:""\}/, ''],
 ];
 function undoLineDiscount(html) {
   let s = String(html);
