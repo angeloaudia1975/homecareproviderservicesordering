@@ -44,4 +44,19 @@ t('adding a minimum-quantity item adds the minimum; submit refuses a cart that b
   eq(/const m=minOrderQty\(p\); const nq=Math\.max\(\(cur\?cur\.qty:0\)\+qty, m\);/.test(H),true);
   eq(/const rp=cartRuleProblems\(\); if\(rp\.length\)\{ toast\(rp\[0\]\.msg\); return; \}/.test(H),true);
 });
+t('owner image library (2026-10-31): exact-part photos on their own SKUs only; no borrowed photo on lookalike parts',()=>{
+  const C=JSON.parse(fs.readFileSync(path.join(ROOT,'public','data','content','abm-respiratory-care.json'),'utf8')).pages;
+  const pg=c=>Object.values(C).find(p=>p.skus.some(s=>s.sku===c));
+  const shown=c=>{ const p=pg(c), s=p.skus.find(x=>x.sku===c); return s.image||p.image||((p.images_gallery||[])[0]||{}).url||''; };
+  for(const c of ['BC21274','BC22496','BK371','BC20116','BC21083','BC22506','BC21087','BC21092','BC21090']){
+    const u=shown(c); eq(!!u,true,c+' photo'); eq(fs.existsSync(path.join(ROOT,'public',u)),true,c+' file '+u); }
+  const ov=JSON.parse(fs.readFileSync(path.join(ROOT,'content-overrides','abm-respiratory-care.json'),'utf8'))._images;
+  for(const c of ['BC21274','BC22496','BK371','BC21083','BC22506']) eq(/New folder\.zip.*sha256 [0-9a-f]{16}/.test(ov[c].slice(-1)[0].source),true,c+' provenance');
+  // the USA cord photo never on the Swiss / Australian cords; the Cough manual never on the Clear manual; the Clear circuit never on Cough dual-lumen
+  for(const c of ['BC2396','BC23966','BK381','BK291','BC23400','BC23406','BC23387','BC23394','BK389','BK281','BC22480']) eq(shown(c),'',c+' must have no photo yet');
+});
+t('shared pages describe every option they hold (not only the first size)',()=>{
+  const C=JSON.parse(fs.readFileSync(path.join(ROOT,'public','data','content','abm-respiratory-care.json'),'utf8')).pages;
+  for(const p of Object.values(C)) if(p.skus.length>1) for(const s of p.skus) eq(String(p.description).includes(s.sku),true,p.page_key+' names '+s.sku);
+});
 console.log(`abm: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);

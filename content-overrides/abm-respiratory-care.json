@@ -132,11 +132,12 @@
   ],
   "image": "/assets/products/abm-respiratory-care/gallery/490f148a99c297b3e29b.jpg",
   "field_provenance": {
-   "description": "HCPS catalog line only (no product-specific manufacturer source)",
+   "description": "ABM 2026 BiWaze Clear / Cough dealer price lists — each option's own line, combined for the shared page (2026-10-31); the per-SKU line stays on the catalog record",
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)"
-  }
+  },
+  "description": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Adult Face Mask — choose Small (BK289), Medium (BK287) or Large (BK285)."
  },
  "_images": {
   "BC21083": [
@@ -154,6 +155,11 @@
     "url": "/assets/products/abm-respiratory-care/gallery/d7298e7fa206f1c4ad60.jpg",
     "source": "https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf",
     "note": "Same carrying bag opened with a BiWaze Clear and circuit packed inside; extracted from ABM's BiWaze Clear Patient Guide (BK386), page 6."
+   },
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/41e02caf73b1e4aa4fdf.jpg",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BC21083-Carrying-Bag.jpg\" sha256 f1b5870fcbd7cc58",
+    "note": "Soft-sided carrying bag with ABM logo (exact part number in file name)."
    }
   ],
   "BC22506": [
@@ -166,6 +172,11 @@
     "url": "/assets/products/abm-respiratory-care/gallery/91b970ffad6625d7bcfb.jpg",
     "source": "https://abmrc.com/wp-content/uploads/2024/06/BiWaze-Clear_Mobile-Cart-scaled.jpg",
     "note": "Same mobile cart (5 casters, pole, basket) shown with a BiWaze Clear mounted."
+   },
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/7e83f5f40996bf557bbf.jpg",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze Cart -BC22506.jpg\" sha256 b30a9e7f2ef8a622",
+    "note": "Mobile cart: 5 casters, telescoping pole, basket (exact part number in file name)."
    }
   ],
   "BC21088": [
@@ -173,6 +184,11 @@
     "url": "/assets/products/abm-respiratory-care/gallery/85df23aae8923ebed004.jpg",
     "source": "https://abmrc.com/wp-content/uploads/2022/08/BiWaze-Cough_with-circuit-scaled.jpg",
     "note": "Cropped from ABM's official photo of the BiWaze Cough with its standard single-path circuit: B/V filter at the patient port, 22 mm tubing and face mask (device corner visible). The system ships with the Adult Medium face-mask circuit (manual BC21084 §11.2); mask size is not legible in the photo, so it is shared across the adult S/M/L page."
+   },
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
+    "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (adult face mask) is included in the circuit but not shown in this photo."
    }
   ],
   "BC21089": [
@@ -180,6 +196,11 @@
     "url": "/assets/products/abm-respiratory-care/gallery/85df23aae8923ebed004.jpg",
     "source": "https://abmrc.com/wp-content/uploads/2022/08/BiWaze-Cough_with-circuit-scaled.jpg",
     "note": "Cropped from ABM's official photo of the BiWaze Cough with its standard single-path circuit: B/V filter at the patient port, 22 mm tubing and face mask (device corner visible). The system ships with the Adult Medium face-mask circuit (manual BC21084 §11.2); mask size is not legible in the photo, so it is shared across the adult S/M/L page."
+   },
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
+    "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (adult face mask) is included in the circuit but not shown in this photo."
    }
   ],
   "BC21273": [
@@ -187,6 +208,11 @@
     "url": "/assets/products/abm-respiratory-care/gallery/85df23aae8923ebed004.jpg",
     "source": "https://abmrc.com/wp-content/uploads/2022/08/BiWaze-Cough_with-circuit-scaled.jpg",
     "note": "Cropped from ABM's official photo of the BiWaze Cough with its standard single-path circuit: B/V filter at the patient port, 22 mm tubing and face mask (device corner visible). The system ships with the Adult Medium face-mask circuit (manual BC21084 §11.2); mask size is not legible in the photo, so it is shared across the adult S/M/L page."
+   },
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
+    "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (adult face mask) is included in the circuit but not shown in this photo."
    }
   ],
   "BC21084": [
@@ -216,6 +242,139 @@
     "source": "https://abmrc.com/wp-content/uploads/2025/10/BiWaze-Clear-QRG-Hospital-Reference-Guide_InLine.pdf",
     "note": "Page 1 of the BiWaze Clear Quick Reference Guide, printed 'BK388 Rev 5.0 SEP-2025'. NOTE: ABM titles this BK388 document 'Hospital and Long-Term Care', while the HCPS SKU is named 'Home Care QRG' — confirm the SKU name with ABM."
    }
+  ],
+  "BC21274": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/0719d2d3e7300245c8f5.jpg",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BC21274-Air-Inlet-Filter.png\" sha256 e89b24676c6bf0c0",
+    "note": "Air inlet filter (exact part number in file name). Sold as a pack of 3."
+   }
+  ],
+  "BC22496": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/680918740b324aa0971b.jpg",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BC22496-Adapter.jpg\" sha256 66cabff608679baa",
+    "note": "Patient port adapter (exact part number in file name). 'System Adapter.webp' is the same photo at a smaller size — not imported."
+   }
+  ],
+  "BK371": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/436243a9adbe4652b0a5.jpg",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BK371.jpg\" sha256 f850ef8ee6c94bfc",
+    "note": "Nonin Xpod pulse oximeter with sensor (exact part number in file name)."
+   }
+  ],
+  "BC20116": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/5f2c83ed4458fabb2619.jpg",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze-Power-Cord.jpg\" sha256 0bc55e2232337d25",
+    "note": "Standard USA power cord (NEMA 5-15 plug, IEC C13 connector, visually confirmed). Not used for the Switzerland or Australia cords."
+   }
+  ],
+  "BC21087": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
+    "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (child face mask) is included in the circuit but not shown in this photo."
+   }
+  ],
+  "BC21092": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
+    "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (mouthpiece) is included in the circuit but not shown in this photo."
+   }
+  ],
+  "BC21090": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
+    "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (trach adapter) is included in the circuit but not shown in this photo."
+   }
   ]
+ },
+ "carrying-bag": {
+  "images_gallery": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/41e02caf73b1e4aa4fdf.jpg",
+    "primary": true,
+    "caption": "",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BC21083-Carrying-Bag.jpg\" sha256 f1b5870fcbd7cc58",
+    "note": "Soft-sided carrying bag with ABM logo (exact part number in file name).",
+    "approved": true
+   },
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/a908fdd101726278baa1.jpg",
+    "primary": false,
+    "caption": "",
+    "source": "https://abmrc.com/wp-content/uploads/2022/08/BiWaze-Cough-with-bag-and-circuit-scaled.jpg",
+    "note": "Black ABM-logo soft carrying bag, closed, cropped from ABM's official BiWaze Cough + bag + circuit photo (corner of device visible)."
+   },
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/a65c54ddaa527cde58b9.jpg",
+    "primary": false,
+    "caption": "",
+    "source": "https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf",
+    "note": "Carrying bag opened, showing the device pocket and circuit stowed inside; extracted from ABM's BiWaze Cough Patient Guide (BC23575), page 11."
+   },
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/d7298e7fa206f1c4ad60.jpg",
+    "primary": false,
+    "caption": "",
+    "source": "https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf",
+    "note": "Same carrying bag opened with a BiWaze Clear and circuit packed inside; extracted from ABM's BiWaze Clear Patient Guide (BK386), page 6."
+   }
+  ],
+  "image": "/assets/products/abm-respiratory-care/gallery/41e02caf73b1e4aa4fdf.jpg",
+  "field_provenance": {
+   "images": "primary = owner-supplied photo named with the exact ABM part number (2026-10-31); earlier official abmrc.com crops kept as alternates"
+  }
+ },
+ "mobile-cart": {
+  "images_gallery": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/7e83f5f40996bf557bbf.jpg",
+    "primary": true,
+    "caption": "",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze Cart -BC22506.jpg\" sha256 b30a9e7f2ef8a622",
+    "note": "Mobile cart: 5 casters, telescoping pole, basket (exact part number in file name).",
+    "approved": true
+   },
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/9a8d23f1919acd2d32a1.jpg",
+    "primary": false,
+    "caption": "",
+    "source": "https://abmrc.com/wp-content/uploads/2022/08/BiWaze-Cough_with-stand-and-circuit-scaled.jpg",
+    "note": "Mobile cart: 5-caster base, telescoping pole, mounting plate and basket, shown with a BiWaze Cough mounted (same photo the manual/brochure label 'Cart'). Already in the BiWaze Cough system gallery, not on the Mobile Cart page."
+   }
+  ],
+  "image": "/assets/products/abm-respiratory-care/gallery/7e83f5f40996bf557bbf.jpg",
+  "field_provenance": {
+   "images": "primary = owner-supplied photo named with the exact ABM part number (2026-10-31); earlier official abmrc.com crops kept as alternates"
+  }
+ },
+ "biwaze-cough-standard-circuit-adult-face-mask": {
+  "description": "Standard adult patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, adult face mask) — choose Small (BC21088), Medium (BC21089) or Large (BC21273).",
+  "field_provenance": {
+   "description": "ABM 2026 BiWaze Clear / Cough dealer price lists — each option's own line, combined for the shared page (2026-10-31); the per-SKU line stays on the catalog record"
+  }
+ },
+ "biwaze-cough-dual-lumen-circuit-adult-face-mask": {
+  "description": "Dual Lumen adult patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, adult face mask) — choose Small (BC23406), Medium (BC23412) or Large (BC23418).",
+  "field_provenance": {
+   "description": "ABM 2026 BiWaze Clear / Cough dealer price lists — each option's own line, combined for the shared page (2026-10-31); the per-SKU line stays on the catalog record"
+  }
+ },
+ "nonin-sensor": {
+  "description": "Nonin soft sensor with 1 meter cable — Small (8000SS, BK373), Medium (8000SM, BK372) or Large (8000SL, BK374).",
+  "field_provenance": {
+   "description": "ABM 2026 BiWaze Clear / Cough dealer price lists — each option's own line, combined for the shared page (2026-10-31); the per-SKU line stays on the catalog record"
+  }
+ },
+ "air-inlet-filter": {
+  "description": "Replacement air inlet filters for BiWaze Clear and BiWaze Cough (Pack of 3).",
+  "field_provenance": {
+   "description": "ABM 2026 BiWaze Clear / Cough dealer price lists — each option's own line, combined for the shared page (2026-10-31); the per-SKU line stays on the catalog record"
+  }
  }
 }

@@ -85,7 +85,7 @@
    "page_key": "air-inlet-filter",
    "name": "Air Inlet Filter",
    "status": "published",
-   "description": "Replacement air inlet filters for BiWaze Clear (Pack of 3)",
+   "description": "Replacement air inlet filters for BiWaze Clear and BiWaze Cough (Pack of 3).",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -115,8 +115,17 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/0719d2d3e7300245c8f5.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/0719d2d3e7300245c8f5.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BC21274-Air-Inlet-Filter.png\" sha256 e89b24676c6bf0c0",
+     "note": "Air inlet filter (exact part number in file name). Sold as a pack of 3.",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -975,7 +984,7 @@
    "page_key": "biwaze-cough-dual-lumen-circuit-adult-face-mask",
    "name": "BiWaze Cough Dual Lumen Circuit – Adult Face Mask",
    "status": "published",
-   "description": "Dual Lumen adult small patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, adult small face mask)",
+   "description": "Dual Lumen adult patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, adult face mask) — choose Small (BC23406), Medium (BC23412) or Large (BC23418).",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -1447,7 +1456,7 @@
    "page_key": "biwaze-cough-standard-circuit-adult-face-mask",
    "name": "BiWaze Cough Standard Circuit – Adult Face Mask",
    "status": "published",
-   "description": "Standard adult small patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, adult small face mask)",
+   "description": "Standard adult patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, adult face mask) — choose Small (BC21088), Medium (BC21089) or Large (BC21273).",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -1511,6 +1520,14 @@
      "caption": "",
      "source": "https://abmrc.com/wp-content/uploads/2022/08/BiWaze-Cough_with-circuit-scaled.jpg",
      "note": "Cropped from ABM's official photo of the BiWaze Cough with its standard single-path circuit: B/V filter at the patient port, 22 mm tubing and face mask (device corner visible). The system ships with the Adult Medium face-mask circuit (manual BC21084 §11.2); mask size is not legible in the photo, so it is shared across the adult S/M/L page."
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
+     "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (adult face mask) is included in the circuit but not shown in this photo.",
+     "approved": true
     }
    ],
    "enrichment_flags": {
@@ -1584,8 +1601,17 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
+     "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (child face mask) is included in the circuit but not shown in this photo.",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -1657,8 +1683,17 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
+     "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (mouthpiece) is included in the circuit but not shown in this photo.",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -1730,8 +1765,17 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
+     "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (trach adapter) is included in the circuit but not shown in this photo.",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -1976,7 +2020,7 @@
    "page_key": "biwaze-dual-lumen-adult-face-mask",
    "name": "BiWaze Dual Lumen – Adult Face Mask",
    "status": "published",
-   "description": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Adult Small Face Mask",
+   "description": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Adult Face Mask — choose Small (BK289), Medium (BK287) or Large (BK285).",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -2113,11 +2157,19 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": "/assets/products/abm-respiratory-care/gallery/a908fdd101726278baa1.jpg",
+   "image": "/assets/products/abm-respiratory-care/gallery/41e02caf73b1e4aa4fdf.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/abm-respiratory-care/gallery/a908fdd101726278baa1.jpg",
+     "url": "/assets/products/abm-respiratory-care/gallery/41e02caf73b1e4aa4fdf.jpg",
      "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BC21083-Carrying-Bag.jpg\" sha256 f1b5870fcbd7cc58",
+     "note": "Soft-sided carrying bag with ABM logo (exact part number in file name).",
+     "approved": true
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/a908fdd101726278baa1.jpg",
+     "primary": false,
      "caption": "",
      "source": "https://abmrc.com/wp-content/uploads/2022/08/BiWaze-Cough-with-bag-and-circuit-scaled.jpg",
      "note": "Black ABM-logo soft carrying bag, closed, cropped from ABM's official BiWaze Cough + bag + circuit photo (corner of device visible)."
@@ -2281,11 +2333,19 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": "/assets/products/abm-respiratory-care/gallery/9a8d23f1919acd2d32a1.jpg",
+   "image": "/assets/products/abm-respiratory-care/gallery/7e83f5f40996bf557bbf.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/abm-respiratory-care/gallery/9a8d23f1919acd2d32a1.jpg",
+     "url": "/assets/products/abm-respiratory-care/gallery/7e83f5f40996bf557bbf.jpg",
      "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze Cart -BC22506.jpg\" sha256 b30a9e7f2ef8a622",
+     "note": "Mobile cart: 5 casters, telescoping pole, basket (exact part number in file name).",
+     "approved": true
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/9a8d23f1919acd2d32a1.jpg",
+     "primary": false,
      "caption": "",
      "source": "https://abmrc.com/wp-content/uploads/2022/08/BiWaze-Cough_with-stand-and-circuit-scaled.jpg",
      "note": "Mobile cart: 5-caster base, telescoping pole, mounting plate and basket, shown with a BiWaze Cough mounted (same photo the manual/brochure label 'Cart'). Already in the BiWaze Cough system gallery, not on the Mobile Cart page."
@@ -2332,7 +2392,7 @@
    "page_key": "nonin-sensor",
    "name": "Nonin Sensor",
    "status": "published",
-   "description": "8000SS - Small Soft Sensor, 1 meter cable",
+   "description": "Nonin soft sensor with 1 meter cable — Small (8000SS, BK373), Medium (8000SM, BK372) or Large (8000SL, BK374).",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -2461,8 +2521,17 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/436243a9adbe4652b0a5.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/436243a9adbe4652b0a5.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BK371.jpg\" sha256 f850ef8ee6c94bfc",
+     "note": "Nonin Xpod pulse oximeter with sensor (exact part number in file name).",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -2534,8 +2603,17 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/680918740b324aa0971b.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/680918740b324aa0971b.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BC22496-Adapter.jpg\" sha256 66cabff608679baa",
+     "note": "Patient port adapter (exact part number in file name). 'System Adapter.webp' is the same photo at a smaller size — not imported.",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -2607,8 +2685,17 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/5f2c83ed4458fabb2619.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/5f2c83ed4458fabb2619.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze-Power-Cord.jpg\" sha256 0bc55e2232337d25",
+     "note": "Standard USA power cord (NEMA 5-15 plug, IEC C13 connector, visually confirmed). Not used for the Switzerland or Australia cords.",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
