@@ -201,7 +201,8 @@
     "dark": "#0c2b44",
     "logo": "/assets/logos/gce.jpg",
     "hasData": true,
-    "sort": 11
+    "sort": 11,
+    "quotable": false
   },
   {
     "slug": "dalton",
