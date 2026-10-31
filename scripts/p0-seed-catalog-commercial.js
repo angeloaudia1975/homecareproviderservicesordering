@@ -87,7 +87,8 @@ async function writeAndVerify(D, recs) {
     if (!current) die(`public/data/${addv}.json is missing in this tree`);
     const p = L.planInitial(addv, full, current, `add-version/${addv}`);
     if (!p.ok) die('REFUSED — nothing written:\n  ' + p.problems.join('\n  '));
-    const x = L.exportAddVersionSql(p.record, { ref: 'tree' });
+    /* --first-version: a NEW line (no stored version yet, e.g. ABM 2026) — the SQL then refuses when one exists. */
+    const x = L.exportAddVersionSql(p.record, { ref: 'tree', first: process.argv.includes('--first-version') });
     fs.writeFileSync(exportPath, x.sql, { mode: 0o600 });
     console.log(`${addv}: version ${short(p.record.identity_sha256)} · overlay ${short(p.record.rows_sha256)} · ${x.rows} rows → ${exportPath} (sha256 ${short(sha(x.sql))})`);
     return;

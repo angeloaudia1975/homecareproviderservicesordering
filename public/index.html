@@ -328,6 +328,16 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .ordrow .ordmain{flex:1;min-width:0;}
 .ordrow .ordtop{display:flex;align-items:center;gap:8px;font-size:13.5px;}
 .ordrow .ordtop b{color:var(--navy);}
+#stagingbar{position:sticky;top:0;z-index:9999;background:#8a5a00;color:#fff;font:700 12.5px Arial,sans-serif;text-align:center;padding:8px 12px}
+.pvorder{position:fixed;inset:0;background:rgba(10,20,35,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:12px}
+.pvbox{background:#fff;border-radius:14px;width:min(920px,100%);height:min(88vh,900px);display:flex;flex-direction:column;overflow:hidden}
+.pvhead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e6e2dc}
+.pvhead button{border:0;background:none;font-size:20px;min-width:44px;min-height:44px;cursor:pointer}
+.pvnote{padding:8px 16px;font-size:12.5px;color:#8a5a00;background:#fff7e6}
+.pvtabs{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid #eee}
+.pvtabs button{border:1px solid #cfd8e3;background:#fff;border-radius:8px;padding:8px 12px;min-height:44px;font:600 13px Arial;cursor:pointer}
+.pvtabs button.on{background:#10263f;color:#fff;border-color:#10263f}
+.pvframe{flex:1;border:0;width:100%}
 .ordrow .ordstat{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:7px;}
 .ordrow .ordsub{font-size:12px;color:var(--gray);margin-top:2px;}
 .ordrow .reord{background:#fff;border:1.5px solid var(--navy);color:var(--navy);border-radius:8px;padding:7px 14px;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;white-space:nowrap;}
@@ -1103,6 +1113,190 @@ header .htop{flex-wrap:nowrap;}
 .pd-opt{margin-bottom:12px;}.pd-opt .ol{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);margin-bottom:6px;}
 .pd-chip{display:inline-block;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;color:var(--navy);margin:0 6px 6px 0;}
 </style>
+<style id="catalog-v2">
+/* ===== OPTION 2 CATALOG LAYOUT (owner-approved 2026-10-31) — shared by every manufacturer ===== */
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .controls{display:none;}
+body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) main.wrap,
+body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner .wrap{max-width:1480px;}
+body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .shophead{position:static;}
+body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) #shopLines{display:none;}
+/* compact manufacturer banner: logo, name, one line of description, the counts */
+body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner{padding:14px 0 13px;}
+body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner h1{font-size:clamp(22px,2.4vw,32px);display:flex;align-items:center;gap:16px;}
+body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner h1 .hdrlogo{height:46px;width:auto;max-width:150px;object-fit:contain;background:#fff;border-radius:9px;padding:6px 10px;margin:0;}
+body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner p{margin-top:4px;}
+body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mstat{padding:7px 16px;gap:18px;}
+body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mstat>div{display:flex;flex-direction:column;align-items:flex-start;}
+body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mstat b{font-size:20px;}
+body.shopv2 .section{padding-top:18px;}
+
+.cv2{display:grid;grid-template-columns:260px minmax(0,1fr);gap:24px;align-items:start;}
+.cv2-side{position:sticky;top:calc(var(--hdrH,57px) + 12px);max-height:calc(100vh - var(--hdrH,57px) - 24px);overflow:auto;
+  background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 12px 12px;overscroll-behavior:contain;}
+.cv2-sidehead{display:flex;align-items:center;gap:9px;font-family:'Archivo',sans-serif;font-size:17px;color:var(--navy);padding:2px 6px 10px;}
+.cv2-sidehead b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cv2-ico{color:var(--orange);font-size:18px;}
+.cv2-x{display:none;}
+.cv2-search input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:14px;color:var(--navy);background:var(--paper);}
+.cv2-search input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(22,129,194,.15);background:#fff;}
+.cv2-nav{margin:10px 0 4px;display:flex;flex-direction:column;gap:1px;}
+.cv2-cat{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;background:none;border:0;border-radius:8px;
+  padding:8px 10px;min-height:38px;font:inherit;font-size:14px;color:var(--navy);cursor:pointer;}
+.cv2-cat span{min-width:0;overflow-wrap:anywhere;}
+.cv2-cat em{font-style:normal;font-size:12px;color:var(--gray);flex:none;}
+.cv2-cat:hover{background:var(--paper);}
+.cv2-cat.on{background:#fdeee6;color:var(--navy);font-weight:700;box-shadow:inset 3px 0 0 var(--orange);}
+.cv2-cat.all{font-weight:700;}
+.cv2-subs{margin:0 0 4px 12px;border-left:2px solid var(--line);padding-left:4px;}
+.cv2-cat.sub{font-size:13px;min-height:34px;padding:6px 10px;}
+.cv2-sec{border-top:1px solid var(--line);padding:10px 4px 6px;margin-top:6px;}
+.cv2-sec summary{cursor:pointer;font-family:'Archivo',sans-serif;font-weight:800;font-size:14px;color:var(--navy);padding:4px 4px 8px;list-style-position:inside;}
+.cv2-lines{display:flex;flex-direction:column;gap:1px;}
+.cv2-line{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:7px 8px;min-height:36px;font:inherit;font-size:13.5px;color:var(--navy);cursor:pointer;}
+.cv2-line:hover{background:var(--paper);}
+.cv2-line.on{font-weight:700;background:var(--paper);}
+.cv2-line i,.cv2-legend i{width:9px;height:9px;border-radius:50%;border:2px solid #b9c2cc;flex:none;}
+.cv2-line i.acct,.cv2-legend i.acct{background:#1a7a4a;border-color:#1a7a4a;}
+.cv2-legend{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--gray);padding:6px 8px 0;}
+.cv2-price{display:flex;align-items:center;gap:6px;padding:0 4px;}
+.cv2-price label{flex:1;min-width:0;}
+.cv2-price input{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;font:inherit;font-size:14px;}
+.cv2-apply{display:block;width:calc(100% - 8px);margin:9px 4px 2px;background:var(--navy);color:#fff;border:0;border-radius:9px;padding:10px;min-height:42px;font:inherit;font-weight:700;cursor:pointer;}
+.cv2-apply:hover{background:var(--orange);}
+.cv2-clear{display:block;width:100%;margin-top:8px;background:none;border:0;color:var(--gray);font:inherit;font-size:13px;font-weight:600;padding:9px;min-height:40px;cursor:pointer;}
+.cv2-clear:hover{color:var(--navy);text-decoration:underline;}
+
+.cv2-main{min-width:0;}
+.cv2-crumb{font-size:13px;color:var(--gray);display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+.cv2-crumb a{color:var(--blue-dk);font-weight:600;text-decoration:none;}
+.cv2-crumb b{color:var(--navy);}
+.cv2-titlerow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 10px;}
+.cv2-title{font-family:'Archivo',sans-serif;font-weight:900;font-size:clamp(21px,2vw,27px);color:var(--navy);letter-spacing:-.01em;}
+.cv2-filterbtn{display:none;}
+.cv2-chipwrap{display:flex;align-items:center;gap:6px;}
+.cv2-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;scrollbar-width:none;flex:1;min-width:0;}
+.cv2-chips::-webkit-scrollbar{display:none;}
+.cv2-chipnext{flex:none;width:38px;height:38px;margin-bottom:8px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--navy);font-size:22px;line-height:1;cursor:pointer;}
+.cv2-chipnext:hover{border-color:var(--navy);}
+.cv2-chip{flex:none;border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:999px;padding:7px 14px;min-height:36px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.cv2-chip:hover{border-color:var(--navy);}
+.cv2-chip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+.cv2-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding:10px 0 12px;}
+.cv2-count{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--gray);}
+.cv2-count b{font-size:15px;color:var(--navy);}
+.cv2-active{color:var(--navy);font-weight:600;}
+.cv2-active button{background:none;border:0;color:var(--blue-dk);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline;padding:4px;}
+.cv2-tools{display:flex;align-items:center;gap:12px;}
+.cv2-sort{font-size:13px;color:var(--gray);display:flex;align-items:center;gap:8px;}
+.cv2-sort select{padding:8px 10px;border:1px solid var(--line);border-radius:9px;font:inherit;font-size:14px;color:var(--navy);background:#fff;min-height:38px;}
+.cv2-view{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+.cv2-view button{background:#fff;border:0;width:40px;height:38px;font-size:16px;color:var(--gray);cursor:pointer;}
+.cv2-view button.on{background:var(--navy);color:#fff;}
+.cv2 :focus-visible{outline:3px solid var(--blue);outline-offset:2px;}
+
+/* product grid: three across on desktop; cards keep one height per row */
+.cv2-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;}
+.cv2-card{display:grid;grid-template-columns:40% minmax(0,1fr);grid-template-rows:1fr auto;gap:0;contain-intrinsic-size:auto 300px;}
+.cv2-card .img{grid-row:1;grid-column:1;min-height:0;height:100%;padding:10px;border-bottom:0;border-right:1px solid var(--line);background:#f6f7f9;}
+.cv2-card .img img{width:100%;height:100%;max-height:200px;object-fit:contain;aspect-ratio:1/1;}
+.cv2-card .cbody{grid-row:1;grid-column:2;padding:12px 13px 8px;gap:5px;}
+.cv2-card .cat-tag{font-size:9.5px;line-height:1.3;}
+.cv2-card .pname{font-size:16.5px;line-height:1.2;color:var(--navy);text-decoration:none;}
+.cv2-card .pname:hover{text-decoration:underline;}
+.cv2-card .pdesc{flex:none;max-height:none;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;font-size:12.5px;line-height:1.4;}
+.cv2-card .prow{margin-top:auto;padding-top:4px;}
+.cv2-from{font-weight:800;font-size:18px;color:var(--ink);}
+.cv2-from span{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.cv2-card .tierhint{font-size:11px;}
+.cv2-hit{font-size:11.5px;font-weight:700;color:#1a7a4a;}
+.cv2-act{grid-row:2;grid-column:1/-1;padding:10px 12px 12px;border-top:1px solid var(--line);}
+.cv2-act .buy{margin:0;}
+.cv2-act .chooseBtn{display:block;width:100%;border:0;cursor:pointer;min-height:42px;font-size:14px;}
+.cv2-act .upgr{margin:0 0 8px;}
+.cv2-ghost{background:#fff;border:1px solid var(--line);color:var(--navy);border-radius:8px;padding:9px 12px;min-height:40px;font:inherit;font-weight:700;cursor:pointer;margin-left:8px;}
+/* list view: one row per product */
+.cv2-grid.list{grid-template-columns:minmax(0,1fr);gap:10px;}
+.cv2-grid.list .cv2-card{grid-template-columns:130px minmax(0,1fr) 250px;grid-template-rows:auto;contain-intrinsic-size:auto 150px;}
+.cv2-grid.list .cv2-card .img{grid-row:1;}
+.cv2-grid.list .cv2-card .img img{max-height:120px;}
+.cv2-grid.list .cv2-act{grid-row:1;grid-column:3;border-top:0;border-left:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;}
+.cv2-grid.list .pdesc{-webkit-line-clamp:2;}
+.cv2-empty{grid-column:1/-1;text-align:center;background:#fff;border:1px dashed var(--line);border-radius:14px;padding:34px 18px;color:var(--gray);}
+.cv2-empty h3{font-family:'Archivo',sans-serif;color:var(--navy);margin-bottom:6px;}
+.cv2-empty .cv2-apply{display:inline-block;width:auto;padding:10px 18px;margin-top:12px;}
+.cv2-skel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);height:280px;display:grid;grid-template-columns:40% 1fr;overflow:hidden;}
+.cv2-skel i,.cv2-skel span{background:linear-gradient(90deg,#eef1f4,#f7f8fa,#eef1f4);background-size:200% 100%;animation:cv2sh 1.2s infinite;}
+.cv2-skel span{margin:16px;border-radius:8px;}
+@keyframes cv2sh{to{background-position:-200% 0;}}
+@media (prefers-reduced-motion:reduce){.cv2-skel i,.cv2-skel span{animation:none;}}
+.cv2-loading{padding:40px;text-align:center;color:var(--gray);}
+.cv2-pager{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap;margin:20px 0 6px;}
+.cv2-pager button{min-width:42px;min-height:42px;border:1px solid var(--line);background:#fff;border-radius:9px;font:inherit;font-weight:700;color:var(--navy);cursor:pointer;padding:0 12px;}
+.cv2-pager button.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+.cv2-pager button:disabled{opacity:.4;cursor:default;}
+.cv2-pager span{color:var(--gray);}
+.cv2-scrim{display:none;}
+
+@media (max-width:1399px){
+  /* three across still fits, the photo moves above the words so names are not squeezed */
+  .cv2-grid:not(.list) .cv2-card{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;}
+  .cv2-grid:not(.list) .cv2-card .img{grid-row:1;grid-column:1;height:170px;border-right:0;border-bottom:1px solid var(--line);}
+  .cv2-grid:not(.list) .cv2-card .img img{max-height:150px;}
+  .cv2-grid:not(.list) .cv2-card .cbody{grid-row:2;grid-column:1;}
+  .cv2-grid:not(.list) .cv2-act{grid-row:3;}
+}
+@media (max-width:1199px){
+  /* tablet and phone: filters in a slide-out drawer, two across */
+  .cv2{grid-template-columns:minmax(0,1fr);}
+  .cv2-side{position:fixed;top:0;left:0;bottom:0;width:min(330px,88vw);max-height:none;z-index:120;border-radius:0 14px 14px 0;
+    transform:translateX(-105%);transition:transform .22s ease;box-shadow:0 10px 40px rgba(11,31,51,.25);padding-top:16px;}
+  .cv2.drawer-open .cv2-side{transform:none;}
+  .cv2-scrim{display:block;position:fixed;inset:0;background:rgba(11,31,51,.45);z-index:110;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .cv2.drawer-open .cv2-scrim{opacity:1;pointer-events:auto;}
+  .cv2-x{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;background:var(--paper);border-radius:10px;font-size:18px;cursor:pointer;color:var(--navy);}
+  .cv2-filterbtn{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--navy);color:var(--navy);border-radius:10px;padding:0 14px;min-height:44px;font:inherit;font-weight:700;cursor:pointer;flex:none;}
+  .cv2-cat,.cv2-line{min-height:44px;}
+  .cv2-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .cv2-grid:not(.list) .cv2-card{grid-template-columns:40% minmax(0,1fr);grid-template-rows:1fr auto;}
+  .cv2-grid:not(.list) .cv2-card .img{grid-row:1;height:100%;border-right:1px solid var(--line);border-bottom:0;}
+  .cv2-grid:not(.list) .cv2-card .cbody{grid-row:1;grid-column:2;}
+  .cv2-grid:not(.list) .cv2-act{grid-row:2;}
+  body.cv2-lock{overflow:hidden;}
+  @media (prefers-reduced-motion:reduce){.cv2-side{transition:none;}}
+}
+@media (max-width:767px){
+  .cv2-grid{grid-template-columns:minmax(0,1fr);}
+  .cv2-grid.list .cv2-card{grid-template-columns:96px minmax(0,1fr);}
+  .cv2-grid.list .cv2-act{grid-row:2;grid-column:1/-1;border-left:0;border-top:1px solid var(--line);}
+  .cv2-bar{align-items:flex-start;}
+  .cv2-tools{width:100%;justify-content:space-between;}
+  .cv2-sort select{max-width:62vw;}
+  .cv2-sortl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+  .cv2-chip,.cv2-view button{min-height:44px;}
+  .cv2-view button{width:44px;height:44px;}
+  .cv2-act .buy .addbtn,.cv2-act .buy .qtyin{min-height:44px;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner p{display:none;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner h1 .hdrlogo{height:32px;padding:4px 7px;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner{padding:10px 0;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mbanner h1{font-size:20px;gap:10px;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mhead{gap:8px;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mstat{padding:5px 10px;gap:12px;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mstat b{font-size:16px;}
+  body.shopv2:not(.home):not(.p360on):not(.hubon):not(.sdon) .mstat span{font-size:9.5px;}
+  .cv2-titlerow{margin:2px 0 8px;}
+  .cv2-title{font-size:20px;}
+  .cv2-bar{gap:6px;padding:8px 0;}
+  .cv2-count{gap:2px 8px;}
+  .cv2-count span{font-size:12px;}
+  .cv2-chipnext{display:none;}
+}
+@media (max-width:420px){
+  .cv2-grid:not(.list) .cv2-card{grid-template-columns:38% minmax(0,1fr);}
+  .cv2-card .pname{font-size:15.5px;}
+}
+</style>
+
 </head>
 <body class="guest locked">
 
@@ -1557,9 +1751,16 @@ function dealerPriceNote(note, p){
 }
 
 /* ---------- data loading ---------- */
+/* PRIVATE CATALOG PREVIEW (owner, 2026-10-27). On a Netlify deploy preview / branch deploy of this site the shop runs the
+   unpublished catalogs: their static content files are shown first, prices are checked by the server's preview actions
+   (which receive the files this page loaded) and checkout records NOTHING — it shows both order emails instead.
+   Never true on the live site. */
+const STAGING=/^(deploy-preview-\d{1,5}|[a-z0-9-]{1,40})--hcpsonlineordering\.netlify\.app$/.test(location.hostname)&&!/^main--/.test(location.hostname);
+const RAW={files:{},content:{},manufacturers:null};
 async function loadManufacturers(){
   const r = await fetch("./data/manufacturers.json",{cache:"no-store"});
   state.manufacturers = await r.json();
+  try{ RAW.manufacturers=JSON.parse(JSON.stringify(state.manufacturers)); }catch(e){}
   // admin-uploaded manufacturer logos (Supabase, public-read) — merged so they show
   // below the manufacturer name on the home cards + catalog header, no redeploy needed.
   try{
@@ -1847,7 +2048,10 @@ async function mergeCatalogEdits(slug, prods){
   let _gated=0;                 // declared here because it is read after the catch below
   try{
     let pages=null;
-    try{
+    /* the preview's own enrichment (static content file) comes first on a staging deploy */
+    if(typeof STAGING!=="undefined"&&STAGING){ try{ const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"}); if(cr.ok){ const cj=await cr.json(); RAW.content[slug]=cj; const pg=(cj&&cj.pages)||{};
+      const keys=Object.keys(pg).filter(k=>pg[k].disabled!==true&&VISIBLE_STATUSES.includes(pg[k].status)); if(keys.length){ pages={}; keys.forEach(k=>{ pages[k]=pg[k]; }); } } }catch(e){} }
+    if(!pages) try{
       const PC_URL=`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${VISIBLE_STATUSES.join(',')})&select=page_key,status,skus,name,tagline,description,features,clinical_applications,options,billing_codes,specs,warranty,source_url,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label,subcategory`;
       /* card_image (2026-10-12): the catalog-card photo the President chose for a grouped page. Until the
          database has the column, the pages are read without it — exactly as before. */
@@ -1932,6 +2136,12 @@ async function mergeCatalogEdits(slug, prods){
              is what every dealer-facing surface renders. */
           const _sxOpt=_sx && String((_sx.size!=null?_sx.size:(_sx.option!=null?_sx.option:''))||'').trim();
           if(_sxOpt) p._skuOption=_sxOpt;
+          /* PARENT FAMILIES (owner, 2026-10-31, Access4U). A family page may name each SKU's choices as axes —
+             {Length:"4 ft (48\")", Width:"36\" wide"} — and its own specification rows. The pickers then offer one
+             control per axis, and each combination is exactly one SKU from the price list. */
+          if(_sx && _sx.axes && typeof _sx.axes==='object' && !Array.isArray(_sx.axes) && Object.keys(_sx.axes).length) p._axes=Object.assign({},_sx.axes);
+          if(p._axes){ const _ix=(pg.skus||[]).indexOf(_sx); if(_ix>=0) p._axisOrder=_ix; }
+          if(_sx && Array.isArray(_sx.specs) && _sx.specs.length) p._skuSpecs=_sx.specs.filter(r=>r&&r.label&&r.value!=null&&r.value!=='');
           if(pg.name) p._encPage=String(pg.name).trim();
           /* THE ENRICHMENT DESCRIPTION IS THE DESCRIPTION (Phase 2.5). It used to fill only a
              blank, so wherever the catalog file carried its own text the approved description
@@ -1973,7 +2183,11 @@ async function mergeCatalogEdits(slug, prods){
              approved photo, or "none" for no photo); groupLeads() puts it on the card. Presentation only:
              no option, price, order or grouping changes. */
           if(pg.card_image) p._cardImage=String(pg.card_image).trim();
-          { const pi=pageImageFor(pg,_sx);
+          /* "none": this option has no exact photo of its own (owner rule, 2026-10-31) — no hero is borrowed from another
+             option or the family; the detail page says "Image not available for this option" and shows no other picture.
+             Handled here, beside pageImageFor, so that shared function stays exactly as the frozen lines render it. */
+          if(_sx && String(_sx.image==null?'':_sx.image).trim()==='none'){ p.image=''; p._noOptionImage=true; if(Array.isArray(p.media)) p.media=p.media.filter(m=>m&&m.kind!=='image'); }
+          else { const pi=pageImageFor(pg,_sx);
             if(pi.hero) p.image=pi.hero;
             if(pi.thumbs.length){ p.media=Array.isArray(p.media)?p.media:[];
               pi.thumbs.forEach(t=>{ if(!p.media.some(m=>m.url===t.url)) p.media.push({kind:'image',url:t.url,title:t.caption||''}); }); } }
@@ -2177,6 +2391,7 @@ async function loadProducts(slug){
   let prods;
   try{ const r = await fetch(`./data/${slug}.json`,{cache:"no-store"}); if(!r.ok) throw new Error('catalog '+r.status); prods = await r.json(); }
   catch(e){ return set([]); }
+  if(typeof STAGING!=="undefined"&&STAGING){ try{ RAW.files[slug]=JSON.parse(JSON.stringify(prods)); }catch(e){} }
   if(seq!==_loadSeq) return false;
   return set(await mergeCatalogEdits(slug, prods||[]));
 }
@@ -2641,14 +2856,18 @@ function renderBanner(){
   /* Products and categories only. The account number was a dash for most dealers on most
      lines, so it spent a column to say nothing — account status is on the manufacturer chips
      now, where it is a colour rather than a number. */
+  /* Products = the cards a dealer sees (one per family); SKUs = the orderable part numbers inside them. */
+  const _fam=new Set(state.products.map(groupKeyOf)).size;
   document.querySelector(".mstat").innerHTML=
     `<div><b id="stProducts">0</b><span>Products</span></div>
+     <div><b id="stSkus">0</b><span>SKUs</span></div>
      <div><b id="stCats">0</b><span>Categories</span></div>`;
-  $("#stProducts").textContent=state.products.length;
+  $("#stProducts").textContent=_fam;
+  $("#stSkus").textContent=state.products.length;
   $("#stCats").textContent=cats.length;
   $("#mfrSub").textContent = state.products.length
-    ? `Browse and order the ${esc(m.name)} line — grouped by category. Add items to your cart and submit to HCPS.`
-    : `Products for ${esc(m.name)} are being loaded into the portal.`;
+    ? `Browse and order the ${m.name||''} line — choose a category, open a product to pick its options, add it to your cart.`
+    : `Products for ${m.name||''} are being loaded into the portal.`;
   // filters
   /* CATEGORIES **AND** SUBCATEGORIES.
      This listed categories only. Once a line was re-filed under broad clinical categories
@@ -2858,12 +3077,15 @@ function optionAxesOf(label){
   return out;
 }
 const AXIS_ORDER=['Size','Color','Side','Variant'];
+/* A SKU's choices: the axes its family page names (authored, exact), else what its option text says. */
+function axesOf(v){ return (v&&v._axes&&Object.keys(v._axes).length)?v._axes:optionAxesOf(variantLabel(v)); }
 /* The axes a dealer may actually choose between, in a fixed order so the pickers do not
    reshuffle as the selection changes. Only axes that VARY are returned; an axis every SKU
    shares is reported separately as a fixed attribute of the model. */
 function optionAxes(variants){
   const seen={}, order=[];
-  (variants||[]).forEach(v=>{ const ax=optionAxesOf(variantLabel(v));
+  const authored=(variants||[]).length>0 && (variants||[]).every(v=>v&&v._axes&&Object.keys(v._axes).length);
+  (variants||[]).forEach(v=>{ const ax=axesOf(v);
     Object.keys(ax).forEach(k=>{ if(!seen[k]){seen[k]=[];order.push(k);} 
       if(seen[k].indexOf(ax[k])<0) seen[k].push(ax[k]); }); });
   /* ONE PRODUCT, ONE AXIS NAME. optionAxesOf decides "Size" or "Variant" per SKU, from whether
@@ -2882,7 +3104,9 @@ function optionAxes(variants){
     return (ia<0?99:ia)-(ib<0?99:ib) || order.indexOf(a)-order.indexOf(b); });
   const varying={}, fixed={};
   keys.forEach(k=>{ const vals=seen[k];
-    if(k==='Size') vals.sort((x,y)=>variantSizeRank(x)-variantSizeRank(y)||x.localeCompare(y));
+    /* authored axes keep the family's own order (the SKUs arrive sorted by length, width, rise …) */
+    if(authored){ /* first-seen order */ }
+    else if(k==='Size') vals.sort((x,y)=>variantSizeRank(x)-variantSizeRank(y)||x.localeCompare(y));
     else vals.sort((x,y)=>x.localeCompare(y));
     (vals.length>1?varying:fixed)[k]=vals; });
   return {varying:varying, fixed:fixed, keys:keys};
@@ -2918,15 +3142,25 @@ function optionsPanelHtml(p, AX, here){
 }
 function resolveVariant(variants, want, changed){
   const list=variants||[];
-  const axOf=v=>optionAxesOf(variantLabel(v));
+  const axOf=v=>axesOf(v);
   const exact=list.find(v=>{ const a=axOf(v);
     return Object.keys(want).every(k=>String(a[k]||'')===String(want[k]||'')); });
   if(exact) return exact;
-  if(changed){ const near=list.find(v=>String(axOf(v)[changed]||'')===String(want[changed]||''));
-    if(near) return near; }
+  if(changed){
+    /* the nearest real SKU that keeps the choice just made: most other choices kept, then the closest value on each
+       (a 7 ft section switched to 48" lands on the 6 ft 48", not on the 1 ft) */
+    const cands=list.filter(v=>String(axOf(v)[changed]||'')===String(want[changed]||''));
+    if(cands.length){
+      const pos={}; list.forEach(v=>{ const a=axOf(v); Object.keys(a).forEach(k=>{ pos[k]=pos[k]||[]; if(pos[k].indexOf(a[k])<0) pos[k].push(a[k]); }); });
+      const score=v=>{ const a=axOf(v); let keep=0, dist=0; Object.keys(want).forEach(k=>{ if(k===changed) return;
+        if(String(a[k]||'')===String(want[k]||'')) keep++; else dist+=Math.abs((pos[k]||[]).indexOf(a[k])-(pos[k]||[]).indexOf(want[k])); }); return [keep,dist]; };
+      return cands.slice().sort((x,y)=>{ const sx=score(x), sy=score(y); return (sy[0]-sx[0])||(sx[1]-sy[1]); })[0];
+    } }
   return list[0]||null;
 }
 function sortVariants(list){
+  /* a family page's own order (length, width, rise …), when every SKU has one */
+  if(list.length && list.every(v=>typeof v._axisOrder==='number')) return list.slice().sort((a,b)=>a._axisOrder-b._axisOrder);
   return list.map((v,i)=>({v:v,i:i,l:variantLabel(v)}))
     .sort((a,b)=>{ const ra=variantSizeRank(a.l), rb=variantSizeRank(b.l);
       if(ra!==rb) return ra-rb;
@@ -2955,7 +3189,7 @@ function groupLeads(list){
   return leads;
 }
 /* The one-line description of what a product's SKUs let a dealer pick. */
-const AXIS_NOUN={Size:['size','sizes'],Color:['colour','colours'],Side:['side','sides'],Variant:['variant','variants']};
+const AXIS_NOUN={Size:['size','sizes'],Color:['colour','colours'],Side:['side','sides'],Variant:['variant','variants'],Length:['length','lengths'],Width:['width','widths'],Steps:['stair height','stair heights'],Rise:['rise','rises'],Accessory:['accessory','accessories']};
 function variantSummary(variants){
   const list=variants||[];
   if(list.length<2) return list.length?('Item # '+String((list[0]||{}).code||'')):'';
@@ -2968,69 +3202,49 @@ function variantSummary(variants){
   return parts.join(' · ');
 }
 function cardHtml(p){
+  /* OPTION 2 CARD (owner, 2026-10-31). One compact card per product family: the photo beside the words, a
+     category label, the name, what a dealer chooses, a description held to three lines (never a scrollbox — the
+     whole text is on the product page), the dealer's price and one clear action. Pricing, grouping and the photo
+     come from the same functions as before (groupLeads, priceHtml, unitPrice, tierSummaryAcross); only the
+     presentation changed. A configurable family keeps "Choose options"; a single SKU keeps quantity + Add to cart. */
   const media = Array.isArray(p.media)?p.media:[];
   const gimgs = media.filter(m=>m.kind==="image"&&m.url);
-  const vids  = media.filter(m=>m.kind==="video"&&m.url);
-  const docs  = media.filter(m=>(m.kind==="brochure"||m.kind==="link")&&m.url);
-  const imgList = [...(p.image?[{url:p.image}]:[]), ...gimgs];   // primary photo first, then gallery
+  const imgList = [...(p.image?[{url:p.image}]:[]), ...gimgs];
   const mainUrl = imgList.length ? imgList[0].url : "";
   const dispName = p._gname || p.name;
   const multi = Array.isArray(p._variants) && p._variants.length>1;
+  const openCode = p._openCode || p.code;
   const img = mainUrl
-    ? `<img src="${esc(imgUrl(mainUrl,400))}" alt="${esc(dispName)}" loading="lazy" decoding="async" onclick="event.stopPropagation();openLightbox('${esc(mainUrl)}',this.alt)" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='${esc(mainUrl)}';}else{this.style.display='none';this.parentElement.innerHTML='<span class=ph>No image</span>';}">`
+    ? `<img src="${esc(imgUrl(mainUrl,400))}" alt="${esc(dispName)}" width="400" height="400" loading="lazy" decoding="async" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='${esc(mainUrl)}';}else{this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:'No image'}))}">`
     : `<span class="ph">No image</span>`;
-  /* ONE photo per card. The gallery strip put four to seven more FULL-SIZE images on every
-     card — hundreds on a page — and because they were CSS background-images they were not
-     lazy-loaded either, so every one fetched and decoded immediately whether or not anyone
-     scrolled that far. The card now shows the primary photo and says how many more exist; the
-     gallery lives in the product detail view, one click away, where it is actually looked at. */
-  const extra = Math.max(0, imgList.length-1) + vids.length;
-  const thumbs = extra ? `<div class="morephotos">${
-      vids.length ? `▶ ${vids.length} video${vids.length>1?'s':''}${imgList.length>1?' · ':''}` : ''
-    }${imgList.length>1 ? `${imgList.length} photos` : ''}</div>` : "";
-  const resLinks = docs.length ? `<div class="reslinks">${docs.map(d=>`<a class="moreinfo" href="${esc(d.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${d.kind==="brochure"?"📄":"🔗"} ${esc(d.title||(d.kind==="brochure"?"Brochure":"Link"))}</a>`).join("")}</div>` : "";
-  /* A card says what a dealer CHOOSES — "5 sizes · 4 colours" — not a bare count of part
-     numbers. "20 sizes / options" read as twenty different boots; it is one boot. */
   const codeLine = multi ? `<div class="pcode">${esc(variantSummary(p._variants))}</div>` : `<div class="pcode">Item # ${esc(p.code)}</div>`;
+  const skuHit = (p._openCode && p._openCode!==p.code) ? `<div class="cv2-hit">Matches item # ${esc(p._openCode)}</div>` : "";
   const priceBlock = (multi && p._priceMin>0 && p._priceMin!==p._priceMax)
-    ? `<div class="prow"><div style="font-weight:800;font-size:18px;color:var(--ink)"><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">From </span>${money(p._priceMin)}</div></div>`
-    : `<div class="prow">${priceHtml(p)}</div>`;
-  /* The card is where a dealer decides whether to open a product at all, so the quantity break
-     belongs here and not only on the detail page.
-
-     This used to print "pricing varies by option — see details" whenever a card's variants did
-     not share one identical ladder, which was 21 cards in 60 — a disclaimer where a number
-     should be, and on Cloth Tape the entire disagreement was five cents. The break
-     QUANTITIES are the same throughout (2+, 6+, 11+, 21+); only the prices move with the size.
-     So the card shows the real ladder at its lowest price per break and marks it "from", which
-     is the same convention the card's own headline price already uses. A number a dealer can
-     act on beats a sentence telling them to look elsewhere, and "from" keeps it true. */
+    ? `<div class="prow"><div class="cv2-from"><span>From </span>${money(p._priceMin)}</div></div>`
+    : `<div class="prow">${priceHtml(p)}</div>`
+      +(minOrderQty(p)>1?`<div class="pcode" style="font-weight:700">Minimum order: ${minOrderQty(p)}</div>`:"")
+      +(p.requires&&p.requires.code?`<div class="pcode">Ordered with ${esc(p.requires.code)} only · max ${esc(p.requires.max_per||1)} per unit</div>`:"");
   const _tierSrc = multi ? (Array.isArray(p._variants)?p._variants:[]) : [p];
   const _tiers = tierSummaryAcross(_tierSrc);
-  const tierHtml = _tiers
-    ? `<div class="tierhint"><b>Volume${_tiers.varies?' from':''}</b> ${esc(_tiers.text)}</div>`
-    : "";
+  const tierHtml = _tiers ? `<div class="tierhint"><b>Volume${_tiers.varies?' from':''}</b> ${esc(_tiers.text)}</div>` : "";
   const _allDisc = multi ? (Array.isArray(p._variants)&&p._variants.length&&p._variants.every(v=>v._discontinued)) : !!p._discontinued;
   const buy = _allDisc
-    ? `<div class="buy"><span class="discbadge">Discontinued — reference only</span></div>`
+    ? `<div class="buy"><span class="discbadge">Discontinued — reference only</span><button class="cv2-ghost" type="button" data-open="${esc(openCode)}">View details</button></div>`
     : multi
-    ? `<div class="buy"><div class="chooseBtn">Choose options →</div></div>`
-    : `${upgradeSelectHtml(p)}<div class="buy"><input class="qtyin" type="number" min="1" value="1" aria-label="Qty"><button class="addbtn" data-code="${esc(p.code)}" data-family="${esc(p.family==null?"":p.family)}">Add to cart</button></div>`;
-  return `<div class="card" data-code="${esc(p.code)}">
+    ? `<div class="buy"><button class="chooseBtn" type="button" data-open="${esc(openCode)}">Choose options <span aria-hidden="true">→</span></button></div>`
+    : `${upgradeSelectHtml(p)}<div class="buy"><input class="qtyin" type="number" min="1" value="1" aria-label="Quantity for ${esc(p.code)}"><button class="addbtn" data-code="${esc(p.code)}" data-family="${esc(p.family==null?"":p.family)}">Add to cart</button></div>`;
+  const label = [p.subcategory||p.category||"", p.brand||""].filter(Boolean).join(" · ");
+  return `<div class="card cv2-card" data-code="${esc(openCode)}">
     <div class="img">${img}</div>
     <div class="cbody">
-      ${thumbs}
-      <div class="cat-tag">${esc(p.subcategory||p.category||"")}${p.brand?" · "+esc(p.brand):""}</div>
-      <div class="pname">${esc(dispName)}</div>
-      ${codeLine}
-      <div class="pdesc">${esc(p.description||"")}</div>
-      ${p.hcpc&&!multi?`<div class="hcpc">HCPC ${esc(p.hcpc)}</div>`:""}
-      ${p.moreUrl?`<a class="moreinfo" href="${esc(p.moreUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📄 ${esc(p.moreLabel||"More Information")}</a>`:""}
-      ${resLinks}
+      ${label?`<div class="cat-tag">${esc(label)}</div>`:""}
+      <a class="pname" href="#" data-open="${esc(openCode)}">${esc(dispName)}</a>
+      ${codeLine}${skuHit}
+      ${p.description?`<div class="pdesc">${esc(p.description)}</div>`:""}
       ${priceBlock}
       ${tierHtml}
-      ${buy}
-    </div></div>`;
+    </div>
+    <div class="cv2-act">${buy}</div></div>`;
 }
 /* Progressive rendering: emit category/subcategory headers inline and render
    cards in batches, loading more as the user scrolls. Keeps big catalogs
@@ -3125,9 +3339,149 @@ function wireShopHeadCondense(){
   apply();
 }
 
+/* ===== OPTION 2 CATALOG LAYOUT (owner-approved, 2026-10-31) — the one shared catalog view for every line =====
+   CatalogShell = sidebar (search, categories, manufacturers, brand, price, clear) + main column (breadcrumb,
+   title, category chips, toolbar with counts / sort / view, product grid or list, pager). Presentation only:
+   products come from state.products as loadProducts left them, families from groupLeads(), prices from
+   priceHtml/unitPrice. Nothing here writes a price, a product or a cart line. The existing #search, #catFilter
+   and #brandFilter controls stay the single place the filters live (so detail-page "back", tracking and the
+   saved search keep working); the sidebar only sets them. */
+const CUI={page:1, per:24, sort:'relevance', view:'grid', pmin:'', pmax:'', sig:'', line:'', drawer:false, lastCode:''};
+try{ const v=localStorage.getItem('hcps_cat_view'); if(v==='list'||v==='grid') CUI.view=v; }catch(e){}
+const cvNorm=s=>String(s==null?'':s).toLowerCase().replace(/[^a-z0-9]/g,'');
+function cvLine(){ return (state.manufacturers||[]).find(x=>x.slug===state.active)||{}; }
+function cvQuery(){ const el=$("#search"); return el?el.value.trim():''; }
+function cvCat(){ const el=$("#catFilter"); return el?el.value:''; }
+function cvBrand(){ const el=$("#brandFilter"); return el?el.value:''; }
+/* every filter except the category — the base the category counts are taken from */
+function cvBase(){
+  const q=cvQuery().toLowerCase(), brand=cvBrand();
+  const lo=parseFloat(CUI.pmin), hi=parseFloat(CUI.pmax);
+  const kept=state.products.filter(p=>{
+    if(brand && p.brand!==brand) return false;
+    if(!isNaN(lo)||!isNaN(hi)){ const u=Number(unitPrice(p,1)||0); if(!(u>0)) return false;
+      if(!isNaN(lo)&&u<lo) return false; if(!isNaN(hi)&&u>hi) return false; }
+    return true;
+  });
+  if(!q) return kept;
+  /* A SEARCH FINDS PRODUCTS, NOT FRAGMENTS OF THEM. When any SKU of a family matches (its part number, name,
+     category, description…), the whole family stays together on its card, so the picker still offers every
+     option — and cvLeads opens the card on the SKU that matched. */
+  const mfrName=String(cvLine().name||'').toLowerCase();
+  const hitKeys=new Set(kept.filter(p=>`${p.code} ${p.name} ${p.category} ${p.subcategory} ${p.brand} ${p.description} ${p.hcpc} ${p._gname||''} ${p._encPage||''} ${mfrName}`.toLowerCase().includes(q)).map(groupKeyOf));
+  return kept.filter(p=>hitKeys.has(groupKeyOf(p)));
+}
+function cvInCat(p,cat){ if(!cat) return true; if(cat.startsWith('sub:')) return p.subcategory===cat.slice(4);
+  return cat==='Other' ? (!p.category||p.category==='Other') : p.category===cat; }
+/* how many family cards a list makes (the number a dealer sees), not how many SKUs */
+function cvFamilies(list){ return new Set(list.map(groupKeyOf)).size; }
+function cvTree(base){
+  const cats={};
+  state.products.forEach(p=>{ const c=p.category||'Other'; (cats[c]=cats[c]||{subs:{}}); const sc=p.subcategory;
+    if(sc&&sc!==c) cats[c].subs[sc]=1; });
+  return Object.keys(cats).sort(compareCats).map(c=>({c, n:cvFamilies(base.filter(p=>(p.category||'Other')===c)),
+    subs:Object.keys(cats[c].subs).sort().map(sc=>({sc, n:cvFamilies(base.filter(p=>p.subcategory===sc))}))}));
+}
+function cvLeads(list){
+  const q=cvNorm(cvQuery());
+  const leads=groupLeads(list);
+  /* SKU SEARCH LANDS ON THE VARIANT. When the search names a part number inside a family, the card opens the
+     product page with that exact SKU selected (openProductDetail picks the variant from the code it is given). */
+  if(q) leads.forEach(L=>{ const hit=(L._variants||[]).find(v=>cvNorm(v.code)===q)||(q.length>=3?(L._variants||[]).find(v=>cvNorm(v.code).includes(q)):null);
+    if(hit) L._openCode=hit.code; });
+  const name=x=>String(x._gname||x.name||'');
+  const price=x=>{ const v=Number(x._priceMin>0?x._priceMin:unitPrice(x,1)||0); return v>0?v:null; };
+  const byPrice=dir=>(a,b)=>{ const pa=price(a), pb=price(b); if(pa==null&&pb==null) return name(a).localeCompare(name(b));
+    if(pa==null) return 1; if(pb==null) return -1; return dir*(pa-pb)||name(a).localeCompare(name(b)); };
+  const s=CUI.sort;
+  if(s==='name') leads.sort((a,b)=>name(a).localeCompare(name(b),undefined,{numeric:true}));
+  else if(s==='name_desc') leads.sort((a,b)=>name(b).localeCompare(name(a),undefined,{numeric:true}));
+  else if(s==='price') leads.sort(byPrice(1));
+  else if(s==='price_desc') leads.sort(byPrice(-1));
+  else leads.sort((a,b)=>compareCats(a.category||"Other", b.category||"Other")
+    || String(a.subcategory||"").localeCompare(String(b.subcategory||""))
+    || name(a).localeCompare(name(b)));
+  /* an exact part number comes first, whatever the sort: "BC2396" must not show "BC23966" above it */
+  if(q){ const exact=L=>(L._variants||[L]).some(v=>cvNorm(v.code)===q);
+    const ex=leads.filter(exact); if(ex.length) return ex.concat(leads.filter(L=>!exact(L))); }
+  return leads;
+}
+function cvShell(m){
+  return `<div class="cv2${CUI.drawer?' drawer-open':''}" id="cv2">
+    <div class="cv2-scrim" data-cv="close"></div>
+    <aside class="cv2-side" id="cv2Side" aria-label="Catalog filters">
+      <div class="cv2-sidehead"><span class="cv2-ico" aria-hidden="true">▦</span><b>Shop ${esc(m.name||'')}</b>
+        <button class="cv2-x" type="button" data-cv="close" aria-label="Close filters">✕</button></div>
+      <label class="cv2-search"><span class="sr">Search ${esc(m.name||'this line')}</span>
+        <input id="cv2q" type="search" autocomplete="off" placeholder="Search ${esc(m.name||'this line')} — name or item #" value="${esc(cvQuery())}"></label>
+      <nav class="cv2-nav" id="cv2Nav" aria-label="Categories"></nav>
+      <div id="cv2Facets"></div>
+      <button class="cv2-clear" type="button" data-cv="clear">↺ Clear all filters</button>
+    </aside>
+    <section class="cv2-main" id="cv2Main" aria-label="Products">
+      <div class="cv2-crumb" id="cv2Crumb"></div>
+      <div class="cv2-titlerow"><h2 class="cv2-title">${esc(m.name||'')} Catalog</h2>
+        <button class="cv2-filterbtn" type="button" data-cv="open" aria-controls="cv2Side">☰ Filters &amp; categories</button></div>
+      <div class="cv2-chipwrap"><div class="cv2-chips" id="cv2Chips" role="list"></div><button type="button" class="cv2-chipnext" data-cv="chipnext" aria-label="More categories" hidden>›</button></div>
+      <div class="cv2-bar" id="cv2Bar"></div>
+      <div id="cv2Grid" class="cv2-grid"></div>
+      <nav class="cv2-pager" id="cv2Pager" aria-label="Pages"></nav>
+    </section></div>`;
+}
+function cvWire(host){
+  if(host.__cvWired) return; host.__cvWired=1;
+  host.addEventListener('click', function(e){
+    const op=e.target.closest('[data-open]');
+    if(op && host.contains(op)){ e.preventDefault(); CUI.lastCode=op.getAttribute('data-open'); openProductDetail(op.getAttribute('data-open')); return; }
+    const t=e.target.closest('[data-cv]');
+    if(!t){ const cd=e.target.closest('.card'); if(cd&&host.contains(cd)) CUI.lastCode=cd.getAttribute('data-code')||''; return; }
+    if(!host.contains(t)) return;
+    if(t.tagName==='A') e.preventDefault();
+    const a=t.getAttribute('data-cv'), v=t.getAttribute('data-v')||'';
+    if(a==='cat'){ cvSetCat(v); if(window.innerWidth<1200) cvDrawer(false); }
+    else if(a==='line'){ cvDrawer(false); showShop(v); }
+    else if(a==='brand'){ const bf=$("#brandFilter"); if(bf){ bf.value=(bf.value===v?'':v); } renderProducts(); }
+    else if(a==='clear'){ cvClear(); }
+    else if(a==='page'){ CUI.page=Math.max(1,parseInt(v,10)||1); renderProducts(); const mm=$("#cv2Main"); if(mm) window.scrollTo({top:Math.max(0,mm.getBoundingClientRect().top+window.scrollY-(parseInt(getComputedStyle(document.documentElement).getPropertyValue('--hdrH'))||0)-12),behavior:'smooth'}); }
+    else if(a==='view'){ CUI.view=v; try{localStorage.setItem('hcps_cat_view',v);}catch(err){} renderProducts(); }
+    else if(a==='price'){ cvPrice(); }
+    else if(a==='open'){ cvDrawer(true); }
+    else if(a==='chipnext'){ const c=$("#cv2Chips"); if(c){ const end=c.scrollLeft+c.clientWidth>=c.scrollWidth-4; c.scrollTo({left:end?0:c.scrollLeft+c.clientWidth*0.8,behavior:'smooth'}); } }
+    else if(a==='close'){ cvDrawer(false); }
+  });
+  host.addEventListener('change', function(e){
+    if(e.target.id==='cv2Sort'){ CUI.sort=e.target.value; renderProducts(); }
+  });
+  host.addEventListener('keydown', function(e){
+    if(e.target.matches&&e.target.matches('.cv2-price input')&&e.key==='Enter'){ e.preventDefault(); cvPrice(); }
+  });
+  host.addEventListener('input', function(e){
+    if(e.target.id!=='cv2q') return;
+    const s=$("#search"); if(!s) return;
+    s.value=e.target.value; s.dispatchEvent(new Event('input',{bubbles:true}));   // the existing search path (debounced render + search tracking)
+  });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'&&CUI.drawer) cvDrawer(false); });
+}
+function cvDrawer(on){ CUI.drawer=!!on; const c=$("#cv2"); if(c) c.classList.toggle('drawer-open',CUI.drawer);
+  document.body.classList.toggle('cv2-lock',CUI.drawer&&window.innerWidth<1200);
+  if(on){ const q=$("#cv2q"); if(q) setTimeout(()=>q.focus(),60); } }
+function cvSetCat(v){ const cf=$("#catFilter"); if(!cf) return;
+  if(v && ![...cf.options].some(o=>o.value===v)){ const o=document.createElement('option'); o.value=v; o.textContent=v.replace(/^sub:/,''); cf.appendChild(o); }
+  cf.value=v; renderProducts(); }
+function cvPrice(){ const a=$("#cv2Pmin"), b=$("#cv2Pmax"); CUI.pmin=a?a.value.trim():''; CUI.pmax=b?b.value.trim():''; renderProducts(); }
+function cvClear(){ const s=$("#search"), cf=$("#catFilter"), bf=$("#brandFilter"), q=$("#cv2q");
+  if(s) s.value=''; if(q) q.value=''; if(cf) cf.value=''; if(bf) bf.value=''; CUI.pmin=''; CUI.pmax=''; CUI.sort='relevance'; renderProducts(); }
+function cvLoading(){
+  const host=$("#content"); if(!host) return;
+  const g=$("#cv2Grid");
+  const sk=Array.from({length:6}).map(()=>`<div class="cv2-skel" aria-hidden="true"><i></i><span></span></div>`).join('');
+  if(g){ g.className='cv2-grid'; g.innerHTML=sk; const b=$("#cv2Bar"); if(b) b.innerHTML='<span class="cv2-count">Loading products…</span>'; }
+  else host.innerHTML=`<div class="cv2-loading" role="status">Loading products…</div>`;
+}
 function renderProducts(){
   const host=$("#content");
   if(RENDER.io){RENDER.io.disconnect();RENDER.io=null;}
+  document.body.classList.add('shopv2');
   if (!state.products.length){
     const _cs=(typeof CATALOG_SOURCE!=='undefined'&&CATALOG_SOURCE[state.active])||null;
     if(_cs && _cs.source==='unavailable'){
@@ -3137,19 +3491,65 @@ function renderProducts(){
     host.innerHTML=`<div class="empty"><h3>Coming soon</h3><p>This manufacturer's products are being added to the portal.</p></div>`;
     return;
   }
-  /* SORT BEFORE SECTIONING. The renderer below starts a new heading and a new grid whenever
-     the category or subcategory CHANGES as it walks the list — a run-length grouping. Fed an
-     unsorted list it therefore printed "Ankle Stirrups" twice, and every run of one or two
-     products opened its own grid, so cards sat one per row instead of filling it. Sorting the
-     list first makes each section appear exactly once with all of its products in it. */
-  const list=groupLeads(filtered()).sort((a,b)=>
-       compareCats(a.category||"Other", b.category||"Other")
-    || String(a.subcategory||"").localeCompare(String(b.subcategory||""))
-    || String(a._gname||a.name||"").localeCompare(String(b._gname||b.name||"")));
-  RENDER.list=list; RENDER.idx=0; RENDER.cat=null; RENDER.sub=null;
-  host.innerHTML="";
-  if(!list.length){ host.innerHTML=`<div class="empty"><h3>No matches</h3><p>Try a different search or filter.</p></div>`; return; }
-  renderNextBatch();
+  const m=cvLine();
+  if(CUI.line!==state.active){ CUI.line=state.active; CUI.pmin=''; CUI.pmax=''; CUI.page=1; CUI.drawer=false; }
+  const sig=[state.active,cvQuery(),cvCat(),cvBrand(),CUI.pmin,CUI.pmax,CUI.sort].join('\u0001');
+  if(sig!==CUI.sig){ CUI.sig=sig; CUI.page=1; }
+  let rebuilt=false;
+  if(!$("#cv2") || $("#cv2").getAttribute('data-line')!==state.active){ host.innerHTML=cvShell(m); $("#cv2").setAttribute('data-line',state.active); rebuilt=true; }
+  cvWire(host);
+  const cat=cvCat(), brand=cvBrand();
+  const base=cvBase();
+  const tree=cvTree(base);
+  const all=base.filter(p=>cvInCat(p,cat));
+  const leads=cvLeads(all);
+  const totalFam=cvFamilies(state.products);
+  /* sidebar: categories (counts are product cards under the other filters), then the lines, brand, price */
+  const navItem=(v,label,n,on,cls)=>`<button type="button" class="cv2-cat${cls?' '+cls:''}${on?' on':''}" data-cv="cat" data-v="${esc(v)}"${on?' aria-current="true"':''}><span>${esc(label)}</span><em>${n}</em></button>`;
+  const catOf=cat.startsWith('sub:')?((state.products.find(p=>p.subcategory===cat.slice(4))||{}).category||''):cat;
+  $("#cv2Nav").innerHTML=navItem('', 'All Products', cvFamilies(base), !cat, 'all')
+    +tree.map(t=>navItem(t.c,t.c,t.n,cat===t.c)+((catOf===t.c&&t.subs.length)?`<div class="cv2-subs">${t.subs.map(s=>navItem('sub:'+s.sc,s.sc,s.n,cat==='sub:'+s.sc,'sub')).join('')}</div>`:'')).join('');
+  const lines=entitledManufacturers().filter(x=>x.hasData), owned=ownedSlugSet();
+  const brands=[...new Set(state.products.map(p=>p.brand).filter(Boolean))].sort();
+  const priced=state.products.some(p=>Number(unitPrice(p,1)||0)>0);
+  let facets='';
+  if(lines.length>1) facets+=`<details class="cv2-sec" open><summary>Manufacturer</summary><div class="cv2-lines">${lines.map(x=>`<button type="button" class="cv2-line${x.slug===state.active?' on':''}" data-cv="line" data-v="${esc(x.slug)}"${x.slug===state.active?' aria-current="page"':''}><i class="${owned.has(x.slug)?'acct':''}" title="${owned.has(x.slug)?'You have an account with this line':'No account with this line yet'}"></i>${esc(x.name)}</button>`).join('')}</div>${owned.size?'<div class="cv2-legend"><i class="acct"></i>Your accounts</div>':''}</details>`;
+  if(brands.length>1) facets+=`<details class="cv2-sec" open><summary>Brand</summary>${brands.map(b=>`<button type="button" class="cv2-cat${brand===b?' on':''}" data-cv="brand" data-v="${esc(b)}"><span>${esc(b)}</span><em>${cvFamilies(state.products.filter(p=>p.brand===b))}</em></button>`).join('')}</details>`;
+  if(priced) facets+=`<details class="cv2-sec" open><summary>Your price range</summary><div class="cv2-price"><label><span class="sr">Minimum price</span><input id="cv2Pmin" inputmode="decimal" placeholder="$ Min" value="${esc(CUI.pmin)}"></label><span aria-hidden="true">–</span><label><span class="sr">Maximum price</span><input id="cv2Pmax" inputmode="decimal" placeholder="$ Max" value="${esc(CUI.pmax)}"></label></div><button type="button" class="cv2-apply" data-cv="price">Apply price range</button></details>`;
+  $("#cv2Facets").innerHTML=facets;
+  const sq=$("#cv2q"); if(sq && document.activeElement!==sq && sq.value!==cvQuery()) sq.value=cvQuery();
+  /* breadcrumb + chips */
+  const catLabel=cat?cat.replace(/^sub:/,''):'';
+  $("#cv2Crumb").innerHTML=`<a href="#" data-cv="cat" data-v="">${esc(m.name||'Shop')}</a>${catOf&&cat.startsWith('sub:')?`<span>›</span><a href="#" data-cv="cat" data-v="${esc(catOf)}">${esc(catOf)}</a>`:''}${catLabel?`<span>›</span><b>${esc(catLabel)}</b>`:''}`;
+  $("#cv2Chips").innerHTML=(tree.length>1||cat)?[`<button type="button" role="listitem" class="cv2-chip${!cat?' on':''}" data-cv="cat" data-v="">All Products (${cvFamilies(base)})</button>`]
+    .concat(tree.map(t=>`<button type="button" role="listitem" class="cv2-chip${catOf===t.c?' on':''}" data-cv="cat" data-v="${esc(t.c)}">${esc(t.c)} (${t.n})</button>`)).join(''):'';
+  { const c=$("#cv2Chips"), nb=document.querySelector('.cv2-chipnext'); if(c&&nb) requestAnimationFrame(()=>{ nb.hidden=!(c.scrollWidth>c.clientWidth+4); }); }
+  /* toolbar */
+  const pages=Math.max(1,Math.ceil(leads.length/CUI.per)); if(CUI.page>pages) CUI.page=pages;
+  const from=leads.length?(CUI.page-1)*CUI.per+1:0, to=Math.min(leads.length,CUI.page*CUI.per);
+  const skuN=all.length;
+  const sorts=[['relevance','Relevance'],['name','Name A–Z'],['name_desc','Name Z–A']].concat(priced?[['price','Price: low to high'],['price_desc','Price: high to low']]:[]);
+  const active=[cvQuery()?`“${cvQuery()}”`:'', catLabel, brand, (CUI.pmin||CUI.pmax)?`${CUI.pmin?'$'+CUI.pmin:'any'}–${CUI.pmax?'$'+CUI.pmax:'any'}`:''].filter(Boolean);
+  $("#cv2Bar").innerHTML=`<div class="cv2-count"><b>${leads.length} product${leads.length===1?'':'s'}</b><span>${skuN} SKU${skuN===1?'':'s'}${leads.length?` · Showing ${from}–${to} of ${leads.length}`:''}</span>${active.length?`<span class="cv2-active">${active.map(esc).join(' · ')} <button type="button" data-cv="clear">Clear</button></span>`:''}</div>
+    <div class="cv2-tools"><label class="cv2-sort"><span class="cv2-sortl">Sort by</span> <select id="cv2Sort">${sorts.map(s=>`<option value="${s[0]}"${CUI.sort===s[0]?' selected':''}>${s[1]}</option>`).join('')}</select></label>
+    <div class="cv2-view" role="group" aria-label="View"><button type="button" data-cv="view" data-v="grid" class="${CUI.view==='grid'?'on':''}" aria-pressed="${CUI.view==='grid'}" title="Grid view">▦<span class="sr">Grid view</span></button><button type="button" data-cv="view" data-v="list" class="${CUI.view==='list'?'on':''}" aria-pressed="${CUI.view==='list'}" title="List view">☰<span class="sr">List view</span></button></div></div>`;
+  /* the grid */
+  const g=$("#cv2Grid"); g.className='cv2-grid'+(CUI.view==='list'?' list':'');
+  if(!leads.length){
+    g.innerHTML=`<div class="cv2-empty"><h3>No products match</h3><p>${totalFam} product${totalFam===1?'':'s'} in ${esc(m.name||'this line')} — try another search or category.</p><button type="button" class="cv2-apply" data-cv="clear">Clear all filters</button></div>`;
+  } else {
+    g.innerHTML=leads.slice(from-1,to).map(cardHtml).join('');
+    wireAdd(g);
+  }
+  /* pager */
+  const pg=$("#cv2Pager");
+  if(pages>1){ const b=(n,l,dis,cur)=>`<button type="button" data-cv="page" data-v="${n}"${dis?' disabled':''}${cur?' class="on" aria-current="page"':''}>${l}</button>`;
+    const nums=[]; for(let i=1;i<=pages;i++){ if(i===1||i===pages||Math.abs(i-CUI.page)<=1) nums.push(i); else if(nums[nums.length-1]!=='…') nums.push('…'); }
+    pg.innerHTML=b(CUI.page-1,'‹ Prev',CUI.page===1)+nums.map(n=>n==='…'?'<span>…</span>':b(n,n,false,n===CUI.page)).join('')+b(CUI.page+1,'Next ›',CUI.page===pages);
+  } else pg.innerHTML='';
+  /* back from a product page: bring that card back into view */
+  if(rebuilt && CUI.lastCode){ const el=g.querySelector(`[data-code="${CSS.escape(CUI.lastCode)}"]`); CUI.lastCode='';
+    if(el) setTimeout(()=>el.scrollIntoView({block:'center'}),30); }
 }
 
 /* ---------- cart ---------- */
@@ -3160,9 +3560,29 @@ const MFR={};                          // slug -> {po, notes}  (per-manufacturer
 function addToCart(p,qty){
   if(p && p._discontinued){ toast(`${p.code} is discontinued — it is shown for reference and cannot be ordered`); return; }
   const k=cartKey(p); const cur=CART.get(k);
-  CART.set(k,{p,qty:(cur?cur.qty:0)+qty});
-  updateCart(); toast(`Added ${qty} × ${p.code}`);
+  const m=minOrderQty(p); const nq=Math.max((cur?cur.qty:0)+qty, m);
+  CART.set(k,{p,qty:nq});
+  updateCart(); toast(m>1&&nq>(cur?cur.qty:0)+qty?`Added ${nq} × ${p.code} (minimum order ${m})`:`Added ${qty} × ${p.code}`);
   track('pricing_view',p&&p.manufacturer,p&&p.code);   // added a priced item to cart — strong buying intent (+8)
+}
+/* ORDER RULES PRINTED ON A MANUFACTURER'S LIST (ABM 2026, owner 2026-10-27) — product data, never per-line code:
+   min_order_qty  — the list's MOQ ("MOQ = 20"): a line below it cannot be ordered;
+   requires       — {code, max_per}: orderable only with that product in the same order, at most max_per for each
+                    one ordered (ABM BiWaze Clear extended warranty: "available only at the time of device purchase …
+                    Max 2 additional years"). The order server applies the same two rules. */
+function minOrderQty(p){ const n=Math.round(Number(p&&p.min_order_qty)); return n>1?n:1; }
+function cartRuleProblems(){
+  const out=[]; const qtyOf={};
+  for(const {p,qty} of CART.values()){ const k=p.manufacturer+"::"+p.code; qtyOf[k]=(qtyOf[k]||0)+qty; }
+  for(const [k,{p,qty}] of CART){
+    const m=minOrderQty(p);
+    if(qty<m) out.push({k, msg:`${p.code}: minimum order is ${m}`});
+    const r=p.requires;
+    if(r&&r.code){ const have=qtyOf[p.manufacturer+"::"+r.code]||0, per=Math.max(1,Math.round(Number(r.max_per))||1);
+      if(!have) out.push({k, msg:`${p.code} can only be ordered together with ${r.code} in the same order`});
+      else if(qty>have*per) out.push({k, msg:`${p.code}: at most ${per} per ${r.code} ordered (${have} in this order)`}); }
+  }
+  return out;
 }
 function cartCount(){let n=0;for(const{qty}of CART.values())n+=qty;return n;}
 function mfrInfo(slug){ if(isGoldenSlug(slug)){ return state.manufacturers.find(m=>isGoldenSlug(m.slug))||{slug:CONFIG.GOLDEN_SLUG,name:'Golden Technologies',golden:true}; } return state.manufacturers.find(m=>m.slug===slug)||{slug,name:slug};}
@@ -3184,6 +3604,7 @@ function validFreightTerms(t){
   if(!isObj(t)) return false;
   if(!str(t.summary)||!str(t.actualNote)||!str(t.otherLabel)) return false;
   if(t.elseActual!=null&&typeof t.elseActual!=='boolean') return false;
+  if(t.mode==='qty_threshold') return typeof t.freeAtQty==='number'&&isFinite(t.freeAtQty)&&t.freeAtQty>=1&&list(t.qualifyingCodes)&&str(t.label)&&str(t.freeLabel);
   if(t.mode!=null) return t.mode==='per_item' && num(t.threshold);
   if(!Array.isArray(t.groups)) return false;
   for(const g of t.groups){
@@ -3216,8 +3637,23 @@ function computeFreight(slug,lines){
       if(v==="tbd") tbd=true; else if(v!=null && v!=="included") fee+=Number(v)*qty;
     }
     const label = method==="ltl" ? "LTL freight (order $2,500+)" : "UPS/FedEx (order under $2,500)";
-    let note = cfg.summary||""; if(tbd) note += " Some items' freight is confirmed by HCPS.";
-    return {rows:[{label,status:"peritem",fee}], fee, itemsTotal, actualNote:note};
+    /* An item whose delivery charge the manufacturer lists as TBD (Corsicana SBKDB-30) is orderable with its freight
+       PENDING: the actual charge comes from the manufacturer's order confirmation. It is never shown as included,
+       free or $0 (owner, 2026-10-27). */
+    let note = cfg.summary||""; if(tbd) note += " Freight for some items is pending — the actual charge comes from the manufacturer's order confirmation.";
+    return {rows:[Object.assign({label,status:"peritem",fee}, tbd?{pending:true}:{})], fee, itemsTotal, actualNote:note};
+  }
+  /* FREE STANDARD SHIPPING BY ORDER QUANTITY (owner, 2026-10-27, AirAvant / BongoRx). An order whose QUALIFYING
+     lines (the part numbers listed in qualifyingCodes — kits and replenishment units) add up to freeAtQty or more
+     ORDER units ships free, accessories included; below that, every line — accessory-only orders too — pays
+     actual shipping (no flat amount is ever quoted). Units are order quantities: a pack of 4 counts once. */
+  if(cfg.mode==="qty_threshold"){
+    const codes=(Array.isArray(cfg.qualifyingCodes)?cfg.qualifyingCodes:[]).map(c=>String(c).trim().toUpperCase());
+    const at=Math.max(1,Math.round(Number(cfg.freeAtQty))||1);
+    let n=0; for(const {p,qty} of lines){ if(codes.includes(String(p.code||"").trim().toUpperCase())) n+=Math.max(0,parseInt(qty)||0); }
+    const label=cfg.label||"Standard shipping";
+    if(n>=at) return {rows:[Object.assign({label,status:"free",qualifyingQty:n,freeAtQty:at},cfg.freeLabel?{freeLabel:String(cfg.freeLabel)}:{})], fee:0, itemsTotal, actualNote:""};
+    return {rows:[{label,status:"actual",qualifyingQty:n,freeAtQty:at,qtyRemaining:at-n}], fee:0, itemsTotal, actualNote:cfg.actualNote||""};
   }
   const assigned=new Set(); const rows=[]; let fee=0; let anyActual=false;
   for(const g of (cfg.groups||[])){
@@ -3259,7 +3695,7 @@ function grandTotal(){let t=0;for(const[slug,lines]of groupCart()){const f=compu
 function freightRowsHtml(f){
   let h="";
   for(const r of f.rows){
-    if(r.status==="peritem") h+=`<div class="frow"><span>${esc(r.label)}</span><span>${r.fee>0?money(r.fee):"included"}</span></div>`;
+    if(r.status==="peritem") h+=`<div class="frow"><span>${esc(r.label)}</span><span>${r.pending?(r.fee>0?money(r.fee)+" + pending":"pending"):(r.fee>0?money(r.fee):"included")}</span></div>`;
     else if(r.status==="free") h+=`<div class="frow free"><span>✓ ${esc(r.label)}</span><span>${esc(r.freeLabel||"FREE freight")}</span></div>`;
     else if(r.status==="flat"){
       const prog = (r.freeLabel && r.freeRemaining>0) ? `· add ${money(r.freeRemaining)} for ${esc(r.freeLabel.toLowerCase())}`
@@ -3267,7 +3703,7 @@ function freightRowsHtml(f){
                  : (r.freeRemaining>0 ? `· add ${money(r.freeRemaining)} for free` : "");
       h+=`<div class="frow"><span>${esc(r.label)}${prog?` <span class="prog">${prog}</span>`:""}</span><span>${money(r.fee)} ${esc(r.flatLabel||"freight")}</span></div>`;
     }
-    else h+=`<div class="frow"><span>${esc(r.label)}${r.freeRemaining>0?` <span class="prog">· add ${money(r.freeRemaining)} to reach free (${money(r.freeAt)})</span>`:""}</span><span>actual freight</span></div>`;
+    else h+=`<div class="frow"><span>${esc(r.label)}${r.freeRemaining>0?` <span class="prog">· add ${money(r.freeRemaining)} to reach free (${money(r.freeAt)})</span>`:""}${r.qtyRemaining>0?` <span class="prog">· add ${r.qtyRemaining} more qualifying unit${r.qtyRemaining===1?"":"s"} for free standard shipping (${r.freeAtQty}+)</span>`:""}</span><span>actual freight</span></div>`;
   }
   if(f.actualNote) h+=`<div class="fnote">${esc(f.actualNote)}</div>`;
   return h;
@@ -3291,6 +3727,7 @@ function renderCart(){
       return `<div class="citem" data-k="${esc(cartKey(p))}">
         ${cimg}
         <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)}${p._skuOption?" · "+esc(variantLabel(p)):""}${p.brand?" · "+esc(p.brand):""}</div>
+        ${(typeof cartRuleProblems==="function"?cartRuleProblems():[]).filter(x=>x.k===cartKey(p)).map(x=>`<div class="s" style="color:#b42323;font-weight:700">${esc(x.msg)}</div>`).join("")}
         <div class="s">${packOf(p)?`${qty} × ${esc(packOf(p).label)} = ${qty*packOf(p).n} each · `:""}Unit ${u?money(u):"—"}${packOf(p)?" per "+esc(packOf(p).label):""} · Line ${u?money(u*qty):"—"}${contractPrice(p)!=null?` · <span style="color:#0a7f3f;font-weight:700">contract</span>`:""}</div>${volNote}${priceNoteHtml(p)}</div>
         <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
     }).join("");
@@ -3355,6 +3792,7 @@ function hcpsCartOrders(){
 async function serverPriceCheck(){
   const orders=hcpsCartOrders();
   if(!orders.length) return {ok:true,changed:false,orders:[]};
+  if(typeof STAGING!=="undefined"&&STAGING) return stagingCall("preview_price_check",{orders});
   if(!AUTH.session||!AUTH.session.access_token) return null;
   try{
     await ensureFreshSession();
@@ -3362,6 +3800,23 @@ async function serverPriceCheck(){
       headers:{"Content-Type":"application/json",authorization:"Bearer "+AUTH.session.access_token},
       body:JSON.stringify({action:"price_check",orders})});
     const j=await r.json().catch(()=>null);
+    return (r.ok&&j&&j.ok)?j:null;
+  }catch(e){ return null; }
+}
+/* The preview's server calls: the dealer's session (or the staff view-as-dealer token) plus the files this page loaded. */
+async function stagingCall(action,body){
+  const slugs=[...new Set((body.orders||[]).map(o=>o.manufacturer_slug))];
+  const pick=src=>Object.fromEntries(slugs.filter(s=>src[s]!==undefined).map(s=>[s,src[s]]));
+  const hdr={"Content-Type":"application/json"};
+  if(window.__PREVIEW__&&window.__PREVIEW__.token) hdr["x-hcps-preview"]=window.__PREVIEW__.token;
+  else if(AUTH.session&&AUTH.session.access_token){ try{ await ensureFreshSession(); }catch(e){} hdr.authorization="Bearer "+AUTH.session.access_token; }
+  else return null;
+  try{
+    const r=await fetch(CONFIG.ORDERS_ENDPOINT,{method:"POST",headers:hdr,body:JSON.stringify(Object.assign({action,catalog_files:pick(RAW.files),content_files:pick(RAW.content),manufacturers:RAW.manufacturers},body))});
+    const j=await r.json().catch(()=>null);
+    /* the staff preview session ended (4 hours): say so instead of showing an empty catalog */
+    if(r.status===401&&window.__PREVIEW__&&window.__PREVIEW__.token){ showPreviewError("This preview session has ended. Open it again from Connect 360 → Commerce → Catalog Preview."); return null; }
+    if(action==="preview_order") return {status:r.status,body:j};
     return (r.ok&&j&&j.ok)?j:null;
   }catch(e){ return null; }
 }
@@ -3407,9 +3862,43 @@ async function repriceSavedCart(){
   else if(res.orders&&res.orders.length) updateCart();
 }
 
+/* PREVIEW CHECKOUT: nothing is recorded, nothing reaches the dealer or a manufacturer. The server prices the order
+   exactly as a real one, renders the dealer's acknowledgment and the HCPS intake email, and sends one copy of the HCPS
+   email to the owner marked CATALOG PREVIEW — NOT AN ORDER. The cart is kept. */
+async function stagingSubmit(payload,btn){
+  if(!payload.orders.length){ toast("The preview checks HCPS lines only."); return; }
+  btn.disabled=true; btn.textContent="Pricing the preview order…";
+  try{
+    const r=await stagingCall("preview_order",payload);
+    const j=r&&r.body;
+    if(r&&r.status===409&&j&&j.status==="prices_changed"){ applyServerPrices(j); updateCart(); toast("Prices changed — review the cart, then try again"); return; }
+    if(!j||!j.ok){ toast((j&&(j.error||j.status))||"The preview order could not be priced."); return; }
+    showPreviewOrder(j);
+  } finally { btn.disabled=false; btn.textContent="Place order →"; }
+}
+function showPreviewOrder(j){
+  let m=document.getElementById("pvOrder"); if(m) m.remove();
+  m=document.createElement("div"); m.id="pvOrder"; m.className="pvorder";
+  const tabs=[["dealer","Dealer's acknowledgment"]].concat((j.hcps_emails||[]).map((e,i)=>["hcps"+i,"HCPS intake — "+(mfrInfo(e.slug).name||e.slug)]),[["sheet","Order sheet (admin)"]]);
+  const sheet=(j.summaries||[]).map(s=>`<h3>${esc(s.line)} · PO ${esc(s.po||"—")}</h3><table><tr><th>Item #</th><th>Description</th><th>Qty</th><th>Unit</th><th>Line</th></tr>${(s.items||[]).map(it=>`<tr><td>${esc(it.code)}</td><td>${esc(it.name)}${it.unit_label?` <i>(${esc(it.unit_label)})</i>`:""}</td><td>${it.qty}</td><td>${money(it.unit_price)}</td><td>${money(it.line_total)}</td></tr>`).join("")}</table><p>Merchandise ${money(s.subtotal)}${Number(s.freight_fee)>0?` · Freight ${money(s.freight_fee)} · Total ${money(s.estimated_total)}`:((s.freight_lines||[]).some(x=>x.status==="actual")?" · Freight pending (actual, from the manufacturer's confirmation)":(s.freight_lines||[]).length?" · Freight: free":"")}</p><p>Status in Order Review: <b>Received by HCPS</b> → Placed with manufacturer → Confirmed by manufacturer</p>`).join("");
+  const docs={dealer:(j.dealer_email&&j.dealer_email.html)||"",sheet:`<html><body style="font:13px Arial;color:#10263f;padding:14px">${sheet}<style>table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ddd;padding:5px;text-align:left}</style></body></html>`};
+  (j.hcps_emails||[]).forEach((e,i)=>{ docs["hcps"+i]=e.html; });
+  m.innerHTML=`<div class="pvbox" role="dialog" aria-label="Preview order"><div class="pvhead"><b>Preview order — NOT recorded, NOT sent</b><button onclick="document.getElementById('pvOrder').remove()" aria-label="Close">✕</button></div>
+    <div class="pvnote">Nothing was saved and nothing went to the dealer or a manufacturer. ${j.owner_copies?`A copy of the HCPS email went to angelo@homecareproviderservices.us marked CATALOG PREVIEW — NOT AN ORDER.`:""}</div>
+    <div class="pvtabs">${tabs.map((t,i)=>`<button class="${i?"":"on"}" data-k="${t[0]}">${esc(t[1])}</button>`).join("")}</div><iframe class="pvframe" title="Preview document"></iframe></div>`;
+  document.body.appendChild(m);
+  const fr=m.querySelector("iframe"); const show=k=>{ fr.srcdoc=docs[k]||"<p>—</p>"; m.querySelectorAll(".pvtabs button").forEach(b=>b.classList.toggle("on",b.dataset.k===k)); };
+  m.querySelectorAll(".pvtabs button").forEach(b=>b.onclick=()=>show(b.dataset.k)); show("dealer");
+}
+function ensureStagingBar(){
+  if(!STAGING||document.getElementById("stagingbar")) return;
+  const bar=document.createElement("div"); bar.id="stagingbar";
+  bar.textContent="PRIVATE CATALOG PREVIEW — not published. Orders placed here are not recorded and are never sent to a manufacturer.";
+  document.body.insertBefore(bar,document.body.firstChild);
+}
 /* ---------- submit (one order per manufacturer) ---------- */
 async function submitOrder(){
-  if(PREVIEW){ toast("Read-only preview — ordering is disabled for this dealer view."); return; }
+  if(PREVIEW && !(typeof STAGING!=="undefined"&&STAGING)){ toast("Read-only preview — ordering is disabled for this dealer view."); return; }
   if(!CART.size){toast("Cart is empty");return;}
   const dealer={
     business:$("#f_biz").value.trim(), account:$("#f_acct").value.trim()||(state.dealer?state.dealer.account:""),
@@ -3428,6 +3917,7 @@ async function submitOrder(){
     }
   }
   if([...CART.values()].some(({p})=>p._unavailable)){ toast("Remove the items that are no longer available, then place your order"); return; }
+  if(typeof cartRuleProblems==="function"){ const rp=cartRuleProblems(); if(rp.length){ toast(rp[0].msg); return; } }
   const btn=$("#submitOrder"); btn.disabled=true; btn.textContent="Checking prices…";
   try{
     /* The server checks the price of every line before anything is submitted. */
@@ -3453,6 +3943,7 @@ async function submitOrder(){
   const goldenOrders = orders.filter(o=>isGoldenSlug(o.manufacturer_slug));
   const hcpsOrders   = orders.filter(o=>!isGoldenSlug(o.manufacturer_slug));
   const payload={dealer, orders:hcpsOrders, submitted_at:new Date().toISOString()};
+  if(typeof STAGING!=="undefined"&&STAGING){ return stagingSubmit(payload,btn); }
   btn.disabled=true; btn.textContent="Submitting…";
   let emailWarn=false, keep=new Set();
   try{
@@ -4146,6 +4637,7 @@ async function selectManufacturer(slug){
   }
   document.body.classList.remove('home');
   state.active=slug; renderTabs();
+  if(typeof cvLoading==='function') cvLoading();
   const current=await loadProducts(slug);
   if(!current || state.active!==slug) return;   // a newer line was chosen while this one loaded
   renderBanner(); renderProducts(); renderA4U(); renderSW();
@@ -4435,7 +4927,7 @@ function ensurePreviewBar(){
   if(document.getElementById('previewbar')) return;
   const dn=(PREVIEW&&PREVIEW.dealer&&PREVIEW.dealer.name)||'this dealer';
   const bar=document.createElement('div'); bar.id='previewbar';
-  bar.innerHTML=`<span class="pv-l"><span class="pv-dot">🔎</span> Previewing as <b>${esc(dn)}</b> · read-only staff preview — ordering &amp; account changes are disabled</span><button class="pv-x" onclick="exitPreview()">Exit preview →</button>`;
+  bar.innerHTML=`<span class="pv-l"><span class="pv-dot">🔎</span> Previewing as <b>${esc(dn)}</b> · ${(typeof STAGING!=="undefined"&&STAGING)?'staff catalog preview — checkout shows the order emails, nothing is recorded':'read-only staff preview — ordering &amp; account changes are disabled'}</span><button class="pv-x" onclick="exitPreview()">Exit preview →</button>`;
   document.body.insertBefore(bar,document.body.firstChild);
   document.body.classList.add('previewing');
 }
@@ -4833,6 +5325,7 @@ function applyAuth(){
   // Authentication is resolved — safe to reveal the correct screen. Drop the boot cover.
   const _bc=document.getElementById('bootcover'); if(_bc) _bc.remove();
   if(PREVIEW) ensurePreviewBar();     // staff previewing a dealer — pin the read-only banner
+  ensureStagingBar();
   const approved=AUTH.status==='approved';
   const awaiting=approved||AUTH.status==='pending';   // signed in but not yet able to order
   const provisioned=isProvisioned();
@@ -5533,7 +6026,7 @@ async function loadShowroom(){
 function showroomStats(){ let retail=0,cost=0,filled=0; const lines=new Set(); for(const z of SHOWROOM.zones){ if(!z)continue; filled++; const r=prodRec(z.mfr+"|"+z.code); retail+=r.msrp; if(r.cost!=null)cost+=r.cost; lines.add(z.mfr); } return {retail,cost,margin:retail-cost,filled,open:ZONE_N-filled,lines:lines.size}; }
 function renderShowroom(){
   ensureZones(); const s=showroomStats();
-  const zonesHtml=SHOWROOM.zones.map((z,i)=>{ if(z){ const r=prodRec(z.mfr+"|"+z.code); return `<div class="swz f"><a class="swx" title="Remove" onclick="swClear(${i})">✕</a><div class="swzn">${esc(r.name)}</div><div class="swzm">${esc(r.mfrName)} · #${esc(r.code)}</div><div class="swzr">Retail ${money(r.msrp)}${r.est?" est":""}</div></div>`; } return `<div class="swz" onclick="swPick(${i})"><div class="swadd">＋ Add product</div></div>`; }).join("");
+  const zonesHtml=SHOWROOM.zones.map((z,i)=>{ if(z){ const r=prodRec(z.mfr+"|"+z.code); return `<div class="swz f"><a class="swx" title="Remove" onclick="p360SwClear(${i})">✕</a><div class="swzn">${esc(r.name)}</div><div class="swzm">${esc(r.mfrName)} · #${esc(r.code)}</div><div class="swzr">Retail ${money(r.msrp)}${r.est?" est":""}</div></div>`; } return `<div class="swz" onclick="swPick(${i})"><div class="swadd">＋ Add product</div></div>`; }).join("");
   const on=new Set(SHOWROOM.zones.filter(Boolean).map(z=>z.mfr+"|"+z.code));
   const recs=[...new Set([...purchasedKeys(),...[...FAVS]])].filter(k=>!on.has(k)&&PRICE&&PRICE[k]).slice(0,6).map(prodRec);
   $("#view-showroom").innerHTML=`
@@ -5686,6 +6179,13 @@ function showView(v){
   if(v==="account")loadAccountView();
 }
 window.showView=showView;
+/* THE HUB'S BUTTONS NEED THEIR FUNCTIONS ON window (2026-10-31). Everything above lives inside this IIFE, but the views
+   are HTML strings with inline onclick="qAdd()" etc., which look the name up on window — so "+ Add" on Customer MSRP
+   Quotes, the showroom wall buttons, the price-request / literature / credit / resale forms and the favourite star did
+   nothing. Exported once here. The showroom zone's clear is exported as p360SwClear because the storefront's Strongback
+   wall builder already owns the global swClear(). */
+Object.assign(window,{closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+  submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
 })();
@@ -5731,16 +6231,20 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
        flat list where "Large" appears four times with nothing to tell the four apart. */
     const AX=optionAxes(variants);
     const axKeys=Object.keys(AX.varying);
-    const here=optionAxesOf(variantLabel(p));
+    const here=axesOf(p);
+    /* A value that does not exist with the other choices made (a 7 ft ramp section comes only 36" wide) is still
+       offered — picking it moves to the nearest real SKU — but it says so, so no combination is ever implied that
+       the price list does not have. */
+    const _avail=(k,val)=>variants.some(v=>{ const a=axesOf(v); return String(a[k]||'')===val && axKeys.every(o=>o===k||String(a[o]||'')===String(here[o]||'')); });
     const variantSel = variants.length<2 ? ""
       : axKeys.length>=2
       ? `<div class="pd-variants pd-axes">${axKeys.map(k=>`<div class="pd-axis"><label>${esc(k)}</label>
           <select class="pd-varsel" data-axis="${esc(k)}" onchange="pickVariant(this)">${
-            AX.varying[k].map(val=>`<option value="${esc(val)}"${String(here[k]||'')===val?' selected':''}>${esc(val)}</option>`).join("")
+            AX.varying[k].map(val=>`<option value="${esc(val)}"${String(here[k]||'')===val?' selected':''}>${esc(val)}${_avail(k,val)?'':' — not offered with this '+esc(axKeys.filter(o=>o!==k).map(o=>String(here[o]||'')).join(' / '))}</option>`).join("")
           }</select></div>`).join("")}</div>`
       : `<div class="pd-variants"><label>${esc(axKeys[0]||'Variant')}</label>
       <select class="pd-varsel" onchange="openProductDetail(this.value,{keepScroll:true})">${
-        variants.map(v=>{const ve=Number(unitPrice(v,1)||v.base_price||0);return `<option value="${esc(v.code)}"${v.code===p.code?' selected':''}>${esc(variantLabel(v))}${v._discontinued?' (discontinued)':(ve>0?' — '+money(ve):'')}</option>`;}).join("")
+        variants.map(v=>{const ve=Number(unitPrice(v,1)||v.base_price||0);return `<option value="${esc(v.code)}"${v.code===p.code?' selected':''}>${esc(v._axes?Object.values(v._axes).join(' · '):variantLabel(v))}${v._discontinued?' (discontinued)':(ve>0?' — '+money(ve):'')}</option>`;}).join("")
       }</select></div>`;
     /* The pickers hand back a combination, not a part number; the SKU is looked up from it. */
     window.__PDVARIANTS=variants;
@@ -5808,14 +6312,15 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const sameSub=relPool.filter(x=>(x.subcategory||"")&&(x.subcategory||"")===(p.subcategory||""));
     const related=sameSub.concat(relPool.filter(x=>sameSub.indexOf(x)<0)).slice(0,4)
       .map(x=>Object.assign({},x,{_relName:groupDisplayName(x)}));
-    const mainImg = imgs.length? `<img src="${esc(imgUrl(imgs[0].url,900))}" alt="${esc(p.name)}" decoding="async" onclick="openLightbox('${esc(imgs[0].url)}',this.alt)" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='${esc(imgs[0].url)}';}else{imgFail(this)}">` : `<span class="ph">No image</span>`;
+    const mainImg = (p._noOptionImage&&!p.image) ? `<span class="ph">Image not available for this option</span>` : imgs.length? `<img src="${esc(imgUrl(imgs[0].url,900))}" alt="${esc(p.name)}" decoding="async" onclick="openLightbox('${esc(imgs[0].url)}',this.alt)" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='${esc(imgs[0].url)}';}else{imgFail(this)}">` : `<span class="ph">No image</span>`;
     /* Gallery thumbs at thumbnail size. The lightbox still opens the full-resolution original.
        A real <img> (not a CSS background) so a photo that fails to load can be taken out. */
     const thumbs = imgs.length>1 ? imgs.map((m,i)=>`<div class="pd-thumb${i===0?' on':''}" onclick="pdSwap(this,'${esc(imgUrl(m.url,900))}')"><img src="${esc(imgUrl(m.url,120))}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain;border-radius:10px" onerror="imgFail(this,'thumb')"></div>`).join("") : "";
     const [d,c]=eff.toFixed(2).split(".");
-    const specRows = (Array.isArray(p._specs)&&p._specs.length) ? p._specs.map(s=>`<tr><td class="k">${esc(s.label||s.name||"")}</td><td class="v">${esc(String(s.value||""))}</td></tr>`).join("") :
+    const skuSpecRows = (Array.isArray(p._skuSpecs)&&p._skuSpecs.length) ? `<tr><td class="k">Item #</td><td class="v">${esc(p.code)}</td></tr>`+p._skuSpecs.map(s=>`<tr><td class="k">${esc(s.label)}</td><td class="v">${esc(String(s.value))}</td></tr>`).join("") : "";
+    const specRows = skuSpecRows + ((Array.isArray(p._specs)&&p._specs.length) ? p._specs.map(s=>`<tr><td class="k">${esc(s.label||s.name||"")}</td><td class="v">${esc(String(s.value||""))}</td></tr>`).join("") :
       (p.specs&&typeof p.specs==="object"&&!Array.isArray(p.specs)) ? Object.keys(p.specs).map(k=>`<tr><td class="k">${esc(k)}</td><td class="v">${esc(String(p.specs[k]))}</td></tr>`).join("") :
-      (Array.isArray(p.attributes)?p.attributes.map(a=>`<tr><td class="k">${esc(a.label||a.name||"")}</td><td class="v">${esc(String(a.value||""))}</td></tr>`).join(""):"");
+      (Array.isArray(p.attributes)?p.attributes.map(a=>`<tr><td class="k">${esc(a.label||a.name||"")}</td><td class="v">${esc(String(a.value||""))}</td></tr>`).join(""):""));
     host.innerHTML = `<div class="pd">
       <div class="pd-crumb"><a onclick="renderProducts()">← ${esc(curLineName()||'Shop')}</a><span class="sep">/</span>${p.category?`<a onclick="renderProducts()">${esc(p.category)}</a><span class="sep">/</span>`:''}<span class="cur">${esc(gname)}</span></div>
       <div class="pd-hero">
@@ -5827,7 +6332,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
           <div class="pd-eyebrow">${esc(p.brand||curLineName()||"")}</div>
           <h1>${esc(gname)}</h1>
           ${p._tagline?`<div class="pd-tagline">${esc(p._tagline)}</div>`:""}
-          <div class="pd-code">Item # ${esc(p.code)}${variants.length>1?" · "+esc(variantLabel(p)):""}${p.category?" · "+esc(p.category):""}${p.hcpc?" · HCPC "+esc(p.hcpc):""}</div>
+          <div class="pd-code">Item # ${esc(p.code)}${variants.length>1?" · "+esc(p._axes?Object.values(p._axes).join(' · '):variantLabel(p)):""}${p.category?" · "+esc(p.category):""}${p.hcpc?" · HCPC "+esc(p.hcpc):""}</div>
           ${(p._billing&&p._billing.length)?`<div class="pd-billing">HCPC / PDAC <b>${p._billing.map(esc).join(' · ')}</b></div>`:""}
           <div class="pd-pricebox">
             ${eff>0?`<div class="pd-plabel">${cp!=null?"Your contract price":"Your dealer price"}</div>
