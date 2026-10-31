@@ -6026,7 +6026,7 @@ async function loadShowroom(){
 function showroomStats(){ let retail=0,cost=0,filled=0; const lines=new Set(); for(const z of SHOWROOM.zones){ if(!z)continue; filled++; const r=prodRec(z.mfr+"|"+z.code); retail+=r.msrp; if(r.cost!=null)cost+=r.cost; lines.add(z.mfr); } return {retail,cost,margin:retail-cost,filled,open:ZONE_N-filled,lines:lines.size}; }
 function renderShowroom(){
   ensureZones(); const s=showroomStats();
-  const zonesHtml=SHOWROOM.zones.map((z,i)=>{ if(z){ const r=prodRec(z.mfr+"|"+z.code); return `<div class="swz f"><a class="swx" title="Remove" onclick="swClear(${i})">✕</a><div class="swzn">${esc(r.name)}</div><div class="swzm">${esc(r.mfrName)} · #${esc(r.code)}</div><div class="swzr">Retail ${money(r.msrp)}${r.est?" est":""}</div></div>`; } return `<div class="swz" onclick="swPick(${i})"><div class="swadd">＋ Add product</div></div>`; }).join("");
+  const zonesHtml=SHOWROOM.zones.map((z,i)=>{ if(z){ const r=prodRec(z.mfr+"|"+z.code); return `<div class="swz f"><a class="swx" title="Remove" onclick="p360SwClear(${i})">✕</a><div class="swzn">${esc(r.name)}</div><div class="swzm">${esc(r.mfrName)} · #${esc(r.code)}</div><div class="swzr">Retail ${money(r.msrp)}${r.est?" est":""}</div></div>`; } return `<div class="swz" onclick="swPick(${i})"><div class="swadd">＋ Add product</div></div>`; }).join("");
   const on=new Set(SHOWROOM.zones.filter(Boolean).map(z=>z.mfr+"|"+z.code));
   const recs=[...new Set([...purchasedKeys(),...[...FAVS]])].filter(k=>!on.has(k)&&PRICE&&PRICE[k]).slice(0,6).map(prodRec);
   $("#view-showroom").innerHTML=`
@@ -6179,6 +6179,13 @@ function showView(v){
   if(v==="account")loadAccountView();
 }
 window.showView=showView;
+/* THE HUB'S BUTTONS NEED THEIR FUNCTIONS ON window (2026-10-31). Everything above lives inside this IIFE, but the views
+   are HTML strings with inline onclick="qAdd()" etc., which look the name up on window — so "+ Add" on Customer MSRP
+   Quotes, the showroom wall buttons, the price-request / literature / credit / resale forms and the favourite star did
+   nothing. Exported once here. The showroom zone's clear is exported as p360SwClear because the storefront's Strongback
+   wall builder already owns the global swClear(). */
+Object.assign(window,{closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+  submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
 })();
