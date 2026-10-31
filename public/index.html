@@ -3340,13 +3340,19 @@ function cvBrand(){ const el=$("#brandFilter"); return el?el.value:''; }
 function cvBase(){
   const q=cvQuery().toLowerCase(), brand=cvBrand();
   const lo=parseFloat(CUI.pmin), hi=parseFloat(CUI.pmax);
-  return state.products.filter(p=>{
+  const kept=state.products.filter(p=>{
     if(brand && p.brand!==brand) return false;
     if(!isNaN(lo)||!isNaN(hi)){ const u=Number(unitPrice(p,1)||0); if(!(u>0)) return false;
       if(!isNaN(lo)&&u<lo) return false; if(!isNaN(hi)&&u>hi) return false; }
-    if(!q) return true;
-    return `${p.code} ${p.name} ${p.category} ${p.subcategory} ${p.brand} ${p.description} ${p.hcpc} ${p._gname||''} ${p._encPage||''}`.toLowerCase().includes(q);
+    return true;
   });
+  if(!q) return kept;
+  /* A SEARCH FINDS PRODUCTS, NOT FRAGMENTS OF THEM. When any SKU of a family matches (its part number, name,
+     category, description…), the whole family stays together on its card, so the picker still offers every
+     option — and cvLeads opens the card on the SKU that matched. */
+  const mfrName=String(cvLine().name||'').toLowerCase();
+  const hitKeys=new Set(kept.filter(p=>`${p.code} ${p.name} ${p.category} ${p.subcategory} ${p.brand} ${p.description} ${p.hcpc} ${p._gname||''} ${p._encPage||''} ${mfrName}`.toLowerCase().includes(q)).map(groupKeyOf));
+  return kept.filter(p=>hitKeys.has(groupKeyOf(p)));
 }
 function cvInCat(p,cat){ if(!cat) return true; if(cat.startsWith('sub:')) return p.subcategory===cat.slice(4);
   return cat==='Other' ? (!p.category||p.category==='Other') : p.category===cat; }
