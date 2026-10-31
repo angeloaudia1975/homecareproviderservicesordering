@@ -2997,7 +2997,7 @@ function groupLeads(list){
   return leads;
 }
 /* The one-line description of what a product's SKUs let a dealer pick. */
-const AXIS_NOUN={Size:['size','sizes'],Color:['colour','colours'],Side:['side','sides'],Variant:['variant','variants'],Length:['length','lengths'],Width:['width','widths'],Steps:['stair height','stair heights'],Rise:['rise','rises']};
+const AXIS_NOUN={Size:['size','sizes'],Color:['colour','colours'],Side:['side','sides'],Variant:['variant','variants'],Length:['length','lengths'],Width:['width','widths'],Steps:['stair height','stair heights'],Rise:['rise','rises'],Accessory:['accessory','accessories']};
 function variantSummary(variants){
   const list=variants||[];
   if(list.length<2) return list.length?('Item # '+String((list[0]||{}).code||'')):'';

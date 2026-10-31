@@ -17,12 +17,12 @@ t('every catalog SKU (125) is on exactly one page; no page lists a SKU the catal
   for (const r of cat) ok(seen[N(r.code)], r.code + ' on no page');
   ok(Object.keys(seen).length === cat.length, 'extra SKUs on pages');
 });
-t('18 product cards: the 14 families + gate, D-loop, VPL kit, centering kit', () => {
-  const want = ['assist-ramp-with-handrails', 'assist-ramp-no-rail', 'ground-platforms', 'platforms', 'platform-to-ramp-kits', 'portable-folding-ramps',
+t('14 product-family cards (owner, 2026-10-31): accessories are one family', () => {
+  const want = ['assist-ramp-with-handrails', 'assist-ramp-no-rail', 'ground-platforms', 'platforms', 'modular-ramp-accessories', 'portable-folding-ramps',
     'modular-ramp-sections', 'starter-ramps', 'rest-ramp-section', 'stairs', 'adjustable-threshold-ramps', 'supported-threshold-ramps',
     'basic-threshold-ramps', 'composite-rubber-threshold-ramps'];
   for (const k of want) ok(pages[k], 'missing family ' + k);
-  ok(Object.keys(pages).length === 18, 'pages ' + Object.keys(pages).length);
+  ok(Object.keys(pages).length === 14, 'pages ' + Object.keys(pages).length);
 });
 t('within each family every combination of choices is exactly one SKU, and every SKU names all of the family axes', () => {
   for (const r of ov._families) {
@@ -37,7 +37,7 @@ t('within each family every combination of choices is exactly one SKU, and every
 t('families hold exactly the SKUs of their price-list family (nothing borrowed from another family)', () => {
   const fam = { 'assist-ramp-with-handrails': /^AST\d/, 'assist-ramp-no-rail': /^ASTNR/, 'stairs': /^STP/, 'basic-threshold-ramps': /^TR\d/,
     'adjustable-threshold-ramps': /^ATR/, 'supported-threshold-ramps': /^STR/, 'composite-rubber-threshold-ramps': /^TRR/, 'modular-ramp-sections': /^RS\d/,
-    'platforms': /^PS\d/, 'ground-platforms': /^GP/, 'portable-folding-ramps': /^PFR/, 'starter-ramps': /^SR\d/, 'platform-to-ramp-kits': /^PRK/, 'rest-ramp-section': /^RRS/ };
+    'platforms': /^PS\d/, 'ground-platforms': /^GP/, 'portable-folding-ramps': /^PFR/, 'starter-ramps': /^SR\d/, 'modular-ramp-accessories': /^(PRK\d+|DLOOP|GATE36|VPLK|CK)$/, 'rest-ramp-section': /^RRS/ };
   for (const [k, re] of Object.entries(fam)) { const p = pages[k]; for (const s of p.skus) ok(re.test(s.sku), k + ' holds ' + s.sku);
     ok(p.skus.length === cat.filter(r => re.test(r.code)).length, k + ' count'); }
 });
@@ -46,9 +46,12 @@ t('known unavailable combination: a 7 ft modular section exists only 36" wide', 
   ok(p.skus.some(s => s.axes.Length === '7 ft' && s.axes.Width === '36" wide'), '7x36');
   ok(!p.skus.some(s => s.axes.Length === '7 ft' && s.axes.Width === '48" wide'), '7x48 must not exist');
 });
-t('every photo a page or option names exists in the preview assets; the No-Rail family shows no railed photo', () => {
+t('every photo a page or option names exists in the preview assets; options without an exact photo carry none (CK, VPLK, DLOOP)', () => {
   for (const p of Object.values(pages)) for (const u of [p.image, p.card_image].concat((p.images_gallery || []).map(g => g.url), p.skus.map(s => s.image)).filter(Boolean))
     ok(fs.existsSync(path.join(ROOT, 'public', u)), p.page_key + ' ' + u);
-  ok(!(pages['assist-ramp-no-rail'].images_gallery || []).length, 'no-rail has photos');
+  const acc = pages['modular-ramp-accessories'];
+  for (const c of ['CK', 'VPLK', 'DLOOP']) ok(!acc.skus.find(s => s.sku === c).image, c + ' must not carry another product\'s photo');
+  ok(acc.skus.find(s => s.sku === 'GATE36').image, 'gate keeps its own photo');
+  ok((pages['assist-ramp-no-rail'].images_gallery || []).every(g => /owner-supplied/.test(g.source || '')), 'no-rail gallery = owner photos only');
 });
 console.log(`access4u families: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
