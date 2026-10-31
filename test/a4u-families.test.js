@@ -46,11 +46,14 @@ t('known unavailable combination: a 7 ft modular section exists only 36" wide', 
   ok(p.skus.some(s => s.axes.Length === '7 ft' && s.axes.Width === '36" wide'), '7x36');
   ok(!p.skus.some(s => s.axes.Length === '7 ft' && s.axes.Width === '48" wide'), '7x48 must not exist');
 });
-t('every photo a page or option names exists in the preview assets; options without an exact photo carry none (CK, VPLK, DLOOP)', () => {
-  for (const p of Object.values(pages)) for (const u of [p.image, p.card_image].concat((p.images_gallery || []).map(g => g.url), p.skus.map(s => s.image)).filter(Boolean))
+t('every photo a page or option names exists in the preview assets; DLOOP has its own (low-res, flagged) photo; CK and VPLK say "none" — never a borrowed photo', () => {
+  for (const p of Object.values(pages)) for (const u of [p.image, p.card_image].concat((p.images_gallery || []).map(g => g.url), p.skus.map(s => s.image)).filter(u => u && u !== 'none'))
     ok(fs.existsSync(path.join(ROOT, 'public', u)), p.page_key + ' ' + u);
   const acc = pages['modular-ramp-accessories'];
-  for (const c of ['CK', 'VPLK', 'DLOOP']) ok(!acc.skus.find(s => s.sku === c).image, c + ' must not carry another product\'s photo');
+  const sk = c => acc.skus.find(s => s.sku === c);
+  for (const c of ['CK', 'VPLK']) ok(sk(c).image === 'none', c + ' must say none, never another product\'s photo');
+  ok(/8da3baec8e81e9ce8f59/.test(sk('DLOOP').image) && /low resolution/.test(sk('DLOOP').image_note || ''), 'DLOOP: owner DLOOP.jpg, flagged low resolution');
+  ok(!/8da3baec8e81e9ce8f59|c7b152e60aef106d8e0f/.test(acc.image), 'family hero is neither the D-Loop nor the stairs photo');
   ok(acc.skus.find(s => s.sku === 'GATE36').image, 'gate keeps its own photo');
   ok((pages['assist-ramp-no-rail'].images_gallery || []).every(g => /owner-supplied/.test(g.source || '')), 'no-rail gallery = owner photos only');
 });

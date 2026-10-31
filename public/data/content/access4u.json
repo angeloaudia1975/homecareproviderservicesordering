@@ -6560,7 +6560,7 @@
      "size": "D-Loop, single (DLOOP)",
      "status": "active",
      "disabled": false,
-     "image": "",
+     "image": "/assets/products/access4u/gallery/8da3baec8e81e9ce8f59.jpg",
      "images": [],
      "source": "",
      "axes": {
@@ -6571,7 +6571,8 @@
        "label": "Accessory",
        "value": "D-Loop - Single"
       }
-     ]
+     ],
+     "image_note": "Owner image DLOOP.jpg — low resolution (102×124); replace when a better official photo is available"
     },
     {
      "sku": "VPLK",
@@ -6579,7 +6580,7 @@
      "size": "VPL Kit — Bruno or Harmar (VPLK)",
      "status": "active",
      "disabled": false,
-     "image": "",
+     "image": "none",
      "images": [],
      "source": "",
      "axes": {
@@ -6598,7 +6599,7 @@
      "size": "Centering Kit, per side (CK)",
      "status": "active",
      "disabled": false,
-     "image": "",
+     "image": "none",
      "images": [],
      "source": "",
      "axes": {
@@ -6624,21 +6625,21 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": "/assets/products/access4u/gallery/8da3baec8e81e9ce8f59.jpg",
+   "image": "/assets/products/access4u/gallery/ae8073ac3f83d3481b72.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/access4u/gallery/8da3baec8e81e9ce8f59.jpg",
+     "url": "/assets/products/access4u/gallery/ae8073ac3f83d3481b72.jpg",
      "primary": true,
+     "caption": "",
+     "source": "current catalog photo"
+    },
+    {
+     "url": "/assets/products/access4u/gallery/8da3baec8e81e9ce8f59.jpg",
+     "primary": false,
      "caption": "",
      "source": "owner-supplied Access4U image (2026-10-31)",
      "note": "Modular ramp handrail accessory detail (family image)",
      "approved": true
-    },
-    {
-     "url": "/assets/products/access4u/gallery/ae8073ac3f83d3481b72.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     },
     {
      "url": "/assets/products/access4u/gallery/909f40272ee2e1b94732.jpg",
@@ -6732,7 +6733,7 @@
     }
    },
    "group_reason": "family rule modular-ramp-accessories (content-overrides _families)",
-   "card_image": "/assets/products/access4u/gallery/8da3baec8e81e9ce8f59.jpg"
+   "card_image": "/assets/products/access4u/gallery/ae8073ac3f83d3481b72.jpg"
   }
  }
 }

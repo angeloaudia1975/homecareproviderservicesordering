@@ -1620,6 +1620,9 @@ function pageImageFor(pg, sx){
   let i=g.findIndex(x=>x.primary===true);
   if(i<0) i=g.findIndex(x=>s(x.url)===s(pg&&pg.image));
   const primary=i>=0?s(g[i].url):(s(pg&&pg.image)||(g.length?s(g[0].url):''));
+  /* "none": this option has no exact photo of its own (owner rule, 2026-10-31) — no hero is borrowed from another
+     option or the family; the page says "Image not available for this option" and shows no other picture */
+  if(sx&&s(sx.image)==='none') return { hero:'', none:true, thumbs:[] };
   const hero=(sx&&s(sx.image))||primary;
   const thumbs=g.filter(x=>s(x.url)!==hero).map(x=>({url:s(x.url),caption:x.caption||''}));
   if(primary && primary!==hero && !thumbs.some(t=>t.url===primary)) thumbs.unshift({url:primary,caption:''});
@@ -2001,6 +2004,7 @@ async function mergeCatalogEdits(slug, prods){
           if(pg.card_image) p._cardImage=String(pg.card_image).trim();
           { const pi=pageImageFor(pg,_sx);
             if(pi.hero) p.image=pi.hero;
+            if(pi.none){ p.image=''; p._noOptionImage=true; if(Array.isArray(p.media)) p.media=p.media.filter(m=>m&&m.kind!=='image'); }
             if(pi.thumbs.length){ p.media=Array.isArray(p.media)?p.media:[];
               pi.thumbs.forEach(t=>{ if(!p.media.some(m=>m.url===t.url)) p.media.push({kind:'image',url:t.url,title:t.caption||''}); }); } }
           if(Array.isArray(pg.specs)&&pg.specs.length) p._specs=pg.specs.filter(s=>s&&(s.label||s.value));
@@ -5948,7 +5952,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const sameSub=relPool.filter(x=>(x.subcategory||"")&&(x.subcategory||"")===(p.subcategory||""));
     const related=sameSub.concat(relPool.filter(x=>sameSub.indexOf(x)<0)).slice(0,4)
       .map(x=>Object.assign({},x,{_relName:groupDisplayName(x)}));
-    const mainImg = imgs.length? `<img src="${esc(imgUrl(imgs[0].url,900))}" alt="${esc(p.name)}" decoding="async" onclick="openLightbox('${esc(imgs[0].url)}',this.alt)" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='${esc(imgs[0].url)}';}else{imgFail(this)}">` : `<span class="ph">No image</span>`;
+    const mainImg = (p._noOptionImage&&!p.image) ? `<span class="ph">Image not available for this option</span>` : imgs.length? `<img src="${esc(imgUrl(imgs[0].url,900))}" alt="${esc(p.name)}" decoding="async" onclick="openLightbox('${esc(imgs[0].url)}',this.alt)" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='${esc(imgs[0].url)}';}else{imgFail(this)}">` : `<span class="ph">No image</span>`;
     /* Gallery thumbs at thumbnail size. The lightbox still opens the full-resolution original.
        A real <img> (not a CSS background) so a photo that fails to load can be taken out. */
     const thumbs = imgs.length>1 ? imgs.map((m,i)=>`<div class="pd-thumb${i===0?' on':''}" onclick="pdSwap(this,'${esc(imgUrl(m.url,900))}')"><img src="${esc(imgUrl(m.url,120))}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain;border-radius:10px" onerror="imgFail(this,'thumb')"></div>`).join("") : "";
