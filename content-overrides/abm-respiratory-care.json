@@ -277,6 +277,11 @@
     "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
     "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
     "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (child face mask) is included in the circuit but not shown in this photo."
+   },
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/ccd97dfe963c5b2c3d9b.jpg",
+    "source": "owner library 'New folder (2).zip' — BC21087.webp (sha256 e79d2f452c10ec27)",
+    "note": "Standard (single-lumen) Cough circuit with face mask and filter; same photo as 'standard circuit.jfif' in the first library, now identified by the owner. Mask size is not distinguishable in the photo."
    }
   ],
   "BC21092": [
@@ -291,6 +296,55 @@
     "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
     "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
     "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (trach adapter) is included in the circuit but not shown in this photo."
+   }
+  ],
+  "BC22480": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/42c5363d6cb3725ece4d.jpg",
+    "source": "owner library 'New folder (2).zip' — BC22480.jfif (sha256 cba4b30f3360245c)",
+    "note": "Inline disc filter = 'Standard Filter Trap' (item C in ABM's BiWaze Clear Quick Reference Guide)."
+   }
+  ],
+  "BK291": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/e9902fe3ec9eba247b57.jpg",
+    "source": "owner library 'New folder (2).zip' — BK291.jpg (sha256 8e1656e4e70661a4)",
+    "note": "BiWaze Clear dual-lumen circuit with face mask; a different photograph from the adult page's photo."
+   }
+  ],
+  "BK373": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/2fa7890cffca9f44d720.jpg",
+    "source": "owner library 'New folder (2).zip' — BK373.jpg (sha256 91a2cfc349f9b6e2)",
+    "note": "Nonin sensors — photo shows the small, medium and large sensors together."
+   }
+  ],
+  "BK372": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/2fa7890cffca9f44d720.jpg",
+    "source": "owner library 'New folder (2).zip' — BK373.jpg (sha256 91a2cfc349f9b6e2)",
+    "note": "Nonin sensors — photo shows the small, medium and large sensors together."
+   }
+  ],
+  "BK374": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/2fa7890cffca9f44d720.jpg",
+    "source": "owner library 'New folder (2).zip' — BK373.jpg (sha256 91a2cfc349f9b6e2)",
+    "note": "Nonin sensors — photo shows the small, medium and large sensors together."
+   }
+  ],
+  "BK536": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/d241f96076c06fafb5a0.jpg",
+    "source": "owner library 'New folder (2).zip' — BK536.jfif (sha256 5a9b340a2d4c3cd3)",
+    "note": "Warranty representation (badge: 1 year factory + 1 year extended), allowed for warranty records by the owner 2026-11-02."
+   }
+  ],
+  "BC21275": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/787bcf41c144aa399b49.jpg",
+    "source": "owner library 'New folder (2).zip' — BC21275.webp (sha256 8bad36f231b4d6c8)",
+    "note": "Warranty representation (badge: 1 year factory + 1 year extended), allowed for warranty records by the owner 2026-11-02."
    }
   ]
  },
@@ -377,5 +431,62 @@
   "field_provenance": {
    "description": "ABM 2026 BiWaze Clear / Cough dealer price lists — each option's own line, combined for the shared page (2026-10-31); the per-SKU line stays on the catalog record"
   }
+ },
+ "_retired": {
+  "BK388": {
+   "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+   "decided": "2026-11-02",
+   "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+  },
+  "BK381": {
+   "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+   "decided": "2026-11-02",
+   "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+  },
+  "BC23966": {
+   "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+   "decided": "2026-11-02",
+   "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+  },
+  "BC23891": {
+   "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+   "decided": "2026-11-02",
+   "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+  },
+  "BC23575": {
+   "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+   "decided": "2026-11-02",
+   "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+  },
+  "BC21084": {
+   "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+   "decided": "2026-11-02",
+   "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+  },
+  "BC2396": {
+   "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+   "decided": "2026-11-02",
+   "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+  }
+ },
+ "biwaze-cough-standard-circuit-child-face-mask": {
+  "images_gallery": [
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/ccd97dfe963c5b2c3d9b.jpg",
+    "primary": true,
+    "caption": "",
+    "source": "owner library 'New folder (2).zip' — BC21087.webp (sha256 e79d2f452c10ec27)",
+    "note": "Standard (single-lumen) Cough circuit with face mask and filter; same photo as 'standard circuit.jfif' in the first library, now identified by the owner. Mask size is not distinguishable in the photo.",
+    "approved": true
+   },
+   {
+    "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+    "primary": false,
+    "caption": "",
+    "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
+    "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (child face mask) is included in the circuit but not shown in this photo.",
+    "approved": true
+   }
+  ]
  }
 }

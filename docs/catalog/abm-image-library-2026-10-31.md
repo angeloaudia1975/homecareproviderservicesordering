@@ -59,3 +59,37 @@ Other decisions recorded with this register:
   BK367, at most 2 per system).
 - **Extended warranties** keep the documented maximum ("maximum 2 years extended"); clarification of the terms is on the
   open questions list for ABM.
+
+## Update 2026-11-02 — seven SKUs retired, second owner library ("New folder (2).zip")
+
+**Retired (owner, 2026-11-02 — not purchased through the HCPS dealer platform):** BK388, BK381, BC23966, BC23891,
+BC23575, BC21084, BC2396. Reversible retirement (content-overrides `_retired`): their SKU entries are switched off, so
+the storefront, search, cart, order server and new hub actions (quote, price request, showroom, pricing export) drop them;
+the catalog file, its private price record, history and existing quotes are untouched. 42 → 35 active SKUs, 34 → 27 cards.
+They leave the exception register.
+
+| File | Pixels | SHA-256 (16) | Decision | Reason |
+|---|---|---|---|---|
+| BC21087.webp | 1001×1001 | `e79d2f452c10ec27` | BC21087 — primary | Standard (single-lumen) Cough circuit with face mask and filter (same photo as "standard circuit.jfif" in the first library, now identified). Mask size is not distinguishable in the photo. The earlier family photo stays as a second view. |
+| BC22480.jfif | 447×447 | `cba4b30f3360245c` | BC22480 | Inline disc filter = "Standard Filter Trap" (item C in ABM's BiWaze Clear Quick Reference Guide). |
+| BK291.jpg | 670×670 | `8e1656e4e70661a4` | BK291 | BiWaze Clear dual-lumen circuit with face mask — a different photograph from the adult page's photo. |
+| BK373.jpg | 879×900 | `91a2cfc349f9b6e2` | BK373, BK372, BK374 | Nonin sensors: the photo shows the small, medium and large sensors together, so it represents each size. |
+| BK536.jfif | 503×397 | `5a9b340a2d4c3cd3` | BK536 | Warranty badge (1 year factory + 1 year extended) — a warranty representation, allowed by the owner for warranty records. |
+| BC21275.webp | 1024×808 | `8bad36f231b4d6c8` | BC21275 | As BK536. |
+| BK389.webp | 634×634 | `b176a4090d0293a7` | Held | The same photograph as the beige "aerogen power cable.webp" in the first library (perceptual match). Its label shows a supplier part number ("P/N 82-00…"), not BK389 — no new evidence. |
+| BV Filter.jpg | 151×145 | `1ec0f3fa84c19ba2` | Held (identified as BK281) | Same file as before. Now identified: the coaxial dual-lumen B/V filter with oxygen port (item A in ABM's Quick Reference Guide) = BK281; BC22480 has its own, different photo. Below the 300 px minimum — needs a larger copy. |
+| BC21095.webp | 1001×1001 | `4737fe4dbeea65b9` | Held | Shows the underside of the device with the battery compartment cover, not the battery. |
+
+### Image exception register (current, 2026-11-02)
+
+35 active SKUs, 26 with a verified photo. Without one (placeholder shown, ordering not blocked):
+
+| SKU | Item | What closes it |
+|---|---|---|
+| BK389 | Aerogen® Power Cable | ABM confirms which cable (grey or beige) is BK389. |
+| BK281 | Dual Lumen B/V Filter | A larger copy (≥300 px) of the identified B/V filter photo. |
+| BC21095 | Battery | ABM's photo of the battery itself, or confirmation that the compartment photo is their image for it. |
+| BC23400 / BC23406 / BC23412 / BC23418 / BC23387 / BC23394 | BiWaze Cough Dual Lumen Circuits (child, adult S/M/L face mask, mouthpiece, trach) | Official photos of the Cough dual-lumen circuit. |
+
+Resolved: BK291, BK373 / BK372 / BK374, BC22480, BC21087 (exact photo), BK536 and BC21275 (warranty badge). Retired and
+removed from the register: BK381, BC2396, BC23966 (and BK388, BC23891, BC23575, BC21084, which had photos).
