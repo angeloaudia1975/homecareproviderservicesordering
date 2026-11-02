@@ -1217,6 +1217,27 @@ body.shopv2 .section{padding-top:18px;}
 .gcard .img{position:relative;} .gribbon{position:absolute;top:8px;left:8px;background:#c8981a;color:#fff;font-size:11px;font-weight:800;border-radius:6px;padding:2px 7px;}
 .gmsrp{font-size:12.5px;color:#41546a;font-weight:600;margin-top:2px;}
 .gsoon{font-size:11.5px;color:#6b7580;margin-top:6px;line-height:1.35;}
+.gsrc{margin-top:8px;font-size:12px;color:#6b7686}.gsrc a{color:#1a5fa8}
+.gmuted{color:#6b7686;font-size:14px}
+.ghls{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:2px 0 14px}
+.ghl{background:#f5f8fc;border:1px solid #e3eaf3;border-radius:10px;padding:9px 11px}.ghl span{display:block;font-size:11.5px;color:#6b7686;text-transform:uppercase;letter-spacing:.03em}.ghl b{font-size:15px;color:#0b1f33}
+.gfeats{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 28px}.gfeat h3{font-size:14px;margin:6px 0 4px;color:#0b1f33}
+.gspec-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e6ebf2;border-radius:10px}
+table.gspec{margin:0;min-width:100%}table.gspec th{background:#f5f8fc;font-size:12.5px;text-align:left;padding:9px 12px;white-space:nowrap;color:#33445a}table.gspec th span{display:block;font-weight:500;font-size:11px;color:#7a8698}
+table.gspec th.on,table.gspec td.on{background:#fff7e0}table.gspec td.v{white-space:nowrap}
+.gunscoped{margin-top:12px;padding:10px 12px;border:1px dashed #d8c27a;border-radius:10px;background:#fffbef;font-size:13px}
+.gfabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:12px}.gfab{text-align:center;font-size:12.5px;color:#33445a}
+.gsw{width:100%;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid #e3e8ef;margin-bottom:5px}.gsw img{width:100%;height:100%;object-fit:cover;display:block}
+.gdocs{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.gdoc{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border:1px solid #e3e8ef;border-radius:10px;text-decoration:none;color:#0b1f33;background:#fff;min-height:44px}.gdoc:hover{border-color:#1681c2}
+.gdoc b{display:block;font-size:13.5px;line-height:1.3}.gdoc small{display:block;font-size:12px;color:#6b7686;margin-top:2px}.gdi{font-size:20px;line-height:1}
+.gvids{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}.gvid span{display:block;font-size:13px;margin-top:6px;color:#33445a}
+.gvf{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000}.gvf iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.gcmp-pick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.gcmp-b{min-height:44px;padding:8px 14px;border:1px solid #cdd8e6;border-radius:999px;background:#fff;cursor:pointer;font:inherit;font-size:13.5px}.gcmp-b.on{background:#0b1f33;color:#fff;border-color:#0b1f33}
+.gfoot{font-size:12.5px;color:#6b7686}
+.gpd .pd-gal{align-items:start}.gpd .pd-thumbs{max-height:560px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+@media (max-width:760px){.gpd .pd-thumbs{max-height:none;overflow-x:auto;overflow-y:hidden}}.gfoot a{color:#1a5fa8}
+@media (max-width:760px){.gdocs,.gvids{grid-template-columns:1fr}.ghls{grid-template-columns:repeat(2,1fr)}}
 .pd-golden{margin-top:12px;padding:12px 14px;border-radius:10px;background:#fbf6e8;border:1px solid #f1dfa6;font-size:13.5px;color:#4b3a07;line-height:1.45;}
 .cv2-act{grid-row:2;grid-column:1/-1;padding:10px 12px 12px;border-top:1px solid var(--line);}
 .cv2-act .buy{margin:0;}
@@ -2498,15 +2519,15 @@ function isGoldenSlug(slug){ return !!slug && (slug===CONFIG.GOLDEN_SLUG || slug
    switch here (CONFIG.GOLDEN_ENABLED) only allows asking. On a deploy preview, a staff "view as dealer" asks Golden's
    PREVIEW environment with a separate test key (golden-proxy decides) — the live site never does. No redirect to the
    Golden platform is part of shopping; the platform stays available on its own. */
-const GOLDEN={ checked:false, on:false, preview:false, state:null, prices:false, reason:null, cat:null, inv:null };
+const GOLDEN={ checked:false, on:false, preview:false, state:null, prices:false, reason:null, cat:null, inv:null, fam:{} };
 function goldenPreviewEnv(){ return (typeof STAGING!=="undefined"&&STAGING) && !!(window.__PREVIEW__&&window.__PREVIEW__.token); }
-async function goldenCall(action){
+async function goldenCall(action, extra){
   const hdr={"Content-Type":"application/json"};
   if(window.__PREVIEW__&&window.__PREVIEW__.token){ hdr["x-hcps-preview"]=window.__PREVIEW__.token; if(goldenPreviewEnv()) hdr["x-hcps-golden-env"]="preview"; }
   else if(AUTH.session&&AUTH.session.access_token){ try{ await ensureFreshSession(); }catch(e){} hdr.authorization="Bearer "+AUTH.session.access_token; }
   else return null;
   try{
-    const r=await fetch(CONFIG.GOLDEN_PROXY_ENDPOINT,{method:"POST",headers:hdr,body:JSON.stringify({action}),cache:"no-store"});
+    const r=await fetch(CONFIG.GOLDEN_PROXY_ENDPOINT,{method:"POST",headers:hdr,body:JSON.stringify(Object.assign({action},extra||{})),cache:"no-store"});
     const j=await r.json().catch(()=>null);
     return (r.ok&&j&&j.ok===true)?j:null;
   }catch(e){ return null; }
@@ -2529,7 +2550,7 @@ function goldenToProduct(g, stockBySku){
   return { manufacturer:CONFIG.GOLDEN_SLUG, brand:"Golden Technologies", code:g.sku, name:g.name, category:g.category||"Golden", subcategory:g.subcategory||"",
     description:g.description||"", image:g.image||"", msrp:(typeof g.msrp==="number")?g.msrp:null, map:(typeof g.emap==="number")?g.emap:null,
     base_price:(typeof g.dealer_price==="number"&&g.dealer_price>0)?g.dealer_price:null,
-    _pageKey:"golden:"+(g.family||g.sku), _encPage:g.family_name||g.name, _axes:sized?{Size:g.size_label||g.size_code}:undefined,
+    _pageKey:"golden:"+(g.family||g.sku), _goldenFamily:g.family||g.sku, _encPage:g.family_name||g.name, _axes:sized?{Size:g.size_label||g.size_code}:undefined,
     _features:Array.isArray(g.specs)?g.specs.slice():[], _skuSpecs:rows, _golden:true, _goldenAction:g.action||"none",
     _goldenStock:(stockBySku&&stockBySku[g.sku])||null, _goldenRibbon:g.ribbon||null, _goldenSort:g.sort||0,
     media:g.brochure_url?[{kind:"brochure",url:g.brochure_url,title:"Brochure"}]:[] };
@@ -2552,6 +2573,77 @@ function goldenStockHtml(items){
   const when=GOLDEN.inv.as_of?new Date(GOLDEN.inv.as_of).toLocaleDateString(undefined,{month:"short",day:"numeric"}):"";
   const asof=when?` · as of ${esc(when)}${GOLDEN.inv.stale?" (may be out of date)":""}`:"";
   return `<div class="gstock gs-${esc(best.status)}">${esc(label)}${best.status==="low"&&best.qty!=null?" · "+esc(best.qty):""}<span class="gasof">${asof}</span></div>`;
+}
+/* GOLDEN PRODUCT DETAIL (B2 enrichment, contract 1.2.0). Everything below comes from Golden's own system through
+   golden-proxy → Golden /v1/catalog/family: Golden's verified photos, the size-specific specifications Golden publishes,
+   Golden's documents and videos — each with its Golden source. HCPS stores none of it; nothing here is invented. */
+function goldenFamilyDetail(fam){
+  if(!fam) return Promise.resolve(null);
+  if(!GOLDEN.fam[fam]) GOLDEN.fam[fam]=goldenCall("family",{family:fam}).then(j=>(j&&j.available===true&&j.family)?j:null).catch(()=>null);
+  return GOLDEN.fam[fam].then(j=>{ if(!j) delete GOLDEN.fam[fam]; return j; });
+}
+const GOLDEN_DOC_KIND={sell_sheet:"Sell sheet",brochure:"Brochure",accessories_sheet:"Accessories sheet",owners_manual:"Owner's manual",quick_start:"Quick start guide",option_manual:"Option manual",warranty:"Warranty",setup_instructions:"Setup instructions",document:"Document"};
+function goldenDate(d){ if(!d) return ""; const m=String(d).match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/); if(!m) return ""; const dt=new Date(Date.UTC(+m[1],(+m[2]||1)-1,+m[3]||1)); return m[3]?dt.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric",timeZone:"UTC"}):(m[2]?dt.toLocaleDateString(undefined,{year:"numeric",month:"short",timeZone:"UTC"}):m[1]); }
+function goldenSrc(src, extra){ if(!src||!src.url) return ""; return `<div class="gsrc">Source: <a href="${esc(src.url)}" target="_blank" rel="noopener">${esc(src.type||"Golden Technologies")}</a>${extra?" · "+extra:""}</div>`; }
+function goldenSizeName(G, sku){ const c=(G.family.skus||[]).find(x=>x.sku===sku); return c&&(c.size_label||c.size_code)?(c.size_label||c.size_code):sku; }
+// Photos for the size on screen: its own Golden size photos first, then Golden's primary, the model's other photos,
+// then Golden's shared feature/lifestyle shots. A photo tagged for a different size is left out for this size.
+function goldenGallery(G, code){
+  const g=(G.family.gallery||[]).filter(x=>x&&x.url&&/^https:\/\//.test(x.url));
+  const mine=g.filter(x=>Array.isArray(x.skus)&&x.skus.includes(code));
+  const prim=g.filter(x=>x.primary&&!mine.includes(x));
+  const rest=g.filter(x=>!mine.includes(x)&&!x.primary&&!(Array.isArray(x.skus)&&x.skus.length&&!x.skus.includes(code))&&x.role!=="document_preview");
+  const own=rest.filter(x=>!x.shared), shared=rest.filter(x=>x.shared);
+  return [...mine,...prim,...own,...shared].map(x=>({url:x.url,title:G.family.name}));
+}
+function goldenSpecTable(G, code){
+  const sp=G.family.specs||{}; const cols=(sp.columns||[]).filter(c=>(G.family.skus||[]).some(x=>x.sku===c));
+  let html="";
+  if(cols.length&&(sp.rows||[]).length){
+    const multi=cols.length>1;
+    html+=`<div class="gspec-wrap"><table class="pd-spec gspec"><thead><tr><th>Specification</th>${cols.map(c=>`<th class="${c===code?"on":""}">${esc(multi?goldenSizeName(G,c):"")}${multi?`<span>${esc(c)}</span>`:""}</th>`).join("")}</tr></thead><tbody>${
+      sp.rows.map(r=>`<tr><td class="k">${esc(r.label)}</td>${cols.map(c=>`<td class="v${c===code?" on":""}">${esc(r.values&&r.values[c]!=null?r.values[c]:"—")}</td>`).join("")}</tr>`).join("")
+    }</tbody></table></div>${goldenSrc(sp.source, multi?"values per size exactly as Golden states them":"")}`;
+  }
+  if((sp.website_unscoped||[]).length){
+    html+=`<div class="gunscoped"><b>Published on goldentech.com without a size</b> — Golden shows one value for this multi-size model, so these are not tied to any size.${(sp.website_unscoped.length)?`<table class="pd-spec">${sp.website_unscoped.map(r=>`<tr><td class="k">${esc(r.label)}</td><td class="v">${esc(r.value)}</td></tr>`).join("")}</table>`:""}</div>`;
+  }
+  return html?`<div class="pd-sect"><h2>Specifications</h2>${html}</div>`:"";
+}
+function goldenHighlights(G, code){
+  const cmp=G.family.compare||{}; const want=["weight_capacity","comfort_zones","positioning","seat_width","seat_depth","seat_height","wall_clearance","max_speed","range","unit_weight","heaviest_piece","turning_radius"];
+  const chips=want.filter(k=>cmp[k]&&cmp[k][code]).slice(0,6).map(k=>`<div class="ghl"><span>${esc(cmp[k].label||k)}</span><b>${esc(cmp[k][code])}</b></div>`);
+  return chips.length?`<div class="ghls">${chips.join("")}</div>`:"";
+}
+function goldenSectionsHtml(G, p){
+  const F=G.family, f=F.features||{};
+  const paras=[...(F.description||[])]; if(F.sell_sheet_description&&!paras.some(x=>x.slice(0,60)===F.sell_sheet_description.slice(0,60))) paras.push(F.sell_sheet_description);
+  const overview=paras.length?`<div class="pd-sect"><h2>Overview</h2>${goldenHighlights(G,p.code)}${paras.map(x=>`<p>${esc(x)}</p>`).join("")}${goldenSrc(F.description_source||(F.page?{type:"goldentech.com product page",url:F.page.url}:null))}</div>`:"";
+  const list=(t,a)=>a&&a.length?`<div class="gfeat"><h3>${esc(t)}</h3><ul class="pd-feat">${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:"";
+  const feats=(f.groups&&f.groups.length)?f.groups.map(g=>list(g.title,g.items)).join(""):(list("Standard features",f.standard)+list("Optional features",f.optional)+list("Benefits",f.benefits));
+  const featHtml=(feats||(f.accessories||[]).length||(f.warranty_terms||[]).length)?`<div class="pd-sect"><h2>Features</h2><div class="gfeats">${feats}${list("Optional accessories",f.accessories)}${list("Warranty",f.warranty_terms)}</div>${goldenSrc(f.source)}</div>`
+    :(f.none_published?`<div class="pd-sect"><h2>Features</h2><p class="gmuted">Golden publishes a specification sheet for this model rather than a feature list — see the specifications and Golden's documents below.</p></div>`:"");
+  const fab=(F.fabrics||[]).length?`<div class="pd-sect"><h2>Standard fabrics</h2><div class="gfabs">${F.fabrics.map(x=>`<div class="gfab"><div class="gsw"${x.hex?` style="background:${esc(x.hex)}"`:""}>${x.swatch?`<img src="${esc(x.swatch)}" alt="${esc(x.name)} swatch" loading="lazy" onerror="this.remove()">`:""}</div><span>${esc(x.name)}</span></div>`).join("")}</div><div class="gsrc">Golden's standard palette for this model. Other fabrics are chosen when ordering, priced by Golden.</div></div>`:"";
+  const docs=(F.documents||[]);
+  const order=["sell_sheet","brochure","accessories_sheet","owners_manual","quick_start","option_manual","setup_instructions","warranty","document"];
+  const docHtml=docs.length?`<div class="pd-sect"><h2>Documents &amp; downloads</h2><div class="gdocs">${docs.slice().sort((a,b)=>order.indexOf(a.kind)-order.indexOf(b.kind)).map(d=>{
+    const meta=[GOLDEN_DOC_KIND[d.kind]||"Document", d.version&&d.version.revision?"Rev. "+d.version.revision:"", d.version&&d.version.date?(/^pdf_/.test(d.version.basis||"")?"PDF dated ":"")+goldenDate(d.version.date):"", d.pages?d.pages+(d.pages===1?" page":" pages"):"", d.language==="es"?"Spanish":"", d.format==="online"?"Online flipbook":"PDF"].filter(Boolean).join(" · ");
+    return `<a class="gdoc" href="${esc(d.url)}" target="_blank" rel="noopener"><span class="gdi">${d.format==="online"?"📖":"📄"}</span><span><b>${esc(d.title)}</b><small>${esc(meta)}</small>${d.applies?`<small>Applies to ${esc(d.applies)}</small>`:""}</span></a>`;}).join("")}</div><div class="gsrc">Golden Technologies' own files — opened from Golden, not copied by HCPS.</div></div>`:"";
+  const vids=(F.videos||[]).filter(v=>/^https:\/\/www\.youtube-nocookie\.com\/embed\/[\w-]{11}$/.test(v.embed||""));
+  const vidHtml=vids.length?`<div class="pd-sect"><h2>Videos</h2><div class="gvids">${vids.map(v=>`<div class="gvid"><div class="gvf"><iframe src="${esc(v.embed)}" title="${esc(v.title||"Golden Technologies video")}" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div><span>${esc(v.title||"")}</span></div>`).join("")}</div><div class="gsrc">From Golden Technologies' YouTube channel.</div></div>`:"";
+  const rel=(F.related||[]).filter(r=>(state.products||[]).some(x=>x._goldenFamily===r));
+  const cmpHtml=rel.length?`<div class="pd-sect"><h2>Compare with other Golden models</h2><div class="gcmp-pick">${rel.map(r=>{const x=(state.products||[]).find(y=>y._goldenFamily===r);return `<button type="button" class="gcmp-b" data-gcmp="${esc(r)}">${esc(x._encPage||x.name)}</button>`;}).join("")}</div><div id="gcmpOut"></div></div>`:"";
+  const src=F.page?`<div class="pd-sect gfoot">Product content from Golden Technologies (<a href="${esc(F.page.url)}" target="_blank" rel="noopener">goldentech.com</a>)${G.enrichment_as_of?", checked "+esc(goldenDate(G.enrichment_as_of)):""}. Prices, stock and ordering come from Golden.</div>`:"";
+  return overview+featHtml+goldenSpecTable(G,p.code)+fab+docHtml+vidHtml+cmpHtml+src;
+}
+// Side-by-side: the comparison rows Golden publishes for each model, with each model's range across its sizes.
+async function goldenCompare(G, other, host){
+  const O=await goldenFamilyDetail(other); if(!host) return;
+  if(!O){ host.innerHTML=`<p class="gmuted">That model's details could not be loaded right now.</p>`; return; }
+  const range=(F,k)=>{ const v=F.compare&&F.compare[k]; if(!v) return "—"; const vals=[...new Set((F.specs.columns||[]).map(c=>v[c]).filter(Boolean))]; return vals.length?vals.join(" / "):"—"; };
+  const keys=[...new Set([...Object.keys(G.family.compare||{}),...Object.keys(O.family.compare||{})])];
+  const label=k=>((G.family.compare||{})[k]||(O.family.compare||{})[k]||{}).label||k;
+  host.innerHTML=`<div class="gspec-wrap"><table class="pd-spec gspec"><thead><tr><th></th><th>${esc(G.family.name)}</th><th>${esc(O.family.name)}</th></tr></thead><tbody>${keys.map(k=>`<tr><td class="k">${esc(label(k))}</td><td class="v">${esc(range(G.family,k))}</td><td class="v">${esc(range(O.family,k))}</td></tr>`).join("")}</tbody></table></div><div class="gsrc">Values as each model's Golden sell sheet or product page states them; several values = the model's sizes.</div>`;
 }
 function goldenPriceHtml(items){
   const prices=(items||[]).map(x=>Number(x.base_price||0)).filter(v=>v>0);
@@ -6381,8 +6473,12 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       (cur||[]).forEach(r=>{ (r.kind==='alternative'?curatedAlt:curatedAcc).push(r); });
     }catch(e){}
     const media=Array.isArray(p.media)?p.media:[];
-    const imgs=[...(p.image?[{url:p.image,title:p.name}]:[]), ...media.filter(m=>m.kind==="image"&&m.url)];
-    const docs=media.filter(m=>(m.kind==="brochure"||m.kind==="link")&&m.url);
+    // Golden: the model's enriched detail from Golden's own system (photos, size specs, documents, videos)
+    const G=p._golden?await goldenFamilyDetail(p._goldenFamily):null;
+    if(p._golden&&state.products.indexOf(p)<0) return;
+    const _gImgs=(G&&(G.family.gallery||[]).length)?goldenGallery(G,p.code):null;
+    const imgs=_gImgs&&_gImgs.length?_gImgs:[...(p.image?[{url:p.image,title:p.name}]:[]), ...media.filter(m=>m.kind==="image"&&m.url)];
+    const docs=G?[]:media.filter(m=>(m.kind==="brochure"||m.kind==="link")&&m.url);
     if(p.moreUrl) docs.push({url:p.moreUrl,title:p.moreLabel||"More information",kind:"link"});
     if(p._sourceUrl) docs.push({url:p._sourceUrl,title:"Manufacturer product page",kind:"link"});
     if(Array.isArray(p._documents)) p._documents.forEach(dc=>{ if(dc&&dc.url) docs.push({url:dc.url,title:dc.title||dc.type||"Document",kind:"link"}); });
@@ -6424,7 +6520,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     // same item repeated in other sizes. Prefers the same subcategory, then the same category.
     const relSeen=new Set([gk]);
     const relPool=(state.products||[]).filter(x=>{
-      const xg=(x.group||x.code); if(relSeen.has(xg)) return false;
+      const xg=x._golden?groupKeyOf(x):(x.group||x.code); if(relSeen.has(xg)) return false;
       if((x.category||"")!==(p.category||"")) return false;
       relSeen.add(xg); return true; });
     const sameSub=relPool.filter(x=>(x.subcategory||"")&&(x.subcategory||"")===(p.subcategory||""));
@@ -6436,10 +6532,10 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const thumbs = imgs.length>1 ? imgs.map((m,i)=>`<div class="pd-thumb${i===0?' on':''}" onclick="pdSwap(this,'${esc(imgUrl(m.url,900))}')"><img src="${esc(imgUrl(m.url,120))}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain;border-radius:10px" onerror="imgFail(this,'thumb')"></div>`).join("") : "";
     const [d,c]=eff.toFixed(2).split(".");
     const skuSpecRows = (Array.isArray(p._skuSpecs)&&p._skuSpecs.length) ? `<tr><td class="k">Item #</td><td class="v">${esc(p.code)}</td></tr>`+p._skuSpecs.map(s=>`<tr><td class="k">${esc(s.label)}</td><td class="v">${esc(String(s.value))}</td></tr>`).join("") : "";
-    const specRows = skuSpecRows + ((Array.isArray(p._specs)&&p._specs.length) ? p._specs.map(s=>`<tr><td class="k">${esc(s.label||s.name||"")}</td><td class="v">${esc(String(s.value||""))}</td></tr>`).join("") :
+    const specRows = G ? "" : skuSpecRows + ((Array.isArray(p._specs)&&p._specs.length) ? p._specs.map(s=>`<tr><td class="k">${esc(s.label||s.name||"")}</td><td class="v">${esc(String(s.value||""))}</td></tr>`).join("") :
       (p.specs&&typeof p.specs==="object"&&!Array.isArray(p.specs)) ? Object.keys(p.specs).map(k=>`<tr><td class="k">${esc(k)}</td><td class="v">${esc(String(p.specs[k]))}</td></tr>`).join("") :
       (Array.isArray(p.attributes)?p.attributes.map(a=>`<tr><td class="k">${esc(a.label||a.name||"")}</td><td class="v">${esc(String(a.value||""))}</td></tr>`).join(""):""));
-    host.innerHTML = `<div class="pd">
+    host.innerHTML = `<div class="pd${G?" gpd":""}">
       <div class="pd-crumb"><a onclick="renderProducts()">← ${esc(curLineName()||'Shop')}</a><span class="sep">/</span>${p.category?`<a onclick="renderProducts()">${esc(p.category)}</a><span class="sep">/</span>`:''}<span class="cur">${esc(gname)}</span></div>
       <div class="pd-hero">
         <div class="pd-gal">
@@ -6480,8 +6576,9 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
         </div>
       </div>
       ${tierSectHtml}
-      ${p.description?`<div class="pd-sect"><h2>Overview</h2><p>${esc(p.description)}</p></div>`:""}
-      ${(p._features&&p._features.length)?`<div class="pd-sect"><h2>Key features</h2><ul class="pd-feat">${p._features.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></div>`:""}
+      ${G?goldenSectionsHtml(G,p):""}
+      ${(!G&&p.description)?`<div class="pd-sect"><h2>Overview</h2><p>${esc(p.description)}</p></div>`:""}
+      ${(!G&&p._features&&p._features.length)?`<div class="pd-sect"><h2>Key features</h2><ul class="pd-feat">${p._features.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></div>`:""}
       ${optionsPanelHtml(p,AX,here)}
       ${(p._clinical&&p._clinical.length)?`<div class="pd-sect"><h2>Clinical applications</h2>${p._clinical.map(x=>`<span class="pd-chip">${esc(x)}</span>`).join("")}</div>`:""}
       ${specRows?`<div class="pd-sect"><h2>Specifications</h2><table class="pd-spec">${specRows}</table></div>`:""}
@@ -6489,7 +6586,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       ${p._warranty?`<div class="pd-sect"><h2>Warranty</h2><p>${esc(p._warranty)}</p></div>`:""}
       ${p._sourceUrl?`<div class="pd-sect"><h2>Manufacturer information</h2><a class="pd-srclink" href="${esc(p._sourceUrl)}" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>View this product on the ${esc(p.brand||curLineName()||"manufacturer")} website</a></div>`:""}
       ${docs.length?`<div class="pd-sect"><h2>Documents &amp; resources</h2>${docs.map(dc=>`<div class="pd-doc"><div class="di"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="dn">${esc(dc.title||(dc.kind==="brochure"?"Brochure":"Link"))}</div><a class="dl" href="${esc(dc.url)}" target="_blank" rel="noopener">Open ↗</a></div>`).join("")}</div>`:""}
-      ${videoHtml}
+      ${G?"":videoHtml}
       ${(curatedAcc.length||related.length)?`<div class="pd-sect"><h2>Related products</h2><div class="pd-rel">${
         (curatedAcc.length
           ? curatedAcc.map(r=>{const inLine=(state.products||[]).find(x=>x.code===r.related_code);const rimg=r.related_image||(inLine&&inLine.image)||"";const re=inLine?Number(unitPrice(inLine,1)||inLine.base_price||0):0;const click=inLine?`onclick="openProductDetail('${esc(r.related_code)}')" style="cursor:pointer"`:'';return `<div class="pd-relc" ${click}><div class="ri">${rimg?`<img src="${esc(rimg)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain" onerror="imgFail(this)">`:'<span class="ph">No image</span>'}</div><div class="rb"><div class="rn">${esc(r.related_name||(inLine&&inLine.name)||r.related_code)}</div>${re>0?`<div class="rp">${money(re)}</div>`:""}</div></div>`;})
@@ -6498,6 +6595,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       ${curatedAlt.length?`<div class="pd-sect"><h2>Also available from other HCPS manufacturers</h2><div class="pd-rel">${curatedAlt.map(r=>{const mn=((state.manufacturers||[]).find(x=>x.slug===r.related_manufacturer)||{}).name||r.related_manufacturer||"";return `<div class="pd-relc"><div class="ri">${r.related_image?`<img src="${esc(r.related_image)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain" onerror="imgFail(this)">`:'<span class="ph">No image</span>'}</div><div class="rb"><div class="rn">${esc(r.related_name||r.related_code)}</div><div class="rp" style="font-weight:600;color:#6b7580;font-size:12px">${esc(mn)}</div></div></div>`;}).join("")}</div><div style="font-size:12px;color:#6b7580;margin-top:6px">Comparable options carried by HCPS — ask your rep about lines you don't yet have access to.</div></div>`:""}
     </div>`;
     if(typeof wireAdd==="function") wireAdd(host);
+    if(G) host.querySelectorAll('[data-gcmp]').forEach(b=>b.addEventListener('click',function(){ host.querySelectorAll('[data-gcmp]').forEach(x=>x.classList.toggle('on',x===b)); const out=host.querySelector('#gcmpOut'); if(out) out.innerHTML='<p class="gmuted">Loading…</p>'; goldenCompare(G,b.getAttribute('data-gcmp'),out); }));
     if(!opts.keepScroll) window.scrollTo({top:0,behavior:"smooth"});
     try{ track&&track('product_view',p.manufacturer,p.code); }catch(e){}
   };
