@@ -12,7 +12,7 @@ const ok = (c, m) => { if (!c) throw new Error(m); };
 const eq = (a, b, m) => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error((m || '') + ' got ' + JSON.stringify(a) + ' expected ' + JSON.stringify(b)); };
 
 const names = ['function groupKeyOf', 'function catOrder', 'function catRank', 'function compareCats', 'function groupDisplayName', 'function groupLeads',
-  'const cvNorm', 'function cvLine', 'function cvQuery', 'function cvCat', 'function cvBrand', 'function cvBase', 'function cvInCat', 'function cvFamilies', 'function cvTree', 'function cvLeads'];
+  'const cvNorm', 'function cvLine', 'function cvQuery', 'function cvCat', 'function cvBrand', 'function cvBase', 'function cvInCat', 'function cvFamilies', 'function cvTree', 'function cvSubOrder', 'function cvLeads'];
 const src = names.map(n => grabDecl(html, n)).join('\n');
 function world(products, f) {
   const inputs = { '#search': { value: f.q || '' }, '#catFilter': { value: f.cat || '' }, '#brandFilter': { value: f.brand || '' } };
