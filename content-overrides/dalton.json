@@ -1343,5 +1343,66 @@
     "note": "extra-wide drop-arm commode (front, arm lowered, side, leg detail) - official photo 4/4 from the Dalton product page (viewed)"
    }
   ]
+ },
+ "transfer-bench-300-lbs-weight-capacity-2-case": {
+  "name": "Transfer Bench, 2/Case",
+  "skus": [
+   {
+    "sku": "TB-5006-2",
+    "name": "Transfer Bench, 2/Case",
+    "size": "",
+    "status": "active",
+    "disabled": false,
+    "image": "",
+    "images": [],
+    "source": ""
+   }
+  ],
+  "features": [
+   "Blow-molded seat and backrest",
+   "Textured, nonslip seating surface",
+   "Drainage holes help prevent water accumulation",
+   "Rust-resistant aluminum frame",
+   "Reversible design accommodates right- or left-facing entry",
+   "Adjustable seat height",
+   "Two transfer benches per case"
+  ],
+  "specs": [
+   {
+    "label": "Product Type",
+    "value": "Bathtub transfer bench"
+   },
+   {
+    "label": "Frame Material",
+    "value": "Aluminum"
+   },
+   {
+    "label": "Seat-Height Range",
+    "value": "18.5\"–22.5\""
+   },
+   {
+    "label": "Overall Width",
+    "value": "29\""
+   },
+   {
+    "label": "Overall Depth",
+    "value": "18\""
+   },
+   {
+    "label": "Configuration",
+    "value": "Reversible for right- or left-facing entry"
+   },
+   {
+    "label": "Package Quantity",
+    "value": "2 per case"
+   }
+  ],
+  "field_provenance": {
+   "features": "manufacturer page — https://daltonmedical.com/product/tb-5006-2-transfer-bench-300-lb-capacity-2-case/",
+   "specs": "manufacturer page — stated values only — https://daltonmedical.com/product/tb-5006-2-transfer-bench-300-lb-capacity-2-case/",
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "name": "HCPS correction 2026-11-02 (Angelo): weight capacity removed from the dealer-facing title, features and specs until Dalton confirms it. Dalton's page title says 300 lb; its description and specifications say 250 lb (https://daltonmedical.com/product/tb-5006-2-transfer-bench-300-lb-capacity-2-case/). Model TB-5006-2, pricing and packaging unchanged."
+  }
  }
 }
