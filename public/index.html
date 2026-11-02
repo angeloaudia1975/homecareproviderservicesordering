@@ -5789,6 +5789,21 @@ async function layersHeaders(){
   await refreshIfNeeded();
   return (SESSION&&SESSION.access_token)?{authorization:'Bearer '+SESSION.access_token}:null;
 }
+/* WITHDRAWN PRODUCTS STAY OUT OF NEW HUB ACTIONS (owner, 2026-11-02, ABM retirements). PRICELIST feeds only things a
+   dealer starts NOW — a new quote line, a price request, a showroom slot, the pricing export — so a product the
+   storefront no longer sells is left out of it: a SKU entry its page switches off (disabled / hidden — the owner's
+   reversible retirement) or a saved catalog edit with active:false. PRICE keeps them, so an item already on a quote and
+   past orders still show their names. An unreadable content file withdraws nothing (the storefront decides what sells). */
+async function hubPageOff(slug){
+  const off=new Set();
+  try{ const r=await fetch('/data/content/'+encodeURIComponent(slug)+'.json'); if(!r.ok) return off; const c=await r.json();
+    for(const k in (c&&c.pages)||{}){ const pg=c.pages[k]; for(const s of (pg&&pg.skus)||[]){ if(s&&s.sku&&(s.disabled===true||s.status==='hidden')) off.add(String(s.sku).trim().toUpperCase()); } } }catch(e){}
+  return off;
+}
+function hubLayerOff(j){ const off=new Set();
+  for(const o of (j&&j.product_overrides)||[]){ if(o&&o.code&&o.patch&&o.patch.active===false) off.add(String(o.code)); }
+  for(const c of (j&&j.custom_products)||[]){ if(c&&c.code&&c.active===false) off.add(String(c.code)); }
+  return off; }
 async function loadPricing(){
   if(PRICE) return;
   PRICE={}; PRICELIST=[];
@@ -5805,13 +5820,14 @@ async function loadPricing(){
       try{
         const d=await fetch('/data/'+m.slug+'.json').then(r=>r.json());
         let items=Array.isArray(d)?d:(d.products||[]);
-        let priced=false;
+        let priced=false, layerOff=new Set();
+        const pageOff=await hubPageOff(m.slug);
         if(hdr && carried.has(m.slug)){
           try{
             const id=catalogIdentity(items);
             const r=await fetch('/.netlify/functions/catalog-layers?manufacturer='+encodeURIComponent(m.slug)+'&identity='+id,{headers:hdr,cache:'no-store'});
             const j=r.ok?await r.json():null;
-            if(j&&j.ok===true&&j.identity_sha256===id&&Array.isArray(j.file_overlay)){ items=restoreCatalogFile(items,j.file_overlay); priced=true; }
+            if(j&&j.ok===true&&j.identity_sha256===id&&Array.isArray(j.file_overlay)){ items=restoreCatalogFile(items,j.file_overlay); priced=true; layerOff=hubLayerOff(j); }
           }catch(e){}
         }
         if(!priced) items=items.map(p=>Object.assign({},p,{base_price:null,msrp:null,map:null}));
@@ -5819,6 +5835,7 @@ async function loadPricing(){
           const code=String(p.code||'').trim(); if(!code) continue;
           const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(p.map!=null?Number(p.map):null),cost:(p.base_price!=null?(typeof dealerCostOf==='function'?dealerCostOf(p,m.slug):Number(p.base_price)):null),category:p.category||'',name:p.name||'',mfrName:m.name};
           PRICE[m.slug+'|'+code]=rec;
+          if(pageOff.has(code.toUpperCase())||layerOff.has(code)) continue;   /* retired / switched off: no NEW quote, price request, showroom slot or export */
           PRICELIST.push({code,mfr:m.slug,mfrName:m.name,name:p.name||'',cost:rec.cost,map:rec.map,msrp:rec.msrp,category:p.category||''});
         }
       }catch(e){}
