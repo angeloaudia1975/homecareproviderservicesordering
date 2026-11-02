@@ -5982,7 +5982,12 @@ function quotePaperHtml(picked,total){
 }
 function renderQuotes(){
   const list=PRICELIST||[]; const picked=quotePicked(); const total=quoteTotal(picked);
-  const opts=list.filter(p=>quotableLine(p.mfr)&&!QUOTE.includes(p.mfr+"|"+p.code)).slice(0,500).map(p=>`<option value="${p.mfr}|${esc(p.code)}">${esc(p.mfrName)} — ${esc(p.name)} (#${esc(p.code)})</option>`).join("");
+  /* EVERY quotable product is offered (2026-11-02): the list used to stop at the first 500, and as the lines load in
+     whatever order the network returns them, whole lines (ABM, Ovation, PediFix) could silently be missing. One group
+     per manufacturer, products by name. */
+  const avail=list.filter(p=>quotableLine(p.mfr)&&!QUOTE.includes(p.mfr+"|"+p.code));
+  const byLine=new Map(); avail.forEach(p=>{ if(!byLine.has(p.mfrName)) byLine.set(p.mfrName,[]); byLine.get(p.mfrName).push(p); });
+  const opts=[...byLine.keys()].sort((a,b)=>String(a).localeCompare(String(b))).map(n=>`<optgroup label="${esc(n)}">`+byLine.get(n).slice().sort((x,y)=>String(x.name).localeCompare(String(y.name),undefined,{numeric:true})||String(x.code).localeCompare(String(y.code))).map(p=>`<option value="${p.mfr}|${esc(p.code)}">${esc(p.name)} (#${esc(p.code)})</option>`).join("")+`</optgroup>`).join("");
   $("#view-quotes").innerHTML=`<div class="ph"><div><h1>Customer MSRP Quotes</h1><div class="sub">Build a branded quote for your customer from any HCPS product</div></div>
      <div><a class="btn gh" onclick="printPDF()">⬇ Print / PDF</a> <a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
    <div class="qbuild">
