@@ -179,11 +179,16 @@
      "sku": "BC23966",
      "name": "Australia Power Cord",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+      "decided": "2026-11-02",
+      "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+     }
     }
    ],
    "sku_count": 1,
@@ -343,8 +348,17 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/e9902fe3ec9eba247b57.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/e9902fe3ec9eba247b57.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner library 'New folder (2).zip' — BK291.jpg (sha256 8e1656e4e70661a4)",
+     "note": "BiWaze Clear dual-lumen circuit with face mask; a different photograph from the adult page's photo.",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -578,8 +592,17 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/d241f96076c06fafb5a0.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/d241f96076c06fafb5a0.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner library 'New folder (2).zip' — BK536.jfif (sha256 5a9b340a2d4c3cd3)",
+     "note": "Warranty representation (badge: 1 year factory + 1 year extended), allowed for warranty records by the owner 2026-11-02.",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -633,11 +656,16 @@
      "sku": "BK388",
      "name": "BiWaze Clear Home Care QRG",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+      "decided": "2026-11-02",
+      "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+     }
     }
    ],
    "sku_count": 1,
@@ -842,11 +870,16 @@
      "sku": "BK381",
      "name": "BiWaze Clear User Manual",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+      "decided": "2026-11-02",
+      "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+     }
     }
    ],
    "sku_count": 1,
@@ -915,11 +948,16 @@
      "sku": "BC23891",
      "name": "BiWaze Cough Acute Care QRG",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+      "decided": "2026-11-02",
+      "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+     }
     }
    ],
    "sku_count": 1,
@@ -1332,8 +1370,17 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/787bcf41c144aa399b49.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/787bcf41c144aa399b49.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner library 'New folder (2).zip' — BC21275.webp (sha256 8bad36f231b4d6c8)",
+     "note": "Warranty representation (badge: 1 year factory + 1 year extended), allowed for warranty records by the owner 2026-11-02.",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -1387,11 +1434,16 @@
      "sku": "BC23575",
      "name": "BiWaze Cough Home Care QRG",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+      "decided": "2026-11-02",
+      "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+     }
     }
    ],
    "sku_count": 1,
@@ -1601,11 +1653,19 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+   "image": "/assets/products/abm-respiratory-care/gallery/ccd97dfe963c5b2c3d9b.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+     "url": "/assets/products/abm-respiratory-care/gallery/ccd97dfe963c5b2c3d9b.jpg",
      "primary": true,
+     "caption": "",
+     "source": "owner library 'New folder (2).zip' — BC21087.webp (sha256 e79d2f452c10ec27)",
+     "note": "Standard (single-lumen) Cough circuit with face mask and filter; same photo as 'standard circuit.jfif' in the first library, now identified by the owner. Mask size is not distinguishable in the photo.",
+     "approved": true
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+     "primary": false,
      "caption": "",
      "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
      "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (child face mask) is included in the circuit but not shown in this photo.",
@@ -1951,11 +2011,16 @@
      "sku": "BC21084",
      "name": "BiWaze Cough User Manual",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+      "decided": "2026-11-02",
+      "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+     }
     }
    ],
    "sku_count": 1,
@@ -2448,8 +2513,17 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/2fa7890cffca9f44d720.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/2fa7890cffca9f44d720.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner library 'New folder (2).zip' — BK373.jpg (sha256 91a2cfc349f9b6e2)",
+     "note": "Nonin sensors — photo shows the small, medium and large sensors together.",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -2767,8 +2841,17 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/42c5363d6cb3725ece4d.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/42c5363d6cb3725ece4d.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner library 'New folder (2).zip' — BC22480.jfif (sha256 cba4b30f3360245c)",
+     "note": "Inline disc filter = 'Standard Filter Trap' (item C in ABM's BiWaze Clear Quick Reference Guide).",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -2822,11 +2905,16 @@
      "sku": "BC2396",
      "name": "Switzerland Power Cord",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Not purchased through the HCPS dealer platform — owner removed it from dealer ordering",
+      "decided": "2026-11-02",
+      "ref": "owner directive 2026-11-02 (ABM final completion, task 1)"
+     }
     }
    ],
    "sku_count": 1,

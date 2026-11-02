@@ -8,16 +8,16 @@ const MF=JSON.parse(fs.readFileSync(path.join(__dirname,'..','public','data','ma
 let pass=0,fail=0; const t=(n,f)=>{ try{f();pass++;console.log('ok   '+n);}catch(e){fail++;console.log('FAIL '+n+'\n     '+e.message);} };
 function grab(name){ const i=H.indexOf('function '+name+'('); if(i<0) throw new Error('missing '+name);
   let d=0,j=H.indexOf('{',i); for(;j<H.length;j++){ if(H[j]==='{')d++; else if(H[j]==='}'){ d--; if(!d) break; } } return H.slice(i,j+1); }
-const names=['quoteMsrp','quotableLine','quoteTotal','quoteMsrpHtml','quotePicked','quotePaperHtml','hashStr','renderQuotes','qPreview'];
+const names=['quoteMsrp','quotableLine','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview'];
 const els={};
 const ctx={ money:v=>'$'+Number(v).toFixed(2), esc:s=>String(s), brandLogoHtml:()=>'', PROFILE:{name:'Dealer X'}, QCUST:{name:'',valid:'30 days'},
   FAVS:new Set(), BRANDING:{logo_url:''}, $:sel=>els[sel]||(els[sel]={innerHTML:''}), Number, isFinite, String, Math };
 vm.createContext(ctx);
-vm.runInContext('var MFRLIST,PRICE,PRICELIST,QUOTE;\n'+names.map(grab).join('\n'),ctx);
+vm.runInContext('var MFRLIST,PRICE,PRICELIST,QUOTELIST,QUOTE,QSEARCH="",QUOTE_UNAVAILABLE=[];\n'+names.map(grab).join('\n'),ctx);
 ctx.MFRLIST=MF.map(m=>({slug:m.slug,name:m.name,quotable:m.quotable}));
 ctx.PRICE={'access4u|A1':{name:'With MSRP',mfrName:'Access4U',msrp:120,cost:60},'access4u|A2':{name:'No MSRP',mfrName:'Access4U',msrp:null,cost:77.77},
   'access4u|A3':{name:'Zero MSRP',mfrName:'Access4U',msrp:0,cost:40},'gce|G1':{name:'Ohio item',mfrName:'Ohio Medical / GCE',msrp:300,cost:150}};
-ctx.PRICELIST=Object.entries(ctx.PRICE).map(([k,p])=>({mfr:k.split('|')[0],code:k.split('|')[1],name:p.name,mfrName:p.mfrName,cost:p.cost,msrp:p.msrp}));
+ctx.QUOTELIST=Object.entries(ctx.PRICE).map(([k,p])=>({mfr:k.split('|')[0],code:k.split('|')[1],name:p.name,mfrName:p.mfrName,cost:p.cost,msrp:p.msrp}));
 t('Ohio Medical / GCE is marked not quotable in manufacturers.json; every other line stays quotable',()=>{
   const g=MF.find(m=>m.slug==='gce'); if(!g||g.quotable!==false) throw new Error('gce not quotable:false');
   const other=MF.filter(m=>m.slug!=='gce'&&m.quotable===false); if(other.length) throw new Error('also off: '+other.map(m=>m.slug));
@@ -37,6 +37,14 @@ t('the builder: Ohio Medical not offered for a new quote; an item already on the
   if(!/Ohio item/.test(h)) throw new Error('existing gce item dropped from the quote');
   if(/2× dealer-cost|est<\/span>|" est"/.test(h)) throw new Error('estimate wording in the builder');
   if(/77\.77|155\.54/.test(h)) throw new Error('dealer cost shown');
+});
+t('every quotable product is offered — no cap: 1,200 products across lines all appear, grouped by manufacturer',()=>{
+  const save=[ctx.QUOTELIST,ctx.QUOTE]; ctx.QUOTE=[];
+  ctx.QUOTELIST=Array.from({length:1200},(_,i)=>({mfr:i<1100?'pedifix':'abm-respiratory-care',code:'C'+i,name:'Item '+i,mfrName:i<1100?'PediFix':'ABM Respiratory Care'}));
+  ctx.renderQuotes(); const h=els['#view-quotes'].innerHTML;
+  const n=(h.match(/<option value=/g)||[]).length; ctx.QUOTELIST=save[0]; ctx.QUOTE=save[1];
+  if(n!==1200) throw new Error('offered '+n);
+  if(!/<optgroup label="ABM Respiratory Care">[\s\S]*value="abm-respiratory-care\|C1199"/.test(h)) throw new Error('ABM group missing');
 });
 t('no 2x arithmetic left in the quote code',()=>{ const src=names.slice(0,6).map(grab).join('\n'); if(/\*\s*2\b/.test(src)) throw new Error('x2 found'); });
 console.log(`quote rules: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
