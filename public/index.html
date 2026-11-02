@@ -2593,7 +2593,7 @@ function goldenStockHtml(items){
    note and item #: each choice asks golden-proxy `config` (Golden runs its own portal configurator) and this page only
    draws the answer. The size is the page's own size picker. Nothing is added to the cart until Stage 4. */
 const GCFG={ sel:{}, seq:0 };
-function goldenConfigHtml(p){ return `<div class="gcfg" id="gcfg" data-sku="${esc(p.code)}" data-fam="${esc(p._goldenFamily||"")}"><h3>Configure this chair</h3><div class="gcfg-note">Loading Golden's options…</div></div>`; }
+function goldenConfigHtml(p){ return `<div class="gcfg" id="gcfg" data-sku="${esc(p.code)}" data-fam="${esc(p._goldenFamily||String(p.code).split("-")[0])}"><h3>Configure this chair</h3><div class="gcfg-note">Loading Golden's options…</div></div>`; }
 async function goldenConfigLoad(host, sku, fam){
   const box=host.querySelector('#gcfg'); if(!box) return;
   const sel=GCFG.sel[fam]||(GCFG.sel[fam]={fabric:"std",color:null,tier:null,footrest:false});
@@ -2619,7 +2619,7 @@ function goldenConfigBody(c, pv, sel){
     :((c.tiers&&c.tiers.options||[]).length>1?`<div class="gl">Upgrade</div><div class="gcfg-tiers">${c.tiers.options.map(o=>`<button type="button" class="gcfg-tier${o.key===tier?" on":""}" data-gtier="${esc(o.key)}">${esc(T[o.key]||o.key)}${up(o.upcharge)}</button>`).join("")}</div>`:"");
   const fr=c.footrest&&c.footrest.eligible?`<label class="gcfg-fr"><input type="checkbox" data-gfoot${sel.footrest?" checked":""}> Footrest extension (${esc(c.footrest.part||"")})${up(c.footrest.upcharge)}</label>`:"";
   const q=c.quote;
-  const qh=q?`<div class="gcfg-q">${pv&&typeof q.unit_price==="number"?`<div class="gp">${money(q.unit_price)}</div>${q.breakdown?`<div class="gbd">${esc(q.breakdown)}</div>`:""}`:`<div class="gbd">Dealer price shows once your Golden account is linked.</div>`}
+  const qh=q?`<div class="gcfg-q">${pv&&typeof q.unit_price==="number"?`<div class="gp">${money(q.unit_price)}</div>${q.breakdown?`<div class="gbd">${esc(q.breakdown)}</div>`:""}`:`<div class="gbd">${GOLDEN.state==="account"?"Dealer pricing isn't shown for your Golden account.":"Dealer price shows once your Golden account is linked."}</div>`}
     <div><b>${esc(q.details||q.color_name||q.color||"")}</b></div>
     <div class="${q.in_stock?"gin":"gcu"}">${esc(q.lead_note||(q.in_stock?"In stock":"Custom build"))}</div>
     <div class="gitem">Golden item # ${esc(q.item_no)}${q.item_no_resolved?"":" (built to the specification above)"}</div></div>`
