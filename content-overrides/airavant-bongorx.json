@@ -18,20 +18,28 @@
  },
  "bongo-rx-annual-replenishment-pack-extra-small-xs": {
   "features": [
-   "No machine, no masks, no hoses and no power needed (manufacturer description)",
-   "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
-   "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
-   "Quiet — allows sleeping in virtually any position",
-   "Reusable and easy to clean; small enough to fit in a pocket",
-   "Designed and made in the USA",
-   "Prescription device"
+   "No machine or power required — small and simple",
+   "Uses the patient's own exhalation to generate EPAP (Expiratory Positive Airway Pressure)",
+   "Soft nasal seals; small valves open on inhalation and close on exhalation, directing exhaled air through precisely designed vent holes",
+   "Use at home and while traveling",
+   "Simple to use: quick startup, no assembly required, easy to clean",
+   "Manufacturer statement: clinically tested and FDA-cleared for mild to moderate obstructive sleep apnea",
+   "Prescription device — AirAvant: all devices that treat sleep apnea require a prescription in the U.S.",
+   "Designed and made in the USA"
   ],
   "field_provenance": {
-   "description": "HCPS catalog line only (no product-specific manufacturer source)",
+   "description": "family rule description (content-overrides _families) — AirAvant Bongo Rx brochure 18006 Rev D (2026) — https://bongorx.com/wp-content/uploads/Bongo-Rx-Flyer-US.pdf; AirAvant 2026 Provider Price List (18023 Rev F) — part numbers and contents only",
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
-   "features": "manufacturer page — https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
-  }
+   "features": "AirAvant Bongo Rx brochure 18006 Rev D (2026) — https://bongorx.com/wp-content/uploads/Bongo-Rx-Flyer-US.pdf",
+   "documents": "AirAvant brochure — HCPS-hosted copy of the manufacturer flyer"
+  },
+  "documents": [
+   {
+    "title": "Bongo Rx brochure — AirAvant 18006 Rev D (2026)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/bongorx-epap-brochure-2026.pdf"
+   }
+  ]
  },
  "bongo-rx-annual-replenishment-pack-large-lg": {
   "features": [
@@ -103,20 +111,28 @@
  },
  "bongo-rx-single-replenishment-unit-extra-small-xs": {
   "features": [
-   "No machine, no masks, no hoses and no power needed (manufacturer description)",
-   "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
-   "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
-   "Quiet — allows sleeping in virtually any position",
-   "Reusable and easy to clean; small enough to fit in a pocket",
-   "Designed and made in the USA",
-   "Prescription device"
+   "No machine or power required — small and simple",
+   "Uses the patient's own exhalation to generate EPAP (Expiratory Positive Airway Pressure)",
+   "Soft nasal seals; small valves open on inhalation and close on exhalation, directing exhaled air through precisely designed vent holes",
+   "Use at home and while traveling",
+   "Simple to use: quick startup, no assembly required, easy to clean",
+   "Manufacturer statement: clinically tested and FDA-cleared for mild to moderate obstructive sleep apnea",
+   "Prescription device — AirAvant: all devices that treat sleep apnea require a prescription in the U.S.",
+   "Designed and made in the USA"
   ],
   "field_provenance": {
-   "description": "HCPS catalog line only (no product-specific manufacturer source)",
+   "description": "family rule description (content-overrides _families) — AirAvant Bongo Rx brochure 18006 Rev D (2026) — https://bongorx.com/wp-content/uploads/Bongo-Rx-Flyer-US.pdf; AirAvant 2026 Provider Price List (18023 Rev F) — part numbers and contents only",
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
-   "features": "manufacturer page — https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
-  }
+   "features": "AirAvant Bongo Rx brochure 18006 Rev D (2026) — https://bongorx.com/wp-content/uploads/Bongo-Rx-Flyer-US.pdf",
+   "documents": "AirAvant brochure — HCPS-hosted copy of the manufacturer flyer"
+  },
+  "documents": [
+   {
+    "title": "Bongo Rx brochure — AirAvant 18006 Rev D (2026)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/bongorx-epap-brochure-2026.pdf"
+   }
+  ]
  },
  "bongo-rx-single-replenishment-unit-large-lg": {
   "features": [
@@ -171,20 +187,29 @@
  },
  "bongo-rx-four-size-starter-kit": {
   "features": [
-   "No machine, no masks, no hoses and no power needed (manufacturer description)",
-   "Soft silicone sealing beads hold the device in the nostrils; one-way valves create expiratory back pressure (EPAP)",
-   "Manufacturer statement: reviewed and cleared by the FDA for the treatment of mild to moderate obstructive sleep apnea",
-   "Quiet — allows sleeping in virtually any position",
-   "Reusable and easy to clean; small enough to fit in a pocket",
-   "Designed and made in the USA",
-   "Prescription device"
+   "No machine or power required — small and simple",
+   "Uses the patient's own exhalation to generate EPAP (Expiratory Positive Airway Pressure)",
+   "Soft nasal seals; small valves open on inhalation and close on exhalation, directing exhaled air through precisely designed vent holes",
+   "Use at home and while traveling",
+   "Simple to use: quick startup, no assembly required, easy to clean",
+   "Manufacturer statement: clinically tested and FDA-cleared for mild to moderate obstructive sleep apnea",
+   "Prescription device — AirAvant: all devices that treat sleep apnea require a prescription in the U.S.",
+   "Designed and made in the USA"
   ],
   "field_provenance": {
-   "description": "HCPS catalog line only (no product-specific manufacturer source)",
+   "description": "AirAvant Bongo Rx brochure 18006 Rev D (2026) — https://bongorx.com/wp-content/uploads/Bongo-Rx-Flyer-US.pdf; AirAvant 2026 Provider Price List (18023 Rev F) — part numbers and contents only",
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
-   "features": "manufacturer page — https://bongorx.com/ (manufacturer home page, read 2026-10-27)"
-  }
+   "features": "AirAvant Bongo Rx brochure 18006 Rev D (2026) — https://bongorx.com/wp-content/uploads/Bongo-Rx-Flyer-US.pdf",
+   "documents": "AirAvant brochure — HCPS-hosted copy of the manufacturer flyer"
+  },
+  "description": "Bongo Rx – Four Sizes Starter Kit (BNG500). Includes 1 each of sizes SM, MD, LG and XL, a headgear, a travel case and a drying stand. AirAvant recommends that every patient start with this kit, so the size that fits best can be found at home.",
+  "documents": [
+   {
+    "title": "Bongo Rx brochure — AirAvant 18006 Rev D (2026)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/bongorx-epap-brochure-2026.pdf"
+   }
+  ]
  },
  "_images": {
   "BNG505": [
@@ -301,5 +326,99 @@
     "note": "Official 'Using the optional headgear' video still: sleeper wearing the gray Bongo Rx headgear holding the device in the nostrils (1920x1080)."
    }
   ]
- }
+ },
+ "bongo-rx-replacement-headgear": {
+  "description": "Bongo Rx – Replacement Headgear Accessory (BNG530). A headgear comes standard with every Bongo Rx Starter Kit, Annual Replenishment Pack and Single Replenishment Unit; order BNG530 to replace it. Sold individually.",
+  "features": [],
+  "documents": [
+   {
+    "title": "Bongo Rx brochure — AirAvant 18006 Rev D (2026)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/bongorx-epap-brochure-2026.pdf"
+   }
+  ],
+  "field_provenance": {
+   "description": "AirAvant 2026 Provider Price List (18023 Rev F) — part numbers and contents only; Bongo Rx patient page (the headgear 'comes standard with your Bongo Rx kit')",
+   "features": "no feature list in the manufacturer sources — left blank",
+   "documents": "AirAvant brochure — HCPS-hosted copy of the manufacturer flyer",
+   "warranty": "not stated by the source — left blank"
+  }
+ },
+ "_families": [
+  {
+   "key": "bongo-rx-annual-replenishment-pack",
+   "name": "Bongo Rx Annual Replenishment Pack",
+   "match": {
+    "code_re": "^BNG50[1-5]$"
+   },
+   "content_from": "bongo-rx-annual-replenishment-pack-extra-small-xs",
+   "description": "Bongo Rx – Annual Replenishment Pack. Each pack includes 4 Bongo Rx devices of a single size, a headgear, a travel case and a drying stand. Choose the size (XS, SM, MD, LG or XL); each size is its own AirAvant part number (BNG501–BNG505). AirAvant: once a patient knows their preferred size and has used the Starter Kit for up to 90 days, order the Annual Replenishment Pack in that size. Sizes can be mixed and matched for quantity pricing. XS is offered in replenishment packs and single units only — the Starter Kit holds SM, MD, LG and XL.",
+   "axes": [
+    {
+     "name": "Size",
+     "on": "name",
+     "re": "— (.+)$",
+     "fmt": "{1}"
+    }
+   ],
+   "order": [
+    "BNG501",
+    "BNG502",
+    "BNG503",
+    "BNG504",
+    "BNG505"
+   ],
+   "specs": [
+    {
+     "label": "Contents",
+     "on": "name",
+     "re": "\\((XS|SM|MD|LG|XL)\\)",
+     "fmt": "4 Bongo Rx devices, size {1} · headgear · travel case · drying stand"
+    },
+    {
+     "label": "AirAvant part no.",
+     "on": "code",
+     "re": "^(.+)$",
+     "fmt": "{1}"
+    }
+   ]
+  },
+  {
+   "key": "bongo-rx-single-replenishment-unit",
+   "name": "Bongo Rx Single Replenishment Unit",
+   "match": {
+    "code_re": "^BNG51[1-5]$"
+   },
+   "content_from": "bongo-rx-single-replenishment-unit-extra-small-xs",
+   "description": "Bongo Rx – Single Replenishment Unit. Each unit includes 1 Bongo Rx device of a single size and a headgear only (no travel case or drying stand). Choose the size (XS, SM, MD, LG or XL); each size is its own AirAvant part number (BNG511–BNG515). Sizes can be mixed and matched for quantity pricing.",
+   "axes": [
+    {
+     "name": "Size",
+     "on": "name",
+     "re": "— (.+)$",
+     "fmt": "{1}"
+    }
+   ],
+   "order": [
+    "BNG511",
+    "BNG512",
+    "BNG513",
+    "BNG514",
+    "BNG515"
+   ],
+   "specs": [
+    {
+     "label": "Contents",
+     "on": "name",
+     "re": "\\((XS|SM|MD|LG|XL)\\)",
+     "fmt": "1 Bongo Rx device, size {1} · headgear"
+    },
+    {
+     "label": "AirAvant part no.",
+     "on": "code",
+     "re": "^(.+)$",
+     "fmt": "{1}"
+    }
+   ]
+  }
+ ]
 }

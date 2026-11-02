@@ -42,8 +42,8 @@ const MUTANTS = [
     to:   '  const norm = c => String(c == null ? "" : c);' },
 
   { name: 'ignore the storefront spelling of a ladder rung',
-    from: "    ? t.map(x => Math.round(Number(x.min_qty != null ? x.min_qty : x.minQty)) + ':' + Number(x.price))",
-    to:   "    ? t.map(x => Math.round(Number(x.min_qty)) + ':' + Number(x.price))" },
+    from: "    ? t.map(x => Math.round(Number(x.min_qty != null ? x.min_qty : x.minQty)) + ':' + Number(x.price) + (x.pool ? '@' + x.pool : ''))",
+    to:   "    ? t.map(x => Math.round(Number(x.min_qty)) + ':' + Number(x.price) + (x.pool ? '@' + x.pool : ''))" },
 
   { name: 'let ladder order count as a difference',
     from: "       .sort().join(',')",

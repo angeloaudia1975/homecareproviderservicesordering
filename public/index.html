@@ -1241,7 +1241,9 @@ table.gspec th.on,table.gspec td.on{background:#fff7e0}table.gspec td.v{white-sp
 .pd-golden{margin-top:12px;padding:12px 14px;border-radius:10px;background:#fbf6e8;border:1px solid #f1dfa6;font-size:13.5px;color:#4b3a07;line-height:1.45;}
 .cv2-act{grid-row:2;grid-column:1/-1;padding:10px 12px 12px;border-top:1px solid var(--line);}
 .cv2-act .buy{margin:0;}
-.cv2-act .chooseBtn{display:block;width:100%;border:0;cursor:pointer;min-height:42px;font-size:14px;}
+.cv2-act .chooseBtn{display:block;width:100%;border:0;cursor:pointer;min-height:44px;font-size:14px;}
+/* Primary ordering controls are at least 44px tall at every width (touch target, RULE 10 — tablets included). */
+.cv2-act .buy .addbtn,.cv2-act .buy .qtyin{min-height:44px;}
 .cv2-act .upgr{margin:0 0 8px;}
 .cv2-ghost{background:#fff;border:1px solid var(--line);color:var(--navy);border-radius:8px;padding:9px 12px;min-height:40px;font:inherit;font-weight:700;cursor:pointer;margin-left:8px;}
 /* list view: one row per product */
@@ -1261,7 +1263,7 @@ table.gspec th.on,table.gspec td.on{background:#fff7e0}table.gspec td.v{white-sp
 @media (prefers-reduced-motion:reduce){.cv2-skel i,.cv2-skel span{animation:none;}}
 .cv2-loading{padding:40px;text-align:center;color:var(--gray);}
 .cv2-pager{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap;margin:20px 0 6px;}
-.cv2-pager button{min-width:42px;min-height:42px;border:1px solid var(--line);background:#fff;border-radius:9px;font:inherit;font-weight:700;color:var(--navy);cursor:pointer;padding:0 12px;}
+.cv2-pager button{min-width:44px;min-height:44px;border:1px solid var(--line);background:#fff;border-radius:9px;font:inherit;font-weight:700;color:var(--navy);cursor:pointer;padding:0 12px;}
 .cv2-pager button.on{background:var(--navy);color:#fff;border-color:var(--navy);}
 .cv2-pager button:disabled{opacity:.4;cursor:default;}
 .cv2-pager span{color:var(--gray);}
@@ -1286,6 +1288,9 @@ table.gspec th.on,table.gspec td.on{background:#fff7e0}table.gspec td.v{white-sp
   .cv2-x{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;background:var(--paper);border-radius:10px;font-size:18px;cursor:pointer;color:var(--navy);}
   .cv2-filterbtn{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--navy);color:var(--navy);border-radius:10px;padding:0 14px;min-height:44px;font:inherit;font-weight:700;cursor:pointer;flex:none;}
   .cv2-cat,.cv2-line{min-height:44px;}
+  /* touch layouts (tablet and phone): every control a dealer taps to order or filter is at least 44px */
+  .cv2-chip,.cv2-sort select,.cv2-ghost,.cv2-active button{min-height:44px;}
+  .cv2-view button,.cv2-chipnext{width:44px;height:44px;}
   .cv2-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
   .cv2-grid:not(.list) .cv2-card{grid-template-columns:40% minmax(0,1fr);grid-template-rows:1fr auto;}
   .cv2-grid:not(.list) .cv2-card .img{grid-row:1;height:100%;border-right:1px solid var(--line);border-bottom:0;}
@@ -3582,11 +3587,25 @@ function cvInCat(p,cat){ if(!cat) return true; if(cat.startsWith('sub:')) return
   return cat==='Other' ? (!p.category||p.category==='Other') : p.category===cat; }
 /* how many family cards a list makes (the number a dealer sees), not how many SKUs */
 function cvFamilies(list){ return new Set(list.map(groupKeyOf)).size; }
-/* Subcategories alphabetically, except a line that states its own order (Golden: its products' sort). */
+/* A line's own card order (presentation only): manufacturers.json `card_order` lists the line's product-page
+   keys in the order dealers should see them (BongoRx: Starter Kit first — AirAvant says every patient starts
+   there). A product on a listed page gets its position; anything else has none and sorts as before. It never
+   touches a price, part number, catalog file or pricing family. */
+function cvCardOrder(p){
+  const m=(p&&p.manufacturer&&typeof mfrInfo==='function')?mfrInfo(p.manufacturer):null;
+  const list=m&&Array.isArray(m.card_order)?m.card_order:null; if(!list||!p._pageKey) return null;
+  const i=list.indexOf(p._pageKey); return i<0?null:i;
+}
+/* Subcategories alphabetically, except a line that states its own order (Golden: its products' sort; any
+   other line: its card_order). */
 function cvSubOrder(a,b){
   const first=sc=>{ const x=state.products.find(p=>p.subcategory===sc&&p._golden); return x?(x._goldenSort||0):null; };
+  const card=sc=>{ let m=null; state.products.forEach(p=>{ if(p.subcategory!==sc) return; const o=cvCardOrder(p); if(o!=null&&(m==null||o<m)) m=o; }); return m; };
   const fa=first(a), fb=first(b);
-  return (fa!=null&&fb!=null)?(fa-fb):String(a).localeCompare(String(b));
+  if(fa!=null&&fb!=null) return fa-fb;
+  const ca=card(a), cb=card(b);
+  if(ca!=null||cb!=null) return (ca!=null&&cb!=null)?(ca-cb):(ca!=null?-1:1);
+  return String(a).localeCompare(String(b));
 }
 function cvTree(base){
   const cats={};
@@ -3614,6 +3633,10 @@ function cvLeads(list){
   else leads.sort((a,b)=>compareCats(a.category||"Other", b.category||"Other")
     /* Golden keeps Golden's own order (5-Zone before 1-Zone, as on Golden's portal) */
     || ((a._golden&&b._golden)?((a._goldenSort||0)-(b._goldenSort||0)):0)
+    /* a line with a stated card order keeps it (presentation only). Lexicographic, so the sort stays consistent if
+       lines ever share a category: ordered cards first (by line, then position), then everyone else as before. */
+    || (()=>{ const oa=cvCardOrder(a), ob=cvCardOrder(b); if((oa!=null)!==(ob!=null)) return oa!=null?-1:1; if(oa==null) return 0;
+         return String(a.manufacturer||"").localeCompare(String(b.manufacturer||""))||(oa-ob); })()
     || String(a.subcategory||"").localeCompare(String(b.subcategory||""))
     || name(a).localeCompare(name(b)));
   /* an exact part number comes first, whatever the sort: "BC2396" must not show "BC23966" above it */
@@ -6612,7 +6635,9 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     // same item repeated in other sizes. Prefers the same subcategory, then the same category.
     const relSeen=new Set([gk]);
     const relPool=(state.products||[]).filter(x=>{
-      const xg=x._golden?groupKeyOf(x):(x.group||x.code); if(relSeen.has(xg)) return false;
+      /* the same family key the cards use (page, else group, else code): another size of THIS page is one of its
+         options, never a related product (2026-11-02; was group||code, which listed BongoRx's other sizes) */
+      const xg=groupKeyOf(x); if(relSeen.has(xg)) return false;
       if((x.category||"")!==(p.category||"")) return false;
       relSeen.add(xg); return true; });
     const sameSub=relPool.filter(x=>(x.subcategory||"")&&(x.subcategory||"")===(p.subcategory||""));

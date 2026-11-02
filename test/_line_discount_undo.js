@@ -20,6 +20,9 @@ const SNIPPETS = [
   [/\n  if\(t\.mode==='qty_threshold'\) return [^\n]*/, ''],
   [/\n  \/\* FREE STANDARD SHIPPING BY ORDER QUANTITY[\s\S]*?\n  if\(cfg\.mode==="qty_threshold"\)\{[\s\S]*?\n  \}/, ''],
   [/\$\{r\.qtyRemaining>0\?` <span class="prog">· add \$\{r\.qtyRemaining\} more qualifying unit[^\n]*?\(\$\{r\.freeAtQty\}\+\)<\/span>`:""\}/, ''],
+  /* Golden B2 (PR #17, merged by the owner 2026-11-02): Golden products are browse-only in Partner 360 until Golden
+     ordering opens. Only a product the Golden catalog builds carries _golden, so no other line's cart behaviour moves. */
+  [/\n  if\(p && p\._golden\)\{ toast\("Golden ordering in Partner 360 is not open yet\."\); return; \}/, ''],
 ];
 function undoLineDiscount(html) {
   let s = String(html);

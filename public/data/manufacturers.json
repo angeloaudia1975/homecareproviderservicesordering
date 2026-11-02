@@ -64,6 +64,7 @@
   {
     "slug": "airavant-bongorx",
     "name": "AIRAVANT / BongoRx",
+    "card_order": ["bongo-rx-four-size-starter-kit", "bongo-rx-annual-replenishment-pack", "bongo-rx-single-replenishment-unit", "bongo-rx-replacement-headgear"],
     "accent": "#f3b223",
     "dark": "#003f67",
     "logo": "/assets/logos/airavant-bongorx.jpg",
