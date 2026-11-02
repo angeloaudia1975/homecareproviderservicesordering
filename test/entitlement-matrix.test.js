@@ -52,7 +52,7 @@ const ev=(slug,tok)=>({httpMethod:'GET',headers:tok?{authorization:'Bearer '+tok
   /* storefront: the shop shows a dealer exactly the lines its access answer allows (never "all" by default) */
   const H=fs.readFileSync(path.join(ROOT,'public','index.html'),'utf8');
   const grab=n=>{ const i=H.indexOf('function '+n+'('); let d=0,j=H.indexOf('{',i); for(;j<H.length;j++){ if(H[j]==='{')d++; else if(H[j]==='}'){ d--; if(!d) break; } } return H.slice(i,j+1); };
-  const ctx={CONFIG:{GOLDEN_ENABLED:false,GOLDEN_SLUG:'golden-technologies'},state:{manufacturers:MF.map(s=>({slug:s,hasData:true}))},AUTH:{}};
+  const ctx={CONFIG:{GOLDEN_ENABLED:false,GOLDEN_SLUG:'golden-technologies'},GOLDEN:{on:false},state:{manufacturers:MF.map(s=>({slug:s,hasData:true}))},AUTH:{}};  // Golden shows only when Golden itself said so (B2)
   vm.createContext(ctx); vm.runInContext(['entitledManufacturers','isGoldenSlug','goldenEntitled','goldenMfr','withGolden'].map(grab).join('\n'),ctx);
   for(const d of ['dealer-A','dealer-B']) await t(`${d}: the storefront shows exactly its lines`,()=>{
     ctx.AUTH={status:'approved',access:{your_accounts:DEALERS[d].lines,available:[]}};
