@@ -1402,13 +1402,16 @@ const CONFIG = {
   ORDER_ENDPOINT: "/.netlify/functions/submit-order",  // Resend order email (netlify/functions/submit-order.js)
   SAMPLE_ENDPOINT: "/.netlify/functions/sample-request",  // Resend sample-request email (netlify/functions/sample-request.js)
   AUTH_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/dealer-auth", // dealer login backend (CORS-enabled)
-  GOLDEN_BASE: "",                     // ← your Golden ordering platform base domain (e.g. https://order.golden-tech.com). Each dealer's /portal/… path is appended. Blank shows a "contact your rep" note.
+  GOLDEN_BASE: "https://goldenonlineordering.netlify.app", // Golden ordering platform base domain (e.g. https://order.golden-tech.com). Each dealer's /portal/… path is appended. Blank shows a "contact your rep" note.
   // ---- Stage 6: Golden integration (order Golden inside Partner 360 via Golden's OWN commerce API) ----
-  // Federation doctrine: the Partner 360 FRONT-END submits through Golden's own API (blueprint v1.2.0 §2);
-  // HCPS never writes Golden's database. Golden then emits the order back into the shared HCPS record.
-  GOLDEN_ENABLED: true,                // surface Golden as a shoppable line inside Partner 360
+  // Federation doctrine (blueprint v1.3.0 §2.4/§5.5): Partner 360 reaches Golden ONLY through the server-side
+  // golden-proxy (signed, delegated, idempotent) — never from the browser. HCPS never writes Golden's database
+  // and never records a Golden order of its own; Golden owns the order and sends it back as events.
+  // OFF until Stage 2 (catalog) is built and Angelo switches it on: with it off, Golden account holders get the
+  // link to the Golden platform (where they order today) instead of an in-platform catalog that does not exist yet.
+  GOLDEN_ENABLED: false,               // surface Golden as a shoppable line inside Partner 360 (Stage 2+)
   GOLDEN_SLUG: "golden-technologies",  // manufacturer slug used for Golden across the platform
-  GOLDEN_ORDER_ENDPOINT: "",           // Golden's own order-submit API (shared commerce engine). Blank = safe stub: forms the shared record locally, no external write.
+  GOLDEN_ORDER_ENDPOINT: "",           // unused: Golden orders go browser → golden-proxy (HCPS) → Golden /v1/orders (Stage 4). Never called from the browser.
   GOLDEN_CATALOG: "",                  // Golden catalog JSON for in-platform shopping. Blank → ./data/golden-technologies.json
   GOLDEN_STATUS_ENDPOINT: "",          // Golden order status / tracking sync (Golden → Partner 360)
 
@@ -3910,6 +3913,7 @@ async function submitOrder(){
   const groups=groupCart();
   try{ for(const[slug,lines]of groups) track('order_started',slug,undefined,{items:lines.reduce((n,it)=>n+(it.qty||0),0)}); }catch(e){}  // began placing an order (+15/line)
   for(const[slug]of groups){
+    if(isGoldenSlug(slug)) continue;   // Golden lines are not submitted here (see below), so no PO is asked for them
     if(!(MFR[slug]&&(MFR[slug].po||"").trim())){
       const el=document.querySelector(`.mgroup[data-slug="${(window.CSS&&CSS.escape)?CSS.escape(slug):slug}"] .po`);
       if(el){el.classList.add("needpo");el.focus();el.scrollIntoView({block:"center",behavior:"smooth"});}
@@ -3930,7 +3934,7 @@ async function submitOrder(){
     const f=computeFreight(slug,lines), info=mfrInfo(slug);
     orders.push({
       manufacturer_slug:slug, manufacturer_name:info.name,
-      po:MFR[slug].po.trim(), notes:(MFR[slug].notes||"").trim(),
+      po:((MFR[slug]&&MFR[slug].po)||"").trim(), notes:((MFR[slug]&&MFR[slug].notes)||"").trim(),
       items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,upgrade:p._upgrade||undefined,name:p.name,brand:p.brand||"",uom:p.uom||"",case_qty:(packOf(p)?packOf(p).n:undefined),qty,unit:unitPrice(p,qty)})),
       items_count:lines.reduce((n,{qty})=>n+qty,0),
       items_subtotal:Number(f.itemsTotal.toFixed(2)),
@@ -3939,9 +3943,14 @@ async function submitOrder(){
       estimated_total:Number((f.itemsTotal+f.fee).toFixed(2))
     });
   }
-  // Stage 6: Golden orders submit through Golden's OWN commerce API (federation §2); the rest go to HCPS.
+  // Golden lines are never submitted from Partner 360 in this release (blueprint v1.3.0): they stay in the cart,
+  // nothing is recorded by HCPS and no Golden order id is ever invented. Stage 4 submits them through golden-proxy.
   const goldenOrders = orders.filter(o=>isGoldenSlug(o.manufacturer_slug));
   const hcpsOrders   = orders.filter(o=>!isGoldenSlug(o.manufacturer_slug));
+  if(goldenOrders.length && !hcpsOrders.length){
+    toast("Golden Technologies can't be ordered in Partner 360 yet — please order it on the Golden platform. Nothing was submitted.");
+    return;
+  }
   const payload={dealer, orders:hcpsOrders, submitted_at:new Date().toISOString()};
   if(typeof STAGING!=="undefined"&&STAGING){ return stagingSubmit(payload,btn); }
   btn.disabled=true; btn.textContent="Submitting…";
@@ -3967,22 +3976,23 @@ async function submitOrder(){
       if(j.status==="email_failed") emailWarn=true;   // recorded at the server's prices; only the HCPS email failed (flagged for HCPS staff)
       DASH.orders=null;             // invalidate cache so the dashboard refetches
     }
-    // 2) Golden lines -> Golden's own API. Tags order_source, captures the shared order id.
-    for(const go of goldenOrders){ await submitGoldenOrder(go, dealer); }
-    // 3) Golden orders are recorded into the Partner 360 order record here (HCPS orders already were).
-    if(goldenOrders.length && AUTH.status==='approved' && AUTH.session && AUTH.session.access_token){
-      try{ await fetch(CONFIG.ORDERS_ENDPOINT,{method:"POST",
-        headers:{"Content-Type":"application/json",authorization:"Bearer "+AUTH.session.access_token},
-        body:JSON.stringify({action:"create",orders:goldenOrders,dealer})});
-        DASH.orders=null;
-      }catch(e){}
+    // 2) Golden lines stay in the cart (see above) — never submitted, never recorded by HCPS.
+    const goldenKept=new Set(goldenOrders.map(go=>go.manufacturer_slug));
+    const parts=[]; if(hcpsOrders.length)parts.push(`${hcpsOrders.length} to HCPS`);
+    if(goldenKept.size && !keep.size){
+      for(const [k,it] of [...CART]) if(!goldenKept.has(it.p.manufacturer)){ CART.delete(k); PRICE_NOTES.delete(k); }
+      for(const k in MFR) if(!goldenKept.has(k)) delete MFR[k];
+      updateCart();
+      toast(`Submitted ${parts.join(' + ')||'order'} ✓ — your Golden Technologies items stay in your cart: please order them on the Golden platform.`);
+      return;
     }
-    const parts=[]; if(hcpsOrders.length)parts.push(`${hcpsOrders.length} to HCPS`); if(goldenOrders.length)parts.push(`${goldenOrders.length} to Golden`);
+    goldenKept.forEach(sl=>keep.add(sl));
     if(keep.size){
       for(const [k,it] of [...CART]) if(!keep.has(it.p.manufacturer)){ CART.delete(k); PRICE_NOTES.delete(k); }
       for(const k in MFR) if(!keep.has(k)) delete MFR[k];
       updateCart();
-      toast(`Some orders were placed, but ${[...keep].map(sl=>mfrInfo(sl).name).join(', ')} could not be recorded — still in your cart. Please place it again.`);
+      const failedNames=[...keep].filter(sl=>!goldenKept.has(sl)).map(sl=>mfrInfo(sl).name).join(', ');
+      toast(`Some orders were placed, but ${failedNames} could not be recorded — still in your cart. Please place it again.`+(goldenKept.size?` Your Golden Technologies items also stay in your cart: please order them on the Golden platform.`:``));
       return;
     }
     toast(emailWarn?`Order recorded ✓ — HCPS has been flagged to confirm it with the manufacturer`:`Submitted ${parts.join(' + ')||'order'} ✓`);
@@ -3990,30 +4000,10 @@ async function submitOrder(){
   }catch(e){console.error(e);toast("Could not submit — please try again.");}
   finally{btn.disabled=false;btn.textContent="Place order →";}
 }
-/* ---- Stage 6: submit one Golden order through Golden's own commerce API ----
-   Federation v1.2.0 §2: the Partner 360 front-end submits via Golden's endpoint (the same
-   shared engine the Golden platform uses); HCPS never writes Golden's DB. Golden returns the
-   shared order id, which Partner 360 then records into its own history (source='golden'). */
-async function submitGoldenOrder(order, dealer){
-  order.source='golden'; order.order_source='partner360';
-  const body={ order_source:'partner360', dealer,
-    po:order.po, notes:order.notes, items:order.items,
-    items_count:order.items_count, estimated_total:order.estimated_total,
-    submitted_at:new Date().toISOString() };
-  if(CONFIG.GOLDEN_ORDER_ENDPOINT){
-    try{
-      const res=await fetch(CONFIG.GOLDEN_ORDER_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-      if(res.ok){ const d=await res.json().catch(()=>({})); order.order_id=d.order_id||d.id||null; order.status=d.status||'received'; }
-      else { order.status='pending_sync'; }
-    }catch(e){ order.status='pending_sync'; }
-  } else {
-    // No live Golden endpoint wired yet: form the shared record locally so nothing is lost.
-    order.order_id='G-'+Date.now().toString(36).toUpperCase(); order.status='received';
-  }
-  order.golden_order_id=order.order_id;
-  try{ track('golden_order_submitted', CONFIG.GOLDEN_SLUG, undefined, {total:order.estimated_total}); }catch(e){}
-  return order;
-}
+/* ---- Golden orders (blueprint v1.3.0 §2.4/§5.5) ----
+   Not submitted from this page in this release. Stage 4 adds: browser → golden-proxy (HCPS, signed and
+   delegated, one Idempotency-Key per checkout attempt) → Golden /v1/orders, which mints the ONLY order id.
+   The browser never calls Golden directly, never invents an order id and never records a Golden order. */
 
 /* ---------- Access4U modular ramp quote builder ---------- */
 const A4U={items:[], open:false, rise:0, width:36, hubMode:false, host:null, project:null};          // items: ordered [{code,fam,qty,turn?}]; PRK<width> auto-added per platform; turn on PS platforms
