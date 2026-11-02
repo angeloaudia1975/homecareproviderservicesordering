@@ -30,7 +30,7 @@ function world(entitled){
       const m=u.match(/data\/([a-z-]+)\.json/); if(m&&files[m[1]]) return R(JSON.parse(JSON.stringify(files[m[1]])));
       return {ok:false,json:async()=>null}; },
     layersHeaders:async()=>null, catalogIdentity:()=>'id', restoreCatalogFile:i=>i,
-    entitledManufacturers:()=>ctx.MFR.filter(m=>entitled.includes(m.slug)), isGoldenSlug:s=>s==='golden',
+    entitledManufacturers:()=>ctx.MFR.filter(m=>ctx.ent.includes(m.slug)), isGoldenSlug:s=>s==='golden',
     mergeCatalogEdits:async(slug)=>JSON.parse(JSON.stringify(MERGED[slug]||[])),
     unitPrice:(p)=>Number(p.base_price)||null,
     withUpgrade:(p,l)=>{ const u=(p.upgrades||[]).find(x=>x.label===l); return u?Object.assign({},p,{_upgrade:l,base_price:p.base_price+u.price_add,msrp:Math.round((p.msrp*(p.base_price+u.price_add)/p.base_price)*100)/100}):null; },
@@ -39,10 +39,10 @@ function world(entitled){
     brandLogoHtml:()=>'', PROFILE:{name:'Dealer X'}, QCUST:{name:'',valid:'30 days'}, FAVS:new Set(), BRANDING:{}, encodeURIComponent };
   const els={}; ctx.$=sel=>els[sel]||(els[sel]={innerHTML:'',value:''}); ctx.els=els;
   vm.createContext(ctx);
-  vm.runInContext('var PRICE=null,PRICELIST=null,QUOTELIST=null,MFRLIST=null,QUOTE=[],QSEARCH="",QUOTE_UNAVAILABLE=[];'+
-    extract(H)+'\n'+grabDecl(H,'function axesOf')+'\n'+['quotableLine','quoteOptionText','quoteEntry','hubStoreCatalog','loadPricing','quoteMsrp','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qDelAt','qFilter'].map(grab).join('\n')+
+  vm.runInContext('var PRICE=null,PRICELIST=null,QUOTELIST=null,MFRLIST=null,QUOTE=[],QSEARCH="",QUOTE_UNAVAILABLE=[],_quoteSig=null,_quoteBuild=null;'+
+    extract(H)+'\n'+grabDecl(H,'function axesOf')+'\n'+['quotableLine','quoteOptionText','quoteEntry','hubStoreCatalog','ensureQuoteCatalog','buildQuoteCatalog','loadPricing','quoteMsrp','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qDelAt','qFilter'].map(grab).join('\n')+
     ';this.S=()=>({PRICE,PRICELIST,QUOTELIST,QUOTE_UNAVAILABLE,QUOTE}); this.setQ=q=>{QUOTE=q;};',ctx);
-  return ctx;
+  ctx.ent=entitled; return ctx;
 }
 (async()=>{
 await t('quote choices = the storefront merge for the dealer\'s lines: no discontinued, no inactive line, no Golden, no line he cannot order',async()=>{
@@ -73,6 +73,11 @@ await t('an item already on a quote keeps its name after it leaves the catalog (
   const w=world(['line-a']); await w.loadPricing(); const S=w.S();
   eq(S.PRICE['line-a|R9'].name,'Retired since'); if(S.QUOTELIST.some(p=>p.code==='R9')) throw new Error('retired offered');
   w.setQ(['line-a|R9']); w.renderQuotes(); if(!w.els['#view-quotes'].innerHTML.includes('Retired since')) throw new Error('name lost'); });
+await t('the hub can start before the dealer\'s lines are known: an empty list never sticks — it is rebuilt when the lines arrive',async()=>{
+  const w=world([]); w.ent=[]; await w.loadPricing(); eq(w.S().QUOTELIST.length,0,'no lines yet');
+  w.ent=['line-b']; await w.ensureQuoteCatalog(); eq(w.S().QUOTELIST.map(p=>p.code),['B1']);
+  w.ent=['line-b','line-a']; await w.ensureQuoteCatalog(); eq(w.S().QUOTELIST.length,7,'a newly granted line arrives too');
+  const a=w.ensureQuoteCatalog(), b=w.ensureQuoteCatalog(); await Promise.all([a,b]); eq(w.S().QUOTELIST.length,7); });
 await t('a customer quote prints as the quote page alone',()=>{
   if(!/@media print\{#p360wrap #view-quotes\.on \.ph,#p360wrap #view-quotes\.on \.qbuild>\.card,#p360wrap #view-quotes\.on \.qprevlbl\{display:none!important\}/.test(H)) throw new Error('print rule'); });
 console.log(`quote catalog: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);

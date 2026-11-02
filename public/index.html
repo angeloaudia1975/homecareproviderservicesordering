@@ -5839,7 +5839,7 @@ async function hubStoreCatalog(){
 }
 async function loadPricing(){
   if(PRICE) return;
-  PRICE={}; PRICELIST=[]; QUOTELIST=[];
+  PRICE={}; PRICELIST=[]; QUOTELIST=null;
   try{
     const mf=await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]);
     MFRLIST=(mf||[]).map(m=>({slug:m.slug,name:m.name,quotable:m.quotable}));
@@ -5871,18 +5871,33 @@ async function loadPricing(){
       }catch(e){}
     }));
   }catch(e){}
-  /* What can be quoted NOW: the storefront's own catalog (see hubStoreCatalog). Its entries also replace the file-based
-     PRICE rows for the same key, so names, options and manufacturer MSRPs match what the dealer sees in the shop. */
+  await ensureQuoteCatalog();
+}
+/* What can be quoted NOW: the storefront's own catalog (see hubStoreCatalog). Its entries also replace the file-based PRICE
+   rows for the same key, so names, options and manufacturer MSRPs match what the dealer sees in the shop. Built for the
+   dealer's CURRENT set of lines and rebuilt whenever that set changes — the hub can start before the dealer's lines are
+   known, and an empty list must never stick (found 2026-11-02 on a fresh page). */
+let _quoteSig=null, _quoteBuild=null;
+async function ensureQuoteCatalog(){
+  const sig=((typeof entitledManufacturers==='function')?entitledManufacturers():[]).map(m=>m&&m.slug).sort().join(',');
+  if(QUOTELIST&&_quoteSig===sig) return;
+  if(_quoteBuild&&_quoteBuild.sig===sig) return _quoteBuild.p;   /* one build at a time for the same set of lines */
+  const p=buildQuoteCatalog(sig); _quoteBuild={sig,p};
+  try{ await p; }finally{ if(_quoteBuild&&_quoteBuild.p===p) _quoteBuild=null; }
+}
+async function buildQuoteCatalog(sig){
+  const quote=[], list=[];
   try{
     for(const {line,rows} of await hubStoreCatalog()){
       for(const e of rows){
         const opt={code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category};
-        QUOTELIST.push(opt);
-        if(!e.upgrade) PRICELIST.push({code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category});
+        quote.push(opt);
+        if(!e.upgrade) list.push({code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category});
         PRICE[e.key]={msrp:e.msrp,map:e.map,cost:e.cost,category:e.category,name:e.family,option:e.option,sku:e.code,mfrName:e.mfrName,msrpEach:e.msrpEach,quotable:true};
       }
     }
   }catch(e){}
+  QUOTELIST=quote; PRICELIST=list; _quoteSig=sig;
 }
 function retailUnit(mfr,code,unitCost){
   const r=PRICE&&PRICE[mfr+'|'+code];
@@ -5972,7 +5987,7 @@ window.exportHistoryCSV=exportHistoryCSV;window.exportReportCSV=exportReportCSV;
 /* ================= PHASE 3: favorites, branding, quotes, pricing requests ================= */
 let FAVS=new Set(), BRANDING={logo_url:null}, _catFavReady=false;
 let QUOTE=[], QCUST={name:"",valid:"30 days"};
-async function ensureCatalogFav(){ await loadPricing(); if(!_catFavReady){ await loadFavorites(); _catFavReady=true; } }
+async function ensureCatalogFav(){ await loadPricing(); await ensureQuoteCatalog(); if(!_catFavReady){ await loadFavorites(); _catFavReady=true; } }
 
 async function loadFavorites(){
   try{ const d=await api(TOOLS_ENDPOINT,{action:"favorites_list"}); if(d&&d.ok&&Array.isArray(d.favorites)){ FAVS=new Set(d.favorites.map(f=>f.manufacturer+"|"+f.code)); try{localStorage.setItem("hcps_favs",JSON.stringify([...FAVS]));}catch(e){} return; } }catch(e){}
