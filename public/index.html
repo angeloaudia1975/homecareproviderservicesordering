@@ -1210,6 +1210,14 @@ body.shopv2 .section{padding-top:18px;}
 .cv2-from span{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
 .cv2-card .tierhint{font-size:11px;}
 .cv2-hit{font-size:11.5px;font-weight:700;color:#1a7a4a;}
+/* Golden in catalog-v2 (B2): stock as of Golden's last sync, ribbon, and the "ordering soon" note. */
+.gstock{display:inline-block;margin-top:6px;font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;background:#eef2f6;color:#41546a;}
+.gstock.gs-in{background:#e7f4ec;color:#1a7a4a;} .gstock.gs-low{background:#fff4e0;color:#9a5b00;} .gstock.gs-out{background:#fdecec;color:#b42318;}
+.gstock .gasof{font-weight:500;opacity:.8;}
+.gcard .img{position:relative;} .gribbon{position:absolute;top:8px;left:8px;background:#c8981a;color:#fff;font-size:11px;font-weight:800;border-radius:6px;padding:2px 7px;}
+.gmsrp{font-size:12.5px;color:#41546a;font-weight:600;margin-top:2px;}
+.gsoon{font-size:11.5px;color:#6b7580;margin-top:6px;line-height:1.35;}
+.pd-golden{margin-top:12px;padding:12px 14px;border-radius:10px;background:#fbf6e8;border:1px solid #f1dfa6;font-size:13.5px;color:#4b3a07;line-height:1.45;}
 .cv2-act{grid-row:2;grid-column:1/-1;padding:10px 12px 12px;border-top:1px solid var(--line);}
 .cv2-act .buy{margin:0;}
 .cv2-act .chooseBtn{display:block;width:100%;border:0;cursor:pointer;min-height:42px;font-size:14px;}
@@ -1414,6 +1422,7 @@ const CONFIG = {
   GOLDEN_ORDER_ENDPOINT: "",           // unused: Golden orders go browser → golden-proxy (HCPS) → Golden /v1/orders (Stage 4). Never called from the browser.
   GOLDEN_CATALOG: "",                  // Golden catalog JSON for in-platform shopping. Blank → ./data/golden-technologies.json
   GOLDEN_STATUS_ENDPOINT: "",          // Golden order status / tracking sync (Golden → Partner 360)
+  GOLDEN_PROXY_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/golden-proxy", // Stage 2: Golden catalog + stock, read through HCPS (signed, delegated). Never Golden directly.
 
   ORDERS_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/orders-api", // saves order history + reorder (CORS-enabled)
   SUPABASE_URL: "https://ycqmztthwldytkzyvmiv.supabase.co",   // HCPS Supabase project
@@ -2384,10 +2393,10 @@ async function loadProducts(slug){
   const seq=++_loadSeq;
   const set=list=>{ if(seq!==_loadSeq) return false; state.products=list; return true; };
   if(isGoldenSlug(slug)){
-    // Golden catalog (shared commerce engine's product data) — shopped in-platform, ordered via Golden's API.
-    const url=CONFIG.GOLDEN_CATALOG||('./data/'+CONFIG.GOLDEN_SLUG+'.json');
-    try{ const r=await fetch(url,{cache:"no-store"}); let prods=(await r.json())||[]; prods.forEach(p=>{ p.manufacturer=p.manufacturer||CONFIG.GOLDEN_SLUG; }); return set(await mergeCatalogEdits(CONFIG.GOLDEN_SLUG, prods)); }
-    catch(e){ return set([]); }
+    /* Golden is authoritative for its catalog, prices and stock (B2): read live through golden-proxy, never from a
+       file here and never through mergeCatalogEdits (HCPS keeps no Golden layer of its own). */
+    if(!goldenEntitled()) return set([]);
+    return set(await goldenCatalogProducts());
   }
   const mfr = state.manufacturers.find(m=>m.slug===slug);
   if (!mfr || !mfr.hasData){ return set([]); }
@@ -2484,11 +2493,109 @@ function entitledManufacturers(){
 }
 /* ---- Stage 6: Golden as a shoppable line inside Partner 360 ---- */
 function isGoldenSlug(slug){ return !!slug && (slug===CONFIG.GOLDEN_SLUG || slug==='golden'); }
-function goldenEntitled(){ return !!(CONFIG.GOLDEN_ENABLED && AUTH.access && AUTH.access.golden==='Account'); }
+/* GOLDEN INSIDE PARTNER 360 (B2, owner 2026-11-02): Golden is one more manufacturer in this same catalog design. Whether
+   it shows is GOLDEN's answer (golden-proxy → Golden /v1/eligibility), never a local flag on the dealer: the master
+   switch here (CONFIG.GOLDEN_ENABLED) only allows asking. On a deploy preview, a staff "view as dealer" asks Golden's
+   PREVIEW environment with a separate test key (golden-proxy decides) — the live site never does. No redirect to the
+   Golden platform is part of shopping; the platform stays available on its own. */
+const GOLDEN={ checked:false, on:false, preview:false, state:null, prices:false, reason:null, cat:null, inv:null };
+function goldenPreviewEnv(){ return (typeof STAGING!=="undefined"&&STAGING) && !!(window.__PREVIEW__&&window.__PREVIEW__.token); }
+async function goldenCall(action){
+  const hdr={"Content-Type":"application/json"};
+  if(window.__PREVIEW__&&window.__PREVIEW__.token){ hdr["x-hcps-preview"]=window.__PREVIEW__.token; if(goldenPreviewEnv()) hdr["x-hcps-golden-env"]="preview"; }
+  else if(AUTH.session&&AUTH.session.access_token){ try{ await ensureFreshSession(); }catch(e){} hdr.authorization="Bearer "+AUTH.session.access_token; }
+  else return null;
+  try{
+    const r=await fetch(CONFIG.GOLDEN_PROXY_ENDPOINT,{method:"POST",headers:hdr,body:JSON.stringify({action}),cache:"no-store"});
+    const j=await r.json().catch(()=>null);
+    return (r.ok&&j&&j.ok===true)?j:null;
+  }catch(e){ return null; }
+}
+async function goldenInit(){
+  GOLDEN.checked=true; GOLDEN.on=false; GOLDEN.cat=null; GOLDEN.inv=null;
+  if(!(CONFIG.GOLDEN_ENABLED||goldenPreviewEnv())) return GOLDEN;
+  const e=await goldenCall("eligibility");
+  if(!e||e.enabled!==true||e.available!==true){ GOLDEN.reason=(e&&e.reason)||"unavailable"; return GOLDEN; }
+  GOLDEN.preview=e.preview===true; GOLDEN.state=e.state||null; GOLDEN.prices=!!(e.capabilities&&e.capabilities.see_prices===true);
+  GOLDEN.on = GOLDEN.preview || e.state==="account" || e.state==="browse_only";
+  return GOLDEN;
+}
+function goldenEntitled(){ return GOLDEN.on===true; }
+/* Golden's product → this catalog's product shape. Prices are Golden's own answer and never pass through HCPS
+   contract prices, line discounts or catalog layers. */
+function goldenToProduct(g, stockBySku){
+  const sized=!!g.size_code;
+  const rows=[]; if(g.zones) rows.push({label:"Lift zones",value:g.zones}); if(g.class_ii) rows.push({label:"Medical device",value:"Class II"}); if(g.color_note) rows.push({label:"Colour",value:g.color_note});
+  return { manufacturer:CONFIG.GOLDEN_SLUG, brand:"Golden Technologies", code:g.sku, name:g.name, category:g.category||"Golden", subcategory:g.subcategory||"",
+    description:g.description||"", image:g.image||"", msrp:(typeof g.msrp==="number")?g.msrp:null, map:(typeof g.emap==="number")?g.emap:null,
+    base_price:(typeof g.dealer_price==="number"&&g.dealer_price>0)?g.dealer_price:null,
+    _pageKey:"golden:"+(g.family||g.sku), _encPage:g.family_name||g.name, _axes:sized?{Size:g.size_label||g.size_code}:undefined,
+    _features:Array.isArray(g.specs)?g.specs.slice():[], _skuSpecs:rows, _golden:true, _goldenAction:g.action||"none",
+    _goldenStock:(stockBySku&&stockBySku[g.sku])||null, _goldenRibbon:g.ribbon||null, _goldenSort:g.sort||0,
+    media:g.brochure_url?[{kind:"brochure",url:g.brochure_url,title:"Brochure"}]:[] };
+}
+async function goldenCatalogProducts(){
+  const [cat,inv]=await Promise.all([goldenCall("catalog"), goldenCall("inventory")]);
+  if(!cat||cat.available!==true||!Array.isArray(cat.products)){ GOLDEN.cat=null; return []; }
+  GOLDEN.cat={ prices:cat.prices_visible===true, as_of:cat.as_of||null };
+  const stock={};
+  if(inv&&inv.available===true&&Array.isArray(inv.items)){ GOLDEN.inv={ as_of:inv.as_of||null, stale:inv.stale!==false }; inv.items.forEach(i=>{ stock[i.sku]=i; }); }
+  else GOLDEN.inv=null;
+  return cat.products.slice().sort((a,b)=>(a.sort||0)-(b.sort||0)).map(g=>goldenToProduct(g,stock));
+}
+function goldenStockHtml(items){
+  const list=(items||[]).map(x=>x&&x._goldenStock).filter(Boolean);
+  if(!list.length||!GOLDEN.inv) return "";
+  const rank={in:3,low:2,on_request:1,out:0};
+  const best=list.reduce((a,b)=>rank[b.status]>rank[a.status]?b:a);
+  const label={in:"In stock",low:"Low stock",out:"Out of stock",on_request:"Order on request"}[best.status]||"";
+  const when=GOLDEN.inv.as_of?new Date(GOLDEN.inv.as_of).toLocaleDateString(undefined,{month:"short",day:"numeric"}):"";
+  const asof=when?` · as of ${esc(when)}${GOLDEN.inv.stale?" (may be out of date)":""}`:"";
+  return `<div class="gstock gs-${esc(best.status)}">${esc(label)}${best.status==="low"&&best.qty!=null?" · "+esc(best.qty):""}<span class="gasof">${asof}</span></div>`;
+}
+function goldenPriceHtml(items){
+  const prices=(items||[]).map(x=>Number(x.base_price||0)).filter(v=>v>0);
+  const lead=(items||[])[0]||{};
+  const msrp=(items||[]).map(x=>Number(x.msrp||0)).filter(v=>v>0), emap=(items||[]).map(x=>Number(x.map||0)).filter(v=>v>0);
+  const msrpLine=msrp.length?`<div class="gmsrp">MSRP ${msrp.length>1&&Math.min(...msrp)!==Math.max(...msrp)?"from ":""}${money(Math.min(...msrp))}</div>`:"";
+  const emapLine=emap.length?`<div class="cmap">eMAP ${emap.length>1&&Math.min(...emap)!==Math.max(...emap)?"from ":""}${money(Math.min(...emap))}</div>`:"";
+  if(!prices.length) return `<div class="prow"><div><span class="price locked">${GOLDEN.cat&&GOLDEN.cat.prices?"Price on request":"Dealer price shows once your Golden account is linked"}</span>${msrpLine}${emapLine}</div></div>`;
+  const lo=Math.min(...prices), hi=Math.max(...prices); const [d,c]=lo.toFixed(2).split(".");
+  void lead;
+  return `<div class="prow"><div>${lo!==hi?'<div class="cv2-from"><span>From </span>'+money(lo)+'</div>':`<div class="price"><sup>$</sup>${d}<sup>.${c}</sup></div>`}<div class="pnote">Your Golden price</div>${msrpLine}${emapLine}</div></div>`;
+}
+/* One Golden card in the catalog-v2 design. Configuration, cart and checkout for Golden come in the next stages
+   (B3/B4); until then the card opens the product page and says ordering is on its way — it never sends the dealer away. */
+function goldenCardHtml(p){
+  const items=Array.isArray(p._variants)&&p._variants.length?p._variants:[p];
+  const multi=items.length>1;
+  const dispName=p._gname||p.name;
+  const openCode=p._openCode||p.code;
+  const img=p.image
+    ? `<img src="${esc(p.image)}" alt="${esc(dispName)}" width="400" height="400" loading="lazy" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:'No image'}))">`
+    : `<span class="ph">No image</span>`;
+  const codeLine=multi?`<div class="pcode">${esc(variantSummary(items))}</div>`:`<div class="pcode">Item # ${esc(p.code)}</div>`;
+  const skuHit=(p._openCode&&p._openCode!==p.code)?`<div class="cv2-hit">Matches item # ${esc(p._openCode)}</div>`:"";
+  const ribbon=p._goldenRibbon?`<span class="gribbon">${esc(p._goldenRibbon)}</span>`:"";
+  const label=[p.subcategory||p.category||"","Golden Technologies"].filter(Boolean).join(" · ");
+  return `<div class="card cv2-card gcard" data-code="${esc(openCode)}">
+    <div class="img">${img}${ribbon}</div>
+    <div class="cbody">
+      <div class="cat-tag">${esc(label)}</div>
+      <a class="pname" href="#" data-open="${esc(openCode)}">${esc(dispName)}</a>
+      ${codeLine}${skuHit}
+      ${p.description?`<div class="pdesc">${esc(p.description)}</div>`:""}
+      ${goldenPriceHtml(items)}
+      ${goldenStockHtml(items)}
+    </div>
+    <div class="cv2-act"><div class="buy"><button class="chooseBtn" type="button" data-open="${esc(openCode)}">${p._goldenAction==="configure"?"View &amp; configure":"View details"} <span aria-hidden="true">→</span></button></div>
+      <div class="gsoon">Golden ordering in Partner 360 is being finished — not orderable yet.</div></div></div>`;
+}
 function goldenMfr(){
   let m=state.manufacturers.find(x=>isGoldenSlug(x.slug));
   if(!m){ m={slug:CONFIG.GOLDEN_SLUG,name:'Golden Technologies',hasData:true,golden:true}; state.manufacturers.push(m); }
   else { m.golden=true; if(m.hasData===undefined)m.hasData=true; }
+  if(!Array.isArray(m.categoryOrder)) m.categoryOrder=['Lift Chairs','Scooters','Power Wheelchairs','Beds'];   // Golden's own section order
   return m;
 }
 // Append Golden to the dealer's entitled lines when they hold a Golden account.
@@ -2569,6 +2676,7 @@ async function loadFeatured(){
 async function loadLine(slug){
   if(DASH.lineCache[slug]) return DASH.lineCache[slug];
   let prods=[];
+  if(isGoldenSlug(slug)){ try{ prods=goldenEntitled()?await goldenCatalogProducts():[]; }catch(e){ prods=[]; } DASH.lineCache[slug]=prods; return prods; }
   try{
     const r=await fetch(`./data/${slug}.json`,{cache:"no-store"});
     prods=await mergeCatalogEdits(slug,(await r.json())||[]);   // same edits/hides/custom as the catalog view
@@ -2662,7 +2770,7 @@ function goldenSectionHtml(){
   // account get the platform link; everyone else sees it as a new-account opportunity, since
   // HCPS is a Golden distributor and any dealer can open a Golden account.
   const g=(AUTH.access&&AUTH.access.golden)||'None';
-  const isAcct=g==='Account';
+  const isAcct=g==='Account'||goldenEntitled();
   // Each Golden dealer has a specific portal path (e.g. /portal/queen-city-med-mart); the
   // portal appends it to the Golden base domain. Falls back to the base, then to a note.
   const path=((AUTH.access&&AUTH.access.golden_url)||"").trim();
@@ -2675,17 +2783,18 @@ function goldenSectionHtml(){
   const d=AUTH.dealer||{};
   let card, secBadge;
   if(isAcct){
-    const inPlatform=CONFIG.GOLDEN_ENABLED;
-    const ext=url?`<a class="oppbtn ghost" href="${esc(url)}" target="_blank" rel="noopener">Open Golden platform ↗</a>`:"";
+    /* In-platform only when Golden itself said so (goldenEntitled). Shopping then stays inside Partner 360: no link out
+       to the Golden platform here (it remains available on its own). */
+    const inPlatform=goldenEntitled();
     const btn=inPlatform
-      ? `<button class="oppbtn primary" onclick="selectManufacturer(CONFIG.GOLDEN_SLUG)">Shop Golden in Partner 360 →</button>${ext}`
+      ? `<button class="oppbtn primary" onclick="selectManufacturer(CONFIG.GOLDEN_SLUG)">Shop Golden in Partner 360 →</button>`
       : (url
         ? `<a class="oppbtn primary" href="${esc(url)}" target="_blank" rel="noopener">Explore Golden catalog →</a>`
         : `<button class="oppbtn primary" onclick="toast('Ask your HCPS sales rep for the Golden platform link and password')">Explore Golden catalog →</button>`);
     card=`<div class="oppcard">
        <div class="opptop"><div class="ln">Golden Technologies</div><span class="oppbadge">Your account</span></div>${logo}
        <div class="lc">${inPlatform
-         ? "Order Golden Technologies right here in Partner 360 — your Golden orders submit through Golden and flow back into your Partner 360 history, reports, reorder, and showroom with everything else."
+         ? "Browse Golden Technologies right here in Partner 360 — Golden's own products, photos, prices and stock. Ordering Golden in Partner 360 opens soon."
          : "You order Golden Technologies on the dedicated Golden Dealer Platform. It opens in a separate site; if you need the password, contact your HCPS sales representative."}</div>
        <div class="oppacts">${btn}</div></div>`;
     secBadge=`<span class="seccount">Your account</span>`;
@@ -3205,6 +3314,7 @@ function variantSummary(variants){
   return parts.join(' · ');
 }
 function cardHtml(p){
+  if(p&&p._golden) return goldenCardHtml(p);
   /* OPTION 2 CARD (owner, 2026-10-31). One compact card per product family: the photo beside the words, a
      category label, the name, what a dealer chooses, a description held to three lines (never a scrollbox — the
      whole text is on the product page), the dealer's price and one clear action. Pricing, grouping and the photo
@@ -3378,12 +3488,18 @@ function cvInCat(p,cat){ if(!cat) return true; if(cat.startsWith('sub:')) return
   return cat==='Other' ? (!p.category||p.category==='Other') : p.category===cat; }
 /* how many family cards a list makes (the number a dealer sees), not how many SKUs */
 function cvFamilies(list){ return new Set(list.map(groupKeyOf)).size; }
+/* Subcategories alphabetically, except a line that states its own order (Golden: its products' sort). */
+function cvSubOrder(a,b){
+  const first=sc=>{ const x=state.products.find(p=>p.subcategory===sc&&p._golden); return x?(x._goldenSort||0):null; };
+  const fa=first(a), fb=first(b);
+  return (fa!=null&&fb!=null)?(fa-fb):String(a).localeCompare(String(b));
+}
 function cvTree(base){
   const cats={};
   state.products.forEach(p=>{ const c=p.category||'Other'; (cats[c]=cats[c]||{subs:{}}); const sc=p.subcategory;
     if(sc&&sc!==c) cats[c].subs[sc]=1; });
   return Object.keys(cats).sort(compareCats).map(c=>({c, n:cvFamilies(base.filter(p=>(p.category||'Other')===c)),
-    subs:Object.keys(cats[c].subs).sort().map(sc=>({sc, n:cvFamilies(base.filter(p=>p.subcategory===sc))}))}));
+    subs:Object.keys(cats[c].subs).sort(cvSubOrder).map(sc=>({sc, n:cvFamilies(base.filter(p=>p.subcategory===sc))}))}));
 }
 function cvLeads(list){
   const q=cvNorm(cvQuery());
@@ -3402,6 +3518,8 @@ function cvLeads(list){
   else if(s==='price') leads.sort(byPrice(1));
   else if(s==='price_desc') leads.sort(byPrice(-1));
   else leads.sort((a,b)=>compareCats(a.category||"Other", b.category||"Other")
+    /* Golden keeps Golden's own order (5-Zone before 1-Zone, as on Golden's portal) */
+    || ((a._golden&&b._golden)?((a._goldenSort||0)-(b._goldenSort||0)):0)
     || String(a.subcategory||"").localeCompare(String(b.subcategory||""))
     || name(a).localeCompare(name(b)));
   /* an exact part number comes first, whatever the sort: "BC2396" must not show "BC23966" above it */
@@ -3561,6 +3679,7 @@ function renderProducts(){
 const cartKey=p=>`${p.manufacturer}::${p.code}`+(p.family!=null&&p.family!==""?`::${p.family}`:"")+(p._upgrade?`::u=${p._upgrade}`:"");
 const MFR={};                          // slug -> {po, notes}  (per-manufacturer order fields)
 function addToCart(p,qty){
+  if(p && p._golden){ toast("Golden ordering in Partner 360 is not open yet."); return; }
   if(p && p._discontinued){ toast(`${p.code} is discontinued — it is shown for reference and cannot be ordered`); return; }
   const k=cartKey(p); const cur=CART.get(k);
   const m=minOrderQty(p); const nq=Math.max((cur?cur.qty:0)+qty, m);
@@ -5411,7 +5530,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
     const _pv=new URLSearchParams(location.search).get('preview');
     if(_pv){
       const res=await previewMe(_pv);
-      if(res.ok){ applyAuth(); updateCart(); }
+      if(res.ok){ try{ await goldenInit(); }catch(e){} applyAuth(); updateCart(); }
       else{ showPreviewError(res.message); }
       return;
     }
@@ -5423,6 +5542,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
     capturePendingProduct();
     AUTH.session=loadStoredSession();
     await authMe();          // restore any signed-in dealer (refreshes the token if needed)
+    if(AUTH.status==='approved'){ try{ await goldenInit(); }catch(e){} }   // Golden decides whether its line shows (B2)
     applyAuth();             // gate: locked landing for guests, entitled lines for approved dealers
     updateCart();
     // keep the session alive so dealers stay signed in instead of dropping after ~1 hour
@@ -6271,8 +6391,8 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     const sizingHtml=_sz.length?`<div class="pd-sect"><h2>Sizing chart</h2><div style="overflow-x:auto"><table class="pd-spec"><thead><tr>${_szCols.map(c=>`<th style="text-align:left;padding:9px 12px;font-size:12px;color:#6b7580">${esc(c)}</th>`).join("")}</tr></thead><tbody>${_sz.map(r=>`<tr>${_szCols.map(c=>`<td class="v">${esc(String(r[c]!=null?r[c]:""))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${p._sizingNote?`<div style="font-size:12px;color:#6b7580;margin-top:6px">${esc(p._sizingNote)}</div>`:""}</div>`:(p._sizingNote?`<div class="pd-sect"><h2>Sizing</h2><div style="font-size:13px;color:#4b5563">${esc(p._sizingNote)}</div></div>`:"");
     const _vids=Array.isArray(p._videos)?p._videos:[];
     const videoHtml=_vids.length?`<div class="pd-sect"><h2>Videos</h2>${_vids.map(v=>{const em=ytEmbed(v.url);return em?`<div style="margin:0 0 14px">${em}</div>`:`<div class="pd-doc"><div class="dn">${esc(v.title||v.url)}</div><a class="dl" href="${esc(v.url)}" target="_blank" rel="noopener">Watch ↗</a></div>`;}).join("")}</div>`:"";
-    const eff=Number(unitPrice(p,1)||p.base_price||0);
-    const cp=(typeof contractPrice==="function")?contractPrice(p):null;
+    const eff=p._golden?Number(p.base_price||0):Number(unitPrice(p,1)||p.base_price||0);
+    const cp=p._golden?null:((typeof contractPrice==="function")?contractPrice(p):null);
     const msrp=(p.msrp!=null&&Number(p.msrp)>eff)?Number(p.msrp):null;
     /* MINIMUM ADVERTISED PRICE. Three lines carry MAP today — Access4U, Climbing Steps and
        PediFix — and a dealer who advertises below it puts the account at risk, so it belongs
@@ -6337,21 +6457,25 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
               <div class="pd-price"><sup>$</sup>${d}<sup>.${c}</sup></div>
               ${cp!=null?`<div class="pd-contract">Contract price set by HCPS${(p.base_price!=null&&Number(p.base_price)>eff)?` · <span style="color:#8a94a6;text-decoration:line-through;font-weight:600">List ${money(p.base_price)}</span>`:""}</div>`:""}
               ${msrp?`<div class="pd-msrp">MSRP ${money(msrp)}</div>`:""}
-              ${mapPrice?`<div class="pd-map" title="Minimum advertised price — do not advertise below this">MAP ${money(mapPrice)}</div>`:""}
+              ${mapPrice?`<div class="pd-map" title="Minimum advertised price — do not advertise below this">${p._golden?"eMAP":"MAP"} ${money(mapPrice)}</div>`:""}
               ${margin?`<div class="pd-margin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Est. retail margin ${money(margin)}${marginPct?" · "+marginPct+"%":""}</div>`:""}`
-              :`<div class="pd-plabel">Pricing</div><div class="pd-price" style="font-size:20px">${state.dealer?"Call for pricing":"Log in for pricing"}</div>`}
+              :`<div class="pd-plabel">Pricing</div><div class="pd-price" style="font-size:20px">${p._golden?(GOLDEN.cat&&GOLDEN.cat.prices?"Price on request":"Dealer price shows once your Golden account is linked"):(state.dealer?"Call for pricing":"Log in for pricing")}</div>
+              ${p._golden&&msrp?`<div class="pd-msrp">MSRP ${money(msrp)}</div>`:""}${p._golden&&mapPrice?`<div class="pd-map">eMAP ${money(mapPrice)}</div>`:""}`}
             ${variantSel}
-            ${p._discontinued
+            ${p._golden?goldenStockHtml([p]):""}
+            ${p._golden
+              ? `<div class="pd-golden"><b>Golden ordering in Partner 360 is being finished.</b> ${p._goldenAction==="configure"?"Fabric, upgrades and configuration will be chosen right here, priced by Golden.":"Ordering will open right here, priced by Golden."} This item can't be added to the cart yet.</div>`
+              : p._discontinued
               ? `<div class="pd-disc"><b>Discontinued</b> — this item is shown for reference and can no longer be ordered.${(variants||[]).some(v=>!v._discontinued)?' Choose a current option above, or see related products below.':' See related products below, or ask your HCPS rep for the current replacement.'}</div>`
               : `${upgradeSelectHtml(p)}<div class="pd-buy buy">
               <input class="qtyin" type="number" min="1" value="1" aria-label="Qty">
               <button class="addbtn" data-code="${esc(p.code)}" data-family="${esc(p.family==null?"":p.family)}">🛒 Add to cart</button>
             </div>`}
-            ${isOvation(p)?`<button class="pd-sample" onclick="requestSample('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Request a Sample</button>`:""}
-            <button class="pd-broch" onclick="openBrochure('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>Print Brochure</button>
-            <div class="pd-sub">
+            ${p._golden?"":(isOvation(p)?`<button class="pd-sample" onclick="requestSample('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Request a Sample</button>`:"")}
+            ${p._golden?"":`<button class="pd-broch" onclick="openBrochure('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>Print Brochure</button>`}
+            ${p._golden?"":`<div class="pd-sub">
               <a onclick="showP360&&showP360('quotes')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Add to a quote</a>
-            </div>
+            </div>`}
           </div>
         </div>
       </div>

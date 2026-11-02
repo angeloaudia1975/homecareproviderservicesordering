@@ -28,7 +28,7 @@ t('Golden orders never sent to orders-api create', ()=>{
 t('Golden account card: link to the Golden platform, no in-platform shop button', ()=>{
   const fn=grab('function goldenSectionHtml(){','function abmSectionHtml(){');
   const cfg=grab('const CONFIG = {','\n};')+'\n};';
-  const ctx={ AUTH:{ access:{ golden:'Account', golden_url:'/portal/test-dealer' }, dealer:{ name:'Test' } }, esc:s=>String(s), toast:()=>{} };
+  const ctx={ AUTH:{ access:{ golden:'Account', golden_url:'/portal/test-dealer' }, dealer:{ name:'Test' } }, esc:s=>String(s), toast:()=>{}, goldenEntitled:()=>false };
   vm.createContext(ctx); vm.runInContext(cfg.replace('const CONFIG','var CONFIG')+'\n'+fn+'\nthis.out=goldenSectionHtml();', ctx);
   ok(ctx.out.includes('href="https://goldenonlineordering.netlify.app/portal/test-dealer"'), 'link to the dealer portal');
   ok(!ctx.out.includes('Shop Golden in Partner 360'), 'no in-platform shop button while off');
