@@ -3913,6 +3913,7 @@ async function submitOrder(){
   const groups=groupCart();
   try{ for(const[slug,lines]of groups) track('order_started',slug,undefined,{items:lines.reduce((n,it)=>n+(it.qty||0),0)}); }catch(e){}  // began placing an order (+15/line)
   for(const[slug]of groups){
+    if(isGoldenSlug(slug)) continue;   // Golden lines are not submitted here (see below), so no PO is asked for them
     if(!(MFR[slug]&&(MFR[slug].po||"").trim())){
       const el=document.querySelector(`.mgroup[data-slug="${(window.CSS&&CSS.escape)?CSS.escape(slug):slug}"] .po`);
       if(el){el.classList.add("needpo");el.focus();el.scrollIntoView({block:"center",behavior:"smooth"});}
@@ -3933,7 +3934,7 @@ async function submitOrder(){
     const f=computeFreight(slug,lines), info=mfrInfo(slug);
     orders.push({
       manufacturer_slug:slug, manufacturer_name:info.name,
-      po:MFR[slug].po.trim(), notes:(MFR[slug].notes||"").trim(),
+      po:((MFR[slug]&&MFR[slug].po)||"").trim(), notes:((MFR[slug]&&MFR[slug].notes)||"").trim(),
       items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,upgrade:p._upgrade||undefined,name:p.name,brand:p.brand||"",uom:p.uom||"",case_qty:(packOf(p)?packOf(p).n:undefined),qty,unit:unitPrice(p,qty)})),
       items_count:lines.reduce((n,{qty})=>n+qty,0),
       items_subtotal:Number(f.itemsTotal.toFixed(2)),
@@ -3990,7 +3991,8 @@ async function submitOrder(){
       for(const [k,it] of [...CART]) if(!keep.has(it.p.manufacturer)){ CART.delete(k); PRICE_NOTES.delete(k); }
       for(const k in MFR) if(!keep.has(k)) delete MFR[k];
       updateCart();
-      toast(`Some orders were placed, but ${[...keep].map(sl=>mfrInfo(sl).name).join(', ')} could not be recorded — still in your cart. Please place it again.`);
+      const failedNames=[...keep].filter(sl=>!goldenKept.has(sl)).map(sl=>mfrInfo(sl).name).join(', ');
+      toast(`Some orders were placed, but ${failedNames} could not be recorded — still in your cart. Please place it again.`+(goldenKept.size?` Your Golden Technologies items also stay in your cart: please order them on the Golden platform.`:``));
       return;
     }
     toast(emailWarn?`Order recorded ✓ — HCPS has been flagged to confirm it with the manufacturer`:`Submitted ${parts.join(' + ')||'order'} ✓`);

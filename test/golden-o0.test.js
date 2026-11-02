@@ -22,6 +22,8 @@ t('Golden orders never sent to orders-api create', ()=>{
   ok(/if\(goldenOrders\.length && !hcpsOrders\.length\)\{[\s\S]{0,200}return;/.test(fn), 'Golden-only cart returns before submitting');
   ok(/const payload=\{dealer, orders:hcpsOrders/.test(fn), 'only HCPS orders in the submit payload');
   ok(/goldenKept/.test(fn), 'Golden lines kept in the cart');
+  ok(/if\(isGoldenSlug\(slug\)\) continue;/.test(fn), 'no PO demanded for Golden lines');
+  ok(/filter\(sl=>!goldenKept\.has\(sl\)\)/.test(fn), 'a failed HCPS order is never reported as a Golden failure');
 });
 t('Golden account card: link to the Golden platform, no in-platform shop button', ()=>{
   const fn=grab('function goldenSectionHtml(){','function abmSectionHtml(){');
