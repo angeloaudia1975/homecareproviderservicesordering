@@ -58800,7 +58800,7 @@
   "transfer-bench-300-lbs-weight-capacity-2-case": {
    "manufacturer": "dalton",
    "page_key": "transfer-bench-300-lbs-weight-capacity-2-case",
-   "name": "Transfer Bench 300 Lbs Weight Capacity, 2/Case",
+   "name": "Transfer Bench, 2/Case",
    "status": "published",
    "description": null,
    "features": [
@@ -58810,7 +58810,6 @@
     "Rust-resistant aluminum frame",
     "Reversible design accommodates right- or left-facing entry",
     "Adjustable seat height",
-    "250 lb weight capacity",
     "Two transfer benches per case"
    ],
    "specs": [
@@ -58839,10 +58838,6 @@
      "value": "Reversible for right- or left-facing entry"
     },
     {
-     "label": "Weight Capacity",
-     "value": "250 lb"
-    },
-    {
      "label": "Package Quantity",
      "value": "2 per case"
     }
@@ -58854,7 +58849,7 @@
    "skus": [
     {
      "sku": "TB-5006-2",
-     "name": "Transfer Bench 300 Lbs Weight Capacity, 2/Case",
+     "name": "Transfer Bench, 2/Case",
      "size": "",
      "status": "active",
      "disabled": false,
@@ -58873,7 +58868,8 @@
     "features": "manufacturer page — https://daltonmedical.com/product/tb-5006-2-transfer-bench-300-lb-capacity-2-case/",
     "specs": "manufacturer page — stated values only — https://daltonmedical.com/product/tb-5006-2-transfer-bench-300-lb-capacity-2-case/",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "name": "HCPS correction 2026-11-02 (Angelo): weight capacity removed from the dealer-facing title, features and specs until Dalton confirms it. Dalton's page title says 300 lb; its description and specifications say 250 lb (https://daltonmedical.com/product/tb-5006-2-transfer-bench-300-lb-capacity-2-case/). Model TB-5006-2, pricing and packaging unchanged."
    },
    "image": "/assets/products/dalton/gallery/f1e8417052fbee43640f.jpg",
    "images_gallery": [
