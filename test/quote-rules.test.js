@@ -38,5 +38,13 @@ t('the builder: Ohio Medical not offered for a new quote; an item already on the
   if(/2× dealer-cost|est<\/span>|" est"/.test(h)) throw new Error('estimate wording in the builder');
   if(/77\.77|155\.54/.test(h)) throw new Error('dealer cost shown');
 });
+t('every quotable product is offered — no cap: 1,200 products across lines all appear, grouped by manufacturer',()=>{
+  const save=[ctx.PRICELIST,ctx.QUOTE]; ctx.QUOTE=[];
+  ctx.PRICELIST=Array.from({length:1200},(_,i)=>({mfr:i<1100?'pedifix':'abm-respiratory-care',code:'C'+i,name:'Item '+i,mfrName:i<1100?'PediFix':'ABM Respiratory Care'}));
+  ctx.renderQuotes(); const h=els['#view-quotes'].innerHTML;
+  const n=(h.match(/<option value=/g)||[]).length; ctx.PRICELIST=save[0]; ctx.QUOTE=save[1];
+  if(n!==1200) throw new Error('offered '+n);
+  if(!/<optgroup label="ABM Respiratory Care">[\s\S]*value="abm-respiratory-care\|C1199"/.test(h)) throw new Error('ABM group missing');
+});
 t('no 2x arithmetic left in the quote code',()=>{ const src=names.slice(0,6).map(grab).join('\n'); if(/\*\s*2\b/.test(src)) throw new Error('x2 found'); });
 console.log(`quote rules: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
