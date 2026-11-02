@@ -52,6 +52,12 @@ t('subcategory list follows the same order', () => {
   const W = world(BONGO, { active: 'airavant-bongorx' });
   eq(W.cvTree(W.cvBase())[0].subs.map(s => s.sc), ORDER.map(k => pages[k].subcategory));
 });
+t('a page the card order does not list sorts after the listed ones (cards and subcategories)', () => {
+  const extra = { code: 'X1', name: 'X1', manufacturer: 'airavant-bongorx', _pageKey: 'not-listed', category: 'Bongo Rx EPAP Therapy', subcategory: 'AAA Unlisted', base_price: 1 };
+  const W = world(BONGO.concat([extra]), { active: 'airavant-bongorx' });
+  eq(W.cvTree(W.cvBase())[0].subs.map(s => s.sc), ORDER.map(k => pages[k].subcategory).concat(['AAA Unlisted']));
+  eq(W.groupKeyOf(W.cvLeads(W.cvBase()).slice(-1)[0]), 'not-listed');
+});
 t('an exact part-number search still puts that card first, on that SKU', () => {
   const W = world(BONGO, { active: 'airavant-bongorx', q: 'BNG530' }); const L = W.cvLeads(W.cvBase());
   eq([W.groupKeyOf(L[0]), L[0]._openCode], ['bongo-rx-replacement-headgear', 'BNG530']);
@@ -65,6 +71,15 @@ t('an exact part-number search still puts that card first, on that SKU', () => {
 t('name and price sorts ignore the card order', () => {
   const W = world(BONGO, { active: 'airavant-bongorx', sort: 'name' });
   eq(W.cvLeads(W.cvBase()).map(L => L._gname), ['Bongo Rx Annual Replenishment Pack', 'Bongo Rx Four-Size Starter Kit', 'Bongo Rx Replacement Headgear', 'Bongo Rx Single Replenishment Unit']);
+});
+t('lines sharing a category: ordered cards first, then the rest as before; the sort is consistent (no cycle)', () => {
+  const mix = [{ code: 'A', name: 'A', manufacturer: 'airavant-bongorx', _pageKey: ORDER[0], category: 'Shared', subcategory: 'Z', base_price: 1 },
+    { code: 'C', name: 'C', manufacturer: 'airavant-bongorx', _pageKey: ORDER[3], category: 'Shared', subcategory: 'A', base_price: 1 },
+    { code: 'B', name: 'B', manufacturer: 'bemis', _pageKey: 'b', category: 'Shared', subcategory: 'M', base_price: 1 },
+    { code: 'D', name: 'D', manufacturer: 'bemis', _pageKey: 'd', category: 'Shared', subcategory: 'B', base_price: 1 }];
+  const perms = [[0, 1, 2, 3], [3, 2, 1, 0], [2, 0, 3, 1], [1, 3, 0, 2]];
+  const outs = perms.map(pm => { const W = world(pm.map(i => mix[i]), {}); return W.cvLeads(W.cvBase()).map(L => L.code).join(''); });
+  eq([...new Set(outs)], ['ACDB']);
 });
 t('a line without a card order keeps alphabetical subcategories', () => {
   const X = [['Z1', 'zp', 'Zeta'], ['A1', 'ap', 'Alpha'], ['M1', 'mp', 'Mid']].map(([c, k, sc]) => ({ code: c, name: c, manufacturer: 'bemis', _pageKey: k, category: 'Bath', subcategory: sc, base_price: 1 }));
@@ -113,8 +128,8 @@ t('Choose options, Add to cart and the quantity box are at least 44px tall at ev
 });
 t('tablet and phone layouts: filter chips, sort select, ghost buttons and view toggles are at least 44px', () => {
   const i = css.indexOf('@media (max-width:1199px){'), j = css.indexOf('@media (max-width:767px){', i); const tab = css.slice(i, j);
-  ok(/\.cv2-chip,\.cv2-sort select,\.cv2-ghost\{min-height:44px;\}/.test(tab), 'chips / select / ghost');
-  ok(/\.cv2-view button\{width:44px;height:44px;\}/.test(tab), 'view toggles');
+  ok(/\.cv2-chip,\.cv2-sort select,\.cv2-ghost,\.cv2-active button\{min-height:44px;\}/.test(tab), 'chips / select / ghost / clear-filter');
+  ok(/\.cv2-view button,\.cv2-chipnext\{width:44px;height:44px;\}/.test(tab), 'view toggles + chip arrow');
 });
 
 console.log(`\ncatalog display: ${pass} passed, ${fail} failed`);

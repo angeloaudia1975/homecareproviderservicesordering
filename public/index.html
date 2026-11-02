@@ -1289,8 +1289,8 @@ table.gspec th.on,table.gspec td.on{background:#fff7e0}table.gspec td.v{white-sp
   .cv2-filterbtn{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--navy);color:var(--navy);border-radius:10px;padding:0 14px;min-height:44px;font:inherit;font-weight:700;cursor:pointer;flex:none;}
   .cv2-cat,.cv2-line{min-height:44px;}
   /* touch layouts (tablet and phone): every control a dealer taps to order or filter is at least 44px */
-  .cv2-chip,.cv2-sort select,.cv2-ghost{min-height:44px;}
-  .cv2-view button{width:44px;height:44px;}
+  .cv2-chip,.cv2-sort select,.cv2-ghost,.cv2-active button{min-height:44px;}
+  .cv2-view button,.cv2-chipnext{width:44px;height:44px;}
   .cv2-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
   .cv2-grid:not(.list) .cv2-card{grid-template-columns:40% minmax(0,1fr);grid-template-rows:1fr auto;}
   .cv2-grid:not(.list) .cv2-card .img{grid-row:1;height:100%;border-right:1px solid var(--line);border-bottom:0;}
@@ -3599,10 +3599,13 @@ function cvCardOrder(p){
 /* Subcategories alphabetically, except a line that states its own order (Golden: its products' sort; any
    other line: its card_order). */
 function cvSubOrder(a,b){
-  const first=sc=>{ const x=state.products.find(p=>p.subcategory===sc&&p._golden); if(x) return x._goldenSort||0;
-    let m=null; state.products.forEach(p=>{ if(p.subcategory!==sc) return; const o=cvCardOrder(p); if(o!=null&&(m==null||o<m)) m=o; }); return m; };
+  const first=sc=>{ const x=state.products.find(p=>p.subcategory===sc&&p._golden); return x?(x._goldenSort||0):null; };
+  const card=sc=>{ let m=null; state.products.forEach(p=>{ if(p.subcategory!==sc) return; const o=cvCardOrder(p); if(o!=null&&(m==null||o<m)) m=o; }); return m; };
   const fa=first(a), fb=first(b);
-  return (fa!=null&&fb!=null)?(fa-fb):String(a).localeCompare(String(b));
+  if(fa!=null&&fb!=null) return fa-fb;
+  const ca=card(a), cb=card(b);
+  if(ca!=null||cb!=null) return (ca!=null&&cb!=null)?(ca-cb):(ca!=null?-1:1);
+  return String(a).localeCompare(String(b));
 }
 function cvTree(base){
   const cats={};
@@ -3630,8 +3633,10 @@ function cvLeads(list){
   else leads.sort((a,b)=>compareCats(a.category||"Other", b.category||"Other")
     /* Golden keeps Golden's own order (5-Zone before 1-Zone, as on Golden's portal) */
     || ((a._golden&&b._golden)?((a._goldenSort||0)-(b._goldenSort||0)):0)
-    /* a line with a stated card order keeps it (presentation only) */
-    || (()=>{ const oa=cvCardOrder(a), ob=cvCardOrder(b); return (oa!=null&&ob!=null)?(oa-ob):0; })()
+    /* a line with a stated card order keeps it (presentation only). Lexicographic, so the sort stays consistent if
+       lines ever share a category: ordered cards first (by line, then position), then everyone else as before. */
+    || (()=>{ const oa=cvCardOrder(a), ob=cvCardOrder(b); if((oa!=null)!==(ob!=null)) return oa!=null?-1:1; if(oa==null) return 0;
+         return String(a.manufacturer||"").localeCompare(String(b.manufacturer||""))||(oa-ob); })()
     || String(a.subcategory||"").localeCompare(String(b.subcategory||""))
     || name(a).localeCompare(name(b)));
   /* an exact part number comes first, whatever the sort: "BC2396" must not show "BC23966" above it */
