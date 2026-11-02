@@ -2588,8 +2588,10 @@ function goldenSrc(src, extra){ if(!src||!src.url) return ""; return `<div class
 function goldenSizeName(G, sku){ const c=(G.family.skus||[]).find(x=>x.sku===sku); return c&&(c.size_label||c.size_code)?(c.size_label||c.size_code):sku; }
 // Photos for the size on screen: its own Golden size photos first, then Golden's primary, the model's other photos,
 // then Golden's shared feature/lifestyle shots. A photo tagged for a different size is left out for this size.
+// Golden photos come only from Golden's own hosts, and never carry a quote or space (they end up in an onclick).
+const GOLDEN_IMG_URL=/^https:\/\/(d3325uqufdmhie\.cloudfront\.net|cdn\.wdgtsrc\.com|goldenonlineordering\.netlify\.app|goldentech\.com|www\.goldentech\.com)\/[^'"\s<>\\]+$/;
 function goldenGallery(G, code){
-  const g=(G.family.gallery||[]).filter(x=>x&&x.url&&/^https:\/\//.test(x.url));
+  const g=(G.family.gallery||[]).filter(x=>x&&x.url&&GOLDEN_IMG_URL.test(x.url));
   const mine=g.filter(x=>Array.isArray(x.skus)&&x.skus.includes(code));
   const prim=g.filter(x=>x.primary&&!mine.includes(x));
   const rest=g.filter(x=>!mine.includes(x)&&!x.primary&&!(Array.isArray(x.skus)&&x.skus.length&&!x.skus.includes(code))&&x.role!=="document_preview");
@@ -2623,7 +2625,7 @@ function goldenSectionsHtml(G, p){
   const feats=(f.groups&&f.groups.length)?f.groups.map(g=>list(g.title,g.items)).join(""):(list("Standard features",f.standard)+list("Optional features",f.optional)+list("Benefits",f.benefits));
   const featHtml=(feats||(f.accessories||[]).length||(f.warranty_terms||[]).length)?`<div class="pd-sect"><h2>Features</h2><div class="gfeats">${feats}${list("Optional accessories",f.accessories)}${list("Warranty",f.warranty_terms)}</div>${goldenSrc(f.source)}</div>`
     :(f.none_published?`<div class="pd-sect"><h2>Features</h2><p class="gmuted">Golden publishes a specification sheet for this model rather than a feature list — see the specifications and Golden's documents below.</p></div>`:"");
-  const fab=(F.fabrics||[]).length?`<div class="pd-sect"><h2>Standard fabrics</h2><div class="gfabs">${F.fabrics.map(x=>`<div class="gfab"><div class="gsw"${x.hex?` style="background:${esc(x.hex)}"`:""}>${x.swatch?`<img src="${esc(x.swatch)}" alt="${esc(x.name)} swatch" loading="lazy" onerror="this.remove()">`:""}</div><span>${esc(x.name)}</span></div>`).join("")}</div><div class="gsrc">Golden's standard palette for this model. Other fabrics are chosen when ordering, priced by Golden.</div></div>`:"";
+  const fab=(F.fabrics||[]).length?`<div class="pd-sect"><h2>Standard fabrics</h2><div class="gfabs">${F.fabrics.map(x=>`<div class="gfab"><div class="gsw"${x.hex?` style="background:${esc(x.hex)}"`:""}>${x.swatch&&GOLDEN_IMG_URL.test(x.swatch)?`<img src="${esc(x.swatch)}" alt="${esc(x.name)} swatch" loading="lazy" onerror="this.remove()">`:""}</div><span>${esc(x.name)}</span></div>`).join("")}</div><div class="gsrc">Golden's standard palette for this model. Other fabrics are chosen when ordering, priced by Golden.</div></div>`:"";
   const docs=(F.documents||[]);
   const order=["sell_sheet","brochure","accessories_sheet","owners_manual","quick_start","option_manual","setup_instructions","warranty","document"];
   const docHtml=docs.length?`<div class="pd-sect"><h2>Documents &amp; downloads</h2><div class="gdocs">${docs.slice().sort((a,b)=>order.indexOf(a.kind)-order.indexOf(b.kind)).map(d=>{
@@ -2930,7 +2932,7 @@ async function renderHome(){
   $("#content").innerHTML=`<div class="dash"><div class="msg" style="text-align:center;color:var(--gray);padding:20px">Loading your dashboard…</div></div>`;
 
   const allowed=new Set(lines.map(m=>m.slug));
-  let feat=(await loadFeatured()).filter(f=>allowed.has(f.manufacturer));
+  let feat=(await loadFeatured()).filter(f=>allowed.has(f.manufacturer)&&!(typeof isGoldenSlug==='function'&&isGoldenSlug(f.manufacturer)));
   // load the lines that have featured items first, then DROP any featured product that no
   // longer exists on its line (removed or hidden in Catalog) so dealers never see a dead card.
   const need=[...new Set(feat.map(f=>f.manufacturer))];
@@ -6930,6 +6932,8 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     var out=[], catBy={}, imgBy={}, msrp={};
     for(var i=0;i<lines.length;i++){
       var m=lines[i]; if(!m.hasData) continue;
+      // Golden prices are Golden's answer, never run through HCPS pricing or saved in HCPS layouts (B2 rule).
+      if(typeof isGoldenSlug==='function'&&isGoldenSlug(m.slug)) continue;
       var prods=[]; try{ prods=await loadLine(m.slug)||[]; }catch(e){ prods=[]; }
       for(var j=0;j<prods.length;j++){
         var p=prods[j]; if(!p||!p.code) continue;

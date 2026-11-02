@@ -87,6 +87,13 @@ const PROD=(over)=>Object.assign({ sku:'PR535-MED', family:'PR535', family_name:
     ok(!/goldenonlineordering\.netlify\.app\/(v1|\.netlify)/.test(H),'the browser never calls Golden');
     ok(/CONFIG\.GOLDEN_ENABLED: false|GOLDEN_ENABLED: false,/.test(H),'master switch still off on the live site');
   });
+  await t('Golden prices never pass through HCPS pricing: showroom designer and featured tiles skip Golden; photos only from Golden hosts', ()=>{
+    const sd=H.slice(H.indexOf('window.sdPreloadCatalog'), H.indexOf('window.sdPreloadCatalog')+1200);
+    ok(/isGoldenSlug\(m\.slug\)\) continue;/.test(sd),'showroom designer skips Golden');
+    ok(/loadFeatured\(\)\)\.filter\(f=>allowed\.has\(f\.manufacturer\)&&!\(typeof isGoldenSlug==='function'&&isGoldenSlug\(f\.manufacturer\)\)\)/.test(H),'featured tiles skip Golden');
+    const re=new Function(H.match(/const GOLDEN_IMG_URL=(\/.*\/);/)[0]+' return GOLDEN_IMG_URL;')();
+    ok(re.test('https://d3325uqufdmhie.cloudfront.net/wp-content/uploads/a.jpg')&&!re.test("https://d3325uqufdmhie.cloudfront.net/x');alert(1);//.jpg")&&!re.test('https://evil.example/a.jpg'),'host allow-list');
+  });
   console.log(`golden b2: ${pass} passed, ${fail} failed`);
   process.exit(fail?1:0);
 })();
