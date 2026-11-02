@@ -16,6 +16,10 @@ const DATA = require(path.join(GOLDEN, 'repo', 'functions', 'lib', 'golden-catal
 const products = C.buildCatalog({ data: DATA, merch: {}, pricing: [], seePrices: false });
 const ENRICH = require(path.join(GOLDEN, 'repo', 'functions', 'lib', 'golden-enrichment.json'));
 const familyAnswer = fam => { const f = C.buildFamily({ data: DATA, enrichment: ENRICH, merch: {}, pricing: [], seePrices: false, linked: false, family: fam }); return f ? { prices_visible: false, linked: false, enrichment_as_of: ENRICH.as_of, family: f } : { available: false, reason: 'not_found' }; };
+const CFG = require(path.join(GOLDEN, 'repo', 'functions', 'lib', 'golden-config.js'));
+const configAnswer = (b, priced) => { const c = CFG.configure({ sku: String(b.sku || ''), fabric: b.fabric || 'std', color: b.color || null, tier: b.tier || null, footrest: b.footrest === true, pricing: [], invRows: [] });
+  if (!c.ok || (c.quote && !c.quote.ok)) return { available: false, reason: 'not_offered' };
+  return { prices_visible: priced, linked: priced, config: CFG.present(c, { seePrices: priced, linked: priced }) }; };
 const inv = C.inventorySummary({ data: DATA, merch: {}, rows: DATA.products.filter(p => /^(PR|GB|GP)/.test(p.sku)).map((p, i) => ({ sku: p.sku, size: p.size_code, avail: [120, 7, 0][i % 3], updated_at: new Date().toISOString() })) });
 const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.json': 'application/json', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
 
@@ -49,6 +53,7 @@ async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } ca
           const ans = b.action === 'eligibility' ? Object.assign(base, { state: 'none', capabilities: { see_prices: false, order: false, history: false } })
             : b.action === 'catalog' ? Object.assign(base, { prices_visible: false, linked: false, products })
             : b.action === 'family' ? Object.assign(base, familyAnswer(String(b.family || '')))
+            : b.action === 'config' ? Object.assign(base, configAnswer(b, false))
             : Object.assign(base, inv);
           return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(ans) });
         }
@@ -80,9 +85,9 @@ async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } ca
       await page.evaluate(() => openProductDetail('PR535-MED'));
       await page.waitForTimeout(1500);
       const d = await page.evaluate(() => ({ sel: [...document.querySelectorAll('.pd-varsel option')].map(o => o.textContent.trim()), addBtns: document.querySelectorAll('.pd .addbtn').length,
-        note: (document.querySelector('.pd-golden') || {}).textContent || '', h1: (document.querySelector('.pd h1') || {}).textContent || '' }));
+        note: (document.querySelector('.gcfg') || {}).textContent || '', h1: (document.querySelector('.pd h1') || {}).textContent || '' }));
       await t(`${label}: product page — one family, size picker, Golden note, no add to cart`, () => {
-        ok(/MaxiComforter/.test(d.h1), d.h1); ok(d.sel.length === 6, 'sizes ' + d.sel.join('|')); ok(d.addBtns === 0); ok(/being finished/.test(d.note)); });
+        ok(/MaxiComforter/.test(d.h1), d.h1); ok(d.sel.length === 6, 'sizes ' + d.sel.join('|')); ok(d.addBtns === 0); ok(/Configure this chair/.test(d.note), d.note.slice(0, 80)); });
       await page.screenshot({ path: path.join(SHOTS, `golden-product-${label}.png`), fullPage: false });
       // the enriched product page: Golden gallery, size-specific specs, documents, videos, fabrics, compare
       for (const code of ['PR511-LAR', 'GA541D', 'BD100A-QB']) {
