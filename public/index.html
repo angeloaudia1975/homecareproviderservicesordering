@@ -5508,6 +5508,8 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .est{display:inline-block;font-size:10px;font-weight:800;color:#b9791a;background:#fdf3e3;border:1px solid #f0d9a8;border-radius:5px;padding:1px 6px}
   #p360wrap .kpi .kv.g{color:var(--green)}
   @media print{#p360wrap .topbar,#p360wrap .mainnav,#p360wrap .tb-actions,#p360wrap .ph .btn,#p360wrap .seelink,#p360wrap .foot,#p360wrap .mn-in{display:none!important}#p360wrap .page{padding:0;max-width:none}#p360wrap .card{box-shadow:none;break-inside:avoid;border-color:#ccc}#p360wrap .view:not(.on){display:none}}
+  /* A customer quote prints as the quote page alone — no builder, no page heading, nothing the dealer works with. */
+  @media print{#p360wrap #view-quotes.on .ph,#p360wrap #view-quotes.on .qbuild>.card,#p360wrap #view-quotes.on .qprevlbl{display:none!important}#p360wrap #view-quotes.on .qbuild{display:block}#p360wrap #view-quotes.on .qpaper{border:0;box-shadow:none;padding:0}}
   #p360wrap .qbuild{display:grid;grid-template-columns:1fr 1fr;gap:18px}
   @media(max-width:900px){#p360wrap .qbuild{grid-template-columns:1fr}}
   #p360wrap .qpaper{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:20px 22px}
@@ -5782,31 +5784,62 @@ async function loadOrders(){
 async function reqTracking(id,mfr,summary){ try{ await api(TOOLS_ENDPOINT,{action:"tracking_request",order_ref:id,manufacturer:mfr,summary}); }catch(e){} alert("Tracking request sent to HCPS — we'll get the tracking from the manufacturer and send it to you."); }
 
 /* ================= PHASE 2: pricing map, reports, exports ================= */
-let PRICE=null, PRICELIST=null;
+let PRICE=null, PRICELIST=null, QUOTELIST=null;
 /* The credential catalog-layers accepts: the preview's token, or the signed-in dealer's session. */
 async function layersHeaders(){
   if(window.__PREVIEW__&&window.__PREVIEW__.token) return {'x-hcps-preview':window.__PREVIEW__.token};
   await refreshIfNeeded();
   return (SESSION&&SESSION.access_token)?{authorization:'Bearer '+SESSION.access_token}:null;
 }
-/* WITHDRAWN PRODUCTS STAY OUT OF NEW HUB ACTIONS (owner, 2026-11-02, ABM retirements). PRICELIST feeds only things a
-   dealer starts NOW — a new quote line, a price request, a showroom slot, the pricing export — so a product the
-   storefront no longer sells is left out of it: a SKU entry its page switches off (disabled / hidden — the owner's
-   reversible retirement) or a saved catalog edit with active:false. PRICE keeps them, so an item already on a quote and
-   past orders still show their names. An unreadable content file withdraws nothing (the storefront decides what sells). */
-async function hubPageOff(slug){
-  const off=new Set();
-  try{ const r=await fetch('/data/content/'+encodeURIComponent(slug)+'.json'); if(!r.ok) return off; const c=await r.json();
-    for(const k in (c&&c.pages)||{}){ const pg=c.pages[k]; for(const s of (pg&&pg.skus)||[]){ if(s&&s.sku&&(s.disabled===true||s.status==='hidden')) off.add(String(s.sku).trim().toUpperCase()); } } }catch(e){}
-  return off;
+/* ONE CATALOG FOR QUOTES AND THE STOREFRONT (owner, 2026-11-02). PRICELIST feeds what a dealer starts NOW — a new quote
+   line, a price request, a showroom slot, the pricing export — and is built from the storefront's OWN merged catalog
+   (mergeCatalogEdits, the same code the shop and the order server run) for every line this dealer may order, so the
+   catalog editor's published changes, added products, colour options and retirements reach the quote builder with no
+   code change. Nothing the shop does not sell is offered: hidden / retired / switched-off products never come out of the
+   merge, and a DISCONTINUED product (visible for reference, not orderable) is left out here. Inactive lines
+   (manufacturers.json quotable:false) and Golden (its own portal) are not quoted. Each SKU is its own choice, named with
+   its family and its exact options; a railing upgrade the shop offers is its own choice too. MSRP is the manufacturer's
+   only — an MSRP the shop derived (_msrp_suggested, 2x the dealer price) is "not provided". PRICE keeps every catalog-file
+   entry too, so an item already on a quote, a favourite or a past order still has its name after a rename or retirement. */
+function quoteOptionText(p){
+  const ax=(typeof axesOf==='function')?axesOf(p):{};
+  const fam=String(groupDisplayName(p)||p.name||'').trim().toLowerCase(), code=String(p.code||'').trim().toLowerCase();
+  const parts=Object.keys(ax||{}).map(k=>{ const v=String(ax[k]||'').trim(); if(!v||v.toLowerCase()===code||v.toLowerCase()===fam) return ''; return /^(size|variant|option)$/i.test(k)?v:k+': '+v; }).filter(Boolean);
+  let t=parts.join(' · ');
+  if(!t){ const v=(typeof variantLabel==='function')?String(variantLabel(p)||''):''; if(v&&v!==p.code&&v!==groupDisplayName(p)) t=v; }
+  return t;
 }
-function hubLayerOff(j){ const off=new Set();
-  for(const o of (j&&j.product_overrides)||[]){ if(o&&o.code&&o.patch&&o.patch.active===false) off.add(String(o.code)); }
-  for(const c of (j&&j.custom_products)||[]){ if(c&&c.code&&c.active===false) off.add(String(c.code)); }
-  return off; }
+function quoteEntry(p, line, upgrade){
+  const q=upgrade?withUpgrade(p,upgrade):p; if(!q) return null;
+  const m=Number(q.msrp); const msrp=(!q._msrp_suggested&&isFinite(m)&&m>0)?m:null;
+  let cost=null; try{ const u=Number(unitPrice(q,1)); cost=isFinite(u)&&u>0?u:null; }catch(e){}
+  const opt=quoteOptionText(p);
+  return {key:line.slug+'|'+p.code+(upgrade?'|u='+upgrade:''), code:p.code, mfr:line.slug, mfrName:line.name, family:groupDisplayName(p)||p.name||p.code,
+    option:[opt, upgrade?('Upgrade: '+upgrade):''].filter(Boolean).join(' · '), name:p.name||p.code, msrp, msrpEach:!!(msrp!=null&&typeof msrpIsEach==='function'&&msrpIsEach(q)),
+    cost, map:(q.map!=null&&q.map!==''&&isFinite(Number(q.map)))?Number(q.map):null, category:p.category||'', upgrade:upgrade||''};
+}
+let QUOTE_UNAVAILABLE=[];   /* lines whose catalog could not be loaded — said on screen, never silently missing */
+async function hubStoreCatalog(){
+  const lines=((typeof entitledManufacturers==='function')?entitledManufacturers():[])
+    .filter(m=>m&&m.hasData!==false&&!(typeof isGoldenSlug==='function'&&isGoldenSlug(m.slug))&&quotableLine(m.slug));
+  const out=[]; QUOTE_UNAVAILABLE=[];
+  await Promise.all(lines.map(async line=>{
+    try{
+      const r=await fetch('./data/'+line.slug+'.json',{cache:'no-store'}); if(!r.ok) throw new Error('catalog '+r.status);
+      const prods=await mergeCatalogEdits(line.slug, (await r.json())||[]);
+      const sellable=(prods||[]).filter(p=>p&&p.code&&!p._discontinued&&!p._hidden);
+      if(sellable.length && !sellable.some(p=>Number(p.base_price)>0)) throw new Error('pricing unavailable');
+      const rows=[];
+      for(const p of sellable){ const e=quoteEntry(p,line); if(e) rows.push(e);
+        for(const u of (Array.isArray(p.upgrades)?p.upgrades:[])){ if(u&&u.label){ const ue=quoteEntry(p,line,u.label); if(ue) rows.push(ue); } } }
+      out.push({line,rows});
+    }catch(e){ QUOTE_UNAVAILABLE.push(line.name||line.slug); }
+  }));
+  return out;
+}
 async function loadPricing(){
   if(PRICE) return;
-  PRICE={}; PRICELIST=[];
+  PRICE={}; PRICELIST=[]; QUOTELIST=null;
   try{
     const mf=await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]);
     MFRLIST=(mf||[]).map(m=>({slug:m.slug,name:m.name,quotable:m.quotable}));
@@ -5820,27 +5853,51 @@ async function loadPricing(){
       try{
         const d=await fetch('/data/'+m.slug+'.json').then(r=>r.json());
         let items=Array.isArray(d)?d:(d.products||[]);
-        let priced=false, layerOff=new Set();
-        const pageOff=await hubPageOff(m.slug);
+        let priced=false;
         if(hdr && carried.has(m.slug)){
           try{
             const id=catalogIdentity(items);
             const r=await fetch('/.netlify/functions/catalog-layers?manufacturer='+encodeURIComponent(m.slug)+'&identity='+id,{headers:hdr,cache:'no-store'});
             const j=r.ok?await r.json():null;
-            if(j&&j.ok===true&&j.identity_sha256===id&&Array.isArray(j.file_overlay)){ items=restoreCatalogFile(items,j.file_overlay); priced=true; layerOff=hubLayerOff(j); }
+            if(j&&j.ok===true&&j.identity_sha256===id&&Array.isArray(j.file_overlay)){ items=restoreCatalogFile(items,j.file_overlay); priced=true; }
           }catch(e){}
         }
         if(!priced) items=items.map(p=>Object.assign({},p,{base_price:null,msrp:null,map:null}));
         for(const p of items){
           const code=String(p.code||'').trim(); if(!code) continue;
           const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(p.map!=null?Number(p.map):null),cost:(p.base_price!=null?(typeof dealerCostOf==='function'?dealerCostOf(p,m.slug):Number(p.base_price)):null),category:p.category||'',name:p.name||'',mfrName:m.name};
-          PRICE[m.slug+'|'+code]=rec;
-          if(pageOff.has(code.toUpperCase())||layerOff.has(code)) continue;   /* retired / switched off: no NEW quote, price request, showroom slot or export */
-          PRICELIST.push({code,mfr:m.slug,mfrName:m.name,name:p.name||'',cost:rec.cost,map:rec.map,msrp:rec.msrp,category:p.category||''});
+          PRICE[m.slug+'|'+code]=rec;   /* history / favourites / existing quotes — not an offer */
         }
       }catch(e){}
     }));
   }catch(e){}
+  await ensureQuoteCatalog();
+}
+/* What can be quoted NOW: the storefront's own catalog (see hubStoreCatalog). Its entries also replace the file-based PRICE
+   rows for the same key, so names, options and manufacturer MSRPs match what the dealer sees in the shop. Built for the
+   dealer's CURRENT set of lines and rebuilt whenever that set changes — the hub can start before the dealer's lines are
+   known, and an empty list must never stick (found 2026-11-02 on a fresh page). */
+let _quoteSig=null, _quoteBuild=null;
+async function ensureQuoteCatalog(){
+  const sig=((typeof entitledManufacturers==='function')?entitledManufacturers():[]).map(m=>m&&m.slug).sort().join(',');
+  if(QUOTELIST&&_quoteSig===sig) return;
+  if(_quoteBuild&&_quoteBuild.sig===sig) return _quoteBuild.p;   /* one build at a time for the same set of lines */
+  const p=buildQuoteCatalog(sig); _quoteBuild={sig,p};
+  try{ await p; }finally{ if(_quoteBuild&&_quoteBuild.p===p) _quoteBuild=null; }
+}
+async function buildQuoteCatalog(sig){
+  const quote=[], list=[];
+  try{
+    for(const {line,rows} of await hubStoreCatalog()){
+      for(const e of rows){
+        const opt={code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category};
+        quote.push(opt);
+        if(!e.upgrade) list.push({code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category});
+        PRICE[e.key]={msrp:e.msrp,map:e.map,cost:e.cost,category:e.category,name:e.family,option:e.option,sku:e.code,mfrName:e.mfrName,msrpEach:e.msrpEach,quotable:true};
+      }
+    }
+  }catch(e){}
+  QUOTELIST=quote; PRICELIST=list; _quoteSig=sig;
 }
 function retailUnit(mfr,code,unitCost){
   const r=PRICE&&PRICE[mfr+'|'+code];
@@ -5930,7 +5987,7 @@ window.exportHistoryCSV=exportHistoryCSV;window.exportReportCSV=exportReportCSV;
 /* ================= PHASE 3: favorites, branding, quotes, pricing requests ================= */
 let FAVS=new Set(), BRANDING={logo_url:null}, _catFavReady=false;
 let QUOTE=[], QCUST={name:"",valid:"30 days"};
-async function ensureCatalogFav(){ await loadPricing(); if(!_catFavReady){ await loadFavorites(); _catFavReady=true; } }
+async function ensureCatalogFav(){ await loadPricing(); await ensureQuoteCatalog(); if(!_catFavReady){ await loadFavorites(); _catFavReady=true; } }
 
 async function loadFavorites(){
   try{ const d=await api(TOOLS_ENDPOINT,{action:"favorites_list"}); if(d&&d.ok&&Array.isArray(d.favorites)){ FAVS=new Set(d.favorites.map(f=>f.manufacturer+"|"+f.code)); try{localStorage.setItem("hcps_favs",JSON.stringify([...FAVS]));}catch(e){} return; } }catch(e){}
@@ -5970,30 +6027,41 @@ async function loadQuotesView(){ await ensureCatalogFav(); renderQuotes(); }
 function quoteMsrp(p){ const v=p&&p.msrp!=null?Number(p.msrp):NaN; return (isFinite(v)&&v>0)?v:null; }
 function quotableLine(slug){ const m=(MFRLIST||[]).find(x=>x.slug===slug); return !(m&&m.quotable===false); }
 function quoteTotal(picked){ return picked.reduce((s,r)=>s+(r.msrp!=null?r.msrp:0),0); }
-function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp):'<span class="est">MSRP not provided</span>'; }
-function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const p=(PRICE&&PRICE[mfr+"|"+code])||{};return {mfr,code,name:p.name||code,mfrName:p.mfrName||mfr,msrp:quoteMsrp(p)};}); }
+function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">MSRP not provided</span>'; }
+function quoteItemHtml(r){ return `${esc(r.name)}<div style="font-size:10.5px;color:var(--muted)">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)}</div>`; }
+function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const p=(PRICE&&PRICE[k])||{};
+  return {key:k,mfr,code,sku:p.sku||code.split("|u=")[0],name:p.name||code,option:p.option||"",mfrName:p.mfrName||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach};}); }
 function quotePaperHtml(picked,total){
   return `<div class="qhead"><div style="display:flex;gap:11px;align-items:center">${brandLogoHtml(46)}<div><div class="qbiz">${esc((PROFILE&&PROFILE.name)||"Your Business")}</div></div></div>
     <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>#Q-${(Math.abs(hashStr((PROFILE&&PROFILE.name)||"x"))%9000+1000)}</b><div class="qc">Valid ${esc(QCUST.valid||"")}</div></div></div>
     ${QCUST.name?`<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">Prepared for <b>${esc(QCUST.name)}</b></div>`:""}
-    <table class="qtbl"><thead><tr><th>Product</th><th>Mfr</th><th style="text-align:right">MSRP</th></tr></thead><tbody>${picked.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(String(r.mfrName).split(" ")[0])}</td><td style="text-align:right">${quoteMsrpHtml(r)}</td></tr>`).join("")||'<tr><td colspan="3" style="color:#9aa4ae">No items yet.</td></tr>'}</tbody></table>
+    <table class="qtbl"><thead><tr><th>Product</th><th>Mfr</th><th style="text-align:right">MSRP</th></tr></thead><tbody>${picked.map(r=>`<tr><td>${quoteItemHtml(r)}</td><td>${esc(String(r.mfrName).split(" ")[0])}</td><td style="text-align:right">${quoteMsrpHtml(r)}</td></tr>`).join("")||'<tr><td colspan="3" style="color:#9aa4ae">No items yet.</td></tr>'}</tbody></table>
     <div class="qtot">Total MSRP: ${money(total)}</div>
     <div style="font-size:10px;color:var(--muted);margin-top:10px">Manufacturer suggested retail. Prepared by ${esc((PROFILE&&PROFILE.name)||"your business")} via HCPS.${picked.some(r=>r.msrp==null)?" Items marked “MSRP not provided” have no manufacturer MSRP and are not in the total.":""}</div>`;
 }
-function renderQuotes(){
-  const list=PRICELIST||[]; const picked=quotePicked(); const total=quoteTotal(picked);
-  /* EVERY quotable product is offered (2026-11-02): the list used to stop at the first 500, and as the lines load in
-     whatever order the network returns them, whole lines (ABM, Ovation, PediFix) could silently be missing. One group
-     per manufacturer, products by name. */
-  const avail=list.filter(p=>quotableLine(p.mfr)&&!QUOTE.includes(p.mfr+"|"+p.code));
+/* The quote picker: every product this dealer may quote now (QUOTELIST — see hubStoreCatalog), one group per manufacturer,
+   products by name, each SKU with its exact options; a search box narrows it by name, option, part number or line. */
+let QSEARCH="";
+function quoteOptionsHtml(){
+  const words=String(QSEARCH||"").toLowerCase().split(/\s+/).filter(Boolean);
+  const avail=(QUOTELIST||[]).filter(p=>quotableLine(p.mfr)&&!QUOTE.includes(p.mfr+"|"+p.code)&&(!words.length||words.every(w=>(p.name+" "+p.code+" "+p.mfrName).toLowerCase().includes(w))));
   const byLine=new Map(); avail.forEach(p=>{ if(!byLine.has(p.mfrName)) byLine.set(p.mfrName,[]); byLine.get(p.mfrName).push(p); });
-  const opts=[...byLine.keys()].sort((a,b)=>String(a).localeCompare(String(b))).map(n=>`<optgroup label="${esc(n)}">`+byLine.get(n).slice().sort((x,y)=>String(x.name).localeCompare(String(y.name),undefined,{numeric:true})||String(x.code).localeCompare(String(y.code))).map(p=>`<option value="${p.mfr}|${esc(p.code)}">${esc(p.name)} (#${esc(p.code)})</option>`).join("")+`</optgroup>`).join("");
+  const html=[...byLine.keys()].sort((a,b)=>String(a).localeCompare(String(b))).map(n=>`<optgroup label="${esc(n)}">`+byLine.get(n).slice().sort((x,y)=>String(x.name).localeCompare(String(y.name),undefined,{numeric:true})||String(x.code).localeCompare(String(y.code))).map(p=>`<option value="${esc(p.mfr+"|"+p.code)}">${esc(p.name)} (#${esc(p.code.split("|u=")[0])})</option>`).join("")+`</optgroup>`).join("");
+  return {html, count:avail.length};
+}
+function qFilter(v){ QSEARCH=String(v||""); const sel=$("#qsel"); if(!sel) return; const o=quoteOptionsHtml(); sel.innerHTML=o.html; const c=$("#qcount"); if(c) c.textContent=o.count+" product"+(o.count===1?"":"s"); }
+function qDelAt(i){ const k=quotePicked()[i]; if(k){ QUOTE=QUOTE.filter(x=>x!==k.key); renderQuotes(); } }
+function renderQuotes(){
+  const picked=quotePicked(); const total=quoteTotal(picked);
+  const o=quoteOptionsHtml(); const opts=o.html;
+  const unavailable=(QUOTE_UNAVAILABLE||[]).length?`<div style="font-size:12px;color:#b9791a;margin-bottom:8px">Could not load right now: ${esc(QUOTE_UNAVAILABLE.join(", "))} — reload to try again.</div>`:"";
   $("#view-quotes").innerHTML=`<div class="ph"><div><h1>Customer MSRP Quotes</h1><div class="sub">Build a branded quote for your customer from any HCPS product</div></div>
      <div><a class="btn gh" onclick="printPDF()">⬇ Print / PDF</a> <a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
    <div class="qbuild">
     <div class="card" style="margin-top:0"><h3>Build the quote</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">MSRP is the manufacturer’s suggested retail; a product without one shows “MSRP not provided”.</div>
-      <div style="display:flex;gap:8px;margin-bottom:10px"><select id="qsel" style="flex:1;border:1px solid var(--line);border-radius:9px;padding:9px;font-family:inherit;font-size:13px">${opts}</select><a class="btn nv" onclick="qAdd()">＋ Add</a></div>
-      <div class="rowlist">${picked.length?picked.map(r=>`<div class="rl"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${esc(r.mfrName)} · ${quoteMsrpHtml(r,"MSRP ")}</div></div><a class="btn gh" title="Favorite" onclick="toggleFav('${r.mfr}','${r.code}')">${FAVS.has(r.mfr+"|"+r.code)?"♥":"♡"}</a> <a class="btn gh" onclick="qDel('${r.mfr}','${r.code}')">Remove</a></div>`).join(""):`<div class="empty">Add a product above to start the quote.</div>`}</div>
+      ${unavailable}<div style="display:flex;gap:8px;margin-bottom:6px;align-items:center"><input id="qsearch" type="search" placeholder="Search name, part # or option" aria-label="Search products for the quote" value="${esc(QSEARCH)}" oninput="qFilter(this.value)" style="flex:1;border:1px solid var(--line);border-radius:9px;padding:9px;font-family:inherit;font-size:13px;min-width:0"><span id="qcount" style="font-size:11.5px;color:var(--muted);white-space:nowrap">${o.count} product${o.count===1?"":"s"}</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:10px"><select id="qsel" aria-label="Product to add" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:9px;font-family:inherit;font-size:13px">${opts}</select><a class="btn nv" onclick="qAdd()">＋ Add</a></div>
+      <div class="rowlist">${picked.length?picked.map((r,i)=>`<div class="rl"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)} · ${esc(r.mfrName)} · ${quoteMsrpHtml(r,"MSRP ")}</div></div><a class="btn gh" title="Favorite" onclick="toggleFav('${esc(r.mfr)}','${esc(r.sku)}')">${FAVS.has(r.mfr+"|"+r.sku)?"♥":"♡"}</a> <a class="btn gh" onclick="qDelAt(${i})">Remove</a></div>`).join(""):`<div class="empty">Add a product above to start the quote.</div>`}</div>
       <div class="card" style="box-shadow:none;background:var(--surface-2);margin-top:14px">
         <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Customer &amp; branding</div>
         <div class="fld2"><label>Customer name</label><input value="${esc(QCUST.name)}" oninput="QCUST.name=this.value;qPreview()"></div>
@@ -6001,7 +6069,7 @@ function renderQuotes(){
         <div class="fld2"><label>Your logo URL (optional — shows on the quote)</label><input id="qlogo" value="${esc(BRANDING.logo_url||"")}" placeholder="https://…/logo.png"><a class="btn gh" style="margin-top:6px" onclick="saveBranding(document.getElementById('qlogo').value)">Save logo</a></div>
       </div>
     </div>
-    <div><div style="font-size:12px;color:var(--muted);margin-bottom:8px">Live preview — what your customer sees</div><div id="qpaper" class="qpaper">${quotePaperHtml(picked,total)}</div></div>
+    <div><div class="qprevlbl" style="font-size:12px;color:var(--muted);margin-bottom:8px">Live preview — what your customer sees</div><div id="qpaper" class="qpaper">${quotePaperHtml(picked,total)}</div></div>
    </div>`;
 }
 function qPreview(){ const picked=quotePicked(); const total=quoteTotal(picked); const el=$("#qpaper"); if(el)el.innerHTML=quotePaperHtml(picked,total); }
@@ -6205,7 +6273,7 @@ window.showView=showView;
    nothing. Exported once here. The showroom zone's clear is exported as p360SwClear because the storefront's Strongback
    wall builder already owns the global swClear(). */
 Object.assign(window,{closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
-  submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear});
+  submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
 })();

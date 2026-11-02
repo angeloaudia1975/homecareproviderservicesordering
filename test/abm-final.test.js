@@ -28,25 +28,6 @@ await t('BC21087 shows its own face-mask circuit photo first (the family photo s
   const p=C['biwaze-cough-standard-circuit-child-face-mask']; if(!/ccd97dfe963c5b2c3d9b/.test(p.image)) throw new Error(p.image); eq(p.images_gallery.length,2); });
 await t('held photos stay unassigned: BK389 (same beige photo, no new evidence), BK281 (identified but 151 px), BC21095 (battery compartment, not the battery)',()=>{
   for(const c of ['BK389','BK281','BC21095']){ const e=entries().find(s=>s.sku===c); if(e.image||e._page.image) throw new Error(c+' has an image'); if(O._images[c]) throw new Error(c+' in _images'); } });
-/* the hub's PRICELIST (new actions) leaves out withdrawn products; PRICE keeps them */
-const grab=n=>{ const i=H.indexOf('async function '+n+'(')>=0?H.indexOf('async function '+n+'('):H.indexOf('function '+n+'('); let d=0,j=H.indexOf('{',i); for(;j<H.length;j++){ if(H[j]==='{')d++; else if(H[j]==='}'){ d--; if(!d) break; } } return H.slice(i,j+1); };
-await t('hub: a retired SKU and a switched-off catalog edit are not offered for new actions, but PRICE still names them',async()=>{
-  const file=[{code:'A1',name:'Kept'},{code:'R1',name:'Retired item'},{code:'X1',name:'Switched off'}];
-  const content={pages:{p:{skus:[{sku:'A1'},{sku:'r1',disabled:true,status:'hidden'}]}}};
-  const layers={ok:true,identity_sha256:'id',file_overlay:[],product_overrides:[{code:'X1',patch:{active:false}}],custom_products:[]};
-  const ctx={LINES:[{slug:'abm-respiratory-care'}],console,
-    fetch:async u=>{ u=String(u); const R=b=>({ok:true,json:async()=>b});
-      if(u==='/data/manufacturers.json') return R([{slug:'abm-respiratory-care',name:'ABM',hasData:true}]);
-      if(u==='/data/abm-respiratory-care.json') return R(file);
-      if(u.startsWith('/data/content/')) return R(content);
-      if(u.includes('catalog-layers')) return R(layers); return {ok:false,json:async()=>null}; },
-    layersHeaders:async()=>({'x-hcps-preview':'t'}), catalogIdentity:()=>'id', restoreCatalogFile:(i)=>i, encodeURIComponent };
-  vm.createContext(ctx); vm.runInContext('var PRICE=null,PRICELIST=null,MFRLIST=null;'+grab('hubPageOff')+grab('hubLayerOff')+grab('loadPricing')+';this.go=async()=>{await loadPricing(); return {PRICE,PRICELIST};};',ctx);
-  const r=await ctx.go(); eq(r.PRICELIST.map(p=>p.code),['A1']); eq(Object.keys(r.PRICE).sort(),['abm-respiratory-care|A1','abm-respiratory-care|R1','abm-respiratory-care|X1']); });
-await t('hub: an unreadable content file withdraws nothing',async()=>{
-  const ctx={LINES:[],fetch:async u=>{ u=String(u); if(u==='/data/manufacturers.json') return {ok:true,json:async()=>[{slug:'s',name:'S'}]}; if(u==='/data/s.json') return {ok:true,json:async()=>[{code:'A'}]}; throw new Error('down'); },
-    layersHeaders:async()=>null, catalogIdentity:()=>'id', restoreCatalogFile:i=>i, encodeURIComponent };
-  vm.createContext(ctx); vm.runInContext('var PRICE=null,PRICELIST=null,MFRLIST=null;'+grab('hubPageOff')+grab('hubLayerOff')+grab('loadPricing')+';this.go=async()=>{await loadPricing(); return PRICELIST;};',ctx);
-  eq((await ctx.go()).map(p=>p.code),['A']); });
+/* the hub's quote / new-action lists now come from the storefront's own merged catalog: test/quote-catalog.test.js */
 console.log(`abm final: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
 })();
