@@ -1238,6 +1238,18 @@ table.gspec th.on,table.gspec td.on{background:#fff7e0}table.gspec td.v{white-sp
 .gpd .pd-gal{align-items:start}.gpd .pd-thumbs{max-height:560px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 @media (max-width:760px){.gpd .pd-thumbs{max-height:none;overflow-x:auto;overflow-y:hidden}}.gfoot a{color:#1a5fa8}
 @media (max-width:760px){.gdocs,.gvids{grid-template-columns:1fr}.ghls{grid-template-columns:repeat(2,1fr)}}
+.gcfg{margin-top:12px;border:1px solid #dfe6ee;border-radius:12px;padding:12px 14px;background:#fff}
+.gcfg h3{margin:0 0 8px;font-size:14.5px;color:#0b1f33}.gcfg .gl{font-size:12px;font-weight:700;color:#5b6676;text-transform:uppercase;letter-spacing:.04em;margin:10px 0 6px}
+.gcfg-tabs,.gcfg-tiers{display:flex;flex-wrap:wrap;gap:6px}.gcfg-tab,.gcfg-tier{min-height:44px;padding:8px 12px;border:1px solid #cdd8e6;border-radius:999px;background:#fff;cursor:pointer;font:inherit;font-size:13px}
+.gcfg-tab.on,.gcfg-tier.on{background:#0b1f33;color:#fff;border-color:#0b1f33}.gcfg-tab small,.gcfg-tier small{opacity:.75;margin-left:4px}
+.gcfg-sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}.gcfg-c{position:relative;min-height:44px;border:2px solid transparent;border-radius:10px;padding:3px;background:#f6f8fb;cursor:pointer;font:inherit;font-size:11px;text-align:center;color:#2b3440}
+.gcfg-c.on{border-color:#1681c2}.gcfg-c .gsw{display:block;width:100%;aspect-ratio:1;border-radius:7px;background-size:cover;background-position:center;margin-bottom:3px}
+.gcfg-c .gdot{position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;border:1.5px solid #fff}.gcfg-c .gdot.in{background:#16a34a}.gcfg-c .gdot.low{background:#f59e0b}.gcfg-c .gdot.out{background:#9ca3af}
+.gcfg-fr{display:flex;align-items:center;gap:8px;min-height:44px;font-size:13.5px}.gcfg-fr input{width:20px;height:20px}
+.gcfg-q{margin-top:12px;padding:10px 12px;border-radius:10px;background:#f4f8fc;font-size:13.5px;line-height:1.5}.gcfg-q .gp{font-size:22px;font-weight:800;color:#0b1f33}.gcfg-q .gbd{color:#5b6676;font-size:12.5px}
+.gcfg-q .gin{color:#15803d;font-weight:700}.gcfg-q .gcu{color:#b45309;font-weight:700}.gcfg-q .gitem{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:#334155}
+.gcfg-add{margin-top:10px;width:100%;min-height:46px;border:0;border-radius:10px;background:#c9d3de;color:#4b5563;font:inherit;font-weight:700;cursor:not-allowed}
+.gcfg-note{font-size:12.5px;color:#6b7580;margin-top:6px}.gcfg-busy{opacity:.55;pointer-events:none}
 .pd-golden{margin-top:12px;padding:12px 14px;border-radius:10px;background:#fbf6e8;border:1px solid #f1dfa6;font-size:13.5px;color:#4b3a07;line-height:1.45;}
 .cv2-act{grid-row:2;grid-column:1/-1;padding:10px 12px 12px;border-top:1px solid var(--line);}
 .cv2-act .buy{margin:0;}
@@ -2582,6 +2594,60 @@ function goldenStockHtml(items){
 /* GOLDEN PRODUCT DETAIL (B2 enrichment, contract 1.2.0). Everything below comes from Golden's own system through
    golden-proxy → Golden /v1/catalog/family: Golden's verified photos, the size-specific specifications Golden publishes,
    Golden's documents and videos — each with its Golden source. HCPS stores none of it; nothing here is invented. */
+/* B3 — Golden's configurator, rendered in the HCPS design. Golden decides every option, price, stock status, lead
+   note and item #: each choice asks golden-proxy `config` (Golden runs its own portal configurator) and this page only
+   draws the answer. The size is the page's own size picker. Nothing is added to the cart until Stage 4. */
+const GCFG={ sel:{}, seq:0 };
+function goldenConfigHtml(p){ return `<div class="gcfg" id="gcfg" data-sku="${esc(p.code)}" data-fam="${esc(p._goldenFamily||String(p.code).split("-")[0])}"><h3>Configure this chair</h3><div class="gcfg-note">Loading Golden's options…</div></div>`; }
+async function goldenConfigLoad(host, sku, fam){
+  const box=host.querySelector('#gcfg'); if(!box) return;
+  const sel=GCFG.sel[fam]||(GCFG.sel[fam]={fabric:"std",color:null,tier:null,footrest:false});
+  const my=++GCFG.seq; box.classList.add('gcfg-busy');
+  const body={sku, fabric:sel.fabric}; if(sel.color) body.color=sel.color; if(sel.tier) body.tier=sel.tier; if(sel.footrest) body.footrest=true;
+  let j=await goldenCall("config", body);
+  if(my!==GCFG.seq||!host.querySelector('#gcfg')) return;
+  if(j&&j.available===false&&j.reason==="not_offered"&&(sel.color||sel.tier)){ sel.color=null; sel.tier=null; j=await goldenCall("config",{sku,fabric:sel.fabric,footrest:sel.footrest||undefined}); if(my!==GCFG.seq) return; }
+  box.classList.remove('gcfg-busy');
+  if(!j||j.available!==true||!j.config){ box.innerHTML=`<h3>Configure this chair</h3><div class="gcfg-note">Golden's configurator isn't available right now. Please try again shortly.</div>`; return; }
+  box.innerHTML=goldenConfigBody(j.config, j.prices_visible===true, sel);
+}
+function goldenConfigBody(c, pv, sel){
+  const up=v=>(pv&&typeof v==="number"&&v>0)?` <small>+${money(v)}</small>`:"";
+  const tab=(c.tabs||[]).find(t=>t.key===sel.fabric)||(c.tabs||[])[0]||{colors:[]};
+  sel.fabric=tab.key||"std"; const tier=sel.tier||c.tier;
+  const tabs=(c.tabs||[]).length>1?`<div class="gl">Fabric</div><div class="gcfg-tabs">${c.tabs.map(t=>`<button type="button" class="gcfg-tab${t.key===sel.fabric?" on":""}" data-gfab="${esc(t.key)}">${esc(t.label)}${up(t.upcharge)}</button>`).join("")}</div>`:"";
+  const stat={in:"In stock",low:"Low stock",out:"Custom build"};
+  const sw=(tab.colors||[]).map(x=>{const img=x.swatch&&GOLDEN_IMG_URL.test(x.swatch)?`background-image:url('${esc(x.swatch)}')`:(x.hex&&/^#[0-9a-f]{6}$/i.test(x.hex)?`background:${x.hex}`:"background:#e5e7eb");
+    return `<button type="button" class="gcfg-c${x.code===sel.color?" on":""}" data-gcol="${esc(x.code)}" aria-pressed="${x.code===sel.color}" title="${esc(x.name)} — ${esc(stat[x.status]||"")}${x.qty!=null?" ("+esc(x.qty)+")":""}"><span class="gsw" style="${img}"></span><span class="gdot ${esc(x.status)}"></span>${esc(x.name)}</button>`;}).join("");
+  const T={standard:"Standard",irheat:"Infrared heat",hvib:"Heat & vibration",nirvana:"Nirvana™ massage + heat"};
+  const tiers=c.tiers&&c.tiers.included?`<div class="gl">Included</div><div class="gcfg-note" style="margin-top:0">${esc(c.tiers.included_text||T[tier]||"")}</div>`
+    :((c.tiers&&c.tiers.options||[]).length>1?`<div class="gl">Upgrade</div><div class="gcfg-tiers">${c.tiers.options.map(o=>`<button type="button" class="gcfg-tier${o.key===tier?" on":""}" data-gtier="${esc(o.key)}">${esc(T[o.key]||o.key)}${up(o.upcharge)}</button>`).join("")}</div>`:"");
+  const fr=c.footrest&&c.footrest.eligible?`<label class="gcfg-fr"><input type="checkbox" data-gfoot${sel.footrest?" checked":""}> Footrest extension (${esc(c.footrest.part||"")})${up(c.footrest.upcharge)}</label>`:"";
+  const q=c.quote;
+  const qh=q?`<div class="gcfg-q">${pv&&typeof q.unit_price==="number"?`<div class="gp">${money(q.unit_price)}</div>${q.breakdown?`<div class="gbd">${esc(q.breakdown)}</div>`:""}`:`<div class="gbd">${GOLDEN.state==="account"?"Dealer pricing isn't shown for your Golden account.":"Dealer price shows once your Golden account is linked."}</div>`}
+    <div><b>${esc(q.details||q.color_name||q.color||"")}</b></div>
+    <div class="${q.in_stock?"gin":"gcu"}">${esc(q.lead_note||(q.in_stock?"In stock":"Custom build"))}</div>
+    <div class="gitem">Golden item # ${esc(q.item_no)}${q.item_no_resolved?"":" (built to the specification above)"}</div></div>`
+    :`<div class="gcfg-note">Choose a colour to see Golden's price and lead time.</div>`;
+  return `<h3>Configure this chair</h3>${tabs}<div class="gl">Colour</div><div class="gcfg-sw">${sw||'<div class="gcfg-note">No colours offered for this fabric.</div>'}</div>${tiers}${fr}${qh}
+    <button type="button" class="gcfg-add" disabled aria-disabled="true">Add to cart — opening soon</button>
+    <div class="gcfg-note">Priced and configured by Golden Technologies. Golden ordering in Partner 360 opens soon; this configuration can't be added to the cart yet.</div>`;
+}
+function goldenConfigWire(host){
+  const box=host.querySelector('#gcfg'); if(!box||box._wired) return; box._wired=true;
+  const sku=box.getAttribute('data-sku'), fam=box.getAttribute('data-fam');
+  box.addEventListener('click',function(e){
+    const sel=GCFG.sel[fam]||(GCFG.sel[fam]={fabric:"std",color:null,tier:null,footrest:false});
+    const f=e.target.closest('[data-gfab]'), c=e.target.closest('[data-gcol]'), t=e.target.closest('[data-gtier]');
+    if(f){ const k=f.getAttribute('data-gfab'); if(k!==sel.fabric){ sel.fabric=k; sel.color=null; } }
+    else if(c) sel.color=c.getAttribute('data-gcol');
+    else if(t) sel.tier=t.getAttribute('data-gtier');
+    else return;
+    goldenConfigLoad(host, sku, fam);
+  });
+  box.addEventListener('change',function(e){ if(!e.target.matches('[data-gfoot]')) return; const sel=GCFG.sel[fam]||(GCFG.sel[fam]={fabric:"std"}); sel.footrest=!!e.target.checked; goldenConfigLoad(host, sku, fam); });
+  goldenConfigLoad(host, sku, fam);
+}
 function goldenFamilyDetail(fam){
   if(!fam) return Promise.resolve(null);
   if(!GOLDEN.fam[fam]) GOLDEN.fam[fam]=goldenCall("family",{family:fam}).then(j=>(j&&j.available===true&&j.family)?j:null).catch(()=>null);
@@ -6676,7 +6742,9 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
               ${p._golden&&msrp?`<div class="pd-msrp">MSRP ${money(msrp)}</div>`:""}${p._golden&&mapPrice?`<div class="pd-map">eMAP ${money(mapPrice)}</div>`:""}`}
             ${variantSel}
             ${p._golden?goldenStockHtml([p]):""}
-            ${p._golden
+            ${p._golden&&p._goldenAction==="configure"&&/^PR\d{3}-[A-Z]{3}$/.test(p.code)
+              ? goldenConfigHtml(p)
+              : p._golden
               ? `<div class="pd-golden"><b>Golden ordering in Partner 360 is being finished.</b> ${p._goldenAction==="configure"?"Fabric, upgrades and configuration will be chosen right here, priced by Golden.":"Ordering will open right here, priced by Golden."} This item can't be added to the cart yet.</div>`
               : p._discontinued
               ? `<div class="pd-disc"><b>Discontinued</b> — this item is shown for reference and can no longer be ordered.${(variants||[]).some(v=>!v._discontinued)?' Choose a current option above, or see related products below.':' See related products below, or ask your HCPS rep for the current replacement.'}</div>`
@@ -6712,6 +6780,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       ${curatedAlt.length?`<div class="pd-sect"><h2>Also available from other HCPS manufacturers</h2><div class="pd-rel">${curatedAlt.map(r=>{const mn=((state.manufacturers||[]).find(x=>x.slug===r.related_manufacturer)||{}).name||r.related_manufacturer||"";return `<div class="pd-relc"><div class="ri">${r.related_image?`<img src="${esc(r.related_image)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain" onerror="imgFail(this)">`:'<span class="ph">No image</span>'}</div><div class="rb"><div class="rn">${esc(r.related_name||r.related_code)}</div><div class="rp" style="font-weight:600;color:#6b7580;font-size:12px">${esc(mn)}</div></div></div>`;}).join("")}</div><div style="font-size:12px;color:#6b7580;margin-top:6px">Comparable options carried by HCPS — ask your rep about lines you don't yet have access to.</div></div>`:""}
     </div>`;
     if(typeof wireAdd==="function") wireAdd(host);
+    if(p._golden) goldenConfigWire(host);
     if(G) host.querySelectorAll('[data-gcmp]').forEach(b=>b.addEventListener('click',function(){ host.querySelectorAll('[data-gcmp]').forEach(x=>x.classList.toggle('on',x===b)); const out=host.querySelector('#gcmpOut'); if(out) out.innerHTML='<p class="gmuted">Loading…</p>'; goldenCompare(G,b.getAttribute('data-gcmp'),out); }));
     if(!opts.keepScroll) window.scrollTo({top:0,behavior:"smooth"});
     try{ track&&track('product_view',p.manufacturer,p.code); }catch(e){}
