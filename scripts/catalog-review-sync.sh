@@ -25,7 +25,7 @@ git fetch -q origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" 2>/dev/nul
 git checkout -q --detach origin/main
 main_sha=$(git rev-parse HEAD)
 included='[]'; skipped='[]'
-for row in $(echo "$prs" | jq -c '.[]'); do
+while IFS= read -r row; do
   n=$(jq -r .n <<<"$row"); sha=$(jq -r .sha <<<"$row")
   if [ "$(jq -r .excluded <<<"$row")" = true ]; then skipped=$(jq -c --argjson r "$row" '.+[$r+{reason:"labelled sandbox-exclude"}]' <<<"$skipped"); continue; fi
   git fetch -q origin "$sha" 2>/dev/null || git fetch -q origin "+refs/pull/$n/head:refs/remotes/pr/$n"
@@ -35,7 +35,7 @@ for row in $(echo "$prs" | jq -c '.[]'); do
     git merge --abort 2>/dev/null || git reset -q --hard
     skipped=$(jq -c --argjson r "$row" '.+[$r+{reason:"does not merge cleanly with main and the PRs before it — update that PR to see it here"}]' <<<"$skipped")
   fi
-done
+done < <(jq -c '.[]' <<<"$prs")
 
 # What this sandbox contains — served at /catalog-review.json on the sandbox only (never on main).
 jq -n --arg main "$main_sha" --argjson inc "$included" --argjson sk "$skipped" --arg at "$(date -u +%FT%TZ)" \

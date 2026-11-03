@@ -1,6 +1,6 @@
 {
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-03T22:55:06Z",
+  "built_at": "2026-11-03T22:56:09Z",
   "main": "dc95889af1cca53c83ed72810f0d0b088eb2dc13",
   "included": [
     {
@@ -13,7 +13,7 @@
       "pr": 25,
       "title": "Catalog review sandbox: one private preview of main + all open PRs",
       "branch": "chore/catalog-review-sandbox",
-      "head": "eb7c3ed3210d6818777e00b05bd195d8412c6aae"
+      "head": "b86edc4c3a198cfec48af75ff76374a23c0071e3"
     }
   ],
   "skipped": [
