@@ -329,6 +329,7 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .ordrow .ordtop{display:flex;align-items:center;gap:8px;font-size:13.5px;}
 .ordrow .ordtop b{color:var(--navy);}
 #stagingbar{position:sticky;top:0;z-index:9999;background:#8a5a00;color:#fff;font:700 12.5px Arial,sans-serif;text-align:center;padding:8px 12px}
+#stagingbar .sbx{font-weight:400;font-size:12px;margin-top:3px;overflow-wrap:anywhere}#stagingbar .sbx a{color:#ffe7b3}
 .pvorder{position:fixed;inset:0;background:rgba(10,20,35,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:12px}
 .pvbox{background:#fff;border-radius:14px;width:min(920px,100%);height:min(88vh,900px);display:flex;flex-direction:column;overflow:hidden}
 .pvhead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e6e2dc}
@@ -4200,6 +4201,20 @@ function ensureStagingBar(){
   const bar=document.createElement("div"); bar.id="stagingbar";
   bar.textContent="PRIVATE CATALOG PREVIEW — not published. Orders placed here are not recorded and are never sent to a manufacturer.";
   document.body.insertBefore(bar,document.body.firstChild);
+  /* The Catalog Review Sandbox (owner, 2026-11-03) carries /catalog-review.json: which unpublished pull requests this build
+     adds to the live catalog. Everything not named there is exactly what is live. A single-PR preview has no such file. */
+  fetch("./catalog-review.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
+    if(!j||!Array.isArray(j.included)) return;
+    const names=s=>((state.manufacturers||[]).find(m=>m.slug===s)||{}).name||s;
+    const parts=j.included.map(p=>{
+      const what=(p.manufacturers||[]).map(names).join(", ")||(p.other_files?"shared storefront":"");
+      return (what?what+" ":"")+"(PR #"+p.pr+")"; });
+    const line=document.createElement("div"); line.className="sbx";
+    line.textContent="Review sandbox "+(j.review_id||"")+" · unpublished changes: "+(parts.join(" · ")||"none — this is the live catalog")+
+      " · everything else is live"+(j.skipped&&j.skipped.length?" · "+j.skipped.length+" PR(s) not included":"");
+    const a=document.createElement("a"); a.href="./catalog-review.json"; a.target="_blank"; a.rel="noopener"; a.textContent=" details";
+    line.appendChild(a); bar.appendChild(line);
+  }).catch(()=>{});
 }
 /* ---------- submit (one order per manufacturer) ---------- */
 async function submitOrder(){

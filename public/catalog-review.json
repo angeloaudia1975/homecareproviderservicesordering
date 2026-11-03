@@ -1,19 +1,26 @@
 {
+  "review_id": "be9b5f64688b",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-03T23:00:21Z",
+  "built_at": "2026-11-03T23:48:06Z",
   "main": "dc95889af1cca53c83ed72810f0d0b088eb2dc13",
   "included": [
     {
       "pr": 24,
       "title": "Dalton Medical catalog completion (preview — owner review)",
       "branch": "catalog/dalton-complete",
-      "head": "769e4418e2a4314bf576aa5557c267d4fdcc9e1f"
+      "head": "769e4418e2a4314bf576aa5557c267d4fdcc9e1f",
+      "manufacturers": [
+        "dalton"
+      ],
+      "other_files": 3
     },
     {
       "pr": 25,
       "title": "Catalog review sandbox: one private preview of main + all open PRs",
       "branch": "chore/catalog-review-sandbox",
-      "head": "8e447d6354c0e0af45daea3369f615c39900ecb7"
+      "head": "b96fe42911f4673ddd449c56d8e0fddfb46c04da",
+      "manufacturers": [],
+      "other_files": 4
     }
   ],
   "skipped": [
@@ -21,7 +28,7 @@
       "pr": 10,
       "title": "Access4U: group threshold, assist, and portable ramps for Fall 2026 catalog",
       "branch": "chore/access4u-owner-ramp-categories-20261027",
-      "reason": "does not merge cleanly with main and the PRs before it — update that PR to see it here"
+      "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
     }
   ]
 }
