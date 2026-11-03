@@ -25,9 +25,9 @@ jobs:
        github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     steps:
+      # The event's own commit (it carries this script); the script itself starts from origin/main.
       - uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
       - name: Rebuild catalog-review
         env:
