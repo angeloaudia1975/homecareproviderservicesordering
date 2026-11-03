@@ -9,6 +9,10 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, closed, labeled, unlabeled]
+  # A PR joins the sandbox once its checks pass: re-run when a check or a commit status (Netlify) finishes.
+  check_suite:
+    types: [completed]
+  status:
   workflow_dispatch:
 permissions:
   contents: write
