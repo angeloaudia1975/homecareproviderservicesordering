@@ -47,7 +47,10 @@ const PROD=(over)=>Object.assign({ sku:'PR535-MED', family:'PR535', family_name:
     await c.goldenInit(); ok(c.goldenEntitled()===true);
     const h=c.calls[0].init.headers; ok(h['x-hcps-golden-env']==='preview' && h['x-hcps-preview'].length===48);
     const c2=sandbox({ staging:true, preview:false, jwt:true, answers:{ eligibility:ELIG() } });
-    await c2.goldenInit(); ok(c2.calls.length===0,'a real dealer on a preview host does not reach Golden preview');
+    // B6 (2026-11-04): a real dealer sign-in on a deploy preview ASKS Golden's preview environment with its own bearer;
+    // golden-proxy allows it only for a TEST dealership behind golden_p360_preview_orders (test/golden-integration-b6 in HCPS).
+    await c2.goldenInit(); const h2=c2.calls[0]&&c2.calls[0].init.headers;
+    ok(h2&&h2['x-hcps-golden-env']==='preview'&&h2.authorization==='Bearer jwt'&&!('x-hcps-preview' in h2),'a real dealer on a preview host asks the preview environment with its own sign-in');
   });
   await t('Golden product → catalog shape: family card, size axis, Golden prices untouched, stock attached', async()=>{
     const c=sandbox({ enabled:true, jwt:true, answers:{ eligibility:ELIG({ state:'account', capabilities:{ see_prices:true } }),
