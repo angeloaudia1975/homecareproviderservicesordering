@@ -1,15 +1,19 @@
 {
-  "review_id": "8145ec6f95d2",
+  "review_id": "8597419a6559",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T03:58:45Z",
+  "built_at": "2026-11-04T03:59:00Z",
   "main": "80198031fdf96c09b5add6db4919d0d5b22d4ee7",
-  "included": [],
-  "skipped": [
+  "included": [
     {
       "pr": 29,
       "title": "Corsicana / CorsicanaCare content batch: 14 SKUs from official sources (owner review)",
       "branch": "catalog/corsicana-enrich",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
+      "head": "ba07984ec2d5e2babc0429fac15fa8d8bb840865",
+      "manufacturers": [
+        "corsicana"
+      ],
+      "other_files": 3
     }
-  ]
+  ],
+  "skipped": []
 }
