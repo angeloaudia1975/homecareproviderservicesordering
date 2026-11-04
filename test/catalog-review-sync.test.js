@@ -11,7 +11,7 @@ let pass = 0, fail = 0;
 const t = (name, fn) => { try { fn(); pass++; console.log('ok   ' + name); } catch (e) { fail++; console.log('FAIL ' + name + '\n     ' + e.message); } };
 const sh = (cwd, ...a) => execFileSync('git', a, { cwd, encoding: 'utf8', env: { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' } }).trim();
 
-function world(prs, extraEnv = {}) {
+function world(prs, extraEnv = {}, opts = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sbx-'));
   const origin = path.join(root, 'origin.git'), seed = path.join(root, 'seed'), work = path.join(root, 'work'), stub = path.join(root, 'stub');
   fs.mkdirSync(stub);
@@ -28,6 +28,7 @@ function world(prs, extraEnv = {}) {
     fs.mkdirSync(path.join(seed, path.dirname(f)), { recursive: true });
     fs.writeFileSync(path.join(seed, f), p.content || ('{"pr":' + p.n + '}\n'));
     sh(seed, 'add', '-A'); sh(seed, 'commit', '-qm', 'pr ' + p.n);
+    if (p.second) { p.oldSha = sh(seed, 'rev-parse', 'HEAD'); fs.writeFileSync(path.join(seed, f), p.second); sh(seed, 'add', '-A'); sh(seed, 'commit', '-qm', 'pr ' + p.n + ' update'); }
     const sha = sh(seed, 'rev-parse', 'HEAD');
     sh(seed, 'push', '-q', 'origin', p.ref, `HEAD:refs/pull/${p.n}/head`);
     list.push({ number: p.n, title: 'PR ' + p.n, draft: !!p.draft, labels: (p.labels || []).map(name => ({ name })),
@@ -40,7 +41,15 @@ function world(prs, extraEnv = {}) {
   sh(seed, 'checkout', '-q', 'main');
   fs.writeFileSync(path.join(seed, 'public/data/acme.json'), '{"v":2}\n');
   sh(seed, 'commit', '-qam', 'main moves'); sh(seed, 'push', '-q', 'origin', 'main');
-  fs.writeFileSync(path.join(stub, 'pulls_state_open_base_main_per_page_100.json'), JSON.stringify(list));
+  fs.writeFileSync(path.join(stub, 'pulls_state_open_base_main_per_page_100.json'), JSON.stringify(opts.prList ? opts.prList(list) : list));
+  if (opts.prevSandbox) {   // a previous sandbox build that included these PRs at their OLD heads
+    sh(seed, 'checkout', '-q', '-B', 'catalog-review', 'main');
+    const inc = [];
+    for (const p of prs.filter(x => x.oldSha)) { sh(seed, 'merge', '-q', '--no-edit', p.oldSha); inc.push({ pr: p.n, head: p.oldSha }); }
+    fs.writeFileSync(path.join(seed, 'public/catalog-review.json'), JSON.stringify({ included: inc, skipped: [] }));
+    sh(seed, 'add', '-A'); sh(seed, 'commit', '-qm', 'old sandbox'); sh(seed, 'push', '-q', 'origin', 'catalog-review');
+    sh(seed, 'checkout', '-q', 'main');
+  }
   sh(root, 'clone', '-q', origin, work);
   let out = '', err = null;
   try {
@@ -75,15 +84,18 @@ const W = world([
   { n: 13, ref: 'excluded', labels: ['sandbox-exclude'], statuses: [ok()], runs: [] },
   { n: 14, ref: 'fork', fork: true, statuses: [ok()], runs: [] },
   { n: 15, ref: 'conflict', file: 'public/data/acme.json', content: '{"v":"pr"}\n', statuses: [ok()], runs: [] },
-  { n: 16, ref: 'own-sync-red', statuses: [ok()], runs: [run('sync', 'failure')] },
+  { n: 16, ref: 'own-sync-red', statuses: [ok()], runs: [{ ...run('catalog-review-sandbox-sync', 'failure'), app: { slug: 'github-actions' } }] },
   { n: 17, ref: 'api-unreadable', statuses: null, runs: null },
   { n: 18, ref: 'other-status-failed', statuses: [ok(), st('error', 'some/other-ci', 3)], runs: [] },
+  { n: 19, ref: 'foreign-sync-red', statuses: [ok()], runs: [{ ...run('sync', 'failure'), app: { slug: 'some-other-app' } }] },
+  { n: 20, ref: 'skipped-build', statuses: [{ ...ok(), description: 'Deploy Preview skipped' }], runs: [] },
+  { n: 21, ref: 'bad-json', file: 'content-overrides/acme.json', content: '{"a":1,\n"b":2\n', statuses: [ok()], runs: [] },
 ]);
 const inc = () => (W.manifest.included || []).map(p => p.pr);
 const why = n => ((W.manifest.skipped || []).find(p => p.pr === n) || {}).reason || '(not listed)';
 
 t('script ran to the end (dry run)', () => { if (W.err || !W.manifest) throw new Error(W.out.slice(-800)); if (!/DRY RUN/.test(W.out)) throw new Error(W.out); });
-t('exactly the eligible PRs are included: #1, #6, #11, #16', () => { const g = inc().join(','); if (g !== '1,6,11,16') throw new Error('included ' + g); });
+t('exactly the eligible PRs are included: #1, #6, #11, #16 (and not #19–#21)', () => { const g = inc().join(','); if (g !== '1,6,11,16') throw new Error('included ' + g); });
 t('no validation results at all → not included (missing evidence)', () => { if (!/no successful required check/.test(why(2))) throw new Error(why(2)); });
 t('green check runs but no Netlify status → not included', () => { if (!/no successful required check/.test(why(3))) throw new Error(why(3)); });
 t('only an unrelated status → not included', () => { if (!/no successful required check/.test(why(4))) throw new Error(why(4)); });
@@ -94,6 +106,9 @@ t('failed / pending status or check run → not included', () => {
 t('a check that failed and then passed counts by its latest result', () => { if (!inc().includes(11)) throw new Error(why(11)); });
 t('sandbox-exclude label and fork PRs are left out', () => { if (!/labelled sandbox-exclude/.test(why(13))) throw new Error(why(13)); if (inc().includes(14) || W.manifest.skipped.some(p => p.pr === 14)) throw new Error('fork listed'); });
 t('a conflicting PR is skipped, never force-resolved', () => { if (!/does not merge cleanly/.test(why(15))) throw new Error(why(15)); });
+t('a check run named like ours but from another app still counts (and is red)', () => { if (!why(19).includes('checks failure')) throw new Error(why(19)); });
+t('a skipped Netlify build is not evidence', () => { if (!/no successful required check/.test(why(20))) throw new Error(why(20)); });
+t('a merged result with invalid JSON is rolled back and left out', () => { if (!/not valid JSON/.test(why(21))) throw new Error(why(21)); });
 t('unreadable check answers → not included', () => { if (!/checks unknown/.test(why(17))) throw new Error(why(17)); });
 t('manifest names the manufacturer a PR touches and a review id', () => {
   const p6 = W.manifest.included.find(p => p.pr === 6); if (!p6 || p6.manufacturers.join() !== 'dalton') throw new Error(JSON.stringify(p6));
@@ -103,6 +118,25 @@ t('dry run pushes nothing: origin has no catalog-review branch, main unchanged b
   if (/catalog-review/.test(W.branches)) throw new Error(W.branches);
 });
 fs.rmSync(W.root, { recursive: true, force: true });
+t('a PR whose new commit is still being checked keeps its last validated version (no drop-out)', () => {
+  const E = world([
+    { n: 1, ref: 'updating', statuses: [st('pending')], runs: [], second: '{"pr":1,"v":2}\n' },
+    { n: 2, ref: 'new-and-pending', statuses: [st('pending')], runs: [] },
+    { n: 3, ref: 'updated-and-failed', statuses: [st('failure')], runs: [], second: '{"pr":3,"v":2}\n' },
+  ], {}, { prevSandbox: true });
+  try {
+    const p1 = (E.manifest && E.manifest.included || []).find(p => p.pr === 1);
+    const old = E.manifest && null;
+    if (!p1 || !/still being checked/.test(p1.note || '')) throw new Error(JSON.stringify(E.manifest) + E.out.slice(-400));
+    if ((E.manifest.included || []).some(p => p.pr === 2)) throw new Error('a never-validated pending PR was included');
+    if ((E.manifest.included || []).some(p => p.pr === 3)) throw new Error('a PR whose new commit FAILED kept its old version');
+  } finally { fs.rmSync(E.root, { recursive: true, force: true }); }
+});
+t('100 or more open PRs stops the run instead of dropping some', () => {
+  const E = world([{ n: 1, ref: 'green', statuses: [ok()], runs: [] }], {}, { prList: l => Array.from({ length: 100 }, (_, i) => ({ ...l[0], number: 1000 + i })) });
+  try { if (!E.err || !/pagination/.test(E.out)) throw new Error('ran: ' + E.out.slice(-300)); }
+  finally { fs.rmSync(E.root, { recursive: true, force: true }); }
+});
 t('a misconfigured (empty) required-check list admits nothing', () => {
   const E = world([{ n: 1, ref: 'green', statuses: [ok()], runs: [] }], { SANDBOX_REQUIRED_STATUSES: ',' });
   try { if (!E.manifest || E.manifest.included.length) throw new Error(JSON.stringify(E.manifest && E.manifest.included)); }

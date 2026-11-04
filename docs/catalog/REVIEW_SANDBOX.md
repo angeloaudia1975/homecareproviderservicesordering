@@ -16,7 +16,12 @@ The branch `catalog-review` contains:
     - the required Netlify deploy-preview build status is present and successful (the latest result per check counts);
     - no other status or check run is failing or unfinished.
 
-    A PR with no validation results at all is never treated as passing.
+    A PR with no validation results at all is never treated as passing, and a skipped or cancelled Netlify build is not evidence.
+  - after it is merged into the sandbox together with the PRs before it, every JSON file it touches still parses.
+    Otherwise it is taken back out and listed for a person.
+  - When a PR that was already in the sandbox gets a new commit, the sandbox keeps its last validated version until the
+    new commit's checks pass, so the PR doesn't drop out and come back. The yellow bar says "newer version still being
+    checked". A new commit whose checks fail removes the PR.
   - it merges cleanly with `main` and the PRs before it (merged in PR-number order).
 
 A PR that is not ready, has failing or unfinished checks, or conflicts is left out. It is listed with the reason in `/catalog-review.json` on the sandbox. A conflict is never resolved automatically: the PR's own branch is updated and the sandbox picks it up. A PR labelled `sandbox-exclude` is left out.
@@ -28,7 +33,11 @@ The yellow bar at the top of every sandbox page names:
 Everything not named in the bar is exactly what is live.
 
 ## Updates
-`.github/workflows/catalog-review-sandbox.yml` runs `scripts/catalog-review-sync.sh`:
+`.github/workflows/catalog-review-sandbox.yml` runs **main's own copy** of `scripts/catalog-review-sync.sh`:
+- It never runs a PR's copy, so an unreviewed branch can't change what runs with write access.
+- It executes no PR code; PR heads are only merged with git.
+
+It runs:
 - on every push to `main`;
 - on every PR change (open / push / label / close);
 - whenever a check or a Netlify status finishes.

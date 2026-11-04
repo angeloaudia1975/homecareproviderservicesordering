@@ -6,7 +6,9 @@ name: Catalog review sandbox
 on:
   push:
     branches: [main]
-  pull_request:
+  # pull_request_target runs MAIN's copy of this workflow and script (never a PR's), so an unreviewed branch can't change
+  # what runs with write access. No PR code is executed: PR heads are only git-merged into the sandbox branch.
+  pull_request_target:
     branches: [main]
     types: [opened, synchronize, reopened, closed, labeled, unlabeled]
   # A PR joins the sandbox once its checks pass: re-run when a check or a commit status (Netlify) finishes.
@@ -21,18 +23,20 @@ concurrency:
   group: catalog-review-sandbox
   cancel-in-progress: false
 jobs:
-  sync:
+  catalog-review-sandbox-sync:
     # The sandbox PR's own pushes do not rebuild it, and PRs from forks are never merged into it.
     if: >-
-      github.event_name != 'pull_request' ||
+      github.event_name != 'pull_request_target' ||
       (github.event.pull_request.head.ref != 'catalog-review' &&
        github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     steps:
-      # The event's own commit (it carries this script); the script itself starts from origin/main.
+      # Always main's script, whatever the event.
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
+          persist-credentials: true
       - name: Rebuild catalog-review
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

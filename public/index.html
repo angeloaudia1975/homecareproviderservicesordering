@@ -4206,14 +4206,18 @@ function ensureStagingBar(){
   fetch("./catalog-review.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
     if(!j||!Array.isArray(j.included)) return;
     const names=s=>((state.manufacturers||[]).find(m=>m.slug===s)||{}).name||s;
+    const line=document.createElement("div"); line.className="sbx";
+    const paint=()=>{ while(line.firstChild) line.removeChild(line.firstChild);
     const parts=j.included.map(p=>{
       const what=(p.manufacturers||[]).map(names).join(", ")||(p.other_files?"shared storefront":"");
-      return (what?what+" ":"")+"(PR #"+p.pr+")"; });
-    const line=document.createElement("div"); line.className="sbx";
+      return (what?what+" ":"")+"(PR #"+p.pr+")"+(p.note?" — newer version still being checked":""); });
     line.textContent="Review sandbox "+(j.review_id||"")+" · unpublished changes: "+(parts.join(" · ")||"none — this is the live catalog")+
       " · everything else is live"+(j.skipped&&j.skipped.length?" · "+j.skipped.length+" PR(s) not included":"");
     const a=document.createElement("a"); a.href="./catalog-review.json"; a.target="_blank"; a.rel="noopener"; a.textContent=" details";
-    line.appendChild(a); bar.appendChild(line);
+    line.appendChild(a); };
+    paint(); bar.appendChild(line);
+    /* the line list may still be loading: repaint once it is, so manufacturer names (not slugs) show */
+    if(!(state.manufacturers||[]).length) setTimeout(paint,3000);
   }).catch(()=>{});
 }
 /* ---------- submit (one order per manufacturer) ---------- */
