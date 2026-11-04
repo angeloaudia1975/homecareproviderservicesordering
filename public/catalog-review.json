@@ -1,7 +1,7 @@
 {
   "review_id": "98891bd8284f",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T17:09:55Z",
+  "built_at": "2026-11-04T19:30:18Z",
   "main": "6e76c95c70f9572d7ea337b764a30e6376c98d7a",
   "included": [],
   "skipped": [
@@ -9,6 +9,12 @@
       "pr": 33,
       "title": "B6: Place order with Golden in the Golden cart (contract 1.6.0)",
       "branch": "integration/b6-place-order",
+      "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
+    },
+    {
+      "pr": 34,
+      "title": "C3: Retire Ohio Medical / GCE — ordering (draft)",
+      "branch": "c3/ohio-medical-retire",
       "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
     }
   ]
