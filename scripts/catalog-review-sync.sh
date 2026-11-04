@@ -17,7 +17,13 @@ BRANCH="catalog-review"
 LABEL="${SANDBOX_EXCLUDE_LABEL:-sandbox-exclude}"
 READY_LABEL="${SANDBOX_READY_LABEL:-owner-review}"
 TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
-api(){ curl -fsSL -H "Accept: application/vnd.github+json" ${TOKEN:+-H "Authorization: Bearer $TOKEN"} "https://api.github.com/repos/$REPO/$1"; }
+# Commit statuses that MUST be present and successful before a PR may enter the sandbox (positive evidence: a PR with no
+# validation results at all is never treated as passing). Netlify's deploy preview builds the PR — that build is the check.
+REQUIRED="${SANDBOX_REQUIRED_STATUSES:-netlify/hcpsonlineordering/deploy-preview}"
+api(){
+  # Tests point SANDBOX_API_STUB at a folder of canned GitHub answers (path with / ? = & replaced by _).
+  if [ -n "${SANDBOX_API_STUB:-}" ]; then cat "$SANDBOX_API_STUB/$(printf '%s' "$1" | tr '/?=&' '____').json"; return; fi
+  curl -fsSL -H "Accept: application/vnd.github+json" ${TOKEN:+-H "Authorization: Bearer $TOKEN"} "https://api.github.com/repos/$REPO/$1"; }
 git config user.name  >/dev/null 2>&1 || git config user.name  "catalog-review-sandbox"
 git config user.email >/dev/null 2>&1 || git config user.email "catalog-review-sandbox@users.noreply.github.com"
 
@@ -31,12 +37,22 @@ main_sha=$(git rev-parse HEAD)
 # Which manufacturers a change touches (catalog, content, overrides, sources, product photos), by its files.
 mfr_of(){ git diff --name-only "$main_sha...$1" | sed -nE 's#^(public/data/content|public/data|content-overrides|content-sources)/([a-z0-9-]+)\.json$#\2#p; s#^public/assets/products/([a-z0-9-]+)/.*#\1#p' | grep -vx manufacturers | sort -u | jq -R . | jq -sc .; }
 other_of(){ git diff --name-only "$main_sha...$1" | grep -vE '^(public/data/|content-overrides/|content-sources/|public/assets/products/)' | jq -R . | jq -sc 'length'; }
-# Checks on a PR head: "pass" when every commit status and check run finished green (the sandbox's own `sync` job aside).
-checks_of(){ local st cr
-  st=$(api "commits/$1/status" | jq -r '.state + " " + (.statuses|length|tostring)')
-  cr=$(api "commits/$1/check-runs?per_page=100" | jq -r '[.check_runs[]|select(.name!="sync")] | if any(.status!="completed") then "pending" elif any(.conclusion as $c | ["success","neutral","skipped"]|index($c)|not) then "failure" else "success" end')
-  case "$st" in "failure "*|"error "*) echo failure; return;; "pending 0") ;; "pending "*) echo pending; return;; esac
-  echo "$cr"; }
+# Checks on a PR head. "success" ONLY with positive evidence: every required status present and successful (latest per
+# context), no other status failing or pending, and every check run finished green (the sandbox's own `sync` job aside).
+# Missing required evidence = "missing" (not ready). Any failure = "failure". Anything unfinished = "pending".
+checks_of(){ local sj cj
+  sj=$(api "commits/$1/statuses?per_page=100") || { echo unknown; return; }
+  cj=$(api "commits/$1/check-runs?per_page=100") || { echo unknown; return; }
+  jq -rn --argjson s "$sj" --argjson c "$cj" --arg req "$REQUIRED" '
+    ($s | group_by(.context) | map(sort_by(.created_at, .id) | last)) as $latest
+    | ($c.check_runs | map(select(.name != "sync"))) as $runs
+    | ($req | split(",") | map(select(length > 0))) as $need
+    | if any($latest[]; .state == "failure" or .state == "error")
+         or any($runs[]; .status == "completed" and ((.conclusion // "") as $x | ["success","neutral","skipped"] | index($x) | not)) then "failure"
+      elif any($latest[]; .state == "pending") or any($runs[]; .status != "completed") then "pending"
+      elif ($need | length) == 0 then "missing"
+      elif all($need[]; . as $n | any($latest[]; .context == $n and .state == "success")) then "success"
+      else "missing" end'; }
 included='[]'; skipped='[]'
 while IFS= read -r row; do
   n=$(jq -r .n <<<"$row"); sha=$(jq -r .sha <<<"$row")
@@ -44,7 +60,11 @@ while IFS= read -r row; do
   if [ "$(jq -r .excluded <<<"$row")" = true ]; then skip "labelled $LABEL"; continue; fi
   if [ "$(jq -r .draft <<<"$row")" = true ] && [ "$(jq -r .ready_label <<<"$row")" != true ]; then skip "draft (work in progress) — label it $READY_LABEL when it is ready for owner review"; continue; fi
   ck=$(checks_of "$sha")
-  if [ "$ck" != success ]; then skip "checks $ck on its latest commit — added automatically once they pass"; continue; fi
+  case "$ck" in
+    success) ;;
+    missing) skip "no successful required check yet ($REQUIRED) on its latest commit — added automatically once it passes"; continue;;
+    *) skip "checks $ck on its latest commit — added automatically once they pass"; continue;;
+  esac
   git fetch -q origin "$sha" 2>/dev/null || git fetch -q origin "+refs/pull/$n/head:refs/remotes/pr/$n"
   if git merge -q --no-ff --no-edit -m "sandbox: merge #$n" "$sha" >/dev/null 2>&1; then
     included=$(jq -c --argjson r "$row" --argjson m "$(mfr_of "$sha")" --argjson o "$(other_of "$sha")" '.+[$r+{manufacturers:$m, other_files:$o}]' <<<"$included")

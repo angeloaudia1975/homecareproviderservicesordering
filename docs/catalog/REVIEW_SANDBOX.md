@@ -12,7 +12,11 @@ The branch `catalog-review` contains:
 - the latest `main` (= production);
 - every open pull request into `main` that is **ready for owner review**:
   - it is a non-draft PR, or a draft labelled `owner-review`;
-  - **all its checks have passed** on its current head;
+  - its checks have passed on its current head, with **positive evidence**:
+    - the required Netlify deploy-preview build status is present and successful (the latest result per check counts);
+    - no other status or check run is failing or unfinished.
+
+    A PR with no validation results at all is never treated as passing.
   - it merges cleanly with `main` and the PRs before it (merged in PR-number order).
 
 A PR that is not ready, has failing or unfinished checks, or conflicts is left out. It is listed with the reason in `/catalog-review.json` on the sandbox. A conflict is never resolved automatically: the PR's own branch is updated and the sandbox picks it up. A PR labelled `sandbox-exclude` is left out.
