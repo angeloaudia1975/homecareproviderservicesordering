@@ -1,7 +1,7 @@
 {
-  "review_id": "fbe5c2a5b7da",
+  "review_id": "c9f718e90d0c",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T04:35:17Z",
+  "built_at": "2026-11-04T04:35:44Z",
   "main": "da671e94ca907a4b59aec101be664b99f78771ac",
   "included": [
     {
@@ -13,13 +13,23 @@
         "corsicana"
       ],
       "other_files": 3
-    }
-  ],
-  "skipped": [
+    },
     {
       "pr": 31,
       "title": "PediFix content batch: displays, catalog photos, P244/P60 families (sandbox review)",
       "branch": "catalog/pedifix-prep",
+      "head": "a48b86250bacf67e7d551a03778c20a5aa9f6e46",
+      "manufacturers": [
+        "pedifix"
+      ],
+      "other_files": 3
+    }
+  ],
+  "skipped": [
+    {
+      "pr": 32,
+      "title": "B5: Golden order history & tracking in My Orders (draft)",
+      "branch": "integration/b5-history-ui",
       "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
     }
   ]

@@ -1999,6 +1999,76 @@
     "source": "owner-supplied image (keep: 5100-C-S/5100CS.jpg, matched by folder)",
     "note": ""
    }
+  ],
+  "D40-3": [
+   {
+    "url": "/assets/products/pedifix/gallery/7d175bc553ebaef9a8f7.jpg",
+    "source": "PediFix OTC Wholesale Catalog 2021–2022 (HCPS copy pedifix-catalog-2025.pdf)",
+    "note": "catalog pages 4–5, 12' Medical Footcare Center photo — cropped from the catalog page image 2026-11-03; display contents subject to change"
+   }
+  ],
+  "D40-2": [
+   {
+    "url": "/assets/products/pedifix/gallery/15ca0eea8a288b7b51de.jpg",
+    "source": "PediFix OTC Wholesale Catalog 2021–2022 (HCPS copy pedifix-catalog-2025.pdf)",
+    "note": "catalog pages 6–7, 8' Medical Footcare Center photo — cropped from the catalog page image 2026-11-03; display contents subject to change"
+   }
+  ],
+  "D40": [
+   {
+    "url": "/assets/products/pedifix/gallery/f7190afa9e80f22b82bd.jpg",
+    "source": "PediFix OTC Wholesale Catalog 2021–2022 (HCPS copy pedifix-catalog-2025.pdf)",
+    "note": "catalog page 8, 4' Top-Sellers Medical Footcare Center photo — cropped from the catalog page image 2026-11-03; display contents subject to change"
+   }
+  ],
+  "D77": [
+   {
+    "url": "/assets/products/pedifix/gallery/8377f60f93b673304ca0.jpg",
+    "source": "PediFix OTC Wholesale Catalog 2021–2022 (HCPS copy pedifix-catalog-2025.pdf)",
+    "note": "catalog page 9, 2' x 6' Mobile Medical Footcare Center photo (sides 1 and 2) — cropped from the catalog page image 2026-11-03; display contents subject to change"
+   }
+  ],
+  "D27": [
+   {
+    "url": "/assets/products/pedifix/gallery/dd30b1bcd667c6d6a4d6.jpg",
+    "source": "PediFix OTC Wholesale Catalog 2021–2022 (HCPS copy pedifix-catalog-2025.pdf)",
+    "note": "catalog page 10, D27 sides 1–2 and 3–4 — cropped from the catalog page image 2026-11-03; display contents subject to change"
+   }
+  ],
+  "D37": [
+   {
+    "url": "/assets/products/pedifix/gallery/9275c4bc5f1aebbac990.jpg",
+    "source": "PediFix OTC Wholesale Catalog 2021–2022 (HCPS copy pedifix-catalog-2025.pdf)",
+    "note": "catalog page 10, Option 2 — D37 — cropped from the catalog page image 2026-11-03; display contents subject to change"
+   }
+  ],
+  "D1": [
+   {
+    "url": "/assets/products/pedifix/gallery/316d41ce319cac488985.jpg",
+    "source": "PediFix OTC Wholesale Catalog 2021–2022 (HCPS copy pedifix-catalog-2025.pdf)",
+    "note": "catalog page 12, 1' wide planogram — cropped from the catalog page image 2026-11-03; display contents subject to change"
+   }
+  ],
+  "D2": [
+   {
+    "url": "/assets/products/pedifix/gallery/f05779b615665caef171.jpg",
+    "source": "PediFix OTC Wholesale Catalog 2021–2022 (HCPS copy pedifix-catalog-2025.pdf)",
+    "note": "catalog page 12, 2' wide planogram — cropped from the catalog page image 2026-11-03; display contents subject to change"
+   }
+  ],
+  "D3": [
+   {
+    "url": "/assets/products/pedifix/gallery/33c463e6d867c44856ee.jpg",
+    "source": "PediFix OTC Wholesale Catalog 2021–2022 (HCPS copy pedifix-catalog-2025.pdf)",
+    "note": "catalog page 13, 3' wide planogram — cropped from the catalog page image 2026-11-03; display contents subject to change"
+   }
+  ],
+  "M905RR": [
+   {
+    "url": "/assets/products/pedifix/gallery/e2baf4751b860abee4c8.jpg",
+    "source": "PediFix OTC Wholesale Catalog 2021–2022 (HCPS copy pedifix-catalog-2025.pdf)",
+    "note": "catalog page 59, colour swatch 'Plant Your Sugar Lips Here — #520' — colour swatch cropped from the catalog page 2026-11-03"
+   }
   ]
  },
  "_retired": {
@@ -2047,5 +2117,928 @@
    "decided": "2026-10-30",
    "ref": "HCPS Master Tracker #42"
   }
- }
+ },
+ "12-footcare-floor-display-60-inh-x-144-inw-x-17-ind": {
+  "description": "PediFix's 12' Medical Footcare Center (#D40-3) is a full-line floor display: three 4' sections that carry PediFix's broadest assortment of foot treatment products, with a section for new and specialty orthotics, insoles and inserts. PediFix states that display contents are subject to change: new items are introduced frequently, so the assortment of a complete display may vary from what the catalog shows.",
+  "features": [
+   "146 products (2–12 pieces each, assorted sizes as applicable)",
+   "3 double-sided display headers (16\" x 9\")",
+   "1 window decal",
+   "25 product guides / referral brochures with holder",
+   "Ailment guide shelf hanger with lanyard",
+   "Out-of-stock tags"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D40-3"
+   },
+   {
+    "label": "Size",
+    "value": "60\" H x 144\" W x 17\" D"
+   },
+   {
+    "label": "Sections",
+    "value": "Three 4' sections"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 5 — read against the page image 2026-11-03",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 5 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 5 — read against the page image 2026-11-03 (HCPS catalog dimensions shown where they agree)"
+  }
+ },
+ "8-footcare-floor-display-60-inh-x-96-inw-x-17-ind": {
+  "description": "PediFix's 8' Medical Footcare Center (#D40-2) is a two-section floor display stocked with a broad PediFix footcare assortment. PediFix states that display contents are subject to change: new items are introduced frequently, so the assortment of a complete display may vary from what the catalog shows.",
+  "features": [
+   "112 products (2–12 pieces each, assorted sizes as applicable)",
+   "2 small, double-sided display headers (16\" x 9\")",
+   "1 window decal",
+   "25 product guides / referral brochures with holder",
+   "Ailment guide shelf hanger with lanyard",
+   "Out-of-stock tags"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D40-2"
+   },
+   {
+    "label": "Size",
+    "value": "60\" H x 96\" W x 17\" D"
+   },
+   {
+    "label": "Sections",
+    "value": "Two 4' sections"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 6 — read against the page image 2026-11-03",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 6 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 6 — read against the page image 2026-11-03 (HCPS catalog dimensions shown where they agree)"
+  }
+ },
+ "top-sellers-footcare-floor-display-60-inh-x-48-inw-x-17-ind": {
+  "description": "PediFix's 4' Top-Sellers Medical Footcare Center (#D40) is a single-section floor display of proven PediFix sellers for common foot conditions, including a range of skincare products. PediFix states that display contents are subject to change: new items are introduced frequently, so the assortment of a complete display may vary from what the catalog shows.",
+  "features": [
+   "72 products (2–12 pieces each, assorted sizes as applicable)",
+   "1 small, double-sided display header (16\" x 9\")",
+   "1 window decal",
+   "25 product guides / referral brochures with holder",
+   "Ailment guide shelf hanger with lanyard",
+   "Out-of-stock tags"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D40"
+   },
+   {
+    "label": "Size",
+    "value": "60\" H x 48\" W x 17\" D"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 8 — read against the page image 2026-11-03",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 8 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 8 — read against the page image 2026-11-03 (HCPS catalog dimensions shown where they agree)"
+  }
+ },
+ "2-sided-floor-spinner-display-60-inh-x-18-inw-x-18-ind": {
+  "description": "PediFix's 2' x 6' Mobile Medical Footcare Center (#D77) is a two-sided floor spinner on wheels, loaded with PediFix best sellers, including insoles, heel cups and skincare items on the bottom shelves. PediFix states that display contents are subject to change: new items are introduced frequently, so the assortment of a complete display may vary from what the catalog shows.",
+  "features": [
+   "61 products (4–6 pieces each, assorted sizes as applicable)",
+   "1 double-sided display header (16\" x 9\")",
+   "1 window decal",
+   "25 product guides / referral brochures with holder",
+   "Ailment guide shelf hanger with lanyard",
+   "Out-of-stock tags"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D77"
+   },
+   {
+    "label": "Size (PediFix catalog)",
+    "value": "72\" H with header; 16\" x 19\" base with wheels"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 9 — read against the page image 2026-11-03",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 9 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 9 — read against the page image 2026-11-03 (HCPS catalog dimensions shown where they agree)"
+  }
+ },
+ "mid-sized-4-sided-counter-top-spinner-display-22-inh-x-22": {
+  "description": "PediFix's 4-Sided Counter-Top Medical Footcare Center (#D27) is a square, four-panel spinner that fits on a counter or table top. It holds 44 PediFix footcare products, three of each item and size where applicable — 135 pieces in total. PediFix states that display contents are subject to change: new items are introduced frequently, so the assortment of a complete display may vary from what the catalog shows.",
+  "features": [
+   "44 products, 3 of each item and size where applicable (135 pieces total)",
+   "1 double-sided display header (16\" x 9\")",
+   "1 window decal",
+   "25 product guides / referral brochures with holder",
+   "Ailment guide shelf hanger with lanyard",
+   "Out-of-stock tags"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D27"
+   },
+   {
+    "label": "Footprint (PediFix catalog)",
+    "value": "12\" diameter base; fully loaded 22\" D x 22\" W x 21\" H, plus 6\" header"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 10 — read against the page image 2026-11-03",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 10 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 10 — read against the page image 2026-11-03 (HCPS catalog dimensions shown where they agree)"
+  }
+ },
+ "two-story-tall-counter-top-spinner-display-d17-d28-43-inh-x": {
+  "description": "PediFix's 'Two-Story' Tall Counter-Top Footcare Center (#D37) stacks the 2-sided D17 spinner on top of the 4-sided D27 spinner in the same counter footprint, for an assortment of 55 PediFix footcare products — 177 pieces in total. PediFix states that display contents are subject to change: new items are introduced frequently, so the assortment of a complete display may vary from what the catalog shows.",
+  "features": [
+   "55 products (177 pieces total)",
+   "D17 2-sided spinner on top, D27 4-sided spinner below",
+   "1 double-sided display header (16\" x 9\")",
+   "1 window decal",
+   "25 product guides / referral brochures with holder",
+   "Ailment guide shelf hanger with lanyard",
+   "Out-of-stock tags"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D37"
+   },
+   {
+    "label": "Footprint (PediFix catalog)",
+    "value": "12\" diameter base; fully loaded 22\" D x 22\" W x 43\" H, plus 6\" header"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 10 — read against the page image 2026-11-03",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 10 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 10 — read against the page image 2026-11-03 (HCPS catalog dimensions shown where they agree)"
+  }
+ },
+ "2-sided-counter-top-spinner-display-22-inh-x-13-5-inw-x-12": {
+  "description": "PediFix's 2-Sided Counter-Top Spinner Display (#D17) fits easily on a counter, table top or deep shelf to offer customers relief and comfort from common foot ailments with the most popular PediFix medical footcare products. Product assortment and price subject to change.",
+  "features": [
+   "20 products (3 pieces each, assorted sizes as applicable)",
+   "1 double-sided display header (16\" x 9\")",
+   "25 product guides / referral brochures with holder",
+   "Ailment guide shelf hanger with lanyard",
+   "Out-of-stock tags"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D17"
+   },
+   {
+    "label": "Size",
+    "value": "22\" H x 13.5\" W x 12\" D"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/2-sided-spinner-counter-top-display-d17 (read 2026-11-03); PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 11 — read against the page image 2026-11-03",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 11 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 11 — read against the page image 2026-11-03 (HCPS catalog dimensions shown where they agree)"
+  }
+ },
+ "1-foot-planogram-12-inw-x-48-inh": {
+  "description": "PediFix's 1' wide best-seller planogram (#D1) is a merchandise assortment of proven PediFix sellers sized to fit a store's existing display fixtures (12\" W x 48\" H), to create or expand a footcare section and leave room for expansion. PediFix states that display contents are subject to change: new items are introduced frequently, so the assortment of a complete display may vary from what the catalog shows.",
+  "features": [
+   "20 products (4–6 pieces each, assorted sizes as applicable)",
+   "With a full assortment purchase of a 1', 2' or 3' planogram, PediFix includes: 1 double-sided display header (16\" x 9\"), 1 window decal, 25 product guides / referral brochures with holder, an ailment guide shelf hanger with lanyard and out-of-stock tags"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D1"
+   },
+   {
+    "label": "Size",
+    "value": "12\" W x 48\" H planogram"
+   },
+   {
+    "label": "Fixture",
+    "value": "Fits the store's existing display fixtures"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 12–13 — read against the page image 2026-11-03",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 12–13 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 12–13 — read against the page image 2026-11-03 (HCPS catalog dimensions shown where they agree)"
+  }
+ },
+ "2-foot-planogram-24-inw-x-42-inh": {
+  "description": "PediFix's 2' wide best-seller planogram (#D2) is a merchandise assortment of proven PediFix sellers sized to fit a store's existing display fixtures (24\" W x 42\" H), to create or expand a footcare section and leave room for expansion. PediFix states that display contents are subject to change: new items are introduced frequently, so the assortment of a complete display may vary from what the catalog shows.",
+  "features": [
+   "31 products (4–6 pieces each, assorted sizes as applicable)",
+   "With a full assortment purchase of a 1', 2' or 3' planogram, PediFix includes: 1 double-sided display header (16\" x 9\"), 1 window decal, 25 product guides / referral brochures with holder, an ailment guide shelf hanger with lanyard and out-of-stock tags"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D2"
+   },
+   {
+    "label": "Size",
+    "value": "24\" W x 42\" H planogram"
+   },
+   {
+    "label": "Fixture",
+    "value": "Fits the store's existing display fixtures"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 12–13 — read against the page image 2026-11-03",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 12–13 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 12–13 — read against the page image 2026-11-03 (HCPS catalog dimensions shown where they agree)"
+  }
+ },
+ "3-foot-planogram-36-inw-x-42-inh": {
+  "description": "PediFix's 3' wide best-seller planogram (#D3) is a merchandise assortment of proven PediFix sellers sized to fit a store's existing display fixtures (36\" W x 42\" H), to create or expand a footcare section and leave room for expansion. PediFix states that display contents are subject to change: new items are introduced frequently, so the assortment of a complete display may vary from what the catalog shows.",
+  "features": [
+   "44 products (3–6 pieces each, assorted sizes as applicable)",
+   "With a full assortment purchase of a 1', 2' or 3' planogram, PediFix includes: 1 double-sided display header (16\" x 9\"), 1 window decal, 25 product guides / referral brochures with holder, an ailment guide shelf hanger with lanyard and out-of-stock tags"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D3"
+   },
+   {
+    "label": "Size",
+    "value": "36\" W x 42\" H planogram"
+   },
+   {
+    "label": "Fixture",
+    "value": "Fits the store's existing display fixtures"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 12–13 — read against the page image 2026-11-03",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 12–13 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 12–13 — read against the page image 2026-11-03 (HCPS catalog dimensions shown where they agree)"
+  }
+ },
+ "tea-tree-ultimates-assortment-display-p3070-s-p3078-s-p3370": {
+  "description": "Tea Tree Ultimates® Assortment Counter-Top Display (#D09-TTU): a counter-top display unit stocked with Tea Tree Ultimates® FungaSoap® 5.1 oz (#P3070), Soaking Crystals™ (#P3078) and Foot Wipes (#P3370). Display contents are subject to change.",
+  "features": [
+   "Tea Tree Ultimates® FungaSoap® 5.1 oz — #P3070",
+   "Tea Tree Ultimates® Soaking Crystals™ — #P3078",
+   "Tea Tree Ultimates® Foot Wipes — #P3370",
+   "Counter-top display unit"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D09-TTU"
+   },
+   {
+    "label": "Display size (PediFix catalog)",
+    "value": "15\" H x 7\" W x 9\" D"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/tea-tree-ultimates-mix-counter-top-display-d09-ttu (read 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/tea-tree-ultimates-mix-counter-top-display-d09-ttu (read 2026-11-03); quantities checked against PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03"
+  }
+ },
+ "dermatology-mix-display-p3071-s-p3078-s-p3069-s": {
+  "description": "Dermatology Mix Counter-Top Display (#D09-MIX): 4 bottles of Tea Tree Ultimates® FungaSoap® 6 oz (#P3071), 3 boxes of Soaking Crystals™ (#P3078) and 4 jars of Deep-Healing Foot Cream™ (#P3069), with a counter-top display unit. Display contents are subject to change.",
+  "features": [
+   "(4) FungaSoap® 6 oz — #P3071",
+   "(3) Soaking Crystals™ — #P3078",
+   "(4) Deep-Healing Foot Cream™ — #P3069",
+   "Counter-top display unit"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D09-MIX"
+   },
+   {
+    "label": "Display size (PediFix catalog)",
+    "value": "15\" H x 7\" W x 9\" D"
+   },
+   {
+    "label": "Contents",
+    "value": "4 + 3 + 4 (11 retail units)"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/dermatology-mix-counter-top-display-d09-mix (read 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/dermatology-mix-counter-top-display-d09-mix (read 2026-11-03); quantities checked against PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03"
+  }
+ },
+ "diabetic-defense-mix-display-p3076-s-p3620-s": {
+  "description": "Diabetic Defense® Daily Therapy Mix Counter-Top Display (#D09-DDMIX): 5 bottles of Diabetic Defense® Foot Wash (#P3076) and 3 jars of Diabetic Defense® Foot Moisturizer (#P3620), with a counter-top display unit. Display contents are subject to change.",
+  "features": [
+   "(5) Diabetic Defense® Foot Wash — #P3076",
+   "(3) Diabetic Defense® Foot Moisturizer — #P3620",
+   "Counter-top display unit"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D09-DDMIX"
+   },
+   {
+    "label": "Display size (PediFix catalog)",
+    "value": "15\" H x 7\" W x 9\" D"
+   },
+   {
+    "label": "Contents",
+    "value": "5 + 3 (8 retail units)"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/diabetic-defense-daily-therapy-mix-counter-top-display-d09-ddmix (read 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/diabetic-defense-daily-therapy-mix-counter-top-display-d09-ddmix (read 2026-11-03); quantities checked against PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03"
+  }
+ },
+ "diabetic-defense-daily-therapy-foot-wash-display-p3076-s": {
+  "description": "Diabetic Defense® Foot Wash Counter-Top Display (#D09-DDFW): 9 bottles of Diabetic Defense® Foot Wash (#P3076) with a counter-top display unit. Display contents are subject to change.",
+  "features": [
+   "(9) Diabetic Defense® Foot Wash — #P3076",
+   "Counter-top display unit"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D09-DDFW"
+   },
+   {
+    "label": "Display size (PediFix catalog)",
+    "value": "15\" H x 7\" W x 9\" D"
+   },
+   {
+    "label": "Contents",
+    "value": "9 retail units"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/diabetic-defense-foot-wash-counter-top-display-d09-ddfw (read 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/diabetic-defense-foot-wash-counter-top-display-d09-ddfw (read 2026-11-03); quantities checked against PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03"
+  }
+ },
+ "deep-healing-foot-cream-display-p3069-s": {
+  "description": "Deep-Healing Foot Cream™ Counter-Top Display (#D09-DHFC): 12 jars of Deep-Healing Foot Cream™ (#P3069) with a counter-top display unit. Display contents are subject to change.",
+  "features": [
+   "(12) Deep-Healing Foot Cream™ — #P3069",
+   "Counter-top display unit"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D09-DHFC"
+   },
+   {
+    "label": "Display size (PediFix catalog)",
+    "value": "15\" H x 7\" W x 9\" D"
+   },
+   {
+    "label": "Contents",
+    "value": "12 retail units"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/deep-healing-foot-cream-counter-top-display-d09-dhfc (read 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/deep-healing-foot-cream-counter-top-display-d09-dhfc (read 2026-11-03); quantities checked against PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03"
+  }
+ },
+ "fasciafix-plantar-fasciitis-relief-sleeve-display-p6023-s": {
+  "description": "FasciaFIX® Plantar Fasciitis Relief Sleeve Counter-Top Display (#D09-FFPFS): 12 FasciaFIX® sleeves (#P6023) — 2 Small, 4 Medium, 4 Large and 2 XLarge — with a counter-top display unit. Display contents are subject to change.",
+  "features": [
+   "(2) Small — #P6023-S",
+   "(4) Medium — #P6023-M",
+   "(4) Large — #P6023-L",
+   "(2) XLarge — #P6023-XL",
+   "Counter-top display unit"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D09-FFPFS"
+   },
+   {
+    "label": "Display size (PediFix catalog)",
+    "value": "15\" H x 7\" W x 9\" D"
+   },
+   {
+    "label": "Contents",
+    "value": "12 retail units"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/fasciafix-plantar-fasciitis-relief-sleeve-counter-top-display-d09-ffpfs (read 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/fasciafix-plantar-fasciitis-relief-sleeve-counter-top-display-d09-ffpfs (read 2026-11-03); quantities checked against PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03"
+  }
+ },
+ "heel-so-smooth-heel-sleeves-display-p800-s": {
+  "description": "Visco-GEL® Heel-So-Smooth® Counter-Top Display (#D09-HSS): 6 Heel-So-Smooth® Heel Sleeve retail packages (#P800) with a counter-top display unit. Display contents are subject to change.",
+  "features": [
+   "(6) Visco-GEL® Heel-So-Smooth® Heel Sleeves — #P800",
+   "Counter-top display unit"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D09-HSS"
+   },
+   {
+    "label": "Display size (PediFix catalog)",
+    "value": "15\" H x 7\" W x 9\" D"
+   },
+   {
+    "label": "Contents",
+    "value": "6 retail units"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/visco-gel-heel-so-smooth-counter-top-display-d09-hss (read 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-heel-so-smooth-counter-top-display-d09-hss (read 2026-11-03); quantities checked against PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03"
+  }
+ },
+ "tea-tree-ultimates-fungasoap-display-p3071-s": {
+  "description": "Tea Tree Ultimates® FungaSoap® Counter-Top Display (#D09-FS): 12 bottles of FungaSoap® 6 oz (#P3071) with a counter-top display unit. Display contents are subject to change.",
+  "features": [
+   "(12) Tea Tree Ultimates® FungaSoap® 6 oz — #P3071",
+   "Counter-top display unit"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D09-FS"
+   },
+   {
+    "label": "Display size (PediFix catalog)",
+    "value": "15\" H x 7\" W x 9\" D"
+   },
+   {
+    "label": "Contents",
+    "value": "12 retail units"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/tea-tree-ultimates-fungasoap-counter-top-display-d09-fs (read 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/tea-tree-ultimates-fungasoap-counter-top-display-d09-fs (read 2026-11-03); quantities checked against PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03"
+  }
+ },
+ "tea-tree-ultimates-soaking-crystals-display-p3078-s": {
+  "description": "Tea Tree Ultimates® Soaking Crystals™ Counter-Top Display (#D09-SC): 6 boxes of Soaking Crystals™ (#P3078) with a counter-top display unit. Display contents are subject to change.",
+  "features": [
+   "(6) Tea Tree Ultimates® Soaking Crystals™ — #P3078",
+   "Counter-top display unit"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D09-SC"
+   },
+   {
+    "label": "Display size (PediFix catalog)",
+    "value": "15\" H x 7\" W x 9\" D"
+   },
+   {
+    "label": "Contents",
+    "value": "6 retail units"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/tea-tree-ultimates-soaking-crystals-counter-top-display-d09-sc (read 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/tea-tree-ultimates-soaking-crystals-counter-top-display-d09-sc (read 2026-11-03); quantities checked against PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03"
+  }
+ },
+ "self-adhesive-felt-roll-white-1-4-in-thick-1-4-in-x-6-in-x-2": {
+  "description": "PediFix Self-Adhesive Felt Roll lets you cut pads that absorb pressure and friction and comfort calluses, blisters and other foot problems. The self-adhesive backing holds the pad in place on the ball of the foot, the back of the heel or wherever protection is needed, on the foot or in the shoe. Trim to size to customize appliances, reinforce padding and soften problem areas.",
+  "features": [
+   "Self-adhesive backing keeps pads in place",
+   "For use on the foot or in shoes",
+   "Trimmable — cut to size",
+   "White felt, 6\" x 2.5 yd roll"
+  ],
+  "specs": [
+   {
+    "label": "Roll size",
+    "value": "6\" x 2.5 yd"
+   },
+   {
+    "label": "Thickness",
+    "value": "1/8\" (#8520) or 1/4\" (#8521)"
+   },
+   {
+    "label": "Sold as",
+    "value": "1 roll"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/self-adhesive-felt-roll-85208521 (read 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/self-adhesive-felt-roll-85208521 (read 2026-11-03)",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 62–63 — read against the page image 2026-11-03"
+  }
+ },
+ "self-adhesive-foam-roll-white-1-4-in-thick-1-4-in-x-6-in-x-2": {
+  "description": "PediFix Self-Adhesive Foam Roll lets you cut pads that absorb pressure and friction and comfort calluses, blisters and other foot problems. The self-adhesive backing holds the pad in place on the ball of the foot, the back of the heel or wherever protection is needed, on the foot or in the shoe. Trim to size to customize appliances, reinforce padding and soften problem areas.",
+  "features": [
+   "Self-adhesive backing keeps pads in place",
+   "For use on the foot or in shoes",
+   "Trimmable — cut to size",
+   "White foam, 6\" x 2 yd roll"
+  ],
+  "specs": [
+   {
+    "label": "Roll size",
+    "value": "6\" x 2 yd"
+   },
+   {
+    "label": "Thickness",
+    "value": "1/8\" (#8620) or 1/4\" (#8621)"
+   },
+   {
+    "label": "Sold as",
+    "value": "1 roll"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/self-adhesive-foam-roll-86208621 (read 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/self-adhesive-foam-roll-86208621 (read 2026-11-03)",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 62–63 — read against the page image 2026-11-03"
+  }
+ },
+ "fungafiles-disposable-fungal-nail-files-24-files-per-pack": {
+  "description": "PediFix FungaFiles® are disposable files for mycotic nails and verrucae debridement. The 'matchbook' design encourages frequent use and disposal, and the small size suits precise use. They remove fungal nail debris, improve nail appearance and keep nails thinner for easier trimming, and can also be used on warts and to help reduce necrotic tissue.",
+  "features": [
+   "Disposable 'matchbook' design for frequent use and disposal",
+   "Small size for precise use",
+   "Removes fungal nail debris and keeps nails thinner for easier trimming",
+   "Can also be used on warts"
+  ],
+  "specs": [
+   {
+    "label": "Pack",
+    "value": "24 files per pack (#P3012)"
+   },
+   {
+    "label": "Multi-pack",
+    "value": "12 packs of 24 files (#P3012-12)"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/fungafiles-p3012 (read 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/fungafiles-p3012 (read 2026-11-03)",
+   "specs": "pedifix.com product page https://www.pedifix.com/products/fungafiles-p3012 (read 2026-11-03) (variant titles)"
+  }
+ },
+ "darco-post-op-shoe-men-s": {
+  "description": "The Darco® Post-Op Shoe was developed by a foot surgeon who recognized that wooden and other inflexible post-op footwear added stress to surgical sites and made walking uncomfortable. Its semi-flexible foam inner sole conforms to the foot during gait to reduce stress on fractures and post-operative areas, and a soft, padded upper, reinforced heel and non-skid outer sole make walking easier.",
+  "features": [
+   "Semi-flexible sole conforms to foot contours throughout the gait cycle",
+   "Soft nylon upper and self-molding insole protect the foot surface",
+   "Reinforced heel and non-skid outer sole",
+   "Interchangeable right or left foot"
+  ],
+  "specs": [
+   {
+    "label": "Women's sizes",
+    "value": "Small fits 4–6 · Medium fits 6½–8 · Large fits 8½–10"
+   },
+   {
+    "label": "Men's sizes",
+    "value": "Small fits 6–8 · Medium fits 8½–10 · Large fits 10½–12 · XLarge fits 12½–14"
+   },
+   {
+    "label": "Sold as",
+    "value": "1 per pack"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/darco-post-op-shoe-6210 (read 2026-11-03)",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 49 — read against the page image 2026-11-03; pedifix.com product page https://www.pedifix.com/products/darco-post-op-shoe-6210 (read 2026-11-03)",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 49 — read against the page image 2026-11-03 (PediFix lists women's sizes as 'Ladies')"
+  }
+ },
+ "pedi-quick-safety-corn-and-callus-trimmer-replacement-blades": {
+  "description": "Replacement blades for the Pedi-Quick® Safety Corn & Callus Trimmer (#P3035). Each trimmer comes with 3 blades; each blade is reversible / double-sided, giving two long-lasting stainless-steel edges. Blade refills come 6 per pack and are bagged — not packaged for retail display. PediFix lists the replacement blades as available by special order.",
+  "features": [
+   "Fits the Pedi-Quick® Safety Corn & Callus Trimmer (#P3035)",
+   "Reversible, double-sided stainless-steel blades",
+   "6 blades per pack",
+   "Bagged — not packaged for retail display"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "P3036"
+   },
+   {
+    "label": "Pack",
+    "value": "6 blades"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 30 — read against the page image 2026-11-03; pedifix.com product page https://www.pedifix.com/products/pedi-quick-safety-corn-callus-trimmer-p3035 (read 2026-11-03)",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 30 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 30 — read against the page image 2026-11-03"
+  }
+ },
+ "gelstep-heel-pad-with-soft-spur-spot-covered": {
+  "description": "The GelStep® Heel Pad with Soft Spur Spot is a soft gel pad with an even softer Blue Zone for extra cushioning, protection and relief of heel pain. Pads need less space in shoes than cups; the Spur Spot sits where the plantar fascia attaches to the heel bone, for extra relief. This covered version has PediFix's anti-microbial top cover.",
+  "features": [
+   "Soft gel pad with an even softer Blue Zone (dual-durometer silicone)",
+   "Spur Spot located where the plantar fascia attaches to the heel bone",
+   "Needs less space in shoes than heel cups",
+   "Anti-microbial top cover"
+  ],
+  "specs": [
+   {
+    "label": "Sizes",
+    "value": "Small fits women's 4–7 · Medium fits men's 6–8½, women's 7½–10 · Large fits men's 9–11½, women's 10½–12"
+   },
+   {
+    "label": "Sold as",
+    "value": "1 pair per pack"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 22 — read against the page image 2026-11-03",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 22 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 22 — read against the page image 2026-11-03 (GelStep heel cups & pads sizing)"
+  }
+ },
+ "tea-tree-ultimates-fungasoap-5-1-oz": {
+  "description": "PediFix Tea Tree Ultimates® FungaSoap® is formulated with Tea Tree Oil to help wash away fungus and bacteria from the skin surface. The cleansing wash removes dirt and impurities while helping refresh and deodorize feet and skin, and can be used on the feet or as an all-over body wash as part of a regular hygiene and footcare routine. This is the 5.1 oz bottle (#P3070).",
+  "features": [
+   "Formulated with Tea Tree Oil",
+   "Helps wash away fungus and bacteria from the skin surface",
+   "Use on feet or as an all-over body wash"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "P3070"
+   },
+   {
+    "label": "Size",
+    "value": "5.1 oz bottle"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/tea-tree-ultimates-fungasoap-p3071p3072p3075 (read 2026-11-03) (the FungaSoap® product line; pedifix.com lists 6 oz, 13.5 oz and 2 oz sizes — the 5.1 oz size is from the HCPS price list and PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/tea-tree-ultimates-fungasoap-p3071p3072p3075 (read 2026-11-03)",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 15 — read against the page image 2026-11-03"
+  }
+ },
+ "tea-tree-ultimates-fungasoap-packets-100-pk-3-ml": {
+  "description": "PediFix Tea Tree Ultimates® FungaSoap® in single-use 3 ml packets, 100 per pack. FungaSoap® is formulated with Tea Tree Oil to help wash away fungus and bacteria from the skin surface, removing dirt and impurities while helping refresh and deodorize feet and skin.",
+  "features": [
+   "Formulated with Tea Tree Oil",
+   "Helps wash away fungus and bacteria from the skin surface",
+   "Single-use packets"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "P3071-PACKET-100"
+   },
+   {
+    "label": "Pack",
+    "value": "100 packets, 3 ml each"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/tea-tree-ultimates-fungasoap-p3071p3072p3075 (read 2026-11-03) (the FungaSoap® product line); packet size and count from the HCPS 2025 PediFix price list",
+   "features": "pedifix.com product page https://www.pedifix.com/products/tea-tree-ultimates-fungasoap-p3071p3072p3075 (read 2026-11-03)",
+   "specs": "HCPS 2025 PediFix price list (product line only)"
+  }
+ },
+ "tea-tree-ultimates-soaking-crystals-1-oz-packets": {
+  "description": "PediFix Tea Tree Ultimates® Soaking Crystals™ combine Tea Tree and Peppermint essential oils with Epsom and Sea Salts for an easy-to-use soak. The blend helps soothe tired, sore feet, relieve itching and soften corns, calluses and dry, rough skin, and helps cleanse the skin's surface. Suitable for foot soaks or full-body baths. This is the 100-pack of single-use 1 oz packets.",
+  "features": [
+   "Tea Tree and Peppermint essential oils with Epsom and Sea Salts",
+   "Helps soothe tired, sore feet and soften rough, dry skin",
+   "For foot soaks or full-body baths",
+   "Single-use 1 oz packets"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "P3078-PACKET-100"
+   },
+   {
+    "label": "Pack",
+    "value": "100 packets, 1 oz each"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/tea-tree-ultimates-soaking-crystals-p3078 (read 2026-11-03) (the Soaking Crystals™ product; the packet listing https://www.pedifix.com/products/ttu-soaking-crystals-100-pk has no text of its own)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/tea-tree-ultimates-soaking-crystals-p3078 (read 2026-11-03)",
+   "specs": "pedifix.com product page https://www.pedifix.com/products/ttu-soaking-crystals-100-pk (read 2026-11-03) and the HCPS 2025 price list"
+  }
+ },
+ "justfortoenails-enhanced-nail-polish-plant-your-sugar-lips": {
+  "description": "PediFix JustForToenails™ Enhanced Nail Polish was developed by a podiatrist as a healthier nail polish. It is the first colour nail polish with tea tree oil (Melaleuca alternifolia), and is free of formaldehyde, phthalate and toluene. For best results, apply the JustForToenails base coat first, then two coats of colour, and seal with the clear top coat. Colour: Plant Your Sugar Lips Here (red).",
+  "features": [
+   "Tea tree oil infused",
+   "Free of formaldehyde, phthalate and toluene",
+   "Use with the JustForToenails base coat and top coat",
+   "0.5 fl oz bottle"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "M905RR"
+   },
+   {
+    "label": "Colour",
+    "value": "Plant Your Sugar Lips Here (PediFix catalog colour #520)"
+   },
+   {
+    "label": "Size",
+    "value": "0.5 fl oz"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "pedifix.com product page https://www.pedifix.com/products/justfortoenails-enhanced-nail-polish-m905 (read 2026-11-03) (the JustForToenails™ product line)",
+   "features": "pedifix.com product page https://www.pedifix.com/products/justfortoenails-enhanced-nail-polish-m905 (read 2026-11-03)",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 30 — read against the page image 2026-11-03 (colour swatch and name); size from the HCPS catalog"
+  }
+ },
+ "sockless-terry-comfort-insoles": {
+  "description": "Feet stay dry, cool and comfortable with these terrycloth-covered insoles. These are especially popular in warm climates, and wherever people go 'sockless' – wearing shoes without socks. One, trim-to-fit size.",
+  "features": [
+   "Terrycloth-covered insoles",
+   "One trim-to-fit size",
+   "Contains natural rubber latex, which may cause allergic reactions (PediFix catalog note)"
+  ],
+  "specs": [
+   {
+    "label": "Pack",
+    "value": "1 pair (#P220) or 3 pairs (#P220-3)"
+   }
+  ],
+  "field_provenance": {
+   "description": "pedifix.com product page https://www.pedifix.com/products/sockless-terry-comfort-insoles-p220-1 (read 2026-11-03)",
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "retail_model": "PediFix Retail Model P220-OSFA-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/sockless-terry-comfort-insoles-p220",
+   "features": "pedifix.com product page https://www.pedifix.com/products/sockless-terry-comfort-insoles-p220-1 (read 2026-11-03); latex note: PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 20 — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 20 — read against the page image 2026-11-03 and pedifix.com variant titles"
+  }
+ },
+ "_families": [
+  {
+   "key": "pressureoff-customizable-insole-system-9-wide-width",
+   "name": "PressureOFF™ Customizable Insole - System 9 - WIDE Width",
+   "match": {
+    "code_re": "^P244-(ML|MR|LL|LR|XLL|XLR)$"
+   },
+   "axes": [
+    {
+     "name": "Size",
+     "on": "code",
+     "re": "^P244-(M|L|XL)[LR]$",
+     "labels": {
+      "P244-ML": "Medium",
+      "P244-MR": "Medium",
+      "P244-LL": "Large",
+      "P244-LR": "Large",
+      "P244-XLL": "XLarge",
+      "P244-XLR": "XLarge"
+     }
+    },
+    {
+     "name": "Side",
+     "on": "code",
+     "re": "^P244-(?:M|L|XL)([LR])$",
+     "labels": {
+      "P244-ML": "Left",
+      "P244-MR": "Right",
+      "P244-LL": "Left",
+      "P244-LR": "Right",
+      "P244-XLL": "Left",
+      "P244-XLR": "Right"
+     }
+    }
+   ],
+   "order": [
+    "P244-ML",
+    "P244-MR",
+    "P244-LL",
+    "P244-LR",
+    "P244-XLL",
+    "P244-XLR"
+   ],
+   "content_from": "pressureoff-customizable-insole-system-9-wide-width",
+   "approved": "owner 2026-11-03 22:21 — combine the XL SKUs with the existing family, all six exact SKU options kept",
+   "provenance": {
+    "options": "family rule (owner 2026-11-03): six exact SKUs from the HCPS catalog — Medium / Large / XLarge × Left / Right; presentation only"
+   }
+  },
+  {
+   "key": "arch-support-bandage",
+   "name": "Arch Support Bandages",
+   "match": {
+    "code_re": "^P60-(OSFM|S|M|L|XL)$"
+   },
+   "axes": [
+    {
+     "name": "Size",
+     "on": "code",
+     "re": "^P60-(\\w+)$",
+     "labels": {
+      "P60-OSFM": "One Size Fits Most — single bandage (1 per pack)",
+      "P60-S": "Small — pair (2 per pack)",
+      "P60-M": "Medium — pair (2 per pack)",
+      "P60-L": "Large — pair (2 per pack)",
+      "P60-XL": "XLarge — pair (2 per pack)"
+     }
+    }
+   ],
+   "order": [
+    "P60-S",
+    "P60-M",
+    "P60-L",
+    "P60-XL",
+    "P60-OSFM"
+   ],
+   "content_from": "arch-support-bandage",
+   "approved": "owner 2026-11-03 22:21 — keep the family; show the single OSFM bandage apart from the paired sizes",
+   "provenance": {
+    "options": "PediFix catalog page 26 (Small–XLarge 2/pk; OSFM 1/pk) and pedifix.com https://www.pedifix.com/products/arch-support-bandages-p60-1 variant titles ('Small Pair' … 'One Size Fits Most')"
+   }
+  }
+ ]
 }
