@@ -1,7 +1,7 @@
 {
-  "review_id": "3414c16aa63f",
+  "review_id": "676b9fa22758",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T00:23:44Z",
+  "built_at": "2026-11-04T00:24:17Z",
   "main": "af49ce0210704e4ba9d614cc32d8cc35f7fee7b0",
   "included": [
     {
@@ -13,14 +13,6 @@
         "dalton"
       ],
       "other_files": 3
-    },
-    {
-      "pr": 27,
-      "title": "Sandbox smoke test — DO NOT MERGE (temporary, closed after the check)",
-      "branch": "chore/sandbox-smoke-test",
-      "head": "aacc0a8b0612264ae7a5d09389a2038e2142123d",
-      "manufacturers": [],
-      "other_files": 1
     }
   ],
   "skipped": [
