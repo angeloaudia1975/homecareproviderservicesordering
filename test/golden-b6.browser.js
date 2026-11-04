@@ -31,7 +31,7 @@ const gS = require(path.join(gFN, 'lib', 'hcps-s2s.js'));
 const TEST_SECRET = crypto.randomBytes(32).toString('hex'), PROD_SECRET = crypto.randomBytes(32).toString('hex');
 const D_HQ = '11111111-2222-4333-8444-555555555555', LOC_CIN = 'cccccccc-0000-4000-8000-000000000001';
 const TEST_BOX = 'angelo@homecareproviderservices.us';
-const W = { cost: 1188, recs: new Map(), orders: [], nextId: 1661, goldenCalls: [], hcpsWrites: 0, mail: [], dropNextPlace: 0, delayPlace: 0 };
+const W = { goldenOrdersOff: false, cost: 1188, recs: new Map(), orders: [], nextId: 1661, goldenCalls: [], hcpsWrites: 0, mail: [], dropNextPlace: 0, delayPlace: 0 };
 // Golden's SQL contract (config/migrate-hcps-integration-v1-submit.sql), mirrored: records per key AND mode; one order per key.
 const rk = (p, m) => p.idempotency_key + '|' + m;
 const valOk = (v, p) => v && v.s === 'done' && v.st === 200 && v.resp.valid === true && v.h === p.validate_hash;
@@ -40,15 +40,18 @@ const idemRpc = {
     if (r.h !== p.request_hash) return { state: 'conflict' }; if (r.s === 'done') return { state: 'replay', status: r.st, response: r.resp }; return { state: 'in_progress' }; },
   integration_order_complete: ({ p }) => { const r = W.recs.get(rk(p, 'validate')); if (!r || r.tok !== p.claim_token) throw new Error('no pending claim'); r.s = 'done'; r.st = p.status; r.resp = p.response; return true; },
   integration_order_release: ({ p }) => { W.recs.delete(rk(p, 'validate')); return true; },
+  integration_order_submit_find: ({ p }) => { const s = W.recs.get(rk(p, 'submit')); return s ? { found: true, request_hash: s.h, hcps_dealer_id: s.d, hcps_branch_id: s.b, golden_dealer_id: s.g,
+    status: s.st, response: s.resp, order_id: s.oid == null ? null : s.oid, email_open: false } : { found: false }; },
   integration_order_submit_lookup: ({ p }) => { const s = W.recs.get(rk(p, 'submit')); if (s) return s.h !== p.request_hash ? { state: 'conflict' } : { state: 'replay', status: s.st, response: s.resp, order_id: s.oid, email_open: false };
     const v = W.recs.get(rk(p, 'validate')); return valOk(v, p) ? { state: 'validated', po_number: v.resp.order.po_number, po_auto: v.resp.order.po_auto } : { state: 'not_validated' }; },
   integration_order_submit: ({ p }) => { const k = rk(p, 'submit'), s = W.recs.get(k);
     if (s) return s.h !== p.request_hash ? { state: 'conflict' } : { state: 'replay', status: s.st, response: s.resp, order_id: s.oid };
     if (!valOk(W.recs.get(rk(p, 'validate')), p)) return { state: 'not_validated' };
-    if (p.refusal) { W.recs.set(k, { h: p.request_hash, st: p.refusal.status, resp: p.refusal.response }); return { state: 'refused', status: p.refusal.status, response: p.refusal.response }; }
+    const ident = { d: p.hcps_dealer_id, b: p.hcps_branch_id || null, g: p.golden_dealer_id };
+    if (p.refusal) { W.recs.set(k, Object.assign({ h: p.request_hash, st: p.refusal.status, resp: p.refusal.response }, ident)); return { state: 'refused', status: p.refusal.status, response: p.refusal.response }; }
     const id = W.nextId++; W.orders.push(Object.assign({}, p.order_row, { id, status: 'pending', order_source: 'online', created_at: new Date().toISOString(), sales_order_no: null }));
     const resp = Object.assign({}, p.response, { order_ref: 'P' + id, status: 'submitted', placed_at: new Date().toISOString() });
-    W.recs.set(k, { h: p.request_hash, st: 201, resp, oid: id }); return { state: 'created', status: 201, response: resp, order_id: id, email_claim: crypto.randomUUID() }; },
+    W.recs.set(k, Object.assign({ h: p.request_hash, st: 201, resp, oid: id }, ident)); return { state: 'created', status: 201, response: resp, order_id: id, email_claim: crypto.randomUUID() }; },
   integration_order_email_claim: () => null, integration_order_email_done: () => true,
 };
 const fresh = (dir, m) => { Object.keys(require.cache).forEach(k => { if (k.startsWith(dir)) delete require.cache[k]; }); return require(path.join(dir, m)); };
@@ -56,7 +59,7 @@ function setEnv() {
   for (const k of ['P360_ORDER_ENV', 'CONTEXT']) delete process.env[k];
   Object.assign(process.env, { SUPABASE_URL: 'https://sb.test', SUPABASE_SERVICE_ROLE: 'svc', SUPABASE_SERVICE_KEY: 'svc', GOLDEN_P360_KEY_ID: 'hcps-p360-1', GOLDEN_P360_SECRET: PROD_SECRET,
     GOLDEN_P360_TEST_KEY_ID: 'hcps-p360-test-1', GOLDEN_P360_TEST_SECRET: TEST_SECRET, GOLDEN_TEST_API_BASE: 'https://deploy-preview-284--goldenonlineordering.netlify.app',
-    GOLDEN_V1_API: 'true', GOLDEN_V1_ORDERS: 'true', P360_TEST_DEALERS: 'dealer-synth', P360_TEST_EMAIL_TO: TEST_BOX, RESEND_API_KEY: 're_test',
+    GOLDEN_V1_API: 'true', GOLDEN_V1_ORDERS: W.goldenOrdersOff ? 'false' : 'true', P360_TEST_DEALERS: 'dealer-synth', P360_TEST_EMAIL_TO: TEST_BOX, RESEND_API_KEY: 're_test',
     HCPS_P360_KEYS: JSON.stringify({ 'hcps-p360-test-1': TEST_SECRET }), ORDER_EMAIL_TO: 'desk@golden.example', ORDER_EMAIL_FROM: 'portal@golden.example' });
 }
 let chain = Promise.resolve();
@@ -119,7 +122,7 @@ async function boot(browser, w, h) {
   const page = await ctx.newPage();
   const errs = []; page.on('pageerror', e => errs.push(String(e && e.message)));
   const counts = { orders: 0, placeCalls: 0 };
-  await page.route('**/*', async route => {
+  await ctx.route('**/*', async route => {
     const req = route.request(), u = new URL(req.url());
     if (u.origin === HOST) {
       let f = path.join(PUB, decodeURIComponent(u.pathname)); if (u.pathname === '/' || !path.extname(f)) f = path.join(PUB, 'index.html');
@@ -149,14 +152,18 @@ async function boot(browser, w, h) {
     if (/^(fonts\.(googleapis|gstatic)\.com)$/.test(u.host)) return route.continue();
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '[]' });
   });
+  await openAsDealer(page, true);
+  return { ctx, page, errs, counts };
+}
+async function openAsDealer(page, clear) {
   await page.goto(HOST + '/?preview=' + 'ab12'.repeat(12), { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(2500);
   // Become a REAL dealer sign-in (bearer token) of the TEST dealership — the only sign-in allowed to place in preview.
-  await page.evaluate(async () => { window.__PREVIEW__ = null; AUTH.session = { access_token: 'jwt-b6-test' }; try { localStorage.clear(); } catch (e) {} await goldenInit(); });
-  return { ctx, page, errs, counts };
+  await page.evaluate(async (c) => { window.__PREVIEW__ = null; AUTH.session = { access_token: 'jwt-b6-test' }; if (c) { try { localStorage.clear(); } catch (e) {} } await goldenInit(); }, clear);
 }
-async function toValidated(page, po) {
-  await page.evaluate(() => { GCART.items = []; goldenCartAdd('PR511-LAR', { fabric: 'std', color: 'SUM', tier: 'nirvana', footrest: false }, null); goldenCartShow(); });
+async function toValidated(page, po, keepItems) {
+  if (keepItems) await page.evaluate(() => goldenCartShow());
+  else await page.evaluate(() => { GCART.items = []; goldenCartAdd('PR511-LAR', { fabric: 'std', color: 'SUM', tier: 'nirvana', footrest: false }, null); goldenCartShow(); });
   await page.waitForSelector('.gck-ship', { timeout: 15000 });
   await page.check(`.gck-ship input[value="${LOC_CIN}"]`);
   if (!(await page.$('.gck-tot'))) await page.click('[data-gck-quote]');   // a single ship-to is chosen for the dealer: ask for Golden's price
@@ -230,6 +237,44 @@ async function toValidated(page, po) {
       const pc = await page.evaluate(() => ({ placed: GCART.placed, pend: !!GCART.pending, attempt: GCART.attempt, btn: !!document.querySelector('[data-gck-place]'), items: GCART.items.length }));
       await t(`${label}: a price change at placement → nothing placed, the cart stays, a new validation is required`, () => {
         ok(W.orders.length === 2 && !pc.placed && !pc.pend && pc.attempt === null && !pc.btn && pc.items === 1, JSON.stringify(pc)); });
+      // ── Golden's ordering switched OFF after a placement whose answer was lost: "Check again" still gets the order ──
+      await page.click('[data-gck-close]');
+      W.cost = 1188; await toValidated(page, 'PO-B6-4');
+      W.dropNextPlace = 1; await page.click('[data-gck-place]');
+      await page.waitForSelector('[data-gck-recheck]:not([disabled])', { timeout: 20000 });
+      const myOrdersBtn = await page.evaluate(() => !!document.querySelector('#gckView [data-gck-myorders]'));
+      W.goldenOrdersOff = true;
+      await page.click('[data-gck-recheck]'); await page.waitForSelector('.gck-done', { timeout: 20000 });
+      W.goldenOrdersOff = false;
+      const off = await page.evaluate(() => document.querySelector('.gck-done').innerText);
+      await t(`${label}: pending view offers My Orders; after Golden's switch is turned off, "Check again" still returns the placed order (never "nothing placed")`, () => {
+        ok(myOrdersBtn, 'no My Orders link in the pending view'); ok(/already placed for this attempt/.test(off) && /P1663/.test(off) && W.orders.length === 3, off.slice(0, 160) + ' orders ' + W.orders.length); });
+      await page.click('[data-gck-done]');
+      // ── two windows: one places the cart; the other (holding the same cart and its own validation) cannot order it again ──
+      await toValidated(page, 'PO-B6-5');
+      const page2 = await ctx.newPage(); page2.on('pageerror', e => errs.push('page2: ' + String(e && e.message)));
+      await openAsDealer(page2, false);
+      await toValidated(page2, 'PO-B6-5', true);
+      const before2 = W.orders.length;
+      await page.click('[data-gck-place]'); await page.waitForSelector('.gck-done', { timeout: 20000 });
+      await page2.waitForTimeout(500);
+      const p2 = await page2.evaluate(() => ({ items: GCART.items.length, place: !!document.querySelector('[data-gck-place]') }));
+      await page2.evaluate(() => { const b = document.querySelector('[data-gck-place]'); if (b) b.click(); });
+      await page2.waitForTimeout(800);
+      await t(`${label}: a second window with the same cart cannot order it again after the first placed it`, () => {
+        ok(W.orders.length === before2 + 1, 'orders ' + before2 + ' → ' + W.orders.length); ok(p2.items === 0 && !p2.place, JSON.stringify(p2)); });
+      // a pending attempt in one window is adopted by the other before it can send anything
+      await page.click('[data-gck-done]');
+      await toValidated(page, 'PO-B6-6');
+      W.dropNextPlace = 1; await page.click('[data-gck-place]'); await page.waitForSelector('[data-gck-recheck]:not([disabled])', { timeout: 20000 });
+      const k1 = await page.evaluate(() => GCART.pending.key);
+      await page2.waitForTimeout(500);
+      const p2b = await page2.evaluate(() => { goldenCartShow(); const n0 = GCART.items.reduce((x, i) => x + i.qty, 0); goldenCartAdd('PR511-LAR', { fabric: 'std', color: 'SUM', tier: null, footrest: false }, null); return { pend: GCART.pending && GCART.pending.key, add: GCART.items.reduce((x, i) => x + i.qty, 0) - n0 }; });
+      await page2.waitForSelector('#gckView .gck-done, #gckView [data-gck-recheck]', { timeout: 20000 });
+      const subs = W.goldenCalls.filter(c => c.path === '/v1/orders' && c.mode === 'submit').slice(-2).map(c => c.key);
+      await t(`${label}: the other window adopts the pending attempt (same key) and cannot add to the cart meanwhile`, () => {
+        ok(p2b.pend === k1 && p2b.add === 0, JSON.stringify(p2b)); ok(subs.every(k => k === k1), JSON.stringify(subs)); });
+      await page2.close();
       const g2 = await geo();
       await t(`${label}: cart — no horizontal scroll, touch targets ≥ 44px`, () => { ok(g2.sw <= g2.cw + 1, JSON.stringify(g2)); ok(!g2.small.length, 'small: ' + g2.small.join(',')); });
       await t(`${label}: no HCPS order call, HCPS stored nothing, no page error`, () => { ok(counts.orders === 0 && W.hcpsWrites === 0, counts.orders + '/' + W.hcpsWrites); ok(!errs.length, errs.join(' | ')); });
