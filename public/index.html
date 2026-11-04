@@ -1258,6 +1258,7 @@ body.gck-lock{overflow:hidden}body.gck-lock .gck-pill{display:none}.gck-ov{displ
 .gck-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:2;background:#fff;margin:-16px -18px 0;padding:12px 18px;border-radius:14px 14px 0 0;border-bottom:1px solid #e7edf3}.gck-hd h2{margin:0;font-size:20px;color:#0b1f33}
 .gck-close,.gck-x,.gck-btn,.gck-qb{min-height:44px;min-width:44px;border:1px solid #cdd8e6;border-radius:10px;background:#fff;font:inherit;font-weight:600;cursor:pointer;padding:6px 12px}
 .gck-btn.primary{background:#ef6325;border-color:#ef6325;color:#fff}.gck-btn:disabled,.gck-qb:disabled{opacity:.45;cursor:not-allowed}
+.gck-ft{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .gck-prev{display:inline-block;vertical-align:middle;margin-left:6px;padding:3px 8px;border-radius:999px;background:#8a5a00;color:#fff;font-size:11.5px;font-weight:700}
 .gck-banner{margin:12px 0;padding:10px 12px;border-radius:10px;background:#fff7e6;border:1px solid #fcd38a;font-size:13.5px;color:#7a4b00}
 .gck-sec{border-top:1px solid #e7edf3;padding-top:12px;margin-top:12px}.gck-sec h3{margin:0 0 8px;font-size:15px;color:#0b1f33}
@@ -2793,7 +2794,7 @@ function gckRender(){
   const canVal=canQuote&&q&&f.name.trim()&&f.phone.trim();
   const res=r?gckResultHtml(r):"";
   const a=document.activeElement, fk=a&&ov.contains(a)?['data-rm','data-dq','data-gck-quote','data-gck-validate','data-gck-close','data-f'].map(k=>a.hasAttribute(k)?`[${k}="${a.getAttribute(k)}"]${k==='data-dq'?`[data-d="${a.getAttribute('data-d')}"]`:''}`:null).find(Boolean)||(a.name==='gckship'?`input[name="gckship"][value="${a.value}"]`:null):null;
-  ov.innerHTML=`<div class="gck-box">
+  ov.innerHTML=`<span class="gck-ft" tabindex="0" data-trap="start"></span><div class="gck-box">
     <div class="gck-hd"><h2>Golden cart${(typeof STAGING!=="undefined"&&STAGING)?' <span class="gck-prev">Private preview</span>':""}</h2><button type="button" class="gck-close" data-gck-close aria-label="Close the Golden cart">Close</button></div>
     <div class="gck-banner">Order review — validation only. Nothing is ordered, reserved or emailed from this screen yet.</div>
     ${GCART.items.length?`<div class="gck-sec"><h3>Chairs</h3>${lines}</div>`:`<div class="gck-sec"><p class="gck-note">Your Golden cart is empty. Configure a lift chair and choose “Add to Golden cart”.</p></div>`}
@@ -2808,8 +2809,11 @@ function gckRender(){
       ${!GCART.ship&&sl&&sl.length?`<div class="gck-note">Choose a ship-to address to see Golden's price.</div>`:""}
       ${q&&!(f.name.trim()&&f.phone.trim())?`<div class="gck-note">Add a contact name and phone to validate.</div>`:""}
       ${GCART.busy?`<div class="gck-note" aria-live="polite">Asking Golden…</div>`:""}</div>${res}`:""}
-  </div>`;
-  if(fk){ let el=null; try{ el=ov.querySelector(fk); }catch(e){} if(!el||el.disabled) el=ov.querySelector('[data-gck-close]'); if(el) el.focus(); }
+  </div><span class="gck-ft" tabindex="0" data-trap="end"></span>`;
+  const want=(!GCART.busy&&GCART._refocus)?GCART._refocus:fk;
+  if(want){ let el=null; try{ el=ov.querySelector(want); }catch(e){}
+    if(el&&!el.disabled){ el.focus(); GCART._refocus=null; }
+    else if(fk){ GCART._refocus=fk; const c=ov.querySelector('[data-gck-close]'); if(c) c.focus(); } }   // a control frozen while Golden answers gets focus back afterwards
   ov.querySelectorAll('iframe[data-gck-email]').forEach(fr=>{ const k=fr.getAttribute('data-gck-email'); const m=r&&r.emails&&(k==="golden"?r.emails.golden_order:r.emails.dealer_confirmation); if(m&&typeof m.html==="string") fr.srcdoc=m.html; });
 }
 function gckResultHtml(r){
@@ -2897,6 +2901,9 @@ function gckWire(ov){
     const v=ov.querySelector('[data-gck-validate]'); if(v) v.disabled=!(GCART.items.length&&GCART.ship&&GCART.quote&&!GCART.busy&&GCART.form.name.trim()&&GCART.form.phone.trim());
   });
   ov.addEventListener('keydown',e=>{ if(e.key==='Escape') goldenCartClose(); });
+  ov.addEventListener('focusin',e=>{ const tr=e.target.getAttribute&&e.target.getAttribute('data-trap'); if(!tr) return;
+    const f=[...ov.querySelectorAll('.gck-box button:not([disabled]),.gck-box input:not([disabled]),.gck-box textarea,.gck-box summary,.gck-box iframe')].filter(x=>x.offsetParent!==null);
+    if(f.length) (tr==='end'?f[0]:f[f.length-1]).focus(); });
 }
 function goldenFamilyDetail(fam){
   if(!fam) return Promise.resolve(null);
