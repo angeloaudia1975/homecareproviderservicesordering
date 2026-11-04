@@ -56,7 +56,7 @@ function runProxy(body, headers) {   // serialised: the in-process fetch world i
     setEnv();
     const goldenSb = createMock({ tables: {
       integration_clients: [{ kid: 'hcps-p360-test-1', client_id: 'hcps-partner360', tenant_id: 'hcps', scopes: ['golden:read'], active: true, secret_fingerprint: gS.fingerprint(TEST_SECRET) }],
-      dealer_integration_map: [{ id: 'aaaaaaaa-0000-4000-8000-000000000001', tenant_id: 'hcps', client_id: 'hcps-partner360', hcps_dealer_id: D_HQ, golden_dealer_id: 'dealer-synth', status: 'verified', price_visibility: 'dealer' }],
+      dealer_integration_map: [{ id: 'aaaaaaaa-0000-4000-8000-000000000001', tenant_id: 'hcps', client_id: 'hcps-partner360', hcps_dealer_id: D_HQ, golden_dealer_id: 'dealer-synth', status: 'verified', price_visibility: 'dealer', history_enabled: false }],
       dealer_integration_branch_map: [], dealers: [{ id: 'dealer-synth', active: true, customer_no: '900001' }], dealer_branches: [],
       dealer_ship_locations: [{ id: LOC_CIN, dealer_id: 'dealer-synth', label: 'Cincinnati showroom', ship_address: '1 Main St', ship_city: 'Cincinnati', ship_state: 'OH', ship_zip: '45202', created_at: '2026-01-01' }],
       dealer_locations: [{ customer_no: '900001', is_primary: true, address_line1: '10 Warehouse Rd', city: 'Columbus', state: 'OH', zip: '43215' }],
