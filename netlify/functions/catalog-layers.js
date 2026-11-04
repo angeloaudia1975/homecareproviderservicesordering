@@ -38,6 +38,7 @@
 // storefront's own origin calls it.
 const FEED = require("./catalog-feed.js");
 const CC = require("./_catalog_commercial.js");
+const RETIRED = require("./_retired_lines.js");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
@@ -75,6 +76,8 @@ async function sb(path) {
 function authorizeLayers(who, slug) {
   if (!who) return { ok: false, status: 401, error: "unauthorized" };
   if (!slug || !SLUG_RE.test(slug)) return { ok: false, status: 400, error: "manufacturer required" };
+  /* A retired line is closed to everyone, staff included, whatever the entitlement rows say. */
+  if (RETIRED.isRetiredLine(slug)) return { ok: false, status: 410, error: "this manufacturer line is retired" };
   if (who.kind === "staff")
     return STAFF_ROLES.indexOf(String(who.role || "")) >= 0
       ? { ok: true } : { ok: false, status: 403, error: "staff review the shop through a dealer preview" };

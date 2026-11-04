@@ -1835,9 +1835,12 @@ function dealerPriceNote(note, p){
    Never true on the live site. */
 const STAGING=/^(deploy-preview-\d{1,5}|[a-z0-9-]{1,40})--hcpsonlineordering\.netlify\.app$/.test(location.hostname)&&!/^main--/.test(location.hostname);
 const RAW={files:{},content:{},manufacturers:null};
+const RETIRED_LINE_SLUGS=["complete-medical-supplies","ohio-medical","gce"];
 async function loadManufacturers(){
   const r = await fetch("./data/manufacturers.json",{cache:"no-store"});
-  state.manufacturers = await r.json();
+  /* Retired lines are never listed, whichever identifier a file uses (netlify/functions/_retired_lines.js
+     is the server's copy; test/retired-lines.test.js keeps the two the same). */
+  state.manufacturers = ((await r.json())||[]).filter(m=>m&&!RETIRED_LINE_SLUGS.includes(String(m.slug||"").toLowerCase()));
   try{ RAW.manufacturers=JSON.parse(JSON.stringify(state.manufacturers)); }catch(e){}
   // admin-uploaded manufacturer logos (Supabase, public-read) — merged so they show
   // below the manufacturer name on the home cards + catalog header, no redeploy needed.
@@ -6721,7 +6724,7 @@ async function loadQuotesView(){ await ensureCatalogFav(); renderQuotes(); }
    price in its place. New quotes offer no product of an inactive line (manufacturers.json "quotable": false —
    Ohio Medical / GCE); an item already on a quote stays on it. */
 function quoteMsrp(p){ const v=p&&p.msrp!=null?Number(p.msrp):NaN; return (isFinite(v)&&v>0)?v:null; }
-function quotableLine(slug){ const m=(MFRLIST||[]).find(x=>x.slug===slug); return !(m&&m.quotable===false); }
+function quotableLine(slug){ if(typeof RETIRED_LINE_SLUGS!=="undefined"&&RETIRED_LINE_SLUGS.includes(String(slug||"").toLowerCase())) return false; const m=(MFRLIST||[]).find(x=>x.slug===slug); return !(m&&m.quotable===false); }
 function quoteTotal(picked){ return picked.reduce((s,r)=>s+(r.msrp!=null?r.msrp:0),0); }
 function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">MSRP not provided</span>'; }
 function quoteItemHtml(r){ return `${esc(r.name)}<div style="font-size:10.5px;color:var(--muted)">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)}</div>`; }

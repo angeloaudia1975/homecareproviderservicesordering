@@ -5,7 +5,7 @@
    keeps checking (404, or no commercial field); it is not used to decide what is seeded. */
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
-const RETIRED = ['complete-medical-supplies'];
+const RETIRED = ['complete-medical-supplies', 'gce'];   // gce = Ohio Medical / GCE, retired 2026-11-04 (Yuwell replaces it)
 function currentLines(root) {
   const p = path.join(root || ROOT, 'public', 'data', 'manufacturers.json');
   return JSON.parse(fs.readFileSync(p, 'utf8')).map(m => String(m.slug));

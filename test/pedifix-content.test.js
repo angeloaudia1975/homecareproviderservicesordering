@@ -67,7 +67,11 @@ t('owner-retired SKUs stay retired (P3306 not restored)', () => {
 });
 t('catalog file and manufacturer list untouched against main (identity, names, units, packaging)', () => {
   const base = process.env.BASE_REF || 'origin/main';
-  let diff = ''; try { diff = execSync(`git diff --name-only ${base} -- public/data/pedifix.json public/data/manufacturers.json`, { cwd: R('.'), encoding: 'utf8' }); } catch (e) { return; }
+  let diff = ''; try { diff = execSync(`git diff --name-only ${base} -- public/data/pedifix.json`, { cwd: R('.'), encoding: 'utf8' }); } catch (e) { return; }
+  /* manufacturers.json may change for other lines (e.g. a retirement); this line's own entry may not. */
+  let mainMf = null; try { mainMf = JSON.parse(execSync(`git show ${base}:public/data/manufacturers.json`, { cwd: R('.'), encoding: 'utf8' })); } catch (e) { return; }
+  const own = l => JSON.stringify((l || []).find(m => m.slug === 'pedifix'));
+  if (own(mainMf) !== own(JSON.parse(fs.readFileSync(R('public/data/manufacturers.json'), 'utf8')))) throw new Error('the pedifix entry in manufacturers.json changed');
   if (diff.trim()) throw new Error(diff);
 });
 console.log(`\npedifix-content: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
