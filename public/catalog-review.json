@@ -1,7 +1,7 @@
 {
   "review_id": "fbe5c2a5b7da",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T04:35:02Z",
+  "built_at": "2026-11-04T04:35:17Z",
   "main": "da671e94ca907a4b59aec101be664b99f78771ac",
   "included": [
     {
@@ -15,5 +15,12 @@
       "other_files": 3
     }
   ],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 31,
+      "title": "PediFix content batch: displays, catalog photos, P244/P60 families (sandbox review)",
+      "branch": "catalog/pedifix-prep",
+      "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
+    }
+  ]
 }
