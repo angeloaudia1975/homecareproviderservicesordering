@@ -1,16 +1,10 @@
 {
   "review_id": "0fb0088c4e23",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T02:59:35Z",
+  "built_at": "2026-11-04T03:01:29Z",
   "main": "9c0172992f593604c341a4e9f2359dd3930923a9",
   "included": [],
   "skipped": [
-    {
-      "pr": 10,
-      "title": "Access4U: group threshold, assist, and portable ramps for Fall 2026 catalog",
-      "branch": "chore/access4u-owner-ramp-categories-20261027",
-      "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
-    },
     {
       "pr": 28,
       "title": "B4: Golden cart + validate-only order review in Partner 360",
