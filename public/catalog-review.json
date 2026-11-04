@@ -1,20 +1,9 @@
 {
-  "review_id": "676b9fa22758",
+  "review_id": "0fb0088c4e23",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T02:57:02Z",
-  "main": "af49ce0210704e4ba9d614cc32d8cc35f7fee7b0",
-  "included": [
-    {
-      "pr": 24,
-      "title": "Dalton Medical catalog completion (preview — owner review)",
-      "branch": "catalog/dalton-complete",
-      "head": "769e4418e2a4314bf576aa5557c267d4fdcc9e1f",
-      "manufacturers": [
-        "dalton"
-      ],
-      "other_files": 3
-    }
-  ],
+  "built_at": "2026-11-04T02:59:35Z",
+  "main": "9c0172992f593604c341a4e9f2359dd3930923a9",
+  "included": [],
   "skipped": [
     {
       "pr": 10,
