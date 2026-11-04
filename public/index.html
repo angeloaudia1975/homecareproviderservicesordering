@@ -2733,7 +2733,9 @@ function gckPill(){
 function gckReq(){ return GCART.items.map(i=>{ const o={sku:i.sku,fabric:i.fabric,color:i.color,qty:i.qty}; if(i.tier) o.tier=i.tier; if(i.footrest) o.footrest=true; return o; }); }
 async function gckShipTo(){
   if(GCART.shipList) return;
+  const seq=GCART.seq;
   const j=await goldenCall("ship_to");
+  if(seq!==GCART.seq) return;   // signed out meanwhile — another dealer's addresses never stay
   if(!j||j.available!==true){ GCART.shipList=[]; GCART.shipErr=(j&&j.reason)||"golden_unavailable"; return; }
   GCART.shipErr=null; GCART.shipList=Array.isArray(j.ship_to)?j.ship_to:[]; GCART.shipScope=j.scope||"account";
   if(GCART.shipList.length===1) GCART.ship=GCART.shipList[0].id;

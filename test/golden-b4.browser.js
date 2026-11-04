@@ -246,7 +246,8 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       // sign-out: the Golden cart, its review and the cached ship-to addresses go with the dealer
       await page.evaluate(() => { goldenCartAdd('PR511-LAR', { fabric: 'std', color: 'SUM', tier: null, footrest: false }, null); goldenCartShow(); });
       await page.waitForSelector('.gck-ship', { timeout: 15000 });
-      await page.evaluate(() => signOut());
+      await page.evaluate(() => { GCART.shipList = null; goldenCartShow(); signOut(); });   // sign out while the ship-to request is in flight
+      await page.waitForTimeout(1500);
       const out = await page.evaluate(() => ({ n: GCART.items.length, pill: !!document.getElementById('gcartPill'), dlg: !!document.getElementById('gckView'), ships: GCART.shipList, on: GOLDEN.on }));
       await t(`${label}: no script error on the page`, () => ok(!pageErrors.length, pageErrors.join(' | ')));
       await t(`${label}: sign-out clears the Golden cart, its dialog, ship-to cache and button`, () => ok(out.n === 0 && !out.pill && !out.dlg && out.ships === null && out.on === false, JSON.stringify(out)));
