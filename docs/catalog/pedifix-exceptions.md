@@ -21,7 +21,7 @@ the shared catalog overrides and is decided separately (see "Reactivation candid
 | PF-4 | D77 2-Sided Floor Spinner | The HCPS size is 60"H x 18"W x 18"D. The PediFix catalog gives **72" H with header, on a 16" x 19" base with wheels**. | The spec shows the PediFix figure, labelled as such. The name is unchanged. |
 | PF-5 | D27 4-Sided Counter-Top Spinner | The HCPS size is 22"H. The PediFix catalog gives a fully loaded **22" D x 22" W x 21" H, plus a 6" header**. | The spec shows the PediFix figure. |
 | PF-6 | D17-DEX "Dexterity" 2-Sided Spinner | No PediFix source: it is not in the catalog and not on pedifix.com. | No description and no photo. The D17 photo is **not** reused, because the contents may differ. |
-| PF-7 | P244 PressureOFF System 9 WIDE (6 SKUs) | No P244 page on pedifix.com or in the catalog. pedifix.com sells "System 9 Wide" as **#2404 in Medium and Large only** (no XL). | The six SKUs are one family page (owner-approved). The description is left blank: there is no product-specific source, and the 2404 copy is not assumed to be the same product. Ask PediFix whether P244 is current and whether an XL Wide exists. |
+| PF-7 | P244 PressureOFF System 9 WIDE (6 SKUs) | No P244 page on pedifix.com or in the catalogs found. (1) The July 2025 PediFix price list (the verified commercial source) lists all six P244 SKUs, XLL and XLR included, with UPCs. (2) pedifix.com sells "System 9 Wide" today as **#2404 in Medium and Large only**. (3) A 2022 PediFix PressureOFF brochure (©2022, form L0105-REV322) gives XL sizing (shoe 13–15) but does not tie an XL to #2404. (4) Only a distributor (McKesson) lists a 2404-XLL. (5) PediFix catalogs "Volume 18R" and "19M" on stores.pedifix.com do not list P244. | All six SKUs were already on sale before this work. **This PR does not activate anything:** the family groups the existing SKUs and their status is unchanged. The description stays blank. **Owner decision (2026-11-03):** never activate an unsupported XL just because an older catalog shows it. Ask PediFix whether P244 is current (or replaced by #2404) and whether an XL Wide is made; until then, Angelo decides whether P244-XLL / P244-XLR stay on sale. |
 | PF-8 | P3036 trimmer replacement blades | The catalog says blade refills are 6 per pack, **bagged, not packaged for retail display**. pedifix.com says they are available by special order. | The copy is from those two sources. There is **no photo**: neither source pictures the blades, and the trimmer photo would be the wrong item. |
 | PF-9 | P3071-PACKET-100 FungaSoap packets (3 ml) | Not on pedifix.com and not in the catalog. | The copy is from the FungaSoap product page. **No photo; availability unconfirmed.** |
 | PF-10 | P3070 FungaSoap 5.1 oz | pedifix.com lists FungaSoap in 6 oz, 13.5 oz and 2 oz only. 5.1 oz appears in the 2021–22 catalog (D09-TTU). | The copy is from the FungaSoap product page, without the ingredient list (the 5.1 oz formula is not confirmed). **Availability unconfirmed.** |
@@ -42,7 +42,7 @@ needs a new commercial record version.
 - **D09-DDMIX:** 5 × P3076 + 3 × P3620. The catalog and pedifix.com agree.
 - **D09-TTU:** see PF-2.
 
-## Reactivation candidates (owner, 2026-11-03) — prepared, NOT applied
+## Reactivation candidates (owner, 2026-11-03) — 14 prepared, NOT applied; each needs Angelo's separate authorization
 
 These SKUs are switched off in the shared catalog overrides, which production uses too. Switching one back on is
 therefore a production change. It is done only after the owner approves, with Product Catalog → Restore.
@@ -54,10 +54,17 @@ therefore a production change. It is done only after the owner approves, with Pr
 | 8620 | Foam roll 1/8" — available | 1 roll, 6" x 2 yd | Matches the July 2025 list |
 | P3012 | FungaFiles 24 files/pk — available | Each = 1 pack of 24 | Matches the July 2025 list |
 | P3012-12 | "12 x 24 files/pk" — available | Pack of 12 (case 12) | Matches the July 2025 list; UPC question PF-13 |
-| P3095-115 | SoreSpot 1" x 1.5 yd — available | Each | Matches the July 2025 list. **Hold:** the owner merged it into 3095-115 on 2026-10-11 (archived). Confirm before restoring, or one product shows twice. |
+| ~~P3095-115~~ | — | — | **NOT to be reactivated (owner, 2026-11-03 22:53):** it duplicates the existing 3095-115 (merged by the owner on 2026-10-11). |
 | P3305 | Cracks & Calluses cream — available | Each, 4 oz | Matches the July 2025 list |
 | P3355-STR | Nail cutter, straight blade — available | Each | Matches the July 2025 list |
 | 6210-L-S / L-M / L-L / M-S / M-M / M-L / M-XL | Darco post-op shoe — all 7 available | Each | All match the July 2025 list |
 
-Kept inactive as instructed: 8621 (unavailable on pedifix.com), P3305-PACKET-100, M905RFG, M905SUB, R3295, D28.
+Kept inactive as instructed: P3095-115 (duplicate), 8621 (unavailable on pedifix.com), P3305-PACKET-100, M905RFG, M905SUB, R3295, D28.
 P3306 stays retired.
+
+## Current PediFix documentation (searched 2026-11-03)
+
+No current (2026) PediFix catalog or price list is public. On stores.pedifix.com there are only wholesale catalogs
+"Volume 18R" and "Volume 19M": no year, no prices, and neither lists P244 or D09-TTU. The July 2025 price list stays the
+commercial source. **No PediFix price is changed without Angelo's approval.** Ask PediFix for the current catalog and
+price list along with the questions above.
