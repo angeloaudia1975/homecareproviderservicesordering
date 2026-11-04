@@ -37,7 +37,7 @@ const gS = require(path.join(gFN, 'lib', 'hcps-s2s.js'));
 const TEST_SECRET = crypto.randomBytes(32).toString('hex'), PROD_SECRET = crypto.randomBytes(32).toString('hex');
 const D_HQ = '11111111-2222-4333-8444-555555555555', LOC_CIN = 'cccccccc-0000-4000-8000-000000000001';
 const PREVIEW_TOKEN = 'ab12'.repeat(12);
-const W = { cost: 1188, idem: new Map(), goldenCalls: [], hcpsWrites: 0, emails: 0, dropNextValidate: 0 };
+const W = { delayValidate: 0, cost: 1188, idem: new Map(), goldenCalls: [], hcpsWrites: 0, emails: 0, dropNextValidate: 0 };
 const idemRpc = {
   integration_order_claim: ({ p }) => { const r = W.idem.get(p.idempotency_key); if (!r) { W.idem.set(p.idempotency_key, { h: p.request_hash, s: 'pending' }); return { state: 'new' }; }
     if (r.h !== p.request_hash) return { state: 'conflict' }; if (r.s === 'done') return { state: 'replay', status: r.st, response: r.resp }; return { state: 'in_progress' }; },
@@ -111,6 +111,7 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       W.cost = 1188; W.idem.clear(); W.goldenCalls.length = 0; W.dropNextValidate = 0;
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: w < 768, hasTouch: w < 1024 });
       const page = await ctx.newPage();
+      const pageErrors = []; page.on('pageerror', e => { pageErrors.push(String(e && e.message)); if (process.env.DBG) console.log('PAGEERROR', e && e.message); });
       let ordersApi = 0, submitOrder = 0;
       await page.route('**/*', async route => {
         const req = route.request(), u = new URL(req.url());
@@ -130,6 +131,7 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
           if (['ship_to', 'quote', 'validate_order'].includes(b.action)) {
             const hdr = await req.allHeaders();
             const out = await runProxy(b, { 'x-hcps-preview': hdr['x-hcps-preview'] || '', 'x-hcps-golden-env': hdr['x-hcps-golden-env'] || '', origin: hdr.origin || '' });
+            if (b.action === 'validate_order' && W.delayValidate) await new Promise(r => setTimeout(r, W.delayValidate));
             if (b.action === 'validate_order' && W.dropNextValidate > 0) { W.dropNextValidate--; return route.abort('connectionreset'); }   // Golden answered, the answer was lost
             return route.fulfill({ status: 200, contentType: 'application/json', headers: H, body: JSON.stringify(out) });
           }
@@ -169,6 +171,11 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
         ok(!/price|cost|total|\$/i.test(st.stored), 'no price in local storage: ' + st.stored); ok(st.hcpsCart === 0, 'HCPS cart ' + st.hcpsCart); ok(/2 chairs/.test(st.pill), st.pill); });
       // open the review
       await page.click('#gcartPill'); await page.waitForSelector('.gck-ship', { timeout: 15000 });
+      const f0 = await page.evaluate(() => document.activeElement && document.activeElement.hasAttribute('data-gck-close'));
+      await page.keyboard.press('Escape');
+      const f1 = await page.evaluate(() => ({ hidden: document.getElementById('gckView').style.display === 'none', pill: document.activeElement && document.activeElement.id === 'gcartPill' }));
+      await t(`${label}: dialog takes focus on open; Escape closes it and focus returns to the cart button`, () => ok(f0 && f1.hidden && f1.pill, JSON.stringify({ f0, f1 })));
+      await page.click('#gcartPill'); await page.waitForSelector('.gck-ship', { timeout: 15000 });
       const sh = await page.evaluate(() => [...document.querySelectorAll('.gck-ship')].map(x => x.innerText.replace(/\s+/g, ' ')));
       await t(`${label}: ship-to = Golden's own two records (primary + saved location), no free-text address field`, () => {
         ok(sh.length === 2 && /Columbus/.test(sh[0]) && /Cincinnati showroom/.test(sh[1]), sh.join(' | ')); });
@@ -189,7 +196,14 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
         ok(!/waived/.test(t1) && /Shipping & handling\s*\$\d/.test(t1) && !/\$0\.00/.test(t1.split('Shipping')[1].split('\n')[0]), 'Columbus: ' + t1);
         ok(/waived for this ship-to/.test(t2) && /\$0\.00/.test(t2), 'Cincinnati: ' + t2);
         ok(lines.length === 2 && /each/.test(lines[0]), lines.join('|')); });
-      await page.fill('[data-f="po"]', 'PO-7781'); await page.fill('[data-f="notes"]', 'Deliver to the back dock');
+      await page.fill('[data-f="po"]', 'PO-7780'); await page.fill('[data-f="notes"]', 'Deliver to the back dock');
+      // while Golden is answering, the cart is frozen — nothing can change under the answer
+      W.delayValidate = 2500; await page.click('[data-gck-validate]'); await page.waitForTimeout(400);
+      const frozen = await page.evaluate(() => ({ plus: document.querySelector('[data-dq="0"][data-d="1"]').disabled, rm: document.querySelector('[data-rm="0"]').disabled, po: document.querySelector('[data-f="po"]').readOnly, ship: [...document.querySelectorAll('input[name=gckship]')].every(x => x.disabled), busy: GCART.busy }));
+      await page.waitForSelector('.gck-ok', { timeout: 20000 }); W.delayValidate = 0;
+      await t(`${label}: while Golden answers, quantities, remove, ship-to and fields are frozen`, () => ok(frozen.busy && frozen.plus && frozen.rm && frozen.po && frozen.ship, JSON.stringify(frozen)));
+      await page.fill('[data-f="po"]', 'PO-7781');   // a new attempt for the lost-answer check below
+      W.goldenCalls.length = 0;
       // validate — the first answer is lost on the way back; the retry reuses the SAME Idempotency-Key and gets Golden's stored result
       W.dropNextValidate = 1;
       await page.click('[data-gck-validate]'); await page.waitForFunction(() => /could not be reached/.test((document.querySelector('.gck-warn') || {}).textContent || ''), null, { timeout: 20000 });
@@ -229,6 +243,13 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       await page.click('[data-rm="0"]'); await page.click('[data-rm="0"]'); await page.click('[data-gck-close]');
       const empty = await page.evaluate(() => ({ n: GCART.items.length, pill: !!document.getElementById('gcartPill') }));
       await t(`${label}: removing every chair empties the cart and hides the cart button`, () => ok(empty.n === 0 && !empty.pill, JSON.stringify(empty)));
+      // sign-out: the Golden cart, its review and the cached ship-to addresses go with the dealer
+      await page.evaluate(() => { goldenCartAdd('PR511-LAR', { fabric: 'std', color: 'SUM', tier: null, footrest: false }, null); goldenCartShow(); });
+      await page.waitForSelector('.gck-ship', { timeout: 15000 });
+      await page.evaluate(() => signOut());
+      const out = await page.evaluate(() => ({ n: GCART.items.length, pill: !!document.getElementById('gcartPill'), dlg: !!document.getElementById('gckView'), ships: GCART.shipList, on: GOLDEN.on }));
+      await t(`${label}: no script error on the page`, () => ok(!pageErrors.length, pageErrors.join(' | ')));
+      await t(`${label}: sign-out clears the Golden cart, its dialog, ship-to cache and button`, () => ok(out.n === 0 && !out.pill && !out.dlg && out.ships === null && out.on === false, JSON.stringify(out)));
       await ctx.close();
     }
   } finally { await browser.close(); }
