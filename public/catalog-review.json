@@ -1,7 +1,7 @@
 {
   "review_id": "8597419a6559",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T03:59:00Z",
+  "built_at": "2026-11-04T04:02:41Z",
   "main": "80198031fdf96c09b5add6db4919d0d5b22d4ee7",
   "included": [
     {
@@ -15,5 +15,12 @@
       "other_files": 3
     }
   ],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 30,
+      "title": "B4: Golden cart keyboard focus (Tab trap + refocus)",
+      "branch": "golden/b4-focus",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
