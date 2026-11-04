@@ -1,15 +1,8 @@
 {
-  "review_id": "0fb0088c4e23",
+  "review_id": "8145ec6f95d2",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T03:01:29Z",
-  "main": "9c0172992f593604c341a4e9f2359dd3930923a9",
+  "built_at": "2026-11-04T03:54:56Z",
+  "main": "80198031fdf96c09b5add6db4919d0d5b22d4ee7",
   "included": [],
-  "skipped": [
-    {
-      "pr": 28,
-      "title": "B4: Golden cart + validate-only order review in Partner 360",
-      "branch": "golden/b4-cart",
-      "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
-    }
-  ]
+  "skipped": []
 }
