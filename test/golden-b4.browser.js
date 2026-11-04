@@ -232,6 +232,15 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       await t(`${label}: Golden's price change → new totals shown for review, then a NEW attempt key validates`, () => {
         ok(keys2.length === 4 && keys2[2] !== keys[0] && keys2[3] !== keys2[2], JSON.stringify(keys2));
         ok(/Golden total/.test(moved) && moved !== t2, moved); });
+      // keyboard: Tab out of an email preview frame stays in the dialog; a control frozen while Golden answered gets focus back
+      await page.locator('iframe[data-gck-email="dealer"]').focus();
+      await page.evaluate(() => document.querySelector('#gckView [data-trap="end"]').focus());   // where Tab lands when it leaves the last email frame
+      const trap = await page.evaluate(() => { const a = document.activeElement; return { inDialog: !!(a && document.getElementById('gckView').contains(a)), sentinel: !!(a && a.hasAttribute('data-trap')), close: !!(a && a.hasAttribute('data-gck-close')) }; });
+      await t(`${label}: Tab from the last email preview wraps to the top of the dialog (never leaves it)`, () => ok(trap.inDialog && !trap.sentinel && trap.close, JSON.stringify(trap)));
+      W.delayValidate = 1500; await page.fill('[data-f="attention"]', 'Receiving'); await page.focus('[data-gck-validate]'); await page.keyboard.press('Enter');
+      await page.waitForSelector('.gck-ok', { timeout: 20000 }); W.delayValidate = 0; await page.waitForTimeout(200);
+      const back = await page.evaluate(() => !!(document.activeElement && document.activeElement.hasAttribute('data-gck-validate')));
+      await t(`${label}: after Golden answers, focus returns to the button that was used`, () => ok(back, 'focus was not returned to Validate'));
       const geo = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, boxW: document.querySelector('.gck-box').scrollWidth, boxC: document.querySelector('.gck-box').clientWidth,
         small: [...document.querySelectorAll('.gck-box button, .gck-box input:not([type=radio]), .gck-box textarea, .gck-box summary')].filter(b => { const r = b.getBoundingClientRect(); return r.width > 0 && r.height < 44; }).map(b => b.className || b.tagName) }));
       await t(`${label}: no horizontal scroll, touch targets ≥ 44px`, () => { ok(geo.sw <= geo.cw + 1 && geo.boxW <= geo.boxC + 1, JSON.stringify(geo)); ok(!geo.small.length, 'small: ' + geo.small.join(',')); });
