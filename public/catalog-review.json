@@ -1,7 +1,7 @@
 {
   "review_id": "9b89395cb5d0",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T04:21:47Z",
+  "built_at": "2026-11-04T04:34:44Z",
   "main": "da671e94ca907a4b59aec101be664b99f78771ac",
   "included": [
     {
@@ -12,7 +12,8 @@
       "manufacturers": [
         "corsicana"
       ],
-      "other_files": 3
+      "other_files": 3,
+      "note": "newer commit 3e7cd5d still being checked — showing the last validated version"
     }
   ],
   "skipped": []
