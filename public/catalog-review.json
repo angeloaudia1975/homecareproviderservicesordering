@@ -1,8 +1,8 @@
 {
-  "review_id": "b75f926973e1",
+  "review_id": "9b89395cb5d0",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T04:14:23Z",
-  "main": "80198031fdf96c09b5add6db4919d0d5b22d4ee7",
+  "built_at": "2026-11-04T04:21:47Z",
+  "main": "da671e94ca907a4b59aec101be664b99f78771ac",
   "included": [
     {
       "pr": 29,
@@ -13,14 +13,6 @@
         "corsicana"
       ],
       "other_files": 3
-    },
-    {
-      "pr": 30,
-      "title": "B4: Golden cart keyboard focus (Tab trap + refocus)",
-      "branch": "golden/b4-focus",
-      "head": "6a24de10d439c3f90170d5ff650152096ec0489c",
-      "manufacturers": [],
-      "other_files": 2
     }
   ],
   "skipped": []
