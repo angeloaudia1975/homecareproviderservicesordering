@@ -39,9 +39,9 @@ const D_HQ = '11111111-2222-4333-8444-555555555555', LOC_CIN = 'cccccccc-0000-40
 const PREVIEW_TOKEN = 'ab12'.repeat(12);
 const W = { delayValidate: 0, cost: 1188, idem: new Map(), goldenCalls: [], hcpsWrites: 0, emails: 0, dropNextValidate: 0 };
 const idemRpc = {
-  integration_order_claim: ({ p }) => { const r = W.idem.get(p.idempotency_key); if (!r) { W.idem.set(p.idempotency_key, { h: p.request_hash, s: 'pending' }); return { state: 'new' }; }
+  integration_order_claim: ({ p }) => { const r = W.idem.get(p.idempotency_key); if (!r) { const tok = crypto.randomUUID(); W.idem.set(p.idempotency_key, { h: p.request_hash, s: 'pending', tok }); return { state: 'new', claim_token: tok }; }
     if (r.h !== p.request_hash) return { state: 'conflict' }; if (r.s === 'done') return { state: 'replay', status: r.st, response: r.resp }; return { state: 'in_progress' }; },
-  integration_order_complete: ({ p }) => { const r = W.idem.get(p.idempotency_key); r.s = 'done'; r.st = p.status; r.resp = p.response; return true; },
+  integration_order_complete: ({ p }) => { const r = W.idem.get(p.idempotency_key); if (!r || r.tok !== p.claim_token) throw new Error('no pending claim'); r.s = 'done'; r.st = p.status; r.resp = p.response; return true; },
   integration_order_release: ({ p }) => { W.idem.delete(p.idempotency_key); return true; },
 };
 const fresh = (dir, m) => { Object.keys(require.cache).forEach(k => { if (k.startsWith(dir)) delete require.cache[k]; }); return require(path.join(dir, m)); };
