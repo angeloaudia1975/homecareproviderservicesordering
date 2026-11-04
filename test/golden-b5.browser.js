@@ -147,10 +147,11 @@ const ghText = page => page.evaluate(() => (document.getElementById('goldenHist'
       W.failNext = 1; await page.click('[data-ghmore]');
       await page.waitForFunction(() => /Couldn.t load older orders/.test((document.getElementById('goldenHist') || {}).innerText || ''), null, { timeout: 15000 });
       const kept = await ghText(page); const fMore = await page.evaluate(() => document.activeElement && document.activeElement.hasAttribute('data-ghmore'));
+      const said = await page.evaluate(() => { const l = document.getElementById('goldenHistLive'); return l && l.getAttribute('aria-live') === 'polite' && l.textContent; });
       await page.click('[data-ghmore]'); await page.waitForFunction(() => /SO0900/.test((document.getElementById('goldenHist') || {}).innerText || ''), null, { timeout: 15000 });
       const fNew = await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-ghbtn'));
-      await t(`${label}: a failed "Load older" keeps the list and offers Try again (focused); the retry appends and focuses the first new order`, () =>
-        ok(/SO1001/.test(kept) && /SO1002/.test(kept) && fMore && fNew === 'GSO0900', JSON.stringify({ fMore, fNew, kept: kept.slice(0, 300) })));
+      await t(`${label}: a failed "Load older" keeps the list, is announced in the page's live region and offers Try again (focused); the retry appends and focuses the first new order`, () =>
+        ok(/SO1001/.test(kept) && /SO1002/.test(kept) && fMore && fNew === 'GSO0900' && /could not be loaded/.test(said || ''), JSON.stringify({ fMore, fNew, said, kept: kept.slice(0, 300) })));
 
       // 4 — open an order by click, refreshed from Golden
       await page.click('[data-ghref="P501"]'); await page.waitForFunction(() => /1Z1000/.test((document.getElementById('goldenHist') || {}).innerText || ''), null, { timeout: 15000 });

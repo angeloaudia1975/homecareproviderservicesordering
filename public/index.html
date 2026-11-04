@@ -6071,11 +6071,11 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .gh-row{cursor:pointer}#p360wrap .gh-row:hover td{background:var(--surface-2)}#p360wrap .gh-row:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}
   #p360wrap .gh-detail td{background:var(--surface-2)}#p360wrap .gh-detail-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;padding:4px 0}
   #p360wrap .gh-col h4{margin:0 0 6px;font-size:13px;color:var(--navy)}#p360wrap .gh-col ul{margin:0;padding-left:18px;font-size:13px}
-  #p360wrap [data-ghmore],#p360wrap [data-ghretry]{min-height:44px}
+  #p360wrap [data-ghmore],#p360wrap [data-ghretry]{min-height:44px}#p360wrap [data-ghmore][aria-disabled="true"]{opacity:.6;cursor:wait}
   #p360wrap .gh-open{background:none;border:0;padding:6px 0;min-height:44px;font:inherit;font-weight:800;color:var(--navy);cursor:pointer;text-align:inherit}
   #p360wrap .gh-open:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:4px}
   #p360wrap .gh-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-  #p360wrap .gh-live:empty{display:none}#p360wrap .gh-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  #p360wrap .gh-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
   #p360wrap .gh-err{color:#b42318;font-weight:700;font-size:13px}
   #p360wrap #goldenHist td,#p360wrap .gh-col li{overflow-wrap:anywhere}
   @media (max-width:760px){ #p360wrap #goldenHist thead{display:none} #p360wrap #goldenHist table,#p360wrap #goldenHist tbody,#p360wrap #goldenHist tr,#p360wrap #goldenHist td{display:block;width:100%}
@@ -6371,6 +6371,7 @@ async function loadOrders(){
       <tbody>${rows||`<tr><td colspan="8" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
       ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total (incl. freight)</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${cents(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
     </table></div>
+    <div id="goldenHistLive" class="gh-live" role="status" aria-live="polite"></div>
     <div id="goldenHist" style="margin-top:16px"></div>
     <div class="lead-note">"Request tracking" asks the manufacturer to send shipment tracking to you and to HCPS. Retail uses MSRP on file, or 2× dealer cost where none is on file.</div>`;
   goldenHistoryLoad(false);
@@ -6388,6 +6389,7 @@ const ghDay=d=>esc(dateShort(d));
 const ghQty=n=>Number.isInteger(n)?String(n):"";
 function ghPill(s){ const l=GH_STATUS[s]||"—"; const c=(s==="completed"||s==="shipped"||s==="invoiced")?"done":(s==="cancelled")?"imported":(s==="submitted"||s==="pending_review")?"open":"portal"; return '<span class="pill '+c+'">'+esc(l)+'</span>'; }
 function ghWhere(o){ const c=[o.ship_to&&o.ship_to.city,o.ship_to&&o.ship_to.state].filter(Boolean).join(", "); return c?esc(c):"—"; }
+function ghLive(t){ const lv=$("#goldenHistLive"); if(lv&&lv.textContent!==t) lv.textContent=t; }
 function ghReset(){ GH.seq++; GH.openSeq++; GH.orders=[]; GH.next=null; GH.pv=false; GH.open=null; GH.state="idle"; GH.moreErr=false; GH.focus=null; }
 async function goldenHistoryLoad(more){
   const box=$("#goldenHist"); if(!box) return;
@@ -6396,7 +6398,7 @@ async function goldenHistoryLoad(more){
   const my=++GH.seq;
   if(typeof GOLDEN!=="undefined"&&!GOLDEN.checked&&typeof goldenInit==="function"){ try{ await goldenInit(); }catch(e){} }
   if(my!==GH.seq) return;
-  if(typeof goldenEntitled!=="function"||!goldenEntitled()){ box.innerHTML=""; return; }
+  if(typeof goldenEntitled!=="function"||!goldenEntitled()){ box.innerHTML=""; ghLive(""); return; }
   GH.state="loading"; GH.moreErr=false; ghRender();
   const body={limit:25}; if(more&&GH.next) body.before=GH.next;
   const r=await goldenCall("history",body);
@@ -6405,10 +6407,10 @@ async function goldenHistoryLoad(more){
     // An older page that could not be read never wipes the orders already shown.
     GH.state="ready"; GH.moreErr=true; GH.focus="more"; ghRender(); return;
   }
-  if(!r||r.enabled!==true){ GH.state="off"; box.innerHTML=""; return; }
+  if(!r||r.enabled!==true){ GH.state="off"; box.innerHTML=""; ghLive(""); return; }
   if(r.available!==true){
     GH.state=(r.reason==="branch_history_not_permitted")?"branch":(r.reason==="history_unavailable"||r.reason==="golden_unavailable"||r.retry)?"retry":"off";
-    if(GH.state==="off"){ box.innerHTML=""; return; }
+    if(GH.state==="off"){ box.innerHTML=""; ghLive(""); return; }
     ghRender(); return;
   }
   const seen=new Set(GH.orders.map(o=>o.order_ref)), fresh=(Array.isArray(r.orders)?r.orders:[]).filter(o=>o&&!seen.has(o.order_ref)&&seen.add(o.order_ref));
@@ -6419,7 +6421,9 @@ async function goldenHistoryLoad(more){
 function ghRender(){
   const box=$("#goldenHist"); if(!box) return;
   const head='<div class="chead"><h3>Golden orders — live from Golden Technologies</h3></div>';
-  const live='<div class="gh-live" role="status" aria-live="polite">'+(GH.state==="loading"?"Loading Golden orders…":GH.moreErr?"Older Golden orders could not be loaded.":"")+'</div>';
+  const msg=GH.state==="loading"?"Loading Golden orders…":GH.moreErr?"Older Golden orders could not be loaded.":GH.state==="retry"?"Golden could not be reached just now.":"";
+  ghLive(msg);   // one region that stays in the page, so changes are announced
+  const live="";
   if(GH.state==="loading"&&!GH.orders.length){ box.innerHTML='<div class="card">'+head+live+'<div class="msg">Loading your Golden orders…</div></div>'; return; }
   if(GH.state==="branch"){ box.innerHTML='<div class="card">'+head+'<div class="msg" role="status">Golden order history is shown on your head-office account.</div></div>'; return; }
   if(GH.state==="retry"){ box.innerHTML='<div class="card">'+head+'<div class="msg" role="status">Golden could not be reached just now. <button type="button" class="btn gh" data-ghretry>Try again</button></div></div>'; ghWire(); ghRestoreFocus(); return; }
@@ -6436,7 +6440,7 @@ function ghRender(){
   box.innerHTML='<div class="card" style="padding:0;overflow:hidden">'+head.replace('class="chead"','class="chead" style="padding:14px 16px 0"')+live
     +'<div class="table-scroll"><table class="tbl"><thead><tr><th>Placed</th><th>Golden order #</th><th>PO</th><th>Ship to</th><th class="n">Units</th>'+(GH.pv?'<th class="n">Total</th>':'')+'<th>Status</th><th>Expected</th></tr></thead><tbody>'
     +(rows||'<tr><td colspan="'+cols+'" class="empty">No Golden orders on record yet.</td></tr>')+'</tbody></table></div>'
-    +((GH.next||GH.moreErr)?'<div style="padding:10px 16px">'+(GH.moreErr?'<span class="gh-err">Couldn’t load older orders. </span>':'')+'<button type="button" class="btn gh" data-ghmore'+(GH.state==="loading"?' disabled':'')+'>'+(GH.state==="loading"?"Loading…":GH.moreErr?"Try again":"Load older Golden orders")+'</button></div>':'')
+    +((GH.next||GH.moreErr)?'<div style="padding:10px 16px">'+(GH.moreErr?'<span class="gh-err">Couldn’t load older orders. </span>':'')+'<button type="button" class="btn gh" data-ghmore'+(GH.state==="loading"?' aria-disabled="true"':'')+'>'+(GH.state==="loading"?"Loading…":GH.moreErr?"Try again":"Load older Golden orders")+'</button></div>':'')
     +'<div class="lead-note" style="padding:0 16px 12px">Status, shipping and tracking come from Golden Technologies. Select an order for its items and tracking.</div></div>';
   ghWire(); ghRestoreFocus();
 }
