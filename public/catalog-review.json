@@ -1,30 +1,9 @@
 {
-  "review_id": "f0a655042c5b",
+  "review_id": "a527fdf5651c",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T04:58:51Z",
-  "main": "da671e94ca907a4b59aec101be664b99f78771ac",
-  "included": [
-    {
-      "pr": 29,
-      "title": "Corsicana / CorsicanaCare content batch: 14 SKUs from official sources (owner review)",
-      "branch": "catalog/corsicana-enrich",
-      "head": "3e7cd5d6086c535ce5bc7d0f8f94e32b814e31d2",
-      "manufacturers": [
-        "corsicana"
-      ],
-      "other_files": 3
-    },
-    {
-      "pr": 31,
-      "title": "PediFix content batch: displays, catalog photos, P244/P60 families (sandbox review)",
-      "branch": "catalog/pedifix-prep",
-      "head": "5e8802f637b88b54c79e6a6392d8e2e3eefcdf06",
-      "manufacturers": [
-        "pedifix"
-      ],
-      "other_files": 3
-    }
-  ],
+  "built_at": "2026-11-04T05:10:30Z",
+  "main": "0e97fec3f357af8c1f8dbb37c11e299cb255853f",
+  "included": [],
   "skipped": [
     {
       "pr": 32,
