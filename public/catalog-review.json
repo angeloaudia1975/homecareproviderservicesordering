@@ -1,15 +1,8 @@
 {
-  "review_id": "a527fdf5651c",
+  "review_id": "98891bd8284f",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T05:10:30Z",
-  "main": "0e97fec3f357af8c1f8dbb37c11e299cb255853f",
+  "built_at": "2026-11-04T15:21:49Z",
+  "main": "6e76c95c70f9572d7ea337b764a30e6376c98d7a",
   "included": [],
-  "skipped": [
-    {
-      "pr": 32,
-      "title": "B5: Golden order history & tracking in My Orders (draft)",
-      "branch": "integration/b5-history-ui",
-      "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
-    }
-  ]
+  "skipped": []
 }
