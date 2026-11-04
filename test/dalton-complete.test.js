@@ -27,10 +27,14 @@ t('339 catalog SKUs: 331 active on a published page, 8 retired by the owner (hid
 t('commercial and catalog files untouched: dalton.json (identity + prices), manufacturers.json (freight), other lines', () => {
   eq(fs.readFileSync(path.join(ROOT, 'public/data/dalton.json'), 'utf8'), gitRaw('public/data/dalton.json'));
   eq(fs.readFileSync(path.join(ROOT, 'public/data/manufacturers.json'), 'utf8'), gitRaw('public/data/manufacturers.json'));
-  for (const f of fs.readdirSync(path.join(ROOT, 'public/data/content')).filter(f => f !== 'dalton.json'))
-    eq(fs.readFileSync(path.join(ROOT, 'public/data/content', f), 'utf8'), gitRaw('public/data/content/' + f), f);
-  for (const f of fs.readdirSync(path.join(ROOT, 'content-overrides')).filter(f => f !== 'dalton.json'))
-    eq(fs.readFileSync(path.join(ROOT, 'content-overrides', f), 'utf8'), gitRaw('content-overrides/' + f), f);
+  /* Other lines may change in their own PRs; a change that touches Dalton content must not touch another line too. */
+  const daltonChanged = ['public/data/content/dalton.json', 'content-overrides/dalton.json'].some(f => fs.readFileSync(path.join(ROOT, f), 'utf8') !== gitRaw(f));
+  if (daltonChanged) {
+    for (const f of fs.readdirSync(path.join(ROOT, 'public/data/content')).filter(f => f !== 'dalton.json'))
+      eq(fs.readFileSync(path.join(ROOT, 'public/data/content', f), 'utf8'), gitRaw('public/data/content/' + f), f);
+    for (const f of fs.readdirSync(path.join(ROOT, 'content-overrides')).filter(f => f !== 'dalton.json'))
+      eq(fs.readFileSync(path.join(ROOT, 'content-overrides', f), 'utf8'), gitRaw('content-overrides/' + f), f);
+  }
 });
 t('every active product has a description and recorded provenance; verified pages cite Dalton and carry features', () => {
   for (const c of live) {
