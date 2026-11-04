@@ -16,7 +16,9 @@ const M = [
   ['combined JSON not validated', '! jq empty "$f" >/dev/null 2>&1 && badjson="$f"', 'false && badjson="$f"'],
   ['PR list limit ignored', '[ "$(jq \'length\' <<<"$raw_prs")" -lt 100 ] ||', 'true ||'],
   ['failed new commit keeps old version', 'if [ "$ck" = pending ] || [ "$ck" = unknown ]; then', 'if true; then'],
-  ['pending new commit drops the PR', 'if [ -n "$ph" ] && [ "$ph" != "$sha" ]; then', 'if false; then'],
+  ['pending new commit drops the PR', 'if [ -n "$ph" ] && [ "$ph" != "$sha" ] && git cat-file', 'if false && git cat-file'],
+  ['kept head not re-checked', '&& [ "$(checks_of "$ph")" = success ]; then', '; then'],
+  ['already-in-main not detected', 'if git merge-base --is-ancestor "$sha" HEAD 2>/dev/null; then skip', 'if false; then skip'],
   ['drafts admitted', 'if [ "$(jq -r .draft <<<"$row")" = true ] &&', 'if false &&'],
   ['exclude label ignored', 'if [ "$(jq -r .excluded <<<"$row")" = true ]; then', 'if false; then'],
 ];

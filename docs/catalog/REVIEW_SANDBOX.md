@@ -18,7 +18,8 @@ The branch `catalog-review` contains:
 
     A PR with no validation results at all is never treated as passing, and a skipped or cancelled Netlify build is not evidence.
   - after it is merged into the sandbox together with the PRs before it, every JSON file it touches still parses.
-    Otherwise it is taken back out and listed for a person.
+    Otherwise it is taken back out and listed for a person. Code and page files (JavaScript, HTML) are validated by the
+    sandbox's own Netlify build (PR #26), so a broken combined page shows there first.
   - When a PR that was already in the sandbox gets a new commit, the sandbox keeps its last validated version until the
     new commit's checks pass, so the PR doesn't drop out and come back. The yellow bar says "newer version still being
     checked". A new commit whose checks fail removes the PR.

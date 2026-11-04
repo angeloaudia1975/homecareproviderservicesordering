@@ -28,7 +28,9 @@ function world(prs, extraEnv = {}, opts = {}) {
     fs.mkdirSync(path.join(seed, path.dirname(f)), { recursive: true });
     fs.writeFileSync(path.join(seed, f), p.content || ('{"pr":' + p.n + '}\n'));
     sh(seed, 'add', '-A'); sh(seed, 'commit', '-qm', 'pr ' + p.n);
-    if (p.second) { p.oldSha = sh(seed, 'rev-parse', 'HEAD'); fs.writeFileSync(path.join(seed, f), p.second); sh(seed, 'add', '-A'); sh(seed, 'commit', '-qm', 'pr ' + p.n + ' update'); }
+    if (p.second) { p.oldSha = sh(seed, 'rev-parse', 'HEAD');
+      fs.writeFileSync(path.join(stub, (`commits/${p.oldSha}/statuses?per_page=100`).replace(/[/?=&]/g, '_') + '.json'), JSON.stringify(p.oldStatuses || [ok()]));
+      fs.writeFileSync(path.join(stub, (`commits/${p.oldSha}/check-runs?per_page=100`).replace(/[/?=&]/g, '_') + '.json'), JSON.stringify({ check_runs: [] })); fs.writeFileSync(path.join(seed, f), p.second); sh(seed, 'add', '-A'); sh(seed, 'commit', '-qm', 'pr ' + p.n + ' update'); }
     const sha = sh(seed, 'rev-parse', 'HEAD');
     sh(seed, 'push', '-q', 'origin', p.ref, `HEAD:refs/pull/${p.n}/head`);
     list.push({ number: p.n, title: 'PR ' + p.n, draft: !!p.draft, labels: (p.labels || []).map(name => ({ name })),
@@ -39,6 +41,7 @@ function world(prs, extraEnv = {}, opts = {}) {
   }
   // a change on main that PR conflicts are measured against
   sh(seed, 'checkout', '-q', 'main');
+  for (const p of prs.filter(x => x.inMain)) sh(seed, 'merge', '-q', '--no-edit', p.ref);
   fs.writeFileSync(path.join(seed, 'public/data/acme.json'), '{"v":2}\n');
   sh(seed, 'commit', '-qam', 'main moves'); sh(seed, 'push', '-q', 'origin', 'main');
   fs.writeFileSync(path.join(stub, 'pulls_state_open_base_main_per_page_100.json'), JSON.stringify(opts.prList ? opts.prList(list) : list));
@@ -89,6 +92,7 @@ const W = world([
   { n: 18, ref: 'other-status-failed', statuses: [ok(), st('error', 'some/other-ci', 3)], runs: [] },
   { n: 19, ref: 'foreign-sync-red', statuses: [ok()], runs: [{ ...run('sync', 'failure'), app: { slug: 'some-other-app' } }] },
   { n: 20, ref: 'skipped-build', statuses: [{ ...ok(), description: 'Deploy Preview skipped' }], runs: [] },
+  { n: 23, ref: 'in-main', inMain: true, statuses: [ok()], runs: [] },
   { n: 21, ref: 'bad-json', file: 'content-overrides/acme.json', content: '{"a":1,\n"b":2\n', statuses: [ok()], runs: [] },
 ]);
 const inc = () => (W.manifest.included || []).map(p => p.pr);
@@ -109,6 +113,7 @@ t('a conflicting PR is skipped, never force-resolved', () => { if (!/does not me
 t('a check run named like ours but from another app still counts (and is red)', () => { if (!why(19).includes('checks failure')) throw new Error(why(19)); });
 t('a skipped Netlify build is not evidence', () => { if (!/no successful required check/.test(why(20))) throw new Error(why(20)); });
 t('a merged result with invalid JSON is rolled back and left out', () => { if (!/not valid JSON/.test(why(21))) throw new Error(why(21)); });
+t('a PR already contained in main adds nothing and blames nothing', () => { if (!/already contained/.test(why(23))) throw new Error(why(23)); });
 t('unreadable check answers → not included', () => { if (!/checks unknown/.test(why(17))) throw new Error(why(17)); });
 t('manifest names the manufacturer a PR touches and a review id', () => {
   const p6 = W.manifest.included.find(p => p.pr === 6); if (!p6 || p6.manufacturers.join() !== 'dalton') throw new Error(JSON.stringify(p6));
@@ -123,6 +128,7 @@ t('a PR whose new commit is still being checked keeps its last validated version
     { n: 1, ref: 'updating', statuses: [st('pending')], runs: [], second: '{"pr":1,"v":2}\n' },
     { n: 2, ref: 'new-and-pending', statuses: [st('pending')], runs: [] },
     { n: 3, ref: 'updated-and-failed', statuses: [st('failure')], runs: [], second: '{"pr":3,"v":2}\n' },
+    { n: 4, ref: 'kept-head-went-red', statuses: [st('pending')], runs: [], second: '{"pr":4,"v":2}\n', oldStatuses: [st('failure')] },
   ], {}, { prevSandbox: true });
   try {
     const p1 = (E.manifest && E.manifest.included || []).find(p => p.pr === 1);
@@ -130,6 +136,7 @@ t('a PR whose new commit is still being checked keeps its last validated version
     if (!p1 || !/still being checked/.test(p1.note || '')) throw new Error(JSON.stringify(E.manifest) + E.out.slice(-400));
     if ((E.manifest.included || []).some(p => p.pr === 2)) throw new Error('a never-validated pending PR was included');
     if ((E.manifest.included || []).some(p => p.pr === 3)) throw new Error('a PR whose new commit FAILED kept its old version');
+    if ((E.manifest.included || []).some(p => p.pr === 4)) throw new Error('a kept head whose own checks turned red was still shown');
   } finally { fs.rmSync(E.root, { recursive: true, force: true }); }
 });
 t('100 or more open PRs stops the run instead of dropping some', () => {

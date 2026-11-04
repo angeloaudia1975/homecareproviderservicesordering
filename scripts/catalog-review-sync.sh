@@ -70,7 +70,11 @@ while IFS= read -r row; do
   ck=$(checks_of "$sha"); note=""
   if [ "$ck" = pending ] || [ "$ck" = unknown ]; then
     ph=$(prev_head_of "$n")
-    if [ -n "$ph" ] && [ "$ph" != "$sha" ]; then sha="$ph"; ck=success; note="newer commit $(jq -r .sha <<<"$row" | cut -c1-7) still being checked — showing the last validated version"; fi
+    # only a kept head that is still in the PR's history and whose own checks are still green
+    if [ -n "$ph" ] && [ "$ph" != "$sha" ] && git cat-file -e "$ph^{commit}" 2>/dev/null \
+       && { git cat-file -e "$sha^{commit}" 2>/dev/null || git fetch -q origin "$sha" 2>/dev/null || git fetch -q origin "+refs/pull/$n/head:refs/remotes/pr/$n" 2>/dev/null; } \
+       && git merge-base --is-ancestor "$ph" "$sha" 2>/dev/null && [ "$(checks_of "$ph")" = success ]; then
+      sha="$ph"; ck=success; note="newer commit $(jq -r .sha <<<"$row" | cut -c1-7) still being checked — showing the last validated version"; fi
   fi
   case "$ck" in
     success) ;;
@@ -79,11 +83,13 @@ while IFS= read -r row; do
   esac
   if ! { git cat-file -e "$sha^{commit}" 2>/dev/null || git fetch -q origin "$sha" 2>/dev/null || git fetch -q origin "+refs/pull/$n/head:refs/remotes/pr/$n" 2>/dev/null; } \
      || ! git cat-file -e "$sha^{commit}" 2>/dev/null; then skip "its commit could not be fetched — retried on the next run"; continue; fi
+  if git merge-base --is-ancestor "$sha" HEAD 2>/dev/null; then skip "already contained in main (or in a PR before it) — nothing to add"; continue; fi
+  pre=$(git rev-parse HEAD)
   if git merge -q --no-ff --no-edit -m "sandbox: merge #$n" "$sha" >/dev/null 2>&1; then
     # The COMBINED result must still be valid: every JSON file this merge touched must parse.
     badjson=""
-    while IFS= read -r f; do case "$f" in *.json) [ -f "$f" ] && ! jq empty "$f" >/dev/null 2>&1 && badjson="$f";; esac; done < <(git diff --name-only HEAD^1 HEAD)
-    if [ -n "$badjson" ]; then git reset -q --hard HEAD^1; skip "combined with the PRs before it, $badjson is not valid JSON — needs a person"; continue; fi
+    while IFS= read -r -d '' f; do case "$f" in *.json) [ -f "$f" ] && ! jq empty "$f" >/dev/null 2>&1 && badjson="$f";; esac; done < <(git diff -z --name-only "$pre" HEAD)
+    if [ -n "$badjson" ]; then git reset -q --hard "$pre"; skip "combined with the PRs before it, $badjson is not valid JSON — needs a person"; continue; fi
     included=$(jq -c --argjson r "$row" --arg sha "$sha" --arg note "$note" --argjson m "$(mfr_of "$sha")" --argjson o "$(other_of "$sha")" \
       '.+[$r+{sha:$sha, note:$note, manufacturers:$m, other_files:$o}]' <<<"$included")
   else
