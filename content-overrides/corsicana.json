@@ -14,5 +14,459 @@
     "note": "SBLB lift base raised with both handrails installed, side view in a bedroom (2000x2000); second photo on Corsicana's 'SBLB Lift Base Handrails' (LBHR) product page. Existing photo is the close-up."
    }
   ]
+ },
+ "corsicanacare-6-in-essentials-mattress-36-inx80-inx6-in": {
+  "description": "The CorsicanaCare™ 6\" Essentials mattress is sized for a standard hospital bed (36\" x 80\" x 6\"). A durable zip-off nylon cover resists friction, shear and fluids while staying vapor-permeable, and an Air Grid™ cooling-gel comfort layer with zoned support and articulated cuts lets the mattress flex with hospital bed movement.",
+  "features": [
+   "Zip-off nylon cover with friction and shear resistance; water- and fluid-resistant yet vapor-permeable, with inverted seams, a flanged zipper, anti-bacterial protection and full fire code compliance",
+   "Air Grid™ — cooling gel comfort layer with a breathable grid; zoned support at the hips and sides; articulated cuts let the mattress flex with hospital bed movement"
+  ],
+  "specs": [
+   {
+    "label": "Size",
+    "value": "36\" x 80\" x 6\" (standard hospital bed)"
+   },
+   {
+    "label": "Model",
+    "value": "6ESSENTIALS"
+   }
+  ],
+  "documents": [
+   {
+    "title": "CorsicanaCare 2026 Product Lineup — spec cards (Corsicana Healthcare)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf"
+   }
+  ],
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf); disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "warranty": "not stated for this product by an official source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "features": "CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)",
+   "specs": "CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)"
+  }
+ },
+ "corsicanacare-6-in-elevate-mattress-36-inx80-inx6-in": {
+  "description": "The CorsicanaCare™ 6\" Elevate mattress is sized for a standard hospital bed (36\" x 80\" x 6\"). It layers reactive foam and copper-infused memory foam over an Air Grid™ cooling core, with Corsicana's patented Edge Support System and a durable zip-off nylon cover.",
+  "features": [
+   "Zip-off nylon cover with friction and shear resistance; water- and fluid-resistant yet vapor-permeable, with inverted seams, a flanged zipper, anti-bacterial protection and full fire code compliance",
+   "Reactive foam — latex-like bounce-back for a balance of supportive yet conforming foam",
+   "Copper-infused memory foam — cooling technology with anti-microbial protection",
+   "Patented Edge Support System — reinforced side support with 20% more sleeping surface and smoother egress",
+   "Air Grid™ — cooling gel comfort layer with a breathable grid; zoned support at the hips and sides; articulated cuts let the mattress flex with hospital bed movement"
+  ],
+  "specs": [
+   {
+    "label": "Size",
+    "value": "36\" x 80\" x 6\" (standard hospital bed)"
+   },
+   {
+    "label": "Model",
+    "value": "6ELEVATE"
+   }
+  ],
+  "documents": [
+   {
+    "title": "CorsicanaCare 2026 Product Lineup — spec cards (Corsicana Healthcare)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf"
+   }
+  ],
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf); disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "warranty": "not stated for this product by an official source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "features": "CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)",
+   "specs": "CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)"
+  }
+ },
+ "corsicanacare-6-in-everest-mattress-36-inx80-inx6-in": {
+  "description": "The CorsicanaCare™ 6\" Everest mattress is sized for a standard hospital bed (36\" x 80\" x 6\"). It layers reactive foam and copper-infused memory foam over an Air Grid™ cooling core, with Corsicana's patented Edge Support System and a durable zip-off nylon cover, and adds Lumi Bands™ graphite cooling bands.",
+  "features": [
+   "Zip-off nylon cover with friction and shear resistance; water- and fluid-resistant yet vapor-permeable, with inverted seams, a flanged zipper, anti-bacterial protection and full fire code compliance",
+   "Reactive foam — latex-like bounce-back for a balance of supportive yet conforming foam",
+   "Copper-infused memory foam — cooling technology with anti-microbial protection",
+   "Patented Edge Support System — reinforced side support with 20% more sleeping surface and smoother egress",
+   "Air Grid™ — cooling gel comfort layer with a breathable grid; zoned support at the hips and sides; articulated cuts let the mattress flex with hospital bed movement",
+   "Lumi Bands™ — German-made graphite cooling bands designed to pull excess heat away (Corsicana: sleep up to 5 degrees cooler for up to 12 hours)"
+  ],
+  "specs": [
+   {
+    "label": "Size",
+    "value": "36\" x 80\" x 6\" (standard hospital bed)"
+   },
+   {
+    "label": "Model",
+    "value": "6EVEREST"
+   }
+  ],
+  "documents": [
+   {
+    "title": "CorsicanaCare 2026 Product Lineup — spec cards (Corsicana Healthcare)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf"
+   }
+  ],
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf); disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "warranty": "not stated for this product by an official source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "features": "CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)",
+   "specs": "CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)"
+  }
+ },
+ "corsicanacare-bed-booster": {
+  "description": "The CorsicanaCare™ Bed Booster is a powered back/foot rest that sits on the mattress to raise or lower the head; flipped to the foot of the bed it raises the feet and legs instead. It sets up with no tools — plug in and go — has a mesh safety covering over pinch points, a wired remote, and folds away for storage.",
+  "features": [
+   "Head incline adjustability — raise or lower the head for positioning",
+   "Dual use — flip it to the foot of the bed to raise feet and legs",
+   "Wired remote — incline and decline",
+   "Quick setup — plug in and go, no tools required",
+   "Mesh safety covering helps keep fingers and objects away from pinch points",
+   "Folds away for easy storage"
+  ],
+  "specs": [
+   {
+    "label": "Size (flat)",
+    "value": "47.5\" L x 30\" W x 3.5\" H"
+   },
+   {
+    "label": "Model",
+    "value": "SBKDB-30"
+   }
+  ],
+  "documents": [
+   {
+    "title": "CorsicanaCare 2026 Product Lineup — spec cards (Corsicana Healthcare)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf"
+   }
+  ],
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf); disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "warranty": "not stated for this product by an official source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "features": "CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)",
+   "specs": "CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)"
+  }
+ },
+ "the-mobility-bed": {
+  "description": "The CorsicanaCare™ Mobility Bed combines a 180° swivel, high/low adjustability and tilt positioning to support easier transfers and caregiver access, on a 10\" EcoCore™ soy-based foam surface. Its fully upholstered frame gives a residential look for home care, and the remote adds underbed lighting, head and foot incline, a Zero Gravity position and one-touch flat. A mattress protector is included.",
+  "features": [
+   "180° swivel, high/low adjustability and tilt positioning for easier transfers and caregiver access",
+   "10\" EcoCore™ foam — eco-friendly, soy-based foam designed to promote airflow and temperature-regulated comfort",
+   "Fully upholstered frame for a softer, residential look",
+   "Remote: underbed lighting, head incline + foot incline, Zero Gravity position, one-touch flat",
+   "Bonus mattress protector included"
+  ],
+  "specs": [
+   {
+    "label": "Sleep surface",
+    "value": "10\" EcoCore™ foam"
+   },
+   {
+    "label": "Model",
+    "value": "10ERGOCB1"
+   }
+  ],
+  "documents": [
+   {
+    "title": "CorsicanaCare 2026 Product Lineup — spec cards (Corsicana Healthcare)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf"
+   }
+  ],
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf); disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "warranty": "not stated for this product by an official source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "features": "CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)",
+   "specs": "CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)"
+  }
+ },
+ "corsicanacare-bedding-bundle": {
+  "description": "The CorsicanaCare™ Essentials Care Bundle packs bedding for a care bed: soft, fiber-filled pillow bedding with a zippered cover, a sheet set (fitted sheet, flat sheet and pillowcase) and a five-sided water-resistant mattress protector.",
+  "features": [
+   "Pillow — soft fiber fill, zippered removable cover, hypoallergenic materials",
+   "Sheet set — 1 fitted sheet, 1 flat sheet, 1 pillowcase; 100% polyester; elastic and rubber grip on the fitted sheet for a secure hold",
+   "Mattress protector — 100% polyester microfiber, woven crinkle-free feel, five-sided water-resistant protection"
+  ],
+  "specs": [
+   {
+    "label": "Model",
+    "value": "PSP1"
+   }
+  ],
+  "documents": [
+   {
+    "title": "CorsicanaCare 2026 Product Lineup — spec cards (Corsicana Healthcare)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf"
+   }
+  ],
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf); disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "warranty": "not stated for this product by an official source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "features": "CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)",
+   "specs": "CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)"
+  }
+ },
+ "corsicanacare-mattress-protector-ice-5-sided": {
+  "description": "CorsicanaCare™ five-sided mattress protector, sold by the case of 10 (per Corsicana Healthcare's 2026 price list).",
+  "features": [],
+  "specs": [
+   {
+    "label": "Sold as",
+    "value": "Case of 10 (price list)"
+   },
+   {
+    "label": "Model",
+    "value": "SB10MATPRON1"
+   }
+  ],
+  "documents": [],
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from Corsicana Healthcare Price List 2026 (rev) — product line only; disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "warranty": "not stated for this product by an official source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "features": "Corsicana Healthcare Price List 2026 (rev) — product line only (read 2026-11-03)",
+   "specs": "Corsicana Healthcare Price List 2026 (rev) — product line only (read 2026-11-03)"
+  }
+ },
+ "ingood-in-head-up-foot-up-power-base": {
+  "description": "The SBKD3 adjustable base offers head and foot incline, a one-touch Flat button, a pre-programmed Zero Gravity position and three programmable positions on a wireless 9-button remote. It sets up with no tools, folds in half for small-parcel shipping, works with zero clearance on a flat surface or platform frame, and has a reinforced steel undercarriage and back-up battery strip.",
+  "features": [
+   "Head and foot up/down functions",
+   "One-touch Flat button and Zero Gravity pre-programmed position",
+   "(3) programmable one-touch positions — hold 5 seconds to save the current position",
+   "Wireless 9-button remote",
+   "Zero clearance — sits on a flat surface or compatible frame without legs (hook-and-loop securing straps)",
+   "Patented screw-in adjustable legs",
+   "Back-up battery power strip and foot retainer bar",
+   "No tools required; folds in half for small-parcel shipping",
+   "Reinforced steel undercarriage",
+   "Sync cable to control two bases together"
+  ],
+  "specs": [
+   {
+    "label": "Leg heights",
+    "value": "3\", 6\", 9\" or 12\" (Corsicana product page)"
+   },
+   {
+    "label": "Retail model",
+    "value": "SBKD3 (Twin XL: SBKD3-TXL)"
+   }
+  ],
+  "documents": [
+   {
+    "title": "CorsicanaCare 2026 Product Lineup — spec cards (Corsicana Healthcare)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf"
+   }
+  ],
+  "warranty": "10-year limited warranty (Corsicana product page)",
+  "source_url": "https://corsicanamattress.com/products/sbkd3-adjustable-base",
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from Corsicana product page https://corsicanamattress.com/products/sbkd3-adjustable-base; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf); disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "features": "Corsicana product page https://corsicanamattress.com/products/sbkd3-adjustable-base; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)",
+   "warranty": "https://corsicanamattress.com/products/sbkd3-adjustable-base (read 2026-11-03)",
+   "category": "HCPS catalog (what dealers see today)",
+   "retail_model": "Corsicana Retail Model SBKD3-TXL — alias only; the HCPS SKU is the ordering code — https://corsicanamattress.com/products/sbkd3-adjustable-base",
+   "specs": "Corsicana product page https://corsicanamattress.com/products/sbkd3-adjustable-base; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)"
+  }
+ },
+ "inbest-inhi-low-lift-power-base": {
+  "description": "The SBLB high/low lift adjustable base raises up to 10\" and tilts forward up to 10 degrees, with head and foot incline, hands-free voice command, head and foot massage, a night light, USB charging ports and Flat and Zero Gravity presets on a 19-button wireless remote. It can be used within a bedframe or as a standalone bed; caster wheels (LBCW) and handrails (LBHR) are sold separately.",
+  "features": [
+   "Lift: raise the base up to 10\"",
+   "Tilt forward up to 10 degrees",
+   "Head and foot incline",
+   "19-button wireless remote with 2 memory buttons, Flat and Zero Gravity presets",
+   "Voice command — hands-free built-in microphone",
+   "Head or foot massage — three intensities, 10/20/30-minute timer",
+   "Night light and USB charging ports",
+   "Built-in fabric safety cover over the lift mechanisms",
+   "Mattress retainer bar, non-skid top fabric, emergency battery strip",
+   "Optional caster wheels (LBCW) and handrails (LBHR), sold separately"
+  ],
+  "specs": [
+   {
+    "label": "Height (without lift)",
+    "value": "12.4\"–18.4\", depending on the 3\", 6\" or 9\" legs used"
+   },
+   {
+    "label": "Retail model",
+    "value": "SBLB-TL (Twin XL)"
+   },
+   {
+    "label": "Manufacturer note",
+    "value": "Corsicana's product page states this base is not to be used in replacement of a medical or hospital bed (warranty voided)."
+   }
+  ],
+  "documents": [
+   {
+    "title": "CorsicanaCare 2026 Product Lineup — spec cards (Corsicana Healthcare)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf"
+   }
+  ],
+  "warranty": "10-year limited warranty (Corsicana product page)",
+  "source_url": "https://corsicanamattress.com/products/sblb-lift-base",
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from Corsicana product page https://corsicanamattress.com/products/sblb-lift-base; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf); disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "features": "Corsicana product page https://corsicanamattress.com/products/sblb-lift-base; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)",
+   "warranty": "https://corsicanamattress.com/products/sblb-lift-base (read 2026-11-03)",
+   "category": "HCPS catalog (what dealers see today)",
+   "retail_model": "Corsicana Retail Model SBLB-TL — alias only; the HCPS SKU is the ordering code — https://corsicanamattress.com/products/sblb-lift-base",
+   "specs": "Corsicana product page https://corsicanamattress.com/products/sblb-lift-base; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)"
+  }
+ },
+ "inbetter-in-adjustable-power-base-spkdp2": {
+  "description": "The SPKDP2 is an upgraded head-up/foot-up power base with voice command, massage, tilt, lights, USB, stackable legs and custom presets (as listed on Corsicana Healthcare's 2026 price list).",
+  "features": [
+   "Head up / foot up",
+   "Voice command",
+   "Massage",
+   "Tilt",
+   "Lights",
+   "USB",
+   "Stackable legs",
+   "Custom presets"
+  ],
+  "specs": [
+   {
+    "label": "Model",
+    "value": "SPKDP2"
+   }
+  ],
+  "documents": [],
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from Corsicana Healthcare Price List 2026 (rev) — product line only; disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "warranty": "not stated for this product by an official source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "features": "Corsicana Healthcare Price List 2026 (rev) — product line only (read 2026-11-03)",
+   "specs": "Corsicana Healthcare Price List 2026 (rev) — product line only (read 2026-11-03)"
+  }
+ },
+ "hand-rails": {
+  "description": "Handrails for the SBLB lift base (sold separately from the base). Use only the handrails designed for the specified base and follow Corsicana's instructions: tighten any loose bolts or screws before use. Corsicana warns that entrapment hazards can occur with handrails on an adjustable base, that climbing over the rails can cause serious injury, and that alterations void the warranty.",
+  "features": [
+   "Fits the SBLB high/low lift adjustable base",
+   "Sold separately from the base"
+  ],
+  "specs": [
+   {
+    "label": "Model",
+    "value": "LBHR"
+   }
+  ],
+  "documents": [
+   {
+    "title": "CorsicanaCare 2026 Product Lineup — spec cards (Corsicana Healthcare)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf"
+   }
+  ],
+  "source_url": "https://corsicanamattress.com/products/sbkdg-adjustable-base-replacement-remote",
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from Corsicana product page https://corsicanamattress.com/products/sbkdg-adjustable-base-replacement-remote; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf); disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "warranty": "not stated for this product by an official source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "retail_model": "Corsicana Retail Model LBHR — alias only; the HCPS SKU is the ordering code — https://corsicanamattress.com/products/sbkdg-adjustable-base-replacement-remote",
+   "features": "Corsicana product page https://corsicanamattress.com/products/sbkdg-adjustable-base-replacement-remote; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)",
+   "specs": "Corsicana product page https://corsicanamattress.com/products/sbkdg-adjustable-base-replacement-remote; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)"
+  }
+ },
+ "casters": {
+  "description": "Caster wheels for the SBLB lift base (sold separately). Corsicana cautions: take care when getting in and out of the base on casters — even when locked and unable to roll, casters can slide.",
+  "features": [
+   "Fits the SBLB high/low lift adjustable base",
+   "Sold separately from the base"
+  ],
+  "specs": [
+   {
+    "label": "Model",
+    "value": "LBCW"
+   }
+  ],
+  "documents": [
+   {
+    "title": "CorsicanaCare 2026 Product Lineup — spec cards (Corsicana Healthcare)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf"
+   }
+  ],
+  "source_url": "https://corsicanamattress.com/products/sblb-lift-base-caster-wheels",
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from Corsicana product page https://corsicanamattress.com/products/sblb-lift-base-caster-wheels; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf); disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "warranty": "not stated for this product by an official source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "retail_model": "Corsicana Retail Model LBCW — alias only; the HCPS SKU is the ordering code — https://corsicanamattress.com/products/sblb-lift-base-caster-wheels",
+   "features": "Corsicana product page https://corsicanamattress.com/products/sblb-lift-base-caster-wheels; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)",
+   "specs": "Corsicana product page https://corsicanamattress.com/products/sblb-lift-base-caster-wheels; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)"
+  }
+ },
+ "corsicanacare-essentials-8-in-gel-infused-mattress": {
+  "description": "The CorsicanaCare™ Essentials 8\" Comfort Reactive mattress is a bed-in-a-box for residential use: an Air Grid™ cooling-gel comfort layer with zoned hip and side support under a quilted, removable cover. It is compressed and rolled for small-parcel shipping, flexes on an adjustable base, and uses CertiPUR-US certified foams.",
+  "features": [
+   "Quilted, removable mattress cover — machine-washable (cold, gentle cycle; air dry without heat)",
+   "Air Grid™ cooling-gel comfort layer with zoned hip and side support",
+   "Flexes with an adjustable base",
+   "Compressed and rolled for small-parcel delivery; may take up to 72 hours to fully expand",
+   "CertiPUR-US certified foams",
+   "Place on a solid surface, an adjustable base, or slats no more than 2\" apart"
+  ],
+  "specs": [
+   {
+    "label": "Size",
+    "value": "Twin Long (HCPS SKU); other sizes exist at Corsicana"
+   },
+   {
+    "label": "Retail model",
+    "value": "8ESSCA-TL"
+   }
+  ],
+  "documents": [
+   {
+    "title": "CorsicanaCare 2026 Product Lineup — spec cards (Corsicana Healthcare)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf"
+   }
+  ],
+  "source_url": "https://corsicanamattress.com/products/8-essentials-comfort-reactive-firm",
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from Corsicana product page https://corsicanamattress.com/products/8-essentials-comfort-reactive-firm; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf); disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "features": "Corsicana product page https://corsicanamattress.com/products/8-essentials-comfort-reactive-firm; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)",
+   "warranty": "not stated for this product by an official source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "retail_model": "Corsicana Retail Model 8ESSCA-T — alias only; the HCPS SKU is the ordering code — https://corsicanamattress.com/products/8-essentials-comfort-reactive-firm",
+   "specs": "Corsicana product page https://corsicanamattress.com/products/8-essentials-comfort-reactive-firm; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)"
+  }
+ },
+ "corsicanacare-essentials-10-in-gel-infused-mattress": {
+  "description": "The CorsicanaCare™ Essentials 10\" Comfort Reactive mattress is a bed-in-a-box for residential use: an Air Grid™ cooling-gel comfort layer with zoned hip and side support under a quilted, removable cover. It is compressed and rolled for small-parcel shipping, flexes on an adjustable base, and uses CertiPUR-US certified foams.",
+  "features": [
+   "Quilted, removable mattress cover — machine-washable (cold, gentle cycle; air dry without heat)",
+   "Air Grid™ cooling-gel comfort layer with zoned hip and side support",
+   "Flexes with an adjustable base",
+   "Compressed and rolled for small-parcel delivery; may take up to 72 hours to fully expand",
+   "CertiPUR-US certified foams",
+   "Place on a solid surface, an adjustable base, or slats no more than 2\" apart"
+  ],
+  "specs": [
+   {
+    "label": "Size",
+    "value": "Twin Long (HCPS SKU); other sizes exist at Corsicana"
+   },
+   {
+    "label": "Retail model",
+    "value": "10ESSCA-TL"
+   }
+  ],
+  "documents": [
+   {
+    "title": "CorsicanaCare 2026 Product Lineup — spec cards (Corsicana Healthcare)",
+    "url": "https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf"
+   }
+  ],
+  "source_url": "https://corsicanamattress.com/products/10-essentials-comfort-reactive-medium",
+  "field_provenance": {
+   "description": "HCPS-written 2026-11-03 strictly from Corsicana product page https://corsicanamattress.com/products/10-essentials-comfort-reactive-medium; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf); disputed values withheld (see docs/catalog/corsicana-exceptions.md)",
+   "features": "Corsicana product page https://corsicanamattress.com/products/10-essentials-comfort-reactive-medium; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)",
+   "warranty": "not stated for this product by an official source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "retail_model": "Corsicana Retail Model 10ESSCA-T — alias only; the HCPS SKU is the ordering code — https://corsicanamattress.com/products/10-essentials-comfort-reactive-medium",
+   "specs": "Corsicana product page https://corsicanamattress.com/products/10-essentials-comfort-reactive-medium; CorsicanaCare™ 2026 Product Lineup spec cards (Corsicana Healthcare, file dated 2026-05-08; HCPS copy https://www.homecareproviderservices.org/assets/docs/corsicana-healthcare-catalog.pdf) (read 2026-11-03)"
+  }
  }
 }
