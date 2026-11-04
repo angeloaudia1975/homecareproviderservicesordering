@@ -33,13 +33,15 @@ function goldenAnswer(u) {
   if (W.mode === 'branch') return [403, { error: { code: 'branch_history_not_permitted' } }];
   if (url.pathname.startsWith('/v1/orders/')) {
     const ref = decodeURIComponent(url.pathname.slice('/v1/orders/'.length));
+    W.orderN = (W.orderN || 0) + 1;
+    const tn = W.slowOrder ? (W.orderN === W.slowFirst ? '1Z1000' : '1Z2000') : '1Z1000';
     return [200, { contract_version: '1.5.0', request_id: 'req_o', prices_visible: W.pv, order: ref === 'P501'
-      ? ORDER({ tracking: [{ so_number: 'SO1001', carrier: 'UPS', tracking_number: '1Z999', ship_date: '2026-10-08' }, { so_number: 'SO1001', carrier: 'UPS', tracking_number: '1Z1000', ship_date: '2026-10-09' }] })
+      ? ORDER({ tracking: [{ so_number: 'SO1001', carrier: 'UPS', tracking_number: '1Z999', ship_date: '2026-10-08' }, { so_number: 'SO1001', carrier: 'UPS', tracking_number: tn, ship_date: '2026-10-09' }] })
       : ORDER({ order_ref: ref, status: 'acknowledged', source: 'golden', so_numbers: ['SO' + ref.slice(3)], tracking: [], lifecycle: [{ type: 'booked', at: '2026-10-02', label: '' }] }) }];
   }
   const before = url.searchParams.get('before');
   const page = before ? [ORDER({ order_ref: 'GSO0900', status: 'completed', source: 'golden', so_numbers: ['SO0900'], placed_on: '2026-08-12', po_number: '' })]
-    : [ORDER(), ORDER({ order_ref: 'GSO1002', status: 'acknowledged', source: 'golden', so_numbers: ['SO1002'], placed_on: '2026-10-02', po_number: 'PO-78', tracking: [], ship_to: { city: 'Columbus', state: 'OH' } })];
+    : [ORDER(), ORDER({ order_ref: 'GSO1002', status: 'acknowledged', source: 'golden', so_numbers: ['SO1002'], placed_on: '2026-10-02', po_number: 'PO-78-' + 'X'.repeat(55), tracking: [], ship_to: { city: 'Columbus', state: 'OH' } })];
   return [200, { contract_version: '1.5.0', request_id: 'req_h', prices_visible: W.pv, orders: page, next_before: before ? null : 'GSO1002' }];
 }
 const fresh = (dir, m) => { Object.keys(require.cache).forEach(k => { if (k.startsWith(dir)) delete require.cache[k]; }); return require(path.join(dir, m)); };
@@ -101,6 +103,7 @@ const ghText = page => page.evaluate(() => (document.getElementById('goldenHist'
             if (proxyMode === 'off') return route.fulfill({ status: 200, contentType: 'application/json', headers: H, body: JSON.stringify({ ok: true, enabled: false, reason: 'history_switched_off' }) });
             const hdr = await req.allHeaders();
             const out = await runProxy(b, { 'x-hcps-preview': hdr['x-hcps-preview'] || '', 'x-hcps-golden-env': hdr['x-hcps-golden-env'] || '', origin: hdr.origin || '' });
+            if (W.slowOrder && b.action === 'order' && out.order && out.order.tracking.some(x => x.tracking_number === '1Z1000')) await new Promise(r => setTimeout(r, 2000));   // the older answer arrives last
             return route.fulfill({ status: 200, contentType: 'application/json', headers: H, body: JSON.stringify(out) });
           }
           const base = { ok: true, enabled: true, available: true, preview: true };
@@ -138,6 +141,17 @@ const ghText = page => page.evaluate(() => (document.getElementById('goldenHist'
         ok(W.calls.some(c => /\/v1\/history\?.*before=GSO1002/.test(c)), W.calls.join(' | ')); ok(/SO1001/.test(older) && /SO0900/.test(older) && /Completed/.test(older), older);
         ok(!/Load older/.test(older), 'no more pages'); });
 
+      // 3b — a failed older page keeps the orders already shown
+      await page.evaluate(() => showView('dash')); await page.waitForTimeout(200); await page.evaluate(() => showView('orders'));
+      await page.waitForFunction(() => /PO-78/.test((document.getElementById('goldenHist') || {}).innerText || ''), null, { timeout: 15000 });
+      W.failNext = 1; await page.click('[data-ghmore]');
+      await page.waitForFunction(() => /Couldn.t load older orders/.test((document.getElementById('goldenHist') || {}).innerText || ''), null, { timeout: 15000 });
+      const kept = await ghText(page); const fMore = await page.evaluate(() => document.activeElement && document.activeElement.hasAttribute('data-ghmore'));
+      await page.click('[data-ghmore]'); await page.waitForFunction(() => /SO0900/.test((document.getElementById('goldenHist') || {}).innerText || ''), null, { timeout: 15000 });
+      const fNew = await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-ghbtn'));
+      await t(`${label}: a failed "Load older" keeps the list and offers Try again (focused); the retry appends and focuses the first new order`, () =>
+        ok(/SO1001/.test(kept) && /SO1002/.test(kept) && fMore && fNew === 'GSO0900', JSON.stringify({ fMore, fNew, kept: kept.slice(0, 300) })));
+
       // 4 — open an order by click, refreshed from Golden
       await page.click('[data-ghref="P501"]'); await page.waitForFunction(() => /1Z1000/.test((document.getElementById('goldenHist') || {}).innerText || ''), null, { timeout: 15000 });
       const det = await ghText(page);
@@ -151,18 +165,33 @@ const ghText = page => page.evaluate(() => (document.getElementById('goldenHist'
       const noLink = await page.evaluate(() => !document.querySelector('#goldenHist a[href]'));
       await t(`${label}: tracking numbers are not turned into links`, () => ok(noLink));
 
-      // 5 — keyboard: Enter on another row opens it, Enter again closes; focus stays on the row
-      await page.focus('[data-ghref="GSO1002"]'); await page.keyboard.press('Enter');
-      await page.waitForFunction(() => document.querySelector('[data-ghref="GSO1002"]').getAttribute('aria-expanded') === 'true' && /Not shipped yet/.test(document.getElementById('goldenHist').innerText), null, { timeout: 15000 });
-      const kf = await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-ghref'));
+      // 5 — keyboard: the order-number button toggles with Enter; aria-expanded follows; focus stays on the button
+      await page.focus('[data-ghbtn="GSO1002"]'); await page.keyboard.press('Enter');
+      await page.waitForFunction(() => document.querySelector('[data-ghbtn="GSO1002"]').getAttribute('aria-expanded') === 'true' && /Not shipped yet/.test(document.getElementById('goldenHist').innerText), null, { timeout: 15000 });
+      const kf = await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-ghbtn'));
       await page.keyboard.press('Enter'); await page.waitForTimeout(200);
-      const closed = await page.evaluate(() => document.querySelector('[data-ghref="GSO1002"]').getAttribute('aria-expanded') === 'false' && !document.querySelector('.gh-detail'));
-      await t(`${label}: keyboard opens and closes an order; focus stays on its row`, () => ok(kf === 'GSO1002' && closed, JSON.stringify({ kf, closed })));
+      const closed = await page.evaluate(() => document.querySelector('[data-ghbtn="GSO1002"]').getAttribute('aria-expanded') === 'false' && !document.querySelector('.gh-detail'));
+      const kf2 = await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-ghbtn'));
+      await t(`${label}: keyboard opens and closes an order from its button; aria-expanded follows; focus stays on it`, () => ok(kf === 'GSO1002' && closed && kf2 === 'GSO1002', JSON.stringify({ kf, closed, kf2 })));
+
+      // 5b — a stale per-order refresh never overwrites a newer one (open → close → open quickly)
+      W.slowOrder = 1; W.slowFirst = (W.orderN || 0) + 1;
+      await page.evaluate(() => { document.querySelector('[data-ghbtn="P501"]').click(); });
+      await page.waitForTimeout(50);
+      await page.evaluate(() => { document.querySelector('[data-ghbtn="P501"]').click(); document.querySelector('[data-ghbtn="P501"]').click(); });
+      await page.waitForFunction(() => /1Z2000/.test(document.getElementById('goldenHist').innerText), null, { timeout: 20000 });
+      await page.waitForTimeout(2500);   // the slow (older) answer arrives after the newer one
+      const stale = await ghText(page);
+      await t(`${label}: an older refresh answering last does not replace the newer one`, () => ok(/1Z2000/.test(stale) && !/1Z1000/.test(stale), stale.slice(0, 600)));
+      W.slowOrder = 0;
+      await page.evaluate(() => document.querySelector('[data-ghbtn="P501"]').click()); await page.waitForTimeout(200);
 
       // 6 — layout
       const lay = await page.evaluate(() => { const bad = [...document.querySelectorAll('#goldenHist button')].filter(b => b.getBoundingClientRect().height && b.getBoundingClientRect().height < 44).length;
-        return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, bad }; });
-      await t(`${label}: no horizontal page scroll; Golden buttons ≥ 44px`, () => ok(lay.over <= 1 && lay.bad === 0, JSON.stringify(lay)));
+        const card = document.querySelector('#goldenHist .card'), cw = card ? card.getBoundingClientRect().right : 1e9;
+        const wide = [...document.querySelectorAll('#goldenHist td')].filter(td => td.getBoundingClientRect().right > cw + 1).length;
+        return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, bad, wide: getComputedStyle(document.querySelector('#goldenHist table')).display === 'block' ? wide : 0 }; });
+      await t(`${label}: no horizontal page scroll; a 60-character PO wraps inside the card on phones; Golden buttons ≥ 44px`, () => ok(lay.over <= 1 && lay.bad === 0 && lay.wide === 0, JSON.stringify(lay)));
 
       // 7 — prices hidden
       W.pv = false; await page.evaluate(() => showView('dash')); await page.waitForTimeout(200); await page.evaluate(() => showView('orders'));
