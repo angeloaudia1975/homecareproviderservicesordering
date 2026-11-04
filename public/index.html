@@ -6068,6 +6068,13 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .pill.gold{background:#fdeee0;color:#b45309;border:1px solid #f6d5ad}
   #p360wrap .pill.portal{background:#e6f0f8;color:#1466a3;border:1px solid #bcd8ef}
   #p360wrap .pill.imported{background:var(--surface-2);color:#6b7d90;border:1px solid var(--line)}
+  #p360wrap .gh-row{cursor:pointer}#p360wrap .gh-row:hover td{background:var(--surface-2)}#p360wrap .gh-row:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}
+  #p360wrap .gh-detail td{background:var(--surface-2)}#p360wrap .gh-detail-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;padding:4px 0}
+  #p360wrap .gh-col h4{margin:0 0 6px;font-size:13px;color:var(--navy)}#p360wrap .gh-col ul{margin:0;padding-left:18px;font-size:13px}
+  #p360wrap [data-ghmore],#p360wrap [data-ghretry]{min-height:44px}
+  @media (max-width:760px){ #p360wrap #goldenHist thead{display:none} #p360wrap #goldenHist table,#p360wrap #goldenHist tbody,#p360wrap #goldenHist tr,#p360wrap #goldenHist td{display:block;width:100%}
+    #p360wrap #goldenHist .gh-row{border-top:1px solid var(--line);padding:8px 0} #p360wrap #goldenHist .gh-row td{display:flex;justify-content:space-between;gap:12px;border:0;padding:4px 16px;text-align:right}
+    #p360wrap #goldenHist .gh-row td::before{content:attr(data-l);font-weight:700;color:var(--muted);text-align:left} #p360wrap #goldenHist .gh-detail td{padding:10px 16px} }
   #p360wrap .pill.done{background:var(--green-bg);color:var(--green);border:1px solid #bfe3ca}
   #p360wrap .pill.open{background:#fff4d6;color:#8a5a00;border:1px solid #f3d27a}
   #p360wrap .hbars{display:flex;flex-direction:column;gap:9px}
@@ -6358,7 +6365,83 @@ async function loadOrders(){
       <tbody>${rows||`<tr><td colspan="8" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
       ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total (incl. freight)</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${cents(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
     </table></div>
+    <div id="goldenHist" style="margin-top:16px"></div>
     <div class="lead-note">"Request tracking" asks the manufacturer to send shipment tracking to you and to HCPS. Retail uses MSRP on file, or 2× dealer cost where none is on file.</div>`;
+  goldenHistoryLoad(false);
+}
+/* GOLDEN ORDER HISTORY & TRACKING (B5, contract 1.5.0). Golden is the authority for its own orders: this section shows
+   Golden's answer (golden-proxy → Golden /v1/history, /v1/orders/{ref}) as text, inside My Orders. Nothing is stored
+   here. Shown only when Golden says this dealer is entitled AND history is on (switch golden_p360_history + Golden's
+   verified link with history enabled); otherwise the section stays empty. Amounts only when Golden says prices are
+   visible. Every value is escaped; tracking numbers are shown as text, never turned into a link. */
+const GH={ seq:0, orders:[], next:null, pv:false, open:null, state:"idle" };
+const GH_STATUS={ submitted:"Submitted", pending_review:"Pending review at Golden", acknowledged:"Acknowledged by Golden", processing:"In production",
+  revised:"Revised by Golden", partially_shipped:"Partially shipped", shipped:"Shipped", invoiced:"Invoiced", completed:"Completed", cancelled:"Cancelled" };
+const GH_EVENT={ submitted:"Submitted", booked:"Booked by Golden", revised:"Revised", invoiced:"Invoiced", shipped:"Shipped", replacement:"Replacement", resubmitted:"Resubmitted" };
+function ghPill(s){ const l=GH_STATUS[s]||"—"; const c=(s==="completed"||s==="shipped"||s==="invoiced")?"done":(s==="cancelled")?"imported":(s==="submitted"||s==="pending_review")?"open":"portal"; return '<span class="pill '+c+'">'+esc(l)+'</span>'; }
+function ghWhere(o){ const c=[o.ship_to&&o.ship_to.city,o.ship_to&&o.ship_to.state].filter(Boolean).join(", "); return c?esc(c):"—"; }
+function ghReset(){ GH.seq++; GH.orders=[]; GH.next=null; GH.pv=false; GH.open=null; GH.state="idle"; }
+async function goldenHistoryLoad(more){
+  const box=$("#goldenHist"); if(!box) return;
+  if(typeof goldenCall!=="function") return;
+  if(!more){ ghReset(); }
+  const my=++GH.seq;
+  if(typeof GOLDEN!=="undefined"&&!GOLDEN.checked&&typeof goldenInit==="function"){ try{ await goldenInit(); }catch(e){} }
+  if(my!==GH.seq) return;
+  if(typeof goldenEntitled!=="function"||!goldenEntitled()){ box.innerHTML=""; return; }
+  GH.state="loading"; ghRender();
+  const body={limit:25}; if(more&&GH.next) body.before=GH.next;
+  const r=await goldenCall("history",body);
+  if(my!==GH.seq||!$("#goldenHist")) return;   // signed out, re-rendered or a newer request
+  if(!r||r.enabled!==true){ GH.state="off"; box.innerHTML=""; return; }
+  if(r.available!==true){
+    GH.state=(r.reason==="branch_history_not_permitted")?"branch":(r.reason==="history_unavailable"||r.reason==="golden_unavailable"||r.retry)?"retry":"off";
+    if(GH.state==="off"){ box.innerHTML=""; return; }
+    ghRender(); return;
+  }
+  GH.pv=r.prices_visible===true; GH.orders=GH.orders.concat(Array.isArray(r.orders)?r.orders:[]); GH.next=r.next_before||null; GH.state="ready"; ghRender();
+}
+function ghRender(){
+  const box=$("#goldenHist"); if(!box) return;
+  const head='<div class="chead"><h3>Golden orders — live from Golden Technologies</h3></div>';
+  if(GH.state==="loading"&&!GH.orders.length){ box.innerHTML='<div class="card">'+head+'<div class="msg">Loading your Golden orders…</div></div>'; return; }
+  if(GH.state==="branch"){ box.innerHTML='<div class="card">'+head+'<div class="msg">Golden order history is shown on your head-office account.</div></div>'; return; }
+  if(GH.state==="retry"){ box.innerHTML='<div class="card">'+head+'<div class="msg">Golden could not be reached just now. <button type="button" class="btn gh" data-ghretry>Try again</button></div></div>'; ghWire(); return; }
+  const rows=GH.orders.map(o=>{
+    const ref=(o.so_numbers&&o.so_numbers.length)?o.so_numbers.join(", "):o.order_ref;
+    return '<tr class="gh-row" tabindex="0" data-ghref="'+esc(o.order_ref)+'" aria-expanded="'+(GH.open===o.order_ref)+'"><td data-l="Placed">'+dateShort(o.placed_on)+'</td><td data-l="Golden order #"><b>'+esc(ref)+'</b></td><td data-l="PO">'+esc(o.po_number||"—")+'</td><td data-l="Ship to">'+ghWhere(o)+'</td><td data-l="Units" class="n tnum">'+(o.items||[]).reduce((s,i)=>s+(i.qty||0),0)+'</td>'
+      +(GH.pv?'<td data-l="Total" class="n tnum">'+(o.totals&&o.totals.total!=null?cents(o.totals.total):"—")+'</td>':'')
+      +'<td data-l="Status">'+ghPill(o.status)+'</td><td data-l="Expected">'+(o.expected_date?dateShort(o.expected_date):"—")+'</td></tr>'
+      +(GH.open===o.order_ref?'<tr class="gh-detail"><td colspan="'+(GH.pv?8:7)+'">'+ghDetail(o)+'</td></tr>':'');
+  }).join("");
+  box.innerHTML='<div class="card" style="padding:0;overflow:hidden">'+head.replace('class="chead"','class="chead" style="padding:14px 16px 0"')
+    +'<div class="table-scroll"><table class="tbl"><thead><tr><th>Placed</th><th>Golden order #</th><th>PO</th><th>Ship to</th><th class="n">Units</th>'+(GH.pv?'<th class="n">Total</th>':'')+'<th>Status</th><th>Expected</th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="'+(GH.pv?8:7)+'" class="empty">No Golden orders on record yet.</td></tr>')+'</tbody></table></div>'
+    +(GH.next?'<div style="padding:10px 16px"><button type="button" class="btn gh" data-ghmore'+(GH.state==="loading"?' disabled':'')+'>'+(GH.state==="loading"?"Loading…":"Load older Golden orders")+'</button></div>':'')
+    +'<div class="lead-note" style="padding:0 16px 12px">Status, shipping and tracking come from Golden Technologies. Select an order for its items and tracking.</div></div>';
+  ghWire();
+}
+function ghDetail(o){
+  const items=(o.items||[]).map(i=>'<li>'+(i.qty!=null?i.qty+' × ':'')+'<b>'+esc(i.sku)+'</b> '+esc(i.description)+'</li>').join("")||'<li>—</li>';
+  const trk=(o.tracking||[]).map(t=>'<li>'+(t.ship_date?dateShort(t.ship_date)+' · ':'')+esc(t.carrier||"Carrier not given")+(t.tracking_number?' · Tracking <span class="tnum">'+esc(t.tracking_number)+'</span>':' · no tracking number yet')+(t.so_number?' (SO '+esc(t.so_number)+')':'')+'</li>').join("")||'<li>Not shipped yet.</li>';
+  const life=(o.lifecycle||[]).map(e=>'<li>'+(e.at?dateShort(e.at)+' · ':'')+esc(e.label||GH_EVENT[e.type]||e.type)+(e.so_number?' (SO '+esc(e.so_number)+')':'')+'</li>').join("")||'<li>—</li>';
+  const tot=(GH.pv&&o.totals)?'<div class="gh-col"><h4>Totals</h4><ul><li>Merchandise '+(o.totals.subtotal!=null?cents(o.totals.subtotal):"—")+'</li><li>Freight '+(o.totals.freight!=null?cents(o.totals.freight):"—")+'</li><li>S&amp;H '+(o.totals.sh!=null?cents(o.totals.sh):"—")+'</li><li><b>Total '+(o.totals.total!=null?cents(o.totals.total):"—")+'</b></li></ul></div>':'';
+  return '<div class="gh-detail-in"><div class="gh-col"><h4>Items</h4><ul>'+items+'</ul></div><div class="gh-col"><h4>Tracking</h4><ul>'+trk+'</ul></div><div class="gh-col"><h4>History</h4><ul>'+life+'</ul></div>'+tot+'</div>';
+}
+async function ghToggle(ref){
+  if(GH.open===ref){ GH.open=null; ghRender(); ghFocus(ref); return; }
+  GH.open=ref; ghRender(); ghFocus(ref);
+  const my=GH.seq; const r=await goldenCall("order",{order_ref:ref});   // refresh this one order from Golden (tracking may be newer)
+  if(my!==GH.seq||GH.open!==ref||!r||r.available!==true||!r.order||r.order.order_ref!==ref) return;
+  GH.orders=GH.orders.map(o=>o.order_ref===ref?r.order:o); if(r.prices_visible!==true) GH.pv=false; ghRender(); ghFocus(ref);
+}
+function ghFocus(ref){ const el=document.querySelector('#goldenHist [data-ghref="'+(window.CSS&&CSS.escape?CSS.escape(ref):ref)+'"]'); if(el) el.focus(); }
+function ghWire(){
+  const box=$("#goldenHist"); if(!box) return;
+  box.querySelectorAll("[data-ghref]").forEach(tr=>{ const go=()=>ghToggle(tr.getAttribute("data-ghref"));
+    tr.onclick=go; tr.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } }; });
+  const m=box.querySelector("[data-ghmore]"); if(m) m.onclick=()=>{ if(GH.state!=="loading") goldenHistoryLoad(true); };
+  const t=box.querySelector("[data-ghretry]"); if(t) t.onclick=()=>goldenHistoryLoad(false);
 }
 async function reqTracking(id,mfr,summary){ try{ await api(TOOLS_ENDPOINT,{action:"tracking_request",order_ref:id,manufacturer:mfr,summary}); }catch(e){} alert("Tracking request sent to HCPS — we'll get the tracking from the manufacturer and send it to you."); }
 
