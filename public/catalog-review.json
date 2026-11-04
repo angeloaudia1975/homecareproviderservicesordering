@@ -1,7 +1,7 @@
 {
   "review_id": "676b9fa22758",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T00:21:37Z",
+  "built_at": "2026-11-04T00:23:29Z",
   "main": "af49ce0210704e4ba9d614cc32d8cc35f7fee7b0",
   "included": [
     {
@@ -21,6 +21,12 @@
       "title": "Access4U: group threshold, assist, and portable ramps for Fall 2026 catalog",
       "branch": "chore/access4u-owner-ramp-categories-20261027",
       "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
+    },
+    {
+      "pr": 27,
+      "title": "Sandbox smoke test — DO NOT MERGE (temporary, closed after the check)",
+      "branch": "chore/sandbox-smoke-test",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
     }
   ]
 }
