@@ -50,4 +50,8 @@ t('catalog file untouched against main (identity, names, units)', () => {
   let diff = ''; try { diff = execSync(`git diff --name-only ${base} -- public/data/corsicana.json public/data/manufacturers.json`, { cwd: R('.'), encoding: 'utf8' }); } catch (e) { return; }
   if (diff.trim()) throw new Error(diff);
 });
+t('mattress protector: sold as one case of 10 (unit "Case", case_qty 10) — C-6 resolved, price per case unchanged', () => {
+  const r = F.find(x => x.code === 'SB10MATPRON1-TL'); if (!r || r.uom !== 'Case' || r.case_qty !== 10) throw new Error(JSON.stringify(r && { uom: r.uom, case_qty: r.case_qty }));
+  for (const k of ['base_price', 'tiers', 'msrp', 'map']) if (k in r) throw new Error('public file carries ' + k);
+});
 console.log(`\ncorsicana-content: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
