@@ -1,8 +1,8 @@
 {
-  "review_id": "d005a5a788e2",
+  "review_id": "676b9fa22758",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-04T00:00:34Z",
-  "main": "dc95889af1cca53c83ed72810f0d0b088eb2dc13",
+  "built_at": "2026-11-04T00:21:37Z",
+  "main": "af49ce0210704e4ba9d614cc32d8cc35f7fee7b0",
   "included": [
     {
       "pr": 24,
@@ -21,12 +21,6 @@
       "title": "Access4U: group threshold, assist, and portable ramps for Fall 2026 catalog",
       "branch": "chore/access4u-owner-ramp-categories-20261027",
       "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
-    },
-    {
-      "pr": 25,
-      "title": "Catalog review sandbox: one private preview of main + all open PRs",
-      "branch": "chore/catalog-review-sandbox",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
     }
   ]
 }
