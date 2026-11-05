@@ -3672,7 +3672,7 @@ async function loadFeatured(){
 async function loadLine(slug){
   if(DASH.lineCache[slug]) return DASH.lineCache[slug];
   let prods=[];
-  if(isGoldenSlug(slug)){ try{ prods=goldenEntitled()?await goldenCatalogProducts():[]; }catch(e){ prods=[]; } DASH.lineCache[slug]=prods; return prods; }
+  if(isGoldenSlug(slug)){ if(!goldenEntitled()) return []; try{ prods=await goldenCatalogProducts(); }catch(e){ return []; } DASH.lineCache[slug]=prods; return prods; }
   try{
     const r=await fetch(`./data/${slug}.json`,{cache:"no-store"});
     if(!r.ok) throw new Error('catalog '+r.status);
@@ -7994,7 +7994,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   }
   window.gsReset=function(){ _gsAll=null; _gsLoading=null; _gsKey=''; _gsListeners=new Set(); };
   function gsSearch(q){
-    const sets=gsTerms(q); if(!sets.length||!_gsAll) return [];
+    const sets=gsTerms(q); if(!sets.length||!_gsAll||_gsKey!==gsAuthKey()) return [];
     const nq=gsNorm(q), seen=new Set(), out=[];
     const allowed=new Set(gsLines().map(m=>m.slug)); let gOk=false; try{ gOk=goldenEntitled(); }catch(e){}
     _gsAll.forEach(x=>{
