@@ -1,21 +1,24 @@
 {
-  "review_id": "d519670529cc",
+  "review_id": "a06dcf7712cf",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T16:57:02Z",
+  "built_at": "2026-11-05T16:57:22Z",
   "main": "b499a44cf5fb9c6976b8df3088b1b529899dab9d",
-  "included": [],
+  "included": [
+    {
+      "pr": 39,
+      "title": "C3-06: one checkout = one order, Yuwell account notice, order tracking",
+      "branch": "c6/order-intake",
+      "head": "2a78659abff538d701cef6ef8a4bd27549b454c0",
+      "manufacturers": [],
+      "other_files": 2
+    }
+  ],
   "skipped": [
     {
       "pr": 38,
       "title": "B6.3 — Guided Golden checkout (auto price + verify, one explicit Place order)",
       "branch": "golden/b6.3-guided-checkout",
       "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
-    },
-    {
-      "pr": 39,
-      "title": "C3-06: one checkout = one order, Yuwell account notice, order tracking",
-      "branch": "c6/order-intake",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
     }
   ]
 }
