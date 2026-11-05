@@ -1,0 +1,581 @@
+{
+ "meta": {
+  "line": "yuwell",
+  "engine": "hand-built (C3-04, 2026-11-04) — no official Yuwell product pages were reachable for scripts/catalog-enrich.js",
+  "generated": "2026-11-04T00:00:00.000Z",
+  "sources": 3,
+  "note": "Built only from the owner-supplied HCPS Dealer Product Guide 2026, the Yuwell 2026 price list (models and stock status only) and FDA 510(k) K242736. Nothing is inferred. Corrections go in content-overrides/yuwell.json."
+ },
+ "pages": {
+  "spirit-3-portable-oxygen-concentrator": {
+   "manufacturer": "yuwell",
+   "page_key": "spirit-3-portable-oxygen-concentrator",
+   "name": "SPIRIT-3 Portable Oxygen Concentrator",
+   "status": "published",
+   "description": "The SPIRIT-3 is a pulse-dose portable oxygen concentrator for active, on-the-go lifestyles. It runs on a rechargeable battery or AC and vehicle DC power, has four pulse settings and simple controls with a battery display, and ships with a carry bag.",
+   "features": [
+    "Carry-ready design with shoulder bag",
+    "Rechargeable battery plus AC and vehicle DC power",
+    "Simple controls with battery display",
+    "Low oxygen, no-breath, and low-battery alerts",
+    "4 pulse settings",
+    "Up to 5 hours of battery runtime",
+    "≤55 dB(A)"
+   ],
+   "specs": [
+    {
+     "label": "Flow settings",
+     "value": "Pulse, settings 1–4"
+    },
+    {
+     "label": "Battery runtime",
+     "value": "Up to 5 hours"
+    },
+    {
+     "label": "Sound level",
+     "value": "≤55 dB(A)"
+    },
+    {
+     "label": "Oxygen concentration",
+     "value": "90% (−3% / +6%) at all settings"
+    },
+    {
+     "label": "Max outlet pressure",
+     "value": "150 kPa"
+    },
+    {
+     "label": "Power",
+     "value": "Rechargeable lithium-ion battery; 100–240 V AC supply; vehicle DC"
+    },
+    {
+     "label": "Includes",
+     "value": "Battery, AC supply, DC cable, cannulas, carry bag, manual"
+    },
+    {
+     "label": "FDA 510(k)",
+     "value": "K242736"
+    }
+   ],
+   "warranty": null,
+   "category": "Portable Oxygen",
+   "subcategory": null,
+   "options": {},
+   "skus": [
+    {
+     "sku": "SP-3",
+     "name": "SPIRIT-3 Portable Oxygen Concentrator",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "",
+   "documents": [],
+   "videos": [],
+   "sizing_note": null,
+   "aliases": [],
+   "field_provenance": {
+    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04) and FDA 510(k) K242736 summary (Jiangsu Yuyue Medical Equipment & Supply Co., Ltd. — Portable Oxygen Concentrator Spirit-3, decision 2025-06-05)",
+    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "specs": "FDA 510(k) K242736 summary (Jiangsu Yuyue Medical Equipment & Supply Co., Ltd. — Portable Oxygen Concentrator Spirit-3, decision 2025-06-05); HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); FDA 510(k) K242736 summary (Jiangsu Yuyue Medical Equipment & Supply Co., Ltd. — Portable Oxygen Concentrator Spirit-3, decision 2025-06-05); HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); FDA 510(k) K242736 summary (Jiangsu Yuyue Medical Equipment & Supply Co., Ltd. — Portable Oxygen Concentrator Spirit-3, decision 2025-06-05) (5 hours at 0.21 LPM); HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); FDA 510(k) K242736 summary (Jiangsu Yuyue Medical Equipment & Supply Co., Ltd. — Portable Oxygen Concentrator Spirit-3, decision 2025-06-05) (55 dBA at 0.75 LPM)",
+    "warranty": "not stated by any source on file — left blank",
+    "image": "no photo yet — owner is supplying Yuwell product photos"
+   },
+   "image": "",
+   "images_gallery": [],
+   "enrichment_flags": {
+    "hcps_review": {
+     "needs": [
+      "official Yuwell product photo",
+      "official Yuwell spec sheet / user manual to confirm the guide's values",
+      "SPIRIT-3 weight and size withheld: the guide says 4.9 lb and 8.72 x 4.22 x 8.87 in; FDA 510(k) K242736 says 2.4 kg with battery and 22 x 8 x 22 cm"
+     ]
+    }
+   }
+  },
+  "ye660e-upper-arm-blood-pressure-monitor": {
+   "manufacturer": "yuwell",
+   "page_key": "ye660e-upper-arm-blood-pressure-monitor",
+   "name": "YE660E Upper Arm Blood Pressure Monitor",
+   "status": "published",
+   "description": "An upper-arm blood pressure monitor with voice broadcast, a large LCD, 99 memories and irregular heartbeat indication.",
+   "features": [
+    "Voice broadcast",
+    "Large LCD",
+    "99 memories",
+    "Irregular heartbeat indication"
+   ],
+   "specs": [
+    {
+     "label": "Type",
+     "value": "Upper arm"
+    }
+   ],
+   "warranty": null,
+   "category": "Blood Pressure Monitors",
+   "subcategory": null,
+   "options": {},
+   "skus": [
+    {
+     "sku": "YE660E",
+     "name": "YE660E Upper Arm Blood Pressure Monitor",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "",
+   "documents": [],
+   "videos": [],
+   "sizing_note": null,
+   "aliases": [],
+   "field_provenance": {
+    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "specs": "Yuwell price list 2026 (owner-supplied, Yuwell_Price_List_2026.pdf, received 2026-11-04) — item, model and stock status only; no price is written here",
+    "warranty": "not stated by any source on file — left blank",
+    "image": "no photo yet — owner is supplying Yuwell product photos"
+   },
+   "image": "",
+   "images_gallery": [],
+   "enrichment_flags": {
+    "hcps_review": {
+     "needs": [
+      "official Yuwell product photo",
+      "official Yuwell spec sheet / user manual to confirm the guide's values"
+     ]
+    }
+   }
+  },
+  "ye620b-upper-arm-blood-pressure-monitor": {
+   "manufacturer": "yuwell",
+   "page_key": "ye620b-upper-arm-blood-pressure-monitor",
+   "name": "YE620B Upper Arm Blood Pressure Monitor",
+   "status": "published",
+   "description": "An upper-arm blood pressure monitor with voice broadcast, a large backlit LCD and a 22–45 cm cuff, with the adapter included.",
+   "features": [
+    "Voice broadcast",
+    "Large backlit LCD",
+    "22–45 cm cuff",
+    "Adapter included"
+   ],
+   "specs": [
+    {
+     "label": "Type",
+     "value": "Upper arm"
+    },
+    {
+     "label": "Cuff range",
+     "value": "22–45 cm"
+    }
+   ],
+   "warranty": null,
+   "category": "Blood Pressure Monitors",
+   "subcategory": null,
+   "options": {},
+   "skus": [
+    {
+     "sku": "YE620B",
+     "name": "YE620B Upper Arm Blood Pressure Monitor",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "",
+   "documents": [],
+   "videos": [],
+   "sizing_note": null,
+   "aliases": [],
+   "field_provenance": {
+    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "specs": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); Yuwell price list 2026 (owner-supplied, Yuwell_Price_List_2026.pdf, received 2026-11-04) — item, model and stock status only; no price is written here",
+    "warranty": "not stated by any source on file — left blank",
+    "image": "no photo yet — owner is supplying Yuwell product photos"
+   },
+   "image": "",
+   "images_gallery": [],
+   "enrichment_flags": {
+    "hcps_review": {
+     "needs": [
+      "official Yuwell product photo",
+      "official Yuwell spec sheet / user manual to confirm the guide's values"
+     ]
+    }
+   }
+  },
+  "ye680b-upper-arm-blood-pressure-monitor": {
+   "manufacturer": "yuwell",
+   "page_key": "ye680b-upper-arm-blood-pressure-monitor",
+   "name": "YE680B Upper Arm Blood Pressure Monitor",
+   "status": "published",
+   "description": "An upper-arm blood pressure monitor with voice broadcast, a large backlit LCD, two-user memory and an average of three readings. A Bluetooth option is available.",
+   "features": [
+    "Voice broadcast",
+    "Large backlit LCD",
+    "2-user memory",
+    "Average of 3 readings",
+    "Bluetooth option available"
+   ],
+   "specs": [
+    {
+     "label": "Type",
+     "value": "Upper arm"
+    }
+   ],
+   "warranty": null,
+   "category": "Blood Pressure Monitors",
+   "subcategory": null,
+   "options": {},
+   "skus": [
+    {
+     "sku": "YE680B",
+     "name": "YE680B Upper Arm Blood Pressure Monitor",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "",
+   "documents": [],
+   "videos": [],
+   "sizing_note": null,
+   "aliases": [],
+   "field_provenance": {
+    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "specs": "Yuwell price list 2026 (owner-supplied, Yuwell_Price_List_2026.pdf, received 2026-11-04) — item, model and stock status only; no price is written here",
+    "warranty": "not stated by any source on file — left blank",
+    "image": "no photo yet — owner is supplying Yuwell product photos"
+   },
+   "image": "",
+   "images_gallery": [],
+   "enrichment_flags": {
+    "hcps_review": {
+     "needs": [
+      "official Yuwell product photo",
+      "official Yuwell spec sheet / user manual to confirm the guide's values"
+     ]
+    }
+   }
+  },
+  "ye8800ar-wrist-blood-pressure-monitor": {
+   "manufacturer": "yuwell",
+   "page_key": "ye8800ar-wrist-blood-pressure-monitor",
+   "name": "YE8800AR Wrist Blood Pressure Monitor with Bluetooth",
+   "status": "published",
+   "description": "A compact wrist blood pressure monitor with Bluetooth, a lithium battery and USB Type-C charging.",
+   "features": [
+    "Bluetooth",
+    "Compact wrist design",
+    "Lithium battery",
+    "USB Type-C"
+   ],
+   "specs": [
+    {
+     "label": "Type",
+     "value": "Wrist"
+    },
+    {
+     "label": "Connectivity",
+     "value": "Bluetooth"
+    }
+   ],
+   "warranty": null,
+   "category": "Blood Pressure Monitors",
+   "subcategory": null,
+   "options": {},
+   "skus": [
+    {
+     "sku": "YE8800AR",
+     "name": "YE8800AR Wrist Blood Pressure Monitor with Bluetooth",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "",
+   "documents": [],
+   "videos": [],
+   "sizing_note": null,
+   "aliases": [],
+   "field_provenance": {
+    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "specs": "Yuwell price list 2026 (owner-supplied, Yuwell_Price_List_2026.pdf, received 2026-11-04) — item, model and stock status only; no price is written here",
+    "warranty": "not stated by any source on file — left blank",
+    "image": "no photo yet — owner is supplying Yuwell product photos"
+   },
+   "image": "",
+   "images_gallery": [],
+   "enrichment_flags": {
+    "hcps_review": {
+     "needs": [
+      "official Yuwell product photo",
+      "official Yuwell spec sheet / user manual to confirm the guide's values"
+     ]
+    }
+   }
+  },
+  "yt-1-infrared-thermometer": {
+   "manufacturer": "yuwell",
+   "page_key": "yt-1-infrared-thermometer",
+   "name": "YT-1 Infrared Thermometer",
+   "status": "published",
+   "description": "A touch-free infrared thermometer for rapid measurement, supplied with a hard case and 2 x AAA batteries.",
+   "features": [
+    "Touch-free",
+    "Rapid measurement",
+    "Includes hard case",
+    "2 x AAA batteries"
+   ],
+   "specs": [
+    {
+     "label": "Type",
+     "value": "Infrared, touch-free"
+    },
+    {
+     "label": "Batteries",
+     "value": "2 x AAA"
+    }
+   ],
+   "warranty": null,
+   "category": "Thermometers",
+   "subcategory": null,
+   "options": {},
+   "skus": [
+    {
+     "sku": "YT-1",
+     "name": "YT-1 Infrared Thermometer",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "",
+   "documents": [],
+   "videos": [],
+   "sizing_note": null,
+   "aliases": [],
+   "field_provenance": {
+    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "specs": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); Yuwell price list 2026 (owner-supplied, Yuwell_Price_List_2026.pdf, received 2026-11-04) — item, model and stock status only; no price is written here; HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "warranty": "not stated by any source on file — left blank",
+    "image": "no photo yet — owner is supplying Yuwell product photos"
+   },
+   "image": "",
+   "images_gallery": [],
+   "enrichment_flags": {
+    "hcps_review": {
+     "needs": [
+      "official Yuwell product photo",
+      "official Yuwell spec sheet / user manual to confirm the guide's values"
+     ]
+    }
+   }
+  },
+  "yht101-infrared-ear-thermometer": {
+   "manufacturer": "yuwell",
+   "page_key": "yht101-infrared-ear-thermometer",
+   "name": "YHT101 Infrared Ear Thermometer",
+   "status": "published",
+   "description": "An infrared ear thermometer for rapid ear measurement, supplied with disposable covers, a hard case and 2 x AAA batteries.",
+   "features": [
+    "Rapid ear measurement",
+    "Disposable covers included",
+    "Includes hard case",
+    "2 x AAA batteries"
+   ],
+   "specs": [
+    {
+     "label": "Type",
+     "value": "Infrared, ear"
+    },
+    {
+     "label": "Batteries",
+     "value": "2 x AAA"
+    }
+   ],
+   "warranty": null,
+   "category": "Thermometers",
+   "subcategory": null,
+   "options": {},
+   "skus": [
+    {
+     "sku": "YHT101",
+     "name": "YHT101 Infrared Ear Thermometer",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "",
+   "documents": [],
+   "videos": [],
+   "sizing_note": null,
+   "aliases": [],
+   "field_provenance": {
+    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "specs": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); Yuwell price list 2026 (owner-supplied, Yuwell_Price_List_2026.pdf, received 2026-11-04) — item, model and stock status only; no price is written here",
+    "warranty": "not stated by any source on file — left blank",
+    "image": "no photo yet — owner is supplying Yuwell product photos"
+   },
+   "image": "",
+   "images_gallery": [],
+   "enrichment_flags": {
+    "hcps_review": {
+     "needs": [
+      "official Yuwell product photo",
+      "official Yuwell spec sheet / user manual to confirm the guide's values"
+     ]
+    }
+   }
+  },
+  "yx103-finger-pulse-oximeter": {
+   "manufacturer": "yuwell",
+   "page_key": "yx103-finger-pulse-oximeter",
+   "name": "YX103 Finger Pulse Oximeter",
+   "status": "published",
+   "description": "A finger pulse oximeter with a high-visibility red LED display, supplied with a lanyard.",
+   "features": [
+    "High-visibility red LED display",
+    "Fast reading",
+    "Includes lanyard"
+   ],
+   "specs": [
+    {
+     "label": "Display",
+     "value": "Red LED"
+    }
+   ],
+   "warranty": null,
+   "category": "Pulse Oximeters",
+   "subcategory": null,
+   "options": {},
+   "skus": [
+    {
+     "sku": "YX103",
+     "name": "YX103 Finger Pulse Oximeter",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "",
+   "documents": [],
+   "videos": [],
+   "sizing_note": null,
+   "aliases": [],
+   "field_provenance": {
+    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "specs": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "warranty": "not stated by any source on file — left blank",
+    "image": "no photo yet — owner is supplying Yuwell product photos"
+   },
+   "image": "",
+   "images_gallery": [],
+   "enrichment_flags": {
+    "hcps_review": {
+     "needs": [
+      "official Yuwell product photo",
+      "official Yuwell spec sheet / user manual to confirm the guide's values"
+     ]
+    }
+   }
+  },
+  "yx306-finger-pulse-oximeter": {
+   "manufacturer": "yuwell",
+   "page_key": "yx306-finger-pulse-oximeter",
+   "name": "YX306 Finger Pulse Oximeter",
+   "status": "published",
+   "description": "A finger pulse oximeter with an easy-to-read, auto-rotating OLED display and pulse wave measurement, supplied with a lanyard and carry bag.",
+   "features": [
+    "Easy-to-read OLED display",
+    "Auto-rotate display",
+    "Pulse wave measurement",
+    "Includes lanyard and carry bag"
+   ],
+   "specs": [
+    {
+     "label": "Display",
+     "value": "OLED, auto-rotate"
+    }
+   ],
+   "warranty": null,
+   "category": "Pulse Oximeters",
+   "subcategory": null,
+   "options": {},
+   "skus": [
+    {
+     "sku": "YX306",
+     "name": "YX306 Finger Pulse Oximeter",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "",
+   "documents": [],
+   "videos": [],
+   "sizing_note": null,
+   "aliases": [],
+   "field_provenance": {
+    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "specs": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "warranty": "not stated by any source on file — left blank",
+    "image": "no photo yet — owner is supplying Yuwell product photos"
+   },
+   "image": "",
+   "images_gallery": [],
+   "enrichment_flags": {
+    "hcps_review": {
+     "needs": [
+      "official Yuwell product photo",
+      "official Yuwell spec sheet / user manual to confirm the guide's values"
+     ]
+    }
+   }
+  }
+ }
+}

@@ -210,5 +210,21 @@
       "elseActual": true,
       "otherLabel": "Dalton freight — per Dalton’s Nov 1, 2026 LTL policy"
     }
+  },
+  {
+    "slug": "yuwell",
+    "name": "Yuwell",
+    "accent": "#d7002f",
+    "dark": "#0b1f33",
+    "logo": "/assets/logos/yuwell.jpg",
+    "hasData": true,
+    "sort": 13,
+    "freight": {
+      "summary": "Yuwell freight terms have not been received yet. Freight is not calculated at checkout: HCPS confirms the actual freight on each order.",
+      "actualNote": "Yuwell freight is not calculated at checkout — HCPS confirms the actual charge on the order.",
+      "groups": [],
+      "elseActual": true,
+      "otherLabel": "Yuwell freight — confirmed by HCPS"
+    }
   }
 ]
