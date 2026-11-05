@@ -2838,7 +2838,7 @@ function goldenBrochurePayload(p, G){
   return { name:(F.name||groupDisplayName(p)||p.name)+(size&&size!==p.code?" — "+size:""), code:p.code, manufacturer:m.name||"Golden Technologies", manufacturer_logo:m.logo||"",
     hcps_logo:_brHcpsLogo(), tagline:"", description:paras.join("\n\n")||p.description||"", images:imgs.length?imgs:(p.image?[p.image]:[]), features:feats.length?feats:(p._features||[]),
     clinical:[], specs:specs, sizing:null, sizing_note:"", warranty:(f.warranty_terms||[]).join(" · "), billing_codes:[], source_url:(F.page&&F.page.url)||"",
-    msrp:(isFinite(msrp)&&msrp>0)?msrp:null, quote_price:null };
+    msrp:(isFinite(msrp)&&msrp>0)?msrp:null, quote_price:null, _mfrSlug:"golden-technologies" };
 }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-gb-broch]"); if(b) return goldenBrochure(b.getAttribute("data-gb-broch"));
   const q=e.target.closest("[data-gb-quote]"); if(q) return goldenQuoteAdd(q.getAttribute("data-gb-quote")); });
@@ -6026,7 +6026,8 @@ function brochurePayload(code){
     source_url: p._sourceUrl || '',
     /* D3 (owner 2026-11-05): only a VERIFIED manufacturer MSRP is offered to customers — never one this page derived at
        2× dealer cost (_msrp_suggested). */
-    msrp: (p.msrp && !p._msrp_suggested) ? p.msrp : null,
+    msrp: (p.msrp && !p._msrp_suggested && !p._upgrade) ? p.msrp : null,
+    _upgrade: !!p._upgrade,   // an upgraded configuration has no published MSRP of its own
     // Dealer cost is deliberately NOT sent. A field that never leaves the page
     // cannot leak onto a document a dealer hands to a patient.
     quote_price: null,

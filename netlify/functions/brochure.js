@@ -214,6 +214,25 @@ function renderBrochure(p, opts) {
    HCPS-addressed message to any address for anyone who called it — an open relay. Now: the caller's Supabase session
    must belong to an approved dealer user; the reply-to is that dealer's own email (never a caller-chosen address);
    one recipient per message. Rendering a brochure to print (action "html") still needs no sign-in — it sends nothing. */
+async function verifiedMsrp(p) {
+  const slug = String(p._mfrSlug || '').trim().toLowerCase(), code = String(p.code || '').trim();
+  if (slug === 'golden-technologies' || slug === 'golden') { const v = Number(p.msrp); return isFinite(v) && v > 0 ? v : null; }
+  if (p._upgrade || !/^[a-z0-9-]{2,60}$/.test(slug) || !code || code.length > 60) return null;
+  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE; if (!url || !key) return null;
+  const H = { apikey: key, Authorization: `Bearer ${key}` };
+  const get = async path => { const r = await fetch(`${url}/rest/v1/${path}`, { headers: H }); if (!r.ok) throw new Error('read ' + r.status); return r.json(); };
+  const num = v => { const n = Number(v); return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null; };
+  const q = `manufacturer=eq.${encodeURIComponent(slug)}&code=eq.${encodeURIComponent(code)}`;
+  try {
+    const rec = await get(`product_skus?${q}&select=msrp&limit=1`);
+    if (rec && rec.length) return num(rec[0].msrp);                    // the commercial master answers when it has the SKU
+    const ov = await get(`product_overrides?${q}&select=patch&limit=1`);
+    const om = ov && ov[0] && ov[0].patch && num(ov[0].patch.msrp); if (om) return om;
+    const cp = await get(`custom_products?${q}&select=msrp&limit=1`);
+    return (cp && cp[0] && num(cp[0].msrp)) || null;
+  } catch (e) { console.error('msrp lookup failed', e && e.message); return null; }   // no verified figure → none printed
+}
+
 async function approvedDealer(event) {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE;
   const auth = (event.headers && (event.headers.authorization || event.headers.Authorization)) || '';
@@ -241,6 +260,10 @@ exports.handler = async (event) => {
   const product = b.product || {};
   if (!product.name && !product.code) return json(400, { ok: false, error: 'A product is required.' });
 
+  /* VERIFIED MSRP, decided here (C3-07 Stage 4 review): the printed "Manufacturer's suggested retail" is looked up on
+     HCPS's own catalog records — never taken from the request — and is dropped when there is none (or for an upgraded
+     configuration). Golden's brochures carry Golden's own official retail from golden-proxy (unchanged). */
+  if (b.include_msrp) product.msrp = await verifiedMsrp(product);
   const html = renderBrochure(product, { include_msrp: !!b.include_msrp });
   const action = String(b.action || 'html');
 
