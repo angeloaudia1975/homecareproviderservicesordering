@@ -1,19 +1,8 @@
 {
-  "review_id": "734bca15940a",
+  "review_id": "d519670529cc",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T14:02:43Z",
-  "main": "1f0da9fd5c5704b1f72cbae166c9519bc5945438",
-  "included": [
-    {
-      "pr": 35,
-      "title": "C4: Yuwell catalog foundation — no prices, not orderable (draft)",
-      "branch": "c4/yuwell-catalog",
-      "head": "43fd475ac3a2b79d439ee6e8ccc92e70dfab7d74",
-      "manufacturers": [
-        "yuwell"
-      ],
-      "other_files": 11
-    }
-  ],
+  "built_at": "2026-11-05T14:02:58Z",
+  "main": "b499a44cf5fb9c6976b8df3088b1b529899dab9d",
+  "included": [],
   "skipped": []
 }
