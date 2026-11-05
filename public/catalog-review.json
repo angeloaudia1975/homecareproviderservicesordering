@@ -1,7 +1,7 @@
 {
   "review_id": "8b81690917e6",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T04:45:24Z",
+  "built_at": "2026-11-05T05:01:57Z",
   "main": "cf9678e26d590730262d8353c24c5e6463d7ba0a",
   "included": [
     {
@@ -23,7 +23,8 @@
         "gce",
         "yuwell"
       ],
-      "other_files": 29
+      "other_files": 29,
+      "note": "newer commit 43fd475 still being checked — showing the last validated version"
     }
   ],
   "skipped": []
