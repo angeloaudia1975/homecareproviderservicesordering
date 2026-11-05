@@ -22,7 +22,7 @@ function world() {
   const rendered = [];
   const ctx = {
     console, Set, Map, Promise, Error, JSON, Object, Array, String, Number,
-    HOME: '__home__',
+    HOME: '__home__', SHOPALL: '__shopall__',
     CONFIG: { GOLDEN_SLUG: 'golden-technologies' },
     state: { active: null, products: [], manufacturers: [
       { slug: 'strongback-mobility', hasData: true }, { slug: 'abm-respiratory-care', hasData: false },
