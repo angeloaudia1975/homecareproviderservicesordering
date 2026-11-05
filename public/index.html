@@ -270,8 +270,9 @@ body.shopall .controls,body.shopall #a4uBuilder,body.shopall #swBuilder,body.sho
 .sl-img.noimg{aspect-ratio:3/1;}.sl-img.noimg .sl-name-fb{display:block;}
 .sl-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px;}
 .sl-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
-.sl-top h3{margin:0;font-size:19px;color:var(--navy,#0b1f33);line-height:1.25;}
-.sl-body p{margin:0;color:var(--gray,#5b6b7c);font-size:14px;}
+.sl-top .sl-h{display:block;margin:0;font-size:19px;font-weight:800;color:var(--navy,#0b1f33);line-height:1.25;}
+.sl-body .sl-p{display:block;margin:0;color:var(--gray,#5b6b7c);font-size:14px;}
+.sl-act{display:block;}
 .sl-badge{flex:none;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:#fff4dc;color:#8a5a00;white-space:nowrap;}
 .sl-badge.acct{background:#e3f5ea;color:#17663a;}.sl-badge.muted{background:#eef1f5;color:#5b6b7c;}
 .sl-act{margin-top:2px;}
@@ -3521,7 +3522,8 @@ let _partners=null;
 async function loadPartners(){
   if(_partners) return _partners;
   try{
-    const r=await fetch(HCPS_SITE+"/data/partners.json",{cache:"no-cache"});
+    const ac=(typeof AbortController==="function")?new AbortController():null; const tm=ac?setTimeout(()=>ac.abort(),5000):0;
+    const r=await fetch(HCPS_SITE+"/data/partners.json",{cache:"no-cache",signal:ac?ac.signal:undefined}); clearTimeout(tm);
     const j=r.ok?await r.json():null;
     if(j&&Array.isArray(j.partners)){ const l=j.partners.filter(x=>x&&typeof x.id==="string"&&x.id&&typeof x.name==="string"&&x.name); if(l.length){ _partners=l; return l; } }
   }catch(e){}
@@ -3533,9 +3535,9 @@ function shopPartnerList(roster){
   const add=(slug,name,img,blurb)=>{ if(!slug||seen.has(slug)) return; seen.add(slug); out.push({slug,name,img,blurb:blurb||""}); };
   if(roster){ roster.forEach(p=>{ const slug=isGoldenSlug(p.id)?CONFIG.GOLDEN_SLUG:p.id;
       add(slug,p.name,/^\/[a-z0-9/_.-]+$/i.test(p.image||"")?HCPS_SITE+p.image:"",p.category||""); }); }
-  else add(CONFIG.GOLDEN_SLUG,"Golden Technologies","","");
+  else { add(CONFIG.GOLDEN_SLUG,"Golden Technologies","",""); mf.filter(m=>!isGoldenSlug(m.slug)).forEach(m=>add(m.slug,m.name,"","")); }
   /* A line the dealer can order is never missing from the landing page, even if the website roster is behind. */
-  mf.filter(m=>!isGoldenSlug(m.slug)).forEach(m=>add(m.slug,m.name,"",""));
+  entitledManufacturers().filter(m=>m.hasData&&!isGoldenSlug(m.slug)).forEach(m=>add(m.slug,m.name,"",""));
   return out;
 }
 function shopTileAction(slug){
@@ -3554,7 +3556,7 @@ function shopTileHtml(t){
   const a=shopTileAction(t.slug);
   const local="/assets/logos/"+t.slug+".jpg";
   const img=t.img||local;
-  const pic=`<div class="sl-img"><img src="${esc(img)}" alt="${esc(t.name)}" loading="lazy" width="1100" height="1100" data-fb="${esc(local)}" onerror="if(this.dataset.fb&&this.getAttribute('src')!==this.dataset.fb){this.src=this.dataset.fb;this.parentNode.classList.add('logo');}else{this.parentNode.classList.add('noimg');this.remove();}"><span class="sl-name-fb">${esc(t.name)}</span></div>`;
+  const pic=`<span class="sl-img"><img src="${esc(img)}" alt="${esc(t.name)}" loading="lazy" width="1100" height="1100" data-fb="${esc(local)}" onerror="if(this.dataset.fb&&this.getAttribute('src')!==this.dataset.fb){this.src=this.dataset.fb;this.parentNode.classList.add('logo');}else{this.parentNode.classList.add('noimg');this.remove();}"><span class="sl-name-fb">${esc(t.name)}</span></span>`;
   const badge=`<span class="sl-badge ${a.badge==="Your account"?"acct":a.kind==="none"?"muted":""}">${esc(a.badge)}</span>`;
   let act;
   if(a.kind==="open") act=`<span class="sl-go">Shop ${esc(t.name)} <span aria-hidden="true">→</span></span>`;
@@ -3562,7 +3564,7 @@ function shopTileHtml(t){
     act=`<button type="button" class="sl-req" ${sent?"disabled":""} data-slug="${esc(t.slug)}" onclick="event.stopPropagation();requestAccess(this.dataset.slug,this)">${sent?"Access requested ✓":"Request access"}</button>`; }
   else if(a.kind==="golden") act=`<span class="sl-go">${esc(a.note)} <span aria-hidden="true">→</span></span>`;
   else act=`<span class="sl-note">${esc(a.note)}</span>`;
-  const head=`<div class="sl-body"><div class="sl-top"><h3>${esc(t.name)}</h3>${badge}</div>${t.blurb?`<p>${esc(t.blurb)}</p>`:""}<div class="sl-act">${act}</div></div>`;
+  const head=`<span class="sl-body"><span class="sl-top"><span class="sl-h">${esc(t.name)}</span>${badge}</span>${t.blurb?`<span class="sl-p">${esc(t.blurb)}</span>`:""}<span class="sl-act">${act}</span></span>`;
   if(a.kind==="open"||a.kind==="golden") return `<button type="button" class="sl-tile" data-sl="${esc(t.slug)}" aria-label="${esc(a.kind==="open"?"Shop "+t.name:t.name+" — "+a.note)}">${pic}${head}</button>`;
   return `<div class="sl-tile static" data-sl="${esc(t.slug)}">${pic}${head}</div>`;
 }
@@ -5854,7 +5856,7 @@ async function selectManufacturer(slug){
   }
   document.body.classList.remove('home');
   if(slug===SHOPALL){
-    _loadSeq++; state.active=SHOPALL; document.body.classList.add('shopall'); renderTabs();
+    _loadSeq++; state.active=SHOPALL; document.body.classList.add('shopall'); document.body.classList.remove('shopv2'); renderTabs();
     await renderShopLanding(); window.scrollTo({top:0,behavior:"smooth"}); return;
   }
   document.body.classList.remove('shopall');
@@ -7914,7 +7916,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   // ---------- Quotes & Configurators hub ----------
   window.showQuotesHub=function(){
     A4U.hubMode=false; A4U.host=null;
-    document.body.classList.remove('p360on','home','sdon'); document.body.classList.add('hubon');
+    document.body.classList.remove('p360on','home','sdon','shopall'); document.body.classList.add('hubon');
     var pw=document.getElementById('p360wrap'); if(pw)pw.style.display='none';
     state.active='p360:quotes'; renderTabs();
     renderQuotesHubLanding();
@@ -7967,7 +7969,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
 
   // ---------- open the Access4U configurator inside the hub ----------
   window.a4uOpenConfigurator=async function(proj){
-    document.body.classList.remove('p360on','home','sdon'); document.body.classList.add('hubon');
+    document.body.classList.remove('p360on','home','sdon','shopall'); document.body.classList.add('hubon');
     var pw=document.getElementById('p360wrap'); if(pw)pw.style.display='none';
     state.active='p360:quotes'; renderTabs();
     A4U.hubMode=true; A4U.host='#hubA4u';
@@ -8242,7 +8244,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
 
   /* ---------- mount from the SHOWROOM tab ---------- */
   window.showShowroomStudio = async function(){
-    document.body.classList.remove('p360on','home'); document.body.classList.add('hubon','sdon');
+    document.body.classList.remove('p360on','home','shopall'); document.body.classList.add('hubon','sdon');
     var pw=document.getElementById('p360wrap'); if(pw)pw.style.display='none';
     try{ state.active='p360:showroom'; renderTabs(); }catch(e){}
     sdRefreshHostGlobals();
