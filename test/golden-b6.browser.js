@@ -166,10 +166,12 @@ async function toValidated(page, po, keepItems) {
   else await page.evaluate(() => { GCART.items = []; goldenCartAdd('PR511-LAR', { fabric: 'std', color: 'SUM', tier: 'nirvana', footrest: false }, null); goldenCartShow(); });
   await page.waitForSelector('.gck-ship', { timeout: 15000 });
   await page.check(`.gck-ship input[value="${LOC_CIN}"]`);
-  if (!(await page.$('.gck-tot'))) await page.click('[data-gck-quote]');   // a single ship-to is chosen for the dealer: ask for Golden's price
-  try { await page.waitForSelector('.gck-tot', { timeout: 15000 }); } catch (e) { console.log('DEBUG cart:', await page.evaluate(() => [GCART.err, JSON.stringify(GCART.items), document.getElementById('gckView').innerText.slice(0, 600)])); throw e; }
+  // B6.3: Golden's price is fetched automatically once a ship-to is chosen
+  try { await page.waitForFunction(() => GCART.quote && !GCART.busy, null, { timeout: 15000 }); } catch (e) { console.log('DEBUG cart:', await page.evaluate(() => [GCART.err, JSON.stringify(GCART.items), document.getElementById('gckView').innerText.slice(0, 600)])); throw e; }
   await page.fill('[data-f="po"]', po); await page.fill('[data-f="name"]', 'Pat Tester'); await page.fill('[data-f="phone"]', '937-555-0100');
-  await page.click('[data-gck-validate]'); await page.waitForSelector('.gck-ok', { timeout: 20000 });
+  // B6.3: validation is automatic once the contact is complete (re-run after a change, when typing pauses)
+  await page.waitForFunction((po) => GCART.result && GCART.result.valid === true && !GCART.busy && !GCART.auto && GCART.form.po === po, po, { timeout: 20000 });
+  await page.waitForSelector('.gck-ok', { timeout: 5000 });
 }
 
 (async () => {
@@ -179,13 +181,37 @@ async function toValidated(page, po, keepItems) {
       Object.assign(W, { cost: 1188, dropNextPlace: 0, delayPlace: 0 }); W.recs.clear(); W.orders.length = 0; W.goldenCalls.length = 0; W.mail.length = 0; W.nextId = 1661;
       const { ctx, page, errs, counts } = await boot(browser, w, h);
       await toValidated(page, 'PO-B6-1');
-      const v = await page.evaluate(() => ({ btn: !!document.querySelector('[data-gck-place]'), test: /Test mode/.test(document.querySelector('.gck-ok').innerText), orders: GCART.result && GCART.result.ordering_enabled,
-        tot: document.querySelector('.gck-tot').innerText, ok: document.querySelector('.gck-ok').innerText, q: GCART.result && GCART.result.quote && GCART.result.quote.totals }));
+      const v = await page.evaluate(() => ({ btn: !!document.querySelector('[data-gck-place]'), test: /Test mode/.test(document.querySelector('.gck-foot').innerText), orders: GCART.result && GCART.result.ordering_enabled,
+        tot: (document.querySelector('.gck-tot') || document.querySelector('.gck-verified')).innerText, ok: document.querySelector('.gck-ok').innerText, q: GCART.result && GCART.result.quote && GCART.result.quote.totals }));
       await t(`${label}: Golden's freight is its own line ($135.00 for one chair) in the review AND the validation; the total includes it`, () => {
         ok(v.q && v.q.freight_total === 135 && v.q.grand_total === Number((v.q.subtotal + 135 + v.q.sh_total).toFixed(2)), JSON.stringify(v.q));
         ok(/Freight\s*\$135\.00/.test(v.tot) && /Freight\s*\$135\.00/.test(v.ok), v.tot.slice(0, 300) + ' || ' + v.ok.slice(0, 300)); });
       await t(`${label}: after a valid validation Golden says ordering is on → "Place order with Golden" + test-mode note`, () => ok(v.btn && v.test && v.orders === true, JSON.stringify(v)));
       await shot(page, `golden-place-ready-${label}.png`);
+      // B6.3 guided checkout: three steps, an instruction for the active step, help, a first-time tip — and never an automatic placement
+      await page.waitForTimeout(2500);   // well past every automatic step: nothing may be placed without the dealer's click
+      const g = await page.evaluate(() => ({ steps: [...document.querySelectorAll('.gck-step')].map(x => x.className.replace('gck-step', '').trim() + ':' + x.innerText.replace(/\s+/g, ' ').trim()),
+        cur: (document.querySelector('.gck-step[aria-current="step"]') || {}).innerText || '', next: (document.querySelector('.gck-next') || {}).innerText || '', help: !!document.querySelector('details.gck-help summary'),
+        tip: !!document.querySelector('.gck-tip'), manual: !!document.querySelector('[data-gck-quote],[data-gck-validate]'), placeTxt: (document.querySelector('[data-gck-place]') || {}).innerText || '' }));
+      const submitsBefore = W.goldenCalls.filter(c => c.path === '/v1/orders' && c.mode === 'submit').length;
+      await t(`${label}: B6.3 — three steps with step 3 active, a plain instruction, Need help, no manual price / validate buttons`, () => {
+        ok(g.steps.length === 3 && /^done/.test(g.steps[0]) && /^done/.test(g.steps[1]) && /^on/.test(g.steps[2]) && /Place order/.test(g.cur), JSON.stringify(g.steps));
+        ok(/Place order with Golden/.test(g.next) && g.help && !g.manual && /Place order with Golden · \$/.test(g.placeTxt), JSON.stringify(g)); });
+      await t(`${label}: B6.3 — Golden is priced and verified automatically, but NOTHING is placed until the dealer clicks`, () => ok(submitsBefore === 0 && W.orders.length === 0, 'submits ' + submitsBefore + ' orders ' + W.orders.length));
+      if (label === 'iphone') {
+        await t(`${label}: B6.3 — a first-time tip explains the checkout; "Got it" hides it for good`, async () => {
+          ok(g.tip, 'tip shown the first time');
+          await page.click('[data-gck-tip]');
+          const after = await page.evaluate(() => ({ tip: !!document.querySelector('.gck-tip'), seen: localStorage.getItem('hcps_gck_tip_v1') }));
+          ok(!after.tip && after.seen === '1', JSON.stringify(after)); });
+        await page.click('details.gck-help summary');
+        const help = await page.evaluate(() => (document.querySelector('details.gck-help') || {}).innerText || '');
+        await t(`${label}: B6.3 — "Need help?" explains the three steps and that nothing is ordered before the click`, () => ok(/Review cart/.test(help) && /Shipping & total/.test(help) && /Nothing is ordered until you press/.test(help), help.slice(0, 300)));
+        const geo = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth,
+          small: [...document.querySelectorAll('.gck-box button, .gck-box input:not([type=radio]), .gck-box textarea, .gck-box summary, .gck-step')].filter(b => { const r = b.getBoundingClientRect(); return r.width > 0 && r.height < 44; }).map(b => b.className || b.tagName) }));
+        await t(`${label}: B6.3 — guided panel: no horizontal scroll, touch targets ≥ 44px`, () => ok(geo.sw <= geo.cw + 1 && !geo.small.length, JSON.stringify(geo)));
+        await shot(page, `golden-guided-help-${label}.png`);
+      }
       // double-click: one placement call, frozen while Golden answers
       W.delayPlace = 1200;
       await page.evaluate(() => { const b = document.querySelector('[data-gck-place]'); b.click(); b.click(); });
@@ -195,8 +221,11 @@ async function toValidated(page, po, keepItems) {
       const done = await page.evaluate(() => ({ text: document.querySelector('.gck-done').innerText, items: GCART.items.length, stored: localStorage.getItem(gckStoreKey()), pend: localStorage.getItem(gckPendKey()), placed: GCART.placed && GCART.placed.order_ref }));
       const keys = W.goldenCalls.filter(c => c.path === '/v1/orders');
       await t(`${label}: one click (double-click proof) → ONE place_order call; frozen while Golden answers`, () => ok(counts.placeCalls === 1 && frozen.busy && frozen.pending, JSON.stringify({ c: counts.placeCalls, frozen })));
-      await t(`${label}: placement uses the SAME Idempotency-Key as the validation; Golden placed ONE order`, () => {
-        ok(keys.length === 2 && keys[0].mode === 'validate' && keys[1].mode === 'submit' && keys[0].key === keys[1].key, JSON.stringify(keys)); ok(W.orders.length === 1, 'orders ' + W.orders.length); });
+      await t(`${label}: placement uses the SAME Idempotency-Key as the last validation; Golden placed ONE order`, () => {
+        // B6.3: validation is automatic — an earlier validation of different details (before the PO was typed) is its own
+        // attempt; the placement reuses the key of the LAST validation, the one the dealer saw verified.
+        const sub = keys.filter(k => k.mode === 'submit'), val = keys.filter(k => k.mode === 'validate');
+        ok(sub.length === 1 && val.length >= 1 && keys[keys.length - 1].mode === 'submit' && val[val.length - 1].key === sub[0].key, JSON.stringify(keys)); ok(W.orders.length === 1, 'orders ' + W.orders.length); });
       await t(`${label}: confirmation shows Golden's order number, PO and TEST note; cart emptied only now; nothing pending`, () => {
         ok(/Order placed with Golden/.test(done.text) && /P1661/.test(done.text) && /PO-B6-1/.test(done.text) && /TEST order/.test(done.text), done.text.slice(0, 300));
         ok(/Freight\s*\$135\.00/.test(done.text), 'the confirmation shows Golden\'s freight: ' + done.text.slice(0, 400));
@@ -293,9 +322,8 @@ async function toValidated(page, po, keepItems) {
         goldenCartAdd('PR511-LAR', { fabric: 'xover', color: 'JBO', tier: 'nirvana', footrest: false }, null); goldenCartShow(); });
       await page.waitForSelector('.gck-ship', { timeout: 15000 });
       await page.check(`.gck-ship input[value="${LOC_CIN}"]`);
-      if (!(await page.$('.gck-tot'))) await page.click('[data-gck-quote]');
-      try { await page.waitForSelector('.gck-tot', { timeout: 15000 }); } catch (e) { console.log('DEBUG mixed:', await page.evaluate(() => [GCART.err, JSON.stringify(GCART.items), document.getElementById('gckView').innerText.slice(0, 500)])); throw e; }
-      const m = await page.evaluate(() => ({ t: GCART.quote && GCART.quote.totals, txt: document.querySelector('.gck-tot').innerText }));
+      try { await page.waitForFunction(() => GCART.quote && !GCART.busy, null, { timeout: 15000 }); } catch (e) { console.log('DEBUG mixed:', await page.evaluate(() => [GCART.err, JSON.stringify(GCART.items), document.getElementById('gckView').innerText.slice(0, 500)])); throw e; }
+      const m = await page.evaluate(() => ({ t: GCART.quote && GCART.quote.totals, txt: (document.querySelector('.gck-verified') || document.querySelector('.gck-tot') || {}).innerText || '' }));
       const qc = W.goldenCalls.filter(c => c.path === '/v1/quote').slice(-1)[0];
       await t('mixed cart: Partner 360 asks for Golden\'s split shipments; ships-now and built-to-order each pay $135 freight', () => {
         ok(m.t && m.t.split === true && m.t.freight_total === 270 && m.t.shipments.length === 2 && m.t.shipments.every(x => x.freight === 135), JSON.stringify(m.t));
