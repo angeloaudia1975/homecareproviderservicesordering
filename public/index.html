@@ -5879,8 +5879,11 @@ function openBrochure(code, officialDocs){
 }
 function closeBrochure(){ const el=document.getElementById('brModal'); if(el) el.remove(); }
 function _brMsg(t,bad){ const el=document.getElementById('brMsg'); if(el) el.innerHTML='<span style="color:'+(bad?'#b22b2b':'#2d7d46')+'">'+esc(t)+'</span>'; }
-function _brPost(body){
-  return fetch('/.netlify/functions/brochure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+async function _brPost(body){
+  if(body&&body.action==='email'&&typeof ensureFreshSession==='function'){ try{ await ensureFreshSession(); }catch(e){} }
+  const hdr={'Content-Type':'application/json'};
+  if(typeof AUTH!=='undefined'&&AUTH&&AUTH.session&&AUTH.session.access_token) hdr.authorization='Bearer '+AUTH.session.access_token;   // email needs the dealer's sign-in
+  return fetch('/.netlify/functions/brochure',{method:'POST',headers:hdr,body:JSON.stringify(body)})
     .then(r=>r.json());
 }
 /* Print through a hidden same-origin iframe rather than a popup: popup blockers
