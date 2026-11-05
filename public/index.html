@@ -497,6 +497,13 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .pd-buy .qtyin{width:66px;padding:11px;text-align:center;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;}
 .pd .addbtn{flex:1;background:var(--grad);color:#141414;border:none;padding:14px;border-radius:11px;font-family:'Archivo',sans-serif;font-weight:800;font-size:15px;letter-spacing:.3px;text-transform:none;cursor:pointer;box-shadow:0 12px 26px -12px rgba(239,99,37,.6);}
 .pd .addbtn:hover{filter:brightness(.97);transform:translateY(-1px);}
+/* B6.1: Golden's configured chair uses the same shopping actions as every HCPS line */
+.pd .gaddbtn{flex:1;min-height:48px;background:var(--grad);color:#141414;border:none;padding:14px;border-radius:11px;font-family:'Archivo',sans-serif;font-weight:800;font-size:15px;letter-spacing:.3px;cursor:pointer;box-shadow:0 12px 26px -12px rgba(239,99,37,.6);}
+.pd .gaddbtn:hover:not(:disabled){filter:brightness(.97);transform:translateY(-1px);}
+.pd .gaddbtn:disabled{background:#d7dde4;color:#5b6676;box-shadow:none;cursor:not-allowed}
+.gcfg .pd-buy{margin-top:12px}.gcfg .pd-buy .qtyin{min-height:48px}.gcfg .pd-broch{min-height:46px}.gcfg .pd-sub a{min-height:46px}
+.pd-sub a.dis{opacity:.5;pointer-events:none}
+.pd-sub a[data-gb-quote]{min-height:44px;display:inline-flex;align-items:center}.gbrowse{margin-top:12px;padding:10px 12px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;font-size:13.5px;line-height:1.45}
 .pd-sub{display:flex;gap:12px;margin-top:12px;}
 .pd-sub a{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:var(--navy);cursor:pointer;}
 .pd-broch{width:100%;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;
@@ -1252,6 +1259,12 @@ table.gspec th.on,table.gspec td.on{background:#fff7e0}table.gspec td.v{white-sp
 .gcfg-add{margin-top:10px;width:100%;min-height:46px;border:0;border-radius:10px;background:#c9d3de;color:#4b5563;font:inherit;font-weight:700;cursor:not-allowed}
 .gcfg-note{font-size:12.5px;color:#6b7580;margin-top:6px}.gcfg-busy{opacity:.55;pointer-events:none}
 .gcfg-add.on{background:#0b1f33;color:#fff;cursor:pointer}.gcfg-add.on:disabled{background:#c9d3de;color:#4b5563;cursor:not-allowed}
+/* B6.1 — Golden's order group inside the HCPS cart */
+.gmgroup .gnote{font-size:12.5px;color:#5b6676;line-height:1.45;margin:10px 0}.gmgroup .gwarn{padding:10px 12px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;font-size:13px;margin-bottom:10px}
+#gSumVal{font-size:14px;font-weight:700;text-align:right}
+.gmgroup .gckgo{width:100%;min-height:46px;margin-top:10px;border:0;border-radius:10px;background:#0b1f33;color:#fff;font:inherit;font-weight:800;cursor:pointer}.gmgroup .gckgo:hover{background:#13304f}
+.gmgroup .citem .r input,.gmgroup .citem .r button{min-height:44px}
+.gmgroup .citem .r input:disabled,.gmgroup .citem .r button:disabled{opacity:.5;cursor:not-allowed}
 .gck-pill{position:fixed;right:16px;bottom:16px;z-index:95;min-height:48px;padding:10px 18px;border:0;border-radius:999px;background:#0b1f33;color:#fff;font:inherit;font-weight:700;box-shadow:0 6px 20px rgba(11,31,51,.25);cursor:pointer}
 body.gck-lock{overflow:hidden}body.gck-lock .gck-pill{display:none}.gck-ov{display:none;position:fixed;inset:0;z-index:10000;background:rgba(16,38,63,.55);overflow-y:auto;padding:20px 12px}
 .gck-box{max-width:860px;margin:0 auto;background:#fff;border-radius:14px;padding:16px 18px 22px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
@@ -1434,6 +1447,7 @@ body.gck-lock{overflow:hidden}body.gck-lock .gck-pill{display:none}.gck-ov{displ
           <div class="dfoot">
             <div class="sumrow"><span class="muted">Items</span><span id="itemsTotal">0</span></div>
             <div class="sumrow"><span class="muted">Estimated total (incl. freight)</span><b id="grandTotal">$0.00</b></div>
+            <div class="sumrow" id="gSumRow" style="display:none"><span class="muted">Golden Technologies — priced by Golden</span><b id="gSumVal">at review</b></div>
             <button class="subbtn" id="submitOrder">Place order →</button>
             <button class="clr" id="clearCart">Clear cart</button>
             <div class="fineprint">A separate order goes to HCPS for each manufacturer. Item prices are your account pricing, confirmed again when you place the order; final freight is confirmed by HCPS.</div>
@@ -2674,7 +2688,7 @@ async function goldenConfigLoad(host, sku, fam){
   if(j&&j.available===false&&j.reason==="not_offered"&&(sel.color||sel.tier)){ sel.color=null; sel.tier=null; j=await goldenCall("config",{sku,fabric:sel.fabric,footrest:sel.footrest||undefined}); if(my!==GCFG.seq) return; }
   box.classList.remove('gcfg-busy');
   if(!j||j.available!==true||!j.config){ box.innerHTML=`<h3>Configure this chair</h3><div class="gcfg-note">Golden's configurator isn't available right now. Please try again shortly.</div>`; return; }
-  GCFG.cur={ sku, sel:Object.assign({},sel,{tier:sel.tier||null}), q:j.config.quote||null };
+  GCFG.cur={ sku, sel:Object.assign({},sel,{tier:sel.tier||null}), q:j.config.quote||null, c:j.config };
   box.innerHTML=goldenConfigBody(j.config, j.prices_visible===true, sel);
 }
 function goldenConfigBody(c, pv, sel){
@@ -2696,19 +2710,103 @@ function goldenConfigBody(c, pv, sel){
     <div class="gitem">Golden item # ${esc(q.item_no)}${q.item_no_resolved?"":" (built to the specification above)"}</div></div>`
     :`<div class="gcfg-note">Choose a colour to see Golden's price and lead time.</div>`;
   return `<h3>Configure this chair</h3>${tabs}<div class="gl">Colour</div><div class="gcfg-sw">${sw||'<div class="gcfg-note">No colours offered for this fabric.</div>'}</div>${tiers}${fr}${qh}
-    ${goldenCartOpen()
-      ? `<button type="button" class="gcfg-add on" data-gadd${q&&pv&&sel.color?"":" disabled aria-disabled=\"true\""}>Add to Golden cart</button>
-    <div class="gcfg-note">Priced and configured by Golden Technologies. Golden prices your cart for the ship-to you choose.${GCART.items.length?' <a href="#" data-gopen>Review Golden cart</a>':""}</div>`
-      : `<button type="button" class="gcfg-add" disabled aria-disabled="true">Add to cart — opening soon</button>
-    <div class="gcfg-note">Priced and configured by Golden Technologies. Golden ordering in Partner 360 opens soon; this configuration can't be added to the cart yet.</div>`}`;
+    ${goldenActionsHtml(!!(q&&sel.color), !!(q&&pv&&sel.color))}`;
 }
+/* B6.1 (owner 2026-11-04): the SAME shopping actions every HCPS line has — quantity, orange Add to cart, Print Brochure,
+   Add to a quote. Add to cart puts the configured chair in the HCPS cart (as its Golden order group); Golden still prices,
+   validates and places that group. Nothing here is a price: Golden's answer above is the only one shown. */
+function goldenActionsHtml(configured, orderable){
+  const open=goldenCartOpen(), can=open&&orderable;
+  return `<div class="pd-buy buy gbuy"><input class="qtyin" type="number" min="1" max="${GCK_MAX_QTY}" value="1" aria-label="Quantity" data-gqty${can?"":" disabled"}>
+      <button type="button" class="gaddbtn" data-gadd${can?"":" disabled aria-disabled=\"true\""}>🛒 Add to cart</button></div>
+    ${!open?`<div class="gcfg-note">Golden ordering in Partner 360 opens soon — this configuration can't be ordered here yet. You can print a brochure or add it to a customer quote.</div>`
+      :(orderable?"":`<div class="gcfg-note">Choose a colour to add this chair to your cart.</div>`)}
+    <button type="button" class="pd-broch" data-gbroch>${BROCH_ICON}Print Brochure</button>
+    <div class="pd-sub"><a role="button" tabindex="0" data-gquote${configured?"":` class="dis" aria-disabled="true"`}>${QUOTE_ICON}Add to a quote</a></div>
+    <div class="gcfg-note">Priced and configured by Golden Technologies. Golden prices your order for the ship-to you choose at checkout.</div>`;
+}
+/* B6.1 — Print Brochure for Golden: the HCPS brochure generator with Golden's OWN content (golden-proxy → Golden's
+   product family: Golden's photos, description, features and the specifications Golden publishes for this size), plus
+   Golden's official sell sheet / brochure when Golden publishes one. Customer-facing: never a dealer price — only Golden's
+   MSRP, and only if the dealer ticks it. */
+const GBROCH={};
+function goldenOfficialDocs(G){
+  const F=G&&G.family||{};
+  return (F.documents||[]).filter(d=>d&&/^https:\/\//.test(String(d.url||""))&&(d.kind==="sell_sheet"||d.kind==="brochure")).slice(0,3)
+    .map(d=>({title:String(d.title||GOLDEN_DOC_KIND[d.kind]||"Golden document").slice(0,120),url:d.url,kind:GOLDEN_DOC_KIND[d.kind]||"Document"}));
+}
+function goldenBrochurePayload(p, G){
+  const F=(G&&G.family)||{}, f=F.features||{}, m=_brManufacturer(p);
+  const gal=G?goldenGallery(G,p.code).map(x=>x.url):[];
+  const imgs=[...new Set([...gal,p.image].filter(u=>u&&GOLDEN_IMG_URL.test(u)))].slice(0,5);
+  const paras=[...(F.description||[])]; if(F.sell_sheet_description&&!paras.some(x=>x.slice(0,60)===F.sell_sheet_description.slice(0,60))) paras.push(F.sell_sheet_description);
+  const feats=(f.groups&&f.groups.length?f.groups.flatMap(g=>g.items||[]):[...(f.standard||[]),...(f.optional||[])]).map(String).filter(Boolean).slice(0,16);
+  const sp=F.specs||{};
+  const specs=(sp.rows||[]).map(r=>({label:String(r.label||""),value:r.values&&r.values[p.code]!=null?String(r.values[p.code]):""})).filter(x=>x.label&&x.value&&x.value!=="—").slice(0,30);
+  const size=G?goldenSizeName(G,p.code):"";
+  const msrp=Number(p.msrp);
+  return { name:(F.name||groupDisplayName(p)||p.name)+(size&&size!==p.code?" — "+size:""), code:p.code, manufacturer:m.name||"Golden Technologies", manufacturer_logo:m.logo||"",
+    hcps_logo:_brHcpsLogo(), tagline:"", description:paras.join("\n\n")||p.description||"", images:imgs.length?imgs:(p.image?[p.image]:[]), features:feats.length?feats:(p._features||[]),
+    clinical:[], specs:specs, sizing:null, sizing_note:"", warranty:(f.warranty_terms||[]).join(" · "), billing_codes:[], source_url:(F.page&&F.page.url)||"",
+    msrp:(isFinite(msrp)&&msrp>0)?msrp:null, quote_price:null };
+}
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-gb-broch]"); if(b) return goldenBrochure(b.getAttribute("data-gb-broch"));
+  const q=e.target.closest("[data-gb-quote]"); if(q) return goldenQuoteAdd(q.getAttribute("data-gb-quote")); });
+document.addEventListener("keydown",e=>{ const q=e.target.closest&&e.target.closest("[data-gb-quote]"); if(q&&(e.key==="Enter"||e.key===" ")){ e.preventDefault(); goldenQuoteAdd(q.getAttribute("data-gb-quote")); } });
+async function goldenBrochure(sku, cur){
+  const p=(state.products||[]).find(x=>x.code===sku&&x._golden); if(!p) return;
+  let G=null; try{ G=await goldenFamilyDetail(p._goldenFamily); }catch(e){}
+  const b=goldenBrochurePayload(p,G);
+  /* From the configurator, the brochure shows the chair as configured: its options and Golden's retail for that exact
+     configuration (null = MSRP not shown). Without a configuration it is the size's own Golden MSRP. */
+  if(cur&&cur.q&&cur.sel&&cur.sel.color){ const r=goldenQuoteRecord(p,cur).rec; b.tagline=r.option||""; b.msrp=r.msrp; }
+  GBROCH[sku]=b;
+  openBrochure(sku, goldenOfficialDocs(G));
+}
+/* B6.1 — Add to a quote for Golden: the existing Customer MSRP Quote Builder, with the exact model, size, fabric, colour
+   and upgrades. MSRP = Golden's official retail for the size plus Golden's official retail for each chosen upgrade (contract
+   1.6.1). If Golden has no retail figure for any part, the line reads "MSRP not provided" — never an estimate, never a
+   dealer price. A quote is a customer document only: it never touches the cart or an order. */
+const GQUOTE={};
+const GTIER_NAME={standard:"Standard",irheat:"Infrared heat",hvib:"Heat & vibration",nirvana:"Nirvana™ massage + heat"};
+function goldenQuoteRecord(p, cur){
+  const fam=String(p._encPage||groupDisplayName(p)||p.name||p.code), sz=(p._axes&&p._axes.Size)||"";
+  if(!(cur&&cur.c&&cur.q&&cur.sel&&cur.sel.color)){
+    const m=Number(p.msrp);
+    return {key:"golden|"+p.code, rec:{name:fam, option:sz, sku:p.code, mfrName:"Golden Technologies", msrp:(isFinite(m)&&m>0)?m:null, msrpEach:false, quotable:true, cost:null}};
+  }
+  const c=cur.c, sel=cur.sel, q=cur.q, fab=sel.fabric||"std", tierKey=sel.tier||c.tier||"standard";
+  const size=(c.sizes||[]).find(x=>x.sku===p.code), tab=(c.tabs||[]).find(t=>t.key===fab);
+  const tierOpt=((c.tiers&&c.tiers.options)||[]).find(o=>o.key===tierKey);
+  const parts=[["chair", size&&typeof size.msrp==="number"&&size.msrp>0?size.msrp:null]];
+  if(fab!=="std") parts.push(["fabric", tab&&typeof tab.msrp==="number"?tab.msrp:null]);
+  if(!(c.tiers&&c.tiers.included)&&tierKey!=="standard") parts.push(["upgrade", tierOpt&&typeof tierOpt.msrp==="number"?tierOpt.msrp:null]);
+  if(sel.footrest&&c.footrest&&c.footrest.eligible) parts.push(["footrest", typeof c.footrest.msrp==="number"?c.footrest.msrp:null]);
+  const msrp=parts.some(x=>x[1]==null)?null:parts.reduce((t,x)=>t+x[1],0);
+  const opt=[size&&size.label||sz, (tab?tab.label:"Standard fabric")+": "+(q.color_name||sel.color),
+    (c.tiers&&c.tiers.included)?(c.tiers.included_text||"Upgrade included"):(tierKey!=="standard"?GTIER_NAME[tierKey]||tierKey:""),
+    sel.footrest&&c.footrest&&c.footrest.eligible?"Footrest extension"+(c.footrest.part?" ("+c.footrest.part+")":""):""].filter(Boolean).join(" · ");
+  return {key:["golden",p.code,fab,sel.color,tierKey,sel.footrest?1:0].join("|"), rec:{name:fam, option:opt, sku:q.item_no||p.code, mfrName:"Golden Technologies", msrp, msrpEach:false, quotable:true, cost:null}};
+}
+function goldenQuoteAdd(sku, cur){
+  const p=(state.products||[]).find(x=>x.code===sku&&x._golden); if(!p) return;
+  if(p._goldenAction==="configure"&&/^PR\d{3}-[A-Z]{3}$/.test(sku)&&!(cur&&cur.q&&cur.sel&&cur.sel.color)){ toast("Choose a colour first — the quote keeps the exact configuration."); return; }
+  const {key,rec}=goldenQuoteRecord(p, cur);
+  GQUOTE[key]=rec;
+  if(window.P360Quote&&window.P360Quote.add) window.P360Quote.add(key);
+  toast("Added to your customer quote"+(rec.msrp==null?" — Golden publishes no retail price for this configuration, so it shows “MSRP not provided”":""));
+  if(typeof showP360==="function") showP360("quotes");
+}
+const BROCH_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>';
+const QUOTE_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
 function goldenConfigWire(host){
   const box=host.querySelector('#gcfg'); if(!box||box._wired) return; box._wired=true;
   const sku=box.getAttribute('data-sku'), fam=box.getAttribute('data-fam');
   box.addEventListener('click',function(e){
     const sel=GCFG.sel[fam]||(GCFG.sel[fam]={fabric:"std",color:null,tier:null,footrest:false});
-    if(e.target.closest('[data-gopen]')){ e.preventDefault(); return goldenCartShow(); }
-    if(e.target.closest('[data-gadd]')){ const cur=GCFG.cur; if(cur&&cur.sku===sku&&!box.classList.contains('gcfg-busy')) goldenCartAdd(sku, cur.sel, cur.q); return goldenConfigLoad(host, sku, fam); }
+    if(e.target.closest('[data-gadd]')){ const cur=GCFG.cur; if(cur&&cur.sku===sku&&!box.classList.contains('gcfg-busy')){ const qi=box.querySelector('[data-gqty]'); goldenCartAdd(sku, cur.sel, cur.q, qi?qi.value:1); } return; }
+    if(e.target.closest('[data-gbroch]')) return goldenBrochure(sku, GCFG.cur&&GCFG.cur.sku===sku?GCFG.cur:null);
+    if(e.target.closest('[data-gquote]')){ e.preventDefault(); const cur=GCFG.cur; if(cur&&cur.sku===sku&&!box.classList.contains('gcfg-busy')) goldenQuoteAdd(sku, cur); return; }
     const f=e.target.closest('[data-gfab]'), c=e.target.closest('[data-gcol]'), t=e.target.closest('[data-gtier]');
     if(f){ const k=f.getAttribute('data-gfab'); if(k!==sel.fabric){ sel.fabric=k; sel.color=null; } }
     else if(c) sel.color=c.getAttribute('data-gcol');
@@ -2716,6 +2814,7 @@ function goldenConfigWire(host){
     else return;
     goldenConfigLoad(host, sku, fam);
   });
+  box.addEventListener('keydown',function(e){ if((e.key==='Enter'||e.key===' ')&&e.target.closest('[data-gquote]')){ e.preventDefault(); e.target.click(); } });
   box.addEventListener('change',function(e){ if(!e.target.matches('[data-gfoot]')) return; const sel=GCFG.sel[fam]||(GCFG.sel[fam]={fabric:"std"}); sel.footrest=!!e.target.checked; goldenConfigLoad(host, sku, fam); });
   goldenConfigLoad(host, sku, fam);
 }
@@ -2756,7 +2855,7 @@ function gckSyncFromStorage(){
   if(!p&&GCART.pending&&!GCART.busy){ GCART.pending=null; }
   let stored=null; try{ stored=JSON.parse(localStorage.getItem(gckStoreKey())||"null"); }catch(e){}
   if(Array.isArray(stored)&&JSON.stringify(stored.map(i=>[i.sku,i.fabric,i.color,i.tier||null,!!i.footrest,i.qty]))!==JSON.stringify(GCART.items.map(i=>[i.sku,i.fabric,i.color,i.tier||null,!!i.footrest,i.qty]))){
-    gckLoad(); GCART.quote=null; GCART.quoteSig=null; GCART.result=null; GCART.attempt=null; return "Your Golden cart changed in another window. Please review it again.";
+    gckLoad(); GCART.quote=null; GCART.quoteSig=null; GCART.result=null; GCART.attempt=null; return "Your Golden chairs changed in another window. Please review them again.";
   }
   const m=gckPlacedRead();
   // only a cart this window held BEFORE another window placed it (a stale copy) — a dealer may deliberately re-order the same chairs
@@ -2786,25 +2885,51 @@ function gckReset(){
   document.body.classList.remove('gck-lock'); if(GCART._esc){ document.removeEventListener('keydown',GCART._esc,true); GCART._esc=null; }
   Object.assign(GCART,{items:[],ship:null,shipList:null,shipScope:null,shipErr:null,quote:null,quoteSig:null,quoteAsOf:null,attempt:null,result:null,busy:false,pending:null,placed:null,pendMsg:null,err:null,changed:false,seq:(GCART.seq||0)+1,form:{po:"",name:"",phone:"",email:"",attention:"",notes:""}});
   if(typeof GOLDEN!=="undefined"){ GOLDEN.on=false; GOLDEN.checked=false; }
+  if(typeof cartBadgeRefresh==="function") try{ cartBadgeRefresh(); }catch(e){}
 }
 function gckChanged(){ GCART.cartAt=Date.now(); GCART.quote=null; GCART.quoteSig=null; GCART.result=null; gckSave(); gckPill(); }
-function goldenCartAdd(sku, sel, cq){
+/* Golden state changed (this tab or another): refresh the cart without taking the dealer's place. If the dealer is typing
+   in an HCPS field of the cart, only the Golden group is replaced; a Golden control that had focus gets it back. */
+function gckRefreshCart(){ try{
+  const host=document.getElementById("cartGroups");
+  if(host&&typeof renderCart==="function"){
+    const a=document.activeElement, inHost=a&&host.contains(a), inG=inHost&&a.closest(".gmgroup");
+    if(inHost&&!inG&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){
+      const g=host.querySelector(".gmgroup"), html=goldenCartGroupHtml();
+      if(g){ if(html){ g.insertAdjacentHTML("afterend",html); g.remove(); } else g.remove(); }
+      else if(html) host.insertAdjacentHTML("beforeend",html);
+      goldenCartGroupWire(host);
+    } else {
+      let want=null; if(inG){ for(const at of ["data-gq","data-grm"]) if(a.hasAttribute(at)) want=[at,a.getAttribute(at)]; if(a.hasAttribute("data-gckgo")) want=["data-gckgo",""]; }
+      renderCart();
+      if(want){ const g=host.querySelector(".gmgroup");
+        const el=g&&(g.querySelector(want[1]!==""?`[${want[0]}="${want[1]}"]`:`[${want[0]}]`)||g.querySelector("[data-grm]")||g.querySelector("[data-gckgo]"));
+        const t=el||document.getElementById("closeCart"); if(t&&t.focus) t.focus(); }
+    }
+  }
+  if(typeof cartBadgeRefresh==="function") cartBadgeRefresh(); }catch(e){} }
+function goldenCartAdd(sku, sel, cq, qty){
   if(!goldenCartOpen()||!sel||!sel.color) return;
-  if(GCART.pending||gckPendRead()){ showToast&&showToast("Finish confirming your Golden order first — open the Golden cart."); return; }
+  if(GCART.pending||gckPendRead()){ showToast&&showToast("Finish confirming your Golden order first — open your cart."); return; }
+  const n=Math.min(GCK_MAX_QTY,Math.max(1,parseInt(qty,10)||1));
   const p=(state.products||[]).find(x=>x.code===sku)||{};
-  const it={sku,fabric:sel.fabric||"std",color:sel.color,tier:sel.tier||null,footrest:!!sel.footrest,qty:1,refs:[],
+  const it={sku,fabric:sel.fabric||"std",color:sel.color,tier:sel.tier||null,footrest:!!sel.footrest,qty:n,refs:[],
     label:((p._encPage||p.name||sku)+(p._axes&&p._axes.Size?" — "+p._axes.Size:"")).slice(0,120), detail:gckDetail(sel, cq)};
   const same=GCART.items.find(x=>gckKey(x)===gckKey(it));
-  if(same){ if(same.qty>=GCK_MAX_QTY){ showToast&&showToast("Golden's limit is "+GCK_MAX_QTY+" per line."); return; } same.qty++; }
-  else { if(GCART.items.length>=GCK_MAX_LINES){ showToast&&showToast("The Golden cart holds up to "+GCK_MAX_LINES+" lines."); return; } GCART.items.push(it); }
-  gckChanged(); showToast&&showToast("Added to your Golden cart");
+  if(same){ if(same.qty+n>GCK_MAX_QTY){ showToast&&showToast("Golden's limit is "+GCK_MAX_QTY+" per line."); return; } same.qty+=n; }
+  else { if(GCART.items.length>=GCK_MAX_LINES){ showToast&&showToast("A Golden order holds up to "+GCK_MAX_LINES+" lines."); return; } GCART.items.push(it); }
+  gckChanged(); showToast&&showToast(`Added ${n} × ${it.label} to your cart`);
 }
+// Golden chairs in the HCPS cart (the Golden order group). Counted only where the Golden cart is open to this dealer.
+function gckCount(){ return (typeof goldenCartOpen==="function"&&goldenCartOpen())?GCART.items.reduce((s,i)=>s+i.qty,0):0; }
+/* B6.1: Golden chairs live in the HCPS cart (header count + their own order group), so there is no separate Golden cart
+   button. The one exception is an order attempt Golden has not confirmed yet: it stays on screen until it is resolved. */
 function gckPill(){
   let el=document.getElementById('gcartPill');
-  const n=GCART.items.reduce((s,i)=>s+i.qty,0);
-  if(!goldenCartOpen()||(!n&&!GCART.pending&&!GCART.placed)){ if(el) el.remove(); return; }
+  gckRefreshCart();
+  if(!goldenCartOpen()||!GCART.pending){ if(el) el.remove(); return; }
   if(!el){ el=document.createElement('button'); el.type='button'; el.id='gcartPill'; el.className='gck-pill'; el.addEventListener('click',goldenCartShow); document.body.appendChild(el); }
-  el.textContent=GCART.pending?"Golden order · confirming":GCART.placed&&!n?"Golden order placed":"Golden cart · "+n+(n===1?" chair":" chairs");
+  el.textContent="Golden order · confirming";
 }
 function gckReq(){ return GCART.items.map(i=>{ const o={sku:i.sku,fabric:i.fabric,color:i.color,qty:i.qty}; if(i.tier) o.tier=i.tier; if(i.footrest) o.footrest=true; return o; }); }
 async function gckShipTo(){
@@ -2819,7 +2944,7 @@ async function gckShipTo(){
 }
 function goldenCartShow(){
   let ov=document.getElementById('gckView');
-  if(!ov){ ov=document.createElement('div'); ov.id='gckView'; ov.className='gck-ov'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label','Golden cart and order review'); document.body.appendChild(ov); gckWire(ov); }
+  if(!ov){ ov=document.createElement('div'); ov.id='gckView'; ov.className='gck-ov'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label','Golden order review'); document.body.appendChild(ov); gckWire(ov); }
   const d=AUTH.dealer||{}; const f=GCART.form;
   if(!f.name&&!f.phone){ f.name=String(d.contact_name||d.contact||"").slice(0,80); f.phone=String(d.phone||"").slice(0,30); f.email=String(d.email||"").slice(0,190); }
   GCART._opener=document.activeElement;
@@ -2836,7 +2961,7 @@ function goldenCartShow(){
 }
 function goldenCartClose(){ const ov=document.getElementById('gckView'); if(ov) ov.style.display='none'; document.body.classList.remove('gck-lock');
   if(GCART._esc){ document.removeEventListener('keydown',GCART._esc,true); GCART._esc=null; } gckPill();
-  const back=(GCART._opener&&document.contains(GCART._opener)&&GCART._opener.offsetParent!==null)?GCART._opener:document.getElementById('gcartPill'); if(back&&back.focus) back.focus(); }
+  const back=(GCART._opener&&document.contains(GCART._opener)&&GCART._opener.offsetParent!==null)?GCART._opener:(document.querySelector('#cartGroups [data-gckgo]')||document.getElementById('gcartPill')); if(back&&back.focus) back.focus(); }
 const gckShipLine=s=>[s.address,[s.city,s.state].filter(Boolean).join(", "),s.zip].filter(Boolean).join(" · ");
 function gckRender(){
   const ov=document.getElementById('gckView'); if(!ov||ov.style.display==='none') return;
@@ -2872,9 +2997,9 @@ function gckRender(){
   const res=r?gckResultHtml(r):"";
   const a=document.activeElement, fk=a&&ov.contains(a)?['data-rm','data-dq','data-gck-quote','data-gck-validate','data-gck-close','data-f'].map(k=>a.hasAttribute(k)?`[${k}="${a.getAttribute(k)}"]${k==='data-dq'?`[data-d="${a.getAttribute('data-d')}"]`:''}`:null).find(Boolean)||(a.name==='gckship'?`input[name="gckship"][value="${a.value}"]`:null):null;
   ov.innerHTML=`<span class="gck-ft" tabindex="0" data-trap="start"></span><div class="gck-box">
-    <div class="gck-hd"><h2>Golden cart${(typeof STAGING!=="undefined"&&STAGING)?' <span class="gck-prev">Private preview</span>':""}</h2><button type="button" class="gck-close" data-gck-close aria-label="Close the Golden cart">Close</button></div>
+    <div class="gck-hd"><h2>Golden Technologies order${(typeof STAGING!=="undefined"&&STAGING)?' <span class="gck-prev">Private preview</span>':""}</h2><button type="button" class="gck-close" data-gck-close aria-label="Close the Golden order review">Close</button></div>
     <div class="gck-banner">${gckOrderingOpen()?"Order review — validate with Golden first; then place the order with Golden.":"Order review — validation only. Nothing is ordered, reserved or emailed from this screen yet."}</div>
-    ${GCART.items.length?`<div class="gck-sec"><h3>Chairs</h3>${lines}</div>`:`<div class="gck-sec"><p class="gck-note">Your Golden cart is empty. Configure a lift chair and choose “Add to Golden cart”.</p></div>`}
+    ${GCART.items.length?`<div class="gck-sec"><h3>Chairs</h3>${lines}</div>`:`<div class="gck-sec"><p class="gck-note">No Golden chairs in your cart. Configure a lift chair and choose “Add to cart”.</p></div>`}
     ${GCART.items.length?`<div class="gck-sec"><h3>Ship to</h3>${ship}</div>
     <div class="gck-sec"><h3>Order details</h3><div class="gck-grid">
       ${field("po","PO number (optional)",30)}${field("attention","Attention (optional)",60)}
@@ -4435,7 +4560,8 @@ function freightRowsHtml(f){
 }
 function renderCart(){
   const host=$("#cartGroups"); const groups=groupCart();
-  if(!groups.size){host.innerHTML='<div class="fineprint" style="margin-top:12px;">Your cart is empty.</div>';return;}
+  const gHtml=goldenCartGroupHtml();
+  if(!groups.size&&!gHtml){host.innerHTML='<div class="fineprint" style="margin-top:12px;">Your cart is empty.</div>';return;}
   let html=priceBannerHtml();
   for(const[slug,lines]of groups){
     const info=mfrInfo(slug), f=computeFreight(slug,lines), tot=f.itemsTotal+f.fee;
@@ -4473,13 +4599,14 @@ function renderCart(){
         </div>
       </div></div>`;
   }
-  host.innerHTML=html;
-  host.querySelectorAll(".citem").forEach(row=>{
+  host.innerHTML=html+gHtml;
+  goldenCartGroupWire(host);
+  host.querySelectorAll(".mgroup:not(.gmgroup) .citem").forEach(row=>{
     const k=row.getAttribute("data-k");
     row.querySelector("input").oninput=e=>{const q=clampInt(e.target.value,0);const it=CART.get(k);if(q<=0){CART.delete(k);PRICE_NOTES.delete(k);}else CART.set(k,{...it,qty:q});updateCart();};
     row.querySelector(".rm").onclick=()=>{CART.delete(k);PRICE_NOTES.delete(k);updateCart();};
   });
-  host.querySelectorAll(".mgroup").forEach(g=>{
+  host.querySelectorAll(".mgroup:not(.gmgroup)").forEach(g=>{
     const slug=g.getAttribute("data-slug");
     const po=g.querySelector(".po"), notes=g.querySelector(".notes");
     po.oninput=()=>{MFR[slug].po=po.value;po.classList.remove("needpo");};
@@ -4488,10 +4615,71 @@ function renderCart(){
 }
 function updateCart(){
   renderCart();
-  $("#cartCount").textContent=cartCount(); $("#cartCount").style.display=cartCount()?'grid':'none';
-  $("#itemsTotal").textContent=cartCount();
-  $("#grandTotal").textContent=money(grandTotal());
+  cartBadgeRefresh();
   scheduleCartSave();   // persist to the server so it survives logout/login (and admin can see it)
+}
+/* The header count and order summary cover EVERY manufacturer, Golden included (B6.1). Golden's amount is Golden's own
+   answer — shown once Golden has priced the order for a ship-to, never estimated here. */
+function cartBadgeRefresh(){
+  const n=cartCount()+(typeof gckCount==="function"?gckCount():0);
+  const b=$("#cartCount"); if(b){ b.textContent=n; b.style.display=n?'grid':'none'; }
+  const it=$("#itemsTotal"); if(it) it.textContent=n;
+  const gt=$("#grandTotal"); if(gt) gt.textContent=money(grandTotal());
+  const g=(typeof gckCount==="function")?gckCount():0, row=$("#gSumRow"), val=$("#gSumVal");
+  if(row) row.style.display=g?'':'none';
+  if(val) val.textContent=(g&&GCART.quote&&GCART.quote.totals)?money(GCART.quote.totals.grand_total):"at review";
+  const sb=$("#submitOrder"); if(sb&&!sb.disabled) sb.textContent=(!CART.size&&g)?"Review Golden order →":"Place order →";
+}
+/* B6.1 — the Golden Technologies order group in the HCPS cart. It shows the dealer's Golden chairs like every other
+   manufacturer's lines; Golden still prices it (merchandise + S&H for one of Golden's own ship-to records), validates it
+   and places it — through golden-proxy only, never through the HCPS order API — with the SAME attempt rules as before
+   (one Idempotency-Key per attempt, lost-answer recovery, cross-tab guards). Its own order and confirmation. */
+function goldenCartGroupHtml(){
+  if(typeof goldenCartOpen!=="function"||!goldenCartOpen()) return "";
+  const items=GCART.items, pend=!!GCART.pending, n=items.reduce((s,i)=>s+i.qty,0);
+  if(!items.length&&!pend) return "";
+  const q=GCART.quote, frozen=pend||GCART.busy;
+  const rows=items.map((i,ix)=>{
+    const p=(state.products||[]).find(x=>x.code===i.sku)||{};
+    const ql=q&&q.lines&&q.lines[ix];
+    const img=p.image?`<div class="cthumb"><img src="${esc(p.image)}" alt="${esc(i.label)}" loading="lazy" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>No image</span>'"></div>`:`<div class="cthumb"><span class="ph">No image</span></div>`;
+    return `<div class="citem" data-gix="${ix}">${img}
+      <div><div class="t">${esc(i.label)}</div><div class="s">${esc((ql&&ql.details)||i.detail||i.color)}</div><div class="s">Golden item # ${esc((ql&&ql.item_no)||i.sku)}</div>
+      <div class="s">${ql?`Unit ${money(ql.unit_price)} · Line ${money(ql.line_total)} · priced by Golden`:"Priced by Golden at review"}</div>
+      <div class="r"><input type="number" min="0" max="${GCK_MAX_QTY}" value="${i.qty}" aria-label="Quantity of ${esc(i.label)}" data-gq="${ix}"${frozen?" disabled":""}><button class="rm" data-grm="${ix}"${frozen?" disabled":""}>Remove</button></div></div></div>`;
+  }).join("");
+  const tot=q&&q.totals?`<div class="r"><span>Subtotal</span><span>${money(q.totals.subtotal)}</span></div>
+      <div class="r"><span>Shipping &amp; handling${q.totals.sh_waived?" (waived)":""}</span><span>${money(q.totals.sh_total)}</span></div>
+      <div class="r tot"><span>Golden Technologies total</span><span>${money(q.totals.grand_total)}</span></div>`
+    :`<div class="r"><span>Subtotal</span><span>at review</span></div><div class="r"><span>Shipping &amp; handling</span><span>at review</span></div>
+      <div class="r tot"><span>Golden Technologies total</span><span>priced by Golden</span></div>`;
+  return `<div class="mgroup gmgroup" data-slug="golden">
+    <div class="mghead"><span>Golden Technologies</span><span class="cnt">${n} chair${n===1?"":"s"}</span></div>
+    <div class="mgbody">
+      ${pend?`<div class="gwarn" role="alert"><b>Your Golden order is being confirmed with Golden.</b> These chairs stay as they are until Golden answers — open the review to check again.</div>`:""}
+      ${rows}
+      <div class="gnote">Golden Technologies prices this order — merchandise and shipping &amp; handling for the Golden ship-to address you choose — validates it and places it. It is a separate order with its own confirmation, shown in My Orders.</div>
+      <div class="mgtot">${tot}</div>
+      <button type="button" class="gckgo" data-gckgo>${pend?"Check my Golden order →":"Review &amp; place Golden order →"}</button>
+    </div></div>`;
+}
+function goldenCartGroupWire(host){
+  const g=host.querySelector(".gmgroup"); if(!g) return;
+  g.addEventListener("click",e=>{
+    if(e.target.closest("[data-gckgo]")) return goldenCartShow();
+    const rm=e.target.closest("[data-grm]"); if(!rm||GCART.pending||GCART.busy) return;
+    if(gckPendRead()){ toast("Your Golden order is being confirmed in another tab — finish it first."); return; }
+    GCART.items.splice(+rm.getAttribute("data-grm"),1); gckChanged();
+  });
+  g.addEventListener("change",e=>{
+    const t=e.target; if(!t.matches("[data-gq]")||GCART.pending||GCART.busy) return;
+    if(gckPendRead()){ toast("Your Golden order is being confirmed in another tab — finish it first."); gckRefreshCart(); return; }
+    const i=GCART.items[+t.getAttribute("data-gq")]; if(!i) return;
+    const v=parseInt(t.value,10);
+    if(!(v>0)) GCART.items.splice(+t.getAttribute("data-gq"),1);
+    else { i.qty=Math.min(GCK_MAX_QTY,v); i.refs=(i.refs||[]).slice(0,i.qty); }
+    gckChanged();
+  });
 }
 
 /* ---------- SERVER PRICING (Phase 2.7) ----------
@@ -4642,7 +4830,7 @@ function ensureStagingBar(){
 /* ---------- submit (one order per manufacturer) ---------- */
 async function submitOrder(){
   if(PREVIEW && !(typeof STAGING!=="undefined"&&STAGING)){ toast("Read-only preview — ordering is disabled for this dealer view."); return; }
-  if(!CART.size){toast("Cart is empty");return;}
+  if(!CART.size){ if(typeof gckCount==="function"&&gckCount()){ goldenCartShow(); return; } toast("Cart is empty");return;}
   const dealer={
     business:$("#f_biz").value.trim(), account:$("#f_acct").value.trim()||(state.dealer?state.dealer.account:""),
     contact:$("#f_contact").value.trim(), email:$("#f_email").value.trim(), phone:$("#f_phone").value.trim(),
@@ -4735,8 +4923,10 @@ async function submitOrder(){
       toast(`Some orders were placed, but ${failedNames} could not be recorded — still in your cart. Please place it again.`+(goldenKept.size?` Your Golden Technologies items also stay in your cart: please order them on the Golden platform.`:``));
       return;
     }
-    toast(emailWarn?`Order recorded ✓ — HCPS has been flagged to confirm it with the manufacturer`:`Submitted ${parts.join(' + ')||'order'} ✓`);
-    CART.clear(); PRICE_NOTES.clear(); for(const k in MFR) delete MFR[k]; clearCartRemote(); updateCart(); closeCart();
+    const goldenNext=(typeof gckCount==="function")&&gckCount()>0;
+    toast((emailWarn?`Order recorded ✓ — HCPS has been flagged to confirm it with the manufacturer`:`Submitted ${parts.join(' + ')||'order'} ✓`)+(goldenNext?" — now review and place your Golden Technologies order":""));
+    CART.clear(); PRICE_NOTES.clear(); for(const k in MFR) delete MFR[k]; clearCartRemote(); updateCart();
+    if(goldenNext) goldenCartShow(); else closeCart();
   }catch(e){console.error(e);toast("Could not submit — please try again.");}
   finally{btn.disabled=false;btn.textContent="Place order →";}
 }
@@ -5436,6 +5626,7 @@ function _brHcpsLogo(){
 }
 // Everything the brochure needs, read off the product the page already rendered.
 function brochurePayload(code){
+  if(typeof GBROCH!=="undefined"&&GBROCH[code]) return GBROCH[code];   // Golden: built from Golden's own content (B6.1)
   const p = (state.products||[]).find(x=>x.code===code); if(!p) return null;
   const m = _brManufacturer(p);
   const gal = (Array.isArray(p.media)?p.media.filter(x=>x.kind==='image'&&x.url).map(x=>x.url):[]);
@@ -5475,8 +5666,9 @@ function brochurePayload(code){
   };
 }
 let _brCode=null, _brMsrp=false;
-function openBrochure(code){
+function openBrochure(code, officialDocs){
   const pl = brochurePayload(code); if(!pl) return;
+  const docs = Array.isArray(officialDocs)?officialDocs:[];
   _brCode = code; _brMsrp = false;
   const host = document.createElement('div');
   host.className='br-modal'; host.id='brModal';
@@ -5486,6 +5678,7 @@ function openBrochure(code){
     <div class="sub">${esc(pl.name)}${pl.code?` · Item ${esc(pl.code)}`:''}</div>
     <label class="br-row"><input type="checkbox" id="brMsrp"> Include MSRP on the brochure</label>
     <div class="sub" style="margin:-6px 0 12px">Your dealer cost is never shown. Leave this unticked for a price-free handout.</div>
+    ${docs.length?`<div class="sub" style="margin:0 0 12px">Manufacturer's own: ${docs.map(d=>`<a href="${esc(d.url)}" target="_blank" rel="noopener" style="color:var(--navy);font-weight:700">${esc(d.title)} ↗</a>`).join(" · ")}</div>`:''}
     <div class="br-acts">
       <button onclick="brochurePrint()">🖨 Print / Save as PDF</button>
       <button class="ghost" onclick="brochureEmailForm()">✉ Email it</button>
@@ -5627,7 +5820,9 @@ async function submitSample(){
 
 /* ---------- init ---------- */
 $("#cartBtn").onclick=openCart; $("#closeCart").onclick=closeCart; $("#scrim").onclick=()=>{closeCart();};
-$("#clearCart").onclick=()=>{CART.clear();updateCart();toast("Cart cleared");};
+$("#clearCart").onclick=()=>{CART.clear();
+  if(typeof goldenCartOpen==="function"&&goldenCartOpen()&&GCART.items.length){ if(GCART.pending||GCART.busy){ updateCart(); toast("Cart cleared — your Golden order is still being confirmed, so its chairs stay until Golden answers"); return; } GCART.items=[]; gckChanged(); }
+  updateCart();toast("Cart cleared");};
 $("#submitOrder").onclick=submitOrder;
 /* ---------- dealer auth (email + password · self-serve + HCPS approval) ---------- */
 const AUTH={session:null,status:'anon',dealer:null,lines:[],prices:{}};
@@ -6891,7 +7086,7 @@ function quotableLine(slug){ if(typeof isRetiredSlug==="function"&&isRetiredSlug
 function quoteTotal(picked){ return picked.reduce((s,r)=>s+(r.msrp!=null?r.msrp:0),0); }
 function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">MSRP not provided</span>'; }
 function quoteItemHtml(r){ return `${esc(r.name)}<div style="font-size:10.5px;color:var(--muted)">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)}</div>`; }
-function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const p=(PRICE&&PRICE[k])||{};
+function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const p=(PRICE&&PRICE[k])||((typeof GQUOTE!=="undefined"&&GQUOTE[k])||{});
   return {key:k,mfr,code,sku:p.sku||code.split("|u=")[0],name:p.name||code,option:p.option||"",mfrName:p.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach};}); }
 function quotePaperHtml(picked,total){
   return `<div class="qhead"><div style="display:flex;gap:11px;align-items:center">${brandLogoHtml(46)}<div><div class="qbiz">${esc((PROFILE&&PROFILE.name)||"Your Business")}</div></div></div>
@@ -6937,6 +7132,9 @@ function renderQuotes(){
 function qPreview(){ const picked=quotePicked(); const total=quoteTotal(picked); const el=$("#qpaper"); if(el)el.innerHTML=quotePaperHtml(picked,total); }
 function qAdd(){ const v=$("#qsel").value; if(v&&!QUOTE.includes(v))QUOTE.push(v); renderQuotes(); }
 function qDel(mfr,code){ QUOTE=QUOTE.filter(x=>x!==mfr+"|"+code); renderQuotes(); }
+/* B6.1: the storefront adds a configured Golden chair to the quote (its record lives in the storefront's GQUOTE). */
+window.P360Quote={ add:function(k){ if(typeof k==="string"&&/^golden\|/.test(k)&&!QUOTE.includes(k)) QUOTE.push(k); }, picked:function(){ return quotePicked(); },
+  paper:function(){ const p=quotePicked(); return quotePaperHtml(p, quoteTotal(p)); } };
 
 /* volume-pricing request modal */
 function openPriceReq(mfr,code){
@@ -7305,7 +7503,9 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
             ${p._golden&&p._goldenAction==="configure"&&/^PR\d{3}-[A-Z]{3}$/.test(p.code)
               ? goldenConfigHtml(p)
               : p._golden
-              ? `<div class="pd-golden"><b>Golden ordering in Partner 360 is being finished.</b> ${p._goldenAction==="configure"?"Fabric, upgrades and configuration will be chosen right here, priced by Golden.":"Ordering will open right here, priced by Golden."} This item can't be added to the cart yet.</div>`
+              ? `<div class="gbrowse"><b>Browse only.</b> ${p._goldenAction==="configure"?"This Golden model can't be configured and ordered in Partner 360 yet.":"Golden "+esc(String(p.category||"products").toLowerCase())+" can't be ordered in Partner 360 yet."} Ask your HCPS rep to order it with Golden.</div>
+                 <button type="button" class="pd-broch" data-gb-broch="${esc(p.code)}">${BROCH_ICON}Print Brochure</button>
+                 <div class="pd-sub"><a role="button" tabindex="0" data-gb-quote="${esc(p.code)}">${QUOTE_ICON}Add to a quote</a></div>`
               : p._discontinued
               ? `<div class="pd-disc"><b>Discontinued</b> — this item is shown for reference and can no longer be ordered.${(variants||[]).some(v=>!v._discontinued)?' Choose a current option above, or see related products below.':' See related products below, or ask your HCPS rep for the current replacement.'}</div>`
               : `${upgradeSelectHtml(p)}<div class="pd-buy buy">

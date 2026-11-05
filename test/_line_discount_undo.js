@@ -27,6 +27,11 @@ const SNIPPETS = [
   [/\n  const live=t=>!\(t&&t\.until!=null&&t\.until!==''\)\|\|[^\n]*\n  const LT=\(Array\.isArray\(p\.tiers\)\?p\.tiers:\[\]\)\.filter\(live\);\n  if\(LT\.length\)\{/, '\n  if(Array.isArray(p.tiers)&&p.tiers.length){'],
   [/\n    for\(const t of LT\)\{ const mq=/, '\n    for(const t of p.tiers){ const mq='],
   [/ \+ \(x\.until \? '~' \+ x\.until : ''\)\)/, ')'],
+  /* Golden B6.1 unified cart (owner directive 2026-11-04): the Golden Technologies group is appended to the HCPS cart and
+     wired on its own; HCPS rows/groups skip it. Taken back out exactly, so any other renderCart change still fails. */
+  [/\n  const gHtml=goldenCartGroupHtml\(\);\n  if\(!groups\.size&&!gHtml\)\{/, '\n  if(!groups.size){'],
+  [/\n  host\.innerHTML=html\+gHtml;\n  goldenCartGroupWire\(host\);\n  host\.querySelectorAll\("\.mgroup:not\(\.gmgroup\) \.citem"\)/, '\n  host.innerHTML=html;\n  host.querySelectorAll(".citem")'],
+  [/\n  host\.querySelectorAll\("\.mgroup:not\(\.gmgroup\)"\)\.forEach\(g=>\{/, '\n  host.querySelectorAll(".mgroup").forEach(g=>{'],
 ];
 function undoLineDiscount(html) {
   let s = String(html);
