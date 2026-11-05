@@ -2957,7 +2957,7 @@ function gckRender(){
       <div><span>Merchandise</span><b>${money(q.totals.subtotal)}</b></div>
       <div><span>Freight</span><b>${gckFreight(q.totals)}</b></div>
       <div><span>Shipping &amp; handling${q.totals.sh_waived?" (waived for this ship-to)":""}</span><b>${money(q.totals.sh_total)}</b></div>
-      ${(q.totals.shipments||[]).length>1?q.totals.shipments.map(s=>`<div class="gck-sm"><span>${esc(s.group)} shipment</span><span>${money(s.subtotal)}${s.freight!=null?` + ${Number(s.freight)===0?"free freight":money(s.freight)+" freight"}`:""} + ${money(s.sh)} S&amp;H</span></div>`).join(""):""}
+      ${(q.totals.shipments||[]).length>1?q.totals.shipments.map(s=>`<div class="gck-sm"><span>${s.group==="in_stock"?"Ships now":s.group==="build"?"Built to order":"Shipment"}</span><span>${money(s.subtotal)}${s.freight!=null?` + ${Number(s.freight)===0?"free freight":money(s.freight)+" freight"}`:""} + ${money(s.sh)} S&amp;H</span></div>`).join(""):""}
       <div class="gck-gt"><span>Golden total</span><b>${money(q.totals.grand_total)}</b></div>
       <div class="gck-note">Priced by Golden Technologies${GCART.quoteAsOf?" · "+esc(new Date(GCART.quoteAsOf).toLocaleString()):""}.${q.freight&&q.freight.note?" "+esc(q.freight.note):""}</div></div>`:"";
   const changed=GCART.changed?`<div class="gck-warn" role="alert"><b>Golden's prices changed since you reviewed them.</b> Please review the new totals below, then validate again.</div>`:"";
@@ -3015,7 +3015,9 @@ async function gckQuote(){
   GCART.busy=true; GCART.err=null; GCART.changed=false; GCART.result=null; gckRender();
   const sig=JSON.stringify([gckReq(),GCART.ship]);
   const seq=GCART.seq;
-  const j=await goldenCall("quote",{lines:gckReq(),ship_to:{id:GCART.ship}});
+  // split_order:true = Golden's own default: in-stock and build chairs ship as separate shipments, each with its own
+  // freight and S&H (Golden treats a single-group order as one shipment). Never a merged order without Golden's hold note.
+  const j=await goldenCall("quote",{lines:gckReq(),ship_to:{id:GCART.ship},split_order:true});
   if(seq!==GCART.seq) return;
   GCART.busy=false;
   if(sig!==JSON.stringify([gckReq(),GCART.ship])){ gckRender(); return; }   // the cart changed while Golden answered
@@ -3030,7 +3032,7 @@ async function gckQuote(){
 function gckOrderBody(){
   const f=GCART.form, q=GCART.quote;
   const lines=gckReq().map((l,ix)=>{ const refs=(GCART.items[ix].refs||[]).slice(0,l.qty).map(x=>String(x||"").trim()); while(refs.length&&!refs[refs.length-1]) refs.pop(); return refs.length?Object.assign({},l,{reference_names:refs}):l; });
-  const b={quote_hash:q.quote_hash,lines,ship_to:{id:GCART.ship},contact:{name:f.name.trim(),phone:f.phone.trim()}};
+  const b={quote_hash:q.quote_hash,lines,ship_to:{id:GCART.ship},split_order:true,contact:{name:f.name.trim(),phone:f.phone.trim()}};
   if(f.email.trim()) b.contact.email=f.email.trim();
   if(f.po.trim()) b.po_number=f.po.trim(); if(f.attention.trim()) b.attention=f.attention.trim(); if(f.notes.trim()) b.notes=f.notes.trim();
   return b;

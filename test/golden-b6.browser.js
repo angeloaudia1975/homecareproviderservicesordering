@@ -86,7 +86,7 @@ function runProxy(body, headers) {   // serialised: the in-process fetch world i
       if (/api\.resend\.com/.test(u)) { W.mail.push(JSON.parse(init.body)); return res(200, { id: 're_1' }); }
       if (/sendgrid|mailgun|smtp|graph\.microsoft/.test(u)) throw new Error('no other email path');
       if (u.startsWith('https://deploy-preview-284--goldenonlineordering.netlify.app/')) {
-        const url = new URL(u); W.goldenCalls.push({ path: url.pathname, key: init.headers && init.headers['Idempotency-Key'], mode: init.body ? JSON.parse(init.body).mode : null });
+        const url = new URL(u); W.goldenCalls.push({ path: url.pathname, key: init.headers && init.headers['Idempotency-Key'], mode: init.body ? JSON.parse(init.body).mode : null, split: init.body ? JSON.parse(init.body).split_order : null });
         const ev = { httpMethod: init.method, rawUrl: u, path: url.pathname, headers: Object.fromEntries(Object.entries(init.headers || {}).map(([k, v]) => [k.toLowerCase(), v])), queryStringParameters: Object.fromEntries(url.searchParams), body: init.body || '', isBase64Encoded: false };
         const outer = global.fetch; global.fetch = (x, y) => /api\.resend\.com/.test(String(x)) ? outer(x, y) : goldenSb(String(x).replace('https://sb.test', 'http://sb.test'), y);
         process.env.SUPABASE_URL = 'http://sb.test';
@@ -284,6 +284,23 @@ async function toValidated(page, po, keepItems) {
       const g2 = await geo();
       await t(`${label}: cart — no horizontal scroll, touch targets ≥ 44px`, () => { ok(g2.sw <= g2.cw + 1, JSON.stringify(g2)); ok(!g2.small.length, 'small: ' + g2.small.join(',')); });
       await t(`${label}: no HCPS order call, HCPS stored nothing, no page error`, () => { ok(counts.orders === 0 && W.hcpsWrites === 0, counts.orders + '/' + W.hcpsWrites); ok(!errs.length, errs.join(' | ')); });
+      await ctx.close();
+    }
+    { // a mixed cart (in-stock + built to order) is quoted as Golden's two shipments, each with its own freight and S&H
+      Object.assign(W, { cost: 1188, dropNextPlace: 0, delayPlace: 0 }); W.recs.clear(); W.orders.length = 0; W.goldenCalls.length = 0; W.mail.length = 0;
+      const { ctx, page } = await boot(browser, 1280, 900);
+      await page.evaluate(() => { GCART.items = []; goldenCartAdd('PR511-LAR', { fabric: 'std', color: 'SUM', tier: 'nirvana', footrest: false }, null);
+        goldenCartAdd('PR511-LAR', { fabric: 'xover', color: 'JBO', tier: 'nirvana', footrest: false }, null); goldenCartShow(); });
+      await page.waitForSelector('.gck-ship', { timeout: 15000 });
+      await page.check(`.gck-ship input[value="${LOC_CIN}"]`);
+      if (!(await page.$('.gck-tot'))) await page.click('[data-gck-quote]');
+      try { await page.waitForSelector('.gck-tot', { timeout: 15000 }); } catch (e) { console.log('DEBUG mixed:', await page.evaluate(() => [GCART.err, JSON.stringify(GCART.items), document.getElementById('gckView').innerText.slice(0, 500)])); throw e; }
+      const m = await page.evaluate(() => ({ t: GCART.quote && GCART.quote.totals, txt: document.querySelector('.gck-tot').innerText }));
+      const qc = W.goldenCalls.filter(c => c.path === '/v1/quote').slice(-1)[0];
+      await t('mixed cart: Partner 360 asks for Golden\'s split shipments; ships-now and built-to-order each pay $135 freight', () => {
+        ok(m.t && m.t.split === true && m.t.freight_total === 270 && m.t.shipments.length === 2 && m.t.shipments.every(x => x.freight === 135), JSON.stringify(m.t));
+        ok(/Ships now/.test(m.txt) && /Built to order/.test(m.txt) && /Freight\s*\$270\.00/.test(m.txt), m.txt.slice(0, 400));
+        ok(qc && qc.split === true, 'the quote request asked Golden for split shipments'); });
       await ctx.close();
     }
   } finally { await browser.close(); }
