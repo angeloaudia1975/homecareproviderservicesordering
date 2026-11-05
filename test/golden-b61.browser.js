@@ -187,11 +187,13 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       await t(`${label}: no Golden retail figure for a chosen upgrade → MSRP not provided`, () => ok(q2.msrp === null, JSON.stringify(q2)));
       // ── 3. Print Brochure: Golden's own content, no dealer price, Golden's official sell sheet linked ──
       await page.click('.gcfg [data-gbroch]'); await page.waitForSelector('#brModal', { timeout: 10000 });
-      const b1 = await page.evaluate(() => ({ modal: document.getElementById('brModal').innerText, links: [...document.querySelectorAll('#brModal a[href]')].map(a => a.href), pl: brochurePayload('PR511-LAR') }));
+      const b1 = await page.evaluate(() => ({ modal: document.getElementById('brModal').innerText, links: [...document.querySelectorAll('#brModal a[href]')].map(a => a.href), pl: brochurePayload('PR511-LAR'),
+        cfg: goldenQuoteRecord(state.products.find(x => x.code === 'PR511-LAR'), GCFG.cur).rec }));
       await t(`${label}: Print Brochure — Golden's photos, description, features and size specs; Golden's MSRP only; no dealer price; official sell sheet linked`, () => {
         const s = JSON.stringify(b1.pl);
         ok(b1.pl && b1.pl.images.length >= 1 && b1.pl.images.every(u => /^https:\/\/(d3325uqufdmhie\.cloudfront\.net|cdn\.wdgtsrc\.com|goldenonlineordering\.netlify\.app|(www\.)?goldentech\.com)\//.test(u)), 'Golden photos ' + s.slice(0, 200));
-        ok(b1.pl.description.length > 40 && b1.pl.features.length > 3 && b1.pl.specs.length > 3, 'content'); ok(b1.pl.msrp === 2992 && b1.pl.quote_price === null, 'msrp ' + b1.pl.msrp);
+        ok(b1.pl.description.length > 40 && b1.pl.features.length > 3 && b1.pl.specs.length > 3, 'content'); ok(b1.pl.msrp === b1.cfg.msrp && b1.pl.msrp >= 2992 && b1.pl.quote_price === null, 'msrp ' + b1.pl.msrp + ' vs configured ' + b1.cfg.msrp);
+        ok(b1.pl.tagline && b1.pl.tagline === b1.cfg.option, 'the brochure names the configuration: ' + b1.pl.tagline);
         ok(!/1188|1608|dealer_price|dealer_cost|unit_price/.test(s), 'no dealer price in the brochure payload');
         ok(b1.links.length >= 1 && b1.links.every(h => /^https:\/\//.test(h)) && /Sell Sheet/i.test(b1.modal), 'official sell sheet ' + JSON.stringify(b1.links)); });
       await page.evaluate(() => closeBrochure());
@@ -199,6 +201,10 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       await page.evaluate(() => openProductDetail('GA541D')); await page.waitForTimeout(1500);
       const sc = await page.evaluate(() => ({ cfg: !!document.querySelector('.gcfg'), note: (document.querySelector('.gbrowse') || {}).innerText || '', add: [...document.querySelectorAll('.pd .addbtn, .pd .gaddbtn')].length, broch: !!document.querySelector('.pd .pd-broch'), quote: /Add to a quote/.test(document.querySelector('.pd').innerText) }));
       await t(`${label}: a Golden scooter says "Browse only", offers no Add to cart, keeps Print Brochure and Add to a quote`, () => ok(!sc.cfg && /Browse only/.test(sc.note) && sc.add === 0 && sc.broch && sc.quote, JSON.stringify(sc)));
+      const scq = await page.evaluate(() => { const a = document.querySelector('.pd [data-gb-quote]'); const h = a.getBoundingClientRect().height, inline = a.hasAttribute('onclick'); a.click();
+        return { h, inline, picked: window.P360Quote.picked().map(r => r.sku), view: document.querySelector('#p360 .view.on, [data-view].on') ? 1 : 0 }; });
+      await t(`${label}: the browse-only "Add to a quote" is a ≥ 44px control with no inline script, and adds the scooter to the quote`, () => ok(scq.h >= 44 && !scq.inline && scq.picked.includes('GA541D'), JSON.stringify(scq)));
+      await page.evaluate(() => { if (typeof showView === 'function') try { showView('catalog'); } catch (e) {} if (typeof P360 !== 'undefined' && P360.show) try { P360.show('shop'); } catch (e) {} });
       // ── 5. the unified cart: Golden group + an HCPS line ──
       await page.evaluate(() => { const p = { manufacturer: 'strongback-mobility', code: '1019', name: 'Strongback Comfort Flip Arm Wheelchair 18"', base_price: 581, brand: 'Strongback' };
         CART.set(cartKey(p), { p, qty: 1 }); updateCart(); openCart(); });
@@ -239,6 +245,22 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       const x1 = await page.evaluate(() => ({ badge: document.getElementById('cartCount').textContent, n: GCART.items.length }));
       await t(`${label}: a chair added in another tab appears in this tab's cart and count`, () => ok(x1.badge === '4' && x1.n === 2, JSON.stringify(x1)));
       await p2.close();
+      // a dealer typing an HCPS PO while another tab changes the Golden cart keeps the field and every keystroke
+      await page.evaluate(() => { const p = { manufacturer: 'strongback-mobility', code: '1019', name: 'Strongback Comfort Flip Arm Wheelchair 18"', base_price: 581, brand: 'Strongback' };
+        CART.set(cartKey(p), { p, qty: 1 }); updateCart(); openCart(); });
+      const poSel = '#cartGroups .mgroup:not(.gmgroup) input.po, #cartGroups .mgroup:not(.gmgroup) input[type=text]';
+      const hasPo = await page.$(poSel);
+      if (hasPo) {
+        await page.focus(poSel); await page.keyboard.type('AB');
+        await page.evaluate(() => { GCART.items[0].qty = 2; gckChanged(); });
+        await page.keyboard.type('CD');
+        const po = await page.evaluate(s => ({ v: document.querySelector(s).value, focus: document.activeElement === document.querySelector(s), g: document.querySelector('.gmgroup [data-gq="0"]').value }), poSel);
+        await t(`${label}: typing an HCPS PO while the Golden cart changes keeps focus and every keystroke; the Golden group still updates`, () => ok(/ABCD$/.test(po.v) && po.focus && po.g === '2', JSON.stringify(po)));
+      }
+      // removing a Golden chair keeps keyboard focus inside the Golden group
+      await page.focus('.gmgroup [data-grm="0"]'); await page.keyboard.press('Enter'); await page.waitForTimeout(200);
+      const rf = await page.evaluate(() => ({ n: GCART.items.length, inG: !!(document.activeElement && document.activeElement.closest('.gmgroup')), tag: document.activeElement && document.activeElement.tagName }));
+      await t(`${label}: removing a Golden chair from the cart keeps keyboard focus in the Golden group`, () => ok(rf.n === 1 && rf.inG, JSON.stringify(rf)));
       // ── 8. clear cart empties both ──
       await page.click('#clearCart'); await page.waitForTimeout(200);
       const e1 = await page.evaluate(() => ({ g: GCART.items.length, badge: getComputedStyle(document.getElementById('cartCount')).display, empty: /Your cart is empty/.test(document.getElementById('cartGroups').innerText) }));

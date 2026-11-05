@@ -503,7 +503,7 @@ body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
 .pd .gaddbtn:disabled{background:#d7dde4;color:#5b6676;box-shadow:none;cursor:not-allowed}
 .gcfg .pd-buy{margin-top:12px}.gcfg .pd-buy .qtyin{min-height:48px}.gcfg .pd-broch{min-height:46px}.gcfg .pd-sub a{min-height:46px}
 .pd-sub a.dis{opacity:.5;pointer-events:none}
-.gbrowse{margin-top:12px;padding:10px 12px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;font-size:13.5px;line-height:1.45}
+.pd-sub a[data-gb-quote]{min-height:44px;display:inline-flex;align-items:center}.gbrowse{margin-top:12px;padding:10px 12px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;font-size:13.5px;line-height:1.45}
 .pd-sub{display:flex;gap:12px;margin-top:12px;}
 .pd-sub a{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:var(--navy);cursor:pointer;}
 .pd-broch{width:100%;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;
@@ -2719,10 +2719,17 @@ function goldenBrochurePayload(p, G){
     clinical:[], specs:specs, sizing:null, sizing_note:"", warranty:(f.warranty_terms||[]).join(" · "), billing_codes:[], source_url:(F.page&&F.page.url)||"",
     msrp:(isFinite(msrp)&&msrp>0)?msrp:null, quote_price:null };
 }
-async function goldenBrochure(sku){
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-gb-broch]"); if(b) return goldenBrochure(b.getAttribute("data-gb-broch"));
+  const q=e.target.closest("[data-gb-quote]"); if(q) return goldenQuoteAdd(q.getAttribute("data-gb-quote")); });
+document.addEventListener("keydown",e=>{ const q=e.target.closest&&e.target.closest("[data-gb-quote]"); if(q&&(e.key==="Enter"||e.key===" ")){ e.preventDefault(); goldenQuoteAdd(q.getAttribute("data-gb-quote")); } });
+async function goldenBrochure(sku, cur){
   const p=(state.products||[]).find(x=>x.code===sku&&x._golden); if(!p) return;
   let G=null; try{ G=await goldenFamilyDetail(p._goldenFamily); }catch(e){}
-  GBROCH[sku]=goldenBrochurePayload(p,G);
+  const b=goldenBrochurePayload(p,G);
+  /* From the configurator, the brochure shows the chair as configured: its options and Golden's retail for that exact
+     configuration (null = MSRP not shown). Without a configuration it is the size's own Golden MSRP. */
+  if(cur&&cur.q&&cur.sel&&cur.sel.color){ const r=goldenQuoteRecord(p,cur).rec; b.tagline=r.option||""; b.msrp=r.msrp; }
+  GBROCH[sku]=b;
   openBrochure(sku, goldenOfficialDocs(G));
 }
 /* B6.1 — Add to a quote for Golden: the existing Customer MSRP Quote Builder, with the exact model, size, fabric, colour
@@ -2767,7 +2774,7 @@ function goldenConfigWire(host){
   box.addEventListener('click',function(e){
     const sel=GCFG.sel[fam]||(GCFG.sel[fam]={fabric:"std",color:null,tier:null,footrest:false});
     if(e.target.closest('[data-gadd]')){ const cur=GCFG.cur; if(cur&&cur.sku===sku&&!box.classList.contains('gcfg-busy')){ const qi=box.querySelector('[data-gqty]'); goldenCartAdd(sku, cur.sel, cur.q, qi?qi.value:1); } return; }
-    if(e.target.closest('[data-gbroch]')) return goldenBrochure(sku);
+    if(e.target.closest('[data-gbroch]')) return goldenBrochure(sku, GCFG.cur&&GCFG.cur.sku===sku?GCFG.cur:null);
     if(e.target.closest('[data-gquote]')){ e.preventDefault(); const cur=GCFG.cur; if(cur&&cur.sku===sku&&!box.classList.contains('gcfg-busy')) goldenQuoteAdd(sku, cur); return; }
     const f=e.target.closest('[data-gfab]'), c=e.target.closest('[data-gcol]'), t=e.target.closest('[data-gtier]');
     if(f){ const k=f.getAttribute('data-gfab'); if(k!==sel.fabric){ sel.fabric=k; sel.color=null; } }
@@ -2847,9 +2854,29 @@ function gckReset(){
   document.body.classList.remove('gck-lock'); if(GCART._esc){ document.removeEventListener('keydown',GCART._esc,true); GCART._esc=null; }
   Object.assign(GCART,{items:[],ship:null,shipList:null,shipScope:null,shipErr:null,quote:null,quoteSig:null,quoteAsOf:null,attempt:null,result:null,busy:false,pending:null,placed:null,pendMsg:null,err:null,changed:false,seq:(GCART.seq||0)+1,form:{po:"",name:"",phone:"",email:"",attention:"",notes:""}});
   if(typeof GOLDEN!=="undefined"){ GOLDEN.on=false; GOLDEN.checked=false; }
+  if(typeof cartBadgeRefresh==="function") try{ cartBadgeRefresh(); }catch(e){}
 }
 function gckChanged(){ GCART.cartAt=Date.now(); GCART.quote=null; GCART.quoteSig=null; GCART.result=null; gckSave(); gckPill(); }
-function gckRefreshCart(){ try{ if(typeof renderCart==="function"&&document.getElementById("cartGroups")) renderCart(); if(typeof cartBadgeRefresh==="function") cartBadgeRefresh(); }catch(e){} }
+/* Golden state changed (this tab or another): refresh the cart without taking the dealer's place. If the dealer is typing
+   in an HCPS field of the cart, only the Golden group is replaced; a Golden control that had focus gets it back. */
+function gckRefreshCart(){ try{
+  const host=document.getElementById("cartGroups");
+  if(host&&typeof renderCart==="function"){
+    const a=document.activeElement, inHost=a&&host.contains(a), inG=inHost&&a.closest(".gmgroup");
+    if(inHost&&!inG&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){
+      const g=host.querySelector(".gmgroup"), html=goldenCartGroupHtml();
+      if(g){ if(html){ g.insertAdjacentHTML("afterend",html); g.remove(); } else g.remove(); }
+      else if(html) host.insertAdjacentHTML("beforeend",html);
+      goldenCartGroupWire(host);
+    } else {
+      let want=null; if(inG){ for(const at of ["data-gq","data-grm"]) if(a.hasAttribute(at)) want=[at,a.getAttribute(at)]; if(a.hasAttribute("data-gckgo")) want=["data-gckgo",""]; }
+      renderCart();
+      if(want){ const g=host.querySelector(".gmgroup");
+        const el=g&&(g.querySelector(want[1]!==""?`[${want[0]}="${want[1]}"]`:`[${want[0]}]`)||g.querySelector("[data-grm]")||g.querySelector("[data-gckgo]"));
+        const t=el||document.getElementById("closeCart"); if(t&&t.focus) t.focus(); }
+    }
+  }
+  if(typeof cartBadgeRefresh==="function") cartBadgeRefresh(); }catch(e){} }
 function goldenCartAdd(sku, sel, cq, qty){
   if(!goldenCartOpen()||!sel||!sel.color) return;
   if(GCART.pending||gckPendRead()){ showToast&&showToast("Finish confirming your Golden order first — open your cart."); return; }
@@ -4610,10 +4637,12 @@ function goldenCartGroupWire(host){
   g.addEventListener("click",e=>{
     if(e.target.closest("[data-gckgo]")) return goldenCartShow();
     const rm=e.target.closest("[data-grm]"); if(!rm||GCART.pending||GCART.busy) return;
+    if(gckPendRead()){ toast("Your Golden order is being confirmed in another tab — finish it first."); return; }
     GCART.items.splice(+rm.getAttribute("data-grm"),1); gckChanged();
   });
   g.addEventListener("change",e=>{
     const t=e.target; if(!t.matches("[data-gq]")||GCART.pending||GCART.busy) return;
+    if(gckPendRead()){ toast("Your Golden order is being confirmed in another tab — finish it first."); gckRefreshCart(); return; }
     const i=GCART.items[+t.getAttribute("data-gq")]; if(!i) return;
     const v=parseInt(t.value,10);
     if(!(v>0)) GCART.items.splice(+t.getAttribute("data-gq"),1);
@@ -7440,8 +7469,8 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
               ? goldenConfigHtml(p)
               : p._golden
               ? `<div class="gbrowse"><b>Browse only.</b> ${p._goldenAction==="configure"?"This Golden model can't be configured and ordered in Partner 360 yet.":"Golden "+esc(String(p.category||"products").toLowerCase())+" can't be ordered in Partner 360 yet."} Ask your HCPS rep to order it with Golden.</div>
-                 <button type="button" class="pd-broch" onclick="goldenBrochure('${esc(p.code)}')">${BROCH_ICON}Print Brochure</button>
-                 <div class="pd-sub"><a role="button" tabindex="0" onclick="goldenQuoteAdd('${esc(p.code)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">${QUOTE_ICON}Add to a quote</a></div>`
+                 <button type="button" class="pd-broch" data-gb-broch="${esc(p.code)}">${BROCH_ICON}Print Brochure</button>
+                 <div class="pd-sub"><a role="button" tabindex="0" data-gb-quote="${esc(p.code)}">${QUOTE_ICON}Add to a quote</a></div>`
               : p._discontinued
               ? `<div class="pd-disc"><b>Discontinued</b> — this item is shown for reference and can no longer be ordered.${(variants||[]).some(v=>!v._discontinued)?' Choose a current option above, or see related products below.':' See related products below, or ask your HCPS rep for the current replacement.'}</div>`
               : `${upgradeSelectHtml(p)}<div class="pd-buy buy">
