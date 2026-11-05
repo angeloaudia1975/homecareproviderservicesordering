@@ -185,6 +185,10 @@ body:not(.p360on) #p360wrap{display:none!important;}
 .citem .pricenote.gone{color:#b42318;}
 .discbadge{display:inline-block;background:#f1f3f5;color:#5b6570;border:1px solid #d9dee3;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;}
 .pd-disc{background:#f6f7f8;border:1px solid #d9dee3;border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:#3a434c;margin-top:10px;}
+.accessnote{background:#fff6e5;border:1px solid #f3c27a;color:#6b3d00;border-radius:10px;padding:10px 12px;margin:8px 0 4px;font-size:13px;line-height:1.45;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;}
+.accessnote[hidden]{display:none;}
+.accessnote button{min-height:44px;padding:8px 14px;border-radius:8px;border:0;background:var(--navy,#0b1f33);color:#fff;font-weight:700;cursor:pointer;}
+.accessnote button[disabled]{opacity:.6;cursor:default;}
 .pricebanner{background:#fff6e5;border:1px solid #f3c27a;color:#6b3d00;border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:13px;line-height:1.45;}
 .citem .r{display:grid;gap:6px;justify-items:end;}
 .citem .r input{width:64px;padding:7px;text-align:center;border:1px solid var(--line);border-radius:7px;}
@@ -1438,6 +1442,7 @@ body.gck-lock{overflow:hidden}body.gck-lock .gck-pill{display:none}.gck-ov{displ
     </div>
   </div>
   <p id="mfrSub">One portal for every HCPS manufacturer partner.</p>
+  <div id="accessNotice" class="accessnote" role="status" hidden></div>
   <div class="shopbar" id="shopLines"></div>
 </div></div>
 
@@ -2095,6 +2100,16 @@ async function commercialLayers(slug, rows){
   if(j.identity_sha256!==identity) throw new Error('catalog-layers answered for another version of the catalog file');
   return j;
 }
+/* RETIRED PART NUMBERS (owner decisions; durable). A part number listed here is never shown, priced or ordered —
+   whatever a catalog file, an import, an added product or an enrichment page says — because the order server runs this
+   same merge (_shop_engine.js). Retiring by an override row alone was reversible by deleting the row; this list is not.
+   History (orders, sales, commissions, audit) is untouched. Removing a code from here needs the owner's decision.
+   PediFix (owner, C3-06 closeout 2026-11-05): the 14 former reactivation candidates are retired, and the duplicate
+   P3095-115 stays retired. */
+const RETIRED_SKUS=Object.freeze({
+  pedifix:Object.freeze(["8520","8521","8620","P3012","P3012-12","P3305","P3355-STR","6210-L-S","6210-L-M","6210-L-L","6210-M-S","6210-M-M","6210-M-L","6210-M-XL","P3095-115"])
+});
+function isRetiredSku(slug,code){ const l=RETIRED_SKUS[String(slug==null?"":slug).trim().toLowerCase()]; return !!(l&&l.includes(String(code==null?"":code).trim().toUpperCase())); }
 async function mergeCatalogEdits(slug, prods){
   /* FAILS CLOSED. Without the line's commercial layers nothing is listed: a product the saved
      edits had hidden would otherwise reappear, and there is no public price left to show. */
@@ -2154,12 +2169,12 @@ async function mergeCatalogEdits(slug, prods){
          record below; without this flag the enrichment layer would silently undo it. */
       if(pa.name!=null && pa.name!=="") merged._nameFromOverride=true;
       if(pa.category!=null && pa.category!=="") merged._catFromOverride=true;
-      if(pa.active===false) merged._hidden=true; return merged; }).filter(p=>!p._hidden);
+      if(pa.active===false||isRetiredSku(slug,p.code)) merged._hidden=true; return merged; }).filter(p=>!p._hidden&&!isRetiredSku(slug,p.code));
     const have=new Set(prods.map(p=>p.code));
     /* An ADDED product had no way to carry a group at all, so every one of them rendered as
        its own card even when it was plainly a size of something already on the shelf. Added
        products now read the same override layer, which is where their group can be set. */
-    (cust||[]).forEach(c=>{ if(c.active===false||have.has(c.code)) return;
+    (cust||[]).forEach(c=>{ if(c.active===false||have.has(c.code)||isRetiredSku(slug,c.code)) return;
       const pa=om[c.code]||{};
       if(pa.active===false) return;
       /* map was SELECTED above but never copied onto the row, so an added product's MAP
@@ -3689,7 +3704,7 @@ async function renderHome(){
      <div class="opptop"><div class="ln">${esc(m.name)}</div><span class="oppbadge">Opportunity</span></div>${mlogo(m)}
      <div class="lc">You have portal access but no ${esc(m.name)} account yet — open one to unlock ordering &amp; pricing.</div>
      <div class="oppacts"><button class="oppbtn primary" onclick="selectManufacturer('${esc(m.slug)}')">Explore catalog →</button>
-       <a class="oppbtn ghost" href="mailto:${bizEmail}?subject=${subj}&body=${bodyq}">Request account</a></div></div>`;}).join("");
+       ${needsAccess(m.slug)?`<button class="oppbtn ghost" data-slug="${esc(m.slug)}" onclick="requestAccess(this.dataset.slug,this)">${ACCESS_REQUESTED.has(m.slug)?"Access requested ✓":"Request access"}</button>`:`<a class="oppbtn ghost" href="mailto:${bizEmail}?subject=${subj}&body=${bodyq}">Request account</a>`}</div></div>`;}).join("");
 
   const hc=await loadHomeContent();
   const heroSec=homeHeroHtml(hc), tilesSec=homeTilesHtml(hc);
@@ -3775,6 +3790,35 @@ async function gotoProduct(slug,code){
 }
 
 /* ---------- render banner + filters ---------- */
+/* REQUEST ACCESS (owner, C3-06 closeout 2026-11-05). A dealer may BROWSE a line it is eligible for (territory rules)
+   without being set up to ORDER it: the order server prices and records only the lines the dealer's own active
+   dealer_manufacturers rows carry. dealer-auth lists those browse-only lines as access.request_access. Such a line
+   shows why ordering is unavailable and a Request access button; the request goes to HCPS staff for review and NEVER
+   grants anything by itself. Staff approve by turning the line on in the dealer's Ordering Access grid. */
+function needsAccess(slug){ const a=(typeof AUTH!=="undefined"&&AUTH)?AUTH.access:null; return !!(a&&Array.isArray(a.request_access)&&a.request_access.includes(slug)); }
+const ACCESS_REQUESTED=new Set();
+function accessNoticeHtml(slug){
+  const m=(state.manufacturers||[]).find(x=>x.slug===slug)||{}; const nm=esc(m.name||slug);
+  const sent=ACCESS_REQUESTED.has(slug);
+  return `<span><b>Ordering access for ${nm} isn't set up on your account yet.</b> A ${nm} manufacturer account and HCPS ordering access must be established before you can see this catalog with your pricing and place orders. Request access and HCPS will review it with you.</span>`
+    +`<button type="button" ${sent?"disabled":""} data-slug="${esc(slug)}" onclick="requestAccess(this.dataset.slug,this)">${sent?"Access requested ✓":"Request access"}</button>`;
+}
+async function requestAccess(slug,btn){
+  if(typeof PREVIEW!=="undefined"&&PREVIEW){ toast("Read-only preview — requests are disabled for this dealer view."); return; }
+  if(!AUTH.session||!AUTH.session.access_token){ toast("Please sign in again to request access."); return; }
+  if(btn){ btn.disabled=true; btn.textContent="Sending…"; }
+  let j=null;
+  try{
+    await ensureFreshSession();
+    const r=await fetch("https://homecareproviderservices.netlify.app/.netlify/functions/dealer-tools-api",{method:"POST",
+      headers:{"content-type":"application/json",authorization:"Bearer "+AUTH.session.access_token},body:JSON.stringify({action:"access_request",manufacturer:slug})});
+    j=await r.json().catch(()=>null);
+  }catch(e){ j=null; }
+  if(j&&j.ok){ ACCESS_REQUESTED.add(slug); if(btn) btn.textContent="Access requested ✓";
+    toast(j.already?"Your request is already with HCPS — we'll be in touch.":j.already_carried?"This line is already on your account — reload the page to order it.":"Request sent to HCPS — we'll review it and contact you about opening the account."); return; }
+  if(btn){ btn.disabled=false; btn.textContent="Request access"; }
+  toast((j&&j.error)||"Your request could not be sent right now — please try again or call HCPS.");
+}
 function renderBanner(){
   const m=state.manufacturers.find(x=>x.slug===state.active)||{};
   $("#mfrName").innerHTML = `${m.logo?`<img class="hdrlogo" src="${esc(m.logo)}" alt="${esc(m.name||'')} logo" onerror="this.style.display='none'">`:""}${esc(m.name||"—")}`;
@@ -3796,6 +3840,7 @@ function renderBanner(){
   $("#mfrSub").textContent = state.products.length
     ? `Browse and order the ${m.name||''} line — choose a category, open a product to pick its options, add it to your cart.`
     : `Products for ${m.name||''} are being loaded into the portal.`;
+  { const an=document.getElementById("accessNotice"); if(an){ if(needsAccess(state.active)){ an.innerHTML=accessNoticeHtml(state.active); an.hidden=false; } else { an.innerHTML=""; an.hidden=true; } } }
   // filters
   /* CATEGORIES **AND** SUBCATEGORIES.
      This listed categories only. Once a line was re-filed under broad clinical categories
@@ -4438,6 +4483,13 @@ function renderProducts(){
   if(RENDER.io){RENDER.io.disconnect();RENDER.io=null;}
   document.body.classList.add('shopv2');
   if (!state.products.length){
+    /* A browse-only line (Request access, C3-06): the catalog and its prices open once ordering access is set up —
+       never "pricing could not be loaded", which would send the dealer to reload for nothing. */
+    if(typeof needsAccess==="function" && needsAccess(state.active)){
+      const nm=esc(((state.manufacturers||[]).find(x=>x.slug===state.active)||{}).name||state.active);
+      host.innerHTML=`<div class="empty"><h3>Request access to order ${nm}</h3><p>This catalog and your pricing open once a ${nm} manufacturer account and HCPS ordering access are set up for your business. Use <b>Request access</b> above and HCPS will review it with you.</p></div>`;
+      return;
+    }
     const _cs=(typeof CATALOG_SOURCE!=='undefined'&&CATALOG_SOURCE[state.active])||null;
     if(_cs && _cs.source==='unavailable'){
       host.innerHTML=`<div class="empty"><h3>Pricing could not be loaded</h3><p>Your account pricing for this line could not be loaded just now. Nothing is shown rather than an out-of-date price. <a href="#" onclick="event.preventDefault();location.reload()">Reload</a></p></div>`;
@@ -4981,6 +5033,8 @@ async function submitOrder(){
     }
   }
   if([...CART.values()].some(({p})=>p._unavailable)){ toast("Remove the items that are no longer available, then place your order"); return; }
+  { const noAcc=[...groups.keys()].filter(sl=>!isGoldenSlug(sl)&&needsAccess(sl));
+    if(noAcc.length){ toast(`Ordering access for ${noAcc.map(sl=>mfrInfo(sl).name).join(", ")} isn't set up yet — use Request access on that catalog (if HCPS has just turned it on, reload the page). Nothing was submitted.`); return; } }
   if(typeof cartRuleProblems==="function"){ const rp=cartRuleProblems(); if(rp.length){ toast(rp[0].msg); return; } }
   const btn=$("#submitOrder"); btn.disabled=true; btn.textContent="Checking prices…";
   try{
