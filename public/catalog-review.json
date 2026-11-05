@@ -1,7 +1,7 @@
 {
   "review_id": "1e3ea8d297f7",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T02:58:47Z",
+  "built_at": "2026-11-05T03:26:56Z",
   "main": "03f4733c59ef9edaeb523642ac5785bc4915329a",
   "included": [],
   "skipped": [
@@ -15,6 +15,12 @@
       "pr": 35,
       "title": "C4: Yuwell catalog foundation — no prices, not orderable (draft)",
       "branch": "c4/yuwell-catalog",
+      "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
+    },
+    {
+      "pr": 36,
+      "title": "B6.1: unified HCPS shopping for Golden (cart, product-page actions, brochure, quote)",
+      "branch": "integration/b61-unified-golden",
       "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
     }
   ]
