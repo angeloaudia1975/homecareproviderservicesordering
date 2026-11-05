@@ -33,8 +33,9 @@ t('shipping: headgear only (even 10 or more) → actual; never a flat amount',()
   eq(/actual standard shipping/i.test(r.actualNote),true,'note');
 });
 t('shipping counts order units, not devices in a pack (3 packs of 4 = 3)',()=>{ eq(run([['BNG503',3]]).rows[0].qualifyingQty,3); });
-t('the rule touches no other manufacturer: their freight entries carry no qty_threshold mode',()=>{
-  eq(MF.filter(m=>m.freight&&m.freight.mode==='qty_threshold').map(m=>m.slug),['airavant-bongorx']);
+t('the rule touches no other manufacturer: only AIRAVANT and (owner 2026-11-04) Yuwell use qty_threshold, each with its own codes',()=>{
+  eq(MF.filter(m=>m.freight&&m.freight.mode==='qty_threshold').map(m=>m.slug),['airavant-bongorx','yuwell']);
+  const y=MF.find(m=>m.slug==='yuwell').freight; eq(y.qualifyingCodes,['SP-3']); eq(y.freeAtQty,1);
 });
 /* Synthetic tiers: section pools exactly as the private file names them. */
 const syn=(c,pool)=>Object.assign(P(c),{base_price:10,tiers:[{minQty:1,price:10},{minQty:10,price:9,...(pool?{pool}:{})},{minQty:20,price:8,...(pool?{pool}:{})}]});
