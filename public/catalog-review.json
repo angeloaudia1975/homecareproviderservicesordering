@@ -1,29 +1,18 @@
 {
-  "review_id": "fae00d85f660",
+  "review_id": "734bca15940a",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T05:34:41Z",
-  "main": "2239ac669061c5e613a7517e3407b7f871200c30",
+  "built_at": "2026-11-05T14:02:43Z",
+  "main": "1f0da9fd5c5704b1f72cbae166c9519bc5945438",
   "included": [
-    {
-      "pr": 34,
-      "title": "C3: Retire Ohio Medical / GCE — ordering (draft)",
-      "branch": "c3/ohio-medical-retire",
-      "head": "0fd1037a265ff61768130bb86060be816acf9bc5",
-      "manufacturers": [
-        "gce"
-      ],
-      "other_files": 21
-    },
     {
       "pr": 35,
       "title": "C4: Yuwell catalog foundation — no prices, not orderable (draft)",
       "branch": "c4/yuwell-catalog",
       "head": "43fd475ac3a2b79d439ee6e8ccc92e70dfab7d74",
       "manufacturers": [
-        "gce",
         "yuwell"
       ],
-      "other_files": 29
+      "other_files": 11
     }
   ],
   "skipped": []
