@@ -155,27 +155,28 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       // configure + add two chairs
       await page.evaluate(() => openProductDetail('PR511-LAR'));
       await page.waitForSelector('.gcfg .gcfg-c', { timeout: 15000 });
-      const pre = await page.evaluate(() => ({ dis: document.querySelector('.gcfg-add').disabled, txt: document.querySelector('.gcfg-add').textContent }));
-      await t(`${label}: "Add to Golden cart" waits for a colour`, () => ok(pre.dis && /Add to Golden cart/.test(pre.txt), JSON.stringify(pre)));
+      const pre = await page.evaluate(() => ({ dis: document.querySelector('.gaddbtn').disabled, txt: document.querySelector('.gaddbtn').textContent }));
+      await t(`${label}: the standard "Add to cart" waits for a colour`, () => ok(pre.dis && /Add to cart/.test(pre.txt) && !/Golden cart/.test(pre.txt), JSON.stringify(pre)));
       await page.click('[data-gcol="SUM"]'); await page.waitForSelector('.gcfg-q', { timeout: 10000 });
       await page.click('[data-gtier="nirvana"]'); await page.waitForFunction(() => /Nirvana/.test((document.querySelector('.gcfg-q') || {}).textContent || ''), null, { timeout: 10000 });
-      await page.waitForFunction(() => { const b = document.querySelector('.gcfg-add'); return b && !b.disabled; }, null, { timeout: 10000 });
-      await page.click('.gcfg-add'); await page.waitForTimeout(500);
+      await page.waitForFunction(() => { const b = document.querySelector('.gaddbtn'); return b && !b.disabled; }, null, { timeout: 10000 });
+      await page.click('.gaddbtn'); await page.waitForTimeout(500);
       await page.click('[data-gfab="xover"]'); await page.waitForTimeout(500);
       await page.click('[data-gcol="JBO"]'); await page.waitForFunction(() => /Bourbon/.test((document.querySelector('.gcfg-q') || {}).textContent || ''), null, { timeout: 10000 });
-      await page.waitForFunction(() => { const b = document.querySelector('.gcfg-add'); return b && !b.disabled; }, null, { timeout: 10000 });
-      await page.click('.gcfg-add'); await page.waitForTimeout(500);
-      const st = await page.evaluate(() => ({ items: GCART.items.map(i => [i.sku, i.fabric, i.color, i.tier, i.qty]), stored: localStorage.getItem(gckStoreKey()) || '', hcpsCart: (typeof state !== 'undefined' && state.cart ? Object.keys(state.cart).length : 0) + (typeof CART !== 'undefined' && CART && CART.length ? CART.length : 0), pill: (document.getElementById('gcartPill') || {}).textContent || '' }));
-      await t(`${label}: two configured chairs in the SEPARATE Golden cart — no price stored, nothing in the HCPS cart`, () => {
+      await page.waitForFunction(() => { const b = document.querySelector('.gaddbtn'); return b && !b.disabled; }, null, { timeout: 10000 });
+      await page.click('.gaddbtn'); await page.waitForTimeout(500);
+      const st = await page.evaluate(() => ({ items: GCART.items.map(i => [i.sku, i.fabric, i.color, i.tier, i.qty]), stored: localStorage.getItem(gckStoreKey()) || '', hcpsCart: (typeof state !== 'undefined' && state.cart ? Object.keys(state.cart).length : 0) + (typeof CART !== 'undefined' && CART && CART.length ? CART.length : 0), pill: (document.getElementById('cartCount') || {}).textContent || '', gpill: !!document.getElementById('gcartPill') }));
+      await t(`${label}: two configured chairs in the Golden order group of the HCPS cart — no price stored, never an HCPS order line`, () => {
         ok(JSON.stringify(st.items) === JSON.stringify([['PR511-LAR', 'std', 'SUM', 'nirvana', 1], ['PR511-LAR', 'xover', 'JBO', 'nirvana', 1]]), JSON.stringify(st.items));
-        ok(!/price|cost|total|\$/i.test(st.stored), 'no price in local storage: ' + st.stored); ok(st.hcpsCart === 0, 'HCPS cart ' + st.hcpsCart); ok(/2 chairs/.test(st.pill), st.pill); });
-      // open the review
-      await page.click('#gcartPill'); await page.waitForSelector('.gck-ship', { timeout: 15000 });
+        ok(!/price|cost|total|\$/i.test(st.stored), 'no price in local storage: ' + st.stored); ok(st.hcpsCart === 0, 'HCPS order lines ' + st.hcpsCart); ok(st.pill === '2' && !st.gpill, 'header count ' + st.pill + ' / separate button ' + st.gpill); });
+      // open the review from the HCPS cart's Golden group
+      await page.evaluate(() => openCart()); await page.waitForSelector('#cartGroups .gmgroup [data-gckgo]', { timeout: 10000 });
+      await page.click('#cartGroups [data-gckgo]'); await page.waitForSelector('.gck-ship', { timeout: 15000 });
       const f0 = await page.evaluate(() => document.activeElement && document.activeElement.hasAttribute('data-gck-close'));
       await page.keyboard.press('Escape');
-      const f1 = await page.evaluate(() => ({ hidden: document.getElementById('gckView').style.display === 'none', pill: document.activeElement && document.activeElement.id === 'gcartPill' }));
-      await t(`${label}: dialog takes focus on open; Escape closes it and focus returns to the cart button`, () => ok(f0 && f1.hidden && f1.pill, JSON.stringify({ f0, f1 })));
-      await page.click('#gcartPill'); await page.waitForSelector('.gck-ship', { timeout: 15000 });
+      const f1 = await page.evaluate(() => ({ hidden: document.getElementById('gckView').style.display === 'none', pill: !!(document.activeElement && document.activeElement.hasAttribute('data-gckgo')) }));
+      await t(`${label}: dialog takes focus on open; Escape closes it and focus returns to the cart's Golden review button`, () => ok(f0 && f1.hidden && f1.pill, JSON.stringify({ f0, f1 })));
+      await page.click('#cartGroups [data-gckgo]'); await page.waitForSelector('.gck-ship', { timeout: 15000 });
       const sh = await page.evaluate(() => [...document.querySelectorAll('.gck-ship')].map(x => x.innerText.replace(/\s+/g, ' ')));
       await t(`${label}: ship-to = Golden's own two records (primary + saved location), no free-text address field`, () => {
         ok(sh.length === 2 && /Columbus/.test(sh[0]) && /Cincinnati showroom/.test(sh[1]), sh.join(' | ')); });
@@ -250,8 +251,9 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       await shotCart(page, `golden-cart-repriced-${label}.png`);
       // remove everything → empty cart, pill gone
       await page.click('[data-rm="0"]'); await page.click('[data-rm="0"]'); await page.click('[data-gck-close]');
-      const empty = await page.evaluate(() => ({ n: GCART.items.length, pill: !!document.getElementById('gcartPill') }));
-      await t(`${label}: removing every chair empties the cart and hides the cart button`, () => ok(empty.n === 0 && !empty.pill, JSON.stringify(empty)));
+      const empty = await page.evaluate(() => ({ n: GCART.items.length, pill: !!document.getElementById('gcartPill'), group: !!document.querySelector('#cartGroups .gmgroup'), badge: getComputedStyle(document.getElementById('cartCount')).display }));
+      await t(`${label}: removing every chair empties the Golden group and the header count`, () => ok(empty.n === 0 && !empty.pill && !empty.group && empty.badge === 'none', JSON.stringify(empty)));
+      await page.evaluate(() => closeCart());
       // sign-out: the Golden cart, its review and the cached ship-to addresses go with the dealer
       await page.evaluate(() => { goldenCartAdd('PR511-LAR', { fabric: 'std', color: 'SUM', tier: null, footrest: false }, null); goldenCartShow(); });
       await page.waitForSelector('.gck-ship', { timeout: 15000 });

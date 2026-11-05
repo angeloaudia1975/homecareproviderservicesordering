@@ -23,6 +23,11 @@ const SNIPPETS = [
   /* Golden B2 (PR #17, merged by the owner 2026-11-02): Golden products are browse-only in Partner 360 until Golden
      ordering opens. Only a product the Golden catalog builds carries _golden, so no other line's cart behaviour moves. */
   [/\n  if\(p && p\._golden\)\{ toast\("Golden ordering in Partner 360 is not open yet\."\); return; \}/, ''],
+  /* Golden B6.1 unified cart (owner directive 2026-11-04): the Golden Technologies group is appended to the HCPS cart and
+     wired on its own; HCPS rows/groups skip it. Taken back out exactly, so any other renderCart change still fails. */
+  [/\n  const gHtml=goldenCartGroupHtml\(\);\n  if\(!groups\.size&&!gHtml\)\{/, '\n  if(!groups.size){'],
+  [/\n  host\.innerHTML=html\+gHtml;\n  goldenCartGroupWire\(host\);\n  host\.querySelectorAll\("\.mgroup:not\(\.gmgroup\) \.citem"\)/, '\n  host.innerHTML=html;\n  host.querySelectorAll(".citem")'],
+  [/\n  host\.querySelectorAll\("\.mgroup:not\(\.gmgroup\)"\)\.forEach\(g=>\{/, '\n  host.querySelectorAll(".mgroup").forEach(g=>{'],
 ];
 function undoLineDiscount(html) {
   let s = String(html);
