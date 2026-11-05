@@ -5,7 +5,7 @@
    provided"); no dealer cost on the customer quote; items already on a quote keep their names after a retirement.
    Synthetic data only. */
 const fs=require('fs'),path=require('path'),vm=require('vm');
-const {extract,grabDecl}=require('./extract-picker.js');
+const {extract,grabDecl,retiredDecls}=require('./extract-picker.js');
 const H=fs.readFileSync(path.join(__dirname,'..','public','index.html'),'utf8');
 let pass=0,fail=0; const t=async(n,f)=>{ try{ await f(); pass++; console.log('ok   '+n);}catch(e){ fail++; console.log('FAIL '+n+'\n     '+e.message);} };
 const eq=(x,y,w)=>{ if(JSON.stringify(x)!==JSON.stringify(y)) throw new Error((w||'')+' got '+JSON.stringify(x)+' expected '+JSON.stringify(y)); };
@@ -40,7 +40,7 @@ function world(entitled){
   const els={}; ctx.$=sel=>els[sel]||(els[sel]={innerHTML:'',value:''}); ctx.els=els;
   vm.createContext(ctx);
   vm.runInContext('var PRICE=null,PRICELIST=null,QUOTELIST=null,MFRLIST=null,QUOTE=[],QSEARCH="",QUOTE_UNAVAILABLE=[],_quoteSig=null,_quoteBuild=null;'+
-    extract(H)+'\n'+grabDecl(H,'function axesOf')+'\n'+['quotableLine','quoteOptionText','quoteEntry','hubStoreCatalog','ensureQuoteCatalog','buildQuoteCatalog','loadPricing','quoteMsrp','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qDelAt','qFilter'].map(grab).join('\n')+
+    retiredDecls(H)+'\n'+extract(H)+'\n'+grabDecl(H,'function axesOf')+'\n'+['quotableLine','quoteOptionText','quoteEntry','hubStoreCatalog','ensureQuoteCatalog','buildQuoteCatalog','loadPricing','quoteMsrp','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qDelAt','qFilter'].map(grab).join('\n')+
     ';this.S=()=>({PRICE,PRICELIST,QUOTELIST,QUOTE_UNAVAILABLE,QUOTE}); this.setQ=q=>{QUOTE=q;};',ctx);
   ctx.ent=entitled; return ctx;
 }

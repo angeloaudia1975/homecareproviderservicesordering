@@ -11,11 +11,13 @@ const path = require('path');
 const FEED = process.env.CATALOG_FEED
   || path.join(__dirname, '..', 'netlify', 'functions', 'catalog-feed.js');
 
+/* the function's own relative requires (./_retired_lines.js) resolve from netlify/functions, as on Netlify */
+const fnRequire = n => require(n.startsWith('./') ? require('path').join(__dirname, '..', 'netlify', 'functions', n) : n);
 function load(src){
   const js = src !== undefined ? src : fs.readFileSync(FEED, 'utf8');
   const mod = { exports: {} };
   new Function('module', 'exports', 'require', 'process', 'fetch', js)(
-    mod, mod.exports, require, { env: {} }, () => {});
+    mod, mod.exports, fnRequire, { env: {} }, () => {});
   return mod.exports;
 }
 

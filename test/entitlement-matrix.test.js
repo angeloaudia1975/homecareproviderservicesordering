@@ -35,7 +35,7 @@ const L=require(path.join(ROOT,'netlify','functions','catalog-layers.js'));
 const F=require(path.join(ROOT,'netlify','functions','catalog-feed.js'));
 const ev=(slug,tok)=>({httpMethod:'GET',headers:tok?{authorization:'Bearer '+tok}:{},queryStringParameters:{manufacturer:slug,identity:ID}});
 (async()=>{
-  await t('the storefront lists the lines under test',()=>{ for(const s of ['access4u','abm-respiratory-care','dalton','bemis','gce']) if(!MF.includes(s)) throw new Error('missing '+s); });
+  await t('the storefront lists the lines under test',()=>{ for(const s of ['access4u','abm-respiratory-care','dalton','bemis']) if(!MF.includes(s)) throw new Error('missing '+s); for(const s of ['gce','ohio-medical']) if(MF.includes(s)) throw new Error('retired line listed: '+s); });
   for(const [d,tok] of [['dealer-A','tok-A'],['dealer-B','tok-B']]){
     await t(`${d}: catalog-layers answers exactly its own lines, 403 for every other manufacturer`,async()=>{
       const bad=[]; for(const s of MF){ const r=await L.handler(ev(s,tok)); const want=DEALERS[d].lines.includes(s)?200:403; if(r.statusCode!==want) bad.push(s+':'+r.statusCode); } if(bad.length) throw new Error(bad.join(' ')); });
@@ -46,9 +46,14 @@ const ev=(slug,tok)=>({httpMethod:'GET',headers:tok?{authorization:'Bearer '+tok
     const bad=[]; for(const s of MF) for(const tok of ['tok-P',null,'forged.jwt.value']) for(const [n,h] of [['layers',L],['feed',F]]){ const r=await h.handler(ev(s,tok)); if(r.statusCode!==401) bad.push(n+' '+s+' '+tok+':'+r.statusCode); } if(bad.length) throw new Error(bad.slice(0,6).join(' ')); });
   await t('a staff rep is refused commercial layers on every line (review goes through a dealer preview)',async()=>{
     const bad=[]; for(const s of MF){ const r=await L.handler(ev(s,'tok-rep')); if(r.statusCode!==403) bad.push(s+':'+r.statusCode); } if(bad.length) throw new Error(bad.join(' ')); });
-  await t('Ohio Medical / GCE: neither synthetic dealer reaches it; a dealer carrying "ohio-medical" does not reach the gce file',async()=>{
-    for(const tok of ['tok-A','tok-B']) if((await L.handler(ev('gce',tok))).statusCode!==403) throw new Error('reached gce');
-    DEALERS['dealer-A'].lines.push('ohio-medical'); try{ if((await L.handler(ev('gce','tok-A'))).statusCode!==403) throw new Error('ohio-medical opened gce'); } finally { DEALERS['dealer-A'].lines.pop(); } });
+  await t('Ohio Medical / GCE is retired: 410 from both functions under either identifier, even for a dealer whose rows carry both, and for HCPS staff',async()=>{
+    DEALERS['dealer-A'].lines.push('ohio-medical','gce');
+    try{ for(const slug of ['gce','ohio-medical','complete-medical-supplies']) for(const tok of ['tok-A','tok-B']) for(const [n,h] of [['layers',L],['feed',F]]){
+      const r=await h.handler(ev(slug,tok)); if(r.statusCode!==410) throw new Error(n+' '+slug+' '+tok+':'+r.statusCode); } }
+    finally { DEALERS['dealer-A'].lines.splice(-2,2); }
+    if(F.authorize({kind:'staff',role:'president'},'ohio-medical').status!==410) throw new Error('staff reached a retired line (feed)');
+    if(L.authorizeLayers({kind:'staff',role:'president'},'gce').status!==410) throw new Error('staff reached a retired line (layers)');
+  });
   /* storefront: the shop shows a dealer exactly the lines its access answer allows (never "all" by default) */
   const H=fs.readFileSync(path.join(ROOT,'public','index.html'),'utf8');
   const grab=n=>{ const i=H.indexOf('function '+n+'('); let d=0,j=H.indexOf('{',i); for(;j<H.length;j++){ if(H[j]==='{')d++; else if(H[j]==='}'){ d--; if(!d) break; } } return H.slice(i,j+1); };

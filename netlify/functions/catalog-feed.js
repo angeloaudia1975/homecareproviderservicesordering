@@ -45,6 +45,7 @@ const json = (c, o) => ({
 });
 const H = () => ({ apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}` });
 
+const RETIRED = require("./_retired_lines.js");
 async function sb(path) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: H() });
   const t = await r.text();
@@ -124,6 +125,8 @@ async function caller(event) {
 function authorize(who, slug) {
   if (!who) return { ok: false, status: 401, error: "unauthorized" };
   if (!slug) return { ok: false, status: 400, error: "manufacturer required" };
+  /* A retired line is closed to everyone, staff included, whatever the entitlement rows say. */
+  if (RETIRED.isRetiredLine(slug)) return { ok: false, status: 410, error: "this manufacturer line is retired" };
   if (who.kind === "staff") return { ok: true };
   if (who.kind === "dealer") {
     return (who.lines || []).indexOf(slug) >= 0
