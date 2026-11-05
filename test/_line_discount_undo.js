@@ -22,7 +22,7 @@ const SNIPPETS = [
   [/\$\{r\.qtyRemaining>0\?` <span class="prog">· add \$\{r\.qtyRemaining\} more qualifying unit[^\n]*?\(\$\{r\.freeAtQty\}\+\)<\/span>`:""\}/, ''],
   /* Golden B2 (PR #17, merged by the owner 2026-11-02): Golden products are browse-only in Partner 360 until Golden
      ordering opens. Only a product the Golden catalog builds carries _golden, so no other line's cart behaviour moves. */
-  [/\n  if\(p && p\._golden\)\{ toast\("Golden ordering in Partner 360 is not open yet\."\); return; \}/, ''],
+  [/\n  if\(p && p\._golden\)\{ toast\("Golden ordering in the 360 Dealer Portal is not open yet\."\); return; \}/, ''],
   [/\n  if\(Array\.isArray\(\(p\|\|\{\}\)\.tiers\)&&p\.tiers\.some\(t=>t&&t\.until!=null&&t\.until!==''\)&&!tierLadder\(p\)\.some\(t=>t\.until\)\) return '';  \/\/ its time-limited special has ended \(2026-11-04\)/, ''],
   /* Time-limited quantity breaks (owner, 2026-11-04 — Yuwell SP-3 special ends Jan 1, 2027). */
   [/\n  const live=t=>!\(t&&t\.until!=null&&t\.until!==''\)\|\|[^\n]*\n  const LT=\(Array\.isArray\(p\.tiers\)\?p\.tiers:\[\]\)\.filter\(live\);\n  if\(LT\.length\)\{/, '\n  if(Array.isArray(p.tiers)&&p.tiers.length){'],

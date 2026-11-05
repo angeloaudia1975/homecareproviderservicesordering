@@ -1,15 +1,17 @@
 {
-  "review_id": "25461dfc9aac",
+  "review_id": "a7442060d020",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T23:13:09Z",
+  "built_at": "2026-11-05T23:13:26Z",
   "main": "a4f5b2c22a441bdf9836388adbf2ee0bf4744ee1",
-  "included": [],
-  "skipped": [
+  "included": [
     {
       "pr": 47,
       "title": "360 Dealer Portal branding — ordering platform",
       "branch": "brand/360-dealer-portal",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
+      "head": "441f249289052171413812581abf0bd981d78c0c",
+      "manufacturers": [],
+      "other_files": 8
     }
-  ]
+  ],
+  "skipped": []
 }
