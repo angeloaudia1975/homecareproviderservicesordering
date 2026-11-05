@@ -37,7 +37,7 @@ const gS = require(path.join(gFN, 'lib', 'hcps-s2s.js'));
 const TEST_SECRET = crypto.randomBytes(32).toString('hex'), PROD_SECRET = crypto.randomBytes(32).toString('hex');
 const D_HQ = '11111111-2222-4333-8444-555555555555', LOC_CIN = 'cccccccc-0000-4000-8000-000000000001';
 const PREVIEW_TOKEN = 'ab12'.repeat(12);
-const W = { delayValidate: 0, cost: 1188, idem: new Map(), goldenCalls: [], hcpsWrites: 0, emails: 0, dropNextValidate: 0 };
+const W = { bumpEachValidate: false, delayValidate: 0, cost: 1188, idem: new Map(), goldenCalls: [], hcpsWrites: 0, emails: 0, dropNextValidate: 0 };
 const idemRpc = {
   integration_order_claim: ({ p }) => { const r = W.idem.get(p.idempotency_key); if (!r) { const tok = crypto.randomUUID(); W.idem.set(p.idempotency_key, { h: p.request_hash, s: 'pending', tok }); return { state: 'new', claim_token: tok }; }
     if (r.h !== p.request_hash) return { state: 'conflict' }; if (r.s === 'done') return { state: 'replay', status: r.st, response: r.resp }; return { state: 'in_progress' }; },
@@ -60,7 +60,7 @@ function runProxy(body, headers) {   // serialised: the in-process fetch world i
       dealer_integration_branch_map: [], dealers: [{ id: 'dealer-synth', active: true, customer_no: '900001' }], dealer_branches: [],
       dealer_ship_locations: [{ id: LOC_CIN, dealer_id: 'dealer-synth', label: 'Cincinnati showroom', ship_address: '1 Main St', ship_city: 'Cincinnati', ship_state: 'OH', ship_zip: '45202', created_at: '2026-01-01' }],
       dealer_locations: [{ customer_no: '900001', is_primary: true, address_line1: '10 Warehouse Rd', city: 'Columbus', state: 'OH', zip: '43215' }],
-      dealer_special_terms: [{ customer_no: '900001', waive_service_handling: true, qualifying_cities: [{ city: 'Cincinnati', state: 'OH' }], active: true }], orders: [],
+      dealer_special_terms: [{ customer_no: '900001', waive_service_handling: true, waive_liftgate: false, free_freight_unit_min: null, qualifying_cities: [{ city: 'Cincinnati', state: 'OH' }], active: true }], orders: [],
       inventory: [{ sku: 'PR511-LAR', size: 'LAR', fabcode: 'SKN', color_code: 'SUM', avail: 4, pool: null }],
     }, rpc: Object.assign({
       integration_nonce_claim: () => true, integration_audit_log: () => null,
@@ -130,6 +130,7 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
           const H = { 'access-control-allow-origin': '*' };
           if (['ship_to', 'quote', 'validate_order'].includes(b.action)) {
             const hdr = await req.allHeaders();
+            if (b.action === 'validate_order' && W.bumpEachValidate) W.cost += 1;   // Golden's price moves on every validation
             const out = await runProxy(b, { 'x-hcps-preview': hdr['x-hcps-preview'] || '', 'x-hcps-golden-env': hdr['x-hcps-golden-env'] || '', origin: hdr.origin || '' });
             if (b.action === 'validate_order' && W.delayValidate) await new Promise(r => setTimeout(r, W.delayValidate));
             if (b.action === 'validate_order' && W.dropNextValidate > 0) { W.dropNextValidate--; return route.abort('connectionreset'); }   // Golden answered, the answer was lost
@@ -187,34 +188,44 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       await page.evaluate(() => { document.querySelectorAll('.gck-refs').forEach(d => d.open = true); });
       await page.fill('.gck-ref[data-ix="0"][data-k="0"]', 'Mrs. Smith'); await page.fill('.gck-ref[data-ix="0"][data-k="1"]', 'Room 12');
       // Columbus (primary) — standard S&H
-      await page.check('.gck-ship input[value="primary"]'); await page.waitForSelector('.gck-tot', { timeout: 15000 });
-      const t1 = await pageBody(page, '.gck-tot');
-      await page.check(`.gck-ship input[value="${LOC_CIN}"]`); await page.waitForFunction(() => /waived/.test((document.querySelector('.gck-tot') || {}).textContent || ''), null, { timeout: 15000 });
-      const t2 = await pageBody(page, '.gck-tot');
+      // B6.3: Golden's price (and, once the contact is complete, Golden's verification) arrive automatically
+      const TOT = '.gck-verified, .gck-tot';
+      const settled = (ship) => page.waitForFunction((sh) => GCART.ship === sh && GCART.quote && !GCART.busy && !GCART.auto, ship, { timeout: 15000 }).catch(async e => { console.log('DEBUG', await page.evaluate(() => JSON.stringify({ ship: GCART.ship, q: !!GCART.quote, busy: GCART.busy, kind: GCART.busyKind, auto: !!GCART.auto, err: GCART.err, res: GCART.result && GCART.result.reason, next: (document.querySelector('.gck-next')||{}).innerText }))); throw e; });
+      await page.check('.gck-ship input[value="primary"]'); await settled('primary');
+      const t1 = await pageBody(page, TOT);
+      await page.check(`.gck-ship input[value="${LOC_CIN}"]`); await settled(LOC_CIN);
+      await page.waitForFunction(() => /waived/.test((document.querySelector('.gck-verified, .gck-tot') || {}).textContent || ''), null, { timeout: 15000 }).catch(async e => { console.log('CALLS', JSON.stringify(W.goldenCalls.map(c => [c.path, c.mode, c.ship, c.status]))); console.log('DEBUG2', await page.evaluate(() => JSON.stringify({ ship: GCART.ship, busy: GCART.busy, err: GCART.err, res: GCART.result && [GCART.result.valid, GCART.result.reason], q: GCART.quote && GCART.quote.totals, txt: (document.querySelector('.gck-verified, .gck-tot') || {}).textContent }))); throw e; });
+      const t2 = await pageBody(page, TOT);
       await shotCart(page, `golden-cart-review-${label}.png`);
       const lines = await page.evaluate(() => [...document.querySelectorAll('.gck-lp')].map(x => x.innerText));
       await t(`${label}: Golden's totals; the S&H waiver applies only at Golden's qualifying ship-to (Cincinnati), not Columbus`, () => {
-        ok(!/waived/.test(t1) && /Shipping & handling\s*\$\d/.test(t1) && !/\$0\.00/.test(t1.split('Shipping')[1].split('\n')[0]), 'Columbus: ' + t1);
+        ok(!/waived/.test(t1) && /Shipping & handling\s*\$\d/.test(t1) && !/\$0\.00/.test(t1.split('Shipping')[1].split('\n')[0].split('·')[0]), 'Columbus: ' + t1);
         ok(/waived for this ship-to/.test(t2) && /\$0\.00/.test(t2), 'Cincinnati: ' + t2);
         ok(lines.length === 2 && /each/.test(lines[0]), lines.join('|')); });
-      await page.fill('[data-f="po"]', 'PO-7780'); await page.fill('[data-f="notes"]', 'Deliver to the back dock');
-      // while Golden is answering, the cart is frozen — nothing can change under the answer
-      W.delayValidate = 2500; await page.click('[data-gck-validate]'); await page.waitForTimeout(400);
-      const frozen = await page.evaluate(() => ({ plus: document.querySelector('[data-dq="0"][data-d="1"]').disabled, rm: document.querySelector('[data-rm="0"]').disabled, po: document.querySelector('[data-f="po"]').readOnly, ship: [...document.querySelectorAll('input[name=gckship]')].every(x => x.disabled), busy: GCART.busy }));
-      await page.waitForSelector('.gck-ok', { timeout: 20000 }); W.delayValidate = 0;
-      await t(`${label}: while Golden answers, quantities, remove, ship-to and fields are frozen`, () => ok(frozen.busy && frozen.plus && frozen.rm && frozen.po && frozen.ship, JSON.stringify(frozen)));
-      await page.fill('[data-f="po"]', 'PO-7781');   // a new attempt for the lost-answer check below
+      const noBtn = await page.evaluate(() => !document.querySelector('[data-gck-quote],[data-gck-validate]'));
+      await t(`${label}: no "Get Golden's price" / "Validate" buttons — the dealer never runs those steps by hand`, () => ok(noBtn));
+      // while Golden verifies, the cart's buttons freeze but the dealer can keep typing (an answer for changed details is dropped)
+      W.delayValidate = 2500; await page.fill('[data-f="notes"]', 'Deliver to the back dock'); await page.fill('[data-f="po"]', 'PO-7780');
+      await page.waitForFunction(() => GCART.busy && GCART.busyKind === 'validate', null, { timeout: 10000 });
+      const frozen = await page.evaluate(() => ({ plus: document.querySelector('[data-dq="0"][data-d="1"]').disabled, rm: document.querySelector('[data-rm="0"]').disabled, po: document.querySelector('[data-f="po"]').readOnly, ship: [...document.querySelectorAll('input[name=gckship]')].every(x => x.disabled), busy: GCART.busy, next: document.querySelector('.gck-next').innerText }));
+      await page.waitForFunction(() => GCART.result && GCART.result.valid && !GCART.busy && GCART.form.po === 'PO-7780', null, { timeout: 20000 }); W.delayValidate = 0;
+      await t(`${label}: while Golden verifies, quantities, remove and ship-to are frozen; fields stay editable; the step says so`, () => ok(frozen.busy && frozen.plus && frozen.rm && !frozen.po && frozen.ship && /verifying/.test(frozen.next), JSON.stringify(frozen)));
       W.goldenCalls.length = 0;
-      // validate — the first answer is lost on the way back; the retry reuses the SAME Idempotency-Key and gets Golden's stored result
+      // the first answer is lost on the way back → "Try again" reuses the SAME Idempotency-Key and gets Golden's stored result
       W.dropNextValidate = 1;
-      await page.click('[data-gck-validate]'); await page.waitForFunction(() => /could not be reached/.test((document.querySelector('.gck-warn') || {}).textContent || ''), null, { timeout: 20000 });
-      await page.click('[data-gck-validate]'); await page.waitForSelector('.gck-ok', { timeout: 20000 });
+      await page.fill('[data-f="po"]', 'PO-7781'); await page.press('[data-f="po"]', 'Tab');
+      await page.waitForFunction(() => /could not be reached/.test((document.querySelector('.gck-warn') || {}).textContent || ''), null, { timeout: 20000 });
+      await page.waitForTimeout(1600);
+      const stuck = W.goldenCalls.filter(c => c.path === '/v1/orders').length;
+      await page.click('[data-gck-retry]'); await page.waitForFunction(() => GCART.result && GCART.result.valid && !GCART.busy, null, { timeout: 20000 });
+      await page.evaluate(() => document.querySelectorAll('.gck-more').forEach(d => { d.open = true; }));
       const keys = W.goldenCalls.filter(c => c.path === '/v1/orders').map(c => c.key);
       const res = await page.evaluate(() => ({ text: document.querySelector('.gck-ok').innerText, frames: [...document.querySelectorAll('.gck-mail iframe')].map(f => ({ sb: f.getAttribute('sandbox'), len: (f.srcdoc || '').length, src: f.getAttribute('src') })),
         mail: (document.querySelector('iframe[data-gck-email="golden"]') || {}).srcdoc || '' }));
-      await t(`${label}: lost answer → retry with the SAME Idempotency-Key → Golden's recorded result (replay), validation only`, () => {
+      await t(`${label}: after an error the automation stops (no retry loop) until the dealer chooses "Try again"`, () => ok(stuck === 1, 'calls before Try again: ' + stuck));
+      await t(`${label}: lost answer → Try again with the SAME Idempotency-Key → Golden's recorded result (replay), validation only`, () => {
         ok(keys.length === 2 && keys[0] === keys[1] && /^[0-9a-f-]{36}$/.test(keys[0]), JSON.stringify(keys));
-        ok(/no order was placed/.test(res.text) && /already recorded/.test(res.text) && /PO-7781/.test(res.text) && /Cincinnati showroom/.test(res.text), res.text.slice(0, 300)); });
+        ok(/No order has been placed/.test(res.text) && /already recorded/.test(res.text) && /PO-7781/.test(res.text) && /Cincinnati showroom/.test(res.text), res.text.slice(0, 400)); });
       const shots = [];
       for (const k of ['golden', 'dealer']) { const b = await page.locator(`iframe[data-gck-email="${k}"]`).screenshot({ path: path.join(SHOTS, `golden-email-${k}-${label}.png`) }); shots.push(b.length); }
       await t(`${label}: both email previews actually render (not a blank frame)`, () => ok(shots.every(n => n > 15000), 'png sizes ' + shots.join(',')));
@@ -223,25 +234,51 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
         ok(/Mrs\. Smith/.test(res.mail) && /Room 12/.test(res.mail) && /1 Main St/.test(res.mail) && /PO-7781/.test(res.mail), 'golden email content');
         ok(!/desk@golden\.example/.test(res.mail + res.text), 'Golden order desk address never shown'); });
       await shotCart(page, `golden-cart-validated-${label}.png`);
-      // Golden's price moves → re-review with Golden's new quote; the next validation is a NEW attempt (new key)
+      // Golden's price moves → the new totals are shown with a notice and verified again automatically with a NEW key
       W.cost = 1250;
-      await page.fill('[data-f="po"]', 'PO-7782');
-      await page.click('[data-gck-validate]'); await page.waitForFunction(() => /prices changed/.test((document.querySelector('.gck-warn') || {}).textContent || ''), null, { timeout: 20000 });
-      const moved = await pageBody(page, '.gck-tot');
-      await page.click('[data-gck-validate]'); await page.waitForSelector('.gck-ok', { timeout: 20000 });
+      await page.fill('[data-f="po"]', 'PO-7782'); await page.press('[data-f="po"]', 'Tab');
+      await page.waitForFunction(() => GCART.priceNotice && GCART.result && GCART.result.valid && !GCART.busy && !GCART.auto, null, { timeout: 20000 });
+      const moved = await pageBody(page, '.gck-box');
       const keys2 = W.goldenCalls.filter(c => c.path === '/v1/orders').map(c => c.key);
-      await t(`${label}: Golden's price change → new totals shown for review, then a NEW attempt key validates`, () => {
+      await t(`${label}: Golden's price change → notice + Golden's new totals, then a NEW attempt key verifies`, () => {
         ok(keys2.length === 4 && keys2[2] !== keys[0] && keys2[3] !== keys2[2], JSON.stringify(keys2));
-        ok(/Golden total/.test(moved) && moved !== t2, moved); });
-      // keyboard: Tab out of an email preview frame stays in the dialog; a control frozen while Golden answered gets focus back
+        ok(/prices changed/.test(moved) && /Golden total/.test(moved) && !moved.includes(t2.split('Golden total')[1] || '§'), moved.slice(0, 500)); });
+      // review fixes: Golden's price moving on every check stops after ONE automatic re-check (no loop) until Try again
+      W.goldenCalls.length = 0; W.bumpEachValidate = true;
+      await page.fill('[data-f="po"]', 'PO-7783'); await page.press('[data-f="po"]', 'Tab');
+      await page.waitForFunction(() => /changed again/.test((document.querySelector('.gck-box') || {}).textContent || ''), null, { timeout: 20000 }).catch(async e => { console.log('DBG', W.cost, JSON.stringify(W.goldenCalls.map(c=>c.path)), await page.evaluate(() => JSON.stringify({ err: GCART.err, pc: GCART.pcCount, busy: GCART.busy, auto: !!GCART.auto, res: GCART.result && GCART.result.valid, po: GCART.form.po }))); throw e; });
+      await page.waitForTimeout(2500);
+      const loopCalls = W.goldenCalls.filter(c => c.path === '/v1/orders').length; W.bumpEachValidate = false;
+      const noPlace = await page.evaluate(() => !document.querySelector('[data-gck-place]') && !!document.querySelector('[data-gck-retry]'));
+      await t(`${label}: Golden's price moving on every check → one automatic re-check, then stop with Try again (no loop, nothing placeable)`, () => ok(loopCalls === 2 && noPlace, 'validate calls ' + loopCalls + ' noPlace ' + noPlace));
+      await page.click('[data-gck-retry]');
+      await page.waitForFunction(() => GCART.result && GCART.result.valid && !GCART.busy && !GCART.auto, null, { timeout: 20000 });
+      // an edit after an error restarts the automatic check (a change is not a retry loop)
+      W.dropNextValidate = 1; await page.fill('[data-f="po"]', 'PO-7784'); await page.press('[data-f="po"]', 'Tab');
+      await page.waitForFunction(() => /could not be reached/.test((document.querySelector('.gck-box') || {}).textContent || ''), null, { timeout: 20000 });
+      await page.fill('[data-f="po"]', 'PO-7785');
+      await page.waitForFunction(() => GCART.result && GCART.result.valid && !GCART.busy && !GCART.auto && GCART.form.po === 'PO-7785', null, { timeout: 20000 }).catch(() => null);
+      const restarted = await page.evaluate(() => !!(GCART.result && GCART.result.valid && GCART.form.po === 'PO-7785'));
+      await t(`${label}: after an error, editing the order re-checks automatically (no Try again needed)`, () => ok(restarted));
+      // Need help stays open (and keeps focus) while Golden prices / verifies in the background
+      await page.click('details.gck-help summary');
+      await page.fill('[data-f="notes"]', 'Back dock please'); await page.focus('details.gck-help summary');
+      await page.waitForFunction(() => GCART.result && GCART.result.valid && !GCART.busy && !GCART.auto, null, { timeout: 20000 }); await page.waitForTimeout(200);
+      const help = await page.evaluate(() => ({ open: document.querySelector('details.gck-help').open, focus: document.activeElement && document.activeElement.tagName === 'SUMMARY' && !!document.activeElement.closest('details.gck-help'), live: (document.getElementById('gckLive') || {}).textContent || '' }));
+      await t(`${label}: "Need help?" stays open and keeps focus while Golden re-checks; one live region announces the step`, () => ok(help.open && help.focus && /Golden verified this order|nothing will be placed|not open yet/i.test(help.live), JSON.stringify(help)));
+      await page.click('details.gck-help summary');
+      // keyboard: Tab out of an email preview frame stays in the dialog
+      await page.evaluate(() => document.querySelectorAll('.gck-more').forEach(d => { d.open = true; }));
       await page.locator('iframe[data-gck-email="dealer"]').focus();
       await page.evaluate(() => document.querySelector('#gckView [data-trap="end"]').focus());   // where Tab lands when it leaves the last email frame
       const trap = await page.evaluate(() => { const a = document.activeElement; return { inDialog: !!(a && document.getElementById('gckView').contains(a)), sentinel: !!(a && a.hasAttribute('data-trap')), close: !!(a && a.hasAttribute('data-gck-close')) }; });
       await t(`${label}: Tab from the last email preview wraps to the top of the dialog (never leaves it)`, () => ok(trap.inDialog && !trap.sentinel && trap.close, JSON.stringify(trap)));
-      W.delayValidate = 1500; await page.fill('[data-f="attention"]', 'Receiving'); await page.focus('[data-gck-validate]'); await page.keyboard.press('Enter');
-      await page.waitForSelector('.gck-ok', { timeout: 20000 }); W.delayValidate = 0; await page.waitForTimeout(200);
-      const back = await page.evaluate(() => !!(document.activeElement && document.activeElement.hasAttribute('data-gck-validate')));
-      await t(`${label}: after Golden answers, focus returns to the button that was used`, () => ok(back, 'focus was not returned to Validate'));
+      // typing while Golden verifies: the dealer keeps the field, the caret and every character
+      W.delayValidate = 1500; await page.click('[data-f="attention"]'); await page.keyboard.type('Receiving', { delay: 40 });
+      await page.waitForTimeout(1500); await page.keyboard.type(' dock', { delay: 40 });
+      await page.waitForFunction(() => GCART.result && GCART.result.valid && !GCART.busy && !GCART.auto, null, { timeout: 20000 }); W.delayValidate = 0; await page.waitForTimeout(200);
+      const back = await page.evaluate(() => ({ focus: !!(document.activeElement && document.activeElement.getAttribute('data-f') === 'attention'), v: document.querySelector('[data-f="attention"]').value, sent: GCART.attempt && JSON.parse(GCART.attempt.sig).attention }));
+      await t(`${label}: typing while Golden verifies keeps focus and every character; the verified order carries the final text`, () => ok(back.focus && back.v === 'Receiving dock' && back.sent === 'Receiving dock', JSON.stringify(back)));
       const geo = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, boxW: document.querySelector('.gck-box').scrollWidth, boxC: document.querySelector('.gck-box').clientWidth,
         small: [...document.querySelectorAll('.gck-box button, .gck-box input:not([type=radio]), .gck-box textarea, .gck-box summary')].filter(b => { const r = b.getBoundingClientRect(); return r.width > 0 && r.height < 44; }).map(b => b.className || b.tagName) }));
       await t(`${label}: no horizontal scroll, touch targets ≥ 44px`, () => { ok(geo.sw <= geo.cw + 1 && geo.boxW <= geo.boxC + 1, JSON.stringify(geo)); ok(!geo.small.length, 'small: ' + geo.small.join(',')); });
