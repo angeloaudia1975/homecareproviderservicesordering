@@ -38,6 +38,12 @@ async function open(browser, w, h, opts) {
     if (/\/functions\/catalog-layers/.test(u.pathname))   // layers answered empty (no prices in this test)
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, identity_sha256: u.searchParams.get('identity'), file_overlay: [], custom_products: [], product_overrides: [] }) });
     if (/\/functions\/dealer-tools-api/.test(u.pathname) && /access_request/.test(req.postData() || '')) { seen.tools.push(req.postData()); }
+    if (/\/functions\/dealer-tools-api/.test(u.pathname) && opts.tools && req.method() === 'POST') {
+      let b = {}; try { b = JSON.parse(req.postData() || '{}'); } catch (e) {}
+      (seen.toolCalls = seen.toolCalls || []).push(b);
+      const ans = opts.tools(b);
+      if (ans) return route.fulfill({ status: ans.status || 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(ans.body || ans) });
+    }
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.host)) return route.fulfill({ status: 200, body: '' });
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '[]' });
   });

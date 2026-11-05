@@ -6009,6 +6009,7 @@ function brochurePayload(code){
   return {
     name: groupDisplayName ? groupDisplayName(p) : p.name,
     code: p.code,
+    _mfrSlug: String(p.manufacturer || state.active || ''),
     manufacturer: m.name,
     manufacturer_logo: m.logo,
     hcps_logo: _brHcpsLogo(),
@@ -6023,13 +6024,65 @@ function brochurePayload(code){
     warranty: p._warranty || '',
     billing_codes: p._billing || [],
     source_url: p._sourceUrl || '',
-    msrp: p.msrp || null,
+    /* D3 (owner 2026-11-05): only a VERIFIED manufacturer MSRP is offered to customers — never one this page derived at
+       2× dealer cost (_msrp_suggested). */
+    msrp: (p.msrp && !p._msrp_suggested) ? p.msrp : null,
     // Dealer cost is deliberately NOT sent. A field that never leaves the page
     // cannot leak onto a document a dealer hands to a patient.
     quote_price: null,
   };
 }
 let _brCode=null, _brMsrp=false;
+/* ---------- C3-07 Stage 4: the three customer pricing choices on a brochure (owner 2026-11-05) ----------
+   No price · verified manufacturer MSRP · the dealer's SAVED retail price · a one-time price for THIS brochure only
+   (with "Save as my retail price" to keep it). Dealer cost never appears. Saved prices come from dealer-retail-api. */
+const RETAIL_API="https://homecareproviderservices.netlify.app/.netlify/functions/dealer-retail-api";
+let RETAIL=null;   // {byKey:{"mfr|code":{price,location_id}}, at}
+async function retailCall(body){
+  if(typeof PREVIEW!=='undefined'&&PREVIEW) return {ok:false,error:'Read-only preview — saved prices are not available here.'};
+  if(!(typeof AUTH!=='undefined'&&AUTH&&AUTH.session&&AUTH.session.access_token)) return {ok:false,error:'Please sign in again.'};
+  try{ await ensureFreshSession(); }catch(e){}
+  try{ const r=await fetch(RETAIL_API,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+AUTH.session.access_token},body:JSON.stringify(body)});
+    return await r.json().catch(()=>({ok:false,error:'Please try again.'})); }catch(e){ return {ok:false,error:'Please try again.'}; }
+}
+async function loadRetail(force){
+  if(RETAIL&&!force&&Date.now()-RETAIL.at<120000) return RETAIL;
+  const r=await retailCall({action:'retail_list'});
+  if(!r||!r.ok) return null;
+  const by={}; const self=String(r.self_id||'');
+  /* the price that applies to THIS login: its own location's price wins over the company default */
+  (r.prices||[]).forEach(x=>{ const k=x.manufacturer+'|'+x.code; const own=x.location_id&&String(x.location_id)===self;
+    if(!x.location_id){ if(!by[k]||!by[k].own) by[k]={price:x.price,own:false}; } else if(own) by[k]={price:x.price,own:true}; });
+  RETAIL={byKey:by,at:Date.now()}; return RETAIL;
+}
+function brPriceChoice(){ const el=document.querySelector('input[name="brPrice"]:checked'); return el?el.value:'none'; }
+function brPriceSet(pl){
+  /* Returns the product payload with the chosen customer price, or {error}. */
+  const mode=brPriceChoice(); const out=Object.assign({},pl,{quote_price:null}); let include_msrp=false;
+  if(mode==='msrp'){ if(!pl.msrp) return {error:'This product has no verified manufacturer MSRP.'}; include_msrp=true; }
+  else if(mode==='retail'){ const k=(pl._mfrSlug||'')+'|'+pl.code; const r=RETAIL&&RETAIL.byKey[k]; if(!r) return {error:'No saved retail price for this product yet.'}; out.quote_price=r.price; }
+  else if(mode==='once'){ const v=Number(String(((document.getElementById('brOnce')||{}).value)||'').replace(/[$,\s]/g,'')); if(!(v>0&&v<=1000000)) return {error:'Enter the price for this brochure.'}; out.quote_price=Math.round(v*100)/100; }
+  return {payload:out,include_msrp};
+}
+async function brSaveRetail(){
+  const pl=brochurePayload(_brCode); if(!pl) return;
+  const v=Number(String(((document.getElementById('brOnce')||{}).value)||'').replace(/[$,\s]/g,''));
+  if(!(v>0&&v<=1000000)){ _brMsg('Enter a price first.',true); return; }
+  const r=await retailCall({action:'retail_set',rows:[{manufacturer:pl._mfrSlug,code:pl.code,price:v}]});
+  if(r&&r.ok){ await loadRetail(true); _brMsg('Saved as your retail price for '+pl.code+'.'); brRenderPriceRow(); } else _brMsg((r&&r.error)||'Could not save just now.',true);
+}
+function brRenderPriceRow(){
+  const pl=brochurePayload(_brCode); const host=document.getElementById('brPriceBox'); if(!pl||!host) return;
+  const k=(pl._mfrSlug||'')+'|'+pl.code; const saved=RETAIL&&RETAIL.byKey[k]; const cur=brPriceChoice();
+  const fm=v=>'$'+Number(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  host.innerHTML=`<div class="br-sub" style="font-weight:700;margin-bottom:4px">Price for your customer</div>
+    <label class="br-row"><input type="radio" name="brPrice" value="none" ${cur==='none'?'checked':''}> No price</label>
+    <label class="br-row" ${pl.msrp?'':'style="opacity:.55"'}><input type="radio" name="brPrice" value="msrp" ${pl.msrp?'':'disabled'} ${cur==='msrp'?'checked':''}> Manufacturer's MSRP ${pl.msrp?fm(pl.msrp):'— not published'}</label>
+    <label class="br-row" ${saved?'':'style="opacity:.55"'}><input type="radio" name="brPrice" value="retail" ${saved?'':'disabled'} ${cur==='retail'?'checked':''}> My saved retail price ${saved?fm(saved.price):(RETAIL?'— none saved yet':'')}</label>
+    <label class="br-row"><input type="radio" name="brPrice" value="once" ${cur==='once'?'checked':''}> A price for this brochure only</label>
+    <div class="br-row" id="brOnceRow" style="display:${cur==='once'?'flex':'none'};gap:8px;align-items:center;flex-wrap:wrap"><input id="brOnce" inputmode="decimal" placeholder="$0.00" style="max-width:140px"><button type="button" class="ghost" onclick="brSaveRetail()">Save as my retail price</button></div>`;
+  host.querySelectorAll('input[name="brPrice"]').forEach(r=>r.onchange=()=>{ const row=document.getElementById('brOnceRow'); if(row) row.style.display=brPriceChoice()==='once'?'flex':'none'; });
+}
 function openBrochure(code, officialDocs){
   const pl = brochurePayload(code); if(!pl) return;
   const docs = Array.isArray(officialDocs)?officialDocs:[];
@@ -6040,8 +6093,8 @@ function openBrochure(code, officialDocs){
   host.innerHTML = `<div class="br-box">
     <h3>Product brochure</h3>
     <div class="sub">${esc(pl.name)}${pl.code?` · Item ${esc(pl.code)}`:''}</div>
-    <label class="br-row"><input type="checkbox" id="brMsrp"> Include MSRP on the brochure</label>
-    <div class="sub" style="margin:-6px 0 12px">Your dealer cost is never shown. Leave this unticked for a price-free handout.</div>
+    <div id="brPriceBox"></div>
+    <div class="sub" style="margin:4px 0 12px">Your dealer cost is never shown.</div>
     ${docs.length?`<div class="sub" style="margin:0 0 12px">Manufacturer's own: ${docs.map(d=>`<a href="${esc(d.url)}" target="_blank" rel="noopener" style="color:var(--navy);font-weight:700">${esc(d.title)} ↗</a>`).join(" · ")}</div>`:''}
     <div class="br-acts">
       <button onclick="brochurePrint()">🖨 Print / Save as PDF</button>
@@ -6051,6 +6104,7 @@ function openBrochure(code, officialDocs){
     <div class="br-msg" id="brMsg"></div>
   </div>`;
   document.body.appendChild(host);
+  brRenderPriceRow(); loadRetail().then(()=>brRenderPriceRow());
 }
 function closeBrochure(){ const el=document.getElementById('brModal'); if(el) el.remove(); }
 function _brMsg(t,bad){ const el=document.getElementById('brMsg'); if(el) el.innerHTML='<span style="color:'+(bad?'#b22b2b':'#2d7d46')+'">'+esc(t)+'</span>'; }
@@ -6066,9 +6120,9 @@ async function _brPost(body){
    silently kill window.open, and the failure looks like the button is broken. */
 function brochurePrint(){
   const pl = brochurePayload(_brCode); if(!pl) return;
-  const msrp = !!(document.getElementById('brMsrp')||{}).checked;
+  const ch = brPriceSet(pl); if(ch.error){ _brMsg(ch.error,true); return; }
   _brMsg('Building brochure…');
-  _brPost({action:'html',product:pl,include_msrp:msrp}).then(d=>{
+  _brPost({action:'html',product:ch.payload,include_msrp:ch.include_msrp}).then(d=>{
     if(!d||!d.ok){ _brMsg((d&&d.error)||'Could not build the brochure.',true); return; }
     const old=document.getElementById('brFrame'); if(old) old.remove();
     const f=document.createElement('iframe');
@@ -6099,10 +6153,10 @@ function brochureSend(){
   const pl = brochurePayload(_brCode); if(!pl) return;
   const to=((document.getElementById('brTo')||{}).value||'').trim();
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)){ _brMsg('Enter a valid email address.',true); return; }
-  const msrp = !!(document.getElementById('brMsrp')||{}).checked;
+  const ch = brPriceSet(pl); if(ch.error){ _brMsg(ch.error,true); return; }
   const note=((document.getElementById('brNote')||{}).value||'').trim();
   _brMsg('Sending…');
-  _brPost({action:'email',product:pl,to:to,message:note,include_msrp:msrp,
+  _brPost({action:'email',product:ch.payload,to:to,message:note,include_msrp:ch.include_msrp,
            reply_to:(state.dealer&&state.dealer.email)||''}).then(d=>{
     if(!d||!d.ok){ _brMsg((d&&d.error)||'Could not send the brochure.',true); return; }
     _brMsg('Sent to '+d.sent_to+'.');

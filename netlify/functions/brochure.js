@@ -12,7 +12,7 @@
 // client could post finished HTML we would be an open relay for anyone wanting to
 // send branded mail from our domain.
 //
-//   POST { action:'html',  product:{...}, include_msrp? }  → { html }
+//   POST { action:'html',  product:{...}, include_msrp? }  → { html }   (product.quote_price = the dealer's chosen price)
 //   POST { action:'email', product:{...}, to, message?, include_msrp? } → sends it
 //
 // PRICING: dealer cost NEVER appears. This is a document a dealer hands to a
@@ -29,6 +29,7 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Content-Type': 'application/json',
 };
+const SEND = require('./_send_limit.js');
 const json = (code, obj) => ({ statusCode: code, headers: CORS, body: JSON.stringify(obj) });
 
 const SITE = (process.env.SITE_URL || 'https://homecareproviderservices.us').replace(/\/+$/, '');
@@ -92,8 +93,10 @@ function renderBrochure(p, opts) {
     : null;
   const sizingNote = esc(str(p.sizing_note, 400));
 
+  /* C3-07 Stage 4: the dealer's chosen customer price (saved retail or a one-time price) shows when sent; MSRP only when
+     asked for. Dealer cost is never a field this renderer reads. */
   const msrp = showMsrp ? money(p.msrp) : '';
-  const quote = showMsrp ? money(p.quote_price) : '';
+  const quote = money(p.quote_price);
 
   const secHtml = (title, body) => body ? `<section class="sec"><h2>${title}</h2>${body}</section>` : '';
 
@@ -250,6 +253,9 @@ exports.handler = async (event) => {
     if (!EMAIL_RE.test(to)) return json(400, { ok: false, error: 'Enter a valid email address.' });
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) return json(500, { ok: false, error: 'Email is not configured on this site yet (RESEND_API_KEY).' });
+    /* C3-07 Stage 4: per-dealer and per-recipient limits, recorded before sending (see _send_limit.js). */
+    const lim = await SEND.reserve({ url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SERVICE_ROLE, dealer_id: who.dealer_id, kind: 'brochure', to });
+    if (!lim.ok) return json(lim.status || 429, { ok: false, error: lim.error });
 
     const note = String(b.message || '').slice(0, 2000);
     const intro = note
@@ -272,6 +278,7 @@ exports.handler = async (event) => {
     if (!res.ok) {
       const t = await res.text().catch(() => '');
       console.error('brochure email refused by the provider', res.status, t.slice(0, 200));
+      await SEND.markFailed({ url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SERVICE_ROLE, id: lim.id });
       return json(502, { ok: false, error: 'Could not send that brochure.' });
     }
     console.log('brochure emailed', JSON.stringify({ dealer_id: who.dealer_id, to_domain: to.split('@')[1] || '' }));
