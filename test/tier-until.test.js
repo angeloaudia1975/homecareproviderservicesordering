@@ -53,4 +53,16 @@ t('every frozen / live line file carries no `until` today (nothing else changes 
   const dir = path.join(__dirname, '..', 'public', 'data');
   for (const f of fs.readdirSync(dir).filter(x => x.endsWith('.json'))) if (/"until"\s*:/.test(fs.readFileSync(path.join(dir, f), 'utf8'))) throw new Error(f);
 });
+t('the price note of a time-limited special disappears with the special; other notes are untouched', () => {
+  const consts = ['PRICE_NOTE_VOLUME', 'PRICE_NOTE_OPERATIONAL', 'PRICE_NOTE_MAP'].map(n => { const m = new RegExp('\\nconst ' + n + '=[^\\n]*').exec(H); if (!m) throw new Error('missing ' + n); return m[0]; }).join('');
+  const F = new Function('CART', 'AUTH', 'money', SRC + consts + '\n' + grab('dealerPriceNote') + ';return {dealerPriceNote};')(new Map(), null, v => '$' + v);
+  const mk = iso => ({ dealerPriceNote: (a, b) => { Date.now = () => Date.parse(iso); try { return F.dealerPriceNote(a, b); } finally { Date.now = realNow; } } });
+  const note = 'Special through Dec 31, 2026: 4+ units at a lower price, free shipping.';
+  const before = mk('2026-12-31T23:59:59-06:00'), after = mk('2027-01-01T06:00:00Z');
+  if (!before.dealerPriceNote(note, P())) throw new Error('note hidden while the special is live');
+  eq(after.dealerPriceNote(note, P()), '', 'note still shown after the special ended');
+  const plain = { base_price: 100, tiers: [{ min_qty: 4, price: 90 }] };
+  if (!after.dealerPriceNote('Ships from Louisville', plain)) throw new Error('a line without an end lost its note');
+  if (!after.dealerPriceNote('Ships from Louisville', { base_price: 5 })) throw new Error('a product without breaks lost its note');
+});
 console.log(`\ntier until: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

@@ -1,7 +1,7 @@
 {
-  "review_id": "8b81690917e6",
+  "review_id": "8b818e52dd03",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T05:01:57Z",
+  "built_at": "2026-11-05T05:02:15Z",
   "main": "cf9678e26d590730262d8353c24c5e6463d7ba0a",
   "included": [
     {
@@ -18,13 +18,12 @@
       "pr": 35,
       "title": "C4: Yuwell catalog foundation — no prices, not orderable (draft)",
       "branch": "c4/yuwell-catalog",
-      "head": "b01e348ea93b601005d9c824c723cef2b1d7434b",
+      "head": "43fd475ac3a2b79d439ee6e8ccc92e70dfab7d74",
       "manufacturers": [
         "gce",
         "yuwell"
       ],
-      "other_files": 29,
-      "note": "newer commit 43fd475 still being checked — showing the last validated version"
+      "other_files": 29
     }
   ],
   "skipped": []
