@@ -13,7 +13,7 @@ const els={};
 const ctx={ money:v=>'$'+Number(v).toFixed(2), esc:s=>String(s), brandLogoHtml:()=>'', PROFILE:{name:'Dealer X'}, QCUST:{name:'',valid:'30 days'},
   FAVS:new Set(), BRANDING:{logo_url:''}, $:sel=>els[sel]||(els[sel]={innerHTML:''}), Number, isFinite, String, Math };
 vm.createContext(ctx);
-vm.runInContext('var RETIRED_LINE_SLUGS=["complete-medical-supplies","ohio-medical","gce"];var MFRLIST,PRICE,PRICELIST,QUOTELIST,QUOTE,QSEARCH="",QUOTE_UNAVAILABLE=[];\n'+names.map(grab).join('\n'),ctx);
+vm.runInContext(require('./extract-picker.js').retiredDecls(H)+'\nvar MFRLIST,PRICE,PRICELIST,QUOTELIST,QUOTE,QSEARCH="",QUOTE_UNAVAILABLE=[];\n'+names.map(grab).join('\n'),ctx);
 ctx.MFRLIST=MF.map(m=>({slug:m.slug,name:m.name,quotable:m.quotable}));
 ctx.PRICE={'access4u|A1':{name:'With MSRP',mfrName:'Access4U',msrp:120,cost:60},'access4u|A2':{name:'No MSRP',mfrName:'Access4U',msrp:null,cost:77.77},
   'access4u|A3':{name:'Zero MSRP',mfrName:'Access4U',msrp:0,cost:40},'gce|G1':{name:'Ohio item',mfrName:'Ohio Medical / GCE',msrp:300,cost:150}};

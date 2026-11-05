@@ -32,6 +32,8 @@ const cleanTiers=t=>{ if(!Array.isArray(t)) return null;
     .filter(r=>r.price!=null).sort((a,b)=>a.min_qty-b.min_qty);
   return out.length?out:null; };
 
+const RETIRED = require("./_retired_lines.js");   // retired lines: never read or written here, either spelling
+
 exports.handler = async (event)=>{
   if(event.httpMethod==="OPTIONS") return {statusCode:204,headers:CORS,body:""};
   try{
@@ -41,6 +43,7 @@ exports.handler = async (event)=>{
 
     if(event.httpMethod==="GET"){
       const slug=(event.queryStringParameters||{}).manufacturer||"";
+      if(slug && RETIRED.isRetiredLine(slug)) return json(410,{error:"this manufacturer line is retired"});
       if(!slug){
         const [mfrs,meta]=await Promise.all([
           fetchJson(`${ORDERING_BASE}/data/manufacturers.json`).catch(()=>[]),
@@ -70,6 +73,7 @@ exports.handler = async (event)=>{
 
     if(event.httpMethod==="POST"){
       let b; try{b=JSON.parse(event.body||"{}");}catch{return json(400,{error:"bad JSON"});}
+      { const m=b.manufacturer||(b.product&&b.product.manufacturer)||b.slug; if(m && RETIRED.isRetiredLine(m)) return json(410,{error:"this manufacturer line is retired"}); }
 
       if(b.action==="upload"){
         if(!b.data) return json(400,{error:"data required"});

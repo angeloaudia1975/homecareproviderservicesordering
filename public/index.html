@@ -1841,12 +1841,14 @@ const RAW={files:{},content:{},manufacturers:null};
 const RETIRED_LINE_SLUGS=["complete-medical-supplies","ohio-medical","gce"];
 /* Historical orders and imported sales of a retired line still show its name (never the bare slug "gce"). */
 const RETIRED_LINE_NAMES={"complete-medical-supplies":"Complete Medical Supplies","ohio-medical":"Ohio Medical / GCE","gce":"Ohio Medical / GCE"};
-function retiredLineName(slug){ return RETIRED_LINE_NAMES[String(slug||"").toLowerCase()]||null; }
+/* One test everywhere: trimmed and case-insensitive, like the servers' isRetiredLine. */
+function isRetiredSlug(slug){ return RETIRED_LINE_SLUGS.includes(String(slug==null?"":slug).trim().toLowerCase()); }
+function retiredLineName(slug){ return RETIRED_LINE_NAMES[String(slug==null?"":slug).trim().toLowerCase()]||null; }
 async function loadManufacturers(){
   const r = await fetch("./data/manufacturers.json",{cache:"no-store"});
   /* Retired lines are never listed, whichever identifier a file uses (netlify/functions/_retired_lines.js
      is the server's copy; test/retired-lines.test.js keeps the two the same). */
-  state.manufacturers = ((await r.json())||[]).filter(m=>m&&!RETIRED_LINE_SLUGS.includes(String(m.slug||"").toLowerCase()));
+  state.manufacturers = ((await r.json())||[]).filter(m=>m&&!isRetiredSlug(m.slug));
   try{ RAW.manufacturers=JSON.parse(JSON.stringify(state.manufacturers)); }catch(e){}
   // admin-uploaded manufacturer logos (Supabase, public-read) — merged so they show
   // below the manufacturer name on the home cards + catalog header, no redeploy needed.
@@ -3285,7 +3287,7 @@ function orderCardHtml(o){
   return `<div class="ordrow">
     <div class="ordmain"><div class="ordtop"><b>${esc(name)}</b><span class="ordstat" style="background:${stColor}1a;color:${stColor}">${esc(ORDER_STATUS_LABEL[st]||st)}</span></div>
       <div class="ordsub">${dt}${o.po?` · PO ${esc(o.po)}`:""} · ${o.items_count} item${o.items_count===1?"":"s"} · ${money(o.subtotal)}</div></div>
-    <button class="reord" onclick="reorder('${esc(o.id)}')">Reorder</button></div>`;
+    ${isRetiredSlug(o.manufacturer)?'<span class="ordsub" style="white-space:nowrap">Line retired</span>':`<button class="reord" onclick="reorder('${esc(o.id)}')">Reorder</button>`}</div>`;
 }
 // admin-editable portal-home content (hero banner + promo tiles). Public-read via anon key.
 async function loadHomeContent(){
@@ -6675,7 +6677,7 @@ async function loadPricing(){
   if(PRICE) return;
   PRICE={}; PRICELIST=[]; QUOTELIST=null;
   try{
-    const mf=await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]);
+    const mf=((await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]))||[]).filter(m=>m&&!isRetiredSlug(m.slug));   // retired lines never listed, under any spelling
     MFRLIST=(mf||[]).map(m=>({slug:m.slug,name:m.name,quotable:m.quotable}));
     const withData=(mf||[]).filter(m=>m.hasData!==false);
     /* P0 (2026-10-23): the public files carry no prices. A line this dealer carries is priced from
@@ -6859,12 +6861,12 @@ async function loadQuotesView(){ await ensureCatalogFav(); renderQuotes(); }
    price in its place. New quotes offer no product of an inactive line (manufacturers.json "quotable": false —
    Ohio Medical / GCE); an item already on a quote stays on it. */
 function quoteMsrp(p){ const v=p&&p.msrp!=null?Number(p.msrp):NaN; return (isFinite(v)&&v>0)?v:null; }
-function quotableLine(slug){ if(typeof RETIRED_LINE_SLUGS!=="undefined"&&RETIRED_LINE_SLUGS.includes(String(slug||"").toLowerCase())) return false; const m=(MFRLIST||[]).find(x=>x.slug===slug); return !(m&&m.quotable===false); }
+function quotableLine(slug){ if(typeof isRetiredSlug==="function"&&isRetiredSlug(slug)) return false; const m=(MFRLIST||[]).find(x=>x.slug===slug); return !(m&&m.quotable===false); }
 function quoteTotal(picked){ return picked.reduce((s,r)=>s+(r.msrp!=null?r.msrp:0),0); }
 function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">MSRP not provided</span>'; }
 function quoteItemHtml(r){ return `${esc(r.name)}<div style="font-size:10.5px;color:var(--muted)">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)}</div>`; }
 function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const p=(PRICE&&PRICE[k])||{};
-  return {key:k,mfr,code,sku:p.sku||code.split("|u=")[0],name:p.name||code,option:p.option||"",mfrName:p.mfrName||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach};}); }
+  return {key:k,mfr,code,sku:p.sku||code.split("|u=")[0],name:p.name||code,option:p.option||"",mfrName:p.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach};}); }
 function quotePaperHtml(picked,total){
   return `<div class="qhead"><div style="display:flex;gap:11px;align-items:center">${brandLogoHtml(46)}<div><div class="qbiz">${esc((PROFILE&&PROFILE.name)||"Your Business")}</div></div></div>
     <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>#Q-${(Math.abs(hashStr((PROFILE&&PROFILE.name)||"x"))%9000+1000)}</b><div class="qc">Valid ${esc(QCUST.valid||"")}</div></div></div>
@@ -7182,7 +7184,8 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       const H={apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON};
       const rr=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_related?manufacturer=eq.${encodeURIComponent(p.manufacturer||'')}&code=eq.${encodeURIComponent(code)}&order=sort&select=related_manufacturer,related_code,related_name,related_image,related_category,kind`,{headers:H});
       const cur=rr.ok?await rr.json():[];
-      (cur||[]).forEach(r=>{ (r.kind==='alternative'?curatedAlt:curatedAcc).push(r); });
+      /* a curated row pointing at a retired or unlisted line is never shown (its photos and catalog are gone) */
+      (cur||[]).filter(r=>r&&!isRetiredSlug(r.related_manufacturer)&&(!r.related_manufacturer||(state.manufacturers||[]).some(m=>m.slug===r.related_manufacturer))).forEach(r=>{ (r.kind==='alternative'?curatedAlt:curatedAcc).push(r); });
     }catch(e){}
     const media=Array.isArray(p.media)?p.media:[];
     // Golden: the model's enriched detail from Golden's own system (photos, size specs, documents, videos)

@@ -8,7 +8,7 @@ const ROOT = path.join(__dirname, '..');
 const R = require(path.join(ROOT, 'netlify', 'functions', '_retired_lines.js'));
 const H = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8');
 const MF = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'data', 'manufacturers.json'), 'utf8'));
-let pass = 0, fail = 0; const t = (n, f) => { try { f(); pass++; console.log('ok   ' + n); } catch (e) { fail++; console.log('FAIL ' + n + '\n     ' + e.message); } };
+let pass = 0, fail = 0; let chain = Promise.resolve(); const t = (n, f) => { chain = chain.then(async () => { try { await f(); pass++; console.log('ok   ' + n); } catch (e) { fail++; console.log('FAIL ' + n + '\n     ' + e.message); } }); };
 const WANT = ['complete-medical-supplies', 'gce', 'ohio-medical'];
 
 t('the server list holds every retired identifier, Ohio Medical under BOTH spellings', () => {
@@ -20,8 +20,17 @@ t('the server list holds every retired identifier, Ohio Medical under BOTH spell
 t('the storefront filters the same list out of manufacturers.json and out of new quotes', () => {
   const m = /const RETIRED_LINE_SLUGS=(\[[^\]]*\]);/.exec(H); if (!m) throw new Error('RETIRED_LINE_SLUGS missing');
   const list = JSON.parse(m[1]).sort(); if (JSON.stringify(list) !== JSON.stringify(WANT)) throw new Error('storefront list differs: ' + list);
-  if (!/state\.manufacturers = \(\(await r\.json\(\)\)\|\|\[\]\)\.filter\(m=>m&&!RETIRED_LINE_SLUGS\.includes/.test(H)) throw new Error('loadManufacturers does not filter');
-  if (!/function quotableLine\(slug\)\{ if\(typeof RETIRED_LINE_SLUGS!=="undefined"&&RETIRED_LINE_SLUGS\.includes/.test(H)) throw new Error('quotableLine does not refuse retired lines');
+  if (!/state\.manufacturers = \(\(await r\.json\(\)\)\|\|\[\]\)\.filter\(m=>m&&!isRetiredSlug\(m\.slug\)\)/.test(H)) throw new Error('loadManufacturers does not filter');
+  if (!/function quotableLine\(slug\)\{ if\(typeof isRetiredSlug==="function"&&isRetiredSlug\(slug\)\) return false;/.test(H)) throw new Error('quotableLine does not refuse retired lines');
+  // the price list / showroom re-read of manufacturers.json filters too, and curated "also available" rows skip retired lines
+  if (!/const mf=\(\(await fetch\('\/data\/manufacturers\.json'\)[^\n]*\.filter\(m=>m&&!isRetiredSlug\(m\.slug\)\)/.test(H)) throw new Error('loadPricing reads the unfiltered list');
+  if (!/\(cur\|\|\[\]\)\.filter\(r=>r&&!isRetiredSlug\(r\.related_manufacturer\)/.test(H)) throw new Error('curated related rows not filtered');
+  // one normalisation: trimmed + case-insensitive, like the servers
+  const m2 = /function isRetiredSlug\(slug\)\{[^\n]*\}/.exec(H); if (!m2) throw new Error('isRetiredSlug missing');
+  const L = /const RETIRED_LINE_SLUGS=(\[[^\]]*\]);/.exec(H)[0];
+  const f = new Function(L + m2[0] + ' return isRetiredSlug;')();
+  for (const v of ['gce', ' GCE ', 'Ohio-Medical', 'complete-medical-supplies']) if (!f(v)) throw new Error('not retired: ' + JSON.stringify(v));
+  for (const v of ['yuwell', 'pedifix', '', null]) if (f(v)) throw new Error('live retired: ' + v);
 });
 t('no retired line is listed, and no public catalog file or product photo folder is left for one', () => {
   for (const m of MF) if (R.isRetiredLine(m.slug)) throw new Error('listed: ' + m.slug);
@@ -40,6 +49,22 @@ t('historical orders of a retired line keep its name — never the bare slug', (
   const fn = new Function(m[0] + ' function retiredLineName(slug){ return RETIRED_LINE_NAMES[String(slug||"").toLowerCase()]||null; } return retiredLineName;')();
   if (fn('GCE') !== 'Ohio Medical / GCE' || fn('yuwell') !== null) throw new Error('retiredLineName wrong');
 });
+t('the legacy catalog-api answers 410 for a retired line, read or write, before touching the database', async () => {
+  process.env.SUPABASE_URL = 'https://sb.invalid'; process.env.SUPABASE_SERVICE_ROLE = 'x'; delete process.env.ANALYTICS_TOKEN;
+  const realFetch = global.fetch; let calls = 0; global.fetch = async () => { calls++; throw new Error('network'); };
+  try {
+    const api = require(path.join(ROOT, 'netlify', 'functions', 'catalog-api.js'));
+    for (const q of ['gce', 'ohio-medical', ' Ohio-Medical ', 'complete-medical-supplies']) {
+      const r = await api.handler({ httpMethod: 'GET', headers: {}, queryStringParameters: { manufacturer: q } });
+      if (r.statusCode !== 410) throw new Error('GET ' + q + ' -> ' + r.statusCode);
+    }
+    for (const b of [{ action: 'save_product', manufacturer: 'gce', product: { code: 'X' } }, { action: 'save_override', manufacturer: 'ohio-medical', code: 'X', patch: {} }, { action: 'save_product', product: { manufacturer: 'GCE', code: 'X' } }]) {
+      const r = await api.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify(b) });
+      if (r.statusCode !== 410) throw new Error('POST ' + JSON.stringify(b) + ' -> ' + r.statusCode);
+    }
+    if (calls) throw new Error('database or network was called ' + calls + ' times');
+  } finally { global.fetch = realFetch; }
+});
 t('both server gates consult the list before any entitlement or staff check', () => {
   for (const f of ['catalog-feed.js', 'catalog-layers.js']) {
     const s = fs.readFileSync(path.join(ROOT, 'netlify', 'functions', f), 'utf8');
@@ -53,4 +78,4 @@ t('the admin site holds the identical list (when its checkout is beside this one
   if (!fs.existsSync(f)) { console.log('     (admin checkout not found — set ADMIN_REPO to compare)'); return; }
   const A = require(f); if (JSON.stringify(A.RETIRED_LINES) !== JSON.stringify(R.RETIRED_LINES)) throw new Error('the two repos disagree');
 });
-console.log(`\nretired lines: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
+chain.then(() => { console.log(`\nretired lines: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0); });

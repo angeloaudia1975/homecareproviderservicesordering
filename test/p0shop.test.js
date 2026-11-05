@@ -135,7 +135,7 @@ const commercialRest = c => c.some(x => /rest\/v1\/(custom_products|product_over
         throw new Error('unexpected ' + u); };
       const window = { __PREVIEW__: preview || null };
       const f = new Function('fetch', 'window', 'SESSION', 'LINES', 'refreshIfNeeded',
-        'let PRICE=null, PRICELIST=null, MFRLIST=[];\n' + lift(src) + '\n;return (async()=>{ await loadPricing(); return {PRICE, PRICELIST}; })();');
+        'let PRICE=null, PRICELIST=null, MFRLIST=[];\n' + require('./extract-picker.js').retiredDecls(src) + '\n' + lift(src) + '\n;return (async()=>{ await loadPricing(); return {PRICE, PRICELIST}; })();');
       const r = await f(fetch, window, session || null, lines || [], async () => {});
       return Object.assign(r, { calls });
     };
@@ -175,7 +175,7 @@ const commercialRest = c => c.some(x => /rest\/v1\/(custom_products|product_over
       if (u === '/data/manufacturers.json') return { ok: true, json: async () => [{ slug: 'L', name: 'L', hasData: true }] };
       if (u === '/data/L.json') return { ok: true, json: async () => copy(SPLIT.public) };
       return { ok: true, status: 200, json: async () => LAYERS() }; };
-    const f = new Function('fetch', 'window', 'SESSION', 'LINES', 'refreshIfNeeded', 'let PRICE=null, PRICELIST=null, MFRLIST=[];\n' + lift(html) + '\n;return (async()=>{ await loadPricing(); return PRICE; })();');
+    const f = new Function('fetch', 'window', 'SESSION', 'LINES', 'refreshIfNeeded', 'let PRICE=null, PRICELIST=null, MFRLIST=[];\n' + require('./extract-picker.js').retiredDecls(html) + '\n' + lift(html) + '\n;return (async()=>{ await loadPricing(); return PRICE; })();');
     const P = await f(fetch, { __PREVIEW__: { token: 'pv-1' } }, null, [{ slug: 'L' }], async () => {});
     const c = calls.find(x => /catalog-layers/.test(x.url)); eq(c.headers['x-hcps-preview'], 'pv-1'); ok(!c.headers.authorization, 'auth sent'); eq(P['L|A1'].cost, 10);
   });
