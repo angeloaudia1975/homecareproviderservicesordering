@@ -1,17 +1,8 @@
 {
-  "review_id": "d13ee2ffa710",
+  "review_id": "e3fae78b828a",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T20:02:37Z",
-  "main": "32ff98f9f79a0c61dffe89c5d258d215762c4901",
-  "included": [
-    {
-      "pr": 42,
-      "title": "C3-07 Stage 1: shop landing page, All manufacturers navigation, line logos",
-      "branch": "c7/s1-landing",
-      "head": "c5e72199f330f94dfed349d88da7501dae580214",
-      "manufacturers": [],
-      "other_files": 13
-    }
-  ],
+  "built_at": "2026-11-05T20:04:15Z",
+  "main": "16114b686f42047e847d0a207a2c473da15c358f",
+  "included": [],
   "skipped": []
 }
