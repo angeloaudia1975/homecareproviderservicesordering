@@ -2988,8 +2988,9 @@ function gckRender(){
   const field=(k,label,max,type,extra)=>`<label class="gck-f"><span>${label}</span><input class="gck-in" data-f="${k}" type="${type||"text"}" maxlength="${max}" value="${esc(f[k])}"${extra||""}${RO}></label>`;
   const totals=q?`<div class="gck-tot">
       <div><span>Merchandise</span><b>${money(q.totals.subtotal)}</b></div>
+      <div><span>Freight</span><b>${gckFreight(q.totals)}</b></div>
       <div><span>Shipping &amp; handling${q.totals.sh_waived?" (waived for this ship-to)":""}</span><b>${money(q.totals.sh_total)}</b></div>
-      ${(q.totals.shipments||[]).length>1?q.totals.shipments.map(s=>`<div class="gck-sm"><span>${esc(s.group)} shipment</span><span>${money(s.subtotal)} + ${money(s.sh)} S&amp;H</span></div>`).join(""):""}
+      ${(q.totals.shipments||[]).length>1?q.totals.shipments.map(s=>`<div class="gck-sm"><span>${s.group==="in_stock"?"Ships now":s.group==="build"?"Built to order":"Shipment"}</span><span>${money(s.subtotal)}${s.freight!=null?` + ${Number(s.freight)===0?"free freight":money(s.freight)+" freight"}`:""} + ${money(s.sh)} S&amp;H</span></div>`).join(""):""}
       <div class="gck-gt"><span>Golden total</span><b>${money(q.totals.grand_total)}</b></div>
       <div class="gck-note">Priced by Golden Technologies${GCART.quoteAsOf?" · "+esc(new Date(GCART.quoteAsOf).toLocaleString()):""}.${q.freight&&q.freight.note?" "+esc(q.freight.note):""}</div></div>`:"";
   const changed=GCART.changed?`<div class="gck-warn" role="alert"><b>Golden's prices changed since you reviewed them.</b> Please review the new totals below, then validate again.</div>`:"";
@@ -3020,6 +3021,8 @@ function gckRender(){
     else if(fk){ GCART._refocus=fk; const c=ov.querySelector('[data-gck-close]'); if(c) c.focus(); } }   // a control frozen while Golden answers gets focus back afterwards
   ov.querySelectorAll('iframe[data-gck-email]').forEach(fr=>{ const k=fr.getAttribute('data-gck-email'); const m=r&&r.emails&&(k==="golden"?r.emails.golden_order:r.emails.dealer_confirmation); if(m&&typeof m.html==="string") fr.srcdoc=m.html; });
 }
+/* Golden's freight (contract 1.7.0) is its own line, exactly as Golden priced it — never estimated here. */
+function gckFreight(t){ const v=t&&t.freight_total; return v==null||!(Number(v)>=0)?"priced by Golden":Number(v)===0?"Free — Golden pays":money(v); }
 function gckCanPlace(r){ return !!(r&&r.valid===true&&r.ordering_enabled===true&&gckOrderingOpen()&&GCART.attempt&&!GCART.busy); }
 function gckResultHtml(r){
   const o=r.order||{}, e=r.emails||{}, go=e.golden_order||{}, dc=e.dealer_confirmation;
@@ -3032,6 +3035,8 @@ function gckResultHtml(r){
     <div class="gck-kv"><div><span>PO number</span><b>${esc(o.po_number||"")}${o.po_auto?" (Golden will assign this)":""}</b></div>
       <div><span>Ship to</span><b>${esc((o.ship_to&&o.ship_to.label)||"")}</b><small>${esc(o.ship_to?gckShipLine(o.ship_to):"")}</small></div>
       <div><span>Contact</span><b>${esc([o.contact&&o.contact.name,o.contact&&o.contact.phone].filter(Boolean).join(" · "))}</b></div>
+      <div><span>Freight</span><b>${r.quote?gckFreight(r.quote.totals):""}</b></div>
+      <div><span>Shipping &amp; handling</span><b>${r.quote?money(r.quote.totals.sh_total):""}</b></div>
       <div><span>Golden total</span><b>${r.quote?money(r.quote.totals.grand_total):""}</b></div></div>
     <h3>Email previews</h3><p class="gck-note">Exactly what Golden ${can?"will send when the order is placed":"would send when ordering opens"}. Shown here only.</p>
     <div class="gck-mail"><div class="gck-mh">${go.recipient==="test_recipient"?"To Golden's TEST mailbox":"To Golden's order desk"}${go.recipient_configured?"":" (address not yet configured)"} · <b>${esc(go.subject||"")}</b></div><iframe data-gck-email="golden" sandbox="" title="Preview of the order email to Golden"></iframe></div>
@@ -3043,7 +3048,9 @@ async function gckQuote(){
   GCART.busy=true; GCART.err=null; GCART.changed=false; GCART.result=null; gckRender();
   const sig=JSON.stringify([gckReq(),GCART.ship]);
   const seq=GCART.seq;
-  const j=await goldenCall("quote",{lines:gckReq(),ship_to:{id:GCART.ship}});
+  // split_order:true = Golden's own default: in-stock and build chairs ship as separate shipments, each with its own
+  // freight and S&H (Golden treats a single-group order as one shipment). Never a merged order without Golden's hold note.
+  const j=await goldenCall("quote",{lines:gckReq(),ship_to:{id:GCART.ship},split_order:true});
   if(seq!==GCART.seq) return;
   GCART.busy=false;
   if(sig!==JSON.stringify([gckReq(),GCART.ship])){ gckRender(); return; }   // the cart changed while Golden answered
@@ -3058,7 +3065,7 @@ async function gckQuote(){
 function gckOrderBody(){
   const f=GCART.form, q=GCART.quote;
   const lines=gckReq().map((l,ix)=>{ const refs=(GCART.items[ix].refs||[]).slice(0,l.qty).map(x=>String(x||"").trim()); while(refs.length&&!refs[refs.length-1]) refs.pop(); return refs.length?Object.assign({},l,{reference_names:refs}):l; });
-  const b={quote_hash:q.quote_hash,lines,ship_to:{id:GCART.ship},contact:{name:f.name.trim(),phone:f.phone.trim()}};
+  const b={quote_hash:q.quote_hash,lines,ship_to:{id:GCART.ship},split_order:true,contact:{name:f.name.trim(),phone:f.phone.trim()}};
   if(f.email.trim()) b.contact.email=f.email.trim();
   if(f.po.trim()) b.po_number=f.po.trim(); if(f.attention.trim()) b.attention=f.attention.trim(); if(f.notes.trim()) b.notes=f.notes.trim();
   return b;
@@ -3105,6 +3112,8 @@ function gckRenderPlacement(ov){
         <div><span>PO number</span><b>${esc(o.po_number||"")}</b></div>
         <div><span>Placed</span><b>${P.placed_at?esc(new Date(P.placed_at).toLocaleString()):""}</b></div>
         <div><span>Ship to</span><b>${esc((o.ship_to&&o.ship_to.label)||"")}</b><small>${esc(o.ship_to?gckShipLine(o.ship_to):"")}</small></div>
+        <div><span>Freight</span><b>${gckFreight(q.totals)}</b></div>
+        <div><span>Shipping &amp; handling</span><b>${q.totals&&q.totals.sh_total!=null?money(q.totals.sh_total):""}</b></div>
         <div><span>Golden total</span><b>${q.totals&&q.totals.grand_total!=null?money(q.totals.grand_total):""}</b></div>
         ${n?`<div><span>Emails</span><small>${P.test_mode?"Order email (test mailbox)":"Golden order desk"}: ${esc(NW[n.order_desk]||n.order_desk)} · ${P.test_mode?"Dealer confirmation (test mailbox)":"Dealer confirmation"}: ${esc(NW[n.dealer_confirmation]||n.dealer_confirmation)}</small></div>`:""}</div>
       <div class="gck-acts"><button type="button" class="gck-btn primary" data-gck-myorders>View in My Orders</button><button type="button" class="gck-btn" data-gck-done>Done</button></div></div>`;
@@ -4651,9 +4660,10 @@ function goldenCartGroupHtml(){
       <div class="r"><input type="number" min="0" max="${GCK_MAX_QTY}" value="${i.qty}" aria-label="Quantity of ${esc(i.label)}" data-gq="${ix}"${frozen?" disabled":""}><button class="rm" data-grm="${ix}"${frozen?" disabled":""}>Remove</button></div></div></div>`;
   }).join("");
   const tot=q&&q.totals?`<div class="r"><span>Subtotal</span><span>${money(q.totals.subtotal)}</span></div>
+      <div class="r"><span>Freight</span><span>${gckFreight(q.totals)}</span></div>
       <div class="r"><span>Shipping &amp; handling${q.totals.sh_waived?" (waived)":""}</span><span>${money(q.totals.sh_total)}</span></div>
       <div class="r tot"><span>Golden Technologies total</span><span>${money(q.totals.grand_total)}</span></div>`
-    :`<div class="r"><span>Subtotal</span><span>at review</span></div><div class="r"><span>Shipping &amp; handling</span><span>at review</span></div>
+    :`<div class="r"><span>Subtotal</span><span>at review</span></div><div class="r"><span>Freight</span><span>at review</span></div><div class="r"><span>Shipping &amp; handling</span><span>at review</span></div>
       <div class="r tot"><span>Golden Technologies total</span><span>priced by Golden</span></div>`;
   return `<div class="mgroup gmgroup" data-slug="golden">
     <div class="mghead"><span>Golden Technologies</span><span class="cnt">${n} chair${n===1?"":"s"}</span></div>

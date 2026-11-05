@@ -86,7 +86,7 @@ function runProxy(body, headers) {   // serialised: the in-process fetch world i
       if (/api\.resend\.com/.test(u)) { W.mail.push(JSON.parse(init.body)); return res(200, { id: 're_1' }); }
       if (/sendgrid|mailgun|smtp|graph\.microsoft/.test(u)) throw new Error('no other email path');
       if (u.startsWith('https://deploy-preview-284--goldenonlineordering.netlify.app/')) {
-        const url = new URL(u); W.goldenCalls.push({ path: url.pathname, key: init.headers && init.headers['Idempotency-Key'], mode: init.body ? JSON.parse(init.body).mode : null });
+        const url = new URL(u); W.goldenCalls.push({ path: url.pathname, key: init.headers && init.headers['Idempotency-Key'], mode: init.body ? JSON.parse(init.body).mode : null, split: init.body ? JSON.parse(init.body).split_order : null });
         const ev = { httpMethod: init.method, rawUrl: u, path: url.pathname, headers: Object.fromEntries(Object.entries(init.headers || {}).map(([k, v]) => [k.toLowerCase(), v])), queryStringParameters: Object.fromEntries(url.searchParams), body: init.body || '', isBase64Encoded: false };
         const outer = global.fetch; global.fetch = (x, y) => /api\.resend\.com/.test(String(x)) ? outer(x, y) : goldenSb(String(x).replace('https://sb.test', 'http://sb.test'), y);
         process.env.SUPABASE_URL = 'http://sb.test';
@@ -179,7 +179,11 @@ async function toValidated(page, po, keepItems) {
       Object.assign(W, { cost: 1188, dropNextPlace: 0, delayPlace: 0 }); W.recs.clear(); W.orders.length = 0; W.goldenCalls.length = 0; W.mail.length = 0; W.nextId = 1661;
       const { ctx, page, errs, counts } = await boot(browser, w, h);
       await toValidated(page, 'PO-B6-1');
-      const v = await page.evaluate(() => ({ btn: !!document.querySelector('[data-gck-place]'), test: /Test mode/.test(document.querySelector('.gck-ok').innerText), orders: GCART.result && GCART.result.ordering_enabled }));
+      const v = await page.evaluate(() => ({ btn: !!document.querySelector('[data-gck-place]'), test: /Test mode/.test(document.querySelector('.gck-ok').innerText), orders: GCART.result && GCART.result.ordering_enabled,
+        tot: document.querySelector('.gck-tot').innerText, ok: document.querySelector('.gck-ok').innerText, q: GCART.result && GCART.result.quote && GCART.result.quote.totals }));
+      await t(`${label}: Golden's freight is its own line ($135.00 for one chair) in the review AND the validation; the total includes it`, () => {
+        ok(v.q && v.q.freight_total === 135 && v.q.grand_total === Number((v.q.subtotal + 135 + v.q.sh_total).toFixed(2)), JSON.stringify(v.q));
+        ok(/Freight\s*\$135\.00/.test(v.tot) && /Freight\s*\$135\.00/.test(v.ok), v.tot.slice(0, 300) + ' || ' + v.ok.slice(0, 300)); });
       await t(`${label}: after a valid validation Golden says ordering is on → "Place order with Golden" + test-mode note`, () => ok(v.btn && v.test && v.orders === true, JSON.stringify(v)));
       await shot(page, `golden-place-ready-${label}.png`);
       // double-click: one placement call, frozen while Golden answers
@@ -195,6 +199,8 @@ async function toValidated(page, po, keepItems) {
         ok(keys.length === 2 && keys[0].mode === 'validate' && keys[1].mode === 'submit' && keys[0].key === keys[1].key, JSON.stringify(keys)); ok(W.orders.length === 1, 'orders ' + W.orders.length); });
       await t(`${label}: confirmation shows Golden's order number, PO and TEST note; cart emptied only now; nothing pending`, () => {
         ok(/Order placed with Golden/.test(done.text) && /P1661/.test(done.text) && /PO-B6-1/.test(done.text) && /TEST order/.test(done.text), done.text.slice(0, 300));
+        ok(/Freight\s*\$135\.00/.test(done.text), 'the confirmation shows Golden\'s freight: ' + done.text.slice(0, 400));
+        ok(W.orders[0] && Number(W.orders[0].freight_total) === 135, 'Golden stored the order with its freight: ' + JSON.stringify(W.orders[0] && W.orders[0].freight_total));
         ok(done.items === 0 && done.stored === '[]' && done.pend === null && done.placed === 'P1661', JSON.stringify(done)); });
       await t(`${label}: Golden's emails went ONLY to the test mailbox, marked TEST — never the order desk or the dealer`, () => {
         ok(W.mail.length === 2 && W.mail.every(m => m.to.length === 1 && m.to[0] === TEST_BOX && /^\[TEST/.test(m.subject)), JSON.stringify(W.mail.map(m => [m.to, m.subject]))); });
@@ -278,6 +284,23 @@ async function toValidated(page, po, keepItems) {
       const g2 = await geo();
       await t(`${label}: cart — no horizontal scroll, touch targets ≥ 44px`, () => { ok(g2.sw <= g2.cw + 1, JSON.stringify(g2)); ok(!g2.small.length, 'small: ' + g2.small.join(',')); });
       await t(`${label}: no HCPS order call, HCPS stored nothing, no page error`, () => { ok(counts.orders === 0 && W.hcpsWrites === 0, counts.orders + '/' + W.hcpsWrites); ok(!errs.length, errs.join(' | ')); });
+      await ctx.close();
+    }
+    { // a mixed cart (in-stock + built to order) is quoted as Golden's two shipments, each with its own freight and S&H
+      Object.assign(W, { cost: 1188, dropNextPlace: 0, delayPlace: 0 }); W.recs.clear(); W.orders.length = 0; W.goldenCalls.length = 0; W.mail.length = 0;
+      const { ctx, page } = await boot(browser, 1280, 900);
+      await page.evaluate(() => { GCART.items = []; goldenCartAdd('PR511-LAR', { fabric: 'std', color: 'SUM', tier: 'nirvana', footrest: false }, null);
+        goldenCartAdd('PR511-LAR', { fabric: 'xover', color: 'JBO', tier: 'nirvana', footrest: false }, null); goldenCartShow(); });
+      await page.waitForSelector('.gck-ship', { timeout: 15000 });
+      await page.check(`.gck-ship input[value="${LOC_CIN}"]`);
+      if (!(await page.$('.gck-tot'))) await page.click('[data-gck-quote]');
+      try { await page.waitForSelector('.gck-tot', { timeout: 15000 }); } catch (e) { console.log('DEBUG mixed:', await page.evaluate(() => [GCART.err, JSON.stringify(GCART.items), document.getElementById('gckView').innerText.slice(0, 500)])); throw e; }
+      const m = await page.evaluate(() => ({ t: GCART.quote && GCART.quote.totals, txt: document.querySelector('.gck-tot').innerText }));
+      const qc = W.goldenCalls.filter(c => c.path === '/v1/quote').slice(-1)[0];
+      await t('mixed cart: Partner 360 asks for Golden\'s split shipments; ships-now and built-to-order each pay $135 freight', () => {
+        ok(m.t && m.t.split === true && m.t.freight_total === 270 && m.t.shipments.length === 2 && m.t.shipments.every(x => x.freight === 135), JSON.stringify(m.t));
+        ok(/Ships now/.test(m.txt) && /Built to order/.test(m.txt) && /Freight\s*\$270\.00/.test(m.txt), m.txt.slice(0, 400));
+        ok(qc && qc.split === true, 'the quote request asked Golden for split shipments'); });
       await ctx.close();
     }
   } finally { await browser.close(); }
