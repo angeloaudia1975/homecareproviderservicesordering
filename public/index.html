@@ -5932,6 +5932,10 @@ let SHIPTO_LABEL="";
 function fmtShipAddr(a){return [a.address,[a.city,a.state].filter(Boolean).join(", "),a.zip].filter(Boolean).join(" · ");}
 function shipAddrList(){const d=AUTH.dealer||{},list=[],seen=new Set();
   const push=(a,lbl)=>{if(!a||(!a.address&&!a.city))return;const key=[a.address,a.city,a.state,a.zip].join('|').toLowerCase();if(seen.has(key))return;seen.add(key);list.push({address:a.address||"",city:a.city||"",state:a.state||"",zip:a.zip||"",label:a.label||lbl||""});};
+  /* C3-07 Stage 3: the dealer's chosen default ship-to comes first (pre-selected); every other address stays available. */
+  const dk=d.default_ship_key||"";
+  if(dk==="main") push({address:d.address,city:d.city,state:d.state,zip:d.zip},"Business address");
+  else if(dk){ const da=(d.addresses||[]).find(a=>a.key===dk); if(da) push(da,da.label); }
   (d.addresses||[]).forEach(a=>push(a,a.label));
   push(d.shipping,"Shipping");
   if(!list.length) push({address:d.address,city:d.city,state:d.state,zip:d.zip},"On file");
@@ -6786,6 +6790,28 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .seelink{font-size:12px;font-weight:800;color:var(--orange-d)}
   #p360wrap .rowlist{display:flex;flex-direction:column}
   #p360wrap .rl{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line-2)}
+  /* C3-07 Stage 3 — Account Center */
+  @media(min-width:981px){#view-account .grid2{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}}
+  @media(max-width:980px){#view-account .grid2{grid-template-columns:minmax(0,1fr)}}
+  #p360wrap .acsm{padding:6px 11px;font-size:12.5px;min-height:36px;display:inline-flex;align-items:center}
+  #p360wrap .acr{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  #p360wrap .acgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+  #p360wrap .acgrid span{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+  #p360wrap .acgrid b{font-size:14px;color:var(--navy);word-break:break-word}
+  #p360wrap .acchip{display:inline-block;font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  #p360wrap .acchip.ok{background:#e3f5ea;color:#17663a}#p360wrap .acchip.warn{background:#fff4dc;color:#8a5a00}#p360wrap .acchip.none{background:#fde8e8;color:#9b1c1c}
+  #p360wrap .acaccts .acrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line-2);flex-wrap:wrap}
+  #p360wrap .acaccts .acrow:first-child{border-top:0}
+  #p360wrap .acrow .acn{flex:1 1 180px;min-width:0;display:flex;flex-direction:column}
+  #p360wrap .acrow .acn span{font-size:12px;color:var(--muted)}
+  #p360wrap .acrow.st-verified{box-shadow:inset 3px 0 0 #2f9e5b;padding-left:9px}
+  #p360wrap .acrow.st-pending{box-shadow:inset 3px 0 0 #e0a106;padding-left:9px}
+  #p360wrap .acrow.st-none{box-shadow:inset 3px 0 0 #d64545;padding-left:9px}
+  #p360wrap .acloc{border:1px solid var(--line-2);border-radius:10px;padding:8px 10px;margin-top:8px}
+  #p360wrap .acloc summary{cursor:pointer;min-height:32px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  #p360wrap .acpend{background:#fff8e6;border-color:#f4d58d}
+  .acerr{color:#b42323;font-size:13px;min-height:16px;margin-top:6px}
+  @media(max-width:640px){#p360wrap .acgrid{grid-template-columns:1fr}#p360wrap .acsm{min-height:44px}}
   #p360wrap .rl:first-child{border-top:0}
   #p360wrap .rl .b{flex:1;min-width:0}
   #p360wrap .rl .n{font-size:13.5px;font-weight:700;color:var(--navy);line-height:1.2}
@@ -6842,6 +6868,10 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .modal{display:none;position:fixed;inset:0;background:rgba(16,38,63,.5);z-index:100;align-items:center;justify-content:center;padding:20px}
   #p360wrap .modal.on{display:flex}
   #p360wrap .mbox{background:#fff;border-radius:14px;box-shadow:var(--shadow);max-width:480px;width:100%;padding:22px 24px}
+  /* C3-07 Stage 3: dialogs fit a phone — never wider than the screen, scroll inside when tall */
+  #p360wrap .mbox{box-sizing:border-box;max-height:calc(100vh - 40px);overflow:auto;min-width:0}
+  #p360wrap .mbox input,#p360wrap .mbox select,#p360wrap .mbox textarea{box-sizing:border-box;max-width:100%}
+  @media(max-width:640px){#p360wrap .modal{padding:12px}#p360wrap .mbox{padding:18px 16px}#p360wrap .mbox .btn{min-height:44px;display:inline-flex;align-items:center}}
   #p360wrap .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
   #p360wrap .mhead h3{margin:0;color:var(--navy)}
   #p360wrap .mx{color:var(--muted);font-size:18px;cursor:pointer}
@@ -7637,53 +7667,130 @@ function renderOpportunities(){
 }
 
 /* --- account & pricing view --- */
-async function loadAccountView(){ await loadPricing(); try{ const a=await api(TOOLS_ENDPOINT,{action:"account_get"}); if(a&&a.ok)ACCOUNT={resale:a.resale||null,applications:a.applications||[],terms:a.terms||[]}; }catch(e){} renderAccount(); }
+/* ===== ACCOUNT CENTER (C3-07 Stage 3, owner 2026-11-05; D2 / D5 2026-11-05 15:20 CT) =====
+   One page for the dealer's own account: company & contacts, addresses (business, billing, ship-to + the checkout
+   default), logo upload, and "Your manufacturer accounts" (green = verified by HCPS, amber = waiting on HCPS, red = none),
+   for every location the login may see (head office: its company; branch: its own). Every edit except the default ship-to
+   and the logo is a REQUEST that HCPS approves — nothing here changes ordering access, prices or terms. The old generic
+   credit form is closed (D5: it stored and emailed EIN / bank details); manufacturer applications move to Stage 5. */
+let AC=null, AC_ERR="";
+const acToast=m=>{ if(typeof window.toast==="function") window.toast(m); else alert(m); };
+async function loadAccountView(){
+  AC=null; AC_ERR="";
+  const host=$("#view-account"); if(host) host.innerHTML=`<div class="ph"><div><h1>Account Center</h1><div class="sub">Loading your account…</div></div></div>`;
+  if(window.__PREVIEW__){ AC_ERR="preview"; }
+  else {
+    const [a,c]=await Promise.all([ api(TOOLS_ENDPOINT,{action:"account_center"}).catch(()=>null), api(TOOLS_ENDPOINT,{action:"account_get"}).catch(()=>null), loadPricing().catch(()=>null) ]);
+    if(a&&a.ok) AC=a; else AC_ERR=(a&&a.error)||"Your account details could not be loaded just now — please try again.";
+    if(c&&c.ok) ACCOUNT={resale:c.resale||null,applications:c.applications||[],terms:c.terms||[]};
+  }
+  renderAccount();
+}
 function termsForLines(){ const map={}; (ACCOUNT.terms||[]).forEach(t=>{map[t.manufacturer]=t.terms;}); const slugs=(LINES&&LINES.length)?LINES.map(l=>l.slug):(MFRLIST||[]).map(m=>m.slug); return slugs.map(s=>({slug:s,name:mfrNameOf(s),terms:map[s]||map[mfrNameOf(s)]||"—"})); }
+function acAddr(a){ return [a.address,[a.city,a.state].filter(Boolean).join(", "),a.zip].filter(Boolean).join(" · "); }
+function acChip(st){ const m={verified:["ok","Verified"],pending:["warn","Pending"],none:["none","No account"]}[st]||["none","No account"]; return `<span class="acchip ${m[0]}">${m[1]}</span>`; }
+function acAccountsHtml(loc){
+  const canClaim=loc.is_self;
+  return `<div class="acaccts">${loc.accounts.map(x=>{
+    const golden=x.slug==="golden-technologies"||x.slug==="golden";
+    let act="";
+    if(canClaim&&!golden&&x.status!=="verified"&&!/Submitted/.test(x.label)) act=`<button type="button" class="btn gh acsm" data-slug="${esc(x.slug)}" data-name="${esc(x.name)}" onclick="acClaimOpen(this.dataset.slug,this.dataset.name)">${x.account_ref?"Correct the number":"I have an account"}</button>`;
+    if(canClaim&&!golden&&x.status==="none"&&typeof window.needsAccess==="function"&&window.needsAccess(x.slug)) act+=` <button type="button" class="btn gh acsm" data-slug="${esc(x.slug)}" onclick="requestAccess(this.dataset.slug,this)">Request access</button>`;
+    return `<div class="acrow st-${esc(x.status)}"><div class="acn"><b>${esc(x.name)}</b><span>${esc(x.label)}${x.account_ref?" · # "+esc(x.account_ref):""}${x.ordering?" · ordering on":""}</span></div><div class="acr">${acChip(x.status)}${act}</div></div>`; }).join("")}</div>`;
+}
 function renderAccount(){
+  const host=$("#view-account"); if(!host) return;
   const resaleOn=ACCOUNT.resale&&ACCOUNT.resale.status==="on_file";
   const terms=termsForLines();
-  const lineList=(LINES&&LINES.length)?LINES.map(l=>({slug:l.slug,name:mfrNameOf(l.slug)})):(MFRLIST||[]);
-  const lineOpts=lineList.map(m=>`<option value="${esc(m.name)}">${esc(m.name)}</option>`).join("");
-  const appsHtml=(ACCOUNT.applications||[]).length?ACCOUNT.applications.map(a=>`<div class="rl"><div class="b"><div class="n">${esc(a.manufacturer)}</div><div class="m">${esc(a.requested_terms||"")} · ${dateShort(a.created_at)}</div></div><span class="pill open">${esc(a.status||"submitted")}</span></div>`).join(""):`<div class="empty" style="padding:12px">No applications submitted yet.</div>`;
-  const fld=(id,label,val,type)=>`<label class="fld2" style="margin:0"><span style="font-size:11px;font-weight:800;color:var(--navy)">${label}</span><input id="${id}" type="${type||"text"}" value="${esc(val||"")}"></label>`;
-  $("#view-account").innerHTML=`
-   <div class="ph"><div><h1>Account &amp; Pricing</h1><div class="sub">Manufacturer onboarding, terms, branding &amp; pricing export — no card storage</div></div></div>
-   <div class="grid2"><div>
-     <div class="card" style="margin-top:0"><h3>Digital account setup center</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Complete manufacturer onboarding online — paperwork only, no payment handling.</div>
-       <div class="steps">
-         <div class="step done"><div class="sn">✓</div><div class="stx"><h4>Business profile</h4><p>${esc((PROFILE&&PROFILE.name)||"—")}</p></div></div>
-         <div class="step ${resaleOn?"done":""}"><div class="sn">${resaleOn?"✓":"2"}</div><div class="stx"><h4>Resale / tax-exemption certificate</h4><p>${resaleOn?("On file"+(ACCOUNT.resale.reference?" · "+esc(ACCOUNT.resale.reference):"")+" — auto-attached to every application."):"Add your certificate reference, then email the file to HCPS to complete."}</p>
-           <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input id="resaleRef" placeholder="Certificate # / reference" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.reference)||"")}" style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><input id="resaleState" placeholder="State" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.state)||"")}" style="width:72px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><a class="btn nv" onclick="submitResale()">Save</a></div></div></div>
-         <div class="step"><div class="sn">3</div><div class="stx"><h4>Manufacturer credit application</h4><p>Complete an electronic credit app for any HCPS line — sent to HCPS with your resale certificate, and HCPS submits it to the manufacturer.</p>
-           <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-             <label class="fld2" style="margin:0"><span style="font-size:11px;font-weight:800;color:var(--navy)">Line</span><select id="caMfr">${lineOpts}</select></label>
-             <label class="fld2" style="margin:0"><span style="font-size:11px;font-weight:800;color:var(--navy)">Requested terms</span><select id="caTerms"><option>Net 30</option><option>Net 45</option><option>Net 60</option><option>Prepay</option></select></label>
-             ${fld("caLegal","Legal business name",(PROFILE&&PROFILE.name)||"")}
-             ${fld("caEin","EIN / Tax ID","")}
-             ${fld("caYears","Years in business","","number")}
-             ${fld("caBank","Bank reference","")}
-             <label class="fld2" style="margin:0;grid-column:1/-1"><span style="font-size:11px;font-weight:800;color:var(--navy)">Trade references</span><input id="caTrade" placeholder="Company, contact, phone…"></label>
-           </div>
-           <a class="btn pri" style="margin-top:10px" onclick="submitCreditApp()">Submit application</a></div></div>
-       </div>
-       <div class="secure" style="margin-top:12px">🔒 HCPS stores no credit-card data — payment stays between you and the manufacturer</div></div>
-
-     <div class="card"><div class="chead"><h3>Your terms by line</h3><span style="font-size:11px;color:var(--muted)">Set by HCPS per manufacturer</span></div>
-       <div class="rowlist">${terms.length?terms.map(t=>{const prepay=String(t.terms).toLowerCase()==="prepay";return `<div class="rl"><div class="b"><div class="n">${esc(t.name)}</div></div>${prepay?`<span class="pill open">Prepay</span> <a class="btn gh" onclick="alert('Routing you to pay the manufacturer directly')">Pay mfr →</a>`:(t.terms==="—"?`<span class="pill imported">Terms pending</span>`:`<span class="pill done">Credit · ${esc(t.terms)}</span>`)}</div>`;}).join(""):`<div class="empty">No lines yet.</div>`}</div>
-       <div class="lead-note" style="margin-top:8px"><b>Credit</b> lines order on net terms once approved. <b>Prepay</b> lines: you pay the manufacturer directly — HCPS never touches the payment.</div></div>
-
-     <div class="card"><h3>Submitted applications</h3><div class="rowlist">${appsHtml}</div></div>
-   </div>
-   <div>
-     <div class="card" style="margin-top:0"><h3>Dealer branding</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Personalize your portal, quotes &amp; confirmations.</div>
-       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">${brandLogoHtml(52)}<div style="font-weight:700;color:var(--navy)">${esc((PROFILE&&PROFILE.name)||"")}</div></div>
-       <div class="fld2"><label>Logo URL</label><input id="acctLogo" value="${esc(BRANDING.logo_url||"")}" placeholder="https://…/logo.png"></div><a class="btn gh" onclick="saveBranding(document.getElementById('acctLogo').value)">Save logo</a></div>
-     <div class="card"><h3>Pricing export</h3><div style="font-size:12.5px;color:var(--muted)">Export your full HCPS product &amp; dealer-pricing file (SKU, manufacturer, description, dealer cost, MAP, MSRP, category) for billing, ERP, inventory or POS.</div><a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">⬇ Export pricing file</a></div>
-   </div>
-  </div>`;
+  const head=`<div class="ph"><div><h1>Account Center</h1><div class="sub">Your company, contacts, addresses, logo and manufacturer accounts. Changes go to HCPS for approval.</div></div></div>`;
+  if(AC_ERR==="preview"){ host.innerHTML=head+`<div class="card" style="margin-top:0">Read-only preview — the Account Center shows the dealer's own details only when they are signed in.</div>`; return; }
+  if(!AC){ host.innerHTML=head+`<div class="card" style="margin-top:0">${esc(AC_ERR)} <a class="btn gh" onclick="loadAccountView()">Try again</a></div>`; return; }
+  const co=AC.company||{}, self=(AC.locations||[]).find(l=>l.is_self)||{accounts:[]}, others=(AC.locations||[]).filter(l=>!l.is_self);
+  const def=co.default_ship_key||"";
+  const ships=(AC.addresses||[]).filter(a=>a.key==="main"||!/^bill/i.test(a.key));
+  const pend=(AC.pending||[]);
+  const appsHtml=(ACCOUNT.applications||[]).length?ACCOUNT.applications.map(a=>`<div class="rl"><div class="b"><div class="n">${esc(a.manufacturer)}</div><div class="m">${esc(a.requested_terms||"")} · ${dateShort(a.created_at)}</div></div><span class="pill open">${esc(a.status||"submitted")}</span></div>`).join(""):`<div class="m" style="color:var(--muted)">No applications on file.</div>`;
+  host.innerHTML=head+`
+  ${pend.length?`<div class="card acpend" style="margin-top:0"><b>${pend.length} change${pend.length===1?"":"s"} waiting for HCPS approval</b> — your account updates once HCPS approves ${pend.length===1?"it":"them"}.</div>`:""}
+  <div class="grid2"><div>
+    <div class="card" style="margin-top:0"><div class="chead"><h3>Company</h3><a class="btn gh acsm" onclick="acCompanyOpen()">Request a change</a></div>
+      <div class="acgrid"><div><span>Business</span><b>${esc(co.business_name||"—")}</b></div><div><span>HCPS account</span><b>${esc(co.hcps_account||"—")}</b></div>
+        <div><span>Main contact</span><b>${esc(co.contact_name||"—")}</b></div><div><span>Phone</span><b>${esc(co.phone||"—")}</b></div>
+        <div><span>Email</span><b>${esc(co.email||"—")}</b></div><div><span>Website</span><b>${co.website?`<a href="${esc(co.website)}" target="_blank" rel="noopener">${esc(co.website)}</a>`:"—"}</b></div></div></div>
+    <div class="card"><div class="chead"><h3>Contacts</h3><a class="btn gh acsm" onclick="acContactOpen()">Add a contact</a></div>
+      <div class="rowlist">${(AC.contacts||[]).length?AC.contacts.map(c=>`<div class="rl"><div class="b"><div class="n">${esc(c.name)}${c.title?` <span class="m">· ${esc(c.title)}</span>`:""}</div><div class="m">${esc([c.email,c.phone].filter(Boolean).join(" · ")||"—")}</div></div><div class="acr"><a class="btn gh acsm" data-id="${esc(c.id)}" onclick="acContactOpen(this.dataset.id)">Edit</a> <a class="btn gh acsm" data-id="${esc(c.id)}" onclick="acContactRemove(this.dataset.id)">Remove</a></div></div>`).join(""):`<div class="m" style="color:var(--muted)">No contacts on file yet.</div>`}</div></div>
+    <div class="card"><div class="chead"><h3>Addresses</h3><a class="btn gh acsm" onclick="acAddrOpen()">Add a ship-to</a></div>
+      <div class="rowlist">${(AC.addresses||[]).map(a=>{ const isBill=/^bill/i.test(a.key); const canShip=!isBill&&a.address;
+        return `<div class="rl"><div class="b"><div class="n">${esc(a.key==="main"?"Business address":(a.label||(isBill?"Billing":"Ship-to")))}${def===a.key?` <span class="acchip ok">Default ship-to</span>`:""}</div><div class="m">${esc(acAddr(a)||"—")}</div></div>
+          <div class="acr">${canShip&&def!==a.key?`<a class="btn gh acsm" data-k="${esc(a.key)}" onclick="acDefaultShip(this.dataset.k)">Make default</a> `:""}<a class="btn gh acsm" data-k="${esc(a.key)}" onclick="acAddrOpen(this.dataset.k)">Edit</a></div></div>`; }).join("")}
+        ${(AC.addresses||[]).some(a=>/^bill/i.test(a.key))?"":`<div class="rl"><div class="b"><div class="n">Billing address</div><div class="m">Not on file</div></div><div class="acr"><a class="btn gh acsm" onclick="acAddrOpen('bill')">Add</a></div></div>`}</div>
+      <div class="lead-note" style="margin-top:8px">${def?"Your default ship-to is pre-selected at checkout":"No default chosen yet — pick one with “Make default”"}; you can still choose another address on each order.</div></div>
+  </div><div>
+    <div class="card" style="margin-top:0"><h3>Your logo</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Printed on your quotes, brochures and storefront. JPEG or PNG, 1 MB max.</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">${co.logo_url?`<img src="${esc(co.logo_url)}" alt="Your logo" style="max-width:160px;max-height:64px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:8px;padding:4px" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'m',textContent:'Logo could not be shown — upload it again'}))">`:`<span class="m" style="color:var(--muted)">No logo yet</span>`}</div>
+      <label class="btn pri acsm" style="display:inline-block;cursor:pointer">Upload logo<input type="file" accept="image/jpeg,image/png" style="display:none" onchange="acLogoUpload(this)"></label>
+      <details style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px">Use a logo link instead</summary><div class="fld2" style="margin-top:6px"><input id="acctLogo" value="${esc(co.logo_url&&!/dealer-logos/.test(co.logo_url)?co.logo_url:"")}" placeholder="https://…/logo.png"></div><a class="btn gh acsm" onclick="saveBranding(document.getElementById('acctLogo').value).then(loadAccountView)">Save link</a></details></div>
+    <div class="card"><h3>Your manufacturer accounts</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Green = verified by HCPS · Amber = waiting on HCPS · Red = no account. Ordering access is set separately by HCPS.</div>
+      ${acAccountsHtml(self)}
+      ${others.length?`<h4 style="margin:14px 0 6px">Your other locations</h4>${others.map(l=>`<details class="acloc"><summary><b>${esc(l.name)}</b> <span class="m">${esc([l.city,l.state].filter(Boolean).join(", "))}</span> <span class="m">· ${l.accounts.filter(x=>x.status==="verified").length} verified</span></summary>${acAccountsHtml(l)}</details>`).join("")}`:""}</div>
+    <div class="card"><div class="chead"><h3>Your terms by line</h3><span style="font-size:11px;color:var(--muted)">Set by HCPS per manufacturer</span></div>
+      <div class="rowlist">${terms.length?terms.map(t=>`<div class="rl"><div class="b"><div class="n">${esc(t.name)}</div></div><span class="pill ${String(t.terms).toLowerCase()==="prepay"?"open":"done"}">${esc(t.terms)}</span></div>`).join(""):`<div class="m" style="color:var(--muted)">No lines yet.</div>`}</div></div>
+    <div class="card"><h3>Resale / tax-exemption certificate</h3><p class="m" style="margin:0 0 8px">${resaleOn?("On file"+(ACCOUNT.resale.reference?" · "+esc(ACCOUNT.resale.reference):"")):"Add your certificate reference, then email the certificate file to HCPS."}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="resaleRef" placeholder="Certificate # / reference" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.reference)||"")}" style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><input id="resaleState" placeholder="State" maxlength="2" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.state)||"")}" style="width:70px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><a class="btn gh acsm" onclick="submitResale()">Save</a></div></div>
+    <div class="card"><h3>Manufacturer account applications</h3><p class="m" style="margin:0 0 8px">Applications move to the new Account Setup Center, where you complete and sign the manufacturer's own application. Until it opens, call HCPS at 937-626-5141 and we'll send you the application.</p><div class="rowlist">${appsHtml}</div></div>
+    <div class="card"><h3>Pricing export</h3><div style="font-size:12.5px;color:var(--muted)">Your HCPS product &amp; dealer-pricing file for billing, ERP, inventory or POS.</div><a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">Download pricing CSV</a></div>
+  </div></div>`;
+}
+function acModal(title,body,onSave){
+  $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>${esc(title)}</h3><a class="mx" onclick="closeModal()">✕</a></div>${body}<div class="acerr" id="acErr" role="alert"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><a class="btn gh" onclick="closeModal()">Cancel</a><a class="btn pri" id="acSave">Send to HCPS</a></div></div>`;
+  $("#modal").classList.add("on"); $("#acSave").onclick=onSave;
+}
+const acF=(id,label,val,extra)=>`<div class="fld2"><label for="${id}">${label}</label><input id="${id}" value="${esc(val||"")}" ${extra||""}></div>`;
+const acV=id=>(($("#"+id)||{}).value||"").trim();
+async function acSend(changes){
+  const err=$("#acErr"), btn=$("#acSave"); if(btn){ btn.style.pointerEvents="none"; btn.textContent="Sending…"; }
+  const r=await api(TOOLS_ENDPOINT,{action:"account_change_request",changes}).catch(()=>null);
+  if(r&&r.ok){ closeModal(); acToast(r.message||"Sent to HCPS for approval."); loadAccountView(); return; }
+  if(btn){ btn.style.pointerEvents=""; btn.textContent="Send to HCPS"; }
+  if(err) err.textContent=(r&&r.error)||"Could not send just now — please try again.";
+}
+function acCompanyOpen(){ const co=(AC&&AC.company)||{};
+  acModal("Request a company change",acF("acCn","Main contact",co.contact_name)+acF("acPh","Phone",co.phone,'type="tel" inputmode="tel"')+acF("acEm","Email",co.email,'type="email"')+acF("acWs","Website",co.website,'type="url" placeholder="https://"')
+    +`<div class="lead-note">Business name changes: call HCPS. Changes apply once HCPS approves them.</div>`,
+    ()=>{ const c={}; const m={contact_name:"acCn",phone:"acPh",email:"acEm",website:"acWs"}; Object.keys(m).forEach(k=>{ if(acV(m[k])!==String(co[k]||"")) c[k]=acV(m[k]); });
+      if(!Object.keys(c).length){ $("#acErr").textContent="Nothing changed."; return; } acSend({company:c}); }); }
+function acContactOpen(id){ const c=((AC&&AC.contacts)||[]).find(x=>String(x.id)===String(id))||{};
+  acModal(id?"Request a contact update":"Add a contact",acF("acNm","Name",c.name)+acF("acTi","Title",c.title)+acF("acCe","Email",c.email,'type="email"')+acF("acCp","Phone",c.phone,'type="tel" inputmode="tel"'),
+    ()=>{ const x={name:acV("acNm"),title:acV("acTi"),email:acV("acCe"),phone:acV("acCp")}; if(id) x.id=id; acSend({contacts:[x]}); }); }
+function acContactRemove(id){ const c=((AC&&AC.contacts)||[]).find(x=>String(x.id)===String(id)); if(!c) return;
+  acModal("Remove a contact",`<p>Ask HCPS to remove <b>${esc(c.name)}</b> from your account?</p>`,()=>acSend({contacts:[{id,remove:true,name:c.name}]})); }
+function acAddrOpen(key){ const a=((AC&&AC.addresses)||[]).find(x=>x.key===key)||{}; const isMain=key==="main", isBill=key&&/^bill/i.test(key);
+  acModal(isMain?"Request a business address change":isBill?"Billing address":key?"Update a ship-to address":"Add a ship-to address",
+    (isMain||isBill?"":acF("acAl","Label (e.g. Warehouse, Store #2)",a.label))+acF("acA1","Street",a.address)+`<div style="display:grid;grid-template-columns:2fr 1fr 1.2fr;gap:8px">${acF("acCi","City",a.city)}${acF("acSt","State",a.state,'maxlength="2"')}${acF("acZp","ZIP",a.zip,'inputmode="numeric"')}</div>`,
+    ()=>{ const v={address:acV("acA1"),city:acV("acCi"),state:acV("acSt"),zip:acV("acZp")};
+      if(isMain) return acSend({business:v}); if(isBill) return acSend({billing:Object.assign({label:"Billing"},v)});
+      v.label=acV("acAl"); if(key) v.key=key; acSend({ship_to:[v]}); }); }
+async function acDefaultShip(key){
+  const r=await api(TOOLS_ENDPOINT,{action:"default_ship_set",key}).catch(()=>null);
+  if(r&&r.ok){ acToast("Default ship-to saved."); try{ if(typeof AUTH!=="undefined"&&AUTH.dealer) AUTH.dealer.default_ship_key=r.default_ship_key; const sel=document.getElementById("f_shipto"); if(sel) delete sel.dataset.init; }catch(e){} loadAccountView(); }
+  else acToast((r&&r.error)||"Could not save just now — please try again.");
+}
+async function acLogoUpload(inp){
+  const f=inp&&inp.files&&inp.files[0]; if(!f) return;
+  if(!/^image\/(jpeg|png)$/.test(f.type)) { acToast("The logo must be a JPEG or PNG image."); return; }
+  if(f.size>1048576){ acToast("The logo must be 1 MB or smaller."); return; }
+  const data=await new Promise((res,rej)=>{ const rd=new FileReader(); rd.onload=()=>res(String(rd.result||"")); rd.onerror=rej; rd.readAsDataURL(f); }).catch(()=>"");
+  const r=await api(TOOLS_ENDPOINT,{action:"logo_upload",data}).catch(()=>null);
+  if(r&&r.ok){ BRANDING.logo_url=r.logo_url; acToast("Logo saved."); loadAccountView(); } else acToast((r&&r.error)||"The logo could not be uploaded just now — please try again.");
+}
+function acClaimOpen(slug,name){
+  acModal(`Your ${name} account`,acF("acRef","Account number (as the manufacturer shows it)","",'maxlength="40" autocomplete="off"')+`<div class="fld2"><label for="acNote">Note (optional)</label><input id="acNote" maxlength="300"></div><div class="lead-note">HCPS verifies the number with ${esc(name)}. This doesn't change what you can order — HCPS sets ordering access separately.</div>`,
+    async ()=>{ const err=$("#acErr"); const r=await api(TOOLS_ENDPOINT,{action:"account_claim",manufacturer:slug,account_ref:acV("acRef"),note:acV("acNote")}).catch(()=>null);
+      if(r&&r.ok){ closeModal(); acToast(r.already_on_file?"That number is already on file.":r.already?"This account is already with HCPS for verification.":"Sent — HCPS will verify it."); loadAccountView(); }
+      else if(err) err.textContent=(r&&r.error)||"Could not send just now — please try again."; });
 }
 async function submitResale(){ try{ await api(TOOLS_ENDPOINT,{action:"resale_cert_set",reference:($("#resaleRef")||{}).value,state:($("#resaleState")||{}).value}); }catch(e){} alert("Resale certificate reference saved. Email the certificate file to HCPS to complete."); loadAccountView(); }
-async function submitCreditApp(){ const body={action:"credit_application",manufacturer:($("#caMfr")||{}).value,requested_terms:($("#caTerms")||{}).value,legal_name:($("#caLegal")||{}).value,ein:($("#caEin")||{}).value,years_in_business:($("#caYears")||{}).value,bank_ref:($("#caBank")||{}).value,trade_refs:($("#caTrade")||{}).value}; if(!body.manufacturer){ alert("Pick a line."); return; } try{ await api(TOOLS_ENDPOINT,body); }catch(e){} alert("Credit application submitted to HCPS."); loadAccountView(); }
+async function submitCreditApp(){ acToast("Manufacturer credit applications are moving to the new Account Setup Center. Until it opens, call HCPS at 937-626-5141."); }
 
 function showView(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
@@ -7705,7 +7812,7 @@ window.showView=showView;
    Quotes, the showroom wall buttons, the price-request / literature / credit / resale forms and the favourite star did
    nothing. Exported once here. The showroom zone's clear is exported as p360SwClear because the storefront's Strongback
    wall builder already owns the global swClear(). */
-Object.assign(window,{closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
