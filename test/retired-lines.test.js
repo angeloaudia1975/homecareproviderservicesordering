@@ -50,20 +50,44 @@ t('historical orders of a retired line keep its name — never the bare slug', (
   if (fn('GCE') !== 'Ohio Medical / GCE' || fn('yuwell') !== null) throw new Error('retiredLineName wrong');
 });
 t('the legacy catalog-api answers 410 for a retired line, read or write, before touching the database', async () => {
-  process.env.SUPABASE_URL = 'https://sb.invalid'; process.env.SUPABASE_SERVICE_ROLE = 'x'; delete process.env.ANALYTICS_TOKEN;
+  process.env.SUPABASE_URL = 'https://sb.invalid'; process.env.SUPABASE_SERVICE_ROLE = 'x'; process.env.ANALYTICS_TOKEN = 'tok-test-1234';
+  const HD = { 'x-analytics-token': 'tok-test-1234' };
   const realFetch = global.fetch; let calls = 0; global.fetch = async () => { calls++; throw new Error('network'); };
   try {
     const api = require(path.join(ROOT, 'netlify', 'functions', 'catalog-api.js'));
     for (const q of ['gce', 'ohio-medical', ' Ohio-Medical ', 'complete-medical-supplies']) {
-      const r = await api.handler({ httpMethod: 'GET', headers: {}, queryStringParameters: { manufacturer: q } });
+      const r = await api.handler({ httpMethod: 'GET', headers: HD, queryStringParameters: { manufacturer: q } });
       if (r.statusCode !== 410) throw new Error('GET ' + q + ' -> ' + r.statusCode);
     }
     for (const b of [{ action: 'save_product', manufacturer: 'gce', product: { code: 'X' } }, { action: 'save_override', manufacturer: 'ohio-medical', code: 'X', patch: {} }, { action: 'save_product', product: { manufacturer: 'GCE', code: 'X' } }]) {
-      const r = await api.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify(b) });
+      const r = await api.handler({ httpMethod: 'POST', headers: HD, body: JSON.stringify(b) });
       if (r.statusCode !== 410) throw new Error('POST ' + JSON.stringify(b) + ' -> ' + r.statusCode);
     }
     if (calls) throw new Error('database or network was called ' + calls + ' times');
   } finally { global.fetch = realFetch; }
+});
+t('legacy catalog-api fails closed: no token configured → 503, wrong or missing token → 401, before any read', async () => {
+  process.env.SUPABASE_URL = 'https://sb.invalid'; process.env.SUPABASE_SERVICE_ROLE = 'x';
+  const realFetch = global.fetch; let calls = 0; global.fetch = async () => { calls++; throw new Error('network'); };
+  try {
+    const api = require(path.join(ROOT, 'netlify', 'functions', 'catalog-api.js'));
+    delete process.env.ANALYTICS_TOKEN;
+    for (const h of [{}, { 'x-analytics-token': '' }, { 'x-analytics-token': 'anything' }]) {
+      const r = await api.handler({ httpMethod: 'GET', headers: h, queryStringParameters: { manufacturer: 'dalton' } });
+      if (r.statusCode !== 503) throw new Error('unset token answered ' + r.statusCode);
+    }
+    process.env.ANALYTICS_TOKEN = 'tok-test-1234';
+    for (const h of [{}, { 'x-analytics-token': 'tok-test-123' }, { 'x-analytics-token': 'tok-test-12345' }]) {
+      for (const ev of [{ httpMethod: 'GET', headers: h, queryStringParameters: { manufacturer: 'dalton' } }, { httpMethod: 'POST', headers: h, body: '{"action":"save_product","manufacturer":"dalton","product":{"code":"X"}}' }]) {
+        const r = await api.handler(ev); if (r.statusCode !== 401) throw new Error(ev.httpMethod + ' with ' + JSON.stringify(h) + ' answered ' + r.statusCode);
+      }
+    }
+    if (calls) throw new Error('reached the network ' + calls + ' times');
+  } finally { global.fetch = realFetch; }
+});
+t('the line switch: manufacturer_meta.active = false removes the line from the storefront list', () => {
+  if (!/manufacturer_meta\?select=slug,logo_url,enriched_only,category_order,category_map,freight_terms,active`/.test(H)) throw new Error('active not selected');
+  if (!/const off=new Set\(\(lg\|\|\[\]\)\.filter\(o=>o&&o\.active===false\)/.test(H)) throw new Error('active=false not honoured');
 });
 t('both server gates consult the list before any entitlement or staff check', () => {
   for (const f of ['catalog-feed.js', 'catalog-layers.js']) {
