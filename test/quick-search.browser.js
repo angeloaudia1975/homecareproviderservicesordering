@@ -68,6 +68,15 @@ async function type(page, q) {
       await page.waitForFunction(() => state.active === '__shopall__' && document.querySelector('.sl-search'), null, { timeout: 20000 });
       await t(`${label}: Enter in the box opens all results`, () => ok(true));
       await t(`${label}: searching sends no access request`, () => ok(!seen.tools.length));
+      // another dealer on the same tab (shared machine): the old index must not answer
+      await page.evaluate(() => { AUTH.dealer = Object.assign({}, AUTH.dealer, { id: 'd-other' }); AUTH.access = { your_accounts: ['bemis'], available: [], request_access: [], golden: 'None' }; });
+      r = await type(page, 'ramp');
+      await t(`${label}: after the dealer changes, another dealer's lines are not searched`, () => ok(!r.rows.some(x => x.slug === 'access4u'), r.rows.map(x => x.slug).join(',')));
+      r = await type(page, 'raised toilet');
+      await t(`${label}: the new dealer's own line still searches`, () => ok(r.rows.some(x => x.slug === 'bemis'), r.rows.map(x => x.slug).join(',')));
+      // Escape closes and a late paint never reopens it
+      await page.fill('#gsearch', ''); await page.type('#gsearch', 'pad'); await page.keyboard.press('Escape'); await page.waitForTimeout(1200);
+      await t(`${label}: Escape closes the suggestions and they stay closed`, async () => ok(!(await page.evaluate(() => document.querySelector('#gsresults').classList.contains('on')))));
       await ctx.close();
     }
   } finally { await browser.close(); }
