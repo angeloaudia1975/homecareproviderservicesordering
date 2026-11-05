@@ -7769,7 +7769,7 @@ function acAddrOpen(key){ const a=((AC&&AC.addresses)||[]).find(x=>x.key===key)|
     (isMain||isBill?"":acF("acAl","Label (e.g. Warehouse, Store #2)",a.label))+acF("acA1","Street",a.address)+`<div style="display:grid;grid-template-columns:2fr 1fr 1.2fr;gap:8px">${acF("acCi","City",a.city)}${acF("acSt","State",a.state,'maxlength="2"')}${acF("acZp","ZIP",a.zip,'inputmode="numeric"')}</div>`,
     ()=>{ const v={address:acV("acA1"),city:acV("acCi"),state:acV("acSt"),zip:acV("acZp")};
       if(isMain) return acSend({business:v}); if(isBill) return acSend({billing:Object.assign({label:"Billing"},v)});
-      v.label=acV("acAl"); if(key) v.key=key; acSend({ship_to:[v]}); }); }
+      v.label=acV("acAl"); if(key&&/^ship-/i.test(key)) v.key=key; acSend({ship_to:[v]});   /* an older address key is sent as a new ship-to */ }); }
 async function acDefaultShip(key){
   const r=await api(TOOLS_ENDPOINT,{action:"default_ship_set",key}).catch(()=>null);
   if(r&&r.ok){ acToast("Default ship-to saved."); try{ if(typeof AUTH!=="undefined"&&AUTH.dealer) AUTH.dealer.default_ship_key=r.default_ship_key; const sel=document.getElementById("f_shipto"); if(sel) delete sel.dataset.init; }catch(e){} loadAccountView(); }
