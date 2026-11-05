@@ -67,7 +67,7 @@ let PRICED = false, configCalls = [];
       await page.evaluate(() => openProductDetail('PR511-LAR'));
       await page.waitForSelector('.gcfg .gcfg-c', { timeout: 15000 });
       const s0 = await page.evaluate(() => ({ tabs: [...document.querySelectorAll('.gcfg-tab')].map(x => x.textContent.trim()), colors: document.querySelectorAll('.gcfg-c').length,
-        tiers: [...document.querySelectorAll('.gcfg-tier')].map(x => x.textContent.trim()), fr: !!document.querySelector('[data-gfoot]'), add: document.querySelector('.gcfg-add').disabled,
+        tiers: [...document.querySelectorAll('.gcfg-tier')].map(x => x.textContent.trim()), fr: !!document.querySelector('[data-gfoot]'), add: document.querySelector('.gaddbtn').disabled,
         cart: document.querySelectorAll('.pd .addbtn').length }));
       await t(`${label}: PR511 — Golden's tabs, colours, tiers and footrest; add-to-cart stays closed`, () => {
         ok(s0.tabs.length === 3 && /Cross-Over/.test(s0.tabs[1]) && /Brisa/.test(s0.tabs[2]), s0.tabs.join('|')); ok(s0.colors === 10, 'std colours ' + s0.colors);
@@ -99,7 +99,7 @@ let PRICED = false, configCalls = [];
       await t(`${label}: PR447 — Nirvana included, no upgrade buttons, no Cross-Over tab`, () => ok(inc.tiers === 0 && /Included/i.test(inc.text) && /Nirvana/.test(inc.text) && !/Cross-Over/.test(inc.text), inc.text.slice(0, 200)));
       // a non-configurable Golden product keeps the B2 note (scooter)
       await page.evaluate(() => openProductDetail('GA541D')); await page.waitForTimeout(1500);
-      const sc = await page.evaluate(() => ({ cfg: !!document.querySelector('.gcfg'), note: !!document.querySelector('.pd-golden') }));
+      const sc = await page.evaluate(() => ({ cfg: !!document.querySelector('.gcfg'), note: !!document.querySelector('.gbrowse') }));
       await t(`${label}: a scooter has no configurator`, () => ok(!sc.cfg && sc.note));
       await ctx.close();
     }
