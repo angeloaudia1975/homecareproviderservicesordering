@@ -4840,27 +4840,31 @@ function ensureStagingBar(){
   }).catch(()=>{});
 }
 /* ---------- submit (one order per manufacturer) ---------- */
-/* ONE CHECKOUT = ONE ORDER (C3-06). A checkout carries a submission key that is kept while the dealer retries the SAME
-   cart (a timeout after the order was saved, a second click, a second tab) and is dropped once the order is recorded.
-   orders-api records each manufacturer order at most once per key. Storage can fail (private mode): then the key lives
-   only for this page, which still covers a retry from the same page. */
-let CHECKOUT_KEY_MEM=null;
-function checkoutFingerprint(orders){
-  return JSON.stringify((orders||[]).map(o=>[o.manufacturer_slug,o.po,(o.items||[]).map(it=>[it.code,it.family||"",it.upgrade||"",it.qty])]));
+/* ONE CHECKOUT = ONE ORDER (C3-06). Each manufacturer order of a checkout carries a submission key that is kept while
+   the dealer retries THAT order unchanged (a timeout after it was saved, a second click, a second tab) and is dropped
+   once it is recorded. Editing one manufacturer's order gives it a new key; the others keep theirs. orders-api records
+   each manufacturer order at most once per key. Storage can fail (private mode): then the keys live only for this
+   page, which still covers a retry from the same page. */
+let CHECKOUT_KEYS_MEM={};
+function checkoutFingerprint(order,dealer){
+  const d=dealer||{};
+  return JSON.stringify([order.manufacturer_slug,order.po,order.notes||"",(order.items||[]).map(it=>[it.code,it.family||"",it.upgrade||"",it.qty]),
+    [d.business,d.contact,d.email,d.phone,d.address,d.city,d.state,d.zip,d.ship_to_label].map(x=>x||"")]);
 }
-function checkoutKey(orders){
-  const fp=checkoutFingerprint(orders);
-  let cur=CHECKOUT_KEY_MEM;
-  try{ const s=JSON.parse(localStorage.getItem("hcps_checkout_key")||"null"); if(s&&typeof s.key==="string") cur=s; }catch(e){}
-  if(cur&&cur.fp===fp&&/^[A-Za-z0-9-]{16,64}$/.test(cur.key)) return cur.key;
+function readCheckoutKeys(){ try{ const s=JSON.parse(localStorage.getItem("hcps_checkout_keys")||"null"); if(s&&typeof s==="object") return s; }catch(e){} return CHECKOUT_KEYS_MEM; }
+function saveCheckoutKeys(m){ CHECKOUT_KEYS_MEM=m; try{ localStorage.setItem("hcps_checkout_keys",JSON.stringify(m)); }catch(e){} }
+function newCheckoutKey(){
   let key="";
   try{ key=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():""; }catch(e){ key=""; }
   if(!key){ const a=new Uint8Array(16); try{ crypto.getRandomValues(a); }catch(e){ for(let i=0;i<16;i++) a[i]=Math.floor(Math.random()*256); } key=[...a].map(b=>b.toString(16).padStart(2,"0")).join(""); }
-  CHECKOUT_KEY_MEM={key,fp};
-  try{ localStorage.setItem("hcps_checkout_key",JSON.stringify(CHECKOUT_KEY_MEM)); }catch(e){}
   return key;
 }
-function clearCheckoutKey(){ CHECKOUT_KEY_MEM=null; try{ localStorage.removeItem("hcps_checkout_key"); }catch(e){} }
+function checkoutKey(order,dealer){
+  const m=Object.assign({},readCheckoutKeys()), fp=checkoutFingerprint(order,dealer), cur=m[order.manufacturer_slug];
+  if(cur&&cur.fp===fp&&/^[A-Za-z0-9-]{16,64}$/.test(cur.key||"")) return cur.key;
+  const key=newCheckoutKey(); m[order.manufacturer_slug]={key,fp}; saveCheckoutKeys(m); return key;
+}
+function clearCheckoutKeys(slugs){ const m=Object.assign({},readCheckoutKeys()); (slugs||[]).forEach(s=>{ delete m[s]; }); saveCheckoutKeys(m); }
 async function submitOrder(){
   if(PREVIEW && !(typeof STAGING!=="undefined"&&STAGING)){ toast("Read-only preview — ordering is disabled for this dealer view."); return; }
   if(!CART.size){ if(typeof gckCount==="function"&&gckCount()){ goldenCartShow(); return; } toast("Cart is empty");return;}
@@ -4912,7 +4916,8 @@ async function submitOrder(){
     toast("Golden Technologies can't be ordered in Partner 360 yet — please order it on the Golden platform. Nothing was submitted.");
     return;
   }
-  const payload={dealer, orders:hcpsOrders, submitted_at:new Date().toISOString(), submission_key:checkoutKey(hcpsOrders)};
+  hcpsOrders.forEach(o=>{ o.submission_key=checkoutKey(o,dealer); });
+  const payload={dealer, orders:hcpsOrders, submitted_at:new Date().toISOString()};
   if(typeof STAGING!=="undefined"&&STAGING){ return stagingSubmit(payload,btn); }
   btn.disabled=true; btn.textContent="Submitting…";
   let emailWarn=false, keep=new Set(), dupNote=false;
@@ -4931,8 +4936,8 @@ async function submitOrder(){
         return;
       }
       if(!j.recorded){ toast(j.error||"Could not submit — nothing was placed. Please try again."); return; }
-      clearCheckoutKey();   // recorded: the next checkout is a new one
-      if(j.status==="already_recorded"||(j.already_recorded||[]).length) dupNote=true;   // an earlier try had already recorded it — never twice
+      clearCheckoutKeys(hcpsOrders.map(o=>o.manufacturer_slug).filter(sl=>!(j.not_recorded||[]).includes(sl)));   // recorded: their next checkout is a new one
+      if(j.status==="already_recorded") dupNote=true;   // an earlier try had already recorded it — never twice
       /* Recorded orders leave the cart. A manufacturer whose order could not be recorded stays
          in the cart, untouched, to be placed again. */
       (j.not_recorded||[]).forEach(sl=>keep.add(sl));
