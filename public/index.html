@@ -254,6 +254,32 @@ body.guest #loginBtn,body.guest #cartBtn{display:none;}
 
 /* PERSONALIZED HOME DASHBOARD */
 body.home .controls,body.home #a4uBuilder,body.home #swBuilder{display:none;}
+/* C3-07 Stage 1 — shop landing: every manufacturer partner, website artwork uncropped, 2 a row (1 on phones). */
+body.shopall .controls,body.shopall #a4uBuilder,body.shopall #swBuilder,body.shopall #shopLines,body.shopall #accessNotice{display:none!important;}
+.shopland{max-width:1120px;margin:0 auto;}
+.shopland .sl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin:4px 0 30px;}
+@media (max-width:640px){.shopland .sl-grid{grid-template-columns:1fr;gap:16px;}}
+.sl-tile{display:flex;flex-direction:column;text-align:left;font:inherit;color:inherit;background:#fff;border:1px solid var(--line,#e2e8f0);border-radius:16px;overflow:hidden;padding:0;cursor:pointer;box-shadow:0 6px 18px -10px rgba(11,31,51,.25);transition:transform .15s ease,box-shadow .15s ease;min-width:0;}
+.sl-tile.static{cursor:default;}
+.sl-tile:not(.static):hover{transform:translateY(-3px);box-shadow:0 16px 30px -14px rgba(11,31,51,.35);}
+.sl-tile:focus-visible{outline:3px solid var(--blue,#1681c2);outline-offset:3px;}
+.sl-img{position:relative;aspect-ratio:1/1;background:#f4f7fa;display:flex;align-items:center;justify-content:center;}
+.sl-img img{width:100%;height:100%;object-fit:contain;display:block;}
+.sl-img.logo{aspect-ratio:705/255;padding:18px;}
+.sl-img .sl-name-fb{display:none;font-weight:800;font-size:22px;color:var(--navy,#0b1f33);padding:24px;text-align:center;}
+.sl-img.noimg{aspect-ratio:3/1;}.sl-img.noimg .sl-name-fb{display:block;}
+.sl-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px;}
+.sl-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.sl-top h3{margin:0;font-size:19px;color:var(--navy,#0b1f33);line-height:1.25;}
+.sl-body p{margin:0;color:var(--gray,#5b6b7c);font-size:14px;}
+.sl-badge{flex:none;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:#fff4dc;color:#8a5a00;white-space:nowrap;}
+.sl-badge.acct{background:#e3f5ea;color:#17663a;}.sl-badge.muted{background:#eef1f5;color:#5b6b7c;}
+.sl-act{margin-top:2px;}
+.sl-go{color:var(--blue-dk,#0f5c8f);font-weight:700;}
+.sl-note{color:var(--gray,#5b6b7c);font-size:14px;}
+.sl-req{min-height:44px;padding:0 18px;border-radius:10px;border:0;background:var(--orange,#ef6325);color:#fff;font-weight:700;font-size:15px;cursor:pointer;}
+.sl-req[disabled]{background:#9aa7b5;cursor:default;}
+.cv2-line.cv2-all{font-weight:700;color:var(--blue-dk,#0f5c8f);}
 .mbanner .tagline{color:var(--gold);font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
 .dash{padding:26px 0 44px;}
 /* admin-uploaded manufacturer logos */
@@ -3475,14 +3501,95 @@ function showShop(slug){
   document.body.classList.remove('p360on','hubon','sdon','locked','home');
   var pw=document.getElementById('p360wrap'); if(pw)pw.style.display='none';
   const lines=entitledManufacturers().filter(m=>m.hasData);
-  if(!lines.length){ selectManufacturer(HOME); return; }
-  let target=slug&&lines.some(m=>m.slug===slug)?slug:(inShopSlug()||lines[0].slug);
-  selectManufacturer(target);
+  /* C3-07 Stage 1: Shop opens on the manufacturer landing page (every HCPS partner, the website's own artwork) instead of
+     dropping the dealer into whichever line came first. A named line still opens that line directly. */
+  if(slug&&lines.some(m=>m.slug===slug)){ selectManufacturer(slug); return; }
+  selectManufacturer(SHOPALL);
 }
-function inShopSlug(){ const a=state.active||''; return (a&&a!==HOME&&a.indexOf('p360:')!==0)?a:''; }
+function inShopSlug(){ const a=state.active||''; return (a&&a!==HOME&&a!==SHOPALL&&a.indexOf('p360:')!==0)?a:''; }
+/* ---------- SHOP LANDING: all manufacturers (C3-07 Stage 1, owner 2026-11-05) ----------
+   One tile per HCPS manufacturer partner, two a row on desktop, one on a phone, using the website's own partner-card
+   artwork uncropped. The roster is the website's (its /data/partners.json, built from the same list every website card
+   grid uses), so a partner added or hidden on the website changes here too; if it cannot be read the storefront's own
+   line list stands in. Each tile does only what the dealer's account allows: an orderable line opens its catalog; a line
+   that needs an account offers Request access; Golden follows Golden's own answer (shop here only when Golden says so,
+   else its platform link or an account request, as on the dashboard); anything else says to ask HCPS — never a dead link.
+   Nothing here reads or shows a price. */
+const SHOPALL="__shopall__";
+const HCPS_SITE="https://www.homecareproviderservices.org";
+let _partners=null;
+async function loadPartners(){
+  if(_partners) return _partners;
+  try{
+    const r=await fetch(HCPS_SITE+"/data/partners.json",{cache:"no-cache"});
+    const j=r.ok?await r.json():null;
+    if(j&&Array.isArray(j.partners)){ const l=j.partners.filter(x=>x&&typeof x.id==="string"&&x.id&&typeof x.name==="string"&&x.name); if(l.length){ _partners=l; return l; } }
+  }catch(e){}
+  return null;   // not cached: the next visit tries again
+}
+function shopPartnerList(roster){
+  const mf=(state.manufacturers||[]).filter(m=>m&&m.slug&&!m.retired);
+  const out=[], seen=new Set();
+  const add=(slug,name,img,blurb)=>{ if(!slug||seen.has(slug)) return; seen.add(slug); out.push({slug,name,img,blurb:blurb||""}); };
+  if(roster){ roster.forEach(p=>{ const slug=isGoldenSlug(p.id)?CONFIG.GOLDEN_SLUG:p.id;
+      add(slug,p.name,/^\/[a-z0-9/_.-]+$/i.test(p.image||"")?HCPS_SITE+p.image:"",p.category||""); }); }
+  else add(CONFIG.GOLDEN_SLUG,"Golden Technologies","","");
+  /* A line the dealer can order is never missing from the landing page, even if the website roster is behind. */
+  mf.filter(m=>!isGoldenSlug(m.slug)).forEach(m=>add(m.slug,m.name,"",""));
+  return out;
+}
+function shopTileAction(slug){
+  const lines=entitledManufacturers().filter(m=>m.hasData), owned=ownedSlugSet();
+  if(isGoldenSlug(slug)){
+    if(goldenEntitled()) return {kind:"open",badge:"Your account"};
+    const g=(AUTH.access&&AUTH.access.golden)||"None";
+    if(g==="Account") return {kind:"golden",badge:"Your account",note:"Ordered on the Golden Dealer Platform"};
+    return {kind:"golden",badge:"Available",note:"Open a Golden account through HCPS"};
+  }
+  if(lines.some(m=>m.slug===slug)) return {kind:"open",badge:owned.has(slug)?"Your account":"Available"};
+  if(needsAccess(slug)) return {kind:"request",badge:"Request access"};
+  return {kind:"none",badge:"Ask HCPS",note:"Not set up on your account — ask your HCPS sales rep"};
+}
+function shopTileHtml(t){
+  const a=shopTileAction(t.slug);
+  const local="/assets/logos/"+t.slug+".jpg";
+  const img=t.img||local;
+  const pic=`<div class="sl-img"><img src="${esc(img)}" alt="${esc(t.name)}" loading="lazy" width="1100" height="1100" data-fb="${esc(local)}" onerror="if(this.dataset.fb&&this.getAttribute('src')!==this.dataset.fb){this.src=this.dataset.fb;this.parentNode.classList.add('logo');}else{this.parentNode.classList.add('noimg');this.remove();}"><span class="sl-name-fb">${esc(t.name)}</span></div>`;
+  const badge=`<span class="sl-badge ${a.badge==="Your account"?"acct":a.kind==="none"?"muted":""}">${esc(a.badge)}</span>`;
+  let act;
+  if(a.kind==="open") act=`<span class="sl-go">Shop ${esc(t.name)} <span aria-hidden="true">→</span></span>`;
+  else if(a.kind==="request"){ const sent=ACCESS_REQUESTED.has(t.slug);
+    act=`<button type="button" class="sl-req" ${sent?"disabled":""} data-slug="${esc(t.slug)}" onclick="event.stopPropagation();requestAccess(this.dataset.slug,this)">${sent?"Access requested ✓":"Request access"}</button>`; }
+  else if(a.kind==="golden") act=`<span class="sl-go">${esc(a.note)} <span aria-hidden="true">→</span></span>`;
+  else act=`<span class="sl-note">${esc(a.note)}</span>`;
+  const head=`<div class="sl-body"><div class="sl-top"><h3>${esc(t.name)}</h3>${badge}</div>${t.blurb?`<p>${esc(t.blurb)}</p>`:""}<div class="sl-act">${act}</div></div>`;
+  if(a.kind==="open"||a.kind==="golden") return `<button type="button" class="sl-tile" data-sl="${esc(t.slug)}" aria-label="${esc(a.kind==="open"?"Shop "+t.name:t.name+" — "+a.note)}">${pic}${head}</button>`;
+  return `<div class="sl-tile static" data-sl="${esc(t.slug)}">${pic}${head}</div>`;
+}
+function shopTileClick(slug){
+  const a=shopTileAction(slug);
+  if(a.kind==="open") return isGoldenSlug(slug)?selectManufacturer(CONFIG.GOLDEN_SLUG):showShop(slug);
+  if(a.kind==="golden"){ selectManufacturer(HOME).then(()=>{ const h=[...document.querySelectorAll('#content .dsec h2')].find(x=>/Golden Technologies/.test(x.textContent)); if(h) h.scrollIntoView({behavior:"smooth",block:"start"}); }); }
+}
+async function renderShopLanding(){
+  const seq=_loadSeq;
+  $("#mfrName").textContent="Shop by manufacturer";
+  $("#mfrSub").textContent="Every HCPS manufacturer partner in one place — choose a line to browse its catalog with your pricing.";
+  const an=document.getElementById("accessNotice"); if(an){ an.innerHTML=""; an.hidden=true; }
+  const sl=$("#shopLines"); if(sl) sl.innerHTML="";
+  const host=$("#content");
+  host.innerHTML=`<div class="shopland"><div class="msg" style="text-align:center;color:var(--gray);padding:20px">Loading manufacturers…</div></div>`;
+  const roster=await loadPartners();
+  if(state.active!==SHOPALL||seq!==_loadSeq) return;
+  const list=shopPartnerList(roster);
+  const nOrder=list.filter(t=>shopTileAction(t.slug).kind==="open").length;
+  document.querySelector(".mstat").innerHTML=`<div><b>${list.length}</b><span>Manufacturers</span></div><div><b>${nOrder}</b><span>Ready to shop</span></div>`;
+  host.innerHTML=`<div class="shopland"><div class="sl-grid">${list.map(shopTileHtml).join("")}</div></div>`;
+  if(!host.__slWired){ host.__slWired=1; host.addEventListener("click",function(e){ if(state.active!==SHOPALL) return; const t=e.target.closest(".sl-tile[data-sl]"); if(!t||t.classList.contains("static")||!host.contains(t)) return; shopTileClick(t.getAttribute("data-sl")); }); }
+}
 function showP360(v){
   state.active='p360:'+v;
-  document.body.classList.add('p360on');
+  document.body.classList.add('p360on'); document.body.classList.remove('shopall');
   document.body.classList.remove('hubon','sdon'); A4U.hubMode=false; A4U.host=null;
   var pw=document.getElementById('p360wrap'); if(pw)pw.style.display='block';
   renderTabs(); window.scrollTo({top:0});
@@ -4440,6 +4547,7 @@ function cvWire(host){
     const a=t.getAttribute('data-cv'), v=t.getAttribute('data-v')||'';
     if(a==='cat'){ cvSetCat(v); if(window.innerWidth<1200) cvDrawer(false); }
     else if(a==='line'){ cvDrawer(false); showShop(v); }
+    else if(a==='all'){ cvDrawer(false); showShop(); }
     else if(a==='brand'){ const bf=$("#brandFilter"); if(bf){ bf.value=(bf.value===v?'':v); } renderProducts(); }
     else if(a==='clear'){ cvClear(); }
     else if(a==='page'){ CUI.page=Math.max(1,parseInt(v,10)||1); renderProducts(); const mm=$("#cv2Main"); if(mm) window.scrollTo({top:Math.max(0,mm.getBoundingClientRect().top+window.scrollY-(parseInt(getComputedStyle(document.documentElement).getPropertyValue('--hdrH'))||0)-12),behavior:'smooth'}); }
@@ -4487,15 +4595,15 @@ function renderProducts(){
        never "pricing could not be loaded", which would send the dealer to reload for nothing. */
     if(typeof needsAccess==="function" && needsAccess(state.active)){
       const nm=esc(((state.manufacturers||[]).find(x=>x.slug===state.active)||{}).name||state.active);
-      host.innerHTML=`<div class="empty"><h3>Request access to order ${nm}</h3><p>This catalog and your pricing open once a ${nm} manufacturer account and HCPS ordering access are set up for your business. Use <b>Request access</b> above and HCPS will review it with you.</p></div>`;
+      host.innerHTML=`<div class="empty"><h3>Request access to order ${nm}</h3><p>This catalog and your pricing open once a ${nm} manufacturer account and HCPS ordering access are set up for your business. Use <b>Request access</b> above and HCPS will review it with you.</p><p class="sl-back"><a href="#" onclick="event.preventDefault();showShop()">← All manufacturers</a></p></div>`;
       return;
     }
     const _cs=(typeof CATALOG_SOURCE!=='undefined'&&CATALOG_SOURCE[state.active])||null;
     if(_cs && _cs.source==='unavailable'){
-      host.innerHTML=`<div class="empty"><h3>Pricing could not be loaded</h3><p>Your account pricing for this line could not be loaded just now. Nothing is shown rather than an out-of-date price. <a href="#" onclick="event.preventDefault();location.reload()">Reload</a></p></div>`;
+      host.innerHTML=`<div class="empty"><h3>Pricing could not be loaded</h3><p>Your account pricing for this line could not be loaded just now. Nothing is shown rather than an out-of-date price. <a href="#" onclick="event.preventDefault();location.reload()">Reload</a></p><p class="sl-back"><a href="#" onclick="event.preventDefault();showShop()">← All manufacturers</a></p></div>`;
       return;
     }
-    host.innerHTML=`<div class="empty"><h3>Coming soon</h3><p>This manufacturer's products are being added to the portal.</p></div>`;
+    host.innerHTML=`<div class="empty"><h3>Coming soon</h3><p>This manufacturer's products are being added to the portal.</p><p class="sl-back"><a href="#" onclick="event.preventDefault();showShop()">← All manufacturers</a></p></div>`;
     return;
   }
   const m=cvLine();
@@ -4520,14 +4628,14 @@ function renderProducts(){
   const brands=[...new Set(state.products.map(p=>p.brand).filter(Boolean))].sort();
   const priced=state.products.some(p=>Number(unitPrice(p,1)||0)>0);
   let facets='';
-  if(lines.length>1) facets+=`<details class="cv2-sec" open><summary>Manufacturer</summary><div class="cv2-lines">${lines.map(x=>`<button type="button" class="cv2-line${x.slug===state.active?' on':''}" data-cv="line" data-v="${esc(x.slug)}"${x.slug===state.active?' aria-current="page"':''}><i class="${owned.has(x.slug)?'acct':''}" title="${owned.has(x.slug)?'You have an account with this line':'No account with this line yet'}"></i>${esc(x.name)}</button>`).join('')}</div>${owned.size?'<div class="cv2-legend"><i class="acct"></i>Your accounts</div>':''}</details>`;
+  facets+=`<details class="cv2-sec" open><summary>Manufacturer</summary><div class="cv2-lines"><button type="button" class="cv2-line cv2-all" data-cv="all">← All manufacturers</button>${lines.map(x=>`<button type="button" class="cv2-line${x.slug===state.active?' on':''}" data-cv="line" data-v="${esc(x.slug)}"${x.slug===state.active?' aria-current="page"':''}><i class="${owned.has(x.slug)?'acct':''}" title="${owned.has(x.slug)?'You have an account with this line':'No account with this line yet'}"></i>${esc(x.name)}</button>`).join('')}</div>${owned.size?'<div class="cv2-legend"><i class="acct"></i>Your accounts</div>':''}</details>`;
   if(brands.length>1) facets+=`<details class="cv2-sec" open><summary>Brand</summary>${brands.map(b=>`<button type="button" class="cv2-cat${brand===b?' on':''}" data-cv="brand" data-v="${esc(b)}"><span>${esc(b)}</span><em>${cvFamilies(state.products.filter(p=>p.brand===b))}</em></button>`).join('')}</details>`;
   if(priced) facets+=`<details class="cv2-sec" open><summary>Your price range</summary><div class="cv2-price"><label><span class="sr">Minimum price</span><input id="cv2Pmin" inputmode="decimal" placeholder="$ Min" value="${esc(CUI.pmin)}"></label><span aria-hidden="true">–</span><label><span class="sr">Maximum price</span><input id="cv2Pmax" inputmode="decimal" placeholder="$ Max" value="${esc(CUI.pmax)}"></label></div><button type="button" class="cv2-apply" data-cv="price">Apply price range</button></details>`;
   $("#cv2Facets").innerHTML=facets;
   const sq=$("#cv2q"); if(sq && document.activeElement!==sq && sq.value!==cvQuery()) sq.value=cvQuery();
   /* breadcrumb + chips */
   const catLabel=cat?cat.replace(/^sub:/,''):'';
-  $("#cv2Crumb").innerHTML=`<a href="#" data-cv="cat" data-v="">${esc(m.name||'Shop')}</a>${catOf&&cat.startsWith('sub:')?`<span>›</span><a href="#" data-cv="cat" data-v="${esc(catOf)}">${esc(catOf)}</a>`:''}${catLabel?`<span>›</span><b>${esc(catLabel)}</b>`:''}`;
+  $("#cv2Crumb").innerHTML=`<a href="#" data-cv="all">All manufacturers</a><span>›</span><a href="#" data-cv="cat" data-v="">${esc(m.name||'Shop')}</a>${catOf&&cat.startsWith('sub:')?`<span>›</span><a href="#" data-cv="cat" data-v="${esc(catOf)}">${esc(catOf)}</a>`:''}${catLabel?`<span>›</span><b>${esc(catLabel)}</b>`:''}`;
   $("#cv2Chips").innerHTML=(tree.length>1||cat)?[`<button type="button" role="listitem" class="cv2-chip${!cat?' on':''}" data-cv="cat" data-v="">All Products (${cvFamilies(base)})</button>`]
     .concat(tree.map(t=>`<button type="button" role="listitem" class="cv2-chip${catOf===t.c?' on':''}" data-cv="cat" data-v="${esc(t.c)}">${esc(t.c)} (${t.n})</button>`)).join(''):'';
   { const c=$("#cv2Chips"), nb=document.querySelector('.cv2-chipnext'); if(c&&nb) requestAnimationFrame(()=>{ nb.hidden=!(c.scrollWidth>c.clientWidth+4); }); }
@@ -5738,13 +5846,18 @@ function swLayoutSheet(){ const bom=swBom(); if(!bom.length){toast("Place at lea
 
 /* ---------- navigation ---------- */
 async function selectManufacturer(slug){
-  document.body.classList.remove('p360on'); var _pw=document.getElementById('p360wrap'); if(_pw)_pw.style.display='none';
+  document.body.classList.remove('p360on','shopall'); var _pw=document.getElementById('p360wrap'); if(_pw)_pw.style.display='none';
   A4U.hubMode=false; A4U.host=null; document.body.classList.remove('hubon','sdon','locked');
   if(slug===HOME){
     _loadSeq++; state.active=HOME; document.body.classList.add('home'); renderTabs();
     await renderHome(); window.scrollTo({top:0,behavior:"smooth"}); return;
   }
   document.body.classList.remove('home');
+  if(slug===SHOPALL){
+    _loadSeq++; state.active=SHOPALL; document.body.classList.add('shopall'); renderTabs();
+    await renderShopLanding(); window.scrollTo({top:0,behavior:"smooth"}); return;
+  }
+  document.body.classList.remove('shopall');
   state.active=slug; renderTabs();
   if(typeof cvLoading==='function') cvLoading();
   const current=await loadProducts(slug);
@@ -5775,7 +5888,7 @@ function populateShipTo(){
 let _lastPriceCheck=0;
 function openCart(){populateShipTo();$("#drawer").classList.add("open");$("#scrim").classList.add("open");
   if(CART.size && Date.now()-_lastPriceCheck>60000){ _lastPriceCheck=Date.now(); repriceSavedCart(); }
-  if(CART.size) track('order_page',state.active&&state.active!==HOME?state.active:undefined);  // opened the cart to order (+10)
+  if(CART.size) track('order_page',state.active&&state.active!==HOME&&state.active!==SHOPALL?state.active:undefined);  // opened the cart to order (+10)
 }
 function closeCart(){$("#drawer").classList.remove("open");$("#scrim").classList.remove("open");}
 
@@ -7674,7 +7787,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       (p.specs&&typeof p.specs==="object"&&!Array.isArray(p.specs)) ? Object.keys(p.specs).map(k=>`<tr><td class="k">${esc(k)}</td><td class="v">${esc(String(p.specs[k]))}</td></tr>`).join("") :
       (Array.isArray(p.attributes)?p.attributes.map(a=>`<tr><td class="k">${esc(a.label||a.name||"")}</td><td class="v">${esc(String(a.value||""))}</td></tr>`).join(""):""));
     host.innerHTML = `<div class="pd${G?" gpd":""}">
-      <div class="pd-crumb"><a onclick="renderProducts()">← ${esc(curLineName()||'Shop')}</a><span class="sep">/</span>${p.category?`<a onclick="renderProducts()">${esc(p.category)}</a><span class="sep">/</span>`:''}<span class="cur">${esc(gname)}</span></div>
+      <div class="pd-crumb"><a onclick="showShop()">All manufacturers</a><span class="sep">/</span><a onclick="renderProducts()">${esc(curLineName()||'Shop')}</a><span class="sep">/</span>${p.category?`<a onclick="renderProducts()">${esc(p.category)}</a><span class="sep">/</span>`:''}<span class="cur">${esc(gname)}</span></div>
       <div class="pd-hero">
         <div class="pd-gal">
           ${thumbs?`<div class="pd-thumbs">${thumbs}</div>`:""}
