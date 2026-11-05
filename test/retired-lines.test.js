@@ -31,6 +31,15 @@ t('no retired line is listed, and no public catalog file or product photo folder
     if (fs.existsSync(path.join(ROOT, 'public', 'assets', 'products', s))) throw new Error('photo folder left: ' + s);
   }
 });
+t('historical orders of a retired line keep its name — never the bare slug', () => {
+  const m = /const RETIRED_LINE_NAMES=(\{[^}]*\});/.exec(H); if (!m) throw new Error('RETIRED_LINE_NAMES missing');
+  const names = JSON.parse(m[1]); for (const s of WANT) if (!names[s]) throw new Error('no name for ' + s);
+  if (names.gce !== names['ohio-medical']) throw new Error('the two Ohio Medical spellings show different names');
+  for (const re of [/\|\| retiredLineName\(o\.manufacturer\) \|\| o\.manufacturer/, /name:retiredLineName\(slug\)\|\|slug\}/, /return m\?m\.name:\(retiredLineName\(slug\)\|\|slug\)/])
+    if (!re.test(H)) throw new Error('history view does not use the retired name: ' + re);
+  const fn = new Function(m[0] + ' function retiredLineName(slug){ return RETIRED_LINE_NAMES[String(slug||"").toLowerCase()]||null; } return retiredLineName;')();
+  if (fn('GCE') !== 'Ohio Medical / GCE' || fn('yuwell') !== null) throw new Error('retiredLineName wrong');
+});
 t('both server gates consult the list before any entitlement or staff check', () => {
   for (const f of ['catalog-feed.js', 'catalog-layers.js']) {
     const s = fs.readFileSync(path.join(ROOT, 'netlify', 'functions', f), 'utf8');

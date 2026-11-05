@@ -1839,6 +1839,9 @@ function dealerPriceNote(note, p){
 const STAGING=/^(deploy-preview-\d{1,5}|[a-z0-9-]{1,40})--hcpsonlineordering\.netlify\.app$/.test(location.hostname)&&!/^main--/.test(location.hostname);
 const RAW={files:{},content:{},manufacturers:null};
 const RETIRED_LINE_SLUGS=["complete-medical-supplies","ohio-medical","gce"];
+/* Historical orders and imported sales of a retired line still show its name (never the bare slug "gce"). */
+const RETIRED_LINE_NAMES={"complete-medical-supplies":"Complete Medical Supplies","ohio-medical":"Ohio Medical / GCE","gce":"Ohio Medical / GCE"};
+function retiredLineName(slug){ return RETIRED_LINE_NAMES[String(slug||"").toLowerCase()]||null; }
 async function loadManufacturers(){
   const r = await fetch("./data/manufacturers.json",{cache:"no-store"});
   /* Retired lines are never listed, whichever identifier a file uses (netlify/functions/_retired_lines.js
@@ -3276,7 +3279,7 @@ async function reorder(orderId){
   else toast("Those items are no longer in the catalog");
 }
 function orderCardHtml(o){
-  const name=(state.manufacturers.find(m=>m.slug===o.manufacturer)||{}).name || o.manufacturer || "Order";
+  const name=(state.manufacturers.find(m=>m.slug===o.manufacturer)||{}).name || retiredLineName(o.manufacturer) || o.manufacturer || "Order";
   const dt=o.submitted_at? new Date(o.submitted_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
   const st=(o.status||"submitted"); const stColor= st==="placed"?"#1A7A4A":st==="reviewed"?"#2B4071":st==="cancelled"?"#B91C1C":"#F5821F";
   return `<div class="ordrow">
@@ -4282,7 +4285,7 @@ function cartRuleProblems(){
   return out;
 }
 function cartCount(){let n=0;for(const{qty}of CART.values())n+=qty;return n;}
-function mfrInfo(slug){ if(isGoldenSlug(slug)){ return state.manufacturers.find(m=>isGoldenSlug(m.slug))||{slug:CONFIG.GOLDEN_SLUG,name:'Golden Technologies',golden:true}; } return state.manufacturers.find(m=>m.slug===slug)||{slug,name:slug};}
+function mfrInfo(slug){ if(isGoldenSlug(slug)){ return state.manufacturers.find(m=>isGoldenSlug(m.slug))||{slug:CONFIG.GOLDEN_SLUG,name:'Golden Technologies',golden:true}; } return state.manufacturers.find(m=>m.slug===slug)||{slug,name:retiredLineName(slug)||slug};}
 function groupCart(){const g=new Map();for(const it of CART.values()){const s=it.p.manufacturer;if(!g.has(s))g.set(s,[]);g.get(s).push(it);}return g;}
 function linesSubtotal(lines){let t=0;for(const{p,qty}of lines)t+=unitPrice(p,qty)*qty;return t;}
 
@@ -6932,7 +6935,7 @@ async function submitPriceReq(){
 /* ================= PHASE 4: showroom, literature, tracking UI ================= */
 let SHOWROOM={zones:[]}, ZONE_N=12, MFRLIST=[], LINES=[], SW_PICK_IDX=null;
 function ensureZones(){ if(!Array.isArray(SHOWROOM.zones))SHOWROOM.zones=[]; while(SHOWROOM.zones.length<ZONE_N)SHOWROOM.zones.push(null); SHOWROOM.zones=SHOWROOM.zones.slice(0,ZONE_N); }
-function mfrNameOf(slug){ const m=(MFRLIST||[]).find(x=>x.slug===slug); return m?m.name:slug; }
+function mfrNameOf(slug){ const m=(MFRLIST||[]).find(x=>x.slug===slug); return m?m.name:(retiredLineName(slug)||slug); }
 function prodRec(key){ const i=key.indexOf("|"); const mfr=key.slice(0,i),code=key.slice(i+1); const p=(PRICE&&PRICE[key])||{}; const cost=p.cost!=null?p.cost:null; const msrp=(p.msrp!=null?p.msrp:(cost!=null?cost*2:0)); return {key,mfr,code,name:p.name||code,mfrName:p.mfrName||mfrNameOf(mfr),cost,msrp,est:p.msrp==null}; }
 function purchasedKeys(){ const m={}; for(const o of (HISTORY||[])){ for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; m[k]=(m[k]||0)+(Number(l.line!=null?l.line:l.cost)||0); } } return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k])=>k); }
 async function loadShowroom(){
