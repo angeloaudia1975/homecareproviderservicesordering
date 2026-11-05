@@ -1620,9 +1620,9 @@ const CONFIG = {
   // and never records a Golden order of its own; Golden owns the order and sends it back as events.
   // OFF until Stage 2 (catalog) is built and Angelo switches it on: with it off, Golden account holders get the
   // link to the Golden platform (where they order today) instead of an in-platform catalog that does not exist yet.
-  GOLDEN_CHECKOUT_ENABLED: false,      // B4: Golden cart + validate-only checkout outside a staff preview (also needs golden_p360_checkout on the server)
-  GOLDEN_ORDERING_ENABLED: false,      // B6: "Place order with Golden" on the live site (also needs golden_p360_ordering on the server AND Golden's ordering_enabled)
-  GOLDEN_ENABLED: false,               // surface Golden as a shoppable line inside Partner 360 (Stage 2+)
+  GOLDEN_CHECKOUT_ENABLED: true,       // B4: Golden cart + validate-only checkout outside a staff preview (also needs golden_p360_checkout on the server)
+  GOLDEN_ORDERING_ENABLED: true,       // B6: "Place order with Golden" on the live site (also needs golden_p360_ordering on the server AND Golden's ordering_enabled)
+  GOLDEN_ENABLED: true,                // surface Golden as a shoppable line inside Partner 360 (Stage 2+)
   GOLDEN_SLUG: "golden-technologies",  // manufacturer slug used for Golden across the platform
   GOLDEN_ORDER_ENDPOINT: "",           // unused: Golden orders go browser → golden-proxy (HCPS) → Golden /v1/orders (Stage 4). Never called from the browser.
   GOLDEN_CATALOG: "",                  // Golden catalog JSON for in-platform shopping. Blank → ./data/golden-technologies.json
