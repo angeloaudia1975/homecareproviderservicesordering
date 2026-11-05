@@ -257,7 +257,7 @@ exports.handler = async (event) => {
       : '';
     // The brochure body, with the print toolbar stripped — it is meaningless in mail.
     const body = html.replace(/<div class="toolbar">[\s\S]*?<\/div>\s*(?=<div class="sheet">)/, '');
-    const subject = `${str(product.name, 120)}${product.code ? ` (Item ${str(product.code, 40)})` : ''}`;
+    const subject = `${str(product.name, 120)}${product.code ? ` (Item ${str(product.code, 40)})` : ''}`.replace(/[\r\n\t]+/g, ' ');
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -271,7 +271,8 @@ exports.handler = async (event) => {
     });
     if (!res.ok) {
       const t = await res.text().catch(() => '');
-      return json(502, { ok: false, error: 'Could not send that brochure.', detail: t.slice(0, 200) });
+      console.error('brochure email refused by the provider', res.status, t.slice(0, 200));
+      return json(502, { ok: false, error: 'Could not send that brochure.' });
     }
     console.log('brochure emailed', JSON.stringify({ dealer_id: who.dealer_id, to_domain: to.split('@')[1] || '' }));
     return json(200, { ok: true, sent_to: to });
