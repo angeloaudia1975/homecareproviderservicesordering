@@ -110,6 +110,14 @@ function run(src){
     eq(r.diffs, [], 'diffs');
   });
 
+  t('a ladder whose only change is a promotion end date is a difference', () => {
+    // A time-limited break that lost (or gained) its end date must be reported, never treated as the same ladder.
+    const r = reconcileShopPrices(
+      [P({ tiers:[{min_qty:4,price:20}] })],
+      [{ code:'A1', tiers:[{min_qty:4,price:20,until:'2027-01-01T06:00:00Z'}] }], true);
+    eq(r.diffs.length, 1, 'one difference');
+  });
+
   t('the storefront spelling of a ladder compares against the record spelling', () => {
     // The old layers wrote minQty; the record writes min_qty. Same ladder.
     const r = reconcileShopPrices(
