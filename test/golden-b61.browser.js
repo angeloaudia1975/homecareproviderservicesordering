@@ -213,7 +213,7 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
         gtxt: document.querySelector('.gmgroup').innerText, sum: getComputedStyle(document.getElementById('gSumRow')).display, btn: document.getElementById('submitOrder').textContent, orders: hcpsCartOrders().map(o => o.manufacturer_slug) }));
       await t(`${label}: mixed cart — Strongback and Golden groups side by side, header count 3, Golden priced by Golden, Golden never an HCPS order`, () => {
         ok(m1.groups.length === 2 && /Golden Technologies/.test(m1.groups[1]) && /2 chairs/.test(m1.groups[1]), m1.groups.join(' | ')); ok(m1.badge === '3', 'badge ' + m1.badge);
-        ok(/Priced by Golden at review/.test(m1.gtxt) && /separate order/.test(m1.gtxt) && /Review & place Golden order/.test(m1.gtxt), m1.gtxt.slice(0, 300));
+        ok(/Priced by Golden at review/.test(m1.gtxt) && /separate order/.test(m1.gtxt) && /Checkout Golden order/.test(m1.gtxt), m1.gtxt.slice(0, 300));
         ok(m1.sum !== 'none' && /Place order/.test(m1.btn) && JSON.stringify(m1.orders) === '["strongback-mobility"]', JSON.stringify(m1)); });
       // Golden prices the group for a ship-to → the group shows Golden's subtotal, S&H and total
       await page.click('#cartGroups [data-gckgo]'); await page.waitForSelector('.gck-ship', { timeout: 15000 });

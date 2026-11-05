@@ -1,15 +1,8 @@
 {
-  "review_id": "bd4d800eb8ea",
+  "review_id": "1ee70cf24316",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T16:59:42Z",
-  "main": "af36674f9159eae71b07ac64f419d73fbffb5e3c",
+  "built_at": "2026-11-05T17:25:15Z",
+  "main": "499dc2d01771b8bd5e55e2128177fe3d9a525adb",
   "included": [],
-  "skipped": [
-    {
-      "pr": 38,
-      "title": "B6.3 — Guided Golden checkout (auto price + verify, one explicit Place order)",
-      "branch": "golden/b6.3-guided-checkout",
-      "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
-    }
-  ]
+  "skipped": []
 }

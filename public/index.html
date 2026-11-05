@@ -1290,6 +1290,26 @@ body.gck-lock{overflow:hidden}body.gck-lock .gck-pill{display:none}.gck-ov{displ
 .gck-acts{display:flex;flex-wrap:wrap;gap:10px}.gck-note{font-size:12.5px;color:#6b7580;margin-top:6px}
 .gck-warn{padding:10px 12px;border-radius:10px;background:#fdecea;border:1px solid #f5b7b1;color:#8a1c12;font-size:13.5px;margin-bottom:10px}
 .gck-ok h3{color:#15803d}.gck-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:8px 0 14px}.gck-kv span{display:block;font-size:12px;color:#5b6676}.gck-kv small{display:block;color:#5b6676}
+.gck-steps{list-style:none;display:flex;gap:6px;margin:14px 0 6px;padding:0;counter-reset:gs}
+.gck-step{flex:1 1 0;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:#f1f5f9;color:#5b6676;font-size:13.5px;font-weight:600;min-height:44px;box-sizing:border-box}
+.gck-step i{flex:0 0 26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#cbd5e1;color:#fff;font-style:normal;font-weight:800;font-size:13px}
+.gck-step.done{background:#ecfdf3;color:#166534}.gck-step.done i{background:#16a34a}
+.gck-step.on{background:#fff4ec;color:#9a3412;box-shadow:inset 0 0 0 2px #ef6325}.gck-step.on i{background:#ef6325}
+.gck-next{margin:8px 0 4px;padding:10px 12px;border-radius:10px;background:#0b1f33;color:#fff;font-size:14.5px;line-height:1.4}.gck-next b{color:#fcb21e}
+.gck-next.busy::before{content:"";display:inline-block;width:12px;height:12px;margin-right:8px;border:2px solid #fcb21e;border-right-color:transparent;border-radius:50%;animation:gckspin .8s linear infinite;vertical-align:-1px}
+@keyframes gckspin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.gck-next.busy::before{animation:none}}
+.gck-tip{position:relative;margin:8px 0;padding:10px 12px 10px 14px;border-radius:10px;background:#fffbeb;border:1px solid #fcd34d;font-size:13.5px;color:#713f12;display:flex;gap:10px;align-items:flex-start}
+.gck-tip::before{content:"";position:absolute;top:-8px;left:28px;border:8px solid transparent;border-top:0;border-bottom-color:#fcd34d}
+.gck-tip p{margin:0;flex:1}.gck-tip .gck-btn{min-height:44px;flex:0 0 auto}
+.gck-help summary{min-height:44px;display:inline-flex;align-items:center;cursor:pointer;color:#0f5c8f;font-weight:600;font-size:13.5px}
+.gck-help ol{margin:4px 0 8px 18px;padding:0;font-size:13.5px;color:#334155;line-height:1.5}
+.gck-verified{border:2px solid #16a34a;border-radius:12px;padding:12px;background:#f6fef9}.gck-verified h3{color:#15803d;margin:0 0 6px}
+.gck-vt{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:15px;margin:6px 0}.gck-vt b{font-size:22px;color:#0b1f33}
+.gck-more summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;color:#0f5c8f}
+@media (max-width:600px){.gck-step span{display:none}.gck-step.on span{display:inline}.gck-tip{flex-direction:column}}
+.gck-foot{position:sticky;bottom:0;z-index:2;margin:14px -18px -22px;padding:12px 18px 14px;background:#fff;border-top:1px solid #e7edf3;box-shadow:0 -6px 18px rgba(11,31,51,.10);border-radius:0 0 14px 14px}
+.gck-foot .gck-warn{margin-bottom:8px}.gck-foot .gck-note{margin-top:6px}
+@media (max-width:600px){.gck-foot{border-radius:0;padding:10px 12px 12px;margin:14px -18px -22px}.gck-foot .gck-note{display:none}.gck-foot .gck-warn{font-size:12.5px;padding:6px 10px}}
 .gck-mail{border:1px solid #dfe6ee;border-radius:10px;overflow:hidden;margin-bottom:12px}.gck-mh{padding:8px 12px;background:#f6f8fb;font-size:13px}.gck-mail iframe{display:block;width:100%;height:520px;border:0;background:#fff}
 @media (max-width:600px){.gck-grid{grid-template-columns:1fr}.gck-ov{padding:0}.gck-box{border-radius:0;min-height:100%}.gck-lp{margin-left:0;width:100%}.gck-acts .gck-btn{flex:1 1 100%}}
 .pd-golden{margin-top:12px;padding:12px 14px;border-radius:10px;background:#fbf6e8;border:1px solid #f1dfa6;font-size:13.5px;color:#4b3a07;line-height:1.45;}
@@ -2827,7 +2847,7 @@ function goldenConfigWire(host){
    one Idempotency-Key per checkout attempt — never the PO, which is not unique). VALIDATION ONLY: nothing is ordered,
    reserved or emailed; the email previews are Golden's exact emails, shown in a sandboxed frame. */
 const GCK_MAX_LINES=30, GCK_MAX_QTY=20;
-const GCART={ seq:0, items:[], ship:null, shipList:null, shipScope:null, quote:null, quoteSig:null, attempt:null, result:null, busy:false, pending:null, placed:null, pendMsg:null, form:{po:"",name:"",phone:"",email:"",attention:"",notes:""} };
+const GCART={ seq:0, busyKind:null, priceNotice:false, auto:null, items:[], ship:null, shipList:null, shipScope:null, quote:null, quoteSig:null, attempt:null, result:null, busy:false, pending:null, placed:null, pendMsg:null, form:{po:"",name:"",phone:"",email:"",attention:"",notes:""} };
 /* B6 — PLACE ORDER (contract 1.6.0). Golden places the order; Golden's order is the order of record (nothing is stored by
    HCPS). The placement uses the SAME Idempotency-Key and the SAME body as the validation the dealer just reviewed. While
    Golden's answer is not definite (timeout, lost answer, server error), the attempt is kept PENDING — in this page and in
@@ -2883,13 +2903,14 @@ function gckDetail(sel, cq){ const F={std:"Standard fabric",xover:"Cross-Over fa
   return [F[sel.fabric]||"", String((cq&&cq.color_name)||sel.color||""), T[sel.tier]||"", sel.footrest?"Footrest extension":""].filter(Boolean).join(" · ").replace(/\$[\d,.]+/g,"").slice(0,200); }
 const gckKey=i=>[i.sku,i.fabric,i.color,i.tier||"",i.footrest?1:0].join("|");
 function gckReset(){
+  clearTimeout(GCART.auto); { const lv=document.getElementById('gckLive'); if(lv) lv.remove(); }
   const ov=document.getElementById('gckView'); if(ov) ov.remove(); const pl=document.getElementById('gcartPill'); if(pl) pl.remove();
   document.body.classList.remove('gck-lock'); if(GCART._esc){ document.removeEventListener('keydown',GCART._esc,true); GCART._esc=null; }
-  Object.assign(GCART,{items:[],ship:null,shipList:null,shipScope:null,shipErr:null,quote:null,quoteSig:null,quoteAsOf:null,attempt:null,result:null,busy:false,pending:null,placed:null,pendMsg:null,err:null,changed:false,seq:(GCART.seq||0)+1,form:{po:"",name:"",phone:"",email:"",attention:"",notes:""}});
+  Object.assign(GCART,{busyKind:null,priceNotice:false,pcCount:0,auto:null,open:{},items:[],ship:null,shipList:null,shipScope:null,shipErr:null,quote:null,quoteSig:null,quoteAsOf:null,attempt:null,result:null,busy:false,pending:null,placed:null,pendMsg:null,err:null,changed:false,seq:(GCART.seq||0)+1,form:{po:"",name:"",phone:"",email:"",attention:"",notes:""}});
   if(typeof GOLDEN!=="undefined"){ GOLDEN.on=false; GOLDEN.checked=false; }
   if(typeof cartBadgeRefresh==="function") try{ cartBadgeRefresh(); }catch(e){}
 }
-function gckChanged(){ GCART.cartAt=Date.now(); GCART.quote=null; GCART.quoteSig=null; GCART.result=null; gckSave(); gckPill(); }
+function gckChanged(){ GCART.pcCount=0; GCART.cartAt=Date.now(); GCART.quote=null; GCART.quoteSig=null; GCART.result=null; GCART.err=null; GCART.priceNotice=false; gckSave(); gckPill(); }
 /* Golden state changed (this tab or another): refresh the cart without taking the dealer's place. If the dealer is typing
    in an HCPS field of the cart, only the Golden group is replaced; a Golden control that had focus gets it back. */
 function gckRefreshCart(){ try{
@@ -2961,24 +2982,24 @@ function goldenCartShow(){
   if(GCART.pending&&!GCART.busy){ gckPlace(true); return; }   // an unconfirmed order attempt is checked first (same key)
   gckShipTo().then(()=>{ if(seq===GCART.seq) gckRender(); });
 }
-function goldenCartClose(){ const ov=document.getElementById('gckView'); if(ov) ov.style.display='none'; document.body.classList.remove('gck-lock');
+function goldenCartClose(){ clearTimeout(GCART.auto); GCART.auto=null; const ov=document.getElementById('gckView'); if(ov) ov.style.display='none'; document.body.classList.remove('gck-lock');
   if(GCART._esc){ document.removeEventListener('keydown',GCART._esc,true); GCART._esc=null; } gckPill();
   const back=(GCART._opener&&document.contains(GCART._opener)&&GCART._opener.offsetParent!==null)?GCART._opener:(document.querySelector('#cartGroups [data-gckgo]')||document.getElementById('gcartPill')); if(back&&back.focus) back.focus(); }
 const gckShipLine=s=>[s.address,[s.city,s.state].filter(Boolean).join(", "),s.zip].filter(Boolean).join(" · ");
 function gckRender(){
   const ov=document.getElementById('gckView'); if(!ov||ov.style.display==='none') return;
   if(GCART.placed||GCART.pending){ gckRenderPlacement(ov); return; }
-  const f=GCART.form, q=GCART.quote, r=GCART.result, BZ=GCART.busy, RO=BZ?" readonly":"", DIS=BZ?" disabled":"";
+  const f=GCART.form, q=GCART.quote, r=GCART.result, BZ=GCART.busy, RO="", DIS=BZ?" disabled":"";
   const lines=GCART.items.map((i,ix)=>{
     const ql=q&&q.lines[ix];
-    const refs=Array.from({length:i.qty},(_,k)=>`<input class="gck-in gck-ref" data-ix="${ix}" data-k="${k}" maxlength="40" value="${esc(i.refs[k]||"")}" placeholder="Unit ${k+1} (optional)" aria-label="Reference name for unit ${k+1}"${BZ?" readonly":""}>`).join("");
+    const refs=Array.from({length:i.qty},(_,k)=>`<input class="gck-in gck-ref" data-ix="${ix}" data-k="${k}" maxlength="40" value="${esc(i.refs[k]||"")}" placeholder="Unit ${k+1} (optional)" aria-label="Reference name for unit ${k+1}">`).join("");
     return `<div class="gck-line">
       <div class="gck-lh"><div><b>${esc(i.label)}</b><div class="gck-sub">${esc((ql&&ql.details)||i.detail||i.color)}</div><div class="gck-item">Golden item # ${esc(ql&&ql.item_no||i.sku)}</div></div>
         <button type="button" class="gck-x" data-rm="${ix}" aria-label="Remove ${esc(i.label)}"${BZ?" disabled":""}>Remove</button></div>
       <div class="gck-qrow"><span>Qty</span><button type="button" class="gck-qb" data-dq="${ix}" data-d="-1" aria-label="One fewer"${i.qty<=1||BZ?" disabled":""}>−</button><b class="gck-qn">${i.qty}</b><button type="button" class="gck-qb" data-dq="${ix}" data-d="1" aria-label="One more"${i.qty>=GCK_MAX_QTY||BZ?" disabled":""}>+</button>
         ${ql?`<span class="gck-lp">${money(ql.unit_price)} each · <b>${money(ql.line_total)}</b></span>`:""}</div>
       ${ql?`<div class="gck-sub">${esc(ql.breakdown||"")}${ql.lead_note?` · <span class="${ql.in_stock?"gin":"gcu"}">${esc(ql.lead_note)}</span>`:""}</div>`:""}
-      <details class="gck-refs"${i.refs.some(Boolean)?" open":""}><summary>Reference names (patient or tag, optional)</summary><div class="gck-refg">${refs}</div></details>
+      <details class="gck-refs" data-gk="refs-${ix}"${(GCART.open&&GCART.open["refs-"+ix]!=null?GCART.open["refs-"+ix]:i.refs.some(Boolean))?" open":""}><summary>Reference names (patient or tag, optional)</summary><div class="gck-refg">${refs}</div></details>
     </div>`;}).join("");
   const sl=GCART.shipList;
   const ship=sl==null?`<div class="gck-note">Loading Golden's ship-to addresses…</div>`
@@ -2993,73 +3014,138 @@ function gckRender(){
       ${(q.totals.shipments||[]).length>1?q.totals.shipments.map(s=>`<div class="gck-sm"><span>${s.group==="in_stock"?"Ships now":s.group==="build"?"Built to order":"Shipment"}</span><span>${money(s.subtotal)}${s.freight!=null?` + ${Number(s.freight)===0?"free freight":money(s.freight)+" freight"}`:""} + ${money(s.sh)} S&amp;H</span></div>`).join(""):""}
       <div class="gck-gt"><span>Golden total</span><b>${money(q.totals.grand_total)}</b></div>
       <div class="gck-note">Priced by Golden Technologies${GCART.quoteAsOf?" · "+esc(new Date(GCART.quoteAsOf).toLocaleString()):""}.${q.freight&&q.freight.note?" "+esc(q.freight.note):""}</div></div>`:"";
-  const changed=GCART.changed?`<div class="gck-warn" role="alert"><b>Golden's prices changed since you reviewed them.</b> Please review the new totals below, then validate again.</div>`:"";
+  const changed=GCART.priceNotice?`<div class="gck-warn" role="alert"><b>Golden's prices changed.</b> The totals below are Golden's new prices — please check them before you place the order.</div>`:"";
   const err=GCART.err?`<div class="gck-warn" role="alert">${esc(GCART.err)}</div>`:"";
-  const canQuote=GCART.items.length&&GCART.ship&&!GCART.busy;
-  const canVal=canQuote&&q&&f.name.trim()&&f.phone.trim();
+  const retry=(!BZ&&(GCART.err||(GCART.shipErr&&GCART.shipErr!=="prices_not_visible")))?`<div class="gck-acts"><button type="button" class="gck-btn" data-gck-retry>Try again</button></div>`:"";
   const res=r?gckResultHtml(r):"";
-  const a=document.activeElement, fk=a&&ov.contains(a)?['data-rm','data-dq','data-gck-quote','data-gck-validate','data-gck-close','data-f'].map(k=>a.hasAttribute(k)?`[${k}="${a.getAttribute(k)}"]${k==='data-dq'?`[data-d="${a.getAttribute('data-d')}"]`:''}`:null).find(Boolean)||(a.name==='gckship'?`input[name="gckship"][value="${a.value}"]`:null):null;
-  ov.innerHTML=`<span class="gck-ft" tabindex="0" data-trap="start"></span><div class="gck-box">
-    <div class="gck-hd"><h2>Golden Technologies order${(typeof STAGING!=="undefined"&&STAGING)?' <span class="gck-prev">Private preview</span>':""}</h2><button type="button" class="gck-close" data-gck-close aria-label="Close the Golden order review">Close</button></div>
-    <div class="gck-banner">${gckOrderingOpen()?"Order review — validate with Golden first; then place the order with Golden.":"Order review — validation only. Nothing is ordered, reserved or emailed from this screen yet."}</div>
-    ${GCART.items.length?`<div class="gck-sec"><h3>Chairs</h3>${lines}</div>`:`<div class="gck-sec"><p class="gck-note">No Golden chairs in your cart. Configure a lift chair and choose “Add to cart”.</p></div>`}
-    ${GCART.items.length?`<div class="gck-sec"><h3>Ship to</h3>${ship}</div>
-    <div class="gck-sec"><h3>Order details</h3><div class="gck-grid">
+  const step=gckStep();
+  const tip=(!gckTipSeen()&&GCART.items.length)?`<div class="gck-tip" role="note"><p><b>New: checkout in three steps.</b> Choose where Golden ships the order and check your contact details — Golden then prices it (merchandise, freight and S&amp;H) and verifies it automatically. Nothing is ordered until you press <b>Place order with Golden</b>.</p><button type="button" class="gck-btn" data-gck-tip>Got it</button></div>`:"";
+  const a=document.activeElement, fk=a&&ov.contains(a)?['data-rm','data-dq','data-gck-retry','data-gck-tip','data-gck-close','data-f'].map(k=>a.hasAttribute(k)?`[${k}="${a.getAttribute(k)}"]${k==='data-dq'?`[data-d="${a.getAttribute('data-d')}"]`:''}`:null).find(Boolean)||(a.name==='gckship'?`input[name="gckship"][value="${a.value}"]`:null)||(a.classList&&a.classList.contains('gck-ref')?`.gck-ref[data-ix="${a.getAttribute('data-ix')}"][data-k="${a.getAttribute('data-k')}"]`:null):null;
+  let caret=null; try{ if(fk&&typeof a.selectionStart==="number") caret=[a.selectionStart,a.selectionEnd]; }catch(x){}   // email inputs: null or a throw in some browsers
+  GCART.open=GCART.open||{}; ov.querySelectorAll('details[data-gk]').forEach(d=>{ GCART.open[d.getAttribute('data-gk')]=d.open; });
+  const fkSum=(!fk&&a&&ov.contains(a)&&a.tagName==="SUMMARY"&&a.parentElement&&a.parentElement.getAttribute('data-gk'))?`details[data-gk="${a.parentElement.getAttribute('data-gk')}"]>summary`:null;
+  gckHost(ov).innerHTML=`<span class="gck-ft" tabindex="0" data-trap="start"></span><div class="gck-box">
+    <div class="gck-hd"><h2>Checkout · Golden Technologies${(typeof STAGING!=="undefined"&&STAGING)?' <span class="gck-prev">Private preview</span>':""}</h2><button type="button" class="gck-close" data-gck-close aria-label="Close the Golden checkout">Close</button></div>
+    ${gckStepsHtml(step)}${gckNextHtml()}${tip}${gckHelpHtml()}
+    ${GCART.items.length?`<div class="gck-sec"><h3>1 · Your Golden chairs</h3>${lines}</div>`:`<div class="gck-sec"><p class="gck-note">No Golden chairs in your cart. Configure a lift chair and choose “Add to cart”.</p></div>`}
+    ${GCART.items.length?`<div class="gck-sec"><h3>2 · Ship to</h3>${ship}</div>
+    <div class="gck-sec"><h3>Contact &amp; PO</h3><div class="gck-grid">
       ${field("po","PO number (optional)",30)}${field("attention","Attention (optional)",60)}
-      ${field("name","Contact name",80)}${field("phone","Contact phone",30,"tel")}${field("email","Contact email (optional)",190,"email")}
+      ${field("name","Contact name",80,"text",' autocomplete="name"')}${field("phone","Contact phone",30,"tel",' autocomplete="tel"')}${field("email","Contact email (optional)",190,"email",' autocomplete="email"')}
       <label class="gck-f gck-wide"><span>Notes for Golden (optional)</span><textarea class="gck-in" data-f="notes" maxlength="500" rows="3"${RO}>${esc(f.notes)}</textarea></label></div></div>
-    <div class="gck-sec">${changed}${err}${totals}
-      <div class="gck-acts"><button type="button" class="gck-btn" data-gck-quote${canQuote?"":" disabled"}>${q?"Refresh Golden's price":"Get Golden's price"}</button>
-      <button type="button" class="gck-btn primary" data-gck-validate${canVal?"":" disabled"}>Validate order with Golden</button></div>
-      ${!GCART.ship&&sl&&sl.length?`<div class="gck-note">Choose a ship-to address to see Golden's price.</div>`:""}
-      ${q&&!(f.name.trim()&&f.phone.trim())?`<div class="gck-note">Add a contact name and phone to validate.</div>`:""}
-      ${GCART.busy?`<div class="gck-note" aria-live="polite">Asking Golden…</div>`:""}</div>${res}`:""}
+    <div class="gck-sec"><h3>${r&&r.valid===true?"3 · Place order":"Total"}</h3>${changed}${err}${retry}${r&&r.valid===true?"":totals}${res}</div>${gckPlaceBarHtml(r)}`:""}
   </div><span class="gck-ft" tabindex="0" data-trap="end"></span>`;
-  const want=(!GCART.busy&&GCART._refocus)?GCART._refocus:fk;
+  const want=(!GCART.busy&&GCART._refocus)?GCART._refocus:(fk||fkSum);
   if(want){ let el=null; try{ el=ov.querySelector(want); }catch(e){}
-    if(el&&!el.disabled){ el.focus(); GCART._refocus=null; }
+    if(el&&!el.disabled){ el.focus(); GCART._refocus=null; if(caret&&want===fk&&typeof el.setSelectionRange==="function"){ try{ el.setSelectionRange(caret[0],caret[1]); }catch(e){} } }
     else if(fk){ GCART._refocus=fk; const c=ov.querySelector('[data-gck-close]'); if(c) c.focus(); } }   // a control frozen while Golden answers gets focus back afterwards
   ov.querySelectorAll('iframe[data-gck-email]').forEach(fr=>{ const k=fr.getAttribute('data-gck-email'); const m=r&&r.emails&&(k==="golden"?r.emails.golden_order:r.emails.dealer_confirmation); if(m&&typeof m.html==="string") fr.srcdoc=m.html; });
+  gckSchedule(0);
+}
+/* B6.3 GUIDED CHECKOUT (owner 2026-11-05). The dealer never asks for a price or a validation: as soon as the chairs and a
+   Golden ship-to are set, Golden's price (merchandise, freight, S&H) is fetched; as soon as the contact is complete, the
+   order is validated with Golden. Both are the SAME calls as before (golden-proxy quote / validate_order, same
+   Idempotency-Key rules). Placement is NEVER automatic — only the dealer's click on "Place order with Golden". An error
+   stops the automation until the dealer chooses "Try again" (no retry loop). */
+const GCK_TIP_KEY="hcps_gck_tip_v1";
+function gckTipSeen(){ try{ return localStorage.getItem(GCK_TIP_KEY)==="1"; }catch(e){ return true; } }
+function gckStep(){ if(GCART.placed) return 4; if(GCART.result&&GCART.result.valid===true) return 3; return GCART.items.length?2:1; }
+function gckStepsHtml(step){ const L=["Review cart","Shipping & total","Place order"];
+  return `<ol class="gck-steps" aria-label="Checkout progress">${L.map((l,k)=>{ const n=k+1, st=n<step?"done":n===step?"on":"";
+    return `<li class="gck-step ${st}"${n===step?' aria-current="step"':""}><i aria-hidden="true">${n<step?"✓":n}</i><span>${esc(l)}</span>${n<step?'<b class="gck-ft"> — done</b>':""}</li>`; }).join("")}</ol>`; }
+function gckNextHtml(){
+  const f=GCART.form, sl=GCART.shipList, r=GCART.result; let t, busy=false;
+  if(!GCART.items.length) t="Your Golden cart is empty. Configure a lift chair and choose <b>Add to cart</b>.";
+  else if(r&&r.valid===true) t=gckCanPlace(r)?"Golden verified this order. Check the total, then press <b>Place order with Golden</b>."
+    :(r.ordering_enabled!==true&&gckOrderingOpen()?"Golden verified this order, but Golden is not accepting orders from Partner 360 for this account yet. Nothing will be placed."
+    :"Golden verified this order. Ordering from Partner 360 is not open yet — nothing will be placed.");
+  else if(GCART.err||(GCART.shipErr&&sl&&!sl.length)) t="Something needs your attention below.";
+  else if(sl==null){ t="Loading Golden's ship-to addresses…"; busy=true; }
+  else if(!sl.length) t="Golden has no ship-to address for this account yet.";
+  else if(!GCART.ship) t="Choose the <b>ship-to address</b> for this order below.";
+  else if(GCART.busyKind==="quote"||!GCART.quote||GCART.quoteSig!==JSON.stringify([gckReq(),GCART.ship])){ t="Getting Golden's price, freight and S&amp;H…"; busy=true; }
+  else if(!(f.name.trim()&&f.phone.trim())) t="Add a <b>contact name and phone</b> below — Golden needs them for delivery.";
+  else { t="Golden is verifying your order…"; busy=true; }
+  gckAnnounce(t);
+  return `<div class="gck-next${busy?" busy":""}">${t}</div>`;
+}
+// Screen readers: one live region that stays in the page; only its text changes (a freshly inserted region is often not read).
+function gckHost(ov){ let h=ov.querySelector(':scope > .gck-host'); if(!h){ h=document.createElement('div'); h.className='gck-host'; ov.prepend(h); } gckLiveEl(ov); return h; }
+function gckLiveEl(ov){ let el=document.getElementById('gckLive'); ov=ov||document.getElementById('gckView');
+  if(!el){ el=document.createElement('div'); el.id='gckLive'; el.className='gck-ft'; el.setAttribute('role','status'); el.setAttribute('aria-live','polite'); }
+  if(ov&&el.parentNode!==ov) ov.appendChild(el);   // inside the aria-modal dialog, outside the part that is re-rendered
+  return el; }
+function gckAnnounce(html){ const el=gckLiveEl();
+  const txt=String(html).replace(/<[^>]+>/g,"").replace(/&amp;/g,"&");
+  if(el.textContent!==txt) el.textContent=txt; }
+function gckHelpHtml(){ return `<details class="gck-help" data-gk="help"${GCART.open&&GCART.open.help?" open":""}><summary>Need help?</summary><ol>
+  <li><b>Review cart</b> — check your chairs, quantities and optional reference names. Remove or change a chair here or in your cart.</li>
+  <li><b>Shipping &amp; total</b> — choose one of Golden's ship-to addresses for your account and confirm the contact. Golden prices the order (merchandise, freight and 3% shipping &amp; handling) and verifies it automatically. If anything changes, it checks again.</li>
+  <li><b>Place order</b> — press <b>Place order with Golden</b> once. Golden places the order and shows its order number, which also appears in My Orders. If the connection drops, “Check again” asks Golden about the same order and can never create a second one.</li></ol>
+  <p class="gck-note">Nothing is ordered until you press Place order with Golden. Questions? Call HCPS at (855) 400-0345.</p></details>`; }
+// Decide the next automatic step. Quote: chairs + ship-to set and no current price. Validate: current price + contact
+// complete + no answer yet. Never while Golden is answering, while an attempt is pending, after an error, or to place.
+function gckSchedule(delay){
+  clearTimeout(GCART.auto); GCART.auto=null;
+  const ov=document.getElementById('gckView'); if(!ov||ov.style.display==='none') return;
+  if(GCART.busy||GCART.pending||GCART.placed||GCART.err||!GCART.items.length||!GCART.ship) return;
+  const cur=JSON.stringify([gckReq(),GCART.ship]);
+  if(!GCART.quote||GCART.quoteSig!==cur){ GCART.auto=setTimeout(()=>{ GCART.auto=null; gckQuote(); },0); return; }
+  const f=GCART.form;
+  const sinceTyping=Date.now()-(GCART.lastInput||0), wait=Math.max(delay|0, 1200-sinceTyping, 0);   // never validate half-typed text
+  if(GCART.result||!(f.name.trim()&&f.phone.trim())) return;
+  GCART.auto=setTimeout(()=>{ GCART.auto=null; if(Date.now()-(GCART.lastInput||0)<1200) return gckSchedule(0); gckValidate(); }, wait);
 }
 /* Golden's freight (contract 1.7.0) is its own line, exactly as Golden priced it — never estimated here. */
 function gckFreight(t){ const v=t&&t.freight_total; return v==null||!(Number(v)>=0)?"priced by Golden":Number(v)===0?"Free — Golden pays":money(v); }
 function gckCanPlace(r){ return !!(r&&r.valid===true&&r.ordering_enabled===true&&gckOrderingOpen()&&GCART.attempt&&!GCART.busy); }
+// The one Place button lives in a footer that stays on screen at step 3 (sticky inside the dialog).
+function gckPlaceBarHtml(r){
+  if(!r||!gckCanPlace(r)) return "";
+  const t=r.quote&&r.quote.totals;
+  return `<div class="gck-foot">${r.test_mode===true?`<div class="gck-warn"><b>Test mode.</b> Golden will place a TEST order: its emails go only to Golden's test mailbox, never to Golden's order desk or to you.</div>`:""}
+    <button type="button" class="gck-btn primary gck-placebtn" data-gck-place>Place order with Golden · ${t?money(t.grand_total):""}</button>
+    <p class="gck-note">One click sends this order to Golden Technologies exactly as verified. Golden is the order of record; nothing is placed until you click.</p></div>`;
+}
 function gckResultHtml(r){
   const o=r.order||{}, e=r.emails||{}, go=e.golden_order||{}, dc=e.dealer_confirmation;
-  const can=gckCanPlace(r), test=r.test_mode===true;
-  return `<div class="gck-sec gck-ok" role="status"><h3>Golden accepted this order for validation</h3>
-    <p>${r.idempotent_replay?"Golden returned the result it already recorded for this attempt. ":""}This was a check — <b>no order was placed yet</b>, nothing was reserved and no email was sent.</p>
-    ${can?`<div class="gck-place">${test?`<div class="gck-warn"><b>Test mode.</b> Golden will place a TEST order: its emails go only to Golden's test mailbox, never to Golden's order desk or to you.</div>`:""}
-      <p>Placing the order sends it to Golden Technologies exactly as validated: <b>${r.quote?money(r.quote.totals.grand_total):""}</b> to ${esc((o.ship_to&&o.ship_to.label)||"")}. Golden is the order of record.</p>
-      <button type="button" class="gck-btn primary gck-placebtn" data-gck-place>Place order with Golden</button></div>`:""}
+  const can=gckCanPlace(r), test=r.test_mode===true, t=r.quote&&r.quote.totals;
+  return `<div class="gck-ok gck-verified" role="status"><h3>✓ Verified by Golden</h3>
+    ${r.idempotent_replay?`<p class="gck-note">Golden returned the result it already recorded for this attempt.</p>`:""}
+    <div class="gck-vt"><span>Golden total</span><b>${t?money(t.grand_total):""}</b></div>
+    <div class="gck-note">Merchandise ${t?money(t.subtotal):""} · Freight ${t?gckFreight(t):""} · Shipping &amp; handling ${t?money(t.sh_total):""}${t&&t.sh_waived?" (waived for this ship-to)":""} · ship to ${esc((o.ship_to&&o.ship_to.label)||"")}${o.po_number?` · PO ${esc(o.po_number)}${o.po_auto?" (Golden will assign this)":""}`:""}</div>
+    ${t&&(t.shipments||[]).length>1?`<div class="gck-tot">${t.shipments.map(x=>`<div class="gck-sm"><span>${x.group==="in_stock"?"Ships now":x.group==="build"?"Built to order":"Shipment"}</span><span>${money(x.subtotal)}${x.freight!=null?` + ${Number(x.freight)===0?"free freight":money(x.freight)+" freight"}`:""} + ${money(x.sh)} S&amp;H</span></div>`).join("")}</div>`:""}
+    ${can?`<p class="gck-note"><b>No order has been placed yet.</b> Use <b>Place order with Golden</b> at the bottom of this window.</p>`:`<p class="gck-note"><b>No order has been placed.</b></p>`}
+    <details class="gck-more" data-gk="more"${GCART.open&&GCART.open.more?" open":""}><summary>Order details and Golden's email previews</summary>
     <div class="gck-kv"><div><span>PO number</span><b>${esc(o.po_number||"")}${o.po_auto?" (Golden will assign this)":""}</b></div>
       <div><span>Ship to</span><b>${esc((o.ship_to&&o.ship_to.label)||"")}</b><small>${esc(o.ship_to?gckShipLine(o.ship_to):"")}</small></div>
       <div><span>Contact</span><b>${esc([o.contact&&o.contact.name,o.contact&&o.contact.phone].filter(Boolean).join(" · "))}</b></div>
-      <div><span>Freight</span><b>${r.quote?gckFreight(r.quote.totals):""}</b></div>
-      <div><span>Shipping &amp; handling</span><b>${r.quote?money(r.quote.totals.sh_total):""}</b></div>
-      <div><span>Golden total</span><b>${r.quote?money(r.quote.totals.grand_total):""}</b></div></div>
-    <h3>Email previews</h3><p class="gck-note">Exactly what Golden ${can?"will send when the order is placed":"would send when ordering opens"}. Shown here only.</p>
+      <div><span>Merchandise</span><b>${t?money(t.subtotal):""}</b></div>
+      <div><span>Freight</span><b>${t?gckFreight(t):""}</b></div>
+      <div><span>Shipping &amp; handling</span><b>${t?money(t.sh_total):""}</b></div></div>
+    <p class="gck-note">Exactly what Golden ${can?"will send when the order is placed":"would send when ordering opens"}. Shown here only.</p>
     <div class="gck-mail"><div class="gck-mh">${go.recipient==="test_recipient"?"To Golden's TEST mailbox":"To Golden's order desk"}${go.recipient_configured?"":" (address not yet configured)"} · <b>${esc(go.subject||"")}</b></div><iframe data-gck-email="golden" sandbox="" title="Preview of the order email to Golden"></iframe></div>
     ${dc?`<div class="gck-mail"><div class="gck-mh">Dealer confirmation${dc.to?" to "+esc(dc.to):""} · <b>${esc(dc.subject||"")}</b></div><iframe data-gck-email="dealer" sandbox="" title="Preview of the dealer confirmation email"></iframe></div>`:""}
+    </details>
   </div>`;
 }
 async function gckQuote(){
   if(!GCART.items.length||!GCART.ship) return;
-  GCART.busy=true; GCART.err=null; GCART.changed=false; GCART.result=null; gckRender();
+  GCART.busy=true; GCART.busyKind="quote"; GCART.err=null; GCART.changed=false; GCART.result=null; gckRender();
   const sig=JSON.stringify([gckReq(),GCART.ship]);
   const seq=GCART.seq;
   // split_order:true = Golden's own default: in-stock and build chairs ship as separate shipments, each with its own
   // freight and S&H (Golden treats a single-group order as one shipment). Never a merged order without Golden's hold note.
   const j=await goldenCall("quote",{lines:gckReq(),ship_to:{id:GCART.ship},split_order:true});
   if(seq!==GCART.seq) return;
-  GCART.busy=false;
+  GCART.busy=false; GCART.busyKind=null;
   if(sig!==JSON.stringify([gckReq(),GCART.ship])){ gckRender(); return; }   // the cart changed while Golden answered
   if(!j||j.available!==true||!j.quote||j.quote.lines.length!==GCART.items.length){
     GCART.quote=null;
     const R={prices_not_visible:"Golden ordering needs a linked Golden account with dealer pricing.",ship_to_invalid:"Golden no longer lists that ship-to address. Please choose another.",not_offered:"Golden can't build one of these chairs as configured"+(j&&j.line!=null?" (line "+(j.line+1)+")":"")+". Please remove it and configure it again.",pricing_unavailable:"Golden's pricing is not available right now. Please try again shortly."};
     GCART.err=(j&&R[j.reason])||"Golden's price could not be loaded right now. Please try again shortly.";
     if(j&&j.reason==="ship_to_invalid"){ GCART.ship=null; GCART.shipList=null; gckShipTo().then(gckRender); }
-  } else { GCART.quote=j.quote; GCART.quoteSig=sig; GCART.quoteAsOf=j.as_of||null; }
+  } else { if(GCART.quote&&GCART.quoteSig===sig&&GCART.quote.quote_hash!==j.quote.quote_hash) GCART.priceNotice=true; GCART.quote=j.quote; GCART.quoteSig=sig; GCART.quoteAsOf=j.as_of||null; }
   gckRender();
 }
 function gckOrderBody(){
@@ -3080,23 +3166,26 @@ async function gckValidate(){
   // One Idempotency-Key per checkout attempt: the same request (a retry after a lost answer) reuses its key; any change is a new attempt.
   if(!GCART.attempt||GCART.attempt.sig!==sig) GCART.attempt={key:gckUuid(),sig};
   const sentCart=JSON.stringify([gckReq(),GCART.ship]), seq=GCART.seq;
-  GCART.busy=true; GCART.err=null; GCART.changed=false; GCART.result=null; gckRender();
+  GCART.busy=true; GCART.busyKind="validate"; GCART.err=null; GCART.changed=false; GCART.result=null; gckRender();
   const j=await goldenCall("validate_order",Object.assign({idempotency_key:GCART.attempt.key},body));
   if(seq!==GCART.seq) return;   // signed out meanwhile
-  GCART.busy=false;
+  GCART.busy=false; GCART.busyKind=null;
   if(JSON.stringify(gckOrderBody())!==sig||JSON.stringify([gckReq(),GCART.ship])!==sentCart){ gckRender(); return; }   // an answer for an order no longer on screen is dropped
-  if(j&&j.valid===true&&j.available===true){ GCART.result=j; if(j.quote) GCART.quote=j.quote; }
+  if(j&&j.valid===true&&j.available===true){ GCART.result=j; GCART.pcCount=0; if(j.quote) GCART.quote=j.quote; }
   else if(j&&j.reason==="prices_changed"){ GCART.attempt=null;
-    if(j.quote&&j.quote.lines&&j.quote.lines.length===GCART.items.length){ GCART.quote=j.quote; GCART.quoteSig=sentCart; GCART.changed=true; }
-    else { GCART.quote=null; GCART.quoteSig=null; GCART.err="Golden's prices changed. Choose “Get Golden's price” to review the new totals."; } }
+    GCART.priceNotice=true;   // new prices are shown and verified again automatically; placing still needs the dealer's click
+    GCART.pcCount=(GCART.pcCount||0)+1;   // one automatic re-check per price change; if Golden's prices keep moving, stop and ask
+    if(GCART.pcCount>=2) GCART.err="Golden's prices changed again while we were checking. Look over the totals, then choose Try again.";
+    if(j.quote&&j.quote.lines&&j.quote.lines.length===GCART.items.length){ GCART.quote=j.quote; GCART.quoteSig=sentCart; }
+    else { GCART.quote=null; GCART.quoteSig=null; } }
   else if(j&&j.reason==="not_found"){ GCART.attempt=null; GCART.err="Golden no longer offers one of these chairs as configured. Please remove it and configure it again."; }
   else if(j&&j.reason==="ordering_disabled"){ GCART.attempt=null; GCART.err="Golden is not accepting orders from Partner 360 right now."; }
   else if(j&&j.reason==="invalid"){ const m=String(j.field||"").match(/^(reference_names|color|qty|sku|fabric|tier|footrest)@(\d{1,2})$/); GCART.err=m?`Golden could not accept line ${Number(m[2])+1} (${m[1].replace("_"," ")}). Please check it.`:`Golden could not accept ${GCK_FIELD[j.field]||"this order"}. Please check it.`; GCART.attempt=null; }
-  else if(j&&j.reason==="idempotency_in_progress") GCART.err="Golden is still checking this order. Please wait a moment and validate again.";
-  else if(j&&j.reason==="idempotency_conflict"){ GCART.err="This attempt was already used for a different order. Please validate again."; GCART.attempt=null; }
+  else if(j&&j.reason==="idempotency_in_progress") GCART.err="Golden is still checking this order. Please wait a moment and try again.";
+  else if(j&&j.reason==="idempotency_conflict"){ GCART.err="This attempt was already used for a different order. Please try again."; GCART.attempt=null; }
   else if(j&&j.reason==="checkout_switched_off") GCART.err="Golden ordering in Partner 360 is not open yet.";
   else if(j&&j.reason==="prices_not_visible") GCART.err="Golden ordering needs a linked Golden account with dealer pricing.";
-  else GCART.err="Golden could not be reached. Your order details are kept — please validate again.";   // same key on retry
+  else GCART.err="Golden could not be reached. Your order details are kept — choose Try again.";   // same key on retry
   gckRender();
 }
 function gckRenderPlacement(ov){
@@ -3123,8 +3212,9 @@ function gckRenderPlacement(ov){
       <p class="gck-note">Your cart is kept unchanged until Golden answers.</p>
       <div class="gck-acts"><button type="button" class="gck-btn primary" data-gck-recheck${BZ?" disabled":""}>Check again</button><button type="button" class="gck-btn" data-gck-myorders${BZ?" disabled":""}>View My Orders</button></div></div>`;
   }
-  ov.innerHTML=`<span class="gck-ft" tabindex="0" data-trap="start"></span><div class="gck-box">
-    <div class="gck-hd"><h2>Golden order${(typeof STAGING!=="undefined"&&STAGING)?' <span class="gck-prev">Private preview</span>':""}</h2><button type="button" class="gck-close" data-gck-close aria-label="Close">Close</button></div>
+  gckHost(ov).innerHTML=`<span class="gck-ft" tabindex="0" data-trap="start"></span><div class="gck-box">
+    <div class="gck-hd"><h2>Checkout · Golden Technologies${(typeof STAGING!=="undefined"&&STAGING)?' <span class="gck-prev">Private preview</span>':""}</h2><button type="button" class="gck-close" data-gck-close aria-label="Close">Close</button></div>
+    ${gckStepsHtml(P?4:3)}
     ${body}</div><span class="gck-ft" tabindex="0" data-trap="end"></span>`;
   const f=ov.querySelector(P?'[data-gck-myorders]':'[data-gck-recheck]:not([disabled])')||ov.querySelector('[data-gck-close]'); if(f&&!BZ) f.focus();
 }
@@ -3137,15 +3227,15 @@ async function gckPlace(recheck){
     const r=GCART.result; if(!gckCanPlace(r)) return;
     { const msg=gckSyncFromStorage(); if(msg){ if(msg!=="pending") GCART.err=msg; gckPill(); gckRender(); return; } }
     body=gckOrderBody();
-    if(JSON.stringify(body)!==GCART.attempt.sig||JSON.stringify([gckReq(),GCART.ship])!==GCART.quoteSig){ GCART.result=null; GCART.err="The order changed since Golden validated it. Please validate again."; gckRender(); return; }
+    if(JSON.stringify(body)!==GCART.attempt.sig||JSON.stringify([gckReq(),GCART.ship])!==GCART.quoteSig){ GCART.result=null; gckRender(); return; }   // re-checked automatically; never placed as it was
     key=GCART.attempt.key;
     GCART.pending={key, body, at:Date.now()}; gckPendSave();   // from here on, only this attempt may be sent
   }
   const seq=GCART.seq;
-  GCART.busy=true; GCART.err=null; gckPill(); gckRender();
+  GCART.busy=true; GCART.busyKind="place"; GCART.err=null; gckPill(); gckRender();
   const j=await goldenCall("place_order",Object.assign({idempotency_key:key},body));
   if(seq!==GCART.seq) return;   // signed out meanwhile
-  GCART.busy=false;
+  GCART.busy=false; GCART.busyKind=null;
   GCART.pendMsg=null;
   if(j&&j.placed===true&&typeof j.order_ref==="string"){
     try{ localStorage.setItem(gckPlacedKey(), JSON.stringify({ref:j.order_ref, sig:gckCartSig(body.lines, body.ship_to&&body.ship_to.id), at:Date.now(), tab:GCK_TAB})); }catch(e){}
@@ -3156,15 +3246,15 @@ async function gckPlace(recheck){
     // A DEFINITE refusal from Golden (it checks the key's stored answer first): nothing was placed under this key.
     // A new review is a new attempt (new key).
     GCART.pending=null; gckPendSave(); GCART.attempt=null; GCART.result=null;
-    const R={revalidate:"Golden asks for this order to be validated again before it is placed.",idempotency_conflict:"This attempt was already used for a different order. Please validate again.",
-      duplicate_po:"Golden refused this PO number for your account. Please use another PO number and validate again.",ordering_unavailable:"Golden is not accepting this order from Partner 360 right now. Nothing was placed.",
-      not_found:"Golden no longer offers one of these chairs as configured. Please remove it and configure it again.",pricing_unavailable:"Golden's pricing is not available right now. Nothing was placed — please validate again shortly."};
+    const R={revalidate:"Golden asks to check this order again before it is placed — choose Try again.",idempotency_conflict:"This attempt was already used for a different order. Please choose Try again.",
+      duplicate_po:"Golden refused this PO number for your account. Please use another PO number.",ordering_unavailable:"Golden is not accepting this order from Partner 360 right now. Nothing was placed.",
+      not_found:"Golden no longer offers one of these chairs as configured. Please remove it and configure it again.",pricing_unavailable:"Golden's pricing is not available right now. Nothing was placed — please choose Try again shortly."};
     if(j.reason==="prices_changed"){
-      if(j.quote&&j.quote.lines&&j.quote.lines.length===GCART.items.length){ GCART.quote=j.quote; GCART.quoteSig=JSON.stringify([gckReq(),GCART.ship]); GCART.changed=true; }
+      if(j.quote&&j.quote.lines&&j.quote.lines.length===GCART.items.length){ GCART.quote=j.quote; GCART.quoteSig=JSON.stringify([gckReq(),GCART.ship]); }
       else { GCART.quote=null; GCART.quoteSig=null; }
-      GCART.err="Golden's prices changed before the order was placed. Nothing was placed — review the new totals and validate again.";
+      GCART.priceNotice=true; GCART.err="Golden's prices changed before the order was placed. Nothing was placed — check the new totals, then choose Try again.";
     } else if(j.reason==="invalid"){ const m=String(j.field||"").match(/^(reference_names|color|qty|sku|fabric|tier|footrest)@(\d{1,2})$/); GCART.err=(m?`Golden could not accept line ${Number(m[2])+1} (${m[1].replace("_"," ")}).`:`Golden could not accept ${GCK_FIELD[j.field]||"this order"}.`)+" Nothing was placed."; }
-    else GCART.err=R[j.reason]||"Golden did not place this order. Nothing was placed — please validate again.";
+    else GCART.err=R[j.reason]||"Golden did not place this order. Nothing was placed — choose Try again.";
   } else if(j&&j.enabled===false&&!recheck){
     // HCPS's own switch answered before Golden was asked, and this attempt was never sent before: nothing can exist.
     GCART.pending=null; gckPendSave(); GCART.attempt=null; GCART.result=null; GCART.err="Golden ordering in Partner 360 is not open right now. Nothing was placed.";
@@ -3181,23 +3271,28 @@ function gckWire(ov){
     const t=e.target;
     if(t.closest('[data-gck-close]')) return goldenCartClose();
     if(GCART.busy) return;   // the cart is frozen while Golden is answering
-    if(t.closest('[data-gck-place]')) return gckPlace(false);
+    if(t.closest('[data-gck-tip]')){ try{ localStorage.setItem(GCK_TIP_KEY,"1"); }catch(x){} GCART._refocus='[data-gck-close]'; return gckRender(); }
+    if(t.closest('[data-gck-place]')){ GCART.priceNotice=false; return gckPlace(false); }
+    if(t.closest('[data-gck-retry]')){ GCART.err=null; GCART.pcCount=0; GCART.lastInput=0; if(GCART.shipErr){ GCART.shipErr=null; GCART.shipList=null; gckRender(); gckShipTo().then(gckRender); return; } return gckRender(); }
     if(t.closest('[data-gck-recheck]')) return gckPlace(true);
     if(t.closest('[data-gck-done]')){ GCART.placed=null; gckPill(); return goldenCartClose(); }
     if(t.closest('[data-gck-myorders]')){ if(GCART.placed) GCART.placed=null; goldenCartClose(); gckPill(); if(typeof showView==="function") showView('orders'); return; }
     if(GCART.pending||GCART.placed) return;   // an order attempt waiting for Golden (or done) can't be edited
     const rm=t.closest('[data-rm]'); if(rm){ GCART.items.splice(+rm.getAttribute('data-rm'),1); gckChanged(); return gckRender(); }
     const dq=t.closest('[data-dq]'); if(dq){ const i=GCART.items[+dq.getAttribute('data-dq')]; if(!i) return; i.qty=Math.min(GCK_MAX_QTY,Math.max(1,i.qty+Number(dq.getAttribute('data-d')))); i.refs=i.refs.slice(0,i.qty); gckChanged(); return gckRender(); }
-    if(t.closest('[data-gck-quote]')) return gckQuote();
-    if(t.closest('[data-gck-validate]')) return gckValidate();
   });
-  ov.addEventListener('change',e=>{ const t=e.target; if(GCART.busy||GCART.pending||GCART.placed) return; if(t.name==='gckship'){ GCART.ship=t.value; GCART.quote=null; GCART.result=null; GCART.err=null; gckRender(); gckQuote(); } });
+  ov.addEventListener('change',e=>{ const t=e.target; if(GCART.busy||GCART.pending||GCART.placed) return; if(t.name==='gckship'){ GCART.ship=t.value; GCART.quote=null; GCART.result=null; GCART.err=null; GCART.priceNotice=false; gckRender(); }
+    else if(t.matches('[data-f],.gck-ref')) gckSchedule(0); });   // leaving a field verifies at once
   ov.addEventListener('input',e=>{
-    const t=e.target; let touched=false; if(GCART.busy||GCART.pending||GCART.placed) return;
+    const t=e.target; let touched=false; if(GCART.pending||GCART.placed||(GCART.busy&&GCART.busyKind==="place")) return;   // typing stays possible while Golden prices / verifies
     if(t.matches('[data-f]')){ GCART.form[t.getAttribute('data-f')]=t.value; touched=true; }
     else if(t.matches('.gck-ref')){ const i=GCART.items[+t.getAttribute('data-ix')]; if(i){ i.refs[+t.getAttribute('data-k')]=t.value; gckSave(); touched=true; } }
-    if(touched&&GCART.result){ GCART.result=null; const box=ov.querySelector('.gck-ok'); if(box) box.remove(); }
-    const v=ov.querySelector('[data-gck-validate]'); if(v) v.disabled=!(GCART.items.length&&GCART.ship&&GCART.quote&&!GCART.busy&&GCART.form.name.trim()&&GCART.form.phone.trim());
+    if(!touched) return;
+    GCART.lastInput=Date.now();
+    // a change to the order discards Golden's verification; it is verified again automatically once typing pauses
+    if(GCART.result||GCART.err){ GCART.result=null; GCART.err=null; gckRender(); }
+    else { const nx=ov.querySelector('.gck-next'); if(nx) nx.outerHTML=gckNextHtml(); }
+    gckSchedule(1200);
   });
   ov.addEventListener('keydown',e=>{ if(e.key==='Escape') goldenCartClose(); });
   ov.addEventListener('focusin',e=>{ const tr=e.target.getAttribute&&e.target.getAttribute('data-trap'); if(!tr) return;
@@ -4672,7 +4767,7 @@ function goldenCartGroupHtml(){
       ${rows}
       <div class="gnote">Golden Technologies prices this order — merchandise and shipping &amp; handling for the Golden ship-to address you choose — validates it and places it. It is a separate order with its own confirmation, shown in My Orders.</div>
       <div class="mgtot">${tot}</div>
-      <button type="button" class="gckgo" data-gckgo>${pend?"Check my Golden order →":"Review &amp; place Golden order →"}</button>
+      <button type="button" class="gckgo" data-gckgo>${pend?"Check my Golden order →":"Checkout Golden order →"}</button>
     </div></div>`;
 }
 function goldenCartGroupWire(host){
