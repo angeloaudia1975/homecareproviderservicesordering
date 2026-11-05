@@ -1,7 +1,7 @@
 {
   "review_id": "25825214eb85",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T23:33:28Z",
+  "built_at": "2026-11-05T23:35:32Z",
   "main": "a4f5b2c22a441bdf9836388adbf2ee0bf4744ee1",
   "included": [
     {
@@ -21,9 +21,9 @@
       "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
     },
     {
-      "pr": 49,
+      "pr": 50,
       "title": "B7 checkout: HCPS shipping address book in the Golden checkout",
-      "branch": "golden-b7-shipto",
+      "branch": "golden-b7-shipto-v2",
       "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
     }
   ]
