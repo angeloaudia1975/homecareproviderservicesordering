@@ -1,17 +1,8 @@
 {
-  "review_id": "d5de2ff1e590",
+  "review_id": "63ff62185f93",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T19:01:55Z",
-  "main": "499dc2d01771b8bd5e55e2128177fe3d9a525adb",
-  "included": [
-    {
-      "pr": 40,
-      "title": "C3-06 closeout: Request access, durable PediFix retirement, catalog closeout",
-      "branch": "c6/closeout",
-      "head": "af001ed0a9f35b40118b35a6151ecbb52080659a",
-      "manufacturers": [],
-      "other_files": 2
-    }
-  ],
+  "built_at": "2026-11-05T19:18:39Z",
+  "main": "0019e4a6ba6c61f6a74c2d1df15df28c8a94c8ab",
+  "included": [],
   "skipped": []
 }
