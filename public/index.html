@@ -1878,8 +1878,14 @@ async function loadManufacturers(){
        catalog file happened to carry, which is why the shop showed "Ankles" and "Backs" while the
        admin showed "Foot & Ankle" and "Back & Spine". One missing word, and the two views of the
        catalog disagreed for weeks. */
-    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,enriched_only,category_order,category_map,freight_terms`,
+    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,enriched_only,category_order,category_map,freight_terms,active`,
       {headers:{apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON}}).then(x=>x.ok?x.json():[]);
+    /* THE LINE SWITCH (Admin → Catalog → "Manufacturers on the ordering platform", manufacturer_meta.active).
+       It was written by the admin but never read here, so switching a line off changed nothing (review 2026-11-04).
+       A line whose record says active = false is not listed; the order server refuses it too. A line with no
+       record, or a record that does not say false, is listed as before. */
+    const off=new Set((lg||[]).filter(o=>o&&o.active===false).map(o=>String(o.slug)));
+    if(off.size){ state.manufacturers=state.manufacturers.filter(m=>!off.has(String(m.slug))); try{ RAW.manufacturers=JSON.parse(JSON.stringify(state.manufacturers)); }catch(e){} }
     const lm=Object.fromEntries((lg||[]).map(o=>[o.slug,o.logo_url]));
     /* Per-line listing mode. On a line whose enrichment is finished, the enrichment record is
        the catalogue: a SKU with no page is not a product yet and is not offered. This is set

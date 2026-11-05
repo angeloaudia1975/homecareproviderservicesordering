@@ -37,8 +37,14 @@ const RETIRED = require("./_retired_lines.js");   // retired lines: never read o
 exports.handler = async (event)=>{
   if(event.httpMethod==="OPTIONS") return {statusCode:204,headers:CORS,body:""};
   try{
-    const need=process.env.ANALYTICS_TOKEN;
-    if(need){const got=event.headers["x-analytics-token"]||(event.queryStringParameters||{}).token||""; if(got!==need) return json(401,{error:"unauthorized"});}
+    /* FAILS CLOSED (security review 2026-11-04): this legacy endpoint reads and writes catalog prices with the
+       service key. It was open to anyone whenever ANALYTICS_TOKEN was unset; now an unset token refuses every
+       request. Production has the token set (verified 2026-11-04: anonymous GET → 401), so nothing changes there. */
+    const need=process.env.ANALYTICS_TOKEN||"";
+    if(!need) return json(503,{error:"catalog-api is not configured (ANALYTICS_TOKEN unset) — refusing"});
+    {const got=String((event.headers||{})["x-analytics-token"]||(event.headers||{})["X-Analytics-Token"]||(event.queryStringParameters||{}).token||"");
+     const A=Buffer.from(got), B=Buffer.from(need);
+     if(A.length!==B.length || !require("crypto").timingSafeEqual(A,B)) return json(401,{error:"unauthorized"});}
     if(!SUPABASE_URL||!SERVICE_ROLE) return json(500,{error:"Supabase env vars not set (SUPABASE_URL, SUPABASE_SERVICE_ROLE)"});
 
     if(event.httpMethod==="GET"){
