@@ -1,10 +1,10 @@
 {
  "meta": {
   "line": "yuwell",
-  "engine": "hand-built (C3-04, 2026-11-04) — no official Yuwell product pages were reachable for scripts/catalog-enrich.js",
+  "engine": "hand-built (C3-04, 2026-11-04) from owner-supplied Yuwell brochures and images",
   "generated": "2026-11-04T00:00:00.000Z",
-  "sources": 3,
-  "note": "Built only from the owner-supplied HCPS Dealer Product Guide 2026, the Yuwell 2026 price list (models and stock status only) and FDA 510(k) K242736. Nothing is inferred. Corrections go in content-overrides/yuwell.json."
+  "sources": 5,
+  "note": "Built only from owner-supplied Yuwell brochures (Products Info 2026, model brochures, SPIRIT-3 brochure and sales sheet), Yuwell product images and FDA 510(k) K242736. Nothing is inferred. Corrections go in content-overrides/yuwell.json."
  },
  "pages": {
   "spirit-3-portable-oxygen-concentrator": {
@@ -12,51 +12,64 @@
    "page_key": "spirit-3-portable-oxygen-concentrator",
    "name": "SPIRIT-3 Portable Oxygen Concentrator",
    "status": "published",
-   "description": "The SPIRIT-3 is a pulse-dose portable oxygen concentrator for active, on-the-go lifestyles. It runs on a rechargeable battery or AC and vehicle DC power, has four pulse settings and simple controls with a battery display, and ships with a carry bag.",
+   "description": "The Yuwell SPIRIT-3 (SP-3) is a compact pulse-dose portable oxygen concentrator for an active, on-the-go lifestyle. It has four adjustable pulse-dose settings, a modular rechargeable battery, AC and vehicle DC power, replaceable molecular sieve beds and a protective shoulder bag. Prescription oxygen device: pulse-dose settings are not equivalent to continuous-flow L/min, and the therapy setting requires individual clinical assessment.",
    "features": [
-    "Carry-ready design with shoulder bag",
+    "Four adjustable pulse-dose settings",
+    "Up to 5 hours of battery runtime at setting 1",
     "Rechargeable battery plus AC and vehicle DC power",
-    "Simple controls with battery display",
-    "Low oxygen, no-breath, and low-battery alerts",
-    "4 pulse settings",
-    "Up to 5 hours of battery runtime",
-    "≤55 dB(A)"
+    "Compact unit with a protective shoulder carry bag",
+    "Display shows the flow setting and battery level",
+    "Alerts for low oxygen, no breath/flow and faults",
+    "Replaceable molecular sieve beds",
+    "≤55 dB(A) (tested at setting 4)"
    ],
    "specs": [
     {
-     "label": "Flow settings",
-     "value": "Pulse, settings 1–4"
+     "label": "Pulse-dose settings",
+     "value": "4 (settings 1–4)"
     },
     {
      "label": "Battery runtime",
-     "value": "Up to 5 hours"
+     "value": "Setting 1: 5 hr · 2: 3 hr 20 min · 3: 2 hr 20 min · 4: 2 hr (approximate)"
+    },
+    {
+     "label": "Pulse oxygen output",
+     "value": "210–750 mL/min total, by setting"
+    },
+    {
+     "label": "Oxygen concentration",
+     "value": "≥90% after 30-minute warm-up (90% −3%/+6%)"
     },
     {
      "label": "Sound level",
      "value": "≤55 dB(A)"
     },
     {
-     "label": "Oxygen concentration",
-     "value": "90% (−3% / +6%) at all settings"
-    },
-    {
-     "label": "Max outlet pressure",
+     "label": "Maximum outlet pressure",
      "value": "150 kPa"
     },
     {
-     "label": "Power",
-     "value": "Rechargeable lithium-ion battery; 100–240 V AC supply; vehicle DC"
+     "label": "Size",
+     "value": "22 × 8 × 22 cm (8.7 × 3.1 × 8.7 in)"
     },
     {
-     "label": "Includes",
-     "value": "Battery, AC supply, DC cable, cannulas, carry bag, manual"
+     "label": "Weight with battery",
+     "value": "Approx. 2.2–2.4 kg (4.9–5.3 lb)"
+    },
+    {
+     "label": "Power",
+     "value": "Rechargeable Li-ion battery; 100–240 V AC supply; vehicle DC"
+    },
+    {
+     "label": "Included",
+     "value": "Concentrator, Li-ion battery, AC supply, DC cable, nasal cannula, 2 filter felts, carry bag, manual"
     },
     {
      "label": "FDA 510(k)",
      "value": "K242736"
     }
    ],
-   "warranty": null,
+   "warranty": "3-year warranty on the compressor; 2-year warranty on the sieve beds.",
    "category": "Portable Oxygen",
    "subcategory": null,
    "options": {},
@@ -79,40 +92,74 @@
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
-    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04) and FDA 510(k) K242736 summary (Jiangsu Yuyue Medical Equipment & Supply Co., Ltd. — Portable Oxygen Concentrator Spirit-3, decision 2025-06-05)",
-    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "specs": "FDA 510(k) K242736 summary (Jiangsu Yuyue Medical Equipment & Supply Co., Ltd. — Portable Oxygen Concentrator Spirit-3, decision 2025-06-05); HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); FDA 510(k) K242736 summary (Jiangsu Yuyue Medical Equipment & Supply Co., Ltd. — Portable Oxygen Concentrator Spirit-3, decision 2025-06-05); HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); FDA 510(k) K242736 summary (Jiangsu Yuyue Medical Equipment & Supply Co., Ltd. — Portable Oxygen Concentrator Spirit-3, decision 2025-06-05) (5 hours at 0.21 LPM); HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); FDA 510(k) K242736 summary (Jiangsu Yuyue Medical Equipment & Supply Co., Ltd. — Portable Oxygen Concentrator Spirit-3, decision 2025-06-05) (55 dBA at 0.75 LPM)",
-    "warranty": "not stated by any source on file — left blank",
-    "image": "no photo yet — owner is supplying Yuwell product photos"
+    "description": "SPIRIT-3 Portable Oxygen Concentrator Brochure 2026 + Yuwell SP-3 sales sheet (owner-supplied)",
+    "features": "SPIRIT-3 Portable Oxygen Concentrator Brochure 2026 + Yuwell SP-3 sales sheet (owner-supplied)",
+    "specs": "FDA 510(k) K242736 summary (Spirit-3, cleared 2025-06-05); SPIRIT-3 Portable Oxygen Concentrator Brochure 2026 + Yuwell SP-3 sales sheet (owner-supplied); SPIRIT-3 Portable Oxygen Concentrator Brochure 2026 + Yuwell SP-3 sales sheet (owner-supplied); FDA 510(k) K242736 summary (Spirit-3, cleared 2025-06-05)",
+    "warranty": "SPIRIT-3 Portable Oxygen Concentrator Brochure 2026 + Yuwell SP-3 sales sheet (owner-supplied)",
+    "images": "Yuwell official product images (owner-supplied Images.zip, received 2026-11-04)",
+    "excluded": "Not used: the sales sheet's 'equivalent continuous oxygen supply 3.75 L/min' (contradicts the brochure's 'pulse-dose settings are not equivalent to continuous-flow L/min') and operating-temperature figures (brochure 5–40 °C vs FDA 10–35 °C)."
    },
-   "image": "",
-   "images_gallery": [],
-   "enrichment_flags": {
-    "hcps_review": {
-     "needs": [
-      "official Yuwell product photo",
-      "official Yuwell spec sheet / user manual to confirm the guide's values",
-      "SPIRIT-3 weight and size withheld: the guide says 4.9 lb and 8.72 x 4.22 x 8.87 in; FDA 510(k) K242736 says 2.4 kg with battery and 22 x 8 x 22 cm"
-     ]
+   "image": "/assets/products/yuwell/gallery/76ec2798a55101a623b8.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/yuwell/gallery/76ec2798a55101a623b8.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): SPIRIT-3 Front.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/756d6828e692c91141ff.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): Spirit 3 Right.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/482dcfe4e54ef9fad0f8.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): SPIRIT-3 Back.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/e8fe18668ecc4248cc39.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): Spirt3 Acrtion 2.jpg"
     }
-   }
+   ],
+   "enrichment_flags": {}
   },
   "ye660e-upper-arm-blood-pressure-monitor": {
    "manufacturer": "yuwell",
    "page_key": "ye660e-upper-arm-blood-pressure-monitor",
    "name": "YE660E Upper Arm Blood Pressure Monitor",
    "status": "published",
-   "description": "An upper-arm blood pressure monitor with voice broadcast, a large LCD, 99 memories and irregular heartbeat indication.",
+   "description": "An upper-arm electronic blood pressure monitor with voice broadcast, a large LCD digital display and 99 memory groups. It indicates irregular heartbeats, detects cuff wearing and movement errors, and averages three measurements.",
    "features": [
-    "Voice broadcast",
-    "Large LCD",
-    "99 memories",
-    "Irregular heartbeat indication"
+    "Voice broadcast function",
+    "Large LCD digital display",
+    "99 groups of memory",
+    "Indication for irregular heartbeats",
+    "Detection for cuff wearing",
+    "Indication for movement error",
+    "Average of three measurements",
+    "Cuff size 22–45 cm, with adapter"
    ],
    "specs": [
     {
      "label": "Type",
      "value": "Upper arm"
+    },
+    {
+     "label": "Cuff size",
+     "value": "22–45 cm"
+    },
+    {
+     "label": "Memory",
+     "value": "99 groups"
+    },
+    {
+     "label": "Power",
+     "value": "4 × AAA alkaline batteries; adapter included"
     }
    ],
    "warranty": null,
@@ -138,34 +185,57 @@
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
-    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "specs": "Yuwell price list 2026 (owner-supplied, Yuwell_Price_List_2026.pdf, received 2026-11-04) — item, model and stock status only; no price is written here",
+    "description": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "features": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "specs": "Yuwell Products Info 2026 (owner-supplied); Yuwell price list 2026 (owner-supplied) — models and stock status only; no price is written here; Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
     "warranty": "not stated by any source on file — left blank",
-    "image": "no photo yet — owner is supplying Yuwell product photos"
+    "images": "Yuwell official product images (owner-supplied Images.zip, received 2026-11-04)",
+    "excluded": ""
    },
-   "image": "",
-   "images_gallery": [],
-   "enrichment_flags": {
-    "hcps_review": {
-     "needs": [
-      "official Yuwell product photo",
-      "official Yuwell spec sheet / user manual to confirm the guide's values"
-     ]
+   "image": "/assets/products/yuwell/gallery/2214dabfed572bff411d.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/yuwell/gallery/2214dabfed572bff411d.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YE660E-Blood Pressure Monitor-Front View.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/5d03f745d8a3d7841b50.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YE660E-Blood Pressure Monitor-Left View.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/d9f64bff20a6f3771314.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YE660E-Blood Pressure Monitor-Right View.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/c953e2b627d0ea186b1a.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YE660E Upper Arm Blood Pressure Monitor.jpg"
     }
-   }
+   ],
+   "enrichment_flags": {}
   },
   "ye620b-upper-arm-blood-pressure-monitor": {
    "manufacturer": "yuwell",
    "page_key": "ye620b-upper-arm-blood-pressure-monitor",
    "name": "YE620B Upper Arm Blood Pressure Monitor",
    "status": "published",
-   "description": "An upper-arm blood pressure monitor with voice broadcast, a large backlit LCD and a 22–45 cm cuff, with the adapter included.",
+   "description": "An upper-arm electronic blood pressure monitor with voice broadcast, a large backlit LCD display and 99 memory groups. It indicates irregular heartbeats, detects cuff wearing and movement errors, and averages three measurements.",
    "features": [
-    "Voice broadcast",
-    "Large backlit LCD",
-    "22–45 cm cuff",
-    "Adapter included"
+    "Voice broadcast function",
+    "Large backlit LCD display",
+    "99 groups of memory",
+    "Indication for irregular heartbeats",
+    "Detection for cuff wearing",
+    "Indication for movement error",
+    "Average of three measurements",
+    "Cuff size 22–45 cm, with adapter"
    ],
    "specs": [
     {
@@ -173,8 +243,16 @@
      "value": "Upper arm"
     },
     {
-     "label": "Cuff range",
+     "label": "Cuff size",
      "value": "22–45 cm"
+    },
+    {
+     "label": "Memory",
+     "value": "99 groups"
+    },
+    {
+     "label": "Power",
+     "value": "4 × AAA alkaline batteries; adapter included"
     }
    ],
    "warranty": null,
@@ -200,40 +278,63 @@
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
-    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "specs": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); Yuwell price list 2026 (owner-supplied, Yuwell_Price_List_2026.pdf, received 2026-11-04) — item, model and stock status only; no price is written here",
+    "description": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "features": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "specs": "Yuwell Products Info 2026 (owner-supplied); Yuwell price list 2026 (owner-supplied) — models and stock status only; no price is written here; Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
     "warranty": "not stated by any source on file — left blank",
-    "image": "no photo yet — owner is supplying Yuwell product photos"
+    "images": "Yuwell official product images (owner-supplied Images.zip, received 2026-11-04)",
+    "excluded": ""
    },
-   "image": "",
-   "images_gallery": [],
-   "enrichment_flags": {
-    "hcps_review": {
-     "needs": [
-      "official Yuwell product photo",
-      "official Yuwell spec sheet / user manual to confirm the guide's values"
-     ]
+   "image": "/assets/products/yuwell/gallery/480632a6b24142904b9e.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/yuwell/gallery/480632a6b24142904b9e.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YE620B-Blood Pressure Monitor-Front View.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/eb3ff50dde4839a474f0.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YE620B-Blood Pressure Monitor-Left View.png"
     }
-   }
+   ],
+   "enrichment_flags": {}
   },
   "ye680b-upper-arm-blood-pressure-monitor": {
    "manufacturer": "yuwell",
    "page_key": "ye680b-upper-arm-blood-pressure-monitor",
    "name": "YE680B Upper Arm Blood Pressure Monitor",
    "status": "published",
-   "description": "An upper-arm blood pressure monitor with voice broadcast, a large backlit LCD, two-user memory and an average of three readings. A Bluetooth option is available.",
+   "description": "A two-user upper-arm electronic blood pressure monitor with voice broadcast, a large backlit LCD display and 99 × 2 memory groups. It indicates irregular heartbeats, detects cuff wearing and movement errors, and averages three measurements. Bluetooth is optional.",
    "features": [
-    "Voice broadcast",
-    "Large backlit LCD",
-    "2-user memory",
-    "Average of 3 readings",
-    "Bluetooth option available"
+    "Voice broadcast function",
+    "Large backlit LCD display",
+    "99 × 2 memory groups (two users)",
+    "Indication for irregular heartbeats",
+    "Detection for cuff wearing",
+    "Indication for movement error",
+    "Average of three measurements",
+    "Bluetooth (optional)",
+    "Cuff size 22–45 cm, with adapter"
    ],
    "specs": [
     {
      "label": "Type",
      "value": "Upper arm"
+    },
+    {
+     "label": "Cuff size",
+     "value": "22–45 cm"
+    },
+    {
+     "label": "Memory",
+     "value": "99 × 2 groups"
+    },
+    {
+     "label": "Power",
+     "value": "4 × AAA alkaline batteries; adapter included"
     }
    ],
    "warranty": null,
@@ -259,34 +360,59 @@
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
-    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "specs": "Yuwell price list 2026 (owner-supplied, Yuwell_Price_List_2026.pdf, received 2026-11-04) — item, model and stock status only; no price is written here",
+    "description": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "features": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "specs": "Yuwell Products Info 2026 (owner-supplied); Yuwell price list 2026 (owner-supplied) — models and stock status only; no price is written here; Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
     "warranty": "not stated by any source on file — left blank",
-    "image": "no photo yet — owner is supplying Yuwell product photos"
+    "images": "Yuwell official product images (owner-supplied Images.zip, received 2026-11-04)",
+    "excluded": ""
    },
-   "image": "",
-   "images_gallery": [],
-   "enrichment_flags": {
-    "hcps_review": {
-     "needs": [
-      "official Yuwell product photo",
-      "official Yuwell spec sheet / user manual to confirm the guide's values"
-     ]
+   "image": "/assets/products/yuwell/gallery/fe4bfcc63b3be3cf15c1.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/yuwell/gallery/fe4bfcc63b3be3cf15c1.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YE680B-Blood Pressure Monitor-Front View1.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/e2636b8b1e950b7f1220.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YE680B-Blood Pressure Monitor-Left View.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/6c6f6b763c3a539fe037.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YE680B-Blood Pressure Monitor-Right View.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/4e35556f6d8a83b2427a.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YE680B Upper Arm Blood Pressure Monitor.jpg"
     }
-   }
+   ],
+   "enrichment_flags": {}
   },
   "ye8800ar-wrist-blood-pressure-monitor": {
    "manufacturer": "yuwell",
    "page_key": "ye8800ar-wrist-blood-pressure-monitor",
    "name": "YE8800AR Wrist Blood Pressure Monitor with Bluetooth",
    "status": "published",
-   "description": "A compact wrist blood pressure monitor with Bluetooth, a lithium battery and USB Type-C charging.",
+   "description": "A wrist electronic blood pressure monitor with Bluetooth, voice broadcast, a large LCD display and 74 memory groups. It indicates wrist position and irregular heartbeats, detects cuff wearing and movement errors, averages three measurements and runs on a lithium battery charged by USB Type-C.",
    "features": [
     "Bluetooth",
-    "Compact wrist design",
-    "Lithium battery",
-    "USB Type-C"
+    "Voice broadcast function",
+    "Large LCD display",
+    "74 groups of memory",
+    "Indication for position",
+    "Indication for irregular heartbeats",
+    "Detection for cuff wearing",
+    "Indication for movement error",
+    "Average of three measurements",
+    "Lithium battery, USB Type-C"
    ],
    "specs": [
     {
@@ -296,6 +422,18 @@
     {
      "label": "Connectivity",
      "value": "Bluetooth"
+    },
+    {
+     "label": "Memory",
+     "value": "74 groups"
+    },
+    {
+     "label": "Power",
+     "value": "Lithium battery; USB Type-C"
+    },
+    {
+     "label": "Weight",
+     "value": "109 g"
     }
    ],
    "warranty": null,
@@ -321,43 +459,71 @@
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
-    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "specs": "Yuwell price list 2026 (owner-supplied, Yuwell_Price_List_2026.pdf, received 2026-11-04) — item, model and stock status only; no price is written here",
+    "description": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "features": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "specs": "Yuwell price list 2026 (owner-supplied) — models and stock status only; no price is written here; Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04); Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04); Yuwell Products Info 2026 (owner-supplied)",
     "warranty": "not stated by any source on file — left blank",
-    "image": "no photo yet — owner is supplying Yuwell product photos"
+    "images": "Yuwell official product images (owner-supplied Images.zip, received 2026-11-04)",
+    "excluded": ""
    },
-   "image": "",
-   "images_gallery": [],
-   "enrichment_flags": {
-    "hcps_review": {
-     "needs": [
-      "official Yuwell product photo",
-      "official Yuwell spec sheet / user manual to confirm the guide's values"
-     ]
+   "image": "/assets/products/yuwell/gallery/2c0fa156441fb43dd44b.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/yuwell/gallery/2c0fa156441fb43dd44b.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YE8800AR Front View FDA Version-Color Box Front View Image Bluetooth English.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/211248a88fbde8862d34.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YE8800AR Side View FDA Version-Color Box Side View Image Bluetooth Version.png"
     }
-   }
+   ],
+   "enrichment_flags": {}
   },
   "yt-1-infrared-thermometer": {
    "manufacturer": "yuwell",
    "page_key": "yt-1-infrared-thermometer",
    "name": "YT-1 Infrared Thermometer",
    "status": "published",
-   "description": "A touch-free infrared thermometer for rapid measurement, supplied with a hard case and 2 x AAA batteries.",
+   "description": "A touch-free infrared thermometer that measures in about one second from 0–5 cm, with °C/°F units, mute and vibration functions and a distance reminder. Supplied with a hardshell carry case and 2 × AAA alkaline batteries.",
    "features": [
     "Touch-free",
-    "Rapid measurement",
-    "Includes hard case",
-    "2 x AAA batteries"
+    "Rapid measurement (1 second)",
+    "°C / °F",
+    "Mute function",
+    "Vibration function",
+    "Distance reminder",
+    "Auto shut-off after 30 seconds",
+    "Includes hardshell carry case",
+    "2 × AAA alkaline batteries"
    ],
    "specs": [
     {
-     "label": "Type",
-     "value": "Infrared, touch-free"
+     "label": "Measurement range",
+     "value": "32–43 °C"
     },
     {
-     "label": "Batteries",
-     "value": "2 x AAA"
+     "label": "Measuring distance",
+     "value": "0–5 cm"
+    },
+    {
+     "label": "Response time",
+     "value": "1 second"
+    },
+    {
+     "label": "Auto shut-off",
+     "value": "30 seconds"
+    },
+    {
+     "label": "Dimensions",
+     "value": "149 × 38 × 42 mm"
+    },
+    {
+     "label": "Power",
+     "value": "2 × AAA alkaline batteries"
     }
    ],
    "warranty": null,
@@ -383,34 +549,57 @@
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
-    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "specs": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); Yuwell price list 2026 (owner-supplied, Yuwell_Price_List_2026.pdf, received 2026-11-04) — item, model and stock status only; no price is written here; HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "description": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "features": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "specs": "Yuwell Products Info 2026 (owner-supplied); Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
     "warranty": "not stated by any source on file — left blank",
-    "image": "no photo yet — owner is supplying Yuwell product photos"
+    "images": "Yuwell official product images (owner-supplied Images.zip, received 2026-11-04)",
+    "excluded": ""
    },
-   "image": "",
-   "images_gallery": [],
-   "enrichment_flags": {
-    "hcps_review": {
-     "needs": [
-      "official Yuwell product photo",
-      "official Yuwell spec sheet / user manual to confirm the guide's values"
-     ]
+   "image": "/assets/products/yuwell/gallery/ab5af65404f7011e701a.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/yuwell/gallery/ab5af65404f7011e701a.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YT-1 Front.jpg"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/b18f650efc3cff501d78.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YT-1 Left.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/2ec75b0cf457c8fac7fc.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YT-1 Right.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/ab23f1269379f6d83cd9.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YT-1 action 2.jpg"
     }
-   }
+   ],
+   "enrichment_flags": {}
   },
   "yht101-infrared-ear-thermometer": {
    "manufacturer": "yuwell",
    "page_key": "yht101-infrared-ear-thermometer",
    "name": "YHT101 Infrared Ear Thermometer",
    "status": "published",
-   "description": "An infrared ear thermometer for rapid ear measurement, supplied with disposable covers, a hard case and 2 x AAA batteries.",
+   "description": "An infrared ear thermometer with fast measurement, automatic shutdown, fever guidance, a backlit display and memory retrieval. Supplied with disposable covers, a hardshell carry case and 2 × AAA alkaline batteries.",
    "features": [
-    "Rapid ear measurement",
-    "Disposable covers included",
-    "Includes hard case",
-    "2 x AAA batteries"
+    "Fast measurement",
+    "Automatic shutdown",
+    "Fever guidance",
+    "Backlit display",
+    "Memory retrieval",
+    "Includes disposable covers",
+    "Includes hardshell carry case",
+    "2 × AAA alkaline batteries"
    ],
    "specs": [
     {
@@ -418,8 +607,8 @@
      "value": "Infrared, ear"
     },
     {
-     "label": "Batteries",
-     "value": "2 x AAA"
+     "label": "Power",
+     "value": "2 × AAA alkaline batteries"
     }
    ],
    "warranty": null,
@@ -445,38 +634,75 @@
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
-    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "specs": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04); Yuwell price list 2026 (owner-supplied, Yuwell_Price_List_2026.pdf, received 2026-11-04) — item, model and stock status only; no price is written here",
+    "description": "Yuwell Products Info 2026 (owner-supplied); Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "features": "Yuwell Products Info 2026 (owner-supplied); Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "specs": "Yuwell Products Info 2026 (owner-supplied); Yuwell price list 2026 (owner-supplied) — models and stock status only; no price is written here",
     "warranty": "not stated by any source on file — left blank",
-    "image": "no photo yet — owner is supplying Yuwell product photos"
+    "images": "Yuwell official product images (owner-supplied Images.zip, received 2026-11-04)",
+    "excluded": ""
    },
-   "image": "",
-   "images_gallery": [],
-   "enrichment_flags": {
-    "hcps_review": {
-     "needs": [
-      "official Yuwell product photo",
-      "official Yuwell spec sheet / user manual to confirm the guide's values"
-     ]
+   "image": "/assets/products/yuwell/gallery/fa6d7f0f9bc169ec1fb4.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/yuwell/gallery/fa6d7f0f9bc169ec1fb4.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YHT-101 Left.jpg"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/c963ab69be64764dc4a6.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YHT101 action 1.jpg"
     }
-   }
+   ],
+   "enrichment_flags": {}
   },
   "yx103-finger-pulse-oximeter": {
    "manufacturer": "yuwell",
    "page_key": "yx103-finger-pulse-oximeter",
    "name": "YX103 Finger Pulse Oximeter",
    "status": "published",
-   "description": "A finger pulse oximeter with a high-visibility red LED display, supplied with a lanyard.",
+   "description": "A finger pulse oximeter with a high-visibility red LED display and pulse column display, reading SpO₂ from 70–100% and pulse rate from 25–250 bpm. Opens to start, shuts down automatically after 8 seconds, and is supplied with a lanyard.",
    "features": [
     "High-visibility red LED display",
-    "Fast reading",
+    "Pulse column display",
+    "Open-angle to boot",
+    "Automatic shutdown after 8 seconds",
     "Includes lanyard"
    ],
    "specs": [
     {
-     "label": "Display",
-     "value": "Red LED"
+     "label": "SpO₂ range",
+     "value": "70–100%"
+    },
+    {
+     "label": "SpO₂ accuracy",
+     "value": "±2% (70–100%); below 70% not defined"
+    },
+    {
+     "label": "Pulse rate range",
+     "value": "25–250 bpm"
+    },
+    {
+     "label": "Pulse rate accuracy",
+     "value": "±1% / ±1 bpm"
+    },
+    {
+     "label": "Power",
+     "value": "2 × 1.5 V AAA alkaline batteries"
+    },
+    {
+     "label": "Dimensions",
+     "value": "60 × 38 × 35 mm"
+    },
+    {
+     "label": "Weight",
+     "value": "38 g (without batteries)"
+    },
+    {
+     "label": "Operating temperature",
+     "value": "5–40 °C"
     }
    ],
    "warranty": null,
@@ -502,29 +728,36 @@
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
-    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "specs": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "description": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "features": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "specs": "Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
     "warranty": "not stated by any source on file — left blank",
-    "image": "no photo yet — owner is supplying Yuwell product photos"
+    "images": "Yuwell official product images (owner-supplied Images.zip, received 2026-11-04)",
+    "excluded": ""
    },
-   "image": "",
-   "images_gallery": [],
-   "enrichment_flags": {
-    "hcps_review": {
-     "needs": [
-      "official Yuwell product photo",
-      "official Yuwell spec sheet / user manual to confirm the guide's values"
-     ]
+   "image": "/assets/products/yuwell/gallery/fc91402ddbdfecf545e1.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/yuwell/gallery/fc91402ddbdfecf545e1.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YX103 Front View.tif"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/020bd67e9197c50b749f.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YX103 Side View.tif"
     }
-   }
+   ],
+   "enrichment_flags": {}
   },
   "yx306-finger-pulse-oximeter": {
    "manufacturer": "yuwell",
    "page_key": "yx306-finger-pulse-oximeter",
    "name": "YX306 Finger Pulse Oximeter",
    "status": "published",
-   "description": "A finger pulse oximeter with an easy-to-read, auto-rotating OLED display and pulse wave measurement, supplied with a lanyard and carry bag.",
+   "description": "A finger pulse oximeter with an easy-to-read, auto-rotating OLED display and pulse wave measurement. Supplied with a lanyard and carry bag.",
    "features": [
     "Easy-to-read OLED display",
     "Auto-rotate display",
@@ -560,22 +793,29 @@
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
-    "description": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "features": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
-    "specs": "HCPS Dealer Product Guide 2026 (owner-supplied, HCPS_Yuwell_2026_Dealer_Product_Catalog_Ver1.pdf, received 2026-11-04)",
+    "description": "Yuwell Products Info 2026 (owner-supplied); Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "features": "Yuwell Products Info 2026 (owner-supplied); Yuwell product brochure (owner-supplied Brochures.zip, received 2026-11-04)",
+    "specs": "Yuwell Products Info 2026 (owner-supplied)",
     "warranty": "not stated by any source on file — left blank",
-    "image": "no photo yet — owner is supplying Yuwell product photos"
+    "images": "Yuwell official product images (owner-supplied Images.zip, received 2026-11-04)",
+    "excluded": ""
    },
-   "image": "",
-   "images_gallery": [],
-   "enrichment_flags": {
-    "hcps_review": {
-     "needs": [
-      "official Yuwell product photo",
-      "official Yuwell spec sheet / user manual to confirm the guide's values"
-     ]
+   "image": "/assets/products/yuwell/gallery/6a3c2f203d4204cd9c61.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/yuwell/gallery/6a3c2f203d4204cd9c61.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YX306-Pulse Oximeter-Front View.png"
+    },
+    {
+     "url": "/assets/products/yuwell/gallery/7172fd97e393033bc199.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "Yuwell official product image (owner-supplied Images.zip, 2026-11-04): YX306-Pulse Oximeter-Right View.png"
     }
-   }
+   ],
+   "enrichment_flags": {}
   }
  }
 }

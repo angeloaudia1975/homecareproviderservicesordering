@@ -20,5 +20,6 @@ const UPDATED = {
   'airavant-bongorx': { identity: 'c0f492e4e3845f9f18e1e667f4fe6c67ab834f28aee48e378479152df159fa81', note: 'Bongo Rx Price List 2026 (18023 Rev F): MAP, section mix-and-match pools (owner 2026-10-27)' },
   pedifix: { identity: '158233406b5bbef820baf0fc05f9080f63e837ef6b33255a4b86b514bd1ecbe4', note: 'PediFix 2025 Retail Order Form REV1025 (OTC, eff. 7/1/25; row 543 REV0725) = the whole active line (owner 2026-10-27)' },
   dalton: { identity: '04d3bd510304a5717a29b074d6b6b14ef66fc5023f54d24e6a8e401ba5dde201', note: 'Dalton Dealer Price List Nov 2026 REVa (owner, tracker #42)' },
+  yuwell: { identity: '6f20b076a3524a085a6e95cfa996e1a1258e700c235654cd7e2c06d86e777dad', note: 'Yuwell Price List 2026 — new line, first version (owner 2026-11-04 C3-04: dealer price as listed, MSRP 2x, SP-3 4+ at the special through Dec 31 2026)', new_line: true },
 };
 module.exports = { currentLines, RETIRED, UPDATED };

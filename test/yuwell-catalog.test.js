@@ -26,23 +26,32 @@ t('every SKU has exactly one published content page, and no page names a SKU out
   for (const c of CODES) if (seen[c] !== 1) throw new Error(c + ' on ' + (seen[c] || 0) + ' pages');
   for (const c of Object.keys(seen)) if (!CODES.includes(c)) throw new Error('unknown SKU ' + c);
 });
-t('nothing unsourced: warranty blank, SPIRIT-3 weight and size withheld, every page names its sources', () => {
+t('nothing unsourced: every page names its sources; only the SPIRIT-3 states a warranty; the continuous-flow claim is never used', () => {
   for (const p of Object.values(CON.pages)) {
-    if (p.warranty) throw new Error('warranty on ' + p.page_key);
-    if (!p.field_provenance || !p.field_provenance.description || !p.field_provenance.specs) throw new Error('no provenance on ' + p.page_key);
+    if (!p.field_provenance || !p.field_provenance.description || !p.field_provenance.specs || !p.field_provenance.images) throw new Error('no provenance on ' + p.page_key);
+    if (p.warranty && p.skus[0].sku !== 'SP-3') throw new Error('warranty without a source on ' + p.page_key);
   }
   const sp = Object.values(CON.pages).find(p => p.skus[0].sku === 'SP-3');
-  for (const s of sp.specs) if (/weight|size|dimension/i.test(s.label)) throw new Error('withheld spec published: ' + s.label);
+  if (!/3-year warranty on the compressor; 2-year warranty on the sieve beds/.test(sp.warranty || '')) throw new Error('SP-3 warranty');
+  if (/equivalent continuous|3\.75\s*L/i.test(JSON.stringify(sp.description) + JSON.stringify(sp.features) + JSON.stringify(sp.specs))) throw new Error('continuous-flow equivalence claim published');
+  if (!/not equivalent to continuous-flow/i.test(sp.description)) throw new Error('prescription / pulse-dose notice missing');
 });
-t('no broken image: an empty image is the placeholder, and the logo file exists', () => {
-  for (const r of CAT) if (r.image) throw new Error('image set without a file: ' + r.code);
+t('every product has its own official photo on disk (primary + gallery), and no broken image', () => {
+  for (const r of CAT) {
+    if (r.image !== '/assets/products/yuwell/' + r.code + '.jpg') throw new Error('primary path ' + r.code);
+    if (!fs.existsSync(path.join(ROOT, 'public', r.image))) throw new Error('missing ' + r.image);
+  }
+  for (const p of Object.values(CON.pages)) {
+    if (!p.images_gallery.length || !p.images_gallery[0].primary) throw new Error('gallery ' + p.page_key);
+    for (const g of p.images_gallery) { if (!fs.existsSync(path.join(ROOT, 'public', g.url))) throw new Error('missing ' + g.url); if (!/Yuwell official product image/.test(g.source)) throw new Error('no source ' + g.url); }
+  }
   const m = MF.find(x => x.slug === 'yuwell'); if (!m) throw new Error('not listed');
   if (!fs.existsSync(path.join(ROOT, 'public', m.logo))) throw new Error('logo missing: ' + m.logo);
 });
-t('freight is not invented: actual freight confirmed by HCPS, no fee or threshold', () => {
+t('freight follows the owner: an order with an SP-3 ships free, otherwise actual shipping; no fee or amount anywhere', () => {
   const f = MF.find(x => x.slug === 'yuwell').freight;
-  if (!f.elseActual || (f.groups || []).length) throw new Error(JSON.stringify(f));
-  for (const k of ['flatFee', 'freeAt', 'fee', 'threshold']) if (k in f) throw new Error('freight figure ' + k);
+  if (f.mode !== 'qty_threshold' || JSON.stringify(f.qualifyingCodes) !== '["SP-3"]' || f.freeAtQty !== 1) throw new Error(JSON.stringify(f));
+  for (const k of ['flatFee', 'freeAt', 'fee', 'threshold', 'groups']) if (k in f) throw new Error('freight figure ' + k);
 });
 t('yuwell is a live identifier, never one of the retired lines', () => {
   const R = require(path.join(ROOT, 'netlify', 'functions', '_retired_lines.js')); if (R.isRetiredLine('yuwell')) throw new Error('retired');
