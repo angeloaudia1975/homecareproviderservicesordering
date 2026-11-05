@@ -64,7 +64,8 @@ function applyServerPrices(orders, recorded) {
     const serverFreight = rec.freight_fee != null && Number.isFinite(Number(rec.freight_fee));
     const fee = serverFreight ? r2(rec.freight_fee) : (Number(o.freight_fee) > 0 ? Number(o.freight_fee) : 0);
     const extra = serverFreight ? { freight_fee: fee, freight_lines: rec.freight_lines || o.freight_lines || [] } : {};
-    return Object.assign({}, o, extra, { items, items_subtotal: sub, estimated_total: r2(sub + fee), order_id: rec.order_id });
+    const notice = rec.account_notice ? { account_notice: String(rec.account_notice) } : {};
+    return Object.assign({}, o, extra, notice, { items, items_subtotal: sub, estimated_total: r2(sub + fee), order_id: rec.order_id });
   });
 }
 
@@ -176,6 +177,7 @@ function buildEmail(dealer, order, submittedAt) {
       <div style="font:600 11px Arial,sans-serif;color:#9fb0c4;letter-spacing:2px;text-transform:uppercase;">New Dealer Order — ${esc(order.manufacturer_name)}</div>
     </div>
     <div style="background:#fff7e6;border-bottom:1px solid #f1d9a6;padding:10px 22px;font:600 12px Arial,sans-serif;color:#8a5a00;">Received by HCPS — NOT yet placed with ${esc(order.manufacturer_name)}. Nothing was sent to the manufacturer; HCPS places this order and sends the dealer the confirmation.</div>
+    ${order.account_notice ? `<div style="background:#fdecea;border-bottom:1px solid #f3b8b0;padding:10px 22px;font:700 13px Arial,sans-serif;color:#9b1c1c;">⚠ ${esc(order.account_notice)} — the dealer has no ${esc(order.manufacturer_name)} account number on file. Open the account (dealer application) before placing this order. The order is recorded and was not blocked.</div>` : ""}
     <div style="padding:22px;">
       <table style="border-collapse:collapse;width:100%;margin-bottom:8px;">
         ${field("Manufacturer", order.manufacturer_name)}
@@ -233,6 +235,7 @@ function buildEmail(dealer, order, submittedAt) {
     `Submitted         : ${submittedStr}`,
     `HCPS order ID     : ${order.order_id || "—"}`,
     "STATUS: Received by HCPS — NOT yet placed with the manufacturer. Nothing was sent to the manufacturer.",
+    order.account_notice ? `*** ${order.account_notice} — no ${order.manufacturer_name} account number on file. Open the account (dealer application) before placing this order. The order is recorded and was not blocked. ***` : "",
     "",
     "ITEMS",
     "=====",
@@ -245,7 +248,7 @@ function buildEmail(dealer, order, submittedAt) {
     order.notes ? `\nNOTES\n-----\n${order.notes}` : "",
   ].join("\n");
 
-  const subject =
+  const subject = (order.account_notice ? "[New account required] " : "") +
     `New order — ${dealer.business || "Dealer"} — ${order.manufacturer_name}` +
     ` · PO ${order.po || "—"} · ${order.items_count} item${Number(order.items_count) === 1 ? "" : "s"} · ${money(order.estimated_total)}`;
 
@@ -326,11 +329,22 @@ exports.handler = async (event) => {
   const notSubmitted = { ok: false, recorded: false, error: "Your order could not be confirmed, so nothing was submitted. Please try again." };
   let rec;
   try {
-    const res = await callApi({ action: "create", orders, dealer });
+    /* The checkout's submission key (C3-06): a retry of the same checkout is never recorded twice. */
+    const key = typeof raw.submission_key === "string" && /^[A-Za-z0-9-]{16,64}$/.test(raw.submission_key) ? raw.submission_key : undefined;
+    const res = await callApi(Object.assign({ action: "create", orders, dealer }, key ? { submission_key: key } : {}));
     rec = await res.json().catch(() => null);
     if (res.status === 409 && rec && rec.status === "prices_changed")
       return json(409, { ok: false, recorded: false, status: "prices_changed", orders: rec.orders || [] });
     if (rec && rec.status === "unauthorized") return json(401, { ok: false, recorded: false, status: "unauthorized", error: "Please sign in again to submit this order." });
+    /* Every order of this checkout was already recorded (a retry after a timeout, a second tab): nothing is recorded
+       or emailed again. orders-api has noted the resubmission on the order so staff check the HCPS email arrived. */
+    if (res.ok && rec && Array.isArray(rec.already_recorded) && rec.already_recorded.length
+        && (!Array.isArray(rec.orders) || !rec.orders.length) && (rec.status === "recorded" || rec.status === "partial")) {
+      const done = new Set(rec.already_recorded.map((r) => r.manufacturer_slug));
+      const missing = orders.filter((o) => !done.has(o.manufacturer_slug)).map((o) => o.manufacturer_slug);
+      return json(missing.length ? 207 : 200, { ok: !missing.length, recorded: true, status: missing.length ? "partial" : "already_recorded", duplicate: true,
+        not_recorded: missing, sent: 0, total: 0, results: [], orders: rec.already_recorded, already_recorded: rec.already_recorded });
+    }
     if (!rec || !Array.isArray(rec.orders) || !rec.orders.length || (rec.status !== "recorded" && rec.status !== "partial"))
       return json(503, Object.assign({}, notSubmitted, { status: (rec && rec.status) || "pricing_unavailable" }));
   } catch (err) {
@@ -339,7 +353,10 @@ exports.handler = async (event) => {
   }
   /* Only what was recorded goes any further. */
   const recordedSlugs = new Set(rec.orders.map((r) => r.manufacturer_slug));
-  const notRecorded = orders.filter((o) => !recordedSlugs.has(o.manufacturer_slug)).map((o) => o.manufacturer_slug);
+  /* Orders of this checkout recorded on an earlier try: not recorded again, not emailed again. */
+  const already = Array.isArray(rec.already_recorded) ? rec.already_recorded : [];
+  const alreadySlugs = new Set(already.map((r) => r.manufacturer_slug));
+  const notRecorded = orders.filter((o) => !recordedSlugs.has(o.manufacturer_slug) && !alreadySlugs.has(o.manufacturer_slug)).map((o) => o.manufacturer_slug);
   try { orders = applyServerPrices(orders.filter((o) => recordedSlugs.has(o.manufacturer_slug)), rec.orders); }
   catch (err) {
     console.error("recorded order did not match the submission", err);
@@ -369,7 +386,8 @@ exports.handler = async (event) => {
   const allOk = !unsent.length && !notRecorded.length;
   return json(allOk ? 200 : 207, { ok: allOk, recorded: true,
     status: notRecorded.length ? "partial" : (unsent.length ? "email_failed" : "submitted"),
-    not_recorded: notRecorded, sent: results.filter((r) => r.ok).length, total: results.length, results, orders: rec.orders });
+    not_recorded: notRecorded, sent: results.filter((r) => r.ok).length, total: results.length, results, orders: rec.orders,
+    ...(already.length ? { already_recorded: already } : {}) });
 };
 
 // Exported for local testing.
