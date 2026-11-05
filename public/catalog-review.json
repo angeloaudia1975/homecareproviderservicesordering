@@ -1,15 +1,17 @@
 {
-  "review_id": "63ff62185f93",
+  "review_id": "757a1b52df55",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T19:43:49Z",
+  "built_at": "2026-11-05T19:44:04Z",
   "main": "0019e4a6ba6c61f6a74c2d1df15df28c8a94c8ab",
-  "included": [],
-  "skipped": [
+  "included": [
     {
       "pr": 41,
       "title": "C3-07 stage 0 (security): brochure email no longer an open relay",
       "branch": "c7/s0-brochure-auth",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
+      "head": "1f131c5e9d962ea630415f78f88bd67d0267edef",
+      "manufacturers": [],
+      "other_files": 3
     }
-  ]
+  ],
+  "skipped": []
 }
