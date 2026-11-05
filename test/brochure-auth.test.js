@@ -4,11 +4,28 @@ const path=require('path');
 let pass=0,fail=0; const t=async(n,f)=>{ try{ await f(); pass++; console.log('ok  ',n); }catch(e){ fail++; console.log('FAIL',n,'\n    ',e.message); } };
 const ok=(c,m)=>{ if(!c) throw new Error(m||'assertion'); };
 process.env.SUPABASE_URL='https://sb.test'; process.env.SUPABASE_SERVICE_ROLE='svc'; process.env.RESEND_API_KEY='re';
-const sent=[];
+const sent=[]; global.SENDS=[];
 global.fetch=async(url,o)=>{ const u=String(url);
   if(u==='https://sb.test/auth/v1/user'){ const tok=String(o.headers.Authorization||'').replace(/^Bearer\s+/,''); return tok==='good'||tok==='pending'?{ok:true,json:async()=>({id:tok==='good'?'u1':'u2',email:'x@y.com'})}:{ok:false,json:async()=>({})}; }
   if(u.startsWith('https://sb.test/rest/v1/dealer_users')){ const approved=/u1/.test(u); return {ok:true,json:async()=>[{status:approved?'approved':'pending',dealer_id:'d1',email:'dealer@shop.com'}]}; }
-  if(u==='https://api.resend.com/emails'){ sent.push(JSON.parse(o.body)); return {ok:true,text:async()=>''}; }
+  if(u.startsWith('https://sb.test/rest/v1/rpc/dealer_document_send_reserve')){
+    if(global.SENDS_MISSING) return {ok:false,status:404,text:async()=>'{"code":"PGRST202","message":"Could not find the function public.dealer_document_send_reserve"}'};
+    if(global.SENDS_DOWN) return {ok:false,status:500,text:async()=>'boom'};
+    if(global.SENDS_COLMISS) return {ok:false,status:400,text:async()=>'{"code":"42703","message":"column x does not exist"}'};
+    /* same rules as the SQL function (whose atomicity is proven on Postgres; see the PR) */
+    const a=JSON.parse(o.body); const since=Date.now()-864e5, hour=Date.now()-36e5;
+    const rows=SENDS.filter(x=>x.status==='sent'&&Date.parse(x.created_at)>=since);
+    if(rows.filter(x=>Date.parse(x.created_at)>=hour).length>=a.p_hour) return {ok:true,text:async()=>JSON.stringify({ok:false,reason:'hour'})};
+    if(rows.length>=a.p_day) return {ok:true,text:async()=>JSON.stringify({ok:false,reason:'day'})};
+    if(rows.filter(x=>x.to_hash===a.p_hash).length>=a.p_recipient) return {ok:true,text:async()=>JSON.stringify({ok:false,reason:'recipient'})};
+    const row={id:SENDS.length+1,created_at:new Date().toISOString(),dealer_id:a.p_dealer,kind:a.p_kind,to_domain:a.p_domain,to_hash:a.p_hash,status:'sent'}; SENDS.push(row);
+    return {ok:true,text:async()=>JSON.stringify({ok:true,id:row.id})}; }
+  if(u.startsWith('https://sb.test/rest/v1/dealer_document_sends')){ const m=(o&&o.method)||'GET';
+    if(m==='PATCH'){ const id=Number((u.match(/id=eq\.(\d+)/)||[])[1]); const r=SENDS.find(x=>x.id===id); if(r) Object.assign(r,JSON.parse(o.body)); return {ok:true,text:async()=>''}; } }
+  if(u==='https://api.resend.com/emails'){ if(global.RESEND_DOWN) return {ok:false,status:500,text:async()=>'down'}; sent.push(JSON.parse(o.body)); return {ok:true,text:async()=>''}; }
+  if(u.startsWith('https://sb.test/rest/v1/product_skus')) return {ok:true,json:async()=>(/code=eq\.REC1/.test(u)?[{msrp:199.99}]:/code=eq\.RECNONE/.test(u)?[{msrp:null}]:[])};
+  if(u.startsWith('https://sb.test/rest/v1/product_overrides')) return {ok:true,json:async()=>(/code=eq\.OV1/.test(u)?[{patch:{msrp:88}}]:[])};
+  if(u.startsWith('https://sb.test/rest/v1/custom_products')) return {ok:true,json:async()=>[]};
   throw new Error('unexpected '+u); };
 const B=require(path.join(__dirname,'..','netlify','functions','brochure.js'));
 const ev=(body,tok)=>({httpMethod:'POST',headers:tok?{authorization:'Bearer '+tok}:{},body:JSON.stringify(body)});
@@ -23,5 +40,20 @@ await t('an approved dealer sends ONE message; reply-to is the dealer, never a c
 await t('printing (html) still needs no sign-in and sends nothing',async()=>{ const n=sent.length; const r=await B.handler(ev({action:'html',product:P})); ok(r.statusCode===200&&JSON.parse(r.body).html.includes('Walker')); ok(sent.length===n); });
 await t('CORS no longer allows every origin',async()=>{ const r=await B.handler({httpMethod:'OPTIONS',headers:{}}); ok(r.headers['Access-Control-Allow-Origin']!=='*',r.headers['Access-Control-Allow-Origin']); });
 await t('the storefront sends the dealer sign-in with brochure calls',async()=>{ const s=require('fs').readFileSync(path.join(__dirname,'..','public','index.html'),'utf8'); ok(/hdr\.authorization='Bearer '\+AUTH\.session\.access_token;   \/\/ email needs the dealer's sign-in/.test(s)); });
+/* ---- C3-07 Stage 4: send limits ---- */
+await t('each send is recorded first (domain + hash, never the address)',async()=>{ const row=SENDS[SENDS.length-1]; ok(row&&row.kind==='brochure'&&row.to_domain==='x.com'&&/^[0-9a-f]{64}$/.test(row.to_hash)&&!JSON.stringify(row).includes('customer@'),JSON.stringify(row)); });
+await t('the same recipient: at most 5 a day (case, spaces and +tags count as the same person)',async()=>{ SENDS.length=0; let last; const v=['Same@X.com',' same@x.com','same+a@x.com','SAME+b@X.COM','same@x.com','same+z@x.com']; for(const a of v) last=await B.handler(ev({action:'email',product:P,to:a},'good')); ok(last.statusCode===429,last.statusCode); ok(SENDS.length===5); });
+await t('a missing COLUMN (or any other database error) never lets a send through',async()=>{ SENDS.length=0; const n=sent.length; global.SENDS_COLMISS=true; const r=await B.handler(ev({action:'email',product:P,to:'k@x.com'},'good')); global.SENDS_COLMISS=false; ok(r.statusCode===503&&sent.length===n,r.statusCode); });
+await t('per dealer: at most 10 an hour',async()=>{ SENDS.length=0; let last; for(let i=0;i<11;i++) last=await B.handler(ev({action:'email',product:P,to:'c'+i+'@x.com'},'good')); ok(last.statusCode===429,last.statusCode); ok(SENDS.length===10); });
+await t('per dealer: at most 40 a day (older sends in the day count)',async()=>{ SENDS.length=0; const old=new Date(Date.now()-5*36e5).toISOString(); for(let i=0;i<40;i++) SENDS.push({id:i+1,status:'sent',to_hash:'h'+i,created_at:old}); const r=await B.handler(ev({action:'email',product:P,to:'new@x.com'},'good')); ok(r.statusCode===429,r.statusCode); });
+await t('a send the provider refused is marked failed and does not count',async()=>{ SENDS.length=0; global.RESEND_DOWN=true; const n=sent.length; const r=await B.handler(ev({action:'email',product:P,to:'f@x.com'},'good')); global.RESEND_DOWN=false; ok(r.statusCode===502); ok(SENDS[0].status==='failed'); ok(sent.length===n); });
+await t('an unreadable limit store refuses the send (fail closed); before the SQL the send goes through',async()=>{ SENDS.length=0; const n=sent.length; global.SENDS_DOWN=true; const r=await B.handler(ev({action:'email',product:P,to:'g@x.com'},'good')); global.SENDS_DOWN=false; ok(r.statusCode===503&&sent.length===n,r.statusCode);
+  global.SENDS_MISSING=true; const r2=await B.handler(ev({action:'email',product:P,to:'g@x.com'},'good')); global.SENDS_MISSING=false; ok(r2.statusCode===200&&sent.length===n+1,r2.statusCode); });
+/* ---- verified MSRP is decided by the server ---- */
+const html=async pr=>JSON.parse((await B.handler(ev({action:'html',product:pr,include_msrp:true}))).body).html;
+await t('MSRP comes from the master record, never the request (a posted dealer cost is not printed)',async()=>{ const h=await html({name:'W',code:'REC1',_mfrSlug:'bemis',msrp:12.34}); ok(h.includes('$199.99')&&!h.includes('12.34'),'msrp'); });
+await t('a record with no MSRP prints none, whatever was posted',async()=>{ const h=await html({name:'W',code:'RECNONE',_mfrSlug:'bemis',msrp:500}); ok(!h.includes('500.00')&&!/suggested retail/i.test(h)); });
+await t('a saved override MSRP counts when the line has no record for the SKU',async()=>{ const h=await html({name:'W',code:'OV1',_mfrSlug:'yuwell',msrp:5}); ok(h.includes('$88.00')&&!h.includes('$5.00')); });
+await t('no manufacturer named, or an upgraded configuration → no MSRP printed',async()=>{ ok(!(await html({name:'W',code:'REC1',msrp:70})).includes('70.00')); ok(!(await html({name:'W',code:'REC1',_mfrSlug:'bemis',_upgrade:true,msrp:70})).includes('199.99')); });
 console.log(`brochure auth: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
 })();
