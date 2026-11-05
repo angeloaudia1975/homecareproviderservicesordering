@@ -4840,6 +4840,27 @@ function ensureStagingBar(){
   }).catch(()=>{});
 }
 /* ---------- submit (one order per manufacturer) ---------- */
+/* ONE CHECKOUT = ONE ORDER (C3-06). A checkout carries a submission key that is kept while the dealer retries the SAME
+   cart (a timeout after the order was saved, a second click, a second tab) and is dropped once the order is recorded.
+   orders-api records each manufacturer order at most once per key. Storage can fail (private mode): then the key lives
+   only for this page, which still covers a retry from the same page. */
+let CHECKOUT_KEY_MEM=null;
+function checkoutFingerprint(orders){
+  return JSON.stringify((orders||[]).map(o=>[o.manufacturer_slug,o.po,(o.items||[]).map(it=>[it.code,it.family||"",it.upgrade||"",it.qty])]));
+}
+function checkoutKey(orders){
+  const fp=checkoutFingerprint(orders);
+  let cur=CHECKOUT_KEY_MEM;
+  try{ const s=JSON.parse(localStorage.getItem("hcps_checkout_key")||"null"); if(s&&typeof s.key==="string") cur=s; }catch(e){}
+  if(cur&&cur.fp===fp&&/^[A-Za-z0-9-]{16,64}$/.test(cur.key)) return cur.key;
+  let key="";
+  try{ key=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():""; }catch(e){ key=""; }
+  if(!key){ const a=new Uint8Array(16); try{ crypto.getRandomValues(a); }catch(e){ for(let i=0;i<16;i++) a[i]=Math.floor(Math.random()*256); } key=[...a].map(b=>b.toString(16).padStart(2,"0")).join(""); }
+  CHECKOUT_KEY_MEM={key,fp};
+  try{ localStorage.setItem("hcps_checkout_key",JSON.stringify(CHECKOUT_KEY_MEM)); }catch(e){}
+  return key;
+}
+function clearCheckoutKey(){ CHECKOUT_KEY_MEM=null; try{ localStorage.removeItem("hcps_checkout_key"); }catch(e){} }
 async function submitOrder(){
   if(PREVIEW && !(typeof STAGING!=="undefined"&&STAGING)){ toast("Read-only preview — ordering is disabled for this dealer view."); return; }
   if(!CART.size){ if(typeof gckCount==="function"&&gckCount()){ goldenCartShow(); return; } toast("Cart is empty");return;}
@@ -4891,10 +4912,10 @@ async function submitOrder(){
     toast("Golden Technologies can't be ordered in Partner 360 yet — please order it on the Golden platform. Nothing was submitted.");
     return;
   }
-  const payload={dealer, orders:hcpsOrders, submitted_at:new Date().toISOString()};
+  const payload={dealer, orders:hcpsOrders, submitted_at:new Date().toISOString(), submission_key:checkoutKey(hcpsOrders)};
   if(typeof STAGING!=="undefined"&&STAGING){ return stagingSubmit(payload,btn); }
   btn.disabled=true; btn.textContent="Submitting…";
-  let emailWarn=false, keep=new Set();
+  let emailWarn=false, keep=new Set(), dupNote=false;
   try{
     // 1) HCPS lines -> submit-order, which records the order at the SERVER's prices (orders-api)
     //    and only then emails HCPS. If a price moved in the meantime, nothing is recorded or sent.
@@ -4910,6 +4931,8 @@ async function submitOrder(){
         return;
       }
       if(!j.recorded){ toast(j.error||"Could not submit — nothing was placed. Please try again."); return; }
+      clearCheckoutKey();   // recorded: the next checkout is a new one
+      if(j.status==="already_recorded"||(j.already_recorded||[]).length) dupNote=true;   // an earlier try had already recorded it — never twice
       /* Recorded orders leave the cart. A manufacturer whose order could not be recorded stays
          in the cart, untouched, to be placed again. */
       (j.not_recorded||[]).forEach(sl=>keep.add(sl));
@@ -4936,7 +4959,7 @@ async function submitOrder(){
       return;
     }
     const goldenNext=(typeof gckCount==="function")&&gckCount()>0;
-    toast((emailWarn?`Order recorded ✓ — HCPS has been flagged to confirm it with the manufacturer`:`Submitted ${parts.join(' + ')||'order'} ✓`)+(goldenNext?" — now review and place your Golden Technologies order":""));
+    toast((dupNote?`Your order was already recorded ✓ — it was not placed twice. See My Orders.`:emailWarn?`Order recorded ✓ — HCPS has been flagged to confirm it with the manufacturer`:`Submitted ${parts.join(' + ')||'order'} ✓`)+(goldenNext?" — now review and place your Golden Technologies order":""));
     CART.clear(); PRICE_NOTES.clear(); for(const k in MFR) delete MFR[k]; clearCartRemote(); updateCart();
     if(goldenNext) goldenCartShow(); else closeCart();
   }catch(e){console.error(e);toast("Could not submit — please try again.");}
@@ -6729,9 +6752,12 @@ let HISTORY=null;
 async function loadOrders(){
   if(!HISTORY){ const d=await api(HISTORY_ENDPOINT,{action:"history",limit:300}); if(!d||d.ok===false){ $("#view-orders").innerHTML=`<div class="msg">Couldn't load your orders right now.</div>`; return; } HISTORY=d.orders||[]; }
   const rows=HISTORY.map(o=>{
-    const canTrack=(o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="delivered";
+    const canTrack=(o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="delivered"&&!o.tracking;
+    /* PO, the tracking number HCPS recorded, and a new-account notice (C3-06) — all shown as text. */
+    const extra=(o.po?`<div class="m">PO ${esc(o.po)}</div>`:"")+(o.tracking?`<div class="m">Tracking <span class="tnum">${esc(o.tracking)}</span></div>`:"")
+      +(o.account_notice?`<div class="m" style="color:#9b1c1c;font-weight:700">${esc(o.account_notice)} — HCPS will help you open it; your order is not held</div>`:"");
     const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
-    return `<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b></td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${cents(orderTotal(o))}${freightNote(o)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
+    return `<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b>${extra}</td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${cents(orderTotal(o))}${freightNote(o)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
   }).join("");
   const total=HISTORY.reduce((s,o)=>s+orderTotal(o),0);
   $("#view-orders").innerHTML=`
@@ -6743,7 +6769,7 @@ async function loadOrders(){
     </table></div>
     <div id="goldenHistLive" class="gh-live" role="status" aria-live="polite"></div>
     <div id="goldenHist" style="margin-top:16px"></div>
-    <div class="lead-note">"Request tracking" asks the manufacturer to send shipment tracking to you and to HCPS. Retail uses MSRP on file, or 2× dealer cost where none is on file.</div>`;
+    <div class="lead-note">"Request tracking" asks HCPS to get the shipment tracking from the manufacturer and send it to you. Retail uses MSRP on file, or 2× dealer cost where none is on file.</div>`;
   goldenHistoryLoad(false);
 }
 /* GOLDEN ORDER HISTORY & TRACKING (B5, contract 1.5.0). Golden is the authority for its own orders: this section shows
@@ -7178,7 +7204,8 @@ function prodRec(key){ const i=key.indexOf("|"); const mfr=key.slice(0,i),code=k
 function purchasedKeys(){ const m={}; for(const o of (HISTORY||[])){ for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; m[k]=(m[k]||0)+(Number(l.line!=null?l.line:l.cost)||0); } } return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k])=>k); }
 async function loadShowroom(){
   await ensureCatalogFav();
-  if(!HISTORY){ try{ const d=await api(HISTORY_ENDPOINT,{action:"history",limit:500}); HISTORY=(d&&d.orders)||[]; }catch(e){ HISTORY=[]; } }
+  /* a failed read is never cached as "no orders" (C3-06): My Orders asks again and says so */
+  if(!HISTORY){ try{ const d=await api(HISTORY_ENDPOINT,{action:"history",limit:500}); if(d&&d.ok!==false&&Array.isArray(d.orders)) HISTORY=d.orders; }catch(e){} }
   try{ const d=await api(TOOLS_ENDPOINT,{action:"showroom_get"}); if(d&&d.ok&&d.layout&&Array.isArray(d.layout.zones)){ SHOWROOM=d.layout; } else { const ls=localStorage.getItem("hcps_showroom"); if(ls)SHOWROOM=JSON.parse(ls); } }
   catch(e){ try{ const ls=localStorage.getItem("hcps_showroom"); if(ls)SHOWROOM=JSON.parse(ls); }catch(_){} }
   ensureZones(); renderShowroom();
@@ -7257,7 +7284,7 @@ function decliningCats(){ const Y=String(new Date().getFullYear()),PY=String(new
   const out=[]; for(const c in prev){ if(prev[c]>=400 && (cur[c]||0)<prev[c]*0.6) out.push({cat:c,prev:prev[c],cur:cur[c]||0,drop:Math.round((1-(cur[c]||0)/prev[c])*100)}); }
   return out.sort((a,b)=>b.prev-a.prev).slice(0,3); }
 function whitespaceLines(){ const carried=new Set((LINES||[]).map(l=>l.slug)); return (MFRLIST||[]).filter(m=>!carried.has(m.slug)).slice(0,8); }
-async function loadDashExtras(){ renderDashFav(); if(!HISTORY){ try{ const h=await api(HISTORY_ENDPOINT,{action:"history",limit:500}); HISTORY=(h&&h.orders)||[]; }catch(e){} } renderOpportunities(); }
+async function loadDashExtras(){ renderDashFav(); if(!HISTORY){ try{ const h=await api(HISTORY_ENDPOINT,{action:"history",limit:500}); if(h&&h.ok!==false&&Array.isArray(h.orders)) HISTORY=h.orders; }catch(e){} } renderOpportunities(); }
 function renderOpportunities(){
   const host=$("#dashOpps"); if(!host)return;
   const due=reorderDueList(), decl=decliningCats(), ws=whitespaceLines();
