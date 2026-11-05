@@ -21,11 +21,9 @@
 // Env: RESEND_API_KEY (email only), BROCHURE_FROM / ORDER_EMAIL_FROM, SITE_URL.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/* The page calls this function from its own origin; no other site may (C3-07 stage 0). */
 const CORS = {
-  'Access-Control-Allow-Origin': process.env.BROCHURE_ORIGIN || 'https://hcpsonlineordering.netlify.app',
-  'Vary': 'Origin',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Content-Type': 'application/json',
 };
@@ -207,29 +205,6 @@ function renderBrochure(p, opts) {
 </body></html>`;
 }
 
-/* EMAIL NEEDS A SIGNED-IN, APPROVED DEALER (C3-07 stage 0 security fix, 2026-11-05). The email action used to send an
-   HCPS-addressed message to any address for anyone who called it — an open relay. Now: the caller's Supabase session
-   must belong to an approved dealer user; the reply-to is that dealer's own email (never a caller-chosen address);
-   one recipient per message. Rendering a brochure to print (action "html") still needs no sign-in — it sends nothing. */
-async function approvedDealer(event) {
-  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE;
-  const auth = (event.headers && (event.headers.authorization || event.headers.Authorization)) || '';
-  const tok = auth.replace(/^Bearer\s+/i, '').trim();
-  if (!tok || !url || !key) return null;
-  try {
-    const ur = await fetch(`${url}/auth/v1/user`, { headers: { apikey: key, Authorization: `Bearer ${tok}` } });
-    if (!ur.ok) return null;
-    const u = await ur.json();
-    if (!u || !u.id) return null;
-    const rr = await fetch(`${url}/rest/v1/dealer_users?uid=eq.${encodeURIComponent(u.id)}&select=status,dealer_id,email`, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
-    if (!rr.ok) return null;
-    const rows = await rr.json();
-    const du = rows && rows[0];
-    if (!du || du.status !== 'approved' || !du.dealer_id) return null;
-    return { dealer_id: du.dealer_id, email: String(du.email || u.email || '').trim() };
-  } catch (e) { return null; }
-}
-
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { ok: false, error: 'POST only' });
@@ -244,8 +219,6 @@ exports.handler = async (event) => {
   if (action === 'html') return json(200, { ok: true, html });
 
   if (action === 'email') {
-    const who = await approvedDealer(event);
-    if (!who) return json(401, { ok: false, error: 'Please sign in again to email a brochure.' });
     const to = String(b.to || '').trim();
     if (!EMAIL_RE.test(to)) return json(400, { ok: false, error: 'Enter a valid email address.' });
     const apiKey = process.env.RESEND_API_KEY;
@@ -264,7 +237,7 @@ exports.handler = async (event) => {
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from: FROM, to: [to],
-        reply_to: EMAIL_RE.test(who.email) ? who.email : undefined,
+        reply_to: EMAIL_RE.test(String(b.reply_to || '')) ? String(b.reply_to).trim() : undefined,
         subject,
         html: body.replace('<body>', '<body>' + intro),
       }),
@@ -273,7 +246,6 @@ exports.handler = async (event) => {
       const t = await res.text().catch(() => '');
       return json(502, { ok: false, error: 'Could not send that brochure.', detail: t.slice(0, 200) });
     }
-    console.log('brochure emailed', JSON.stringify({ dealer_id: who.dealer_id, to_domain: to.split('@')[1] || '' }));
     return json(200, { ok: true, sent_to: to });
   }
 
