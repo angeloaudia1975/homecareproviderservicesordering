@@ -37,7 +37,7 @@ const gS = require(path.join(gFN, 'lib', 'hcps-s2s.js'));
 const TEST_SECRET = crypto.randomBytes(32).toString('hex'), PROD_SECRET = crypto.randomBytes(32).toString('hex');
 const D_HQ = '11111111-2222-4333-8444-555555555555', LOC_CIN = 'cccccccc-0000-4000-8000-000000000001';
 const PREVIEW_TOKEN = 'ab12'.repeat(12);
-const W = { delayValidate: 0, cost: 1188, idem: new Map(), goldenCalls: [], hcpsWrites: 0, emails: 0, dropNextValidate: 0 };
+const W = { bumpEachValidate: false, delayValidate: 0, cost: 1188, idem: new Map(), goldenCalls: [], hcpsWrites: 0, emails: 0, dropNextValidate: 0 };
 const idemRpc = {
   integration_order_claim: ({ p }) => { const r = W.idem.get(p.idempotency_key); if (!r) { const tok = crypto.randomUUID(); W.idem.set(p.idempotency_key, { h: p.request_hash, s: 'pending', tok }); return { state: 'new', claim_token: tok }; }
     if (r.h !== p.request_hash) return { state: 'conflict' }; if (r.s === 'done') return { state: 'replay', status: r.st, response: r.resp }; return { state: 'in_progress' }; },
@@ -130,6 +130,7 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
           const H = { 'access-control-allow-origin': '*' };
           if (['ship_to', 'quote', 'validate_order'].includes(b.action)) {
             const hdr = await req.allHeaders();
+            if (b.action === 'validate_order' && W.bumpEachValidate) W.cost += 1;   // Golden's price moves on every validation
             const out = await runProxy(b, { 'x-hcps-preview': hdr['x-hcps-preview'] || '', 'x-hcps-golden-env': hdr['x-hcps-golden-env'] || '', origin: hdr.origin || '' });
             if (b.action === 'validate_order' && W.delayValidate) await new Promise(r => setTimeout(r, W.delayValidate));
             if (b.action === 'validate_order' && W.dropNextValidate > 0) { W.dropNextValidate--; return route.abort('connectionreset'); }   // Golden answered, the answer was lost
@@ -242,6 +243,30 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       await t(`${label}: Golden's price change → notice + Golden's new totals, then a NEW attempt key verifies`, () => {
         ok(keys2.length === 4 && keys2[2] !== keys[0] && keys2[3] !== keys2[2], JSON.stringify(keys2));
         ok(/prices changed/.test(moved) && /Golden total/.test(moved) && !moved.includes(t2.split('Golden total')[1] || '§'), moved.slice(0, 500)); });
+      // review fixes: Golden's price moving on every check stops after ONE automatic re-check (no loop) until Try again
+      W.goldenCalls.length = 0; W.bumpEachValidate = true;
+      await page.fill('[data-f="po"]', 'PO-7783'); await page.press('[data-f="po"]', 'Tab');
+      await page.waitForFunction(() => /changed again/.test((document.querySelector('.gck-box') || {}).textContent || ''), null, { timeout: 20000 }).catch(async e => { console.log('DBG', W.cost, JSON.stringify(W.goldenCalls.map(c=>c.path)), await page.evaluate(() => JSON.stringify({ err: GCART.err, pc: GCART.pcCount, busy: GCART.busy, auto: !!GCART.auto, res: GCART.result && GCART.result.valid, po: GCART.form.po }))); throw e; });
+      await page.waitForTimeout(2500);
+      const loopCalls = W.goldenCalls.filter(c => c.path === '/v1/orders').length; W.bumpEachValidate = false;
+      const noPlace = await page.evaluate(() => !document.querySelector('[data-gck-place]') && !!document.querySelector('[data-gck-retry]'));
+      await t(`${label}: Golden's price moving on every check → one automatic re-check, then stop with Try again (no loop, nothing placeable)`, () => ok(loopCalls === 2 && noPlace, 'validate calls ' + loopCalls + ' noPlace ' + noPlace));
+      await page.click('[data-gck-retry]');
+      await page.waitForFunction(() => GCART.result && GCART.result.valid && !GCART.busy && !GCART.auto, null, { timeout: 20000 });
+      // an edit after an error restarts the automatic check (a change is not a retry loop)
+      W.dropNextValidate = 1; await page.fill('[data-f="po"]', 'PO-7784'); await page.press('[data-f="po"]', 'Tab');
+      await page.waitForFunction(() => /could not be reached/.test((document.querySelector('.gck-box') || {}).textContent || ''), null, { timeout: 20000 });
+      await page.fill('[data-f="po"]', 'PO-7785');
+      await page.waitForFunction(() => GCART.result && GCART.result.valid && !GCART.busy && !GCART.auto && GCART.form.po === 'PO-7785', null, { timeout: 20000 }).catch(() => null);
+      const restarted = await page.evaluate(() => !!(GCART.result && GCART.result.valid && GCART.form.po === 'PO-7785'));
+      await t(`${label}: after an error, editing the order re-checks automatically (no Try again needed)`, () => ok(restarted));
+      // Need help stays open (and keeps focus) while Golden prices / verifies in the background
+      await page.click('details.gck-help summary');
+      await page.fill('[data-f="notes"]', 'Back dock please'); await page.focus('details.gck-help summary');
+      await page.waitForFunction(() => GCART.result && GCART.result.valid && !GCART.busy && !GCART.auto, null, { timeout: 20000 }); await page.waitForTimeout(200);
+      const help = await page.evaluate(() => ({ open: document.querySelector('details.gck-help').open, focus: document.activeElement && document.activeElement.tagName === 'SUMMARY' && !!document.activeElement.closest('details.gck-help'), live: (document.getElementById('gckLive') || {}).textContent || '' }));
+      await t(`${label}: "Need help?" stays open and keeps focus while Golden re-checks; one live region announces the step`, () => ok(help.open && help.focus && /Golden verified this order|nothing will be placed|not open yet/i.test(help.live), JSON.stringify(help)));
+      await page.click('details.gck-help summary');
       // keyboard: Tab out of an email preview frame stays in the dialog
       await page.evaluate(() => document.querySelectorAll('.gck-more').forEach(d => { d.open = true; }));
       await page.locator('iframe[data-gck-email="dealer"]').focus();
