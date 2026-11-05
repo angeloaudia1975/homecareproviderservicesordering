@@ -3704,7 +3704,7 @@ async function renderHome(){
      <div class="opptop"><div class="ln">${esc(m.name)}</div><span class="oppbadge">Opportunity</span></div>${mlogo(m)}
      <div class="lc">You have portal access but no ${esc(m.name)} account yet — open one to unlock ordering &amp; pricing.</div>
      <div class="oppacts"><button class="oppbtn primary" onclick="selectManufacturer('${esc(m.slug)}')">Explore catalog →</button>
-       ${needsAccess(m.slug)?`<button class="oppbtn ghost" onclick="requestAccess('${esc(m.slug)}',this)">${ACCESS_REQUESTED.has(m.slug)?"Access requested ✓":"Request access"}</button>`:`<a class="oppbtn ghost" href="mailto:${bizEmail}?subject=${subj}&body=${bodyq}">Request account</a>`}</div></div>`;}).join("");
+       ${needsAccess(m.slug)?`<button class="oppbtn ghost" data-slug="${esc(m.slug)}" onclick="requestAccess(this.dataset.slug,this)">${ACCESS_REQUESTED.has(m.slug)?"Access requested ✓":"Request access"}</button>`:`<a class="oppbtn ghost" href="mailto:${bizEmail}?subject=${subj}&body=${bodyq}">Request account</a>`}</div></div>`;}).join("");
 
   const hc=await loadHomeContent();
   const heroSec=homeHeroHtml(hc), tilesSec=homeTilesHtml(hc);
@@ -3800,8 +3800,8 @@ const ACCESS_REQUESTED=new Set();
 function accessNoticeHtml(slug){
   const m=(state.manufacturers||[]).find(x=>x.slug===slug)||{}; const nm=esc(m.name||slug);
   const sent=ACCESS_REQUESTED.has(slug);
-  return `<span><b>Ordering access for ${nm} isn't set up on your account yet.</b> You can browse this catalog, but a ${nm} manufacturer account and HCPS ordering access must be established before you can see your pricing or place an order.</span>`
-    +`<button type="button" ${sent?"disabled":""} onclick="requestAccess('${esc(slug)}',this)">${sent?"Access requested ✓":"Request access"}</button>`;
+  return `<span><b>Ordering access for ${nm} isn't set up on your account yet.</b> A ${nm} manufacturer account and HCPS ordering access must be established before you can see this catalog with your pricing and place orders. Request access and HCPS will review it with you.</span>`
+    +`<button type="button" ${sent?"disabled":""} data-slug="${esc(slug)}" onclick="requestAccess(this.dataset.slug,this)">${sent?"Access requested ✓":"Request access"}</button>`;
 }
 async function requestAccess(slug,btn){
   if(typeof PREVIEW!=="undefined"&&PREVIEW){ toast("Read-only preview — requests are disabled for this dealer view."); return; }
@@ -3815,7 +3815,7 @@ async function requestAccess(slug,btn){
     j=await r.json().catch(()=>null);
   }catch(e){ j=null; }
   if(j&&j.ok){ ACCESS_REQUESTED.add(slug); if(btn) btn.textContent="Access requested ✓";
-    toast(j.already?"Your request is already with HCPS — we'll be in touch.":"Request sent to HCPS — we'll review it and contact you about opening the account."); return; }
+    toast(j.already?"Your request is already with HCPS — we'll be in touch.":j.already_carried?"This line is already on your account — reload the page to order it.":"Request sent to HCPS — we'll review it and contact you about opening the account."); return; }
   if(btn){ btn.disabled=false; btn.textContent="Request access"; }
   toast((j&&j.error)||"Your request could not be sent right now — please try again or call HCPS.");
 }
@@ -4483,6 +4483,13 @@ function renderProducts(){
   if(RENDER.io){RENDER.io.disconnect();RENDER.io=null;}
   document.body.classList.add('shopv2');
   if (!state.products.length){
+    /* A browse-only line (Request access, C3-06): the catalog and its prices open once ordering access is set up —
+       never "pricing could not be loaded", which would send the dealer to reload for nothing. */
+    if(typeof needsAccess==="function" && needsAccess(state.active)){
+      const nm=esc(((state.manufacturers||[]).find(x=>x.slug===state.active)||{}).name||state.active);
+      host.innerHTML=`<div class="empty"><h3>Request access to order ${nm}</h3><p>This catalog and your pricing open once a ${nm} manufacturer account and HCPS ordering access are set up for your business. Use <b>Request access</b> above and HCPS will review it with you.</p></div>`;
+      return;
+    }
     const _cs=(typeof CATALOG_SOURCE!=='undefined'&&CATALOG_SOURCE[state.active])||null;
     if(_cs && _cs.source==='unavailable'){
       host.innerHTML=`<div class="empty"><h3>Pricing could not be loaded</h3><p>Your account pricing for this line could not be loaded just now. Nothing is shown rather than an out-of-date price. <a href="#" onclick="event.preventDefault();location.reload()">Reload</a></p></div>`;
@@ -5027,7 +5034,7 @@ async function submitOrder(){
   }
   if([...CART.values()].some(({p})=>p._unavailable)){ toast("Remove the items that are no longer available, then place your order"); return; }
   { const noAcc=[...groups.keys()].filter(sl=>!isGoldenSlug(sl)&&needsAccess(sl));
-    if(noAcc.length){ toast(`Ordering access for ${noAcc.map(sl=>mfrInfo(sl).name).join(", ")} isn't set up yet — use Request access on that catalog. Nothing was submitted.`); return; } }
+    if(noAcc.length){ toast(`Ordering access for ${noAcc.map(sl=>mfrInfo(sl).name).join(", ")} isn't set up yet — use Request access on that catalog (if HCPS has just turned it on, reload the page). Nothing was submitted.`); return; } }
   if(typeof cartRuleProblems==="function"){ const rp=cartRuleProblems(); if(rp.length){ toast(rp[0].msg); return; } }
   const btn=$("#submitOrder"); btn.disabled=true; btn.textContent="Checking prices…";
   try{
