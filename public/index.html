@@ -488,7 +488,7 @@ body.shopall .controls,body.shopall #a4uBuilder,body.shopall #swBuilder,body.sho
 .hsearch{position:relative;flex:1 1 260px;min-width:240px;max-width:460px;margin:0 8px;display:flex;align-items:center;gap:9px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:9px 15px;}
 .hsearch svg{color:var(--gray);flex-shrink:0;}
 .hsearch input{border:0;background:transparent;outline:none;font-family:inherit;font-size:14px;width:100%;color:var(--navy);}
-@media(max-width:900px){.hsearch{display:none;}}
+/* (shown on phones since C3-07 Stage 2 — see the quick search block) */
 .gsresults{position:absolute;top:calc(100% + 8px);left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;display:none;z-index:90;max-height:380px;overflow-y:auto;}
 .gsresults.on{display:block;}
 .gsr{display:flex;flex-direction:column;gap:2px;padding:11px 15px;cursor:pointer;border-top:1px solid var(--line);}
@@ -497,6 +497,32 @@ body.shopall .controls,body.shopall #a4uBuilder,body.shopall #swBuilder,body.sho
 .gsr b{font-size:13.5px;font-weight:700;color:var(--navy);}
 .gsr span{font-size:12px;color:var(--gray);}
 .gsr.empty{color:var(--gray);font-size:13px;cursor:default;}
+/* C3-07 Stage 2 — quick search rows: photo, name, manufacturer · part number, the dealer's own price. */
+.gsresults{max-height:min(70vh,520px);}
+.gsr.gsr2{flex-direction:row;align-items:center;gap:12px;}
+.gsr2:focus{outline:2px solid var(--blue,#1681c2);outline-offset:-2px;background:var(--paper);}
+.gsi{flex:none;width:44px;height:44px;border-radius:8px;background:#f4f7fa;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.gsi img{width:100%;height:100%;object-fit:contain;}
+.gsi-ph{font-size:9px;color:var(--gray);text-align:center;line-height:1.1;}
+.gst{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.gst b,.gst span{overflow:hidden;text-overflow:ellipsis;}
+.gsp{flex:none;text-align:right;font-weight:800;color:var(--navy);font-size:13.5px;display:flex;flex-direction:column;}
+.gsp small{font-size:10.5px;font-weight:600;color:var(--gray);}
+.gsall{display:block;width:100%;min-height:44px;border:0;border-top:1px solid var(--line);background:var(--paper);color:var(--blue-dk,#0f5c8f);font-weight:700;font-size:13.5px;cursor:pointer;text-align:center;font-family:inherit;}
+.gsall:focus,.gsall:hover{background:#e8f1f9;outline:none;}
+.sl-search .sl-shead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:4px 0 14px;}
+.sl-search .sl-shead h2{margin:0;font-size:22px;color:var(--navy);}
+.sl-clear{font-weight:700;color:var(--blue-dk,#0f5c8f);}
+.sl-results{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+.sl-results .gsr2{min-height:64px;}
+.sl-results .gsi{width:56px;height:56px;}
+.sl-more{display:block;margin:16px auto 30px;min-height:44px;padding:0 22px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:700;cursor:pointer;font-family:inherit;}
+@media(max-width:900px){
+  body header .htop{flex-wrap:wrap;}
+  .hsearch{display:flex;order:10;flex:1 1 100%;max-width:none;min-width:0;margin:0;}
+  .hsearch input{font-size:16px;}
+  .gsresults{max-height:60vh;}
+}
 /* product detail */
 .pd{max-width:1200px;margin:0 auto;}
 .pd-crumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray);margin:6px 0 18px;flex-wrap:wrap;}
@@ -3505,7 +3531,7 @@ function showShop(slug){
   /* C3-07 Stage 1: Shop opens on the manufacturer landing page (every HCPS partner, the website's own artwork) instead of
      dropping the dealer into whichever line came first. A named line still opens that line directly. */
   if(slug&&lines.some(m=>m.slug===slug)){ selectManufacturer(slug); return; }
-  selectManufacturer(SHOPALL);
+  SL_Q=""; selectManufacturer(SHOPALL);
 }
 function inShopSlug(){ const a=state.active||''; return (a&&a!==HOME&&a!==SHOPALL&&a.indexOf('p360:')!==0)?a:''; }
 /* ---------- SHOP LANDING: all manufacturers (C3-07 Stage 1, owner 2026-11-05) ----------
@@ -3573,8 +3599,38 @@ function shopTileClick(slug){
   if(a.kind==="open") return isGoldenSlug(slug)?selectManufacturer(CONFIG.GOLDEN_SLUG):showShop(slug);
   if(a.kind==="golden"){ selectManufacturer(HOME).then(()=>{ const h=[...document.querySelectorAll('#content .dsec h2')].find(x=>/Golden Technologies/.test(x.textContent)); if(h) h.scrollIntoView({behavior:"smooth",block:"start"}); }); }
 }
+/* "View all results" of the quick search (C3-07 Stage 2): the full list opens on the Shop page. */
+let SL_Q="";
+async function showShopSearch(q){ SL_Q=String(q||"").trim().slice(0,80); await selectManufacturer(SHOPALL); }
+async function renderShopSearch(host,seq){
+  const q=SL_Q;
+  $("#mfrName").textContent="Search results";
+  $("#mfrSub").textContent="Every line you can order, searched at once.";
+  host.innerHTML=`<div class="shopland"><div class="msg" style="text-align:center;color:var(--gray);padding:20px">Searching your lines…</div></div>`;
+  const hits=(typeof window.gsSearchAll==="function")?await window.gsSearchAll(q):[];
+  if(state.active!==SHOPALL||seq!==_loadSeq||q!==SL_Q) return;
+  document.querySelector(".mstat").innerHTML=`<div><b>${hits.length}</b><span>Results</span></div>`;
+  let shown=60;
+  const paint=()=>{
+    host.innerHTML=`<div class="shopland sl-search"><div class="sl-shead"><h2>${hits.length} result${hits.length===1?"":"s"} for &ldquo;${esc(q)}&rdquo;</h2><a href="#" class="sl-clear" data-sl-clear="1">← All manufacturers</a></div>`
+      +(hits.length?`<div class="sl-results" role="listbox">${hits.slice(0,shown).map(window.gsRowHtml).join("")}</div>`
+        +(hits.length>shown?`<button type="button" class="sl-more" data-sl-more="1">Show more (${hits.length-shown} left)</button>`:"")
+        :`<div class="empty"><h3>No matches</h3><p>Nothing on your lines matches &ldquo;${esc(q)}&rdquo;. Try a part number, a product type or a manufacturer name.</p></div>`)+`</div>`;
+  };
+  paint();
+  host.__slPaintMore=()=>{ shown+=60; paint(); };
+}
+function wireShopLanding(host){
+  if(!host.__slWired){ host.__slWired=1; host.addEventListener("click",function(e){ if(state.active!==SHOPALL) return;
+    if(e.target.closest("[data-sl-clear]")){ e.preventDefault(); SL_Q=""; selectManufacturer(SHOPALL); return; }
+    if(e.target.closest("[data-sl-more]")){ if(host.__slPaintMore) host.__slPaintMore(); return; }
+    const r=e.target.closest(".gsr2"); if(r){ openFromSearch(r.getAttribute("data-slug"),r.getAttribute("data-code")); return; }
+    const t=e.target.closest(".sl-tile[data-sl]"); if(!t||t.classList.contains("static")||!host.contains(t)) return; shopTileClick(t.getAttribute("data-sl")); }); }
+}
 async function renderShopLanding(){
   const seq=_loadSeq;
+  wireShopLanding($("#content"));
+  if(SL_Q){ return renderShopSearch($("#content"),seq); }
   $("#mfrName").textContent="Shop by manufacturer";
   $("#mfrSub").textContent="Every HCPS manufacturer partner in one place — choose a line to browse its catalog with your pricing.";
   const an=document.getElementById("accessNotice"); if(an){ an.innerHTML=""; an.hidden=true; }
@@ -3587,7 +3643,6 @@ async function renderShopLanding(){
   const nOrder=list.filter(t=>shopTileAction(t.slug).kind==="open").length;
   document.querySelector(".mstat").innerHTML=`<div><b>${list.length}</b><span>Manufacturers</span></div><div><b>${nOrder}</b><span>Ready to shop</span></div>`;
   host.innerHTML=`<div class="shopland"><div class="sl-grid">${list.map(shopTileHtml).join("")}</div></div>`;
-  if(!host.__slWired){ host.__slWired=1; host.addEventListener("click",function(e){ if(state.active!==SHOPALL) return; const t=e.target.closest(".sl-tile[data-sl]"); if(!t||t.classList.contains("static")||!host.contains(t)) return; shopTileClick(t.getAttribute("data-sl")); }); }
 }
 function showP360(v){
   state.active='p360:'+v;
@@ -7869,29 +7924,126 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     });
   })();
 
-  // ---------- global search ----------
-  let _gsAll=null,_gsTimer=null;
-  async function gsEnsure(){
-    if(_gsAll)return _gsAll; _gsAll=[];
-    let lines=[]; try{ lines=(typeof entitledManufacturers==='function')?entitledManufacturers():[]; }catch(e){}
-    for(const m of lines){ if(!m.hasData)continue; try{ const prods=await loadLine(m.slug); (prods||[]).forEach(p=>_gsAll.push({p,slug:m.slug,mname:m.name})); }catch(e){} }
-    return _gsAll;
+  // ---------- global search (C3-07 Stage 2: universal quick search) ----------
+  /* One box searches every line the dealer can order. Lines load in parallel and results appear as each arrives
+     (no waiting for the slowest line). A query matches when every word appears in the product's name, part number,
+     category, subcategory, brand or manufacturer — or a common trade synonym of it ("rollator" finds walkers, "bp"
+     blood-pressure monitors). Part numbers rank first, then names that start with the query. A product family shows
+     once. Prices: only the dealer's own price, worked out exactly as the catalog card does (unitPrice), and only for
+     a line whose pricing loaded; Golden only when Golden lets this dealer see prices. Never MSRP-as-cost, never
+     another dealer's price. "View all results" opens the full list on the Shop page. Opening a result goes through
+     the line's own product page, so configurators work as before. */
+  let _gsAll=null,_gsTimer=null,_gsLoading=null,_gsQ='';
+  const GS_SYN=[
+    ['walker','rollator','walking aid'],['wheelchair','transport chair','chair'],['lift chair','recliner','power recliner','lift recliner'],
+    ['scooter','mobility scooter'],['commode','toilet','bedside commode'],['shower chair','bath seat','shower seat','bath bench','transfer bench'],
+    ['ramp','threshold','threshold ramp'],['brace','support','orthosis','splint'],['boot','walker boot','walking boot','cam boot'],
+    ['bp','blood pressure','sphygmomanometer'],['oximeter','pulse oximeter','spo2'],['oxygen','concentrator','o2'],['nebulizer','neb'],
+    ['cane','walking stick'],['raised toilet seat','toilet seat riser','elevated toilet seat'],['grab bar','safety rail','rail'],
+    ['bed','hospital bed','hi-low','hi low'],['mattress','overlay','pressure redistribution'],['cushion','seat cushion','pad'],
+    ['stairlift','stair lift'],['compression','stocking','hosiery'],['glove','gloves','nitrile'],['gauze','sponge','dressing'],
+    ['thermometer','temp'],['knee','knee brace'],['wrist','wrist brace','carpal'],['ankle','ankle brace'],['back','lumbar','back brace']
+  ];
+  const gsNorm=s=>String(s==null?'':s).toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[®™©]/g,'').replace(/[^a-z0-9.+\/-]+/g,' ').trim();
+  function gsTerms(q){
+    const n=gsNorm(q); if(!n) return [];
+    const words=n.split(' ').filter(Boolean);
+    /* Each word (or a known multi-word phrase) becomes a set of alternatives; every set must match. */
+    const sets=[]; let rest=' '+n+' ';
+    GS_SYN.forEach(g=>{ g.forEach(ph=>{ if(ph.indexOf(' ')>0 && rest.indexOf(' '+ph+' ')>=0){ rest=rest.replace(' '+ph+' ',' '); sets.push(g.slice()); } }); });
+    rest.trim().split(' ').filter(Boolean).forEach(w=>{ const alt=new Set([w]); GS_SYN.forEach(g=>{ if(g.includes(w)) g.forEach(x=>alt.add(x)); }); sets.push([...alt]); });
+    return sets.length?sets:[words];
   }
-  window.gsInput=function(e){ const q=(e.target.value||'').trim().toLowerCase(); clearTimeout(_gsTimer); _gsTimer=setTimeout(()=>gsRun(q),180); };
+  function gsIndex(x){ const p=x.p; return gsNorm([p.name,groupDisplayName(p),p.code,p.category,p.subcategory,p.brand,x.mname].filter(Boolean).join(' ')); }
+  function gsPrice(x){
+    const p=x.p;
+    try{
+      if(isGoldenSlug(x.slug)) return (GOLDEN.prices&&typeof p.base_price==='number'&&p.base_price>0)?money(p.base_price):'';
+      if(p.base_price==null) return '';
+      const v=Number(unitPrice(p,1)); return (isFinite(v)&&v>0)?money(v):'';
+    }catch(e){ return ''; }
+  }
+  function gsLines(){ let lines=[]; try{ lines=(typeof entitledManufacturers==='function')?entitledManufacturers():[]; }catch(e){} return lines.filter(m=>m&&m.hasData); }
+  function gsEnsure(onLine){
+    if(_gsAll&&!_gsLoading) return Promise.resolve(_gsAll);
+    if(_gsLoading) return _gsLoading;
+    _gsAll=[];
+    _gsLoading=Promise.all(gsLines().map(m=>Promise.resolve().then(()=>loadLine(m.slug)).then(prods=>{
+        (prods||[]).forEach(p=>{ if(p&&p.code){ const x={p,slug:m.slug,mname:m.name}; x.ix=gsIndex(x); _gsAll.push(x); } });
+        if(onLine) onLine();
+      }).catch(()=>{}))).then(()=>{ _gsLoading=null; return _gsAll; });
+    return _gsLoading;
+  }
+  window.gsReset=function(){ _gsAll=null; _gsLoading=null; };
+  function gsSearch(q){
+    const sets=gsTerms(q); if(!sets.length||!_gsAll) return [];
+    const nq=gsNorm(q), seen=new Set(), out=[];
+    _gsAll.forEach(x=>{
+      if(!sets.every(alts=>alts.some(a=>x.ix.indexOf(a)>=0))) return;
+      const code=gsNorm(x.p.code), name=gsNorm(groupDisplayName(x.p)||x.p.name);
+      const score=(code===nq?0:code.indexOf(nq)===0?1:name.indexOf(nq)===0?2:name.indexOf(nq)>=0?3:gsNorm(x.p.name).indexOf(nq)>=0?4:5);
+      out.push({x,score,key:x.slug+'\u0001'+groupKeyOf(x.p)});
+    });
+    out.sort((a,b)=>a.score-b.score||String(a.x.p.name||'').localeCompare(String(b.x.p.name||'')));
+    const res=[]; const count={};
+    out.forEach(o=>{ count[o.key]=(count[o.key]||0)+1; });
+    out.forEach(o=>{ if(seen.has(o.key)) return; seen.add(o.key); res.push({x:o.x,n:count[o.key]}); });
+    return res;
+  }
+  window.gsSearchAll=function(q){ return gsEnsure().then(()=>gsSearch(q)); };
+  function gsRow(r){
+    const x=r.x,p=x.p, price=gsPrice(x), nm=groupDisplayName(p)||p.name||p.code;
+    const img=p.image?`<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'gsi-ph',textContent:'No photo'}))">`:`<span class="gsi-ph">No photo</span>`;
+    return `<div class="gsr gsr2" role="option" tabindex="-1" data-slug="${esc(x.slug)}" data-code="${esc(p.code)}"><span class="gsi">${img}</span><span class="gst"><b>${esc(nm)}</b><span>${esc(x.mname)} · Item # ${esc(p.code)}${r.n>1?` · ${r.n} options`:''}</span></span>${price?`<span class="gsp">${esc(price)}<small>Your price</small></span>`:''}</div>`;
+  }
+  window.gsInput=function(e){ const q=(e.target.value||'').trim(); _gsQ=q; clearTimeout(_gsTimer); _gsTimer=setTimeout(()=>gsRun(q),160); };
   async function gsRun(q){
     const box=$q('#gsresults'); if(!box)return;
-    if(q.length<2){ box.innerHTML=''; box.classList.remove('on'); return; }
-    const all=await gsEnsure();
-    const hits=all.filter(x=>((x.p.name||'').toLowerCase().includes(q))||((x.p.code||'').toLowerCase().includes(q))||((x.mname||'').toLowerCase().includes(q))).slice(0,8);
-    box.innerHTML = hits.length ? hits.map(x=>`<div class="gsr" onclick="openFromSearch('${esc(x.slug)}','${esc(x.p.code)}')"><b>${esc(x.p.name)}</b><span>${esc(x.mname)} · Item # ${esc(x.p.code)}${x.p._skuOption?" · "+esc(variantLabel(x.p)):""}</span></div>`).join('') : `<div class="gsr empty">No matches for &ldquo;${esc(q)}&rdquo;</div>`;
-    box.classList.add('on');
+    if(gsNorm(q).length<2){ box.innerHTML=''; box.classList.remove('on'); return; }
+    const paint=()=>{
+      if(q!==_gsQ) return;
+      const hits=gsSearch(q), loading=!!_gsLoading||!_gsAll;
+      box.innerHTML=(hits.length?hits.slice(0,8).map(gsRow).join(''):(loading?'':`<div class="gsr empty">No matches for &ldquo;${esc(q)}&rdquo;</div>`))
+        +(loading?`<div class="gsr empty">Searching your lines…</div>`:'')
+        +(hits.length?`<button type="button" class="gsall" data-q="${esc(q)}">View all ${hits.length} result${hits.length===1?'':'s'} →</button>`:'');
+      box.classList.add('on');
+      return hits;
+    };
+    paint();
+    await gsEnsure(paint);
+    const hits=paint();
+    if(!hits) return;
     /* The global box searches every line a dealer is entitled to, so a miss here is a miss
        across the whole catalogue — the strongest "we do not carry this" signal there is. */
     searchSettle('global',function(){
       const top=hits[0]||null;
-      trackSearch(q,hits.length,(top&&top.slug)||undefined,(top&&top.p&&top.p.code)||undefined,'global');
+      trackSearch(gsNorm(q),hits.length,(top&&top.x.slug)||undefined,(top&&top.x.p&&top.x.p.code)||undefined,'global');
     });
   }
+  (function(){ const box=$q('#gsresults'), gi=$q('#gsearch'); if(!box||!gi) return;
+    box.addEventListener('click',function(e){
+      const all=e.target.closest('.gsall'); if(all){ e.preventDefault(); gsViewAll(all.getAttribute('data-q')); return; }
+      const r=e.target.closest('.gsr2'); if(r) openFromSearch(r.getAttribute('data-slug'),r.getAttribute('data-code'));
+    });
+    gi.addEventListener('keydown',function(e){
+      const rows=[...box.querySelectorAll('.gsr2,.gsall')]; const i=rows.indexOf(document.activeElement);
+      if(e.key==='ArrowDown'&&rows.length){ e.preventDefault(); rows[0].focus(); }
+      else if(e.key==='Enter'){ e.preventDefault(); const q=(gi.value||'').trim(); if(gsNorm(q).length>=2) gsViewAll(q); }
+      else if(e.key==='Escape'){ box.classList.remove('on'); }
+    });
+    box.addEventListener('keydown',function(e){
+      const rows=[...box.querySelectorAll('.gsr2,.gsall')]; const i=rows.indexOf(document.activeElement);
+      if(e.key==='ArrowDown'){ e.preventDefault(); (rows[i+1]||rows[i]).focus(); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); i>0?rows[i-1].focus():gi.focus(); }
+      else if(e.key==='Enter'&&i>=0){ e.preventDefault(); rows[i].click(); }
+      else if(e.key==='Escape'){ box.classList.remove('on'); gi.focus(); }
+    });
+  })();
+  function gsViewAll(q){
+    const box=$q('#gsresults'); if(box)box.classList.remove('on');
+    if(typeof showShopSearch==='function') showShopSearch(q);
+  }
+  window.gsRowHtml=gsRow;
   window.openFromSearch=async function(slug,code){
     const box=$q('#gsresults'); if(box)box.classList.remove('on');
     const gi=$q('#gsearch'); if(gi)gi.value='';
