@@ -2903,14 +2903,14 @@ function gckDetail(sel, cq){ const F={std:"Standard fabric",xover:"Cross-Over fa
   return [F[sel.fabric]||"", String((cq&&cq.color_name)||sel.color||""), T[sel.tier]||"", sel.footrest?"Footrest extension":""].filter(Boolean).join(" · ").replace(/\$[\d,.]+/g,"").slice(0,200); }
 const gckKey=i=>[i.sku,i.fabric,i.color,i.tier||"",i.footrest?1:0].join("|");
 function gckReset(){
-  clearTimeout(GCART.auto);
+  clearTimeout(GCART.auto); { const lv=document.getElementById('gckLive'); if(lv) lv.remove(); }
   const ov=document.getElementById('gckView'); if(ov) ov.remove(); const pl=document.getElementById('gcartPill'); if(pl) pl.remove();
   document.body.classList.remove('gck-lock'); if(GCART._esc){ document.removeEventListener('keydown',GCART._esc,true); GCART._esc=null; }
   Object.assign(GCART,{busyKind:null,priceNotice:false,pcCount:0,auto:null,open:{},items:[],ship:null,shipList:null,shipScope:null,shipErr:null,quote:null,quoteSig:null,quoteAsOf:null,attempt:null,result:null,busy:false,pending:null,placed:null,pendMsg:null,err:null,changed:false,seq:(GCART.seq||0)+1,form:{po:"",name:"",phone:"",email:"",attention:"",notes:""}});
   if(typeof GOLDEN!=="undefined"){ GOLDEN.on=false; GOLDEN.checked=false; }
   if(typeof cartBadgeRefresh==="function") try{ cartBadgeRefresh(); }catch(e){}
 }
-function gckChanged(){ GCART.cartAt=Date.now(); GCART.quote=null; GCART.quoteSig=null; GCART.result=null; GCART.err=null; GCART.priceNotice=false; gckSave(); gckPill(); }
+function gckChanged(){ GCART.pcCount=0; GCART.cartAt=Date.now(); GCART.quote=null; GCART.quoteSig=null; GCART.result=null; GCART.err=null; GCART.priceNotice=false; gckSave(); gckPill(); }
 /* Golden state changed (this tab or another): refresh the cart without taking the dealer's place. If the dealer is typing
    in an HCPS field of the cart, only the Golden group is replaced; a Golden control that had focus gets it back. */
 function gckRefreshCart(){ try{
@@ -3024,7 +3024,7 @@ function gckRender(){
   let caret=null; try{ if(fk&&typeof a.selectionStart==="number") caret=[a.selectionStart,a.selectionEnd]; }catch(x){}   // email inputs: null or a throw in some browsers
   GCART.open=GCART.open||{}; ov.querySelectorAll('details[data-gk]').forEach(d=>{ GCART.open[d.getAttribute('data-gk')]=d.open; });
   const fkSum=(!fk&&a&&ov.contains(a)&&a.tagName==="SUMMARY"&&a.parentElement&&a.parentElement.getAttribute('data-gk'))?`details[data-gk="${a.parentElement.getAttribute('data-gk')}"]>summary`:null;
-  ov.innerHTML=`<span class="gck-ft" tabindex="0" data-trap="start"></span><div class="gck-box">
+  gckHost(ov).innerHTML=`<span class="gck-ft" tabindex="0" data-trap="start"></span><div class="gck-box">
     <div class="gck-hd"><h2>Checkout · Golden Technologies${(typeof STAGING!=="undefined"&&STAGING)?' <span class="gck-prev">Private preview</span>':""}</h2><button type="button" class="gck-close" data-gck-close aria-label="Close the Golden checkout">Close</button></div>
     ${gckStepsHtml(step)}${gckNextHtml()}${tip}${gckHelpHtml()}
     ${GCART.items.length?`<div class="gck-sec"><h3>1 · Your Golden chairs</h3>${lines}</div>`:`<div class="gck-sec"><p class="gck-note">No Golden chairs in your cart. Configure a lift chair and choose “Add to cart”.</p></div>`}
@@ -3070,8 +3070,12 @@ function gckNextHtml(){
   return `<div class="gck-next${busy?" busy":""}">${t}</div>`;
 }
 // Screen readers: one live region that stays in the page; only its text changes (a freshly inserted region is often not read).
-function gckAnnounce(html){ let el=document.getElementById('gckLive');
-  if(!el){ el=document.createElement('div'); el.id='gckLive'; el.className='gck-ft'; el.setAttribute('role','status'); el.setAttribute('aria-live','polite'); document.body.appendChild(el); }
+function gckHost(ov){ let h=ov.querySelector(':scope > .gck-host'); if(!h){ h=document.createElement('div'); h.className='gck-host'; ov.prepend(h); } gckLiveEl(ov); return h; }
+function gckLiveEl(ov){ let el=document.getElementById('gckLive'); ov=ov||document.getElementById('gckView');
+  if(!el){ el=document.createElement('div'); el.id='gckLive'; el.className='gck-ft'; el.setAttribute('role','status'); el.setAttribute('aria-live','polite'); }
+  if(ov&&el.parentNode!==ov) ov.appendChild(el);   // inside the aria-modal dialog, outside the part that is re-rendered
+  return el; }
+function gckAnnounce(html){ const el=gckLiveEl();
   const txt=String(html).replace(/<[^>]+>/g,"").replace(/&amp;/g,"&");
   if(el.textContent!==txt) el.textContent=txt; }
 function gckHelpHtml(){ return `<details class="gck-help" data-gk="help"${GCART.open&&GCART.open.help?" open":""}><summary>Need help?</summary><ol>
@@ -3088,7 +3092,9 @@ function gckSchedule(delay){
   const cur=JSON.stringify([gckReq(),GCART.ship]);
   if(!GCART.quote||GCART.quoteSig!==cur){ GCART.auto=setTimeout(()=>{ GCART.auto=null; gckQuote(); },0); return; }
   const f=GCART.form;
-  if(!GCART.result&&f.name.trim()&&f.phone.trim()) GCART.auto=setTimeout(()=>{ GCART.auto=null; gckValidate(); }, Math.max(0,delay|0));
+  const sinceTyping=Date.now()-(GCART.lastInput||0), wait=Math.max(delay|0, 1200-sinceTyping, 0);   // never validate half-typed text
+  if(GCART.result||!(f.name.trim()&&f.phone.trim())) return;
+  GCART.auto=setTimeout(()=>{ GCART.auto=null; if(Date.now()-(GCART.lastInput||0)<1200) return gckSchedule(0); gckValidate(); }, wait);
 }
 /* Golden's freight (contract 1.7.0) is its own line, exactly as Golden priced it — never estimated here. */
 function gckFreight(t){ const v=t&&t.freight_total; return v==null||!(Number(v)>=0)?"priced by Golden":Number(v)===0?"Free — Golden pays":money(v); }
@@ -3206,7 +3212,7 @@ function gckRenderPlacement(ov){
       <p class="gck-note">Your cart is kept unchanged until Golden answers.</p>
       <div class="gck-acts"><button type="button" class="gck-btn primary" data-gck-recheck${BZ?" disabled":""}>Check again</button><button type="button" class="gck-btn" data-gck-myorders${BZ?" disabled":""}>View My Orders</button></div></div>`;
   }
-  ov.innerHTML=`<span class="gck-ft" tabindex="0" data-trap="start"></span><div class="gck-box">
+  gckHost(ov).innerHTML=`<span class="gck-ft" tabindex="0" data-trap="start"></span><div class="gck-box">
     <div class="gck-hd"><h2>Checkout · Golden Technologies${(typeof STAGING!=="undefined"&&STAGING)?' <span class="gck-prev">Private preview</span>':""}</h2><button type="button" class="gck-close" data-gck-close aria-label="Close">Close</button></div>
     ${gckStepsHtml(P?4:3)}
     ${body}</div><span class="gck-ft" tabindex="0" data-trap="end"></span>`;
@@ -3267,7 +3273,7 @@ function gckWire(ov){
     if(GCART.busy) return;   // the cart is frozen while Golden is answering
     if(t.closest('[data-gck-tip]')){ try{ localStorage.setItem(GCK_TIP_KEY,"1"); }catch(x){} GCART._refocus='[data-gck-close]'; return gckRender(); }
     if(t.closest('[data-gck-place]')){ GCART.priceNotice=false; return gckPlace(false); }
-    if(t.closest('[data-gck-retry]')){ GCART.err=null; if(GCART.shipErr){ GCART.shipErr=null; GCART.shipList=null; gckRender(); gckShipTo().then(gckRender); return; } return gckRender(); }
+    if(t.closest('[data-gck-retry]')){ GCART.err=null; GCART.pcCount=0; GCART.lastInput=0; if(GCART.shipErr){ GCART.shipErr=null; GCART.shipList=null; gckRender(); gckShipTo().then(gckRender); return; } return gckRender(); }
     if(t.closest('[data-gck-recheck]')) return gckPlace(true);
     if(t.closest('[data-gck-done]')){ GCART.placed=null; gckPill(); return goldenCartClose(); }
     if(t.closest('[data-gck-myorders]')){ if(GCART.placed) GCART.placed=null; goldenCartClose(); gckPill(); if(typeof showView==="function") showView('orders'); return; }
@@ -3282,6 +3288,7 @@ function gckWire(ov){
     if(t.matches('[data-f]')){ GCART.form[t.getAttribute('data-f')]=t.value; touched=true; }
     else if(t.matches('.gck-ref')){ const i=GCART.items[+t.getAttribute('data-ix')]; if(i){ i.refs[+t.getAttribute('data-k')]=t.value; gckSave(); touched=true; } }
     if(!touched) return;
+    GCART.lastInput=Date.now();
     // a change to the order discards Golden's verification; it is verified again automatically once typing pauses
     if(GCART.result||GCART.err){ GCART.result=null; GCART.err=null; gckRender(); }
     else { const nx=ov.querySelector('.gck-next'); if(nx) nx.outerHTML=gckNextHtml(); }
