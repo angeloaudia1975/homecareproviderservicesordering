@@ -1,7 +1,7 @@
 {
   "review_id": "8b818e52dd03",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T05:02:15Z",
+  "built_at": "2026-11-05T05:07:10Z",
   "main": "cf9678e26d590730262d8353c24c5e6463d7ba0a",
   "included": [
     {
@@ -26,5 +26,12 @@
       "other_files": 29
     }
   ],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 37,
+      "title": "B6.2: Golden freight as its own line",
+      "branch": "fix/golden-freight-line",
+      "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
+    }
+  ]
 }
