@@ -23,7 +23,7 @@ t('the storefront filters the same list out of manufacturers.json and out of new
   if (!/state\.manufacturers = \(\(await r\.json\(\)\)\|\|\[\]\)\.filter\(m=>m&&!isRetiredSlug\(m\.slug\)\)/.test(H)) throw new Error('loadManufacturers does not filter');
   if (!/function quotableLine\(slug\)\{ if\(typeof isRetiredSlug==="function"&&isRetiredSlug\(slug\)\) return false;/.test(H)) throw new Error('quotableLine does not refuse retired lines');
   // the price list / showroom re-read of manufacturers.json filters too, and curated "also available" rows skip retired lines
-  if (!/const mf=\(\(await fetch\('\/data\/manufacturers\.json'\)[^\n]*\.filter\(m=>m&&!isRetiredSlug\(m\.slug\)\)/.test(H)) throw new Error('loadPricing reads the unfiltered list');
+  if (!/const mf=\(\(await fetch\('\/data\/manufacturers\.json'\)[^\n]*\.filter\(m=>m&&!isRetiredSlug\(m\.slug\)&&\(!shopList\|\|shopList\.has\(String\(m\.slug\)\)\)\)/.test(H)) throw new Error('loadPricing reads the unfiltered list');
   if (!/\(cur\|\|\[\]\)\.filter\(r=>r&&!isRetiredSlug\(r\.related_manufacturer\)/.test(H)) throw new Error('curated related rows not filtered');
   // one normalisation: trimmed + case-insensitive, like the servers
   const m2 = /function isRetiredSlug\(slug\)\{[^\n]*\}/.exec(H); if (!m2) throw new Error('isRetiredSlug missing');
