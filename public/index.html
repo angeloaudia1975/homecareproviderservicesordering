@@ -6683,7 +6683,10 @@ async function loadPricing(){
   if(PRICE) return;
   PRICE={}; PRICELIST=[]; QUOTELIST=null;
   try{
-    const mf=((await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]))||[]).filter(m=>m&&!isRetiredSlug(m.slug));   // retired lines never listed, under any spelling
+    /* Retired lines never listed (any spelling); a line switched off (manufacturer_meta.active=false) is never listed
+       either — the price list, showroom and quotes follow the same list as the catalog (review 2026-11-04). */
+    const shopList=(typeof state!=="undefined"&&state&&Array.isArray(state.manufacturers)&&state.manufacturers.length)?new Set(state.manufacturers.map(m=>String(m.slug))):null;
+    const mf=((await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]))||[]).filter(m=>m&&!isRetiredSlug(m.slug)&&(!shopList||shopList.has(String(m.slug))));
     MFRLIST=(mf||[]).map(m=>({slug:m.slug,name:m.name,quotable:m.quotable}));
     const withData=(mf||[]).filter(m=>m.hasData!==false);
     /* P0 (2026-10-23): the public files carry no prices. A line this dealer carries is priced from
