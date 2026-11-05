@@ -1,15 +1,17 @@
 {
-  "review_id": "8c6935d77205",
+  "review_id": "3636ebd73b6b",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T22:19:51Z",
+  "built_at": "2026-11-05T22:20:09Z",
   "main": "dbad1486b1e695de0db3f0ccbfebb7ce0ed0fec8",
-  "included": [],
-  "skipped": [
+  "included": [
     {
       "pr": 46,
       "title": "C3-07 Stage 1 refinement: Shop landing sidebar + 3/2/1 card grid",
       "branch": "c7/s1-landing-sidebar",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
+      "head": "9199018879602333758329b6bda52d05d26e05d6",
+      "manufacturers": [],
+      "other_files": 2
     }
-  ]
+  ],
+  "skipped": []
 }
