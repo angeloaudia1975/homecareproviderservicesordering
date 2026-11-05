@@ -1,8 +1,17 @@
 {
-  "review_id": "e3fae78b828a",
+  "review_id": "f19013b5543b",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T20:04:15Z",
+  "built_at": "2026-11-05T20:16:39Z",
   "main": "16114b686f42047e847d0a207a2c473da15c358f",
-  "included": [],
+  "included": [
+    {
+      "pr": 43,
+      "title": "C3-07 Stage 2: universal quick search",
+      "branch": "c7/s2-search",
+      "head": "25f667f8328bc13da260c6fb77bafeaa0f4378f7",
+      "manufacturers": [],
+      "other_files": 4
+    }
+  ],
   "skipped": []
 }
