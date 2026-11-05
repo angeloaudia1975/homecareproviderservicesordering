@@ -1853,6 +1853,7 @@ const PRICE_NOTE_TIERISH=/^\s*\d+\s*(?:[–—-]\s*\d+|\+)\s*\$/;
 const PRICE_NOTE_MAP=/^\s*(?:min\.?\s*advertised[^$]*|map)\s*\$?\s*[\d,]+(?:\.\d+)?\s*$/i;
 function dealerPriceNote(note, p){
   const raw=String(note==null?'':note);
+  if(Array.isArray((p||{}).tiers)&&p.tiers.some(t=>t&&t.until!=null&&t.until!=='')&&!tierLadder(p).some(t=>t.until)) return '';  // its time-limited special has ended (2026-11-04)
   const supersededByLadder=tierLadder(p||{}).length>0 && PRICE_NOTE_VOLUME.test(raw);
   const mv=(p||{}).map; const hasMapField=(mv!=null && mv!=='' && Number(mv)>0);
   return raw
