@@ -1,8 +1,15 @@
 {
   "review_id": "1ee70cf24316",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T17:25:15Z",
+  "built_at": "2026-11-05T19:01:39Z",
   "main": "499dc2d01771b8bd5e55e2128177fe3d9a525adb",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 40,
+      "title": "C3-06 closeout: Request access, durable PediFix retirement, catalog closeout",
+      "branch": "c6/closeout",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
