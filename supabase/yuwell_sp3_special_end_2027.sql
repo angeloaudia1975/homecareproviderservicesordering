@@ -1,14 +1,15 @@
 -- ============================================================================
--- Yuwell — END the SPIRIT-3 (SP-3) 4+ unit special on Jan 1, 2027 (owner 2026-11-04: "after Jan 1st the price
--- moves up to the regular price regardless of quantity").  Run on/after Jan 1, 2027 in the Supabase SQL editor
--- of the ORDERING project. Contains NO prices: it only removes the SP-3 quantity break and its special note
+-- Yuwell — BACKUP ONLY. The SP-3 special ends AUTOMATICALLY: its break carries until = 2027-01-01T06:00:00Z
+-- (midnight Central) and the shop and the order server both ignore it from that instant (owner 2026-11-04 C3-05).
+-- This file only tidies the stored record afterwards (or is a manual fallback); it is never run automatically.
+-- Run on/after Jan 1, 2027 in the Supabase SQL editor of the ORDERING project, only with Angelo's approval. Contains NO prices: it only removes the SP-3 quantity break and its special note
 -- from the private commercial record, so every SP-3 quantity prices at the regular dealer price again.
--- Refuses (writes nothing) unless the stored record is exactly version 1 (overlay 166d2f99…). Idempotent:
+-- Refuses (writes nothing) unless the stored record is exactly version 1 (overlay 7026fa39…). Idempotent:
 -- a second run finds overlay e31d7475… and does nothing. Shipping is unchanged (SP-3 orders still ship free).
 -- ============================================================================
 begin;
 do $end$
-declare v1 constant text := '166d2f99ccd7e24bf6498b1c39aeb896e0e9bbc9315bf8a79794092ed867b7eb';
+declare v1 constant text := '7026fa3924dccb7268ab9fc3cdf16504f34ad5189fdc54b54194aa4ac3fb6afe';
         v2 constant text := 'e31d74757798400a9772863290638651e6db750f39fe05513f9891fd1602ddaf';
         id constant text := '6f20b076a3524a085a6e95cfa996e1a1258e700c235654cd7e2c06d86e777dad';
         cur text; n int;

@@ -1574,12 +1574,23 @@ function contractPrice(p){
    which already is the default discount). ONLY the purchase price moves: MSRP and MAP are never touched here. A
    product with quantity breaks is left to its breaks, and a contract price (checked first) is never discounted
    again. Rounded to the cent from the list in cents, so 628 at 15% is 533.80 exactly. */
+/* TIME-LIMITED QUANTITY BREAKS (owner, 2026-11-04 — Yuwell SP-3 special through Dec 31, 2026). A break may carry
+   `until`: the ISO instant at which it ENDS (exclusive), e.g. "2027-01-01T06:00:00Z" = midnight Central on Jan 1.
+   From that instant the break is ignored everywhere — the cart, the order server (which runs this same text), the
+   price ladder and the card — so a promotion ends on time without anyone running anything. A break without
+   `until` never ends (every line before 2026-11-04). An `until` that cannot be read ends the break: an
+   unreadable date can never keep a lower price alive. */
+function liveTiers(p){
+  const all=Array.isArray(p&&p.tiers)?p.tiers:[]; if(!all.some(t=>t&&t.until!=null&&t.until!=='')) return all;
+  const now=Date.now();
+  return all.filter(t=>{ if(!t||t.until==null||t.until==='') return true; const e=Date.parse(t.until); return isFinite(e)&&now<e; });
+}
 function lineRatePrice(p){
   if(!(AUTH && AUTH.rates)) return null;
   const r=AUTH.rates[p.manufacturer||""]; if(r==null || r==="") return null;
   const rate=Number(r); if(!isFinite(rate) || rate<=0 || rate>=100) return null;
   const list=Number(p.dealer_price); if(!isFinite(list) || list<=0) return null;
-  if(Array.isArray(p.tiers) && p.tiers.length) return null;
+  if(liveTiers(p).length) return null;
   return Math.round(Number((list*(100-rate)).toFixed(6)))/100;
 }
 /* RAILING UPGRADES (owner, 2026-10-27; Access4U Fall 2026). A product may list manufacturer upgrades
@@ -1644,7 +1655,8 @@ function unitPrice(p, qty){
   const lr=lineRatePrice(p);
   if(lr!=null) return lr;
   // Quantity-break tiers apply when present.
-  if(Array.isArray(p.tiers)&&p.tiers.length){
+  const LT=liveTiers(p);
+  if(LT.length){
     const q=tierQty(p,qty);
     /* THRESHOLD-SPECIFIC POOLING (agreed 2026-10-09, Strongback Rev C). A break that names a pool
        ("strongback-models") qualifies on the combined cart quantity of every product of the same line
@@ -1652,12 +1664,12 @@ function unitPrice(p, qty){
        catalog group). 1×1003AB + 1×R0001 → both reach 2+; 4×1003AB + 4×1017 never reach 8+. */
     const poolQty=name=>{ let n=0, seen=false;
       for(const {p:cp,qty:cq} of CART.values()){
-        if(cp.manufacturer===p.manufacturer && Array.isArray(cp.tiers) && cp.tiers.some(r=>r&&r.pool===name)){
+        if(cp.manufacturer===p.manufacturer && liveTiers(cp).some(r=>r&&r.pool===name)){
           n+=(parseInt(cq)||0); if(cp.code===p.code) seen=true; } }
       if(!seen) n+=(parseInt(qty)||1);
       return Math.max(1,n); };
     let price=null;
-    for(const t of p.tiers){ const mq=(t.minQty??t.min_qty??1); const tq=(t&&t.pool)?poolQty(t.pool):q; if(tq>=mq && t.price!=null) price=Number(t.price); }
+    for(const t of LT){ const mq=(t.minQty??t.min_qty??1); const tq=(t&&t.pool)?poolQty(t.pool):q; if(tq>=mq && t.price!=null) price=Number(t.price); }
     if(price!=null) return price;
   }
   return Number(p.base_price||0);
@@ -1670,8 +1682,9 @@ function unitPrice(p, qty){
    minQty and min_qty, and because a tier at qty 1 is the base price wearing a hat. */
 function tierLadder(p){
   const base=Number(p&&p.base_price);
-  const rows=(Array.isArray(p&&p.tiers)?p.tiers:[])
-    .map(t=>({qty:Math.round(Number(t&&(t.minQty!=null?t.minQty:t.min_qty))||0), price:Number(t&&t.price), pool:(t&&t.pool)||null}))
+  const rows=liveTiers(p)
+    .map(t=>Object.assign({qty:Math.round(Number(t&&(t.minQty!=null?t.minQty:t.min_qty))||0), price:Number(t&&t.price), pool:(t&&t.pool)||null},
+      (t&&t.until)?{until:t.until}:{}))
     .filter(t=>t.qty>1 && isFinite(t.price) && t.price>0)
     .sort((a,b)=>a.qty-b.qty);
   if(!rows.length) return [];
@@ -1684,13 +1697,18 @@ function tierLadder(p){
    an expression inside the table template, because the one case that reads wrong — a single
    unit between the base and a break at 2, which printed as "1–1" — is only catchable if the
    rule can be tested on its own. */
+/* The last day a time-limited break applies, in Central time ("Dec 31, 2026" for an end of 2027-01-01 06:00Z). */
+function tierUntilLabel(until){
+  const e=Date.parse(until); if(!isFinite(e)) return '';
+  try{ return new Date(e-1).toLocaleDateString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric',year:'numeric'}); }catch(_){ return ''; }
+}
 function tierRangeLabel(qty, nextQty){
   if(nextQty==null) return `${qty}+`;
   return nextQty>qty ? `${qty}–${nextQty}` : `${qty}`;
 }
 /* One line for the card: the breaks only, no arithmetic, no base price repeated. */
 function tierSummary(p){
-  return tierLadder(p).filter(t=>t.qty>1).map(t=>`${t.qty}+ ${money(t.price)}${t.pool?' (mix models)':''}`).join(' · ');
+  return tierLadder(p).filter(t=>t.qty>1).map(t=>`${t.qty}+ ${money(t.price)}${t.pool?' (mix models)':''}${t.until?` (through ${tierUntilLabel(t.until)})`:''}`).join(' · ');
 }
 /* ONE LINE FOR A WHOLE CARD, ACROSS EVERY VARIANT ON IT.
    Takes the union of the break quantities and, at each one, the LOWEST price any variant
@@ -7224,7 +7242,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       <div style="overflow-x:auto"><table class="pd-tier"><thead><tr><th>Quantity</th><th>Unit price</th><th>You save</th></tr></thead><tbody>${
         _lad.map((t,i)=>{ const top=_lad[0].price, save=top-t.price, nextQ=_lad[i+1]?_lad[i+1].qty-1:null;
           const range=tierRangeLabel(t.qty, nextQ);
-          return `<tr><td>${esc(range)}</td><td class="v">${money(t.price)}</td><td class="sv">${save>0.005?money(save)+' ea':'—'}</td></tr>`;
+          return `<tr><td>${esc(range)}${t.until?`<div style="font-size:11px;color:var(--muted)">through ${esc(tierUntilLabel(t.until))}</div>`:''}</td><td class="v">${money(t.price)}</td><td class="sv">${save>0.005?money(save)+' ea':'—'}</td></tr>`;
         }).join("")
       }</tbody></table></div>
       ${(p.group&&_lad.length)?`<div class="pd-tiernote">Counts your combined quantity across every size on this page — mixing sizes still reaches the break.</div>`:""}
