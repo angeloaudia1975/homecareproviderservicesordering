@@ -5,9 +5,9 @@
 const fs = require('fs'), path = require('path');
 const H = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
 function grab(n) { const i = H.indexOf('function ' + n + '('); if (i < 0) throw new Error('missing ' + n); let d = 0, j = H.indexOf('{', i); for (;; j++) { if (H[j] === '{') d++; else if (H[j] === '}') { d--; if (!d) break; } } return H.slice(i, j + 1); }
-const SRC = ['liveTiers', 'tierUntilLabel', 'tierLadder', 'tierSummary', 'tierQty', 'familyQty', 'contractPrice', 'lineRatePrice', 'unitPrice', 'nextTierGain'].map(grab).join('\n');
+const SRC = ['tierUntilLabel', 'tierLadder', 'tierSummary', 'tierQty', 'familyQty', 'contractPrice', 'lineRatePrice', 'unitPrice', 'nextTierGain'].map(grab).join('\n');
 const realNow = Date.now;
-const at = (iso, f) => { Date.now = () => Date.parse(iso); try { return f(new Function('CART', 'AUTH', 'money', SRC + ';return {unitPrice,tierSummary,tierLadder,nextTierGain,liveTiers};')(new Map(), null, v => '$' + Number(v).toFixed(2))); } finally { Date.now = realNow; } };
+const at = (iso, f) => { Date.now = () => Date.parse(iso); try { return f(new Function('CART', 'AUTH', 'money', SRC + ';return {unitPrice,tierSummary,tierLadder,nextTierGain,lineRatePrice};')(new Map(), null, v => '$' + Number(v).toFixed(2))); } finally { Date.now = realNow; } };
 let pass = 0, fail = 0; const t = (n, f) => { try { f(); pass++; console.log('ok   ' + n); } catch (e) { fail++; console.log('FAIL ' + n + '\n     ' + e.message); } };
 const eq = (a, b, m) => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error((m || '') + ' got ' + JSON.stringify(a) + ' expected ' + JSON.stringify(b)); };
 const END = '2027-01-01T06:00:00Z';                     // midnight, Jan 1 2027, Central (CST = UTC-6)
@@ -34,8 +34,19 @@ t('fail closed: an unreadable end date ends the break; a break without an end ne
   eq(E.unitPrice({ base_price: 100, tiers: [{ min_qty: 4, price: 90 }] }, 5), 90);
   eq(E.unitPrice({ base_price: 100, tiers: [{ min_qty: 4, price: 90, until: '' }] }, 5), 90);
 }));
-t('lines without time-limited breaks are untouched (liveTiers returns the same array)', () => at('2030-01-01T00:00:00Z', E => {
-  const p = { tiers: [{ min_qty: 2, price: 9 }, { min_qty: 5, price: 8, pool: 'x' }] }; if (E.liveTiers(p) !== p.tiers) throw new Error('copied');
+t('one rule, written out identically in unitPrice, lineRatePrice and tierLadder', () => {
+  const rules = ['unitPrice', 'lineRatePrice', 'tierLadder'].map(n => { const m = /\n  const live=([^\n]*);\n/.exec(grab(n)); if (!m) throw new Error(n + ' has no live rule'); return m[1]; });
+  if (new Set(rules).size !== 1) throw new Error('the copies differ: ' + JSON.stringify(rules));
+});
+t('only a full ISO instant is accepted: a date-only or zone-less `until` ends the break at once (no timezone guess)', () => at('2026-12-01T00:00:00Z', E => {
+  for (const u of ['2027-01-01', '2027-01-01T00:00:00', 'Jan 1 2027', '2027/01/01 00:00'])
+    eq(E.unitPrice({ base_price: 100, tiers: [{ min_qty: 4, price: 90, until: u }] }, 5), 100, u);
+  for (const u of ['2027-01-01T00:00:00-06:00', '2027-01-01T06:00Z', '2027-01-01T06:00:00.000Z'])
+    eq(E.unitPrice({ base_price: 100, tiers: [{ min_qty: 4, price: 90, until: u }] }, 5), 90, u);
+}));
+t('a line-rate dealer is unaffected while a live break exists, and the break never stacks with the rate', () => at('2026-12-01T00:00:00Z', () => {
+  const E = new Function('CART', 'AUTH', 'money', SRC + ';return {unitPrice};')(new Map(), { rates: { yuwell: 10 } }, v => v);
+  eq(E.unitPrice({ manufacturer: 'yuwell', base_price: 100, dealer_price: 100, tiers: [{ min_qty: 4, price: 90, until: END }] }, 5), 90);
 }));
 t('every frozen / live line file carries no `until` today (nothing else changes behaviour)', () => {
   const dir = path.join(__dirname, '..', 'public', 'data');

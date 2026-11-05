@@ -1575,22 +1575,19 @@ function contractPrice(p){
    product with quantity breaks is left to its breaks, and a contract price (checked first) is never discounted
    again. Rounded to the cent from the list in cents, so 628 at 15% is 533.80 exactly. */
 /* TIME-LIMITED QUANTITY BREAKS (owner, 2026-11-04 — Yuwell SP-3 special through Dec 31, 2026). A break may carry
-   `until`: the ISO instant at which it ENDS (exclusive), e.g. "2027-01-01T06:00:00Z" = midnight Central on Jan 1.
-   From that instant the break is ignored everywhere — the cart, the order server (which runs this same text), the
-   price ladder and the card — so a promotion ends on time without anyone running anything. A break without
-   `until` never ends (every line before 2026-11-04). An `until` that cannot be read ends the break: an
-   unreadable date can never keep a lower price alive. */
-function liveTiers(p){
-  const all=Array.isArray(p&&p.tiers)?p.tiers:[]; if(!all.some(t=>t&&t.until!=null&&t.until!=='')) return all;
-  const now=Date.now();
-  return all.filter(t=>{ if(!t||t.until==null||t.until==='') return true; const e=Date.parse(t.until); return isFinite(e)&&now<e; });
-}
+   `until`: the ISO 8601 instant (with Z or an offset) at which it ENDS, exclusive — "2027-01-01T06:00:00Z" is midnight
+   Central on Jan 1, 2027. From that instant the break is ignored by unitPrice (so by the order server, which runs this
+   same text), the line-discount check, the ladder and the card. A break without `until` never ends (every line before
+   2026-11-04). An `until` that is not a full ISO instant ends the break at once: an unreadable or date-only value can
+   never keep a lower price alive. The rule is written out where it is used (unitPrice, lineRatePrice, tierLadder) so
+   every copy of these functions carries it; test/tier-until.test.js holds the three identical. */
 function lineRatePrice(p){
   if(!(AUTH && AUTH.rates)) return null;
   const r=AUTH.rates[p.manufacturer||""]; if(r==null || r==="") return null;
   const rate=Number(r); if(!isFinite(rate) || rate<=0 || rate>=100) return null;
   const list=Number(p.dealer_price); if(!isFinite(list) || list<=0) return null;
-  if(liveTiers(p).length) return null;
+  const live=t=>!(t&&t.until!=null&&t.until!=='')||(/^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:\d\d)$/.test(String(t.until))&&Date.now()<Date.parse(t.until));
+  if((Array.isArray(p.tiers)?p.tiers:[]).filter(live).length) return null;
   return Math.round(Number((list*(100-rate)).toFixed(6)))/100;
 }
 /* RAILING UPGRADES (owner, 2026-10-27; Access4U Fall 2026). A product may list manufacturer upgrades
@@ -1655,7 +1652,8 @@ function unitPrice(p, qty){
   const lr=lineRatePrice(p);
   if(lr!=null) return lr;
   // Quantity-break tiers apply when present.
-  const LT=liveTiers(p);
+  const live=t=>!(t&&t.until!=null&&t.until!=='')||(/^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:\d\d)$/.test(String(t.until))&&Date.now()<Date.parse(t.until));
+  const LT=(Array.isArray(p.tiers)?p.tiers:[]).filter(live);
   if(LT.length){
     const q=tierQty(p,qty);
     /* THRESHOLD-SPECIFIC POOLING (agreed 2026-10-09, Strongback Rev C). A break that names a pool
@@ -1664,7 +1662,7 @@ function unitPrice(p, qty){
        catalog group). 1×1003AB + 1×R0001 → both reach 2+; 4×1003AB + 4×1017 never reach 8+. */
     const poolQty=name=>{ let n=0, seen=false;
       for(const {p:cp,qty:cq} of CART.values()){
-        if(cp.manufacturer===p.manufacturer && liveTiers(cp).some(r=>r&&r.pool===name)){
+        if(cp.manufacturer===p.manufacturer && Array.isArray(cp.tiers) && cp.tiers.some(r=>r&&r.pool===name)){
           n+=(parseInt(cq)||0); if(cp.code===p.code) seen=true; } }
       if(!seen) n+=(parseInt(qty)||1);
       return Math.max(1,n); };
@@ -1682,7 +1680,8 @@ function unitPrice(p, qty){
    minQty and min_qty, and because a tier at qty 1 is the base price wearing a hat. */
 function tierLadder(p){
   const base=Number(p&&p.base_price);
-  const rows=liveTiers(p)
+  const live=t=>!(t&&t.until!=null&&t.until!=='')||(/^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:\d\d)$/.test(String(t.until))&&Date.now()<Date.parse(t.until));
+  const rows=(Array.isArray(p&&p.tiers)?p.tiers:[]).filter(live)
     .map(t=>Object.assign({qty:Math.round(Number(t&&(t.minQty!=null?t.minQty:t.min_qty))||0), price:Number(t&&t.price), pool:(t&&t.pool)||null},
       (t&&t.until)?{until:t.until}:{}))
     .filter(t=>t.qty>1 && isFinite(t.price) && t.price>0)
@@ -2382,7 +2381,7 @@ function reconcileShopPrices(prods, rows, authoritative){
                        : (a == null || b == null) ? false
                        : Math.abs(Number(a) - Number(b)) < 0.005;
   const ladder = t => Array.isArray(t)
-    ? t.map(x => Math.round(Number(x.min_qty != null ? x.min_qty : x.minQty)) + ':' + Number(x.price) + (x.pool ? '@' + x.pool : ''))
+    ? t.map(x => Math.round(Number(x.min_qty != null ? x.min_qty : x.minQty)) + ':' + Number(x.price) + (x.pool ? '@' + x.pool : '') + (x.until ? '~' + x.until : ''))
        .sort().join(',')
     : '';
 
