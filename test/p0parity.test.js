@@ -125,6 +125,8 @@ const sha = v => crypto.createHash('sha256').update(JSON.stringify(canon(v))).di
       for (const slug of SLUGS) {
         /* a line updated after P0 by a reviewed catalog update is checked by p0commercial against its registered version */
         if (require('../scripts/p0-lines.js').UPDATED[slug]) continue;
+        /* a line retired since the seed (Ohio Medical / GCE, 2026-11-04) is not listed any more: its file is gone, nothing to compare */
+        if (!require('../scripts/p0-lines.js').currentLines(ROOT).includes(slug)) continue;
         let full; try { full = JSON.parse(git(`public/data/${slug}.json`)); } catch (e) { continue; }
         const strippedNow = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'data', slug + '.json'), 'utf8'));
         const contract = {}; full.slice(0, 3).forEach((r, i) => { contract[`${slug}::${r.code}`] = 5 + i; });

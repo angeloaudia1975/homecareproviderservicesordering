@@ -53,13 +53,17 @@ const preload = slugs => psql(SEED.split('\ndo $p0$')[0] + `
 const { UPDATED } = require('../scripts/p0-lines.js');
 const refRows = slug => JSON.parse(execFileSync('git', ['-C', ROOT, 'show', `${REF}:public/data/${slug}.json`], { encoding: 'utf8', maxBuffer: 1 << 26 })).length;
 const UPD = Object.keys(UPDATED).filter(k => !UPDATED[k].new_line);   // a new line (ABM) was never in the seed
-const EXP = `${10 - UPD.length}|${1120 - UPD.reduce((n, s) => n + refRows(s), 0)}`;
-const SEEDED = ['bemis', 'dalton', 'airavant-bongorx', 'corsicana', 'climbing-steps', 'strongback-mobility', 'ovation-medical', 'pedifix', 'gce'].filter(s => !UPD.includes(s));
+/* A line retired since the seed (no longer listed in this tree's manufacturers.json) leaves the plan too. */
+const CUR = require('../scripts/p0-lines.js').currentLines(ROOT);
+const GONE = ['gce'].filter(s => !CUR.includes(s));
+const EXP = `${10 - UPD.length - GONE.length}|${1120 - UPD.reduce((n, s) => n + refRows(s), 0) - GONE.reduce((n, s) => n + refRows(s), 0)}`;
+const SEEDED = ['bemis', 'dalton', 'airavant-bongorx', 'corsicana', 'climbing-steps', 'strongback-mobility', 'ovation-medical', 'pedifix', 'gce'].filter(s => !UPD.includes(s) && !GONE.includes(s));
 const FIVE = SEEDED.slice(0, 5);
 const FIVE_EXP = `${FIVE.length}|${FIVE.reduce((n, s) => n + refRows(s), 0)}`;
 const FP = SEEDED.find(s => s !== 'bemis');
-t(`the export plans exactly the runbook minus updated lines (${EXP}), Complete Medical excluded`, () => {
+t(`the export plans exactly the runbook minus updated lines (${EXP}), Complete Medical and Ohio Medical excluded`, () => {
   ok(`${LINES}|${ROWS}` === EXP, `${LINES} / ${ROWS}`);
+  ok(!/'gce'/.test(SEED.split('\ndo $p0$')[0].replace(/\$p0j[0-9a-f]+\$[\s\S]*?\$p0j[0-9a-f]+\$/g, '')), 'Ohio Medical in the plan');
   ok(!/complete-medical/.test(SEED.split('\ndo $p0$')[0].replace(/\$p0j[0-9a-f]+\$[\s\S]*?\$p0j[0-9a-f]+\$/g, '')), 'retired line in the plan');
 });
 t('the file is private: mode 0600, outside the repository, no UPDATE / DELETE statement', () => {

@@ -196,16 +196,6 @@
     }
   },
   {
-    "slug": "gce",
-    "name": "Ohio Medical / GCE",
-    "accent": "#0e7ac0",
-    "dark": "#0c2b44",
-    "logo": "/assets/logos/gce.jpg",
-    "hasData": true,
-    "sort": 11,
-    "quotable": false
-  },
-  {
     "slug": "dalton",
     "name": "Dalton Medical",
     "accent": "#1681c2",
@@ -219,6 +209,26 @@
       "groups": [],
       "elseActual": true,
       "otherLabel": "Dalton freight — per Dalton’s Nov 1, 2026 LTL policy"
+    }
+  },
+  {
+    "slug": "yuwell",
+    "name": "Yuwell",
+    "accent": "#d7002f",
+    "dark": "#0b1f33",
+    "logo": "/assets/logos/yuwell.jpg",
+    "hasData": true,
+    "sort": 13,
+    "freight": {
+      "mode": "qty_threshold",
+      "qualifyingCodes": [
+        "SP-3"
+      ],
+      "freeAtQty": 1,
+      "label": "Shipping",
+      "freeLabel": "Free shipping",
+      "summary": "Yuwell shipping: the SPIRIT-3 (SP-3) always ships free, and any Yuwell order that includes an SP-3 ships free — accessories and monitors included. Orders without an SP-3 pay actual shipping, added from the order confirmation.",
+      "actualNote": "Actual shipping is added to Yuwell orders without a SPIRIT-3 (SP-3). Add an SP-3 and the whole Yuwell order ships free."
     }
   }
 ]

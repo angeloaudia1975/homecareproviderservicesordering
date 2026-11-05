@@ -66,8 +66,9 @@ function world(over) {
   const proc = { env: { SUPABASE_URL: URL, SUPABASE_SERVICE_ROLE: KEY } };
   const load = (src, req) => { const mod = { exports: {} };
     new Function('module', 'exports', 'require', 'process', 'fetch', src)(mod, mod.exports, req, proc, fetch); return mod.exports; };
-  const feed = load(FEED_SRC, require);
-  const layers = load(LAYERS_SRC, n => (/catalog-feed(\.js)?$/.test(n) ? feed : /_catalog_commercial(\.js)?$/.test(n) ? CC : require(n)));
+  const RL = require(path.join(FN, '_retired_lines.js'));
+  const feed = load(FEED_SRC, n => (/_retired_lines(\.js)?$/.test(n) ? RL : require(n)));
+  const layers = load(LAYERS_SRC, n => (/catalog-feed(\.js)?$/.test(n) ? feed : /_catalog_commercial(\.js)?$/.test(n) ? CC : /_retired_lines(\.js)?$/.test(n) ? RL : require(n)));
   const call = async (q, headers, method) => {
     const r = await layers.handler({ httpMethod: method || 'GET', queryStringParameters: q || {}, headers: headers || {} });
     let body = null; try { body = JSON.parse(r.body || 'null'); } catch (e) {}

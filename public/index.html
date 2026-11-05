@@ -1588,12 +1588,21 @@ function contractPrice(p){
    which already is the default discount). ONLY the purchase price moves: MSRP and MAP are never touched here. A
    product with quantity breaks is left to its breaks, and a contract price (checked first) is never discounted
    again. Rounded to the cent from the list in cents, so 628 at 15% is 533.80 exactly. */
+/* TIME-LIMITED QUANTITY BREAKS (owner, 2026-11-04 — Yuwell SP-3 special through Dec 31, 2026). A break may carry
+   `until`: the ISO 8601 instant (with Z or an offset) at which it ENDS, exclusive — "2027-01-01T06:00:00Z" is midnight
+   Central on Jan 1, 2027. From that instant the break is ignored by unitPrice (so by the order server, which runs this
+   same text), the line-discount check, the ladder and the card. A break without `until` never ends (every line before
+   2026-11-04). An `until` that is not a full ISO instant of a REAL calendar time (no Feb 30, no 24:00 — V8 rolls those forward while
+   Safari refuses them) ends the break at once: an unreadable or date-only value can
+   never keep a lower price alive. The rule is written out where it is used (unitPrice, lineRatePrice, tierLadder) so
+   every copy of these functions carries it; test/tier-until.test.js holds the three identical. */
 function lineRatePrice(p){
   if(!(AUTH && AUTH.rates)) return null;
   const r=AUTH.rates[p.manufacturer||""]; if(r==null || r==="") return null;
   const rate=Number(r); if(!isFinite(rate) || rate<=0 || rate>=100) return null;
   const list=Number(p.dealer_price); if(!isFinite(list) || list<=0) return null;
-  if(Array.isArray(p.tiers) && p.tiers.length) return null;
+  const live=t=>!(t&&t.until!=null&&t.until!=='')||((u,d)=>/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?(Z|[+-]([01]\d|2[0-3]):[0-5]\d)$/.test(u)&&isFinite(d=Date.parse(u.slice(0,10)+'T00:00:00Z'))&&new Date(d).toISOString().slice(0,10)===u.slice(0,10)&&Date.now()<Date.parse(u))(String(t.until));
+  if((Array.isArray(p.tiers)?p.tiers:[]).filter(live).length) return null;
   return Math.round(Number((list*(100-rate)).toFixed(6)))/100;
 }
 /* RAILING UPGRADES (owner, 2026-10-27; Access4U Fall 2026). A product may list manufacturer upgrades
@@ -1658,7 +1667,9 @@ function unitPrice(p, qty){
   const lr=lineRatePrice(p);
   if(lr!=null) return lr;
   // Quantity-break tiers apply when present.
-  if(Array.isArray(p.tiers)&&p.tiers.length){
+  const live=t=>!(t&&t.until!=null&&t.until!=='')||((u,d)=>/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?(Z|[+-]([01]\d|2[0-3]):[0-5]\d)$/.test(u)&&isFinite(d=Date.parse(u.slice(0,10)+'T00:00:00Z'))&&new Date(d).toISOString().slice(0,10)===u.slice(0,10)&&Date.now()<Date.parse(u))(String(t.until));
+  const LT=(Array.isArray(p.tiers)?p.tiers:[]).filter(live);
+  if(LT.length){
     const q=tierQty(p,qty);
     /* THRESHOLD-SPECIFIC POOLING (agreed 2026-10-09, Strongback Rev C). A break that names a pool
        ("strongback-models") qualifies on the combined cart quantity of every product of the same line
@@ -1671,7 +1682,7 @@ function unitPrice(p, qty){
       if(!seen) n+=(parseInt(qty)||1);
       return Math.max(1,n); };
     let price=null;
-    for(const t of p.tiers){ const mq=(t.minQty??t.min_qty??1); const tq=(t&&t.pool)?poolQty(t.pool):q; if(tq>=mq && t.price!=null) price=Number(t.price); }
+    for(const t of LT){ const mq=(t.minQty??t.min_qty??1); const tq=(t&&t.pool)?poolQty(t.pool):q; if(tq>=mq && t.price!=null) price=Number(t.price); }
     if(price!=null) return price;
   }
   return Number(p.base_price||0);
@@ -1684,8 +1695,10 @@ function unitPrice(p, qty){
    minQty and min_qty, and because a tier at qty 1 is the base price wearing a hat. */
 function tierLadder(p){
   const base=Number(p&&p.base_price);
-  const rows=(Array.isArray(p&&p.tiers)?p.tiers:[])
-    .map(t=>({qty:Math.round(Number(t&&(t.minQty!=null?t.minQty:t.min_qty))||0), price:Number(t&&t.price), pool:(t&&t.pool)||null}))
+  const live=t=>!(t&&t.until!=null&&t.until!=='')||((u,d)=>/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?(Z|[+-]([01]\d|2[0-3]):[0-5]\d)$/.test(u)&&isFinite(d=Date.parse(u.slice(0,10)+'T00:00:00Z'))&&new Date(d).toISOString().slice(0,10)===u.slice(0,10)&&Date.now()<Date.parse(u))(String(t.until));
+  const rows=(Array.isArray(p&&p.tiers)?p.tiers:[]).filter(live)
+    .map(t=>Object.assign({qty:Math.round(Number(t&&(t.minQty!=null?t.minQty:t.min_qty))||0), price:Number(t&&t.price), pool:(t&&t.pool)||null},
+      (t&&t.until)?{until:t.until}:{}))
     .filter(t=>t.qty>1 && isFinite(t.price) && t.price>0)
     .sort((a,b)=>a.qty-b.qty);
   if(!rows.length) return [];
@@ -1698,13 +1711,18 @@ function tierLadder(p){
    an expression inside the table template, because the one case that reads wrong — a single
    unit between the base and a break at 2, which printed as "1–1" — is only catchable if the
    rule can be tested on its own. */
+/* The last day a time-limited break applies, in Central time ("Dec 31, 2026" for an end of 2027-01-01 06:00Z). */
+function tierUntilLabel(until){
+  const e=Date.parse(until); if(!isFinite(e)) return '';
+  try{ return new Date(e-1).toLocaleDateString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric',year:'numeric'}); }catch(_){ return ''; }
+}
 function tierRangeLabel(qty, nextQty){
   if(nextQty==null) return `${qty}+`;
   return nextQty>qty ? `${qty}–${nextQty}` : `${qty}`;
 }
 /* One line for the card: the breaks only, no arithmetic, no base price repeated. */
 function tierSummary(p){
-  return tierLadder(p).filter(t=>t.qty>1).map(t=>`${t.qty}+ ${money(t.price)}${t.pool?' (mix models)':''}`).join(' · ');
+  return tierLadder(p).filter(t=>t.qty>1).map(t=>`${t.qty}+ ${money(t.price)}${t.pool?' (mix models)':''}${t.until?` (through ${tierUntilLabel(t.until)})`:''}`).join(' · ');
 }
 /* ONE LINE FOR A WHOLE CARD, ACROSS EVERY VARIANT ON IT.
    Takes the union of the break quantities and, at each one, the LOWEST price any variant
@@ -1852,9 +1870,17 @@ function dealerPriceNote(note, p){
    Never true on the live site. */
 const STAGING=/^(deploy-preview-\d{1,5}|[a-z0-9-]{1,40})--hcpsonlineordering\.netlify\.app$/.test(location.hostname)&&!/^main--/.test(location.hostname);
 const RAW={files:{},content:{},manufacturers:null};
+const RETIRED_LINE_SLUGS=["complete-medical-supplies","ohio-medical","gce"];
+/* Historical orders and imported sales of a retired line still show its name (never the bare slug "gce"). */
+const RETIRED_LINE_NAMES={"complete-medical-supplies":"Complete Medical Supplies","ohio-medical":"Ohio Medical / GCE","gce":"Ohio Medical / GCE"};
+/* One test everywhere: trimmed and case-insensitive, like the servers' isRetiredLine. */
+function isRetiredSlug(slug){ return RETIRED_LINE_SLUGS.includes(String(slug==null?"":slug).trim().toLowerCase()); }
+function retiredLineName(slug){ return RETIRED_LINE_NAMES[String(slug==null?"":slug).trim().toLowerCase()]||null; }
 async function loadManufacturers(){
   const r = await fetch("./data/manufacturers.json",{cache:"no-store"});
-  state.manufacturers = await r.json();
+  /* Retired lines are never listed, whichever identifier a file uses (netlify/functions/_retired_lines.js
+     is the server's copy; test/retired-lines.test.js keeps the two the same). */
+  state.manufacturers = ((await r.json())||[]).filter(m=>m&&!isRetiredSlug(m.slug));
   try{ RAW.manufacturers=JSON.parse(JSON.stringify(state.manufacturers)); }catch(e){}
   // admin-uploaded manufacturer logos (Supabase, public-read) — merged so they show
   // below the manufacturer name on the home cards + catalog header, no redeploy needed.
@@ -1866,8 +1892,14 @@ async function loadManufacturers(){
        catalog file happened to carry, which is why the shop showed "Ankles" and "Backs" while the
        admin showed "Foot & Ankle" and "Back & Spine". One missing word, and the two views of the
        catalog disagreed for weeks. */
-    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,enriched_only,category_order,category_map,freight_terms`,
+    const lg = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/manufacturer_meta?select=slug,logo_url,enriched_only,category_order,category_map,freight_terms,active`,
       {headers:{apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON}}).then(x=>x.ok?x.json():[]);
+    /* THE LINE SWITCH (Admin → Catalog → "Manufacturers on the ordering platform", manufacturer_meta.active).
+       It was written by the admin but never read here, so switching a line off changed nothing (review 2026-11-04).
+       A line whose record says active = false is not listed; the order server refuses it too. A line with no
+       record, or a record that does not say false, is listed as before. */
+    const off=new Set((lg||[]).filter(o=>o&&o.active===false).map(o=>String(o.slug)));
+    if(off.size){ state.manufacturers=state.manufacturers.filter(m=>!off.has(String(m.slug))); try{ RAW.manufacturers=JSON.parse(JSON.stringify(state.manufacturers)); }catch(e){} }
     const lm=Object.fromEntries((lg||[]).map(o=>[o.slug,o.logo_url]));
     /* Per-line listing mode. On a line whose enrichment is finished, the enrichment record is
        the catalogue: a SKU with no page is not a product yet and is not offered. This is set
@@ -2364,7 +2396,7 @@ function reconcileShopPrices(prods, rows, authoritative){
                        : (a == null || b == null) ? false
                        : Math.abs(Number(a) - Number(b)) < 0.005;
   const ladder = t => Array.isArray(t)
-    ? t.map(x => Math.round(Number(x.min_qty != null ? x.min_qty : x.minQty)) + ':' + Number(x.price) + (x.pool ? '@' + x.pool : ''))
+    ? t.map(x => Math.round(Number(x.min_qty != null ? x.min_qty : x.minQty)) + ':' + Number(x.price) + (x.pool ? '@' + x.pool : '') + (x.until ? '~' + x.until : ''))
        .sort().join(',')
     : '';
 
@@ -3398,13 +3430,13 @@ async function reorder(orderId){
   else toast("Those items are no longer in the catalog");
 }
 function orderCardHtml(o){
-  const name=(state.manufacturers.find(m=>m.slug===o.manufacturer)||{}).name || o.manufacturer || "Order";
+  const name=(state.manufacturers.find(m=>m.slug===o.manufacturer)||{}).name || retiredLineName(o.manufacturer) || o.manufacturer || "Order";
   const dt=o.submitted_at? new Date(o.submitted_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
   const st=(o.status||"submitted"); const stColor= st==="placed"?"#1A7A4A":st==="reviewed"?"#2B4071":st==="cancelled"?"#B91C1C":"#F5821F";
   return `<div class="ordrow">
     <div class="ordmain"><div class="ordtop"><b>${esc(name)}</b><span class="ordstat" style="background:${stColor}1a;color:${stColor}">${esc(ORDER_STATUS_LABEL[st]||st)}</span></div>
       <div class="ordsub">${dt}${o.po?` · PO ${esc(o.po)}`:""} · ${o.items_count} item${o.items_count===1?"":"s"} · ${money(o.subtotal)}</div></div>
-    <button class="reord" onclick="reorder('${esc(o.id)}')">Reorder</button></div>`;
+    ${isRetiredSlug(o.manufacturer)?'<span class="ordsub" style="white-space:nowrap">Line retired</span>':`<button class="reord" onclick="reorder('${esc(o.id)}')">Reorder</button>`}</div>`;
 }
 // admin-editable portal-home content (hero banner + promo tiles). Public-read via anon key.
 async function loadHomeContent(){
@@ -4404,7 +4436,7 @@ function cartRuleProblems(){
   return out;
 }
 function cartCount(){let n=0;for(const{qty}of CART.values())n+=qty;return n;}
-function mfrInfo(slug){ if(isGoldenSlug(slug)){ return state.manufacturers.find(m=>isGoldenSlug(m.slug))||{slug:CONFIG.GOLDEN_SLUG,name:'Golden Technologies',golden:true}; } return state.manufacturers.find(m=>m.slug===slug)||{slug,name:slug};}
+function mfrInfo(slug){ if(isGoldenSlug(slug)){ return state.manufacturers.find(m=>isGoldenSlug(m.slug))||{slug:CONFIG.GOLDEN_SLUG,name:'Golden Technologies',golden:true}; } return state.manufacturers.find(m=>m.slug===slug)||{slug,name:retiredLineName(slug)||slug};}
 function groupCart(){const g=new Map();for(const it of CART.values()){const s=it.p.manufacturer;if(!g.has(s))g.set(s,[]);g.get(s).push(it);}return g;}
 function linesSubtotal(lines){let t=0;for(const{p,qty}of lines)t+=unitPrice(p,qty)*qty;return t;}
 
@@ -6864,7 +6896,10 @@ async function loadPricing(){
   if(PRICE) return;
   PRICE={}; PRICELIST=[]; QUOTELIST=null;
   try{
-    const mf=await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]);
+    /* Retired lines never listed (any spelling); a line switched off (manufacturer_meta.active=false) is never listed
+       either — the price list, showroom and quotes follow the same list as the catalog (review 2026-11-04). */
+    const shopList=(typeof state!=="undefined"&&state&&Array.isArray(state.manufacturers)&&state.manufacturers.length)?new Set(state.manufacturers.map(m=>String(m.slug))):null;
+    const mf=((await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]))||[]).filter(m=>m&&!isRetiredSlug(m.slug)&&(!shopList||shopList.has(String(m.slug))));
     MFRLIST=(mf||[]).map(m=>({slug:m.slug,name:m.name,quotable:m.quotable}));
     const withData=(mf||[]).filter(m=>m.hasData!==false);
     /* P0 (2026-10-23): the public files carry no prices. A line this dealer carries is priced from
@@ -7048,12 +7083,12 @@ async function loadQuotesView(){ await ensureCatalogFav(); renderQuotes(); }
    price in its place. New quotes offer no product of an inactive line (manufacturers.json "quotable": false —
    Ohio Medical / GCE); an item already on a quote stays on it. */
 function quoteMsrp(p){ const v=p&&p.msrp!=null?Number(p.msrp):NaN; return (isFinite(v)&&v>0)?v:null; }
-function quotableLine(slug){ const m=(MFRLIST||[]).find(x=>x.slug===slug); return !(m&&m.quotable===false); }
+function quotableLine(slug){ if(typeof isRetiredSlug==="function"&&isRetiredSlug(slug)) return false; const m=(MFRLIST||[]).find(x=>x.slug===slug); return !(m&&m.quotable===false); }
 function quoteTotal(picked){ return picked.reduce((s,r)=>s+(r.msrp!=null?r.msrp:0),0); }
 function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">MSRP not provided</span>'; }
 function quoteItemHtml(r){ return `${esc(r.name)}<div style="font-size:10.5px;color:var(--muted)">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)}</div>`; }
 function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const p=(PRICE&&PRICE[k])||((typeof GQUOTE!=="undefined"&&GQUOTE[k])||{});
-  return {key:k,mfr,code,sku:p.sku||code.split("|u=")[0],name:p.name||code,option:p.option||"",mfrName:p.mfrName||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach};}); }
+  return {key:k,mfr,code,sku:p.sku||code.split("|u=")[0],name:p.name||code,option:p.option||"",mfrName:p.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach};}); }
 function quotePaperHtml(picked,total){
   return `<div class="qhead"><div style="display:flex;gap:11px;align-items:center">${brandLogoHtml(46)}<div><div class="qbiz">${esc((PROFILE&&PROFILE.name)||"Your Business")}</div></div></div>
     <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>#Q-${(Math.abs(hashStr((PROFILE&&PROFILE.name)||"x"))%9000+1000)}</b><div class="qc">Valid ${esc(QCUST.valid||"")}</div></div></div>
@@ -7127,7 +7162,7 @@ async function submitPriceReq(){
 /* ================= PHASE 4: showroom, literature, tracking UI ================= */
 let SHOWROOM={zones:[]}, ZONE_N=12, MFRLIST=[], LINES=[], SW_PICK_IDX=null;
 function ensureZones(){ if(!Array.isArray(SHOWROOM.zones))SHOWROOM.zones=[]; while(SHOWROOM.zones.length<ZONE_N)SHOWROOM.zones.push(null); SHOWROOM.zones=SHOWROOM.zones.slice(0,ZONE_N); }
-function mfrNameOf(slug){ const m=(MFRLIST||[]).find(x=>x.slug===slug); return m?m.name:slug; }
+function mfrNameOf(slug){ const m=(MFRLIST||[]).find(x=>x.slug===slug); return m?m.name:(retiredLineName(slug)||slug); }
 function prodRec(key){ const i=key.indexOf("|"); const mfr=key.slice(0,i),code=key.slice(i+1); const p=(PRICE&&PRICE[key])||{}; const cost=p.cost!=null?p.cost:null; const msrp=(p.msrp!=null?p.msrp:(cost!=null?cost*2:0)); return {key,mfr,code,name:p.name||code,mfrName:p.mfrName||mfrNameOf(mfr),cost,msrp,est:p.msrp==null}; }
 function purchasedKeys(){ const m={}; for(const o of (HISTORY||[])){ for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; m[k]=(m[k]||0)+(Number(l.line!=null?l.line:l.cost)||0); } } return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k])=>k); }
 async function loadShowroom(){
@@ -7374,7 +7409,8 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       const H={apikey:CONFIG.SUPABASE_ANON,authorization:'Bearer '+CONFIG.SUPABASE_ANON};
       const rr=await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/product_related?manufacturer=eq.${encodeURIComponent(p.manufacturer||'')}&code=eq.${encodeURIComponent(code)}&order=sort&select=related_manufacturer,related_code,related_name,related_image,related_category,kind`,{headers:H});
       const cur=rr.ok?await rr.json():[];
-      (cur||[]).forEach(r=>{ (r.kind==='alternative'?curatedAlt:curatedAcc).push(r); });
+      /* a curated row pointing at a retired or unlisted line is never shown (its photos and catalog are gone) */
+      (cur||[]).filter(r=>r&&!isRetiredSlug(r.related_manufacturer)&&(!r.related_manufacturer||(state.manufacturers||[]).some(m=>m.slug===r.related_manufacturer))).forEach(r=>{ (r.kind==='alternative'?curatedAlt:curatedAcc).push(r); });
     }catch(e){}
     const media=Array.isArray(p.media)?p.media:[];
     // Golden: the model's enriched detail from Golden's own system (photos, size specs, documents, videos)
@@ -7413,7 +7449,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       <div style="overflow-x:auto"><table class="pd-tier"><thead><tr><th>Quantity</th><th>Unit price</th><th>You save</th></tr></thead><tbody>${
         _lad.map((t,i)=>{ const top=_lad[0].price, save=top-t.price, nextQ=_lad[i+1]?_lad[i+1].qty-1:null;
           const range=tierRangeLabel(t.qty, nextQ);
-          return `<tr><td>${esc(range)}</td><td class="v">${money(t.price)}</td><td class="sv">${save>0.005?money(save)+' ea':'—'}</td></tr>`;
+          return `<tr><td>${esc(range)}${t.until?`<div style="font-size:11px;color:var(--muted)">through ${esc(tierUntilLabel(t.until))}</div>`:''}</td><td class="v">${money(t.price)}</td><td class="sv">${save>0.005?money(save)+' ea':'—'}</td></tr>`;
         }).join("")
       }</tbody></table></div>
       ${(p.group&&_lad.length)?`<div class="pd-tiernote">Counts your combined quantity across every size on this page — mixing sizes still reaches the break.</div>`:""}

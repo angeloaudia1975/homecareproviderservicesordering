@@ -23,6 +23,10 @@ const SNIPPETS = [
   /* Golden B2 (PR #17, merged by the owner 2026-11-02): Golden products are browse-only in Partner 360 until Golden
      ordering opens. Only a product the Golden catalog builds carries _golden, so no other line's cart behaviour moves. */
   [/\n  if\(p && p\._golden\)\{ toast\("Golden ordering in Partner 360 is not open yet\."\); return; \}/, ''],
+  /* Time-limited quantity breaks (owner, 2026-11-04 — Yuwell SP-3 special ends Jan 1, 2027). */
+  [/\n  const live=t=>!\(t&&t\.until!=null&&t\.until!==''\)\|\|[^\n]*\n  const LT=\(Array\.isArray\(p\.tiers\)\?p\.tiers:\[\]\)\.filter\(live\);\n  if\(LT\.length\)\{/, '\n  if(Array.isArray(p.tiers)&&p.tiers.length){'],
+  [/\n    for\(const t of LT\)\{ const mq=/, '\n    for(const t of p.tiers){ const mq='],
+  [/ \+ \(x\.until \? '~' \+ x\.until : ''\)\)/, ')'],
   /* Golden B6.1 unified cart (owner directive 2026-11-04): the Golden Technologies group is appended to the HCPS cart and
      wired on its own; HCPS rows/groups skip it. Taken back out exactly, so any other renderCart change still fails. */
   [/\n  const gHtml=goldenCartGroupHtml\(\);\n  if\(!groups\.size&&!gHtml\)\{/, '\n  if(!groups.size){'],

@@ -23,5 +23,12 @@ function grabDecl(src, anchor){
   throw new Error('unterminated: '+anchor);
 }
 function extract(src){ return NAMES.map(a=>grabDecl(src,a)).join('\n'); }
-module.exports={extract,NAMES,grabDecl};
+/* The storefront's retired-line helpers (RETIRED_LINE_SLUGS, RETIRED_LINE_NAMES, isRetiredSlug, retiredLineName),
+   verbatim, for tests that run storefront functions which call them. Empty when the storefront has none. */
+function retiredDecls(html){
+  const out=[];
+  for(const re of [/const RETIRED_LINE_SLUGS=\[[^\]]*\];/, /const RETIRED_LINE_NAMES=\{[^}]*\};/, /function isRetiredSlug\(slug\)\{[^\n]*\}/, /function retiredLineName\(slug\)\{[^\n]*\}/]){ const m=re.exec(html); if(m) out.push(m[0]); }
+  return out.join('\n');
+}
+module.exports={extract,NAMES,grabDecl,retiredDecls};
 if(require.main===module){ const src=fs.readFileSync(process.argv[2],'utf8'); process.stdout.write(extract(src)); }

@@ -42,8 +42,11 @@ const MUTANTS = [
     to:   '  const norm = c => String(c == null ? "" : c);' },
 
   { name: 'ignore the storefront spelling of a ladder rung',
-    from: "    ? t.map(x => Math.round(Number(x.min_qty != null ? x.min_qty : x.minQty)) + ':' + Number(x.price) + (x.pool ? '@' + x.pool : ''))",
-    to:   "    ? t.map(x => Math.round(Number(x.min_qty)) + ':' + Number(x.price) + (x.pool ? '@' + x.pool : ''))" },
+    from: "    ? t.map(x => Math.round(Number(x.min_qty != null ? x.min_qty : x.minQty)) + ':' + Number(x.price) + (x.pool ? '@' + x.pool : '') + (x.until ? '~' + x.until : ''))",
+    to:   "    ? t.map(x => Math.round(Number(x.min_qty)) + ':' + Number(x.price) + (x.pool ? '@' + x.pool : '') + (x.until ? '~' + x.until : ''))" },
+  { name: 'let a promotion end date not count as a ladder difference',
+    from: " + (x.until ? '~' + x.until : ''))\n       .sort().join(',')",
+    to:   ")\n       .sort().join(',')" },
 
   { name: 'let ladder order count as a difference',
     from: "       .sort().join(',')",

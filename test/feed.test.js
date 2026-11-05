@@ -16,12 +16,14 @@ function eq(a, b, what){
     throw new Error((what || 'value') + ': got ' + JSON.stringify(a) + ', expected ' + JSON.stringify(b));
 }
 
+/* the function's own relative requires (./_retired_lines.js) resolve from netlify/functions, as on Netlify */
+const fnRequire = n => require(n.startsWith('./') ? require('path').join(__dirname, '..', 'netlify', 'functions', n) : n);
 function load(src){
   const fs = require('fs');
   const code = src !== undefined ? src : fs.readFileSync(FEED, 'utf8');
   const mod = { exports: {} };
   new Function('module', 'exports', 'require', 'process', 'fetch', code)(
-    mod, mod.exports, require, { env: {} }, () => { throw new Error('no network in tests'); });
+    mod, mod.exports, fnRequire, { env: {} }, () => { throw new Error('no network in tests'); });
   return mod.exports;
 }
 
