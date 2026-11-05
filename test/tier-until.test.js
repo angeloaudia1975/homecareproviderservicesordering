@@ -39,7 +39,8 @@ t('one rule, written out identically in unitPrice, lineRatePrice and tierLadder'
   if (new Set(rules).size !== 1) throw new Error('the copies differ: ' + JSON.stringify(rules));
 });
 t('only a full ISO instant is accepted: a date-only or zone-less `until` ends the break at once (no timezone guess)', () => at('2026-12-01T00:00:00Z', E => {
-  for (const u of ['2027-01-01', '2027-01-01T00:00:00', 'Jan 1 2027', '2027/01/01 00:00'])
+  for (const u of ['2027-01-01', '2027-01-01T00:00:00', 'Jan 1 2027', '2027/01/01 00:00',
+                   '2027-02-30T00:00:00Z', '2027-01-01T24:00Z', '2027-04-31T06:00:00Z', '2027-01-01T06:60:00Z', '2027-01-01T06:00:00+24:00'])
     eq(E.unitPrice({ base_price: 100, tiers: [{ min_qty: 4, price: 90, until: u }] }, 5), 100, u);
   for (const u of ['2027-01-01T00:00:00-06:00', '2027-01-01T06:00Z', '2027-01-01T06:00:00.000Z'])
     eq(E.unitPrice({ base_price: 100, tiers: [{ min_qty: 4, price: 90, until: u }] }, 5), 90, u);

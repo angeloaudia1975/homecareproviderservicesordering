@@ -1592,7 +1592,8 @@ function contractPrice(p){
    `until`: the ISO 8601 instant (with Z or an offset) at which it ENDS, exclusive — "2027-01-01T06:00:00Z" is midnight
    Central on Jan 1, 2027. From that instant the break is ignored by unitPrice (so by the order server, which runs this
    same text), the line-discount check, the ladder and the card. A break without `until` never ends (every line before
-   2026-11-04). An `until` that is not a full ISO instant ends the break at once: an unreadable or date-only value can
+   2026-11-04). An `until` that is not a full ISO instant of a REAL calendar time (no Feb 30, no 24:00 — V8 rolls those forward while
+   Safari refuses them) ends the break at once: an unreadable or date-only value can
    never keep a lower price alive. The rule is written out where it is used (unitPrice, lineRatePrice, tierLadder) so
    every copy of these functions carries it; test/tier-until.test.js holds the three identical. */
 function lineRatePrice(p){
@@ -1600,7 +1601,7 @@ function lineRatePrice(p){
   const r=AUTH.rates[p.manufacturer||""]; if(r==null || r==="") return null;
   const rate=Number(r); if(!isFinite(rate) || rate<=0 || rate>=100) return null;
   const list=Number(p.dealer_price); if(!isFinite(list) || list<=0) return null;
-  const live=t=>!(t&&t.until!=null&&t.until!=='')||(/^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:\d\d)$/.test(String(t.until))&&Date.now()<Date.parse(t.until));
+  const live=t=>!(t&&t.until!=null&&t.until!=='')||((u,d)=>/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?(Z|[+-]([01]\d|2[0-3]):[0-5]\d)$/.test(u)&&isFinite(d=Date.parse(u.slice(0,10)+'T00:00:00Z'))&&new Date(d).toISOString().slice(0,10)===u.slice(0,10)&&Date.now()<Date.parse(u))(String(t.until));
   if((Array.isArray(p.tiers)?p.tiers:[]).filter(live).length) return null;
   return Math.round(Number((list*(100-rate)).toFixed(6)))/100;
 }
@@ -1666,7 +1667,7 @@ function unitPrice(p, qty){
   const lr=lineRatePrice(p);
   if(lr!=null) return lr;
   // Quantity-break tiers apply when present.
-  const live=t=>!(t&&t.until!=null&&t.until!=='')||(/^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:\d\d)$/.test(String(t.until))&&Date.now()<Date.parse(t.until));
+  const live=t=>!(t&&t.until!=null&&t.until!=='')||((u,d)=>/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?(Z|[+-]([01]\d|2[0-3]):[0-5]\d)$/.test(u)&&isFinite(d=Date.parse(u.slice(0,10)+'T00:00:00Z'))&&new Date(d).toISOString().slice(0,10)===u.slice(0,10)&&Date.now()<Date.parse(u))(String(t.until));
   const LT=(Array.isArray(p.tiers)?p.tiers:[]).filter(live);
   if(LT.length){
     const q=tierQty(p,qty);
@@ -1694,7 +1695,7 @@ function unitPrice(p, qty){
    minQty and min_qty, and because a tier at qty 1 is the base price wearing a hat. */
 function tierLadder(p){
   const base=Number(p&&p.base_price);
-  const live=t=>!(t&&t.until!=null&&t.until!=='')||(/^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:\d\d)$/.test(String(t.until))&&Date.now()<Date.parse(t.until));
+  const live=t=>!(t&&t.until!=null&&t.until!=='')||((u,d)=>/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?(Z|[+-]([01]\d|2[0-3]):[0-5]\d)$/.test(u)&&isFinite(d=Date.parse(u.slice(0,10)+'T00:00:00Z'))&&new Date(d).toISOString().slice(0,10)===u.slice(0,10)&&Date.now()<Date.parse(u))(String(t.until));
   const rows=(Array.isArray(p&&p.tiers)?p.tiers:[]).filter(live)
     .map(t=>Object.assign({qty:Math.round(Number(t&&(t.minQty!=null?t.minQty:t.min_qty))||0), price:Number(t&&t.price), pool:(t&&t.pool)||null},
       (t&&t.until)?{until:t.until}:{}))
