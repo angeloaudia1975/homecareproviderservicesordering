@@ -1,17 +1,8 @@
 {
-  "review_id": "1b63357bcaf8",
+  "review_id": "8c6935d77205",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T22:01:09Z",
-  "main": "52f408e440fe405f527a77b045887e5b5f38156f",
-  "included": [
-    {
-      "pr": 45,
-      "title": "C3-07 Stage 4 (core): brochure email limits + customer pricing choices",
-      "branch": "c7/s4-core",
-      "head": "46ded16c27826ec9762dfe2b20eb9daea16e0dcd",
-      "manufacturers": [],
-      "other_files": 5
-    }
-  ],
+  "built_at": "2026-11-05T22:02:29Z",
+  "main": "dbad1486b1e695de0db3f0ccbfebb7ce0ed0fec8",
+  "included": [],
   "skipped": []
 }
