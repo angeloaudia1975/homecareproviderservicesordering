@@ -1,8 +1,15 @@
 {
   "review_id": "3ee448d0f933",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T20:16:59Z",
+  "built_at": "2026-11-05T21:50:29Z",
   "main": "140adab81a7a4f8750c02cc6491775e3893637de",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 44,
+      "title": "C3-07 Stage 3: Partner 360 Account Center",
+      "branch": "c7/s3-account",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
