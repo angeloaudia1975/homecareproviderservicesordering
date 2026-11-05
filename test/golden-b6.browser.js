@@ -179,7 +179,11 @@ async function toValidated(page, po, keepItems) {
       Object.assign(W, { cost: 1188, dropNextPlace: 0, delayPlace: 0 }); W.recs.clear(); W.orders.length = 0; W.goldenCalls.length = 0; W.mail.length = 0; W.nextId = 1661;
       const { ctx, page, errs, counts } = await boot(browser, w, h);
       await toValidated(page, 'PO-B6-1');
-      const v = await page.evaluate(() => ({ btn: !!document.querySelector('[data-gck-place]'), test: /Test mode/.test(document.querySelector('.gck-ok').innerText), orders: GCART.result && GCART.result.ordering_enabled }));
+      const v = await page.evaluate(() => ({ btn: !!document.querySelector('[data-gck-place]'), test: /Test mode/.test(document.querySelector('.gck-ok').innerText), orders: GCART.result && GCART.result.ordering_enabled,
+        tot: document.querySelector('.gck-tot').innerText, ok: document.querySelector('.gck-ok').innerText, q: GCART.result && GCART.result.quote && GCART.result.quote.totals }));
+      await t(`${label}: Golden's freight is its own line ($135.00 for one chair) in the review AND the validation; the total includes it`, () => {
+        ok(v.q && v.q.freight_total === 135 && v.q.grand_total === Number((v.q.subtotal + 135 + v.q.sh_total).toFixed(2)), JSON.stringify(v.q));
+        ok(/Freight\s*\$135\.00/.test(v.tot) && /Freight\s*\$135\.00/.test(v.ok), v.tot.slice(0, 300) + ' || ' + v.ok.slice(0, 300)); });
       await t(`${label}: after a valid validation Golden says ordering is on → "Place order with Golden" + test-mode note`, () => ok(v.btn && v.test && v.orders === true, JSON.stringify(v)));
       await shot(page, `golden-place-ready-${label}.png`);
       // double-click: one placement call, frozen while Golden answers
@@ -195,6 +199,8 @@ async function toValidated(page, po, keepItems) {
         ok(keys.length === 2 && keys[0].mode === 'validate' && keys[1].mode === 'submit' && keys[0].key === keys[1].key, JSON.stringify(keys)); ok(W.orders.length === 1, 'orders ' + W.orders.length); });
       await t(`${label}: confirmation shows Golden's order number, PO and TEST note; cart emptied only now; nothing pending`, () => {
         ok(/Order placed with Golden/.test(done.text) && /P1661/.test(done.text) && /PO-B6-1/.test(done.text) && /TEST order/.test(done.text), done.text.slice(0, 300));
+        ok(/Freight\s*\$135\.00/.test(done.text), 'the confirmation shows Golden\'s freight: ' + done.text.slice(0, 400));
+        ok(W.orders[0] && Number(W.orders[0].freight_total) === 135, 'Golden stored the order with its freight: ' + JSON.stringify(W.orders[0] && W.orders[0].freight_total));
         ok(done.items === 0 && done.stored === '[]' && done.pend === null && done.placed === 'P1661', JSON.stringify(done)); });
       await t(`${label}: Golden's emails went ONLY to the test mailbox, marked TEST — never the order desk or the dealer`, () => {
         ok(W.mail.length === 2 && W.mail.every(m => m.to.length === 1 && m.to[0] === TEST_BOX && /^\[TEST/.test(m.subject)), JSON.stringify(W.mail.map(m => [m.to, m.subject]))); });
