@@ -1,18 +1,9 @@
 {
-  "review_id": "a06dcf7712cf",
+  "review_id": "bd4d800eb8ea",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-05T16:57:22Z",
-  "main": "b499a44cf5fb9c6976b8df3088b1b529899dab9d",
-  "included": [
-    {
-      "pr": 39,
-      "title": "C3-06: one checkout = one order, Yuwell account notice, order tracking",
-      "branch": "c6/order-intake",
-      "head": "2a78659abff538d701cef6ef8a4bd27549b454c0",
-      "manufacturers": [],
-      "other_files": 2
-    }
-  ],
+  "built_at": "2026-11-05T16:59:42Z",
+  "main": "af36674f9159eae71b07ac64f419d73fbffb5e3c",
+  "included": [],
   "skipped": [
     {
       "pr": 38,
