@@ -20,7 +20,8 @@ const PUBLIC = { ok: true, dealer: { name: 'Acme <script>x</script> Medical', he
   products: [{ manufacturer: 'bemis', code: 'B1', name: 'Raised seat', category: 'Bath Safety', description: 'Nice <b>seat</b>', image: '/assets/products/bemis/B1.jpg', attributes: { Width: '18"' }, price: 99.99, price_label: 'MSRP' },
     { manufacturer: 'bemis', code: 'B2', name: 'Grab bar', category: 'Bath Safety', image: '/assets/missing.jpg', attributes: {}, price: null, price_label: 'Call for Price' },
     { manufacturer: 'strongback', code: 'S1', name: 'Excursion chair', category: 'Wheelchairs', image: null, attributes: {}, price: null, price_label: 'Call for Price' },
-    { manufacturer: 'bemis', code: 'B9', name: 'Seat case', category: 'Parts', image: null, attributes: {}, price: 120, price_label: 'MSRP', price_unit: 'per Case (2 each)' }],
+    { manufacturer: 'bemis', code: 'B9', name: 'Seat case', category: 'Parts', image: null, attributes: {}, price: 120, price_label: 'MSRP', price_unit: 'per Case (2 each)' },
+    { manufacturer: 'golden-technologies', code: 'PR-501', name: 'Cloud lift chair', category: 'Lift Chairs', image: 'https://d3325uqufdmhie.cloudfront.net/pr501.jpg', attributes: { Size: 'Small' }, features: ['Infinite position'], price: 1899, price_label: 'Price', price_unit: null }],
   price_note: 'Prices shown are the manufacturer\'s suggested retail price (MSRP).', privacy: 'Your request is sent only to this dealer…' };
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
@@ -41,6 +42,7 @@ async function publicPage(browser, w, h) {
     if (u.origin === HOST && u.pathname.startsWith('/store/')) return route.fulfill({ status: 200, contentType: 'text/html', headers: { 'content-security-policy': CSP }, body: fs.readFileSync(path.join(PUB, 'store.html')) });
     if (u.origin === HOST && u.pathname === '/store.js') return route.fulfill({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(path.join(PUB, 'store.js')) });
     if (u.origin === HOST && u.pathname === '/assets/products/bemis/B1.jpg') return route.fulfill({ status: 200, contentType: 'image/png', body: PNG });
+    if (u.host === 'd3325uqufdmhie.cloudfront.net') return route.fulfill({ status: 200, contentType: 'image/png', body: PNG });
     return route.fulfill({ status: 404, body: '' }); });
   await page.goto(HOST + '/store/acme-medical'); await page.waitForSelector('.card');
   return { ctx, page, st };
@@ -59,7 +61,7 @@ const layout = (page, sel) => page.evaluate((sel) => {
       const { ctx, page, st } = await publicPage(browser, w, h);
       await t(label + ': public page shows the dealer (escaped), a Call link and products with MSRP or Call for Price', async () => {
         const r = await page.evaluate(() => [document.querySelector('h1').textContent, !!document.querySelector('h1 script'), document.querySelector('a[href^="tel:"]').getAttribute('href'), [...document.querySelectorAll('.card')].map((c) => c.querySelector('.price').textContent)]);
-        ok(r[0] === 'Acme <script>x</script> Medical' && !r[1], 'name escaped'); ok(r[2] === 'tel:5550100100', r[2]); ok(JSON.stringify(r[3]) === JSON.stringify(['$99.99 MSRP', 'Call for Price', 'Call for Price', '$120.00 MSRP per Case (2 each)']), JSON.stringify(r[3]));
+        ok(r[0] === 'Acme <script>x</script> Medical' && !r[1], 'name escaped'); ok(r[2] === 'tel:5550100100', r[2]); ok(JSON.stringify(r[3]) === JSON.stringify(['$99.99 MSRP', 'Call for Price', 'Call for Price', '$120.00 MSRP per Case (2 each)', '$1,899.00']), JSON.stringify(r[3]), 'a dealer / calculated price is never labelled MSRP');
         ok(!st.csp.length, 'CSP violations: ' + st.csp.join(' | '));
       });
       await page.waitForTimeout(400);
@@ -102,9 +104,17 @@ const layout = (page, sel) => page.evaluate((sel) => {
       await page.route('**/functions/dealer-storefront-api', async (route) => { const b = JSON.parse(route.request().postData() || '{}'); S.calls.push(b); const R = (o) => route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(o) });
         if (b.action === 'sf_get') return R({ ok: true, head_office: false, base: HOST + '/store/', locations: [loc('br', 'Acme Branch', true, null), loc('hq', 'Acme HQ', false, { slug: 'acme-hq', enabled: true, version: 3, lines: null, hidden_categories: [], price_mode: 'msrp' }), loc('off', 'Acme Off', true, { slug: 'acme-off', enabled: false, version: 1, lines: null, hidden_categories: [], price_mode: 'msrp' })] });
         if (b.action === 'sf_inquiries') return R({ ok: true, inquiries: [{ id: 'i1', dealer_id: 'br', created_at: '2026-11-06T10:00:00Z', name: 'Pat <b>', email: 'pat@example.com', phone: null, message: 'Hi', product_name: 'Seat', product_code: 'B1', status: 'new' }] });
+        if (b.action === 'sf_prices') return R({ ok: true, head_office: true, can_edit: true, lines: [{ slug: 'golden-technologies', name: 'Golden Technologies' }, { slug: 'bemis', name: 'Bemis' }], policies: { 'golden-technologies': 'map', bemis: 'unknown' },
+          flag_text: { below_map: 'Below the minimum advertised price (MAP).', rules_unknown: 'Rules not recorded yet.' }, products: [
+            { manufacturer: 'golden-technologies', code: 'PR-501', name: 'Cloud <i>', category: 'Lift Chairs', price: 2499, price_label: 'MSRP', source: 'msrp', calculated: 2200, msrp: 2499, flags: [{ on: 'dealer', flag: 'below_map', map: 1999 }], your_price: 1500, your_price_here: null, company_price: 1500 },
+            { manufacturer: 'bemis', code: 'B1', name: 'Seat', category: 'Bath Safety', price: null, price_label: 'Call for Price', source: 'call', calculated: 111, msrp: null, flags: [{ on: 'calculated', flag: 'rules_unknown' }], your_price: null, your_price_here: null, company_price: null }] });
+        if (b.action === 'sf_preview') return R(Object.assign({}, PUBLIC, { preview: true, dealer: Object.assign({}, PUBLIC.dealer, { name: 'Preview Dealer' }), price_note: 'Preview — this is what customers see.' }));
         if (b.action === 'sf_save') return R({ ok: true, storefront: Object.assign({ version: 1, lines: b.settings.lines, hidden_categories: b.settings.hidden_categories, price_mode: b.settings.price_mode }, b.settings), link: HOST + '/store/' + b.settings.slug, live: b.settings.enabled });
         return R({ ok: true }); });
-      await page.evaluate(() => { PREVIEW = null; window.__PREVIEW__ = null; window.confirm = () => true; });
+      await page.route('**/functions/dealer-retail-api', async (route) => { const b = JSON.parse(route.request().postData() || '{}'); S.calls.push(Object.assign({ api: 'retail' }, b)); return route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify({ ok: true, saved: (b.rows || []).filter((r) => r.price != null).length, removed: (b.rows || []).filter((r) => r.price == null).length, prices: [] }) }); });
+      await page.route('**/store.html', (route) => route.fulfill({ status: 200, contentType: 'text/html', headers: { 'content-security-policy': CSP }, body: fs.readFileSync(path.join(PUB, 'store.html')) }));
+      await page.route('**/store.js', (route) => route.fulfill({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(path.join(PUB, 'store.js')) }));
+      await page.evaluate(() => { PREVIEW = null; window.__PREVIEW__ = null; window.confirm = () => true; try { AUTH.session = { access_token: 'test-dealer-token', expires_at: Math.floor(Date.now() / 1000) + 3600 }; } catch (e) {} });
       await page.evaluate(() => showP360('storefront')); await page.waitForSelector('#sfSlug');
       await t(label + ': no promotion before the storefront has an address', async () => ok(await page.$$eval('.sf-promo', (b) => b.length) === 0, 'promo shown'));
       await t(label + ': the account\'s phone and email are never pre-filled — only placeholders, or the person taps "Use my account"', async () => {
@@ -113,11 +123,35 @@ const layout = (page, sel) => page.evaluate((sel) => {
         await page.evaluate(() => { document.getElementById('sfEmail').value = ''; document.getElementById('sfPhone').value = ''; }); });
       await t(label + ': My Storefront tab, settings save exactly what was typed', async () => {
         ok(await page.evaluate(() => [...document.querySelectorAll('.navtab span')].some((s) => s.textContent === 'My Storefront')), 'tab');
-        await page.fill('#sfHead', 'Welcome'); await page.check('#sfOn'); await page.uncheck('#sfAll'); await page.uncheck('.sf-line[value="strongback"]'); await page.selectOption('#sfPrice', 'call');
-        await page.evaluate(() => sfSave()); await page.waitForTimeout(400);
+        await page.fill('#sfHead', 'Welcome'); await page.uncheck('#sfAll'); await page.uncheck('.sf-line[value="strongback"]'); await page.selectOption('#sfPrice', 'call');
+        ok(await page.$('#sfPublish') && /Save without publishing/.test(await page.textContent('#sfSave')), 'publish and save-without-publishing offered');
+        await page.evaluate(() => sfSave(false)); await page.waitForTimeout(400);
+        const d = S.calls.filter((c) => c.action === 'sf_save').pop(); ok(d && d.settings.enabled === false && /not published/.test(await page.textContent('#view-storefront')), 'saved without publishing');
+        await page.evaluate(() => sfSave(true)); await page.waitForTimeout(400);
         const s = S.calls.filter((c) => c.action === 'sf_save').pop();
-        ok(s && s.location_id === 'br' && s.settings.slug === 'acme-medical' && s.settings.enabled === true && s.settings.headline === 'Welcome' && JSON.stringify(s.settings.lines) === '["bemis"]' && s.settings.price_mode === 'call' && s.version === undefined, JSON.stringify(s));
+        ok(s && s.location_id === 'br' && s.settings.slug === 'acme-medical' && s.settings.enabled === true && s.settings.headline === 'Welcome' && JSON.stringify(s.settings.lines) === '["bemis"]' && s.settings.price_mode === 'call' && s.version === 1, JSON.stringify(s));
         ok(/Saved — your storefront is live/.test(await page.textContent('#view-storefront')), 'saved message'); });
+      await t(label + ': STOREFRONT PRICES — each product\'s public price and its source, why a price is held, your own price saved (company or this location), bulk % of MSRP / calculated', async () => {
+        await page.evaluate(() => sfPricesLoad()); await page.waitForSelector('.sfp tbody tr');
+        const r = await page.evaluate(() => [...document.querySelectorAll('.sfp tbody tr')].map((tr) => tr.textContent.replace(/\s+/g, ' ').trim()));
+        ok(/Cloud <i>.*\$2,499(\.00)? MSRP.*Below the minimum advertised price \(MAP\)\. MAP \$1,999(\.00)?.*HCPS calculated retail: \$2,200/.test(r[0]), r[0]);
+        ok(/Seat.*Call for Price.*Rules not recorded yet/.test(r[1]), "row2: " + JSON.stringify(r));
+        ok(await page.evaluate(() => document.querySelector('.sfp-in').value === '1500.00'), 'company price shown');
+        await page.fill('.sfp-in[data-k="bemis|B1"]', '129.5'); await page.dispatchEvent('.sfp-in[data-k="bemis|B1"]', 'change');
+        await page.evaluate(() => sfpSave()); await page.waitForTimeout(500);
+        const sv = S.calls.filter((c) => c.api === 'retail' && c.action === 'retail_set').pop(); ok(sv && JSON.stringify(sv.rows) === JSON.stringify([{ manufacturer: 'bemis', code: 'B1', price: 129.5, location_id: null }]), "sv1: " + JSON.stringify(sv));
+        await page.evaluate(() => sfpScope('location')); await page.evaluate(() => sfpF('m', 'golden-technologies'));
+        await page.fill('#sfpPct', '90'); await page.evaluate(() => sfpBulk('pct')); await page.evaluate(() => sfpSave()); await page.waitForTimeout(500);
+        const sv2 = S.calls.filter((c) => c.api === 'retail' && c.action === 'retail_set').pop(); ok(sv2 && JSON.stringify(sv2.rows) === JSON.stringify([{ manufacturer: 'golden-technologies', code: 'PR-501', price: 2249.1, location_id: 'br' }]), "sv2: " + JSON.stringify(sv2));
+        ok(!S.calls.some((c) => c.action === 'sf_save' && c.settings && c.settings.enabled === undefined), 'prices never publish anything'); });
+      await t(label + ': PREVIEW — the public page inside the portal with the settings on screen; nothing counted, requests off', async () => {
+        await page.evaluate(() => sfPreview()); const fr = await (await page.waitForSelector('#sfPrevOv iframe')).contentFrame(); await fr.waitForSelector('.card');
+        ok(await fr.evaluate(() => document.querySelector('h1').textContent === 'Preview Dealer'), 'preview content');
+        const pv = S.calls.filter((c) => c.action === 'sf_preview').pop(); ok(pv && pv.settings && pv.settings.slug === 'acme-medical', 'sent the settings on screen');
+        await fr.evaluate(() => document.querySelector('[data-ask]').click()); await fr.waitForSelector('#f'); await fr.waitForTimeout(2600);
+        await fr.fill('#f [name=name]', 'X'); await fr.fill('#f [name=email]', 'x@x.co'); await fr.check('#f [name=consent]'); await fr.click('#fsend');
+        ok(/preview/.test(await fr.textContent('#ferr')), 'requests off in preview');
+        await page.click('#sfPrevClose'); ok(!(await page.$('#sfPrevOv')), 'closed'); });
       await t(label + ': customer requests show escaped and can be marked handled', async () => {
         ok(await page.evaluate(() => /Pat <b>/.test(document.querySelector('.sf-inq b').textContent)), 'escaped');
         await page.evaluate(() => sfInq('i1', 'handled')); await page.waitForTimeout(300); ok(S.calls.some((c) => c.action === 'sf_inquiry_set' && c.status === 'handled'), 'handled'); });

@@ -201,8 +201,8 @@ function renderBrochure(p, opts) {
 
   ${(msrp || quote) ? `<div class="price">
       ${quote ? `<div class="l">Your price</div><div class="v">${quote}</div>`
-              : `<div class="l">Manufacturer's suggested retail</div><div class="v">${msrp}</div>`}
-      ${quote && msrp ? `<div class="note">MSRP ${msrp}</div>` : ''}
+              : `<div class="l">${p.msrp_calculated === true ? 'Retail price' : 'Manufacturer\'s suggested retail'}</div><div class="v">${msrp}</div>`}
+      ${quote && msrp ? `<div class="note">${p.msrp_calculated === true ? 'Retail price' : 'MSRP'} ${msrp}</div>` : ''}
       <div class="note">Pricing shown is for reference and may vary. Contact us for a written quote.</div>
     </div>` : ''}
 
@@ -235,9 +235,27 @@ function renderBrochure(p, opts) {
    HCPS-addressed message to any address for anyone who called it — an open relay. Now: the caller's Supabase session
    must belong to an approved dealer user; the reply-to is that dealer's own email (never a caller-chosen address);
    one recipient per message. Rendering a brochure to print (action "html") still needs no sign-in — it sends nothing. */
+/* C3-07 P4 (owner 2026-11-06): a Golden brochure's price is read from Golden ON THE SERVER for the signed-in dealer — the
+   admin site's golden-proxy "retail" action (Golden's MSRP for the item / configuration, else HCPS calculated retail =
+   2× Golden's standard dealer price at or above eMAP, labelled as calculated) — never the figure the page sent. Signed
+   out, or Golden unreadable → no price printed. → { price, calculated } | null */
+const GOLDEN_FN = (process.env.HCPS_FUNCTIONS_BASE || 'https://homecareproviderservices.netlify.app/.netlify/functions').replace(/\/+$/, '');
+async function goldenRetail(p, event) {
+  const h = (event && event.headers) || {};
+  const auth = String(h.authorization || h.Authorization || ''), prev = String(h['x-hcps-preview'] || h['X-HCPS-Preview'] || '');
+  if (!/^Bearer\s+\S+/i.test(auth) && !/^[0-9a-f]{48}$/.test(prev)) return null;
+  const code = String(p._goldenKey || p.code || '').trim().slice(0, 120); if (!code) return null;
+  try {
+    const hd = { 'content-type': 'application/json' }; if (/^Bearer\s+\S+/i.test(auth)) hd.authorization = auth; else hd['x-hcps-preview'] = prev;
+    const r = await fetch(`${GOLDEN_FN}/golden-proxy`, { method: 'POST', headers: hd, body: JSON.stringify({ action: 'retail', code }) });
+    if (!r.ok) return null; const j = await r.json();
+    const v = Number(j && j.price); if (!(j && j.ok && isFinite(v) && v > 0)) return null;
+    return { price: Math.round(v * 100) / 100, calculated: j.source === 'calculated' };
+  } catch (e) { console.error('golden retail lookup failed', e && e.message); return null; }
+}
 async function verifiedMsrp(p) {
   const slug = String(p._mfrSlug || '').trim().toLowerCase(), code = String(p.code || '').trim();
-  if (slug === 'golden-technologies' || slug === 'golden') { const v = Number(p.msrp); return isFinite(v) && v > 0 ? v : null; }
+  if (slug === 'golden-technologies' || slug === 'golden') return null;   // Golden: goldenRetail(), on the server
   if (p._upgrade || !/^[a-z0-9-]{2,60}$/.test(slug) || !code || code.length > 60) return null;
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE; if (!url || !key) return null;
   const H = { apikey: key, Authorization: `Bearer ${key}` };
@@ -301,8 +319,11 @@ exports.handler = async (event) => {
 
   /* VERIFIED MSRP, decided here (C3-07 Stage 4 review): the printed "Manufacturer's suggested retail" is looked up on
      HCPS's own catalog records — never taken from the request — and is dropped when there is none (or for an upgraded
-     configuration). Golden's brochures carry Golden's own official retail from golden-proxy (unchanged). */
-  if (b.include_msrp) product.msrp = await verifiedMsrp(product);
+     configuration). Golden's price is read from Golden on the server by goldenRetail() (C3-07 P4) — never the page's. */
+  const isGolden = /^golden(-technologies)?$/.test(String(product._mfrSlug || '').trim().toLowerCase());
+  product.msrp_calculated = false;
+  if (b.include_msrp && isGolden) { const g = await goldenRetail(product, event); product.msrp = g ? g.price : null; product.msrp_calculated = !!(g && g.calculated); }
+  else if (b.include_msrp) product.msrp = await verifiedMsrp(product);
   const action = String(b.action || 'html');
   /* Branded only for a signed-in, approved dealer; a request cannot name or style the dealer. */
   const who = await approvedDealer(event);
