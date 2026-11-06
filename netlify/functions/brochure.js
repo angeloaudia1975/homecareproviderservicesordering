@@ -247,11 +247,24 @@ async function goldenRetail(p, event) {
   const code = String(p._goldenKey || p.code || '').trim().slice(0, 120); if (!code) return null;
   try {
     const hd = { 'content-type': 'application/json' }; if (/^Bearer\s+\S+/i.test(auth)) hd.authorization = auth; else hd['x-hcps-preview'] = prev;
-    const r = await fetch(`${GOLDEN_FN}/golden-proxy`, { method: 'POST', headers: hd, body: JSON.stringify({ action: 'retail', code }) });
+    const r = await fetch(`${GOLDEN_FN}/golden-proxy`, { method: 'POST', signal: AbortSignal.timeout(6000), headers: hd, body: JSON.stringify({ action: 'retail', code }) });
     if (!r.ok) return null; const j = await r.json();
     const v = Number(j && j.price); if (!(j && j.ok && isFinite(v) && v > 0)) return null;
     return { price: Math.round(v * 100) / 100, calculated: j.source === 'calculated' };
   } catch (e) { console.error('golden retail lookup failed', e && e.message); return null; }
+}
+/* C3-07 owner 2026-11-06 15:23: any other line's default customer price, read on the server for the signed-in dealer —
+   admin dealer-quotes-api default_retail: official MSRP, else HCPS calculated retail (2 × standard dealer cost) under the
+   manufacturer's advertising rules. → { price, calculated } | undefined (not signed in / unreadable → official MSRP only) */
+async function defaultRetail(p, event) {
+  const h = (event && event.headers) || {}; const auth = String(h.authorization || h.Authorization || '');
+  const slug = String(p._mfrSlug || '').trim().toLowerCase(), code = String(p.code || '').trim();
+  if (!/^Bearer\s+\S+/i.test(auth) || !/^[a-z0-9-]{2,60}$/.test(slug) || !code || code.length > 60 || p._upgrade) return undefined;
+  try {
+    const r = await fetch(`${GOLDEN_FN}/dealer-quotes-api`, { method: 'POST', signal: AbortSignal.timeout(4000), headers: { 'content-type': 'application/json', authorization: auth }, body: JSON.stringify({ action: 'default_retail', manufacturer: slug, code }) });   // slow → official MSRP only
+    if (!r.ok) return undefined; const j = await r.json(); if (!(j && j.ok)) return undefined;
+    const v = Number(j.price); return isFinite(v) && v > 0 ? { price: Math.round(v * 100) / 100, calculated: j.source === 'calculated' } : null;
+  } catch (e) { console.error('default retail lookup failed', e && e.message); return undefined; }
 }
 async function verifiedMsrp(p) {
   const slug = String(p._mfrSlug || '').trim().toLowerCase(), code = String(p.code || '').trim();
@@ -323,7 +336,11 @@ exports.handler = async (event) => {
   const isGolden = /^golden(-technologies)?$/.test(String(product._mfrSlug || '').trim().toLowerCase());
   product.msrp_calculated = false;
   if (b.include_msrp && isGolden) { const g = await goldenRetail(product, event); product.msrp = g ? g.price : null; product.msrp_calculated = !!(g && g.calculated); }
-  else if (b.include_msrp) product.msrp = await verifiedMsrp(product);
+  else if (b.include_msrp) {
+    const d = await defaultRetail(product, event);
+    if (d === undefined) product.msrp = await verifiedMsrp(product);
+    else { product.msrp = d ? d.price : null; product.msrp_calculated = !!(d && d.calculated); }
+  }
   const action = String(b.action || 'html');
   /* Branded only for a signed-in, approved dealer; a request cannot name or style the dealer. */
   const who = await approvedDealer(event);

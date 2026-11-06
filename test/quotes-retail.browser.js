@@ -147,6 +147,12 @@ const layout = page => page.evaluate(() => {
       await page.evaluate(() => __T(`closeModal()`));
       const L2 = await layout(page); await page.screenshot({ path: path.join(SHOTS, label + '-retail.png'), fullPage: false });
       await t(label + ': retail prices — no horizontal page scroll, nothing broken' + (w < 768 ? ', 44 px touch targets' : ''), () => { ok(L2.overflow <= 1, 'overflow ' + L2.overflow); ok(!L2.broken, 'broken'); if (w < 768) ok(!L2.small.length, 'small: ' + L2.small.join(' | ')); });
+      if (label === 'desktop') await t('default retail (owner 2026-11-06): the server decides it — a product without an official MSRP gets the server\'s HCPS calculated retail, flagged; official MSRP untouched; nothing invented when the server has none', async () => {
+        const r = await page.evaluate(() => __T(`(async()=>{ const saved=quotesCall, sent=[]; quotesCall=async(b)=>{ sent.push(b); return {ok:true,items:[{manufacturer:'yuwell',code:'X1',price:20,label:'Price',source:'calculated'}]}; };
+          const list=[{mfr:'yuwell',code:'X1',msrp:null},{mfr:'yuwell',code:'X2',msrp:35},{mfr:'yuwell',code:'X3',msrp:null},{mfr:'yuwell',code:'X4|u=Heavy',msrp:null}];
+          try{ await applyDefaultRetail(list); } finally { quotesCall=saved; }
+          return [list[0].msrp,list[0].msrpCalc,list[1].msrp,list[1].msrpCalc,list[2].msrp,sent[0].items.map(i=>i.code).join(',')]; })()`));
+        ok(JSON.stringify(r) === JSON.stringify([20, true, 35, undefined, null, 'X1,X3']), JSON.stringify(r)); });
       await ctx.close();
     }
     /* ---------- a head office requests a change FOR a branch (Account Center) ---------- */
