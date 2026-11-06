@@ -75,6 +75,20 @@ function lineSandbox(fetchImpl) {
     eq((await L.loadLine('dalton')).map(x => x.code), ['Y']); eq(n, 2);
   });
 
+  await t('the tab shows a loading panel at once on first open, and clears it when the lines arrive', async () => {
+    const cls = new Set(['p360on']); let during = null, panel = null;
+    const el = id => id === 'sdScaffold' ? { parentNode: { insertBefore: n => { panel = n; } } } : (id === 'sdLoading' ? panel : null);
+    const doc = { body: { classList: { add: (...a) => a.forEach(x => cls.add(x)), remove: (...a) => a.forEach(x => cls.delete(x)) } },
+      getElementById: el, createElement: () => ({ setAttribute() {}, set id(v) { this._id = v; } }) };
+    const w = { __sdCatalogLoaded: false, scrollTo() {}, showSec() {}, sdRefreshHostGlobals() {},
+      sdPreloadCatalog: async () => { during = cls.has('sdloading') && cls.has('sdon') && !!panel; await sleep(10); w.__sdCatalogLoaded = true; } };
+    const ctx = { window: w, document: doc, state: {}, renderTabs() {}, sdRefreshHostGlobals: w.sdRefreshHostGlobals, sdPreloadCatalog: () => w.sdPreloadCatalog() };
+    vm.createContext(ctx);
+    vm.runInContext(block('window.showShowroomStudio = async function') + ';', ctx);
+    await w.showShowroomStudio();
+    ok(during, 'loading panel visible while the lines load'); ok(!cls.has('sdloading'), 'panel cleared after load');
+    panel = null; await w.showShowroomStudio(); ok(!panel, 'no panel once the catalog is loaded');
+  });
   console.log(`showroom speed: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })();
