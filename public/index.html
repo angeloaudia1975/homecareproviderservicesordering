@@ -7343,6 +7343,25 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .barchart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
   #p360wrap .barchart .bar{width:64%;background:linear-gradient(180deg,var(--orange),#f7a24f);border-radius:5px 5px 0 0;min-height:3px}
   #p360wrap .barchart .bl{font-size:9px;color:var(--muted);font-weight:700}
+  /* C3-07 Stage 6 reports */
+  #view-reports .rpt-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  #view-reports .rpt-ctl select{max-width:100%}
+  #view-reports .rpt-pair{display:flex;align-items:flex-end;justify-content:center;gap:2px;width:100%;height:100%}
+  #view-reports .rpt-pair .bar{width:42%}
+  #view-reports .bar.rpt-prior{background:transparent;border:1.5px solid var(--muted);border-bottom:0}
+  #view-reports .rpt-card{margin-top:16px;min-width:0}
+  #view-reports .rpt-card h3{margin:0 0 4px}
+  #view-reports .rpt-sub,#view-reports .rpt-s{font-size:12px;color:var(--muted)}
+  #view-reports .rpt-sub{margin-bottom:10px}
+  #view-reports .rpt-tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #view-reports .rpt-note{font-size:12.5px;color:var(--ink-2);margin:10px 2px 0}
+  #view-reports .rpt-chg{font-weight:800}#view-reports .rpt-chg.up{color:var(--green)}#view-reports .rpt-chg.dn{color:#b42318}#view-reports .rpt-na{color:var(--muted)}
+  #view-reports .rpt-alert{margin-top:12px;padding:10px 14px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;font-size:13px}
+  #view-reports .rpt-vs{display:grid;gap:8px}#view-reports .rpt-vs div{display:flex;justify-content:space-between;gap:10px;font-size:13px;border-bottom:1px solid var(--line,#e5e7eb);padding-bottom:6px}
+  #view-reports .rpt-ai{padding:10px 0;border-bottom:1px solid var(--line,#e5e7eb);font-size:13.5px}#view-reports .rpt-ai div{color:var(--ink-2);margin-top:3px}
+  #view-reports .rpt-aih{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  #view-reports .rpt-link{cursor:pointer;color:var(--navy)}#view-reports .rpt-notes{margin:0;padding-left:18px;font-size:12.5px;color:var(--ink-2)}
+  @media(max-width:760px){#view-reports .rpt-ctl .btn,#view-reports .rpt-ctl select,#view-reports .rpt-aih .btn{min-height:44px}#view-reports .rpt-ctl{width:100%}#view-reports .rpt-ctl select{flex:1 1 100%}#view-reports .rpt-link{display:inline-block;min-height:44px;line-height:44px}}
   #p360wrap .tbl{width:100%;border-collapse:collapse;font-size:13.5px}
   #p360wrap .tbl th{text-align:left;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--surface-2)}
   #p360wrap .tbl td{padding:10px 12px;border-bottom:1px solid var(--line-2)}
@@ -7867,80 +7886,101 @@ function retailUnit(mfr,code,unitCost){
   if(r&&r.msrp>0) return {v:r.msrp,est:false};
   return {v:(Number(unitCost)||0)*2,est:true};
 }
-let REPORT_YEAR=null;
+/* ===== C3-07 Stage 6 — Reports: company / branch reporting built on HCPS's server (dealer-reports-api).
+   Purchases = manufacturer-reported; portal orders, quotes and network opportunities are shown APART and never added to them;
+   year-over-year only where HCPS history covers the period; AI suggestions only when asked; PDF built by HCPS's server. */
+const REPORTS_ENDPOINT=API_BASE+"/dealer-reports-api";
+let REPORT_YEAR=null, RPT=null, RPT_SCOPE=null, RPT_AI=null, RPT_AIBUSY=false, RPT_PDFBUSY=false;
 async function loadReports(){
-  if(!HISTORY){ const d=await api(HISTORY_ENDPOINT,{action:'history',limit:500}); HISTORY=(d&&d.orders)||[]; }
-  await loadPricing();
-  renderReports();
+  $("#view-reports").innerHTML='<div class="msg">Loading your report…</div>';
+  RPT_AI=null;
+  const d=await api(REPORTS_ENDPOINT,{action:'report',scope:RPT_SCOPE||undefined,year:REPORT_YEAR||undefined});
+  if(!d||!d.ok){ RPT_SCOPE=null; REPORT_YEAR=null;   /* a location or year the account no longer allows is never resent by Try again */
+    $("#view-reports").innerHTML=`<div class="ph"><div><h1>Reports</h1></div></div><div class="card"><div class="msg">${esc((d&&d.error)||'Your report could not be loaded just now — please try again.')}</div><a class="btn pri" onclick="loadReports()">Try again</a></div>`; return; }
+  RPT=d; RPT_SCOPE=d.scope; renderReports();
 }
-function reportAgg(year){
-  const lines=[];
-  for(const o of (HISTORY||[])){
-    const ym=String(o.ym||(o.date||'').slice(0,7)); const y=ym.slice(0,4);
-    for(const l of (o.lines||[])){
-      const qty=Number(l.qty)||0; const line=Number(l.line!=null?l.line:l.cost)||0; const unit=qty?line/qty:line;
-      const r=retailUnit(o.manufacturer,l.code,unit);
-      lines.push({ym,y,mfr:o.manufacturer,mfrName:o.manufacturerName,code:l.code,name:l.name,qty,cost:line,retail:r.v*qty,est:r.est});
-    }
-  }
-  const sel=lines.filter(l=>year==='all'||l.y===year);
-  let spend=0,retail=0,units=0; const monthly={}, byMfr={}, prod={};
-  sel.forEach(l=>{spend+=l.cost;retail+=l.retail;units+=l.qty;
-    if(year!=='all') monthly[l.ym]=(monthly[l.ym]||0)+l.cost;
-    const m=byMfr[l.mfr]||(byMfr[l.mfr]={name:l.mfrName,spend:0,retail:0}); m.spend+=l.cost; m.retail+=l.retail;
-    const k=l.mfr+'|'+l.code; const p=prod[k]||(prod[k]={name:l.name,mfrName:l.mfrName,code:l.code,qty:0,spend:0,retail:0,est:false}); p.qty+=l.qty; p.spend+=l.cost; p.retail+=l.retail; if(l.est)p.est=true;
-  });
-  return {spend,retail,margin:retail-spend,units,monthly,
-    byMfr:Object.values(byMfr).sort((a,b)=>b.spend-a.spend),
-    prod:Object.values(prod).sort((a,b)=>b.spend-a.spend),
-    years:[...new Set(lines.map(l=>l.y))].filter(Boolean).sort().reverse()};
-}
+const m2=n=>n==null?'—':(n<0?'-':'')+'$'+Math.abs(Number(n)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pctB=p=>p==null?'<span class="rpt-na">—</span>':`<span class="rpt-chg ${p<0?'dn':'up'}">${p>0?'+':''}${p}%</span>`;
+function rptScope(v){ RPT_SCOPE=v; loadReports(); }
+function rptYear(v){ REPORT_YEAR=v; loadReports(); }
 function renderReports(){
-  const cy=String(new Date().getFullYear()); const year=REPORT_YEAR||cy;
-  const a=reportAgg(year);
-  const blended=a.retail>0?Math.round(a.margin/a.retail*100):0;
-  const allYears=reportAgg('all').years;
-  const yearOpts=[`<option value="${cy}"${year===cy?' selected':''}>Year: ${cy}</option>`]
-    .concat(allYears.filter(y=>y!==cy).map(y=>`<option value="${y}"${year===y?' selected':''}>Year: ${y}</option>`))
-    .concat([`<option value="all"${year==='all'?' selected':''}>All time</option>`]).join('');
-  let chart;
-  if(year!=='all'){const maxM=Math.max(1,...Object.values(a.monthly));chart=MONS.map((lbl,i)=>{const k=`${year}-${String(i+1).padStart(2,'0')}`;const v=a.monthly[k]||0;return `<div class="col"><div class="bar" style="height:${v?Math.max(4,Math.round(v/maxM*100)):0}%"></div><div class="bl">${lbl}</div></div>`;}).join('');}
-  else chart='<div class="empty">Select a specific year to see the monthly breakdown.</div>';
-  const maxMf=Math.max(1,...a.byMfr.map(m=>m.spend));
-  const hbars=a.byMfr.slice(0,8).map(m=>`<div class="hbar"><div class="hn">${esc(m.name)}</div><div class="htrack"><div class="hfill" style="width:${Math.max(3,Math.round(m.spend/maxMf*100))}%"></div></div><div class="hv tnum">${money(m.spend)}</div></div>`).join('')||'<div class="empty">No activity.</div>';
-  const toprows=a.prod.slice(0,10).map(p=>`<tr><td><b>${esc(p.name)}</b><div style="font-size:11px;color:var(--muted)">${esc(p.mfrName)} · #${esc(p.code)}</div></td><td class="n tnum">${p.qty}</td><td class="n tnum">${money(p.spend)}</td><td class="n tnum" style="color:var(--green)">${money(p.retail)}${p.est?' <span class="est">est</span>':''}</td><td class="n tnum">${money(p.retail-p.spend)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No products in this period.</td></tr>';
+  if(!RPT) return loadReports();
+  const R=RPT.report, sc=R.scorecard, cy=String(new Date().getFullYear()), year=R.period.year;
+  const years=[...new Set([cy].concat(R.years||[]))].sort().reverse();
+  const scopeSel=RPT.head_office?`<select class="btn gh" aria-label="Company or location" onchange="rptScope(this.value)"><option value="company"${RPT.scope==='company'?' selected':''}>All locations (company)</option>${RPT.locations.map(l=>`<option value="${esc(l.id)}"${RPT.scope===l.id?' selected':''}>${esc(l.name)}${l.city?' — '+esc(l.city):''}</option>`).join('')}</select>`:'';
+  const yearSel=`<select class="btn gh" aria-label="Year" onchange="rptYear(this.value)">${years.map(y=>`<option value="${y}"${y===year?' selected':''}>${y===cy?'Year to date '+y:'Year '+y}</option>`).join('')}</select>`;
+  const mx=Math.max(1,...R.monthly.map(x=>Math.max(x.purchases,x.prior||0)));
+  const chart=R.monthly.map(x=>`<div class="col" title="${esc(x.label)}: ${m2(x.purchases)}${x.prior?' · last year '+m2(x.prior):''}"><div class="rpt-pair"><div class="bar rpt-prior" style="height:${x.prior?Math.max(3,Math.round(x.prior/mx*100)):0}%"></div><div class="bar" style="height:${x.purchases?Math.max(3,Math.round(x.purchases/mx*100)):0}%"></div></div><div class="bl">${esc(x.label)}</div></div>`).join('');
+  const tbl=(head,rows,empty)=>`<div class="rpt-tw"><table class="tbl"><thead><tr>${head.map(h=>`<th${h[1]?' class="n"':''}>${h[0]}</th>`).join('')}</tr></thead><tbody>${rows.length?rows.join(''):`<tr><td colspan="${head.length}" class="empty">${empty||'Nothing in this period.'}</td></tr>`}</tbody></table></div>`;
+  const mfr=tbl([['Manufacturer'],['Purchases',1],['Last year',1],['Change',1],['Share',1]],R.manufacturers.map(m=>`<tr><td><b>${esc(m.name)}</b>${m.history_from?`<div class="rpt-s">HCPS history from ${esc(m.history_from)}</div>`:''}</td><td class="n tnum">${m2(m.purchases)}</td><td class="n tnum">${m2(m.prior)}</td><td class="n">${pctB(m.change_pct)}</td><td class="n tnum">${m.share_pct}%</td></tr>`),'No manufacturer-reported purchases in this period.');
+  const cats=tbl([['Category'],['Units',1],['Purchases',1],['Last year',1],['Change',1]],R.categories.map(c=>`<tr><td><b>${esc(c.category)}</b></td><td class="n tnum">${c.units}</td><td class="n tnum">${m2(c.purchases)}</td><td class="n tnum">${m2(c.prior)}</td><td class="n">${pctB(c.change_pct)}</td></tr>`));
+  const prods=tbl([['Product'],['Units',1],['Purchases',1]],R.top_products.map(p=>`<tr><td><b>${esc(p.name)}</b><div class="rpt-s">${esc(p.manufacturer_name)} · #${esc(p.code)} · ${esc(p.category)}</div></td><td class="n tnum">${p.qty}</td><td class="n tnum">${m2(p.purchases)}</td></tr>`));
+  const br=R.branches.length>1?`<div class="card rpt-card"><h3>Locations</h3><div class="rpt-sub">Each location’s own manufacturer-reported purchases.</div>${tbl([['Location'],['Purchases',1],['Last year',1],['Change',1],['Last purchase',1]],R.branches.map(b=>`<tr><td><a class="rpt-link" onclick="rptScope('${esc(b.id)}')"><b>${esc(b.name)}</b></a><div class="rpt-s">${esc([b.city,b.state].filter(Boolean).join(', '))}${b.top_line?' · top line '+esc(b.top_line):''}</div></td><td class="n tnum">${m2(b.purchases)}</td><td class="n tnum">${m2(b.prior)}</td><td class="n">${pctB(b.change_pct)}</td><td class="n">${esc(b.last_purchase_month||'—')}</td></tr>`))}</div>`:'';
+  const down=R.declining_categories.length?`<div class="rpt-alert"><b>Categories down versus last year:</b> ${R.declining_categories.map(c=>`${esc(c.category)} ${pctB(c.change_pct)}`).join(' · ')}</div>`:'';
+  const opp=tbl([['Product'],['Category'],['Dealers ordering',1]],R.opportunities.map(o=>`<tr><td><b>${esc(o.name)}</b><div class="rpt-s">${esc(o.manufacturer_name)} · #${esc(o.code)}</div></td><td>${esc(o.category)}</td><td class="n tnum">${o.dealers}</td></tr>`),'No suggestions from the network data right now.');
+  const ai=RPT_AI?(RPT_AI.error?`<div class="msg">${esc(RPT_AI.error)}</div>`:RPT_AI.list.map(r=>`<div class="rpt-ai"><b>${esc(r.title)}</b><div>${esc(r.detail)}</div></div>`).join('')):`<div class="rpt-sub">Suggestions written by AI from the figures on this page only — check them against your own knowledge of your market.</div>`;
   $("#view-reports").innerHTML=`
-    <div class="ph"><div><h1>Reports</h1><div class="sub">Purchases, manufacturer performance &amp; retail opportunity</div></div>
-      <div><select class="btn gh" onchange="p360ReportYear(this.value)">${yearOpts}</select> <a class="btn gh" onclick="exportReportCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a></div></div>
+    <div class="ph"><div><h1>Reports</h1><div class="sub">${esc(RPT.scope_name)} · ${esc(R.period.label)}</div></div>
+      <div class="rpt-ctl">${scopeSel}${yearSel}<a class="btn gh" onclick="exportReportCSV()">⬇ Excel</a><a class="btn gh" id="rptPdf" onclick="rptPdf()">⬇ PDF report</a></div></div>
     <div class="kpis">
-      <div class="kpi accent"><div class="kl">Spend${year==='all'?' — all time':' — '+year}</div><div class="kv o tnum">${money(a.spend)}</div><div class="ks">${num(a.units)} units</div></div>
-      <div class="kpi"><div class="kl">Retail revenue opportunity</div><div class="kv g tnum">${money(a.retail)}</div><div class="ks">at MSRP / estimate</div></div>
-      <div class="kpi"><div class="kl">Margin opportunity</div><div class="kv tnum">${money(a.margin)}</div></div>
-      <div class="kpi"><div class="kl">Blended margin</div><div class="kv tnum">${blended}%</div></div>
+      <div class="kpi accent"><div class="kl">Purchases</div><div class="kv o tnum">${money(R.purchases.total)}</div><div class="ks">${R.purchases.prior!=null?`Same months last year ${money(R.purchases.prior)} ${pctB(R.purchases.change_pct)}`:'No comparable reports last year'}</div></div>
+      <div class="kpi"><div class="kl">Average month (12 mo.)</div><div class="kv tnum">${money(sc.avg_month_12m)}</div><div class="ks">${sc.active_lines_12m} active line${sc.active_lines_12m===1?'':'s'}</div></div>
+      <div class="kpi"><div class="kl">Last reported purchase</div><div class="kv tnum" style="font-size:22px">${esc(sc.last_purchase_month||'—')}</div><div class="ks">${sc.last_portal_order?'Last portal order '+esc(sc.last_portal_order):'No portal orders yet'}</div></div>
+      <div class="kpi"><div class="kl">Portal orders</div><div class="kv tnum">${R.portal.orders}</div><div class="ks">${money(R.portal.merchandise)} · shown apart</div></div>
     </div>
+    <div class="rpt-note">Purchases are reported by the manufacturers to HCPS. Portal orders and quotes are shown separately and never added to purchases.</div>
+    ${down}
     <div class="grid2">
-      <div class="card"><div class="chead"><h3>Monthly purchases${year==='all'?'':' · '+year}</h3></div><div class="barchart">${chart}</div></div>
-      <div class="card"><div class="chead"><h3>By manufacturer</h3></div><div class="hbars">${hbars}</div></div>
+      <div class="card rpt-card"><h3>Monthly purchases</h3><div class="rpt-sub">This year (solid) and the same month last year (outline — only lines reported in both years).</div><div class="barchart">${chart}</div></div>
+      <div class="card rpt-card"><h3>Vital Signs</h3><div class="rpt-vs">
+        <div><span>Purchases ${esc(R.period.ytd?'year to date':year)}</span><b>${m2(R.purchases.total)}</b></div>
+        <div><span>Same reported months last year</span><b>${R.purchases.prior!=null?m2(R.purchases.prior):'—'}</b></div>${R.purchases.partial&&R.purchases.prior!=null?`<div><span>This year, same months</span><b>${m2(R.purchases.current_compared)}</b></div>`:''}
+        <div><span>Change</span><b>${pctB(R.purchases.change_pct)}</b></div>
+        <div><span>Units</span><b>${R.purchases.units}</b></div>
+        <div><span>Top line</span><b>${esc(sc.top_line||'—')}</b></div>
+        <div><span>Quotes created / sent</span><b>${R.quotes.created} / ${R.quotes.sent}</b></div></div></div>
     </div>
-    <div class="card" style="padding:0;overflow:hidden"><div style="padding:16px 20px 4px"><h3>Top products ordered</h3><div style="font-size:12.5px;color:var(--muted)">Retail &amp; margin at MSRP, or 2× dealer cost where none on file (<span class="est">est</span>)</div></div>
-      <table class="tbl"><thead><tr><th>Product</th><th class="n">Qty</th><th class="n">Spend</th><th class="n">Retail</th><th class="n">Margin</th></tr></thead><tbody>${toprows}</tbody></table></div>
+    ${br}
+    <div class="card rpt-card"><h3>By manufacturer</h3>${mfr}</div>
+    <div class="card rpt-card"><h3>By product category</h3><div class="rpt-sub">Categories as listed in the current HCPS catalog.</div>${cats}</div>
+    <div class="card rpt-card"><h3>Top products</h3>${prods}</div>
+    <div class="card rpt-card"><h3>Assortment opportunities</h3><div class="rpt-sub">Products other HCPS dealers order (at least 3 of them) on lines you already buy, that you haven’t ordered in 12 months. A suggestion, not a forecast — no other dealer’s name or figures are shown.</div>${opp}</div>
+    <div class="card rpt-card"><div class="rpt-aih"><h3>AI growth suggestions</h3>${typeof PREVIEW!=='undefined'&&PREVIEW?'':`<a class="btn pri" id="rptAi" onclick="rptAi()">${RPT_AI&&!RPT_AI.error?'Refresh suggestions':'Get suggestions'}</a>`}</div>${ai}</div>
+    ${R.notes.length?`<div class="card rpt-card"><h3>About these figures</h3><ul class="rpt-notes">${R.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></div>`:''}
     <div class="card"><div class="chead"><h3>Pricing export</h3></div><div style="font-size:13px;color:var(--ink-2)">Export your full HCPS product &amp; dealer-pricing file — SKU, manufacturer, description, dealer cost, MAP, MSRP, category — for billing, ERP, inventory or POS.</div>
       <a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">⬇ Export pricing file (Excel/CSV)</a></div>`;
 }
+async function rptAi(){
+  if(RPT_AIBUSY) return; RPT_AIBUSY=true; const b=$("#rptAi"); if(b){b.textContent='Writing suggestions…';b.style.pointerEvents='none';}
+  const d=await api(REPORTS_ENDPOINT,{action:'report_ai',scope:RPT_SCOPE,year:RPT&&RPT.report.period.year});
+  RPT_AIBUSY=false; RPT_AI=d&&d.ok?{list:d.recommendations||[]}:{error:(d&&d.error)||'Suggestions are not available just now.'}; renderReports();
+}
+async function rptPdf(){
+  if(RPT_PDFBUSY) return; RPT_PDFBUSY=true; const b=$("#rptPdf"); if(b){b.textContent='Preparing PDF…';b.style.pointerEvents='none';}
+  const d=await api(REPORTS_ENDPOINT,{action:'report_pdf',scope:RPT_SCOPE,year:RPT&&RPT.report.period.year});
+  RPT_PDFBUSY=false; if(b){b.textContent='⬇ PDF report';b.style.pointerEvents='';}
+  if(!d||!d.ok){ alertMsg((d&&d.error)||'The PDF could not be prepared just now — please try again.'); return; }
+  const bin=atob(d.pdf_base64), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  const url=URL.createObjectURL(new Blob([u8],{type:'application/pdf'})); const a=document.createElement('a'); a.href=url; a.download=d.file||'hcps-dealer-report.pdf'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},2000);
+}
+function alertMsg(t){ const v=$("#view-reports"); const n=document.createElement('div'); n.className='msg'; n.textContent=t; v.prepend(n); setTimeout(()=>n.remove(),6000); }
 /* ---- exports (CSV opens in Excel; PDF via print) ---- */
 function dl(filename,text,mime){const blob=new Blob(["﻿"+text],{type:mime||'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},120);}
-function csvCell(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+function csvCell(v){v=String(v==null?'':v);if(/^[=+\-@\t\r]/.test(v)&&!/^-?\d+(\.\d+)?$/.test(v))v="'"+v;return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}   /* a cell starting = + - @ is never run as a spreadsheet formula */
 function toCSV(rows){return rows.map(r=>r.map(csvCell).join(',')).join('\r\n');}
 function exportHistoryCSV(){const rows=[['Date','Source','Manufacturer','Item #','Product','Qty','Unit','Line total','Status']];
   for(const o of (HISTORY||[])){for(const l of (o.lines||[])){const qty=Number(l.qty)||0;const line=Number(l.line!=null?l.line:l.cost)||0;rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,l.code,l.name,qty,qty?(line/qty).toFixed(2):line.toFixed(2),line.toFixed(2),o.status]);}
     if(Number(o.freight)>0) rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,'','Freight / shipping & handling',1,Number(o.freight).toFixed(2),Number(o.freight).toFixed(2),o.status]);}
   dl('hcps-order-history.csv',toCSV(rows));}
-function exportReportCSV(){const year=REPORT_YEAR||String(new Date().getFullYear());const a=reportAgg(year);
-  const rows=[['HCPS Purchase Report',year==='all'?'All time':year],[],['Manufacturer','Spend','Retail','Margin']];
-  a.byMfr.forEach(m=>rows.push([m.name,m.spend.toFixed(2),m.retail.toFixed(2),(m.retail-m.spend).toFixed(2)]));
-  rows.push([],['Top products'],['Product','Item #','Manufacturer','Qty','Spend','Retail','Margin','MSRP source']);
-  a.prod.forEach(p=>rows.push([p.name,p.code,p.mfrName,p.qty,p.spend.toFixed(2),p.retail.toFixed(2),(p.retail-p.spend).toFixed(2),p.est?'estimated (2x cost)':'MSRP on file']));
-  dl('hcps-report-'+year+'.csv',toCSV(rows));}
+function exportReportCSV(){ if(!RPT) return; const R=RPT.report;
+  const rows=[['HCPS Dealer Report',RPT.scope_name,R.period.label],['Purchases are manufacturer-reported; portal orders and quotes are shown apart.'],[],['Manufacturer','Purchases','Last year','Change %','Share %']];
+  R.manufacturers.forEach(m=>rows.push([m.name,m.purchases.toFixed(2),m.prior==null?'':m.prior.toFixed(2),m.change_pct==null?'':m.change_pct,m.share_pct]));
+  rows.push([],['Category','Units','Purchases','Last year','Change %']); R.categories.forEach(c=>rows.push([c.category,c.units,c.purchases.toFixed(2),c.prior==null?'':c.prior.toFixed(2),c.change_pct==null?'':c.change_pct]));
+  if(R.branches.length>1){ rows.push([],['Location','Purchases','Last year','Change %','Last purchase']); R.branches.forEach(x=>rows.push([x.name,x.purchases.toFixed(2),x.prior==null?'':x.prior.toFixed(2),x.change_pct==null?'':x.change_pct,x.last_purchase_month||''])); }
+  rows.push([],['Top products','Item #','Manufacturer','Category','Units','Purchases']); R.top_products.forEach(p=>rows.push([p.name,p.code,p.manufacturer_name,p.category,p.qty,p.purchases.toFixed(2)]));
+  rows.push([],['Portal orders',R.portal.orders,R.portal.merchandise.toFixed(2)],['Quotes created',R.quotes.created,'sent',R.quotes.sent]);
+  rows.push([],['Notes']); R.notes.forEach(n=>rows.push([n]));
+  dl('hcps-report-'+R.period.year+(RPT.scope==='company'?'-company':'')+'.csv',toCSV(rows));}
 async function exportPricingCSV(){await loadPricing();const rows=[['SKU','Manufacturer','Description','Dealer cost','MAP','MSRP','Category']];
   (PRICELIST||[]).forEach(p=>rows.push([p.code,p.mfrName,p.name,p.cost!=null?p.cost:'',p.map!=null?p.map:'',p.msrp!=null?p.msrp:'',p.category]));
   dl('hcps-pricing.csv',toCSV(rows));}
@@ -8732,7 +8772,7 @@ window.showView=showView;
    Quotes, the showroom wall buttons, the price-request / literature / credit / resale forms and the favourite star did
    nothing. Exported once here. The showroom zone's clear is exported as p360SwClear because the storefront's Strongback
    wall builder already owns the global swClear(). */
-Object.assign(window,{loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:v=>{ REPORT_YEAR=v; renderReports(); },qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
