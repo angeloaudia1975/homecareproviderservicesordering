@@ -8817,9 +8817,10 @@ function renderStorefront(){
     <label class="sf-check"><input type="checkbox" id="sfOn"${s.enabled?' checked':''}${dis}> Storefront is on (anyone with the link can see it)</label>
     <label class="fld2"><span class="rp-l">Headline</span><input id="sfHead" maxlength="120" value="${esc(s.headline||'')}" placeholder="e.g. Home medical equipment for Dayton families"${dis}></label>
     <label class="fld2"><span class="rp-l">About your business</span><textarea id="sfAbout" maxlength="1500" rows="4"${dis}>${esc(s.about||'')}</textarea></label>
-    <div class="sf-row"><label class="fld2"><span class="rp-l">Phone for customers (shown publicly)</span><input id="sfPhone" maxlength="40" value="${esc(L.storefront?(s.phone||''):(L.default_phone||''))}"${dis}></label>
-     <label class="fld2"><span class="rp-l">Email for requests (shown publicly)</span><input id="sfEmail" type="email" maxlength="200" value="${esc(L.storefront?(s.email||''):(L.default_email||''))}"${dis}></label></div>
-    <div class="sf-note">Only the phone and email entered here appear on your storefront — clear one to keep it private. Requests are emailed to the address above.</div>
+    <div class="sf-row"><label class="fld2"><span class="rp-l">Phone for customers (shown publicly)</span><input id="sfPhone" maxlength="40" value="${esc(s.phone||'')}" placeholder="${esc(L.default_phone?'e.g. '+L.default_phone:'')}"${dis}></label>
+     <label class="fld2"><span class="rp-l">Email for requests (shown publicly)</span><input id="sfEmail" type="email" maxlength="200" value="${esc(s.email||'')}" placeholder="${esc(L.default_email?'e.g. '+L.default_email:'')}"${dis}></label></div>
+    ${ed&&(L.default_phone||L.default_email)?`<a class="btn gh" onclick="sfUseAccount()">Use my account phone and email</a>`:''}
+    <div class="sf-note">Only the phone and email entered here appear on your storefront — nothing from your account is published unless you put it here. Requests are emailed to the address above.</div>
     <label class="fld2"><span class="rp-l">Hours</span><input id="sfHours" maxlength="300" value="${esc(s.hours||'')}" placeholder="e.g. Mon–Fri 9–5, Sat 9–12"${dis}></label>
     <label class="sf-check"><input type="checkbox" id="sfAddr"${s.show_address===false?'':' checked'}${dis}> Show my street address</label>
     <label class="fld2"><span class="rp-l">Prices</span><select id="sfPrice"${dis}><option value="msrp"${s.price_mode!=='call'?' selected':''}>Show the manufacturer's MSRP where HCPS has verified it — otherwise "Call for Price"</option><option value="call"${s.price_mode==='call'?' selected':''}>"Call for Price" on everything</option></select></label>
@@ -8837,6 +8838,7 @@ function renderStorefront(){
    </div>
   </div>`;
 }
+function sfUseAccount(){ const L=SFD&&SFD.locations.find(l=>l.id===SFLOC); if(!L) return; const p=document.getElementById('sfPhone'), e=document.getElementById('sfEmail'); if(p&&L.default_phone) p.value=L.default_phone; if(e&&L.default_email) e.value=L.default_email; }
 function sfCopy(){ const i=document.querySelector('.sf-link input'); if(!i) return; try{ navigator.clipboard.writeText(i.value); }catch(e){ i.select(); document.execCommand&&document.execCommand('copy'); } const m=$("#sfMsg"); if(m) m.textContent='Link copied.'; }
 async function sfSave(){
   if(SFBUSY) return; const L=SFD.locations.find(l=>l.id===SFLOC); if(!L) return;
@@ -8853,7 +8855,7 @@ async function sfSave(){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfUseAccount,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
