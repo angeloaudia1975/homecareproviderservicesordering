@@ -3470,7 +3470,7 @@ function gckResultHtml(r){
   const can=gckCanPlace(r), test=r.test_mode===true, t=r.quote&&r.quote.totals;
   return `<div class="gck-ok gck-verified" role="status"><h3>✓ Verified by Golden</h3>
     ${r.idempotent_replay?`<p class="gck-note">Golden returned the result it already recorded for this attempt.</p>`:""}
-    <div class="gck-vt"><span>Golden total</span><b>${t?money(t.grand_total):""}</b></div>
+    <div class="gck-vt"><span>Golden total${t&&t.freight_quote_required?" (freight to be quoted)":""}</span><b>${t?money(t.grand_total):""}</b></div>
     <div class="gck-note">Merchandise ${t?money(t.subtotal):""} · Freight ${t?gckFreight(t):""} · Shipping &amp; handling ${t?money(t.sh_total):""}${t&&t.sh_waived?" (waived for this ship-to)":""} · ship to ${esc((o.ship_to&&o.ship_to.label)||"")}${o.po_number?` · PO ${esc(o.po_number)}${o.po_auto?" (Golden will assign this)":""}`:""}</div>
     ${t&&(t.shipments||[]).length>1?`<div class="gck-tot">${t.shipments.map(x=>`<div class="gck-sm"><span>${x.group==="in_stock"?"Ships now":x.group==="build"?"Built to order":"Shipment"}</span><span>${money(x.subtotal)}${gckShipFreight(x)} + ${money(x.sh)} S&amp;H</span></div>`).join("")}</div>`:""}
     ${can?`<p class="gck-note"><b>No order has been placed yet.</b> Use <b>Place order with Golden</b> at the bottom of this window.</p>`:`<p class="gck-note"><b>No order has been placed.</b></p>`}
@@ -3565,7 +3565,7 @@ function gckRenderPlacement(ov){
         <div><span>Ship to</span><b>${esc((o.ship_to&&o.ship_to.label)||"")}</b><small>${esc(o.ship_to?gckShipLine(o.ship_to):"")}</small></div>
         <div><span>Freight</span><b>${gckFreight(q.totals)}</b></div>
         <div><span>Shipping &amp; handling</span><b>${q.totals&&q.totals.sh_total!=null?money(q.totals.sh_total):""}</b></div>
-        <div><span>Golden total</span><b>${q.totals&&q.totals.grand_total!=null?money(q.totals.grand_total):""}</b></div>
+        <div><span>Golden total${q.totals&&q.totals.freight_quote_required?" (freight to be quoted)":""}</span><b>${q.totals&&q.totals.grand_total!=null?money(q.totals.grand_total):""}</b></div>
         ${n?`<div><span>Emails</span><small>${P.test_mode?"Order email (test mailbox)":"Golden order desk"}: ${esc(NW[n.order_desk]||n.order_desk)} · ${P.test_mode?"Dealer confirmation (test mailbox)":"Dealer confirmation"}: ${esc(NW[n.dealer_confirmation]||n.dealer_confirmation)}</small></div>`:""}</div>
       <div class="gck-acts"><button type="button" class="gck-btn primary" data-gck-myorders>View in My Orders</button><button type="button" class="gck-btn" data-gck-done>Done</button></div></div>`;
   } else {
@@ -5361,7 +5361,7 @@ function goldenCartGroupHtml(){
   const tot=q&&q.totals?`<div class="r"><span>Subtotal</span><span>${money(q.totals.subtotal)}</span></div>
       <div class="r"><span>Freight</span><span>${gckFreight(q.totals)}</span></div>
       <div class="r"><span>Shipping &amp; handling${q.totals.sh_waived?" (waived)":""}</span><span>${money(q.totals.sh_total)}</span></div>
-      <div class="r tot"><span>Golden Technologies total</span><span>${money(q.totals.grand_total)}</span></div>`
+      <div class="r tot"><span>Golden Technologies total${q.totals.freight_quote_required?" (freight to be quoted)":""}</span><span>${money(q.totals.grand_total)}</span></div>`
     :`<div class="r"><span>Subtotal</span><span>at review</span></div><div class="r"><span>Freight</span><span>at review</span></div><div class="r"><span>Shipping &amp; handling</span><span>at review</span></div>
       <div class="r tot"><span>Golden Technologies total</span><span>priced by Golden</span></div>`;
   return `<div class="mgroup gmgroup" data-slug="golden">
