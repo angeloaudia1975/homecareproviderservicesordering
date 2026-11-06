@@ -247,7 +247,7 @@ async function goldenRetail(p, event) {
   const code = String(p._goldenKey || p.code || '').trim().slice(0, 120); if (!code) return null;
   try {
     const hd = { 'content-type': 'application/json' }; if (/^Bearer\s+\S+/i.test(auth)) hd.authorization = auth; else hd['x-hcps-preview'] = prev;
-    const r = await fetch(`${GOLDEN_FN}/golden-proxy`, { method: 'POST', headers: hd, body: JSON.stringify({ action: 'retail', code }) });
+    const r = await fetch(`${GOLDEN_FN}/golden-proxy`, { method: 'POST', signal: AbortSignal.timeout(6000), headers: hd, body: JSON.stringify({ action: 'retail', code }) });
     if (!r.ok) return null; const j = await r.json();
     const v = Number(j && j.price); if (!(j && j.ok && isFinite(v) && v > 0)) return null;
     return { price: Math.round(v * 100) / 100, calculated: j.source === 'calculated' };
@@ -261,7 +261,7 @@ async function defaultRetail(p, event) {
   const slug = String(p._mfrSlug || '').trim().toLowerCase(), code = String(p.code || '').trim();
   if (!/^Bearer\s+\S+/i.test(auth) || !/^[a-z0-9-]{2,60}$/.test(slug) || !code || code.length > 60 || p._upgrade) return undefined;
   try {
-    const r = await fetch(`${GOLDEN_FN}/dealer-quotes-api`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: auth }, body: JSON.stringify({ action: 'default_retail', manufacturer: slug, code }) });
+    const r = await fetch(`${GOLDEN_FN}/dealer-quotes-api`, { method: 'POST', signal: AbortSignal.timeout(4000), headers: { 'content-type': 'application/json', authorization: auth }, body: JSON.stringify({ action: 'default_retail', manufacturer: slug, code }) });   // slow → official MSRP only
     if (!r.ok) return undefined; const j = await r.json(); if (!(j && j.ok)) return undefined;
     const v = Number(j.price); return isFinite(v) && v > 0 ? { price: Math.round(v * 100) / 100, calculated: j.source === 'calculated' } : null;
   } catch (e) { console.error('default retail lookup failed', e && e.message); return undefined; }

@@ -7823,14 +7823,10 @@ function quoteImg(p){ let u=String((p&&(p.image||(Array.isArray(p.images)&&p.ima
 function quoteEntry(p, line, upgrade){
   const q=upgrade?withUpgrade(p,upgrade):p; if(!q) return null;
   const m=Number(q.msrp); const msrp=(!q._msrp_suggested&&isFinite(m)&&m>0)?m:null;
-  /* C3-07 owner 2026-11-06 15:23: no official MSRP → HCPS calculated retail (2 × the STANDARD dealer price — the shop's own
-     _msrp_suggested figure, never a contract price), labelled "Retail price (HCPS calculated)"; the server decides it again
-     under the manufacturer's advertising rules when the quote or brochure is made */
-  const calc=(msrp==null&&!upgrade&&q._msrp_suggested&&isFinite(m)&&m>0)?m:null;
   let cost=null; try{ const u=Number(unitPrice(q,1)); cost=isFinite(u)&&u>0?u:null; }catch(e){}
   const opt=quoteOptionText(p);
   return {key:line.slug+'|'+p.code+(upgrade?'|u='+upgrade:''), code:p.code, mfr:line.slug, mfrName:line.name, family:groupDisplayName(p)||p.name||p.code,
-    option:[opt, upgrade?('Upgrade: '+upgrade):''].filter(Boolean).join(' · '), name:p.name||p.code, msrp:msrp!=null?msrp:calc, msrpCalc:msrp==null&&calc!=null, msrpEach:!!(msrp!=null&&typeof msrpIsEach==='function'&&msrpIsEach(q)),
+    option:[opt, upgrade?('Upgrade: '+upgrade):''].filter(Boolean).join(' · '), name:p.name||p.code, msrp, msrpEach:!!(msrp!=null&&typeof msrpIsEach==='function'&&msrpIsEach(q)),
     cost, map:(q.map!=null&&q.map!==''&&isFinite(Number(q.map)))?Number(q.map):null, category:p.category||'', upgrade:upgrade||'', image:quoteImg(p)};
 }
 let QUOTE_UNAVAILABLE=[];   /* lines whose catalog could not be loaded — said on screen, never silently missing */
@@ -7916,6 +7912,24 @@ async function buildQuoteCatalog(sig){
     }
   }catch(e){}
   QUOTELIST=quote; PRICELIST=list; _quoteSig=sig;
+  await applyDefaultRetail(list).catch(()=>null);
+}
+/* C3-07 owner 2026-11-06 15:23: a product without an official MSRP shows HCPS's DEFAULT RETAIL — decided on the server
+   (dealer-quotes-api default_retail: 2 × standard dealer cost, only where the manufacturer's advertising rules allow it),
+   labelled "HCPS calculated". The page never computes it, so what the dealer sees is what quotes, brochures and the
+   storefront use. */
+async function applyDefaultRetail(list){
+  if(typeof PREVIEW!=='undefined'&&PREVIEW) return;
+  const need=(list||[]).filter(e=>e&&e.msrp==null&&!/\|u=/.test(e.code)&&e.mfr!=='golden-technologies');
+  for(let i=0;i<need.length;i+=500){
+    const r=await quotesCall({action:'default_retail',items:need.slice(i,i+500).map(e=>({manufacturer:e.mfr,code:e.code}))});
+    if(!(r&&r.ok&&Array.isArray(r.items))) return;
+    const by=new Map(r.items.filter(x=>x&&Number(x.price)>0).map(x=>[x.manufacturer+'|'+x.code,x]));
+    for(const e of need){ const d=by.get(e.mfr+'|'+e.code); if(!d) continue; const k=e.mfr+'|'+e.code;
+      e.msrp=Number(d.price); e.msrpCalc=d.source==='calculated';
+      if(PRICE&&PRICE[k]){ PRICE[k].msrp=e.msrp; PRICE[k].msrpCalc=e.msrpCalc; }
+      const qo=(QUOTELIST||[]).find(x=>x.mfr===e.mfr&&x.code===e.code); if(qo){ qo.msrp=e.msrp; qo.msrpCalc=e.msrpCalc; } }
+  }
 }
 function retailUnit(mfr,code,unitCost){
   const r=PRICE&&PRICE[mfr+'|'+code];
