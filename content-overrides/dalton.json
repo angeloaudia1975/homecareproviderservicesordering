@@ -16614,8 +16614,30 @@
    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/ar-8411kdar-rollator-4-wheels-steel-red-300lb-weight-capacity/ (read 2026-11-03)",
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
-   "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ar-8411kdar-rollator-4-wheels-steel-red-300lb-weight-capacity/ (every number and claim checked against the page)"
-  }
+   "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ar-8411kdar-rollator-4-wheels-steel-red-300lb-weight-capacity/ (every number and claim checked against the page)",
+   "images": "2026-11-05: removed 34f7dfe8b48cd8a8b9af.png (Euro-style rollator photo, wrong product) at Angelo's request; front view 3a00d13657d6307af766.jpg is now the main photo"
+  },
+  "image": "/assets/products/dalton/gallery/3a00d13657d6307af766.jpg",
+  "images_gallery": [
+   {
+    "url": "/assets/products/dalton/gallery/3a00d13657d6307af766.jpg",
+    "primary": true,
+    "caption": "",
+    "source": "manufacturer page"
+   },
+   {
+    "url": "/assets/products/dalton/gallery/841f5be0132286f08b52.jpg",
+    "primary": false,
+    "caption": "",
+    "source": "manufacturer page"
+   },
+   {
+    "url": "/assets/products/dalton/gallery/be4f054e6cf1705bfe4a.jpg",
+    "primary": false,
+    "caption": "",
+    "source": "current catalog photo"
+   }
+  ]
  },
  "rollator-extra-wide-seat-steel-blue-400lb-weight-capacity": {
   "description": "The Dalton Medical extra-wide rollator has a heavy-duty steel frame that supports up to 400 lb, an extra-wide padded seat and a padded backrest. Height-adjustable handles, ergonomic hand brakes for stopping and parking, large wheels and a storage compartment add everyday convenience. The frame folds for transportation and storage, in a blue finish.",
