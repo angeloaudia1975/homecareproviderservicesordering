@@ -1,8 +1,15 @@
 {
   "review_id": "41d20cdaf4cd",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T17:05:29Z",
+  "built_at": "2026-11-06T17:39:54Z",
   "main": "475723052434310a298db742c1184dccb75ad1fc",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 56,
+      "title": "C3-07 Stage 6: Reports section (company / branch)",
+      "branch": "c7/s6-reports",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
