@@ -36,11 +36,11 @@ function world(entitled){
     withUpgrade:(p,l)=>{ const u=(p.upgrades||[]).find(x=>x.label===l); return u?Object.assign({},p,{_upgrade:l,base_price:p.base_price+u.price_add,msrp:Math.round((p.msrp*(p.base_price+u.price_add)/p.base_price)*100)/100}):null; },
     msrpIsEach:p=>!!(p&&p.case_qty>1&&p.msrp_each===true),
     money:v=>'$'+Number(v).toFixed(2), esc:s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'),
-    brandLogoHtml:()=>'', PROFILE:{name:'Dealer X'}, QCUST:{name:'',valid:'30 days'}, FAVS:new Set(), BRANDING:{}, encodeURIComponent, location:{origin:'https://p360.test'} };
+    brandLogoHtml:()=>'', quotesCall:async()=>({ok:false}), PROFILE:{name:'Dealer X'}, QCUST:{name:'',valid:'30 days'}, FAVS:new Set(), BRANDING:{}, encodeURIComponent, location:{origin:'https://p360.test'} };
   const els={}; ctx.$=sel=>els[sel]||(els[sel]={innerHTML:'',value:''}); ctx.els=els;
   vm.createContext(ctx);
   vm.runInContext('var QMETA={},QSNAP={},QSAVED=null,QLIST=[],QDIRTY=false,RETAIL=null,AC=null,QLOCRETAIL=null; const qIsUpgrade=k=>/\\|u=/.test(k); function qLoadList(){}\nvar PRICE=null,PRICELIST=null,QUOTELIST=null,MFRLIST=null,QUOTE=[],QSEARCH="",QUOTE_UNAVAILABLE=[],_quoteSig=null,_quoteBuild=null;'+
-    retiredDecls(H)+'\n'+extract(H)+'\n'+grabDecl(H,'function axesOf')+'\n'+['quotableLine','quoteOptionText','quoteEntry','hubStoreCatalog','ensureQuoteCatalog','buildQuoteCatalog','loadPricing','quoteMsrp','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qDelAt','qFilter','quoteImg','qSaved','qMsrpOk','qMeta','qUnit','qMoney','qLineHtml','qListHtml'].map(grab).join('\n')+
+    retiredDecls(H)+'\n'+extract(H)+'\n'+grabDecl(H,'function axesOf')+'\n'+['quotableLine','quoteOptionText','quoteEntry','hubStoreCatalog','ensureQuoteCatalog','buildQuoteCatalog','applyDefaultRetail','loadPricing','quoteMsrp','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qDelAt','qFilter','quoteImg','qSaved','qMsrpOk','qMeta','qUnit','qMoney','qLineHtml','qListHtml'].map(grab).join('\n')+
     ';this.S=()=>({PRICE,PRICELIST,QUOTELIST,QUOTE_UNAVAILABLE,QUOTE}); this.setQ=q=>{QUOTE=q;};',ctx);
   ctx.ent=entitled; return ctx;
 }
