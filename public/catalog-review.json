@@ -1,8 +1,15 @@
 {
   "review_id": "b0515263d41d",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T18:43:09Z",
+  "built_at": "2026-11-06T20:02:49Z",
   "main": "bc28e3db9750e5cfabc9955a8440cc7ae7af3893",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 60,
+      "title": "C3-07 corrections: storefront price editor + preview + publish, Golden brochure pricing, paper-signed upload",
+      "branch": "c7/s7-pricing",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
