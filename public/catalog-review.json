@@ -1,8 +1,15 @@
 {
   "review_id": "b388405ccdf1",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T18:40:22Z",
+  "built_at": "2026-11-06T18:41:23Z",
   "main": "fe1999da53ce4c17f4e024ba7771539a8e80f414",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 59,
+      "title": "C3-07 Stage 8: dealer-branded promotional downloads",
+      "branch": "c7/s8-demand",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
