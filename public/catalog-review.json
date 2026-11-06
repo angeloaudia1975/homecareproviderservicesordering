@@ -1,15 +1,17 @@
 {
-  "review_id": "b3ebcb84946c",
+  "review_id": "eb8f0a05a47e",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T02:10:58Z",
+  "built_at": "2026-11-06T02:11:16Z",
   "main": "ed3a15b84ad21c0142b7c1706e61ee025053eed0",
-  "included": [],
-  "skipped": [
+  "included": [
     {
       "pr": 51,
       "title": "Golden cards: remove stale \"being finished\" note (ordering is live)",
       "branch": "golden-card-orderable-note",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
+      "head": "6db43ae9c0adeadf63adac3b75487bebefb451c8",
+      "manufacturers": [],
+      "other_files": 2
     }
-  ]
+  ],
+  "skipped": []
 }
