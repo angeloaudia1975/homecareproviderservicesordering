@@ -1,17 +1,8 @@
 {
-  "review_id": "a458b34f51e1",
+  "review_id": "42ee0465d433",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T21:39:05Z",
-  "main": "552b90f08f2022e614b400e88f350ace0d7482e3",
-  "included": [
-    {
-      "pr": 61,
-      "title": "C3-07 HCPS default retail in brochures, quotes and My Retail Prices",
-      "branch": "c7/default-retail",
-      "head": "3886e18d5dff8ba1c26ff21d7e0e85b326edb7ea",
-      "manufacturers": [],
-      "other_files": 4
-    }
-  ],
+  "built_at": "2026-11-06T21:39:38Z",
+  "main": "e2e1f5aad6b540db95ff06596799deeea661d47e",
+  "included": [],
   "skipped": []
 }
