@@ -762,6 +762,12 @@ body.sdon #sdScaffold{display:block;}
 body.sdon .mbanner,body.sdon .controls,body.sdon #a4uBuilder,body.sdon #swBuilder{display:none!important;}
 #sdScaffold>.section:empty{display:none!important;}
 #sec-showroom{display:none;}
+/* Loading panel (2026-11-05): shown the instant the Showroom tab is clicked, so the page is never blank while the lines load. */
+#sdLoading{display:none;max-width:1220px;margin:40px auto;padding:48px 20px;text-align:center;color:var(--navy);font-weight:600;}
+body.sdon.sdloading #sdLoading{display:block;}
+#sdLoading .sdl-spin{width:34px;height:34px;margin:0 auto 14px;border:3px solid #e3e1dd;border-top-color:var(--orange);border-radius:50%;animation:bcspin .8s linear infinite;}
+#sdLoading .sdl-sub{font-weight:400;color:#6b7280;font-size:13px;margin-top:6px;}
+@media (prefers-reduced-motion:reduce){#sdLoading .sdl-spin{animation:none;}}
 #sec-showroom.section{max-width:1220px;margin:0 auto;padding:6px 0 40px;}
 #sec-showroom .section-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:10px 0 4px;flex-wrap:wrap;}
 #sec-showroom .section-title{font-family:'Archivo',sans-serif;font-weight:900;font-size:27px;color:var(--navy);letter-spacing:-.01em;line-height:1.1;}
@@ -9151,7 +9157,15 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     var pw=document.getElementById('p360wrap'); if(pw)pw.style.display='none';
     try{ state.active='p360:showroom'; renderTabs(); }catch(e){}
     sdRefreshHostGlobals();
+    /* first open: show a loading panel straight away instead of a blank page while the lines load */
+    if(!window.__sdCatalogLoaded){
+      var sc=document.getElementById('sdScaffold'), ld=document.getElementById('sdLoading');
+      if(sc && !ld){ ld=document.createElement('div'); ld.id='sdLoading'; ld.setAttribute('role','status');
+        ld.innerHTML='<div class="sdl-spin"></div>Loading your showroom…<div class="sdl-sub">Gathering products from every line you carry</div>'; sc.parentNode.insertBefore(ld, sc); }
+      document.body.classList.add('sdloading');
+    }
     try{ await sdPreloadCatalog(); }catch(e){}
+    document.body.classList.remove('sdloading');
     if(!document.getElementById('sec-showroom') && typeof window.__sdBoot==='function'){ try{ window.__sdBoot(); }catch(e){} }
     if(typeof window.showSec==='function') window.showSec('showroom');
     window.scrollTo({top:0});
