@@ -19,14 +19,15 @@ const HOST = (() => { const a = H.indexOf('Partner 360 Stage 5 — Showroom Stud
 const ENGINE_AT = H.indexOf('<script id="sd-engine">');
 
 /* The whole host script, run with a fake browser: its localStorage backend is reached through window.fetch. */
-function host(storeInit) {
+function host(storeInit, dealer) {
   const ls = new Map(); if (storeInit) ls.set('hcps_sd_dealer', JSON.stringify(storeInit));
   const window = { fetch: async () => { throw new Error('network'); } };
-  const ctx = { window, console, JSON, Object, Array, Number, String, Math, Date, Promise, isNaN, decodeURIComponent, encodeURIComponent,
+  const AUTH = { dealer: { id: dealer === undefined ? 'dealer-A' : dealer } };
+  const ctx = { window, AUTH, console, JSON, Object, Array, Number, String, Math, Date, Promise, isNaN, decodeURIComponent, encodeURIComponent,
     localStorage: { getItem: k => (ls.has(k) ? ls.get(k) : null), setItem: (k, v) => ls.set(k, String(v)) }, document: { getElementById: () => null, body: { classList: { add() {}, remove() {} } } } };
   vm.createContext(ctx); vm.runInContext(HOST, ctx);
   const call = async (url, opts) => (await window.fetch('/.netlify/functions/dealer-showroom-design' + url, opts)).json();
-  return { window, call, raw: () => JSON.parse(ls.get('hcps_sd_dealer') || 'null') };
+  return { window, call, auth: AUTH, raw: () => JSON.parse(ls.get('hcps_sd_dealer') || 'null') };
 }
 /* Engine helpers lifted exactly as they ship, with the registry the host publishes. */
 function engine(win, grid) {
@@ -61,6 +62,7 @@ function engine(win, grid) {
     for (const [w, d, re] of [['', '3', /Enter a width/], ['abc', '3', /Enter a width/], ['0', '3', /at least 1/], ['-1', '3', /at least 1/], ['2.5', '3', /whole feet/i], ['151', '3', /at most 150/], ['31', '3', /bigger than your floor/], ['3', '21', /bigger than your floor/]]) {
       const r = E.sdCheckSize(w, d); ok(!r.ok && re.test(r.reason), w + 'x' + d + ' ' + JSON.stringify(r)); }
     eq(E.sdCheckSize('30', '20').ok, true, 'exactly the floor size fits');
+    eq(E.sdCheckSize('2', '25', true), { ok: true, w: 2, h: 25 }, 'shape checked before turning (rotate first, fit after)');
   });
   await t("an image's un-rotated box comes from the item's OWN size and angle (any edited size stays aligned)", () => {
     eq(E.sdNaturalDimsForItem({ width_cells: 4, height_cells: 7, rotation_deg: 0 }), { w: 4, h: 7 });
@@ -85,9 +87,9 @@ function engine(win, grid) {
   });
   await t("a dealer's saved default is the starting size; without one, the manifest size", () => {
     const lc = E.sdEquipById('lift_chairs');
-    eq(E.sdEquipDefaultSize(lc), { w: 5, h: 5, mine: false });
+    eq(E.sdEquipDefaultSize(lc), { w: 5, h: 5, rot: 0, mine: false });
     E._sdTypeDefaults = { lift_chairs: { width_cells: 4, height_cells: 6 } };
-    eq(vm.runInContext('_sdTypeDefaults={lift_chairs:{width_cells:4,height_cells:6}}; sdEquipDefaultSize(sdEquipById("lift_chairs"))', E), { w: 4, h: 6, mine: true });
+    eq(vm.runInContext('_sdTypeDefaults={lift_chairs:{width_cells:6,height_cells:4,rotation_deg:90}}; sdEquipDefaultSize(sdEquipById("lift_chairs"))', E), { w: 6, h: 4, rot: 90, mine: true }, 'a default keeps its angle');
   });
 
   /* ---------- the browser-store backend ---------- */
@@ -117,12 +119,24 @@ function engine(win, grid) {
   await t('dealer defaults: saved, validated, reset — and never change a placed item', async () => {
     const b = host(JSON.parse(JSON.stringify(OLD))); const items = () => JSON.stringify(b.raw().designs.d1.items);
     const before = items();
-    eq((await b.call('?action=type_defaults', { method: 'POST', body: JSON.stringify({ type: 'lift_chairs', width_cells: 4, height_cells: 6 }) })).defaults, { lift_chairs: { width_cells: 4, height_cells: 6 } });
-    for (const bad of [{ type: 'lift_chairs', width_cells: 0, height_cells: 6 }, { type: 'lift_chairs', width_cells: 2.5, height_cells: 6 }, { type: 'lift_chairs', width_cells: 151, height_cells: 6 }, { type: 'lift_chairs', width_cells: 'x', height_cells: 6 }, { type: 'reception_desk', width_cells: 4, height_cells: 4 }]) {
+    eq((await b.call('?action=type_defaults', { method: 'POST', body: JSON.stringify({ type: 'lift_chairs', width_cells: 4, height_cells: 6 }) })).defaults, { lift_chairs: { width_cells: 4, height_cells: 6, rotation_deg: 0 } });
+    for (const bad of [{ type: 'lift_chairs', width_cells: 0, height_cells: 6 }, { type: 'lift_chairs', width_cells: 2.5, height_cells: 6 }, { type: 'lift_chairs', width_cells: 151, height_cells: 6 }, { type: 'lift_chairs', width_cells: 'x', height_cells: 6 }, { type: 'reception_desk', width_cells: 4, height_cells: 4 }, { type: 'lift_chairs', width_cells: 4, height_cells: 6, rotation_deg: 45 }]) {
       const r = await b.call('?action=type_defaults', { method: 'POST', body: JSON.stringify(bad) }); ok(r.ok === false, 'accepted ' + JSON.stringify(bad)); }
-    eq((await b.call('?action=type_defaults')).defaults, { lift_chairs: { width_cells: 4, height_cells: 6 } }, 'bad writes changed the defaults');
+    eq((await b.call('?action=type_defaults')).defaults, { lift_chairs: { width_cells: 4, height_cells: 6, rotation_deg: 0 } }, 'bad writes changed the defaults');
     eq((await b.call('?action=type_defaults', { method: 'POST', body: JSON.stringify({ type: 'lift_chairs', reset: true }) })).defaults, {});
     eq(items(), before, 'placed items changed');
+  });
+  await t("defaults belong to the signed-in dealer: another dealer on the same browser never sees or changes them", async () => {
+    const b = host(JSON.parse(JSON.stringify(OLD)), 'dealer-A');
+    await b.call('?action=type_defaults', { method: 'POST', body: JSON.stringify({ type: 'beds', width_cells: 4, height_cells: 9, rotation_deg: 90 }) });
+    b.auth.dealer = { id: 'dealer-B' };
+    eq((await b.call('?action=type_defaults')).defaults, {}, 'dealer B sees A\'s defaults');
+    await b.call('?action=type_defaults', { method: 'POST', body: JSON.stringify({ type: 'beds', reset: true }) });
+    b.auth.dealer = { id: 'dealer-A' };
+    eq((await b.call('?action=type_defaults')).defaults, { beds: { width_cells: 4, height_cells: 9, rotation_deg: 90 } }, 'B reset A\'s default');
+    b.auth.dealer = null;
+    const r = await b.call('?action=type_defaults', { method: 'POST', body: JSON.stringify({ type: 'beds', width_cells: 2, height_cells: 2 }) }); ok(r.ok === false, 'saved while signed out');
+    eq((await b.call('?action=type_defaults')).defaults, {}, 'signed out sees defaults');
   });
   await t('snapshot + restore keep each item\'s own size, angle and type', async () => {
     const b = host(JSON.parse(JSON.stringify(OLD)));
