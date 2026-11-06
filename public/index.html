@@ -7274,6 +7274,11 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .rp-bulk .rp-sp{flex:1}#p360wrap .rp-mk{display:inline-flex;gap:4px;align-items:center}
   #p360wrap .rp-mk input{border:1px solid var(--line);border-radius:8px;padding:6px}
   #p360wrap .rp-only{font-size:12.5px;display:inline-flex;gap:4px;align-items:center}
+  #p360wrap details.apsec{border:1px solid var(--line);border-radius:10px;margin:0 0 10px;background:#fff}
+  #p360wrap details.apsec>summary{cursor:pointer;padding:12px 14px;font-weight:800;color:var(--ink);min-height:44px;box-sizing:border-box}
+  #p360wrap .apgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 12px;padding:0 14px 10px}
+  #p360wrap .apgrid textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:14px;box-sizing:border-box}
+  @media(max-width:640px){#p360wrap .apgrid input,#p360wrap .apgrid select,#p360wrap .apgrid textarea,#p360wrap #apLoc{font-size:16px;min-height:44px}}
   #p360wrap .rp-in{width:96px;text-align:right;border:1px solid var(--line);border-radius:8px;padding:6px}
   #p360wrap .rp-tbl tr.rp-ed td{background:#fff8e6}#p360wrap .rp-neg{color:#b42323}
   #p360wrap .rp-save{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:12px;position:sticky;bottom:0;background:#fff;padding:8px 0}
@@ -7432,6 +7437,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   <div class="view" id="view-reports"><div class="msg">Loading…</div></div>
   <div class="view" id="view-quotes"><div class="msg">Loading…</div></div>
   <div class="view" id="view-retail"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-apply"><div class="msg">Loading…</div></div>
   <div class="view" id="view-favorites"><div class="msg">Loading…</div></div>
   <div class="view" id="view-showroom"><div class="msg">Loading…</div></div>
   <div class="view" id="view-resources"><div class="msg">Loading…</div></div>
@@ -8501,7 +8507,7 @@ function renderAccount(){
       <div class="rowlist">${terms.length?terms.map(t=>`<div class="rl"><div class="b"><div class="n">${esc(t.name)}</div></div><span class="pill ${String(t.terms).toLowerCase()==="prepay"?"open":"done"}">${esc(t.terms)}</span></div>`).join(""):`<div class="m" style="color:var(--muted)">No lines yet.</div>`}</div></div>
     <div class="card"><h3>Resale / tax-exemption certificate</h3><p class="m" style="margin:0 0 8px">${resaleOn?("On file"+(ACCOUNT.resale.reference?" · "+esc(ACCOUNT.resale.reference):"")):"Add your certificate reference, then email the certificate file to HCPS."}</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="resaleRef" placeholder="Certificate # / reference" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.reference)||"")}" style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><input id="resaleState" placeholder="State" maxlength="2" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.state)||"")}" style="width:70px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><a class="btn gh acsm" onclick="submitResale()">Save</a></div></div>
-    <div class="card"><h3>Manufacturer account applications</h3><p class="m" style="margin:0 0 8px">Applications move to the new Account Setup Center, where you complete and sign the manufacturer's own application. Until it opens, call HCPS at 937-626-5141 and we'll send you the application.</p><div class="rowlist">${appsHtml}</div></div>
+    <div class="card"><h3>Manufacturer account applications</h3><p class="m" style="margin:0 0 8px">Complete and sign each manufacturer's own application in the Account Setup Center — saved as you go, reviewed privately by HCPS, who sends it to the manufacturer.</p><a class="btn pri acsm" onclick="showP360('apply')">Open Account Setup Center</a>${appsHtml&&!/No applications on file/.test(appsHtml)?`<div class="rowlist" style="margin-top:10px">${appsHtml}</div>`:''}</div>
     <div class="card"><h3>Pricing export</h3><div style="font-size:12.5px;color:var(--muted)">Your HCPS product &amp; dealer-pricing file for billing, ERP, inventory or POS.</div><a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">Download pricing CSV</a></div>
   </div></div>`;
 }
@@ -8556,6 +8562,129 @@ function acClaimOpen(slug,name){
 async function submitResale(){ try{ await api(TOOLS_ENDPOINT,{action:"resale_cert_set",reference:($("#resaleRef")||{}).value,state:($("#resaleState")||{}).value}); }catch(e){} alert("Resale certificate reference saved. Email the certificate file to HCPS to complete."); loadAccountView(); }
 async function submitCreditApp(){ acToast("Manufacturer credit applications are moving to the new Account Setup Center. Until it opens, call HCPS at 937-626-5141."); }
 
+/* ---------- C3-07 Stage 5: MANUFACTURER ACCOUNT SETUP CENTER (owner 2026-11-05; D1 / D5) ----------
+   The dealer completes each manufacturer's OWN application (dealer-applications-api fills the original PDF), saves and comes
+   back, reviews the completed form, and signs it electronically (Documenso Free) — or prints it to sign by hand. The signed
+   application goes privately to HCPS's President, who sends it to the manufacturer himself: nothing is ever sent to a
+   manufacturer automatically. Golden, Ohio Medical and Corsicana keep their own application process (shown as links).
+   Answers are stored encrypted by the server; they never pass through email. */
+const APPS_API="https://homecareproviderservices.netlify.app/.netlify/functions/dealer-applications-api";
+let AP=null, APCUR=null, APDIRTY=false, APBUSY=false;
+async function appsCall(body){
+  if(typeof PREVIEW!=='undefined'&&PREVIEW) return {ok:false,error:'Read-only preview — applications are not available here.'};
+  if(!(typeof AUTH!=='undefined'&&AUTH&&AUTH.session&&AUTH.session.access_token)) return {ok:false,error:'Please sign in again.'};
+  try{ await ensureFreshSession(); }catch(e){}
+  try{ const r=await fetch(APPS_API,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+AUTH.session.access_token},body:JSON.stringify(body)});
+    return await r.json().catch(()=>({ok:false,error:'Please try again.'})); }catch(e){ return {ok:false,error:'Please try again.'}; }
+}
+const AP_LABEL={draft:'In progress',queued:'Waiting to be signed — HCPS notified',signing:'Ready to sign',signing_failed:'Signing stopped — edit and sign again',signed:'Signed — with HCPS',offline_signed:'Signed — with HCPS',
+  under_review:'HCPS reviewing',sent_to_manufacturer:'Sent to the manufacturer by HCPS',approved:'Approved',declined:'Declined',withdrawn:'Withdrawn'};
+const AP_PILL={draft:'open',queued:'open',signing:'open',signing_failed:'open',signed:'done',offline_signed:'done',under_review:'done',sent_to_manufacturer:'done',approved:'done',declined:'open'};
+async function loadApplyView(){
+  const host=$("#view-apply"); if(!host) return;
+  if(window.__PREVIEW__){ host.innerHTML=`<div class="ph"><div><h1>Manufacturer Account Setup</h1></div></div><div class="card" style="margin-top:0">Read-only preview — applications are shown only when the dealer is signed in.</div>`; return; }
+  if(!APCUR) host.innerHTML=`<div class="ph"><div><h1>Manufacturer Account Setup</h1><div class="sub">Loading…</div></div></div>`;
+  const r=await appsCall({action:'app_list'});
+  if(!(r&&r.ok)){ host.innerHTML=`<div class="ph"><div><h1>Manufacturer Account Setup</h1></div></div><div class="card" style="margin-top:0">${esc((r&&r.error)||'Applications could not be loaded just now.')} <a class="btn gh" onclick="loadApplyView()">Try again</a></div>`; return; }
+  AP=r; AP.loc=AP.loc&&AP.locations.some(l=>l.id===AP.loc&&l.can_apply)?AP.loc:((AP.locations.find(l=>l.id===AP.self_id&&l.can_apply)||AP.locations.find(l=>l.can_apply)||{}).id||'');
+  if(APCUR) return; renderApplyList();
+}
+function renderApplyList(){
+  const host=$("#view-apply"); if(!host||!AP) return;
+  const mine=(AP.applications||[]).filter(a=>a.status!=='withdrawn');
+  const byForm=new Map(); mine.filter(a=>String(a.location_id)===String(AP.loc)).forEach(a=>{ if(!byForm.has(a.manufacturer)) byForm.set(a.manufacturer,a); });
+  const locSel=AP.locations.filter(l=>l.can_apply).length>1?`<label class="fld2" style="max-width:420px;margin:0 0 10px"><span style="font-size:12px;color:var(--muted)">Applying for</span><select id="apLoc" onchange="apSetLoc(this.value)">${AP.locations.filter(l=>l.can_apply).map(l=>`<option value="${esc(l.id)}" ${l.id===AP.loc?'selected':''}>${esc(l.name)}</option>`).join('')}</select></label>`:'';
+  host.innerHTML=`<div class="ph"><div><h1>Manufacturer Account Setup</h1><div class="sub">Complete each manufacturer's own application here — saved as you go, signed electronically, and reviewed privately by HCPS before HCPS sends it on.</div></div>
+      <div class="qacts"><a class="btn gh" onclick="showP360('account')">← Account Center</a></div></div>
+    <div class="card" style="margin-top:0">${locSel}
+      <div class="lead-note" style="margin-bottom:10px">Nothing is sent to a manufacturer automatically. ${AP.signing?'':'Electronic signing opens shortly — meanwhile you can complete an application and print it to sign by hand.'}</div>
+      <div class="rowlist">${AP.forms.map(f=>{ const a=byForm.get(f.slug);
+        if(f.external) return `<div class="rl"><div class="b"><div class="n">${esc(f.name)}</div><div class="m">${esc(f.external.how)}</div></div><a class="btn gh acsm" href="${esc(f.external.url)}" target="_blank" rel="noopener">Apply →</a></div>`;
+        return `<div class="rl"><div class="b"><div class="n">${esc(f.name)}</div><div class="m">${a?esc(AP_LABEL[a.status]||a.status)+' · updated '+esc(dateShort(a.updated_at)):'Not started'}${f.notice?' · '+esc(f.notice):''}</div></div>
+          ${a?`<span class="pill ${AP_PILL[a.status]||'open'}">${esc(AP_LABEL[a.status]||a.status)}</span> <a class="btn ${['draft','signing','signing_failed','queued'].includes(a.status)?'pri':'gh'} acsm" data-id="${esc(a.id)}" onclick="apOpen(this.dataset.id)">${a.status==='signing'?'Sign':['draft','signing_failed','queued'].includes(a.status)?'Continue':'View'}</a>`
+             :`<a class="btn gh acsm" data-m="${esc(f.slug)}" onclick="apStart(this.dataset.m)">Start</a>`}</div>`; }).join('')}</div></div>`;
+}
+function apDirty(){ APDIRTY=true; }
+function apSetLoc(v){ AP.loc=v; renderApplyList(); }
+async function apStart(m){
+  const r=await appsCall({action:'app_start',manufacturer:m,location_id:AP.loc}); if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not start it.',true); return; }
+  await apOpen(r.application.id);
+}
+async function apOpen(id){
+  if(APDIRTY&&!confirm('Leave this application? Unsaved changes will be lost.')) return;
+  const r=await appsCall({action:'app_get',id}); if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not open it.',true); return; }
+  APCUR=r; APDIRTY=false; renderApply(); window.scrollTo({top:0});
+}
+function apClose(){ if(APDIRTY&&!confirm('Leave this application? Unsaved changes will be lost.')) return; APCUR=null; APDIRTY=false; loadApplyView(); }
+function apToast(msg,bad){ const el=$("#apMsg"); if(el){ el.textContent=msg; el.style.color=bad?'#b42323':''; } else if(typeof acToast==='function') acToast(msg); }
+function apField(f,v,edit){
+  const id='ap_'+f.key.replace(/\./g,'_');
+  if(f.key==='biz.entity') return `<div class="fld2"><label for="${id}">${esc(f.label)}</label><select id="${id}" data-k="${esc(f.key)}" ${edit?'':'disabled'} onchange="apDirty()">${['',...Object.keys(APCUR.entities)].map(k=>`<option value="${esc(k)}" ${v===k?'selected':''}>${esc(k?APCUR.entities[k]:'—')}</option>`).join('')}</select></div>`;
+  const type=/email/.test(f.key)?'email':/phone|fax/.test(f.key)?'tel':'text';
+  const tag=f.key==='req.notes'?`<textarea id="${id}" data-k="${esc(f.key)}" rows="3" ${edit?'':'disabled'} oninput="apDirty()">${esc(v||'')}</textarea>`
+    :`<input id="${id}" type="${type}" data-k="${esc(f.key)}" value="${esc(v||'')}" ${edit?'':'disabled'} maxlength="200" oninput="apDirty()" ${f.required?'aria-required="true"':''}>`;
+  return `<div class="fld2"><label for="${id}">${esc(f.label)}${f.required?' <span style="color:#b42323">*</span>':''}</label>${tag}</div>`;
+}
+function renderApply(){
+  const host=$("#view-apply"); const a=APCUR.application, ans=a.answers||{}, edit=!!APCUR.can_edit;
+  const sec=APCUR.sections.map(s=>`<details class="apsec" ${['Business','Signer','Contacts'].includes(s.title)||!edit?'open':''}><summary>${esc(s.title)}</summary><div class="apgrid">${s.fields.map(f=>apField(f,ans[f.key],edit)).join('')}</div></details>`).join('');
+  const acts=[];
+  if(edit){ acts.push('<a class="btn gh" onclick="apSave()">Save</a>','<a class="btn gh" onclick="apPreview()">Review completed form</a>');
+    acts.push(`<a class="btn pri" onclick="apSign()">${APCUR.signing?'Sign electronically':'Electronic signing opens shortly'}</a>`); acts.push('<a class="btn gh" onclick="apOffline()">Print to sign by hand</a>'); }
+  if(a.status==='signing') acts.push('<a class="btn pri" onclick="apLink()">Continue to signing</a>','<a class="btn gh" onclick="apRefresh()">I signed it — check</a>');
+  if(['draft','queued','signing','signing_failed'].includes(a.status)) acts.push('<a class="btn gh" onclick="apWithdraw()">Withdraw</a>');
+  host.innerHTML=`<div class="ph"><div><h1>${esc(a.name)} application</h1><div class="sub">${esc(a.location_name||'')} · ${esc(AP_LABEL[a.status]||a.status)}</div></div>
+      <div class="qacts"><a class="btn gh" onclick="apClose()">← All applications</a></div></div>
+    <div class="card" style="margin-top:0">
+      <div class="lead-note">These answers fill in ${esc(a.name)}'s own application form. Details already on file with HCPS are filled in — check them. ${APCUR.notice?'<b>'+esc(APCUR.notice)+'</b> ':''}Bank account and Social Security numbers are never stored by HCPS: if the form asks for them, the signer types them on the signing screen. <b>The authorised signer signs from their own 360 Dealer Portal login</b> — if that is someone else, they sign in and open this application to sign.</div>
+      <div id="apMsg" class="lead-note" role="status" style="min-height:18px"></div>
+      ${sec}
+      <div class="qacts" style="margin-top:12px;flex-wrap:wrap">${acts.join(' ')}</div></div>`;
+}
+function apCollect(){ const o={}; document.querySelectorAll('#view-apply [data-k]').forEach(el=>{ if(el.value) o[el.dataset.k]=el.value; }); return o; }
+async function apSave(quiet){
+  if(APBUSY) return false; APBUSY=true; if(!quiet) apToast('Saving…');
+  const a=APCUR.application; const r=await appsCall({action:'app_save',id:a.id,version:a.version,answers:apCollect()}); APBUSY=false;
+  if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not save just now.',true); return false; }
+  a.version=r.application.version; a.status=r.application.status; APDIRTY=false;
+  if(!quiet) apToast(r.missing&&r.missing.length?'Saved. Still needed before signing: '+r.missing.slice(0,6).join(', ')+(r.missing.length>6?'…':''):'Saved — ready to review and sign.');
+  return r;
+}
+function apOpenPdf(b64,name){ const bin=atob(b64), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+  const url=URL.createObjectURL(new Blob([u8],{type:'application/pdf'}));
+  /* a same-origin blob tab (no "noopener": that always returns null and would force a download of the dealer's credit
+     details); only a blocked pop-up falls back to a download */
+  const w=window.open(url,'_blank');
+  if(!w){ const l=document.createElement('a'); l.href=url; l.download=name||'application.pdf'; document.body.appendChild(l); l.click(); l.remove(); }
+  setTimeout(()=>URL.revokeObjectURL(url),120000); }
+/* the signing page opens from the click itself (a tab opened after an await is pop-up-blocked), then is sent to the link */
+function apTab(){ let w=null; try{ w=window.open('about:blank','_blank'); if(w) w.opener=null; }catch(e){} return w; }
+function apGo(w,url){ if(w&&!w.closed){ try{ w.location.href=url; return; }catch(e){} } window.location.href=url; }
+async function apPreview(){ if(APDIRTY){ const s=await apSave(true); if(!s) return; } apToast('Building the completed form…');
+  const r=await appsCall({action:'app_preview',id:APCUR.application.id}); if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not build it.',true); return; }
+  apOpenPdf(r.pdf_base64,r.file); apToast('Opened the completed form — the orange boxes show where the signer signs.'); }
+async function apOffline(){ if(APDIRTY){ const s=await apSave(true); if(!s) return; }
+  const r=await appsCall({action:'app_offline',id:APCUR.application.id}); if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not build it.',true); return; }
+  apOpenPdf(r.pdf_base64,r.file); apToast('Print it, sign it, and send it to HCPS (info@homecareproviderservices.us) — HCPS sends it to the manufacturer.'); }
+async function apSign(){
+  if(!APCUR.signing){ apToast('Electronic signing opens shortly — use “Print to sign by hand” meanwhile.',true); return; }
+  const s=await apSave(true); if(!s) return;
+  if(s.missing&&s.missing.length){ apToast('Please complete: '+s.missing.slice(0,6).join(', ')+(s.missing.length>6?'…':''),true); return; }
+  if(!confirm('Sign this application now? It can no longer be edited after this (you can withdraw it).')) return;
+  const tab=apTab(); apToast('Preparing the signing document…');
+  const r=await appsCall({action:'app_sign',id:APCUR.application.id,version:APCUR.application.version});
+  if(!(r&&r.ok)){ if(tab) tab.close(); apToast((r&&r.error)||'Could not prepare it.',true); return; }
+  if(!r.url&&tab) tab.close();
+  if(r.queued){ await apOpen(APCUR.application.id); apToast('This month’s free signing slots are used — HCPS has been told and will send it for signing. You can also print it to sign by hand.'); return; }
+  await apOpen(APCUR.application.id); if(r.url) apGo(tab,r.url);
+  apToast('The signing page opened in a new tab. Come back and press “I signed it — check” when done.');
+}
+async function apLink(){ const tab=apTab(); const r=await appsCall({action:'app_signing_link',id:APCUR.application.id}); if(r&&r.ok&&r.url) apGo(tab,r.url); else { if(tab) tab.close(); apToast((r&&r.error)||'Could not open it.',true); } }
+async function apRefresh(){ const r=await appsCall({action:'app_refresh',id:APCUR.application.id}); if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not check just now.',true); return; }
+  await apOpen(APCUR.application.id); apToast(r.application&&/signed/.test(r.application.status)?'Signed — HCPS has it now.':'Not signed yet.'); }
+async function apWithdraw(){ if(!confirm('Withdraw this application?')) return; const r=await appsCall({action:'app_withdraw',id:APCUR.application.id});
+  if(r&&r.ok){ APCUR=null; APDIRTY=false; loadApplyView(); } else apToast((r&&r.error)||'Could not withdraw it.',true); }
+
 function showView(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
   $("#view-"+v).classList.add("on");
@@ -8566,6 +8695,7 @@ function showView(v){
   if(v==="reports")loadReports();
   if(v==="quotes")loadQuotesView();
   if(v==="retail")loadRetailView();
+  if(v==="apply")loadApplyView();
   if(v==="favorites")loadFavView();
   if(v==="showroom")loadShowroom();
   if(v==="resources")loadResourcesView();
@@ -8577,7 +8707,7 @@ window.showView=showView;
    Quotes, the showroom wall buttons, the price-request / literature / credit / resale forms and the favourite star did
    nothing. Exported once here. The showroom zone's clear is exported as p360SwClear because the storefront's Strongback
    wall builder already owns the global swClear(). */
-Object.assign(window,{p360ReportYear:v=>{ REPORT_YEAR=v; renderReports(); },qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:v=>{ REPORT_YEAR=v; renderReports(); },qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};

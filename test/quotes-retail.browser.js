@@ -57,7 +57,7 @@ function fakeApis(page, S) {
 }
 /* The quote / retail code lives inside the page's script scope; the TEST copy of the page gets one probe (__T) so the test
    can read and seed that scope. The shipped page is unchanged. */
-const PROBE = h => { const a = 'Object.assign(window,{p360ReportYear:'; if (!h.includes(a)) throw new Error('probe anchor missing'); return h.replace(a, 'window.__T=function(src){return eval(src)};' + a); };
+const PROBE = h => { const a = 'window.P360={boot:boot'; if (!h.includes(a)) throw new Error('probe anchor missing'); return h.replace(a, 'window.__T=function(src){return eval(src)};' + a); };
 const signIn = page => page.evaluate(list => { PREVIEW = null; window.__PREVIEW__ = null; AUTH.session = { access_token: 'tok' }; window.ensureFreshSession = async () => {};
   window.confirm = () => true; window.__LIST = list;
   __T(`ensureCatalogFav=async()=>{}; PRICELIST=window.__LIST; QUOTELIST=window.__LIST.map(p=>({mfr:p.mfr,code:p.code,name:p.name,mfrName:p.mfrName}));
