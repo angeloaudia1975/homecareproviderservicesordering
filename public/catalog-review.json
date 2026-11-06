@@ -1,17 +1,8 @@
 {
-  "review_id": "0847a01603cf",
+  "review_id": "36189eb16e19",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T17:40:12Z",
-  "main": "475723052434310a298db742c1184dccb75ad1fc",
-  "included": [
-    {
-      "pr": 56,
-      "title": "C3-07 Stage 6: Reports section (company / branch)",
-      "branch": "c7/s6-reports",
-      "head": "634bb176858a455e72a4533c36faca580701c2e7",
-      "manufacturers": [],
-      "other_files": 2
-    }
-  ],
+  "built_at": "2026-11-06T17:52:05Z",
+  "main": "0b4e88bcc41d457beb28def7536e48d568392586",
+  "included": [],
   "skipped": []
 }
