@@ -162,6 +162,19 @@ async function modalErr(page) { return page.evaluate(() => { const e = document.
       await page.waitForFunction(() => [...document.querySelectorAll('#sd-grid .sd-item-img')].every(i => i.complete), null, { timeout: 15000 });
       const broken = await page.evaluate(() => [...document.querySelectorAll('#sd-grid .sd-item-img')].filter(i => i.naturalWidth === 0).map(i => i.getAttribute('src')));
       eq(broken, [], 'sprites that did not load');
+      // owner request 2026-11-06: each picture fills its placement box (no big empty margin) — on its limiting side it
+      // spans >= 95% of the occupied squares, never stretched (contain)
+      const fill = await page.evaluate(() => [...document.querySelectorAll('#sd-grid .sd-item-block')].map(b => { const i = b.querySelector('img'); if (!i) return null;
+        const bw = parseFloat(i.style.width), bh = parseFloat(i.style.height), k = Math.min(bw / i.naturalWidth, bh / i.naturalHeight);
+        // the picture inside the file: trimmed sprites carry only a thin margin, so the file box ~ the picture
+        return { src: i.getAttribute('src').split('/').pop(), fill: Math.max(i.naturalWidth * k / bw, i.naturalHeight * k / bh), opaqueEdge: null }; }).filter(Boolean));
+      const small = fill.filter(f => f.fill < 0.95); eq(small, [], 'pictures not filling their boxes');
+      const margins = await page.evaluate(async () => { const out = []; for (const i of [...document.querySelectorAll('#sd-grid .sd-item-img')]) {
+        const c = document.createElement('canvas'); c.width = i.naturalWidth; c.height = i.naturalHeight; const x = c.getContext('2d'); x.drawImage(i, 0, 0);
+        const d = x.getImageData(0, 0, c.width, c.height).data; let minX = c.width, minY = c.height, maxX = 0, maxY = 0;
+        for (let y = 0; y < c.height; y++) for (let xx = 0; xx < c.width; xx++) if (d[(y * c.width + xx) * 4 + 3] > 8) { if (xx < minX) minX = xx; if (xx > maxX) maxX = xx; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+        out.push({ src: i.getAttribute('src').split('/').pop(), w: (maxX - minX + 1) / c.width, h: (maxY - minY + 1) / c.height }); } return out; });
+      eq(margins.filter(m => Math.max(m.w, m.h) < 0.9), [], 'sprite files still carry a wide empty margin');
       const kinds = await items(page, D3);
       for (const m of MANIFEST) { const it = kinds.find(x => x.id === placed[m.id]); if (['lift_chairs', 'power_chairs', 'scooters', 'beds'].includes(m.id)) ok(it.item_type === 'golden' && !it.model && it.pending_category, m.id + ' placeholder ' + JSON.stringify(it)); else ok(it.item_type === 'custom' && it.custom_category === m.id && it.custom_name === m.label, m.id + ' fixture'); }
     });
