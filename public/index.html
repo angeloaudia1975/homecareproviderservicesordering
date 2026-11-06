@@ -8818,9 +8818,10 @@ function renderStorefront(){
     <label class="sf-check"><input type="checkbox" id="sfOn"${s.enabled?' checked':''}${dis}> Storefront is on (anyone with the link can see it)</label>
     <label class="fld2"><span class="rp-l">Headline</span><input id="sfHead" maxlength="120" value="${esc(s.headline||'')}" placeholder="e.g. Home medical equipment for Dayton families"${dis}></label>
     <label class="fld2"><span class="rp-l">About your business</span><textarea id="sfAbout" maxlength="1500" rows="4"${dis}>${esc(s.about||'')}</textarea></label>
-    <div class="sf-row"><label class="fld2"><span class="rp-l">Phone for customers (shown publicly)</span><input id="sfPhone" maxlength="40" value="${esc(L.storefront?(s.phone||''):(L.default_phone||''))}"${dis}></label>
-     <label class="fld2"><span class="rp-l">Email for requests (shown publicly)</span><input id="sfEmail" type="email" maxlength="200" value="${esc(L.storefront?(s.email||''):(L.default_email||''))}"${dis}></label></div>
-    <div class="sf-note">Only the phone and email entered here appear on your storefront — clear one to keep it private. Requests are emailed to the address above.</div>
+    <div class="sf-row"><label class="fld2"><span class="rp-l">Phone for customers (shown publicly)</span><input id="sfPhone" maxlength="40" value="${esc(s.phone||'')}" placeholder="${esc(L.default_phone?'e.g. '+L.default_phone:'')}"${dis}></label>
+     <label class="fld2"><span class="rp-l">Email for requests (shown publicly)</span><input id="sfEmail" type="email" maxlength="200" value="${esc(s.email||'')}" placeholder="${esc(L.default_email?'e.g. '+L.default_email:'')}"${dis}></label></div>
+    ${ed&&(L.default_phone||L.default_email)?`<a class="btn gh" onclick="sfUseAccount()">Use my account phone and email</a>`:''}
+    <div class="sf-note">Only the phone and email entered here appear on your storefront — nothing from your account is published unless you put it here. Requests are emailed to the address above.</div>
     <label class="fld2"><span class="rp-l">Hours</span><input id="sfHours" maxlength="300" value="${esc(s.hours||'')}" placeholder="e.g. Mon–Fri 9–5, Sat 9–12"${dis}></label>
     <label class="sf-check"><input type="checkbox" id="sfAddr"${s.show_address===false?'':' checked'}${dis}> Show my street address</label>
     <label class="fld2"><span class="rp-l">Prices</span><select id="sfPrice"${dis}><option value="msrp"${s.price_mode!=='call'?' selected':''}>Show the manufacturer's MSRP where HCPS has verified it — otherwise "Call for Price"</option><option value="call"${s.price_mode==='call'?' selected':''}>"Call for Price" on everything</option></select></label>
@@ -8837,7 +8838,7 @@ function renderStorefront(){
       ${ed?`<div class="sf-act"><a class="btn gh" onclick="sfInq('${esc(x.id)}','${x.status==='new'?'handled':'new'}')">${x.status==='new'?'Mark handled':'Mark new'}</a><a class="btn gh" onclick="sfInqDel('${esc(x.id)}')">Delete</a></div>`:''}</div>`).join(''):'<div class="msg">No requests yet.</div>'}
    </div>
   </div>
-  ${L.link?`<div class="card sf-card"><div class="sf-head"><h3>Promote your storefront</h3></div>
+  ${L.link&&L.live?`<div class="card sf-card"><div class="sf-head"><h3>Promote your storefront</h3></div>
     <div class="sf-note">Ready-made images with your name, contact details and storefront link, to post on your own social pages or print. They download to your device — nothing is posted for you.</div>
     <div class="sf-promo">${SF_PROMO.map(p=>`<a class="btn gh" onclick="sfPromo('${p.k}')">⬇ ${esc(p.label)}</a>`).join('')}</div></div>`:''}`;
 }
@@ -8850,8 +8851,13 @@ function sfPromoDraw(L,p){
   const s=L.storefront||{}, W=p.w, H=p.h, pad=Math.round(Math.min(W,H)*0.07), font='"Helvetica Neue",Arial,sans-serif';
   g.fillStyle='#0b1f33'; g.fillRect(0,0,W,H); g.fillStyle='#1681c2'; g.fillRect(0,H-Math.round(H*0.16),W,Math.round(H*0.16)); g.fillStyle='#ef6325'; g.fillRect(pad,pad,Math.round(W*0.12),Math.max(8,Math.round(H*0.012)));
   const wrap=(text,size,weight,color,x,y,maxW,maxLines)=>{ g.font=`${weight} ${size}px ${font}`; g.fillStyle=color; const words=String(text||'').split(/\s+/).filter(Boolean); let line='', n=0;
-    for(let i=0;i<words.length;i++){ const t=line?line+' '+words[i]:words[i]; if(g.measureText(t).width>maxW&&line){ g.fillText(line,x,y); y+=size*1.2; line=words[i]; if(++n>=maxLines-1){ line=words.slice(i).join(' '); while(g.measureText(line+'…').width>maxW&&line.length>1) line=line.slice(0,-1); if(i<words.length-1||g.measureText(words.slice(i).join(' ')).width>maxW) line+='…'; break; } } else line=t; }
-    if(line){ g.fillText(line,x,y); y+=size*1.2; } return y; };
+    const fit=t=>{ if(g.measureText(t).width<=maxW) return t; while(t.length>1&&g.measureText(t+'…').width>maxW) t=t.slice(0,-1); return t+'…'; };
+    for(let i=0;i<words.length;i++){ const t=line?line+' '+words[i]:words[i];
+      if(g.measureText(t).width>maxW&&line){
+        if(n>=maxLines-1){ line=fit(words.slice(i-line.split(' ').length,words.length).join(' ')); g.fillText(line,x,y); return y+size*1.2; }   // last allowed line: the rest, shortened
+        g.fillText(line,x,y); y+=size*1.2; n++; line=words[i]; }
+      else line=t; }
+    if(line){ g.fillText(fit(line),x,y); y+=size*1.2; } return y; };
   const big=Math.round(Math.min(W,H)*(p.k==='cover'?0.11:0.085)), mid=Math.round(big*0.5), small=Math.round(big*0.36), maxW=W-pad*2;
   let y=pad+Math.round(H*0.012)+big*1.3;
   y=wrap(L.name,big,'800','#ffffff',pad,y,maxW,p.k==='cover'?1:3);
@@ -8863,11 +8869,12 @@ function sfPromoDraw(L,p){
   return c;
 }
 function sfPromo(k){
-  const L=SFD&&SFD.locations.find(l=>l.id===SFLOC), p=SF_PROMO.find(x=>x.k===k); if(!L||!p||!L.link) return;
+  const L=SFD&&SFD.locations.find(l=>l.id===SFLOC), p=SF_PROMO.find(x=>x.k===k); if(!L||!p||!L.link||!L.live) return;   // only a live storefront is promoted
   const c=sfPromoDraw(L,p); if(!c) return;
   const name=(String(L.storefront&&L.storefront.slug||'storefront')+'-'+p.k+'.png');
   c.toBlob(b=>{ if(!b) return; const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000); },'image/png');
 }
+function sfUseAccount(){ const L=SFD&&SFD.locations.find(l=>l.id===SFLOC); if(!L) return; const p=document.getElementById('sfPhone'), e=document.getElementById('sfEmail'); if(p&&L.default_phone) p.value=L.default_phone; if(e&&L.default_email) e.value=L.default_email; }
 function sfCopy(){ const i=document.querySelector('.sf-link input'); if(!i) return; try{ navigator.clipboard.writeText(i.value); }catch(e){ i.select(); document.execCommand&&document.execCommand('copy'); } const m=$("#sfMsg"); if(m) m.textContent='Link copied.'; }
 async function sfSave(){
   if(SFBUSY) return; const L=SFD.locations.find(l=>l.id===SFLOC); if(!L) return;
@@ -8884,7 +8891,7 @@ async function sfSave(){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};

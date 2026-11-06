@@ -100,13 +100,17 @@ const layout = (page, sel) => page.evaluate((sel) => {
       const { ctx, page } = await open(browser, w, h, {});
       const loc = (id, name, edit, sf) => ({ id, name, city: 'Dayton', state: 'OH', can_edit: edit, lines: [{ slug: 'bemis', name: 'Bemis' }, { slug: 'strongback', name: 'Strongback' }], default_email: 'hq@acme.test', default_phone: '555', storefront: sf, suggested_slug: 'acme-medical', link: sf ? HOST + '/store/' + sf.slug : null, live: !!(sf && sf.enabled) });
       await page.route('**/functions/dealer-storefront-api', async (route) => { const b = JSON.parse(route.request().postData() || '{}'); S.calls.push(b); const R = (o) => route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(o) });
-        if (b.action === 'sf_get') return R({ ok: true, head_office: false, base: HOST + '/store/', locations: [loc('br', 'Acme Branch', true, null), loc('hq', 'Acme HQ', false, { slug: 'acme-hq', enabled: true, version: 3, lines: null, hidden_categories: [], price_mode: 'msrp' })] });
+        if (b.action === 'sf_get') return R({ ok: true, head_office: false, base: HOST + '/store/', locations: [loc('br', 'Acme Branch', true, null), loc('hq', 'Acme HQ', false, { slug: 'acme-hq', enabled: true, version: 3, lines: null, hidden_categories: [], price_mode: 'msrp' }), loc('off', 'Acme Off', true, { slug: 'acme-off', enabled: false, version: 1, lines: null, hidden_categories: [], price_mode: 'msrp' })] });
         if (b.action === 'sf_inquiries') return R({ ok: true, inquiries: [{ id: 'i1', dealer_id: 'br', created_at: '2026-11-06T10:00:00Z', name: 'Pat <b>', email: 'pat@example.com', phone: null, message: 'Hi', product_name: 'Seat', product_code: 'B1', status: 'new' }] });
         if (b.action === 'sf_save') return R({ ok: true, storefront: Object.assign({ version: 1, lines: b.settings.lines, hidden_categories: b.settings.hidden_categories, price_mode: b.settings.price_mode }, b.settings), link: HOST + '/store/' + b.settings.slug, live: b.settings.enabled });
         return R({ ok: true }); });
       await page.evaluate(() => { PREVIEW = null; window.__PREVIEW__ = null; window.confirm = () => true; });
       await page.evaluate(() => showP360('storefront')); await page.waitForSelector('#sfSlug');
       await t(label + ': no promotion before the storefront has an address', async () => ok(await page.$$eval('.sf-promo', (b) => b.length) === 0, 'promo shown'));
+      await t(label + ': the account\'s phone and email are never pre-filled — only placeholders, or the person taps "Use my account"', async () => {
+        ok(await page.evaluate(() => document.getElementById('sfPhone').value === '' && document.getElementById('sfEmail').value === '' && /hq@acme\.test/.test(document.getElementById('sfEmail').placeholder)), 'pre-filled');
+        await page.evaluate(() => sfUseAccount()); ok(await page.evaluate(() => document.getElementById('sfEmail').value === 'hq@acme.test'), 'use account');
+        await page.evaluate(() => { document.getElementById('sfEmail').value = ''; document.getElementById('sfPhone').value = ''; }); });
       await t(label + ': My Storefront tab, settings save exactly what was typed', async () => {
         ok(await page.evaluate(() => [...document.querySelectorAll('.navtab span')].some((s) => s.textContent === 'My Storefront')), 'tab');
         await page.fill('#sfHead', 'Welcome'); await page.check('#sfOn'); await page.uncheck('#sfAll'); await page.uncheck('.sf-line[value="strongback"]'); await page.selectOption('#sfPrice', 'call');
@@ -124,7 +128,8 @@ const layout = (page, sel) => page.evaluate((sel) => {
         const [dl] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => sfPromo('square'))]);
         ok(dl.suggestedFilename() === 'acme-hq-square.png', dl.suggestedFilename());
         const b = fs.readFileSync(await dl.path()); ok(b.slice(1, 4).toString() === 'PNG' && b.readUInt32BE(16) === 1080 && b.readUInt32BE(20) === 1080, 'PNG 1080×1080');
-        ok(S.calls.length === before, 'no server call'); });
+        ok(S.calls.length === before, 'no server call');
+        await page.evaluate(() => sfLoc('off')); ok(await page.$$eval('.sf-promo', (b) => b.length) === 0, 'promo for a storefront that is off'); await page.evaluate(() => sfLoc('hq')); });
       await t(label + ': the head office\'s storefront is read-only for a branch', async () => ok(await page.evaluate(() => document.getElementById('sfSlug').disabled && !document.getElementById('sfSave')), 'read only'));
       const L2 = await layout(page, '#view-storefront .btn, #view-storefront select');
       await t(label + ': My Storefront has no horizontal scroll' + (w < 768 ? '; 44 px targets' : ''), () => { ok(L2.overflow <= 1, 'overflow ' + L2.overflow); if (w < 768) ok(!L2.small.length, 'small: ' + L2.small.join('|')); });
