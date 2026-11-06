@@ -10124,6 +10124,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     if(!drag.dragging){
       // Movement stayed under the threshold the whole time — a plain click,
       // so open details exactly as #204 established (nothing moved).
+      _sdReturnFocusId = String(drag.item.id);
       sdShowItemDetails(drag.item);
       return;
     }
@@ -11320,13 +11321,24 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   //      step for non-Golden presets)
   //   3. everything else -> the original read-only details view, unchanged
   // Keyboard / screen-reader path to a placed item: the Placed Items "Edit" buttons, or Enter/Space on a focused item.
+  var _sdReturnFocusId=null;   // the placed item whose panel is open — focus goes back to it on close
   window.sdOpenItem=function(id){
     var item = itemsList.filter(function(x){ return String(x.id)===String(id); })[0]; if(!item) return;
+    _sdReturnFocusId = String(id);
     window.sdCancelPlacement(); sdShowItemDetails(item);
   };
   document.addEventListener('keydown', function(e){
     var m=document.getElementById('sd-item-modal');
     if(e.key==='Escape' && m && m.style.display!=='none'){ window.sdCloseItemModal(); return; }
+    // keep Tab inside the open item panel (it is a modal dialog)
+    if(e.key==='Tab' && m && m.style.display!=='none'){
+      var f=[].slice.call(m.querySelectorAll('button,input,select,textarea,a[href],[tabindex]:not([tabindex="-1"])')).filter(function(x){ return !x.disabled && x.offsetParent!==null; });
+      if(f.length){ var first=f[0], last=f[f.length-1];
+        if(!m.contains(document.activeElement)){ e.preventDefault(); first.focus(); }
+        else if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+        else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); } }
+      return;
+    }
     var blk = e.target && e.target.closest && e.target.closest('#sd-grid .sd-item-block');
     if(blk && (e.key==='Enter' || e.key===' ')){ e.preventDefault(); window.sdOpenItem(blk.dataset.id); }
   });
@@ -11743,7 +11755,12 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       })
       .catch(function(){ toast('Could not save pricing — try again.'); });
   };
-  window.sdCloseItemModal=function(){ var m=document.getElementById('sd-item-modal'); if(m) m.style.display='none'; if(!pendingPlacement && !_sdDrag) sdClearPreview(); };
+  window.sdCloseItemModal=function(){ var m=document.getElementById('sd-item-modal'); var wasOpen = m && m.style.display!=='none'; if(m) m.style.display='none'; if(!pendingPlacement && !_sdDrag) sdClearPreview();
+    // focus returns to the placed item the panel was opened from (if it still exists and nothing else took over)
+    if(wasOpen && _sdReturnFocusId!=null && !pendingPlacement){ var id=_sdReturnFocusId; _sdReturnFocusId=null;
+      var blk=[].slice.call(document.querySelectorAll('#sd-grid .sd-item-block')).filter(function(b){ return b.dataset.id===id; })[0];
+      if(blk){ try{ blk.focus({preventScroll:true}); }catch(_){ blk.focus(); } } }
+  };
   window.sdDeleteItem=function(id){
     if(!confirm('Remove this item from your showroom floor?')) return;
     fetch(FN+'?action=items&id='+encodeURIComponent(id), {method:'DELETE'})

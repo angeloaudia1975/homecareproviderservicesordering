@@ -289,7 +289,10 @@ async function modalErr(page) { return page.evaluate(() => { const e = document.
       ok(r.focused && r.role === 'button' && r.tab === 0 && /Lift Chairs|Pride/.test(r.label), JSON.stringify(r));
       await page.keyboard.press('Enter'); await page.waitForSelector('#sd-item-modal #sd-resize-w', { state: 'visible' });
       const f = await page.evaluate(() => ({ id: document.activeElement.id, role: document.querySelector('#sd-item-modal .sd-modal').getAttribute('role') })); eq(f, { id: 'sd-resize-w', role: 'dialog' });
+      for (let i = 0; i < 40; i++) await page.keyboard.press('Tab');
+      ok(await page.evaluate(() => document.getElementById('sd-item-modal').contains(document.activeElement)), 'Tab left the dialog');
       await page.keyboard.press('Escape'); ok(await page.evaluate(() => document.getElementById('sd-item-modal').style.display === 'none'), 'escape');
+      eq(await page.evaluate(() => document.activeElement && document.activeElement.dataset && document.activeElement.dataset.id), lcB.id, 'focus back on the item');
       const edits = await page.evaluate(() => [...document.querySelectorAll('#sd-items-panel-list .sd-items-panel-edit')].map(b => b.tagName + ':' + b.getAttribute('aria-label')));
       ok(edits.length === (await items(page, D4)).length && edits.every(x => /^BUTTON:Edit /.test(x)), edits.join('|'));
       await page.focus('#sd-items-panel-list .sd-items-panel-edit'); await page.keyboard.press('Enter'); await page.waitForSelector('#sd-item-modal #sd-resize-w', { state: 'visible' });
