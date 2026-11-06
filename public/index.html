@@ -7355,6 +7355,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #view-storefront .sf-lines{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:2px 12px}#view-storefront .sf-note{font-size:12.5px;color:var(--ink-2);margin:8px 0 12px}
   #view-storefront .sf-msg{font-size:13px;color:var(--ink-2)}#view-storefront .sf-inq{padding:10px 0;border-bottom:1px solid var(--line,#e5e7eb);font-size:13.5px}#view-storefront .sf-inq.new{border-left:3px solid var(--orange,#ef6325);padding-left:10px}
   #view-storefront .sf-inq-h{display:flex;justify-content:space-between;gap:8px}#view-storefront .sf-s{font-size:12px;color:var(--muted)}#view-storefront .sf-msgtxt{white-space:pre-wrap;margin-top:4px}#view-storefront .sf-act{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+  #view-storefront .sf-promo{display:flex;flex-wrap:wrap;gap:8px}
   @media(max-width:760px){#view-storefront .sf-row{grid-template-columns:1fr}#view-storefront .btn,#view-storefront select,#view-storefront .fld2 input,#view-storefront .sf-check input{min-height:44px}#view-storefront input,#view-storefront select,#view-storefront textarea{font-size:16px}#view-storefront .sf-check{min-height:44px}}
   /* C3-07 Stage 6 reports */
   #view-reports .rpt-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -8835,7 +8836,37 @@ function renderStorefront(){
       ${x.product_name?`<div class="sf-s">About: ${esc(x.product_name)}${x.product_code?' (#'+esc(x.product_code)+')':''}</div>`:''}${x.message?`<div class="sf-msgtxt">${esc(x.message)}</div>`:''}
       ${ed?`<div class="sf-act"><a class="btn gh" onclick="sfInq('${esc(x.id)}','${x.status==='new'?'handled':'new'}')">${x.status==='new'?'Mark handled':'Mark new'}</a><a class="btn gh" onclick="sfInqDel('${esc(x.id)}')">Delete</a></div>`:''}</div>`).join(''):'<div class="msg">No requests yet.</div>'}
    </div>
-  </div>`;
+  </div>
+  ${L.link?`<div class="card sf-card"><div class="sf-head"><h3>Promote your storefront</h3></div>
+    <div class="sf-note">Ready-made images with your name, contact details and storefront link, to post on your own social pages or print. They download to your device — nothing is posted for you.</div>
+    <div class="sf-promo">${SF_PROMO.map(p=>`<a class="btn gh" onclick="sfPromo('${p.k}')">⬇ ${esc(p.label)}</a>`).join('')}</div></div>`:''}`;
+}
+/* C3-07 Stage 8 — dealer-branded promotional downloads: drawn in the browser from the storefront's own public details (name,
+   headline, the phone entered for customers, the lines it shows, the link). Download only — never posted anywhere. */
+const SF_PROMO=[{k:'square',label:'Social post (1080×1080)',w:1080,h:1080},{k:'story',label:'Story (1080×1920)',w:1080,h:1920},{k:'cover',label:'Cover photo (1640×624)',w:1640,h:624}];
+function sfPromoLines(L){ const s=L.storefront||{}, on=Array.isArray(s.lines)?s.lines:null; return (L.lines||[]).filter(l=>!on||on.includes(l.slug)).map(l=>l.name); }
+function sfPromoDraw(L,p){
+  const c=document.createElement('canvas'); c.width=p.w; c.height=p.h; const g=c.getContext('2d'); if(!g) return null;
+  const s=L.storefront||{}, W=p.w, H=p.h, pad=Math.round(Math.min(W,H)*0.07), font='"Helvetica Neue",Arial,sans-serif';
+  g.fillStyle='#0b1f33'; g.fillRect(0,0,W,H); g.fillStyle='#1681c2'; g.fillRect(0,H-Math.round(H*0.16),W,Math.round(H*0.16)); g.fillStyle='#ef6325'; g.fillRect(pad,pad,Math.round(W*0.12),Math.max(8,Math.round(H*0.012)));
+  const wrap=(text,size,weight,color,x,y,maxW,maxLines)=>{ g.font=`${weight} ${size}px ${font}`; g.fillStyle=color; const words=String(text||'').split(/\s+/).filter(Boolean); let line='', n=0;
+    for(let i=0;i<words.length;i++){ const t=line?line+' '+words[i]:words[i]; if(g.measureText(t).width>maxW&&line){ g.fillText(line,x,y); y+=size*1.2; line=words[i]; if(++n>=maxLines-1){ line=words.slice(i).join(' '); while(g.measureText(line+'…').width>maxW&&line.length>1) line=line.slice(0,-1); if(i<words.length-1||g.measureText(words.slice(i).join(' ')).width>maxW) line+='…'; break; } } else line=t; }
+    if(line){ g.fillText(line,x,y); y+=size*1.2; } return y; };
+  const big=Math.round(Math.min(W,H)*(p.k==='cover'?0.11:0.085)), mid=Math.round(big*0.5), small=Math.round(big*0.36), maxW=W-pad*2;
+  let y=pad+Math.round(H*0.012)+big*1.3;
+  y=wrap(L.name,big,'800','#ffffff',pad,y,maxW,p.k==='cover'?1:3);
+  y=wrap(s.headline||'Home medical equipment from your local dealer',mid,'600','#fcb21e',pad,y+mid*0.2,maxW,2);
+  const lines=sfPromoLines(L); if(lines.length&&p.k!=='cover') y=wrap('Brands: '+lines.join(' · '),small,'500','#d9e3ee',pad,y+small*0.6,maxW,3);
+  const by=H-Math.round(H*0.16)+small*1.5;
+  wrap('Browse our products online'+(s.phone?' · Call '+s.phone:''),small,'700','#ffffff',pad,by,maxW,1);
+  wrap(String(L.link||'').replace(/^https?:\/\//,''),small,'500','#ffffff',pad,by+small*1.3,maxW,1);
+  return c;
+}
+function sfPromo(k){
+  const L=SFD&&SFD.locations.find(l=>l.id===SFLOC), p=SF_PROMO.find(x=>x.k===k); if(!L||!p||!L.link) return;
+  const c=sfPromoDraw(L,p); if(!c) return;
+  const name=(String(L.storefront&&L.storefront.slug||'storefront')+'-'+p.k+'.png');
+  c.toBlob(b=>{ if(!b) return; const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000); },'image/png');
 }
 function sfCopy(){ const i=document.querySelector('.sf-link input'); if(!i) return; try{ navigator.clipboard.writeText(i.value); }catch(e){ i.select(); document.execCommand&&document.execCommand('copy'); } const m=$("#sfMsg"); if(m) m.textContent='Link copied.'; }
 async function sfSave(){
@@ -8853,7 +8884,7 @@ async function sfSave(){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};

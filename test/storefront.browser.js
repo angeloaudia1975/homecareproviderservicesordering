@@ -106,6 +106,7 @@ const layout = (page, sel) => page.evaluate((sel) => {
         return R({ ok: true }); });
       await page.evaluate(() => { PREVIEW = null; window.__PREVIEW__ = null; window.confirm = () => true; });
       await page.evaluate(() => showP360('storefront')); await page.waitForSelector('#sfSlug');
+      await t(label + ': no promotion before the storefront has an address', async () => ok(await page.$$eval('.sf-promo', (b) => b.length) === 0, 'promo shown'));
       await t(label + ': My Storefront tab, settings save exactly what was typed', async () => {
         ok(await page.evaluate(() => [...document.querySelectorAll('.navtab span')].some((s) => s.textContent === 'My Storefront')), 'tab');
         await page.fill('#sfHead', 'Welcome'); await page.check('#sfOn'); await page.uncheck('#sfAll'); await page.uncheck('.sf-line[value="strongback"]'); await page.selectOption('#sfPrice', 'call');
@@ -117,6 +118,13 @@ const layout = (page, sel) => page.evaluate((sel) => {
         ok(await page.evaluate(() => /Pat <b>/.test(document.querySelector('.sf-inq b').textContent)), 'escaped');
         await page.evaluate(() => sfInq('i1', 'handled')); await page.waitForTimeout(300); ok(S.calls.some((c) => c.action === 'sf_inquiry_set' && c.status === 'handled'), 'handled'); });
       await page.evaluate(() => sfLoc('hq'));
+      await t(label + ': promotional downloads: three branded PNGs with the storefront address, downloaded — nothing posted', async () => {
+        ok(await page.$$eval('.sf-promo .btn', (b) => b.length) === 3, 'three downloads');
+        const before = S.calls.length;
+        const [dl] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => sfPromo('square'))]);
+        ok(dl.suggestedFilename() === 'acme-hq-square.png', dl.suggestedFilename());
+        const b = fs.readFileSync(await dl.path()); ok(b.slice(1, 4).toString() === 'PNG' && b.readUInt32BE(16) === 1080 && b.readUInt32BE(20) === 1080, 'PNG 1080×1080');
+        ok(S.calls.length === before, 'no server call'); });
       await t(label + ': the head office\'s storefront is read-only for a branch', async () => ok(await page.evaluate(() => document.getElementById('sfSlug').disabled && !document.getElementById('sfSave')), 'read only'));
       const L2 = await layout(page, '#view-storefront .btn, #view-storefront select');
       await t(label + ': My Storefront has no horizontal scroll' + (w < 768 ? '; 44 px targets' : ''), () => { ok(L2.overflow <= 1, 'overflow ' + L2.overflow); if (w < 768) ok(!L2.small.length, 'small: ' + L2.small.join('|')); });
