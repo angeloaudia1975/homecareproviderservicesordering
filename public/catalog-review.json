@@ -1,17 +1,8 @@
 {
-  "review_id": "590d61c574ba",
+  "review_id": "e09852f37852",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T03:09:06Z",
-  "main": "4b8a24bd89e394ddebfa0f67d8e909c6e009932f",
-  "included": [
-    {
-      "pr": 52,
-      "title": "C3-07 Stages 3–4: Customer Quotes, My Retail Prices, branch requests, dealer-branded brochures",
-      "branch": "c7/s34-account-quotes",
-      "head": "daa0c20a6d8f81f6f39029b948ff01abe5c354a6",
-      "manufacturers": [],
-      "other_files": 8
-    }
-  ],
+  "built_at": "2026-11-06T03:12:53Z",
+  "main": "b5c80f04dfabd779fc2632b56e0bb262304ac9c1",
+  "included": [],
   "skipped": []
 }
