@@ -31,8 +31,8 @@ t('Golden account card: link to the Golden platform, no in-platform shop button'
   const ctx={ AUTH:{ access:{ golden:'Account', golden_url:'/portal/test-dealer' }, dealer:{ name:'Test' } }, esc:s=>String(s), toast:()=>{}, goldenEntitled:()=>false };
   vm.createContext(ctx); vm.runInContext(cfg.replace('const CONFIG','var CONFIG')+'\n'+fn+'\nthis.out=goldenSectionHtml();', ctx);
   ok(ctx.out.includes('href="https://goldenonlineordering.netlify.app/portal/test-dealer"'), 'link to the dealer portal');
-  ok(!ctx.out.includes('Shop Golden in Partner 360'), 'no in-platform shop button while off');
-  ok(!ctx.out.includes('Order Golden Technologies right here in Partner 360'), 'no in-platform claim while off');
+  ok(!ctx.out.includes('Shop Golden in the 360 Dealer Portal'), 'no in-platform shop button while off');
+  ok(!ctx.out.includes('Order Golden Technologies right here in the 360 Dealer Portal'), 'no in-platform claim while off');
 });
 console.log(`golden o0: ${pass} passed, ${fail} failed`);
 process.exit(fail?1:0);
