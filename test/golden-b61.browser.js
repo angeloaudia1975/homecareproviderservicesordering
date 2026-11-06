@@ -27,7 +27,7 @@ const C = require(path.join(gFN, 'lib', 'golden-catalog.js'));
 const DATA = require(path.join(gFN, 'lib', 'golden-catalog-data.json'));
 const ENRICH = require(path.join(gFN, 'lib', 'golden-enrichment.json'));
 const CFG = require(path.join(gFN, 'lib', 'golden-config.js'));
-const PRICING = [{ sku: 'PR511-LAR', dealer_cost: 1188 }, { sku: 'PR511-MXW', dealer_cost: 1266 }];
+const PRICING = [{ sku: 'PR511-LAR', dealer_cost: 1140 }, { sku: 'PR511-MXW', dealer_cost: 1240 }];
 const products = C.buildCatalog({ data: DATA, merch: {}, pricing: PRICING, seePrices: true });
 const familyAnswer = fam => { const f = C.buildFamily({ data: DATA, enrichment: ENRICH, merch: {}, pricing: PRICING, seePrices: true, linked: true, family: fam }); return f ? { prices_visible: true, linked: true, enrichment_as_of: ENRICH.as_of, family: f } : { available: false, reason: 'not_found' }; };
 const MOB = require(path.join(gFN, 'lib', 'golden-mobility.js'));
@@ -44,7 +44,7 @@ const gS = require(path.join(gFN, 'lib', 'hcps-s2s.js'));
 const TEST_SECRET = crypto.randomBytes(32).toString('hex'), PROD_SECRET = crypto.randomBytes(32).toString('hex');
 const D_HQ = '11111111-2222-4333-8444-555555555555', LOC_CIN = 'cccccccc-0000-4000-8000-000000000001';
 const PREVIEW_TOKEN = 'ab12'.repeat(12);
-const W = { delayValidate: 0, cost: 1188, idem: new Map(), goldenCalls: [], hcpsWrites: 0, emails: 0, dropNextValidate: 0 };
+const W = { delayValidate: 0, cost: 1140, idem: new Map(), goldenCalls: [], hcpsWrites: 0, emails: 0, dropNextValidate: 0 };
 const idemRpc = {
   integration_order_claim: ({ p }) => { const r = W.idem.get(p.idempotency_key); if (!r) { const tok = crypto.randomUUID(); W.idem.set(p.idempotency_key, { h: p.request_hash, s: 'pending', tok }); return { state: 'new', claim_token: tok }; }
     if (r.h !== p.request_hash) return { state: 'conflict' }; if (r.s === 'done') return { state: 'replay', status: r.st, response: r.resp }; return { state: 'in_progress' }; },
@@ -115,7 +115,7 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
   const inv = C.inventorySummary({ data: DATA, merch: {}, rows: [] });
   try {
     for (const [w, h, label] of [[390, 844, 'iphone'], [768, 1024, 'tablet'], [1280, 900, 'desktop']]) {
-      W.cost = 1188; W.idem.clear(); W.goldenCalls.length = 0; W.dropNextValidate = 0;
+      W.cost = 1140; W.idem.clear(); W.goldenCalls.length = 0; W.dropNextValidate = 0;
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: w < 768, hasTouch: w < 1024 });
       const page = await ctx.newPage();
       const pageErrors = []; page.on('pageerror', e => { pageErrors.push(String(e && e.message)); if (process.env.DBG) console.log('PAGEERROR', e && e.message); });
@@ -185,7 +185,7 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       await t(`${label}: Add to a quote keeps model, size, fabric, colour and upgrades with Golden's official retail — never a dealer cost`, () => {
         ok(q1.r && /Cloud/.test(q1.r.name) && /Large/.test(q1.r.option) && /Cross-Over: JZ Bourbon/.test(q1.r.option) && /Nirvana/.test(q1.r.option) && /Footrest extension \(RM621FRE-L\)/.test(q1.r.option), JSON.stringify(q1.r));
         ok(q1.r.msrp === 2992 + 286 + 600 + 156, 'retail ' + q1.r.msrp); ok(q1.nav === 'quotes', 'opens the quote builder');
-        ok(!/1,?608|1,?188|1,?266|dealer/i.test(q1.paper), 'no dealer price on the customer quote'); ok(/\$4,034/.test(q1.paper), 'quote shows the retail total'); });
+        ok(!/1,?560|1,?140|1,?240|dealer/i.test(q1.paper), 'no dealer price on the customer quote'); ok(/\$4,034/.test(q1.paper), 'quote shows the retail total'); });
       // a configuration whose upgrade has no Golden retail figure → "MSRP not provided" (never an estimate)
       const q2 = await page.evaluate(() => { const cur = JSON.parse(JSON.stringify(GCFG.cur)); cur.c.tabs.forEach(t => { if (t.key === 'xover') t.msrp = null; }); const p = state.products.find(x => x.code === 'PR511-LAR'); return goldenQuoteRecord(p, cur).rec; });
       await t(`${label}: no Golden retail figure for a chosen upgrade → MSRP not provided`, () => ok(q2.msrp === null, JSON.stringify(q2)));
@@ -198,7 +198,7 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
         ok(b1.pl && b1.pl.images.length >= 1 && b1.pl.images.every(u => /^https:\/\/(d3325uqufdmhie\.cloudfront\.net|cdn\.wdgtsrc\.com|goldenonlineordering\.netlify\.app|(www\.)?goldentech\.com)\//.test(u)), 'Golden photos ' + s.slice(0, 200));
         ok(b1.pl.description.length > 40 && b1.pl.features.length > 3 && b1.pl.specs.length > 3, 'content'); ok(b1.pl.msrp === b1.cfg.msrp && b1.pl.msrp >= 2992 && b1.pl.quote_price === null, 'msrp ' + b1.pl.msrp + ' vs configured ' + b1.cfg.msrp);
         ok(b1.pl.tagline && b1.pl.tagline === b1.cfg.option, 'the brochure names the configuration: ' + b1.pl.tagline);
-        ok(!/1188|1608|dealer_price|dealer_cost|unit_price/.test(s), 'no dealer price in the brochure payload');
+        ok(!/1140|1608|dealer_price|dealer_cost|unit_price/.test(s), 'no dealer price in the brochure payload');
         ok(b1.links.length >= 1 && b1.links.every(h => /^https:\/\//.test(h)) && /Sell Sheet/i.test(b1.modal), 'official sell sheet ' + JSON.stringify(b1.links)); });
       await page.evaluate(() => closeBrochure());
       // ── 4. a Golden scooter (B8, contract 1.9.0): ordered here like a chair — Golden's colours + accessories, Add to cart ──

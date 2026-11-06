@@ -24,14 +24,14 @@ for (const f of [path.join(gFN, 'lib', 'golden-order-notify.js'), path.join(hFN,
 const C = require(path.join(gFN, 'lib', 'golden-catalog.js'));
 const DATA = require(path.join(gFN, 'lib', 'golden-catalog-data.json'));
 const PRICING = () => [{ sku: 'PR511-LAR', dealer_cost: W.cost }];
-const products = C.buildCatalog({ data: DATA, merch: {}, pricing: [{ sku: 'PR511-LAR', dealer_cost: 1188 }], seePrices: true });
+const products = C.buildCatalog({ data: DATA, merch: {}, pricing: [{ sku: 'PR511-LAR', dealer_cost: 1140 }], seePrices: true });
 
 const { createMock } = require(path.join(GOLDEN, 'repo', 'tests', 'support', 'postgrest-mock.js'));
 const gS = require(path.join(gFN, 'lib', 'hcps-s2s.js'));
 const TEST_SECRET = crypto.randomBytes(32).toString('hex'), PROD_SECRET = crypto.randomBytes(32).toString('hex');
 const D_HQ = '11111111-2222-4333-8444-555555555555', LOC_CIN = 'cccccccc-0000-4000-8000-000000000001';
 const TEST_BOX = 'angelo@homecareproviderservices.us';
-const W = { goldenOrdersOff: false, cost: 1188, recs: new Map(), orders: [], nextId: 1661, goldenCalls: [], hcpsWrites: 0, mail: [], dropNextPlace: 0, delayPlace: 0 };
+const W = { goldenOrdersOff: false, cost: 1140, recs: new Map(), orders: [], nextId: 1661, goldenCalls: [], hcpsWrites: 0, mail: [], dropNextPlace: 0, delayPlace: 0 };
 // Golden's SQL contract (config/migrate-hcps-integration-v1-submit.sql), mirrored: records per key AND mode; one order per key.
 const rk = (p, m) => p.idempotency_key + '|' + m;
 const valOk = (v, p) => v && v.s === 'done' && v.st === 200 && v.resp.valid === true && v.h === p.validate_hash;
@@ -178,7 +178,7 @@ async function toValidated(page, po, keepItems) {
   const browser = await chromium.launch();
   try {
     for (const [w, h, label] of [[390, 844, 'iphone'], [768, 1024, 'tablet'], [1280, 900, 'desktop']]) {
-      Object.assign(W, { cost: 1188, dropNextPlace: 0, delayPlace: 0 }); W.recs.clear(); W.orders.length = 0; W.goldenCalls.length = 0; W.mail.length = 0; W.nextId = 1661;
+      Object.assign(W, { cost: 1140, dropNextPlace: 0, delayPlace: 0 }); W.recs.clear(); W.orders.length = 0; W.goldenCalls.length = 0; W.mail.length = 0; W.nextId = 1661;
       const { ctx, page, errs, counts } = await boot(browser, w, h);
       await toValidated(page, 'PO-B6-1');
       const v = await page.evaluate(() => ({ btn: !!document.querySelector('[data-gck-place]'), test: /Test mode/.test(document.querySelector('.gck-foot').innerText), orders: GCART.result && GCART.result.ordering_enabled,
@@ -274,7 +274,7 @@ async function toValidated(page, po, keepItems) {
         ok(W.orders.length === 2 && !pc.placed && !pc.pend && pc.attempt === null && !pc.btn && pc.items === 1, JSON.stringify(pc)); });
       // ── Golden's ordering switched OFF after a placement whose answer was lost: "Check again" still gets the order ──
       await page.click('[data-gck-close]');
-      W.cost = 1188; await toValidated(page, 'PO-B6-4');
+      W.cost = 1140; await toValidated(page, 'PO-B6-4');
       W.dropNextPlace = 1; await page.click('[data-gck-place]');
       await page.waitForSelector('[data-gck-recheck]:not([disabled])', { timeout: 20000 });
       const myOrdersBtn = await page.evaluate(() => !!document.querySelector('#gckView [data-gck-myorders]'));
@@ -316,7 +316,7 @@ async function toValidated(page, po, keepItems) {
       await ctx.close();
     }
     { // a mixed cart (in-stock + built to order) is quoted as Golden's two shipments, each with its own freight and S&H
-      Object.assign(W, { cost: 1188, dropNextPlace: 0, delayPlace: 0 }); W.recs.clear(); W.orders.length = 0; W.goldenCalls.length = 0; W.mail.length = 0;
+      Object.assign(W, { cost: 1140, dropNextPlace: 0, delayPlace: 0 }); W.recs.clear(); W.orders.length = 0; W.goldenCalls.length = 0; W.mail.length = 0;
       const { ctx, page } = await boot(browser, 1280, 900);
       await page.evaluate(() => { GCART.items = []; goldenCartAdd('PR511-LAR', { fabric: 'std', color: 'SUM', tier: 'nirvana', footrest: false }, null);
         goldenCartAdd('PR511-LAR', { fabric: 'xover', color: 'JBO', tier: 'nirvana', footrest: false }, null); goldenCartShow(); });

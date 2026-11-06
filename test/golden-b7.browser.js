@@ -25,7 +25,7 @@ if (!fs.readFileSync(path.join(gFN, 'lib', 'golden-shipto.js'), 'utf8').includes
 
 const C = require(path.join(gFN, 'lib', 'golden-catalog.js'));
 const DATA = require(path.join(gFN, 'lib', 'golden-catalog-data.json'));
-const products = C.buildCatalog({ data: DATA, merch: {}, pricing: [{ sku: 'PR511-LAR', dealer_cost: 1188 }], seePrices: true });
+const products = C.buildCatalog({ data: DATA, merch: {}, pricing: [{ sku: 'PR511-LAR', dealer_cost: 1140 }], seePrices: true });
 const { createMock } = require(path.join(GOLDEN, 'repo', 'tests', 'support', 'postgrest-mock.js'));
 const gS = require(path.join(gFN, 'lib', 'hcps-s2s.js'));
 const HW = require(path.join(HCPS, 'test', 'golden-b7-world.js'));
@@ -74,7 +74,7 @@ function runHcps(mod, body, headers) {   // serialised: the in-process fetch wor
       inventory: [{ sku: 'PR511-LAR', size: 'LAR', fabcode: 'SKN', color_code: 'SUM', avail: 4, pool: null }],
     }, rpc: Object.assign({
       integration_nonce_claim: () => true, integration_audit_log: () => null,
-      get_dealer_portal_data: () => ({ dealer: { dealer_id: 'dealer-riverbend', name: 'Riverbend Medical', customer_no: 'T90100', terms: 'Net 30' }, pricing: [{ sku: 'PR511-LAR', dealer_cost: 1188 }] }),
+      get_dealer_portal_data: () => ({ dealer: { dealer_id: 'dealer-riverbend', name: 'Riverbend Medical', customer_no: 'T90100', terms: 'Net 30' }, pricing: [{ sku: 'PR511-LAR', dealer_cost: 1140 }] }),
     }, idemRpc) });
     const handlers = { '/v1/quote': fresh(gFN, 'v1-quote.js').handler, '/v1/orders': fresh(gFN, 'v1-orders.js').handler };
     const fn = fresh(hFN, mod);
