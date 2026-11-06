@@ -300,7 +300,7 @@ exports.handler = async (event) => {
   catch (e) { return json(400, { ok: false, error: "Invalid JSON body" }); }
 
   /* The single flat payload predates server pricing and carries no line to price against. */
-  if (!Array.isArray(raw.orders)) return json(400, { ok: false, status: "reload", error: "This page is out of date — please reload Partner 360 and submit again." });
+  if (!Array.isArray(raw.orders)) return json(400, { ok: false, status: "reload", error: "This page is out of date — please reload the 360 Dealer Portal and submit again." });
   const auth = (event.headers && (event.headers.authorization || event.headers.Authorization)) || "";
   if (!/^Bearer\s+\S+/i.test(auth)) return json(401, { ok: false, status: "unauthorized", error: "Please sign in again to submit this order." });
 

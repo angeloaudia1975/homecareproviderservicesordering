@@ -73,7 +73,7 @@ function buildEmail(r) {
       </table>
       ${r.note ? `<div style="margin-top:14px;padding:12px 14px;background:#f6f7f5;border-radius:8px;border:1px solid #e6e2dc;"><div style="font:700 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:4px;">Note from dealer</div><div style="font:400 13px/1.5 Arial,sans-serif;color:#10263f;white-space:pre-wrap;">${esc(r.note)}</div></div>` : ""}
       <div style="margin-top:18px;font:400 11px/1.5 Arial,sans-serif;color:#9aa2ac;">
-        Sample request submitted through the HCPS Partner 360 ordering platform. Reply to this email to reach the dealer directly.
+        Sample request submitted through the HCPS 360 Dealer Portal. Reply to this email to reach the dealer directly.
       </div>
     </div>
   </div></body></html>`;
