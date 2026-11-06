@@ -1,15 +1,8 @@
 {
-  "review_id": "42ee0465d433",
+  "review_id": "182146d895b6",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T22:34:21Z",
-  "main": "e2e1f5aad6b540db95ff06596799deeea661d47e",
+  "built_at": "2026-11-06T22:34:51Z",
+  "main": "688e4ae2182c133f35431ed6515a5c97d064e6b3",
   "included": [],
-  "skipped": [
-    {
-      "pr": 62,
-      "title": "test: quote-catalog harness includes applyDefaultRetail",
-      "branch": "c7/quote-catalog-test",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
-    }
-  ]
+  "skipped": []
 }
