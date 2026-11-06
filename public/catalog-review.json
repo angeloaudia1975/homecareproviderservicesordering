@@ -1,17 +1,8 @@
 {
-  "review_id": "c0a9d914b33a",
+  "review_id": "b388405ccdf1",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T18:37:02Z",
-  "main": "5a4a1ff0fcdc73e11cc624a627a3901702b2cf92",
-  "included": [
-    {
-      "pr": 58,
-      "title": "C3-07 Stage 7: public storefront page + My Storefront",
-      "branch": "c7/s7-storefront",
-      "head": "36a21f1786d10e665d3da587cf9f4c81194a605d",
-      "manufacturers": [],
-      "other_files": 5
-    }
-  ],
+  "built_at": "2026-11-06T18:40:22Z",
+  "main": "fe1999da53ce4c17f4e024ba7771539a8e80f414",
+  "included": [],
   "skipped": []
 }
