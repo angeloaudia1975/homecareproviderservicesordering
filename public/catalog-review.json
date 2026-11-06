@@ -1,15 +1,8 @@
 {
   "review_id": "b0b76a48f1c2",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T04:27:25Z",
+  "built_at": "2026-11-06T04:27:39Z",
   "main": "82be09a10afa1233f48f3c28fb0be53495a654c4",
   "included": [],
-  "skipped": [
-    {
-      "pr": 53,
-      "title": "B8: order every Golden family in Partner 360 — scooters, power chairs, beds, accessories",
-      "branch": "golden-all-families",
-      "reason": "already contained in main (or in a PR before it) — nothing to add"
-    }
-  ]
+  "skipped": []
 }
