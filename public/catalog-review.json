@@ -1,7 +1,7 @@
 {
   "review_id": "45658060ee1b",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T04:18:46Z",
+  "built_at": "2026-11-06T04:26:14Z",
   "main": "b2d6ad4caef453c492e5480aff08ae030310b37e",
   "included": [
     {
@@ -10,7 +10,8 @@
       "branch": "golden-all-families",
       "head": "faf18f74dccdd051b059c8f17e6b497fc1a729bf",
       "manufacturers": [],
-      "other_files": 6
+      "other_files": 6,
+      "note": "newer commit 4a6c3a4 still being checked — showing the last validated version"
     }
   ],
   "skipped": []
