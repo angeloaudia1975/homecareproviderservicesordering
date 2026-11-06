@@ -136,3 +136,28 @@
   to = "https://homecareproviderservices.netlify.app/admin/website.html"
   status = 302
   force = true
+
+# C3-07 Stage 7: a dealer's public storefront — the shareable link /store/<address> serves the storefront page.
+[[redirects]]
+  from = "/store/*"
+  to = "/store.html"
+  status = 200
+
+[[headers]]
+  for = "/store.html"
+  [headers.values]
+    Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.supabase.co; connect-src https://homecareproviderservices.netlify.app; base-uri 'none'; form-action 'none'; frame-ancestors 'self'"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+
+[[headers]]
+  for = "/store/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.supabase.co; connect-src https://homecareproviderservices.netlify.app; base-uri 'none'; form-action 'none'; frame-ancestors 'self'"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

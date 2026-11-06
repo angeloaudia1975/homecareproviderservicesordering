@@ -3841,6 +3841,7 @@ const NAVICON={
   quotes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
   showroom:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>',
   account:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>',
+  storefront:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M5 13v8h14v-8"/><path d="M10 21v-5h4v5"/></svg>',
   resources:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'
 };
 function renderTabs(){
@@ -3854,6 +3855,7 @@ function renderTabs(){
     ['reports','Reports',()=>showP360('reports'), a==='p360:reports'],
     ['quotes','Quotes',()=>showQuotesHub(), a==='p360:quotes'],
     ['showroom','Showroom Designer',()=>showShowroomStudio(), a==='p360:showroom'],
+    ['storefront','My Storefront',()=>showP360('storefront'), a==='p360:storefront'],
     ['account','Account',()=>showP360('account'), a==='p360:account'],
     ['resources','Resources',()=>showP360('resources'), a==='p360:resources']
   ];
@@ -7343,6 +7345,17 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .barchart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
   #p360wrap .barchart .bar{width:64%;background:linear-gradient(180deg,var(--orange),#f7a24f);border-radius:5px 5px 0 0;min-height:3px}
   #p360wrap .barchart .bl{font-size:9px;color:var(--muted);font-weight:700}
+  /* C3-07 Stage 7 My Storefront */
+  #view-storefront .sf-card{min-width:0;margin-top:16px}#view-storefront .sf-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+  #view-storefront .sf-pill{font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--surface-2,#eef1f4);color:var(--ink-2)}#view-storefront .sf-pill.on{background:#e5f4e4;color:#14532d}#view-storefront .sf-pill.bad{background:#fbebeb;color:#991b1b}
+  #view-storefront .fld2{display:block;margin:10px 0}#view-storefront .fld2 input,#view-storefront .fld2 textarea,#view-storefront .fld2 select{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid var(--line,#d6dbe1);border-radius:8px;font:inherit}
+  #view-storefront .sf-slug{display:flex;align-items:center;gap:6px;flex-wrap:wrap}#view-storefront .sf-slug span{font-size:12px;color:var(--muted);word-break:break-all}#view-storefront .sf-slug input{flex:1 1 160px;width:auto}
+  #view-storefront .sf-link{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}#view-storefront .sf-link input{flex:1 1 220px;min-width:0;padding:9px 10px;border:1px solid var(--line,#d6dbe1);border-radius:8px;font:inherit}
+  #view-storefront .sf-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}#view-storefront .sf-check{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px}
+  #view-storefront .sf-lines{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:2px 12px}#view-storefront .sf-note{font-size:12.5px;color:var(--ink-2);margin:8px 0 12px}
+  #view-storefront .sf-msg{font-size:13px;color:var(--ink-2)}#view-storefront .sf-inq{padding:10px 0;border-bottom:1px solid var(--line,#e5e7eb);font-size:13.5px}#view-storefront .sf-inq.new{border-left:3px solid var(--orange,#ef6325);padding-left:10px}
+  #view-storefront .sf-inq-h{display:flex;justify-content:space-between;gap:8px}#view-storefront .sf-s{font-size:12px;color:var(--muted)}#view-storefront .sf-msgtxt{white-space:pre-wrap;margin-top:4px}#view-storefront .sf-act{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+  @media(max-width:760px){#view-storefront .sf-row{grid-template-columns:1fr}#view-storefront .btn,#view-storefront select,#view-storefront .fld2 input,#view-storefront .sf-check input{min-height:44px}#view-storefront input,#view-storefront select,#view-storefront textarea{font-size:16px}#view-storefront .sf-check{min-height:44px}}
   /* C3-07 Stage 6 reports */
   #view-reports .rpt-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   #view-reports .rpt-ctl select{max-width:100%}
@@ -7482,6 +7495,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   <div class="view" id="view-quotes"><div class="msg">Loading…</div></div>
   <div class="view" id="view-retail"><div class="msg">Loading…</div></div>
   <div class="view" id="view-apply"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-storefront"><div class="msg">Loading…</div></div>
   <div class="view" id="view-favorites"><div class="msg">Loading…</div></div>
   <div class="view" id="view-showroom"><div class="msg">Loading…</div></div>
   <div class="view" id="view-resources"><div class="msg">Loading…</div></div>
@@ -7502,7 +7516,7 @@ const HISTORY_ENDPOINT=API_BASE+"/order-history-api";
 const TOOLS_ENDPOINT=API_BASE+"/dealer-tools-api";
 
 const $=s=>document.querySelector(s);
-const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=n=>"$"+Math.round(Number(n)||0).toLocaleString();
 /* An ORDER's amount is shown to the cent and includes the freight the server stored on it (agreed
    2026-10-09): My Orders and the dashboard's recent orders read the same total as the dealer's
@@ -8761,6 +8775,7 @@ function showView(v){
   if(v==="quotes")loadQuotesView();
   if(v==="retail")loadRetailView();
   if(v==="apply")loadApplyView();
+  if(v==="storefront")loadStorefrontView();
   if(v==="favorites")loadFavView();
   if(v==="showroom")loadShowroom();
   if(v==="resources")loadResourcesView();
@@ -8772,7 +8787,75 @@ window.showView=showView;
    Quotes, the showroom wall buttons, the price-request / literature / credit / resale forms and the favourite star did
    nothing. Exported once here. The showroom zone's clear is exported as p360SwClear because the storefront's Strongback
    wall builder already owns the global swClear(). */
-Object.assign(window,{loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+/* ===== C3-07 Stage 7 — My Storefront: the dealer's public, shareable storefront (no checkout) + its customer requests.
+   Server: dealer-storefront-api (admin repo). Public page: /store/<address>. D3: verified MSRP or "Call for Price" only. ===== */
+const SF_API=API_BASE+"/dealer-storefront-api";
+let SFD=null, SFLOC=null, SFINQ=[], SFBUSY=false;
+async function loadStorefrontView(){
+  const host=$("#view-storefront"); if(!host) return; host.innerHTML='<div class="msg">Loading your storefront…</div>';
+  const [g,q]=await Promise.all([api(SF_API,{action:'sf_get'}),api(SF_API,{action:'sf_inquiries'})]);
+  if(!g||!g.ok){ host.innerHTML=`<div class="ph"><div><h1>My Storefront</h1></div></div><div class="card"><div class="msg">${esc((g&&g.error)||'Your storefront could not be loaded just now — please try again.')}</div><a class="btn pri" onclick="loadStorefrontView()">Try again</a></div>`; return; }
+  SFD=g; SFINQ=(q&&q.ok&&q.inquiries)||[]; SFD.hidden_in_preview=!!(q&&q.hidden_in_preview); if(!SFLOC||!SFD.locations.some(l=>l.id===SFLOC)) SFLOC=(SFD.locations.find(l=>l.can_edit)||SFD.locations[0]||{}).id;
+  renderStorefront();
+}
+function sfLoc(v){ SFLOC=v; renderStorefront(); }
+function renderStorefront(){
+  const host=$("#view-storefront"); if(!host||!SFD) return;
+  const L=SFD.locations.find(l=>l.id===SFLOC); if(!L){ host.innerHTML='<div class="msg">No location available.</div>'; return; }
+  const s=L.storefront||{}, ed=L.can_edit&&!SFD.preview, dis=ed?'':' disabled';
+  const lines=Array.isArray(s.lines)?s.lines:null;
+  const status=!L.storefront?'<span class="sf-pill">Not set up</span>':s.hcps_blocked?'<span class="sf-pill bad">Paused by HCPS</span>':s.enabled?'<span class="sf-pill on">Live</span>':'<span class="sf-pill">Off</span>';
+  const inq=SFINQ.filter(x=>x.dealer_id===L.id);
+  host.innerHTML=`
+  <div class="ph"><div><h1>My Storefront</h1><div class="sub">A public page of your HCPS lines to share with customers — browse, call you or ask for information. No online checkout.</div></div></div>
+  ${SFD.locations.length>1?`<label class="fld2 sf-loc"><span class="rp-l">Location</span><select onchange="sfLoc(this.value)">${SFD.locations.map(l=>`<option value="${esc(l.id)}"${l.id===L.id?' selected':''}>${esc(l.name)}${l.city?' — '+esc(l.city):''}</option>`).join('')}</select></label>`:''}
+  <div class="grid2 sf-grid">
+   <div class="card sf-card"><div class="sf-head"><h3>Storefront settings</h3>${status}</div>
+    ${L.link?`<div class="sf-link"><input readonly value="${esc(L.link)}" aria-label="Your storefront link"><a class="btn gh" onclick="sfCopy()">Copy link</a><a class="btn gh" href="${esc(L.link)}" target="_blank" rel="noopener">Open</a></div>`:''}
+    ${!ed?`<div class="msg">${SFD.preview?'Read-only preview.':'Your head office manages this location\'s storefront.'}</div>`:''}
+    <label class="fld2"><span class="rp-l">Web address</span><div class="sf-slug"><span>${esc(SFD.base)}</span><input id="sfSlug" value="${esc(s.slug||L.suggested_slug||'')}" maxlength="50" autocomplete="off"${dis}></div></label>
+    <label class="sf-check"><input type="checkbox" id="sfOn"${s.enabled?' checked':''}${dis}> Storefront is on (anyone with the link can see it)</label>
+    <label class="fld2"><span class="rp-l">Headline</span><input id="sfHead" maxlength="120" value="${esc(s.headline||'')}" placeholder="e.g. Home medical equipment for Dayton families"${dis}></label>
+    <label class="fld2"><span class="rp-l">About your business</span><textarea id="sfAbout" maxlength="1500" rows="4"${dis}>${esc(s.about||'')}</textarea></label>
+    <div class="sf-row"><label class="fld2"><span class="rp-l">Phone for customers (shown publicly)</span><input id="sfPhone" maxlength="40" value="${esc(s.phone||'')}" placeholder="${esc(L.default_phone?'e.g. '+L.default_phone:'')}"${dis}></label>
+     <label class="fld2"><span class="rp-l">Email for requests (shown publicly)</span><input id="sfEmail" type="email" maxlength="200" value="${esc(s.email||'')}" placeholder="${esc(L.default_email?'e.g. '+L.default_email:'')}"${dis}></label></div>
+    ${ed&&(L.default_phone||L.default_email)?`<a class="btn gh" onclick="sfUseAccount()">Use my account phone and email</a>`:''}
+    <div class="sf-note">Only the phone and email entered here appear on your storefront — nothing from your account is published unless you put it here. Requests are emailed to the address above.</div>
+    <label class="fld2"><span class="rp-l">Hours</span><input id="sfHours" maxlength="300" value="${esc(s.hours||'')}" placeholder="e.g. Mon–Fri 9–5, Sat 9–12"${dis}></label>
+    <label class="sf-check"><input type="checkbox" id="sfAddr"${s.show_address===false?'':' checked'}${dis}> Show my street address</label>
+    <label class="fld2"><span class="rp-l">Prices</span><select id="sfPrice"${dis}><option value="msrp"${s.price_mode!=='call'?' selected':''}>Show the manufacturer's MSRP where HCPS has verified it — otherwise "Call for Price"</option><option value="call"${s.price_mode==='call'?' selected':''}>"Call for Price" on everything</option></select></label>
+    <div class="fld2"><span class="rp-l">Lines to show</span>${L.lines.length?`<label class="sf-check"><input type="checkbox" id="sfAll"${lines?'':' checked'}${dis} onchange="document.querySelectorAll('.sf-line').forEach(x=>x.disabled=this.checked||${ed?'false':'true'})"> All my lines</label><div class="sf-lines">${L.lines.map(l=>`<label class="sf-check"><input type="checkbox" class="sf-line" value="${esc(l.slug)}"${!lines||lines.includes(l.slug)?' checked':''}${!ed||!lines?' disabled':''}> ${esc(l.name)}</label>`).join('')}</div>`:'<div class="msg">No manufacturer accounts are active on this location yet.</div>'}</div>
+    <label class="fld2"><span class="rp-l">Categories to hide (comma-separated)</span><input id="sfHide" value="${esc((s.hidden_categories||[]).join(', '))}"${dis}></label>
+    <div class="sf-note">Your dealer cost, account numbers and contract prices are never shown. Customers can't order online — they call you or send a request.</div>
+    ${ed?`<a class="btn pri" id="sfSave" onclick="sfSave()">Save storefront</a> <span id="sfMsg" class="sf-msg"></span>`:''}
+   </div>
+   <div class="card sf-card"><div class="sf-head"><h3>Customer requests</h3><span class="sf-pill">${inq.filter(x=>x.status==='new').length} new</span></div>
+    <div class="sf-note">Requests sent from your storefront. They are emailed to you and kept here for 24 months; delete one at any time. Copies in your own mailbox are yours to keep or delete.</div>
+    ${SFD.hidden_in_preview?'<div class="msg">Customer requests are not shown in a preview — they stay with the dealer.</div>':inq.length?inq.map(x=>`<div class="sf-inq${x.status==='new'?' new':''}"><div class="sf-inq-h"><b>${esc(x.name)}</b><span>${esc(new Date(x.created_at).toLocaleDateString())}</span></div>
+      <div>${x.email?`<a href="mailto:${esc(x.email)}">${esc(x.email)}</a>`:''}${x.email&&x.phone?' · ':''}${x.phone?`<a href="tel:${esc(String(x.phone).replace(/[^0-9+]/g,''))}">${esc(x.phone)}</a>`:''}</div>
+      ${x.product_name?`<div class="sf-s">About: ${esc(x.product_name)}${x.product_code?' (#'+esc(x.product_code)+')':''}</div>`:''}${x.message?`<div class="sf-msgtxt">${esc(x.message)}</div>`:''}
+      ${ed?`<div class="sf-act"><a class="btn gh" onclick="sfInq('${esc(x.id)}','${x.status==='new'?'handled':'new'}')">${x.status==='new'?'Mark handled':'Mark new'}</a><a class="btn gh" onclick="sfInqDel('${esc(x.id)}')">Delete</a></div>`:''}</div>`).join(''):'<div class="msg">No requests yet.</div>'}
+   </div>
+  </div>`;
+}
+function sfUseAccount(){ const L=SFD&&SFD.locations.find(l=>l.id===SFLOC); if(!L) return; const p=document.getElementById('sfPhone'), e=document.getElementById('sfEmail'); if(p&&L.default_phone) p.value=L.default_phone; if(e&&L.default_email) e.value=L.default_email; }
+function sfCopy(){ const i=document.querySelector('.sf-link input'); if(!i) return; try{ navigator.clipboard.writeText(i.value); }catch(e){ i.select(); document.execCommand&&document.execCommand('copy'); } const m=$("#sfMsg"); if(m) m.textContent='Link copied.'; }
+async function sfSave(){
+  if(SFBUSY) return; const L=SFD.locations.find(l=>l.id===SFLOC); if(!L) return;
+  const v=id=>{ const e=document.getElementById(id); return e?e.value:''; };
+  const all=document.getElementById('sfAll');
+  const settings={slug:v('sfSlug').trim().toLowerCase(),enabled:document.getElementById('sfOn').checked,headline:v('sfHead'),about:v('sfAbout'),phone:v('sfPhone'),email:v('sfEmail'),hours:v('sfHours'),
+    show_address:document.getElementById('sfAddr').checked,price_mode:v('sfPrice'),hidden_categories:v('sfHide').split(',').map(x=>x.trim()).filter(Boolean)};
+  if(all) settings.lines=all.checked?null:[...document.querySelectorAll('.sf-line:checked')].map(x=>x.value);
+  SFBUSY=true; const b=$("#sfSave"), m=$("#sfMsg"); if(b) b.style.pointerEvents='none'; if(m) m.textContent='Saving…';
+  const d=await api(SF_API,{action:'sf_save',location_id:L.id,version:L.storefront?L.storefront.version:undefined,settings});
+  SFBUSY=false; if(b) b.style.pointerEvents='';
+  if(!d||!d.ok){ if(m) m.textContent=(d&&d.error)||'Could not save — please try again.'; return; }
+  L.storefront=d.storefront; L.link=d.link; L.live=d.live; renderStorefront(); const m2=$("#sfMsg"); if(m2) m2.textContent=d.live?'Saved — your storefront is live.':'Saved — your storefront is off.';
+}
+async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
+async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
+Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfUseAccount,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
