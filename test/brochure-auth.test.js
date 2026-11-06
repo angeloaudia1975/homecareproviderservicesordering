@@ -23,6 +23,11 @@ global.fetch=async(url,o)=>{ const u=String(url);
   if(u.startsWith('https://sb.test/rest/v1/dealer_document_sends')){ const m=(o&&o.method)||'GET';
     if(m==='PATCH'){ const id=Number((u.match(/id=eq\.(\d+)/)||[])[1]); const r=SENDS.find(x=>x.id===id); if(r) Object.assign(r,JSON.parse(o.body)); return {ok:true,text:async()=>''}; } }
   if(u==='https://api.resend.com/emails'){ if(global.RESEND_DOWN) return {ok:false,status:500,text:async()=>'down'}; sent.push(JSON.parse(o.body)); return {ok:true,text:async()=>''}; }
+  if(u.startsWith('https://sb.test/rest/v1/dealers')){ if(global.DEALERS_DOWN) return {ok:false,status:500,json:async()=>({})};
+    const D={d1:{id:'d1',parent_id:'hq',business_name:'Acme <Branch>',address:'2 Side St',city:'Xenia',state:'OH',zip:'45385',phone:'555-0200',email:'br@acme.test',website:null,logo_url:null},hq:{id:'hq',logo_url:'https://cdn.acme.test/logo.png'}};
+    if(global.EVIL_LOGO) D.hq.logo_url=global.EVIL_LOGO; else D.hq.logo_url='https://cdn.acme.test/logo.png';
+    const id=(u.match(/id=eq\.([^&]+)/)||[])[1]; const row=D[id]; if(!row) return {ok:true,json:async()=>[]};
+    const cols=((u.match(/select=([^&]+)/)||[])[1]||'').split(','); const o2={}; for(const c of cols) o2[c]=row[c]; return {ok:true,json:async()=>[o2]}; }
   if(u.startsWith('https://sb.test/rest/v1/product_skus')) return {ok:true,json:async()=>(/code=eq\.REC1/.test(u)?[{msrp:199.99}]:/code=eq\.RECNONE/.test(u)?[{msrp:null}]:[])};
   if(u.startsWith('https://sb.test/rest/v1/product_overrides')) return {ok:true,json:async()=>(/code=eq\.OV1/.test(u)?[{patch:{msrp:88}}]:[])};
   if(u.startsWith('https://sb.test/rest/v1/custom_products')) return {ok:true,json:async()=>[]};
@@ -47,13 +52,34 @@ await t('a missing COLUMN (or any other database error) never lets a send throug
 await t('per dealer: at most 10 an hour',async()=>{ SENDS.length=0; let last; for(let i=0;i<11;i++) last=await B.handler(ev({action:'email',product:P,to:'c'+i+'@x.com'},'good')); ok(last.statusCode===429,last.statusCode); ok(SENDS.length===10); });
 await t('per dealer: at most 40 a day (older sends in the day count)',async()=>{ SENDS.length=0; const old=new Date(Date.now()-5*36e5).toISOString(); for(let i=0;i<40;i++) SENDS.push({id:i+1,status:'sent',to_hash:'h'+i,created_at:old}); const r=await B.handler(ev({action:'email',product:P,to:'new@x.com'},'good')); ok(r.statusCode===429,r.statusCode); });
 await t('a send the provider refused is marked failed and does not count',async()=>{ SENDS.length=0; global.RESEND_DOWN=true; const n=sent.length; const r=await B.handler(ev({action:'email',product:P,to:'f@x.com'},'good')); global.RESEND_DOWN=false; ok(r.statusCode===502); ok(SENDS[0].status==='failed'); ok(sent.length===n); });
-await t('an unreadable limit store refuses the send (fail closed); before the SQL the send goes through',async()=>{ SENDS.length=0; const n=sent.length; global.SENDS_DOWN=true; const r=await B.handler(ev({action:'email',product:P,to:'g@x.com'},'good')); global.SENDS_DOWN=false; ok(r.statusCode===503&&sent.length===n,r.statusCode);
-  global.SENDS_MISSING=true; const r2=await B.handler(ev({action:'email',product:P,to:'g@x.com'},'good')); global.SENDS_MISSING=false; ok(r2.statusCode===200&&sent.length===n+1,r2.statusCode); });
+await t('an unreadable limit store refuses the send (fail closed); with the SQL installed a missing function also refuses',async()=>{ SENDS.length=0; const n=sent.length; global.SENDS_DOWN=true; const r=await B.handler(ev({action:'email',product:P,to:'g@x.com'},'good')); global.SENDS_DOWN=false; ok(r.statusCode===503&&sent.length===n,r.statusCode);
+  global.SENDS_MISSING=true; const r2=await B.handler(ev({action:'email',product:P,to:'g@x.com'},'good')); global.SENDS_MISSING=false; ok(r2.statusCode===503&&sent.length===n,r2.statusCode); });
 /* ---- verified MSRP is decided by the server ---- */
 const html=async pr=>JSON.parse((await B.handler(ev({action:'html',product:pr,include_msrp:true}))).body).html;
 await t('MSRP comes from the master record, never the request (a posted dealer cost is not printed)',async()=>{ const h=await html({name:'W',code:'REC1',_mfrSlug:'bemis',msrp:12.34}); ok(h.includes('$199.99')&&!h.includes('12.34'),'msrp'); });
 await t('a record with no MSRP prints none, whatever was posted',async()=>{ const h=await html({name:'W',code:'RECNONE',_mfrSlug:'bemis',msrp:500}); ok(!h.includes('500.00')&&!/suggested retail/i.test(h)); });
 await t('a saved override MSRP counts when the line has no record for the SKU',async()=>{ const h=await html({name:'W',code:'OV1',_mfrSlug:'yuwell',msrp:5}); ok(h.includes('$88.00')&&!h.includes('$5.00')); });
 await t('no manufacturer named, or an upgraded configuration → no MSRP printed',async()=>{ ok(!(await html({name:'W',code:'REC1',msrp:70})).includes('70.00')); ok(!(await html({name:'W',code:'REC1',_mfrSlug:'bemis',_upgrade:true,msrp:70})).includes('199.99')); });
+/* ---- dealer-branded brochures (Stage 4) ---- */
+await t('signed in: branded from HCPS\'s dealer record (escaped; branch uses its head office logo); the request cannot brand it',async()=>{
+  const r=await B.handler(ev({action:'html',product:Object.assign({},P,{dealer:{business_name:'Evil'}}),dealer:{business_name:'Evil'}},'good')); const h=JSON.parse(r.body).html;
+  ok(h.includes('Presented by <b>Acme &lt;Branch&gt;</b>')&&h.includes('https://cdn.acme.test/logo.png')&&h.includes('555-0200')&&h.includes('Xenia, OH 45385'),'brand'); ok(!h.includes('Evil'),'request branded it');
+  ok(h.includes('supplied through HomeCare Provider Services'),'HCPS credit'); });
+await t('signed out / pending / brand unreadable → the plain HCPS handout',async()=>{
+  for(const tok of [null,'pending']){ const h=JSON.parse((await B.handler(ev({action:'html',product:P},tok))).body).html; ok(!h.includes('Presented by')&&h.includes('Provided by HomeCare Provider Services'),String(tok)); }
+  global.DEALERS_DOWN=true; const h=JSON.parse((await B.handler(ev({action:'html',product:P},'good'))).body).html; global.DEALERS_DOWN=false; ok(!h.includes('Presented by'),'down'); });
+await t('a branded email names the dealer in the sender, still from HCPS\'s address',async()=>{ SENDS.length=0; const n=sent.length; const r=await B.handler(ev({action:'email',product:P,to:'brand@x.com'},'good')); ok(r.statusCode===200&&sent.length===n+1,r.statusCode);
+  const m=sent[sent.length-1]; ok(/^"Acme Branch via HCPS" <[^<>]+@[^<>]+>$/.test(m.from),m.from); ok(m.html.includes('Presented by'),'body'); });
+await t('review fix: a dealer logo cannot break out of its attribute (stored XSS) and must be https / raster data',async()=>{
+  for(const evil of ['https://x/a.png" onerror="alert(1)','http://x/a.png','javascript:alert(1)','data:image/svg+xml;base64,PHN2Zz4=','/relative.png']){
+    global.EVIL_LOGO=evil; const h=JSON.parse((await B.handler(ev({action:'html',product:P},'good'))).body).html; global.EVIL_LOGO=null;
+    ok(!/onerror="alert/.test(h)&&!h.includes('javascript:')&&!h.includes('svg+xml')&&!h.includes('http://x/')&&!h.includes('/relative.png'),evil); ok(h.includes('Presented by'),'brand kept'); } });
+await t('review fix: one plain address only (no display name / brackets), so one person cannot count as many',async()=>{ SENDS.length=0; const n=sent.length;
+  for(const bad of ['foo<v@x.com>','"V" <v@x.com>','v@x.com (x)']){ const r=await B.handler(ev({action:'email',product:P,to:bad},'good')); ok(r.statusCode===400,bad+' '+r.statusCode); }
+  ok(sent.length===n&&SENDS.length===0,'reached the limiter'); });
+await t('review fix: the From display name is quoted; "$" in a message is text; limits count against the company',async()=>{ SENDS.length=0;
+  const r=await B.handler(ev({action:'email',product:P,to:'q@x.com',message:"price $' ok"},'good')); ok(r.statusCode===200,r.statusCode);
+  const m=sent[sent.length-1]; ok(/^"Acme Branch via HCPS" <[^<>]+>$/.test(m.from),m.from); ok(m.html.includes("price $' ok")&&(m.html.match(/class="sheet"/g)||[]).length===1,'message / duplicated body');
+  ok(SENDS[0].dealer_id==='hq',SENDS[0].dealer_id); });
 console.log(`brochure auth: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
 })();

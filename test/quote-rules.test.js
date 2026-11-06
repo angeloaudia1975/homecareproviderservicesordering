@@ -8,12 +8,12 @@ const MF=JSON.parse(fs.readFileSync(path.join(__dirname,'..','public','data','ma
 let pass=0,fail=0; const t=(n,f)=>{ try{f();pass++;console.log('ok   '+n);}catch(e){fail++;console.log('FAIL '+n+'\n     '+e.message);} };
 function grab(name){ const i=H.indexOf('function '+name+'('); if(i<0) throw new Error('missing '+name);
   let d=0,j=H.indexOf('{',i); for(;j<H.length;j++){ if(H[j]==='{')d++; else if(H[j]==='}'){ d--; if(!d) break; } } return H.slice(i,j+1); }
-const names=['quoteMsrp','quotableLine','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview'];
+const names=['quoteMsrp','quotableLine','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qSaved','qMsrpOk','qMeta','qUnit','qMoney','qLineHtml','qListHtml'];
 const els={};
 const ctx={ money:v=>'$'+Number(v).toFixed(2), esc:s=>String(s), brandLogoHtml:()=>'', PROFILE:{name:'Dealer X'}, QCUST:{name:'',valid:'30 days'},
   FAVS:new Set(), BRANDING:{logo_url:''}, $:sel=>els[sel]||(els[sel]={innerHTML:''}), Number, isFinite, String, Math };
 vm.createContext(ctx);
-vm.runInContext(require('./extract-picker.js').retiredDecls(H)+'\nvar MFRLIST,PRICE,PRICELIST,QUOTELIST,QUOTE,QSEARCH="",QUOTE_UNAVAILABLE=[];\n'+names.map(grab).join('\n'),ctx);
+vm.runInContext(require('./extract-picker.js').retiredDecls(H)+'\nvar MFRLIST,PRICE,PRICELIST,QUOTELIST,QUOTE,QSEARCH="",QUOTE_UNAVAILABLE=[];\nvar QMETA={},QSNAP={},QSAVED=null,QLIST=[],QDIRTY=false,RETAIL=null,AC=null,QLOCRETAIL=null; const qIsUpgrade=k=>/\\|u=/.test(k); function qLoadList(){}\n'+names.map(grab).join('\n'),ctx);
 ctx.MFRLIST=MF.map(m=>({slug:m.slug,name:m.name,quotable:m.quotable}));
 ctx.PRICE={'access4u|A1':{name:'With MSRP',mfrName:'Access4U',msrp:120,cost:60},'access4u|A2':{name:'No MSRP',mfrName:'Access4U',msrp:null,cost:77.77},
   'access4u|A3':{name:'Zero MSRP',mfrName:'Access4U',msrp:0,cost:40},'gce|G1':{name:'Ohio item',mfrName:'Ohio Medical / GCE',msrp:300,cost:150}};

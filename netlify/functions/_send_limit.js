@@ -4,8 +4,9 @@
    is sent, and refused past:  10 per dealer per hour · 40 per dealer per 24 hours · 5 to the same recipient per 24 hours.
    The recipient is stored as its DOMAIN and a SHA-256 of the normalised address (lower-case, "+tag" removed, Gmail dots
    removed), never the address. A send the provider refused is marked failed and does not count. Anything that can't be
-   checked refuses the send (fail closed); only a database without the reserve function yet (before the Stage 4 SQL)
-   lets the send through, as before. */
+   checked refuses the send (fail closed) — including a database without the reserve function: the Stage 4 SQL is
+   installed in production (verified 2026-11-05), so a missing function now means something is wrong, never "send anyway".
+   Identical copy in both repos (homecareproviderservices: quotes; homecareproviderservicesordering: brochures). */
 const crypto = require('crypto');
 const LIMITS = { hour: 10, day: 40, recipient: 5 };
 /* only "this function / table does not exist" — never a column, role or any other error */
@@ -28,7 +29,7 @@ async function reserve({ url, key, dealer_id, kind, to }) {
     txt = await r.text();
   } catch (e) { console.error('send limit unavailable', e && e.message); return { ok: false, status: 503, error: 'Email is unavailable for a moment — please try again.' }; }
   if (!r.ok) {
-    if (NOT_INSTALLED(txt)) return { ok: true, untracked: true };
+    if (NOT_INSTALLED(txt)) console.error('send limit function missing — refusing the send');
     console.error('send limit refused', r.status, txt.slice(0, 160));
     return { ok: false, status: 503, error: 'Email is unavailable for a moment — please try again.' };
   }
