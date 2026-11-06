@@ -1409,7 +1409,10 @@ body.gck-lock{overflow:hidden}body.gck-lock .gck-pill{display:none}.gck-ov{displ
 .gck-qrow{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:14px}.gck-qn{min-width:24px;text-align:center}.gck-lp{margin-left:auto;font-size:13.5px}
 .gck-refs summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;color:#0f5c8f}.gck-refg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
 .gck-in{width:100%;min-height:44px;box-sizing:border-box;border:1px solid #cdd8e6;border-radius:9px;padding:8px 10px;font:inherit;font-size:16px}
-.gck-ships{display:grid;gap:8px}.gck-ship{display:flex;gap:10px;align-items:flex-start;min-height:44px;border:1px solid #dfe6ee;border-radius:10px;padding:10px 12px;cursor:pointer}
+.gck-ships{display:grid;gap:8px}.gck-ship.off{opacity:.6;cursor:default}.gck-def{font-style:normal;font-size:12px;font-weight:700;color:#0f5c8f;background:#e8f2fa;border-radius:6px;padding:1px 6px;margin-left:6px}
+.gck-src{display:block;color:#6b7785}.gck-lnk{background:none;border:0;color:#0f5c8f;text-decoration:underline;font:inherit;font-size:13px;min-height:44px;padding:0 10px 0 0;cursor:pointer}
+.gck-af{border:1px solid #dfe6ee;border-radius:10px;padding:12px;margin-top:10px}.gck-af h4{margin:0 0 8px;font-size:15px}.gck-chk{display:flex;gap:8px;align-items:center;min-height:44px}.gck-chk input{width:20px;height:20px}
+.gck-ghost{background:#fff!important;color:#0f5c8f!important;border:1px solid #0f5c8f!important}.gck-ship{display:flex;gap:10px;align-items:flex-start;min-height:44px;border:1px solid #dfe6ee;border-radius:10px;padding:10px 12px;cursor:pointer}
 .gck-ship.on{border-color:#1681c2;background:#f2f8fd}.gck-ship input{width:20px;height:20px;margin-top:2px}.gck-ship small{display:block;color:#5b6676}
 .gck-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.gck-f span{display:block;font-size:12.5px;font-weight:700;color:#5b6676;margin-bottom:4px}.gck-wide{grid-column:1/-1}
 .gck-tot{background:#f4f8fc;border-radius:10px;padding:10px 12px;margin-bottom:10px}.gck-tot>div{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:14px}
@@ -1654,6 +1657,7 @@ const CONFIG = {
   GOLDEN_ORDER_ENDPOINT: "",           // unused: Golden orders go browser → golden-proxy (HCPS) → Golden /v1/orders (Stage 4). Never called from the browser.
   GOLDEN_CATALOG: "",                  // Golden catalog JSON for in-platform shopping. Blank → ./data/golden-technologies.json
   GOLDEN_STATUS_ENDPOINT: "",          // Golden order status / tracking sync (Golden → Partner 360)
+  GOLDEN_ADDRESSES_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/golden-addresses-api", // B7: HCPS ship-to address book for Golden orders
   GOLDEN_PROXY_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/golden-proxy", // Stage 2: Golden catalog + stock, read through HCPS (signed, delegated). Never Golden directly.
 
   ORDERS_ENDPOINT: "https://homecareproviderservices.netlify.app/.netlify/functions/orders-api", // saves order history + reorder (CORS-enabled)
@@ -2777,13 +2781,13 @@ const GOLDEN={ checked:false, on:false, preview:false, state:null, prices:false,
 // Golden's PREVIEW environment: only on a Partner 360 deploy preview — for a staff "view as dealer" token, or (B6) a real
 // dealer sign-in, which golden-proxy allows only for a TEST dealership behind its own switch (anyone else is refused).
 function goldenPreviewEnv(){ return (typeof STAGING!=="undefined"&&STAGING) && (!!(window.__PREVIEW__&&window.__PREVIEW__.token) || !!(AUTH.session&&AUTH.session.access_token)); }
-async function goldenCall(action, extra){
+async function goldenCall(action, extra, endpoint){
   const hdr={"Content-Type":"application/json"};
   if(window.__PREVIEW__&&window.__PREVIEW__.token){ hdr["x-hcps-preview"]=window.__PREVIEW__.token; if(goldenPreviewEnv()) hdr["x-hcps-golden-env"]="preview"; }
   else if(AUTH.session&&AUTH.session.access_token){ try{ await ensureFreshSession(); }catch(e){} hdr.authorization="Bearer "+AUTH.session.access_token; if(goldenPreviewEnv()) hdr["x-hcps-golden-env"]="preview"; }
   else return null;
   try{
-    const r=await fetch(CONFIG.GOLDEN_PROXY_ENDPOINT,{method:"POST",headers:hdr,body:JSON.stringify(Object.assign({action},extra||{})),cache:"no-store"});
+    const r=await fetch(endpoint||CONFIG.GOLDEN_PROXY_ENDPOINT,{method:"POST",headers:hdr,body:JSON.stringify(Object.assign({action},extra||{})),cache:"no-store"});
     const j=await r.json().catch(()=>null);
     return (r.ok&&j&&j.ok===true)?j:null;
   }catch(e){ return null; }
@@ -2986,7 +2990,7 @@ function goldenConfigWire(host){
    one Idempotency-Key per checkout attempt — never the PO, which is not unique). VALIDATION ONLY: nothing is ordered,
    reserved or emailed; the email previews are Golden's exact emails, shown in a sandboxed frame. */
 const GCK_MAX_LINES=30, GCK_MAX_QTY=20;
-const GCART={ seq:0, busyKind:null, priceNotice:false, auto:null, items:[], ship:null, shipList:null, shipScope:null, quote:null, quoteSig:null, attempt:null, result:null, busy:false, pending:null, placed:null, pendMsg:null, form:{po:"",name:"",phone:"",email:"",attention:"",notes:""} };
+const GCART={ seq:0, busyKind:null, priceNotice:false, auto:null, items:[], ship:null, shipList:null, shipScope:null, book:false, bookDefault:null, bookStale:false, bookEdit:false, af:null, afErr:null, quote:null, quoteSig:null, attempt:null, result:null, busy:false, pending:null, placed:null, pendMsg:null, form:{po:"",name:"",phone:"",email:"",attention:"",notes:""} };
 /* B6 — PLACE ORDER (contract 1.6.0). Golden places the order; Golden's order is the order of record (nothing is stored by
    HCPS). The placement uses the SAME Idempotency-Key and the SAME body as the validation the dealer just reviewed. While
    Golden's answer is not definite (timeout, lost answer, server error), the attempt is kept PENDING — in this page and in
@@ -3094,9 +3098,27 @@ function gckPill(){
   el.textContent="Golden order · confirming";
 }
 function gckReq(){ return GCART.items.map(i=>{ const o={sku:i.sku,fabric:i.fabric,color:i.color,qty:i.qty}; if(i.tier) o.tier=i.tier; if(i.footrest) o.footrest=true; return o; }); }
+/* B7 (owner 2026-11-05): HCPS is the ship-to system of record. When the address book is switched on (golden-addresses-api
+   answers enabled:true) the dealer chooses from the book of every location sharing their Golden account number, adds a new
+   address on the spot (saved in HCPS, usable at once, no approval) and keeps a personal default. HCPS's server resolves
+   the chosen ref into the address Golden prices — the browser never sends an address. Otherwise Golden's own records. */
+const gckBookEntry=e=>({ id:e.ref, label:e.name, address:[e.address,e.address2].filter(Boolean).join(", "), city:e.city, state:e.state, zip:e.zip, phone:e.phone||"",
+  location:e.location||"", source:e.source, editable:e.editable===true, usable:e.usable!==false, problem:e.problem||null, raw:e });
+async function gckBookLoad(){
+  const j=await goldenCall("list",null,CONFIG.GOLDEN_ADDRESSES_ENDPOINT);
+  if(!j||j.enabled!==true) return false;
+  GCART.book=true; GCART.canEdit=j.can_edit===true; GCART.shipErr=null; GCART.shipScope="account";
+  GCART.shipList=(Array.isArray(j.entries)?j.entries:[]).map(gckBookEntry);
+  GCART.bookDefault=j.default_ref||null; GCART.bookStale=j.default_stale===true;
+  if(!GCART.ship||!GCART.shipList.some(s=>s.id===GCART.ship&&s.usable)) GCART.ship=j.preselect||null;
+  return true;
+}
 async function gckShipTo(){
   if(GCART.shipList) return;
   const seq=GCART.seq;
+  if(await gckBookLoad()){ if(seq!==GCART.seq){ GCART.shipList=null; } return; }
+  if(seq!==GCART.seq) return;
+  GCART.book=false;
   const j=await goldenCall("ship_to");
   if(seq!==GCART.seq) return;   // signed out meanwhile — another dealer's addresses never stay
   if(!j||j.available!==true){ GCART.shipList=[]; GCART.shipErr=(j&&j.reason)||"golden_unavailable"; return; }
@@ -3125,6 +3147,62 @@ function goldenCartClose(){ clearTimeout(GCART.auto); GCART.auto=null; const ov=
   if(GCART._esc){ document.removeEventListener('keydown',GCART._esc,true); GCART._esc=null; } gckPill();
   const back=(GCART._opener&&document.contains(GCART._opener)&&GCART._opener.offsetParent!==null)?GCART._opener:(document.querySelector('#cartGroups [data-gckgo]')||document.getElementById('gcartPill')); if(back&&back.focus) back.focus(); }
 const gckShipLine=s=>[s.address,[s.city,s.state].filter(Boolean).join(", "),s.zip].filter(Boolean).join(" · ");
+const gckShipRef=()=>GCART.book?{ref:GCART.ship}:{id:GCART.ship};
+const GCK_AF_FIELDS=[["name","Recipient or business name",80,' autocomplete="organization"'],["address","Street address",120,' autocomplete="address-line1"'],["address2","Apt, suite, unit (optional)",80,' autocomplete="address-line2"'],
+  ["city","City",60,' autocomplete="address-level2"'],["state","State (2 letters)",2,' autocomplete="address-level1"'],["zip","ZIP code",10,' autocomplete="postal-code" inputmode="numeric"'],["phone","Delivery phone (optional)",30,' type="tel" autocomplete="tel"']];
+const GCK_AF_ERR={name:"Enter the recipient or business name (2–80 characters).",address:"Enter the street address.",address2:"The second address line is too long.",city:"Enter the city.",state:"Use the 2-letter state code (for example KY).",
+  zip:"Enter a 5-digit ZIP code (or ZIP+4).",phone:"Enter a 10-digit phone number, or leave it blank.",text:"Remove the < or > characters.",too_many_addresses:"This account already has the maximum number of saved addresses — remove one first."};
+function gckBookHtml(sl,DIS){
+  const usable=sl.filter(s=>s.usable);
+  const src=s=>s.source==="saved"?"Saved address":s.source==="location_ship_to"?`Ship-to · ${esc(s.location)}`:"Location";
+  const list=!sl.length?`<div class="gck-warn">No shipping address on file yet for this account — add one below.</div>`
+    :`<div class="gck-ships">${sl.map(s=>`<label class="gck-ship${s.id===GCART.ship?" on":""}${s.usable?"":" off"}"><input type="radio" name="gckship" value="${esc(s.id)}"${s.id===GCART.ship?" checked":""}${DIS}${s.usable?"":" disabled"}><span><b>${esc(s.label)}</b>${s.id===GCART.bookDefault?' <em class="gck-def">Your default</em>':""}<small>${esc(gckShipLine(s))}${s.phone?` · ${esc(s.phone)}`:""}</small><small class="gck-src">${src(s)}${s.usable?"":` · incomplete (${esc(s.problem||"address")}) — not usable for Golden`}</small>
+      ${GCART.canEdit&&s.usable&&s.id!==GCART.bookDefault?`<button type="button" class="gck-lnk" data-bk-def="${esc(s.id)}"${DIS}>Make default</button>`:""}${GCART.canEdit&&s.editable?`<button type="button" class="gck-lnk" data-bk-edit="${esc(s.id)}"${DIS}>Edit</button><button type="button" class="gck-lnk" data-bk-rm="${esc(s.id)}"${DIS}>Remove</button>`:""}</span></label>`).join("")}</div>`;
+  const stale=GCART.bookStale?`<div class="gck-warn">Your default shipping address is no longer available. Please choose one${GCART.canEdit?" (and make it your default)":""}.</div>`:"";
+  const af=GCART.af;
+  const form=af?`<div class="gck-af" role="group" aria-label="${af.ref?"Edit shipping address":"New shipping address"}"><h4>${af.ref?"Edit shipping address":"New shipping address"}</h4><div class="gck-grid">
+      ${GCK_AF_FIELDS.map(([k,l,m,x])=>`<label class="gck-f${k==="address"?" gck-wide":""}"><span>${l}</span><input class="gck-in" data-af="${k}" maxlength="${m}" value="${esc(af[k]||"")}"${/type=/.test(x)?"":' type="text"'}${x}${GCART.afErr===k?' aria-invalid="true"':""}></label>`).join("")}
+      <label class="gck-chk gck-wide"><input type="checkbox" data-af="make_default"${af.make_default?" checked":""}> Make this my default shipping address</label></div>
+      ${GCART.afErr?`<div class="gck-warn" role="alert">${esc(GCK_AF_ERR[GCART.afErr]||"This address could not be saved right now. Please try again.")}</div>`:""}
+      <div class="gck-acts"><button type="button" class="gck-btn" data-bk-save${GCART.afBusy?" disabled":""}>${GCART.afBusy?"Saving…":af.ref?"Save changes":"Save and ship here"}</button><button type="button" class="gck-btn gck-ghost" data-bk-cancel>Cancel</button></div>
+      <div class="gck-note">Saved in HCPS for every location on your Golden account. Golden prices freight and handling for this exact address.</div></div>`
+    :(GCART.canEdit?`<div class="gck-acts"><button type="button" class="gck-btn gck-ghost" data-bk-new${DIS}>+ Add a new shipping address</button></div>`:"");
+  return `${stale}${list}${form}<div class="gck-note">${usable.length>1&&!GCART.ship?"Choose where Golden ships this order. ":""}Addresses for every location on your Golden account. Golden prices freight and handling for the address you choose.</div>`;
+}
+async function gckBookAct(body){ const x=Object.assign({},body); const act=x.action; delete x.action; return goldenCall(act,x,CONFIG.GOLDEN_ADDRESSES_ENDPOINT); }
+function gckBookReload(selectRef){ GCART.shipList=null; const seq=GCART.seq; gckRender(); return gckBookLoad().then(()=>{ if(seq!==GCART.seq) return; if(selectRef&&GCART.shipList.some(s=>s.id===selectRef&&s.usable)){ GCART.ship=selectRef; GCART.quote=null; GCART.result=null; } gckRender(); }); }
+function gckBookClick(t){
+  if(!GCART.book) return false;
+  if(t.closest('[data-bk-new]')){ GCART.af={}; GCART.afErr=null; GCART._refocus='[data-af="name"]'; gckRender(); return true; }
+  if(t.closest('[data-bk-cancel]')){ GCART.af=null; GCART.afErr=null; GCART._refocus='[data-bk-new]'; gckRender(); return true; }
+  const ed=t.closest('[data-bk-edit]'); if(ed){ const s=(GCART.shipList||[]).find(x=>x.id===ed.getAttribute('data-bk-edit')); if(s){ const e=s.raw; GCART.af={ref:s.id,name:e.name,address:e.address,address2:e.address2||"",city:e.city,state:e.state,zip:e.zip,phone:e.phone||""}; GCART.afErr=null; GCART._refocus='[data-af="name"]'; gckRender(); } return true; }
+  const df=t.closest('[data-bk-def]'); if(df){ const ref=df.getAttribute('data-bk-def'); gckBookAct({action:"set_default",ref}).then(j=>{ if(j&&j.default_ref){ GCART.bookDefault=j.default_ref; GCART.bookStale=false; } else GCART.err="Your default could not be saved right now."; gckRender(); }); return true; }
+  const rm=t.closest('[data-bk-rm]'); if(rm){ const ref=rm.getAttribute('data-bk-rm'); const s=(GCART.shipList||[]).find(x=>x.id===ref);
+    if(!window.confirm(`Remove “${s?s.label:"this address"}” from your account's shipping addresses? Orders already placed keep their address.`)) return true;
+    gckBookAct({action:"remove",ref}).then(j=>{ if(!j||j.removed!==true){ GCART.err="That address could not be removed right now."; gckRender(); return; } if(GCART.ship===ref){ GCART.ship=null; GCART.quote=null; GCART.result=null; } gckBookReload(); }); return true; }
+  if(t.closest('[data-bk-save]')){
+    const af=GCART.af||{}; if(GCART.afBusy) return true;
+    GCART.afBusy=true; GCART.afErr=null; gckRender();
+    const address={}; for(const [k] of GCK_AF_FIELDS) address[k]=String(af[k]||"").trim();
+    (async()=>{
+      const hdrOk=await gckBookSave(Object.assign({action:"save",address,make_default:af.make_default===true},af.ref?{ref:af.ref}:{}));
+      GCART.afBusy=false;
+      if(!hdrOk.ok){ GCART.afErr=hdrOk.field||"x"; gckRender(); return; }
+      GCART.af=null; GCART.afErr=null; GCART._refocus=`input[name="gckship"][value="${hdrOk.ref}"]`;
+      gckBookReload(hdrOk.ref);
+    })();
+    return true;
+  }
+  return false;
+}
+// save needs the field of a 400 answer, which goldenCall drops — so this one reads the answer itself.
+async function gckBookSave(body){
+  const hdr={"Content-Type":"application/json"};
+  if(AUTH.session&&AUTH.session.access_token){ try{ await ensureFreshSession(); }catch(e){} hdr.authorization="Bearer "+AUTH.session.access_token; } else return { ok:false };
+  try{ const r=await fetch(CONFIG.GOLDEN_ADDRESSES_ENDPOINT,{method:"POST",headers:hdr,body:JSON.stringify(body),cache:"no-store"}); const j=await r.json().catch(()=>null);
+    if(r.ok&&j&&j.ok===true&&j.saved_ref) return { ok:true, ref:j.saved_ref };
+    return { ok:false, field:(j&&(j.field||j.error))||null }; }catch(e){ return { ok:false }; }
+}
 function gckRender(){
   const ov=document.getElementById('gckView'); if(!ov||ov.style.display==='none') return;
   if(GCART.placed||GCART.pending){ gckRenderPlacement(ov); return; }
@@ -3141,7 +3219,7 @@ function gckRender(){
       <details class="gck-refs" data-gk="refs-${ix}"${(GCART.open&&GCART.open["refs-"+ix]!=null?GCART.open["refs-"+ix]:i.refs.some(Boolean))?" open":""}><summary>Reference names (patient or tag, optional)</summary><div class="gck-refg">${refs}</div></details>
     </div>`;}).join("");
   const sl=GCART.shipList;
-  const ship=sl==null?`<div class="gck-note">Loading Golden's ship-to addresses…</div>`
+  const ship=GCART.book&&sl?gckBookHtml(sl,DIS):sl==null?`<div class="gck-note">Loading Golden's ship-to addresses…</div>`
     :(!sl.length?`<div class="gck-warn">${GCART.shipErr==="prices_not_visible"?"Golden ordering needs a linked Golden account with dealer pricing.":GCART.shipErr?"Golden's ship-to addresses could not be loaded right now. Please try again shortly.":"Golden has no ship-to address on file for this account. Ask Golden or your HCPS rep to add one."}</div>`
     :`<div class="gck-ships">${sl.map(s=>`<label class="gck-ship${s.id===GCART.ship?" on":""}"><input type="radio" name="gckship" value="${esc(s.id)}"${s.id===GCART.ship?" checked":""}${DIS}><span><b>${esc(s.label)}</b><small>${esc(gckShipLine(s))}</small></span></label>`).join("")}</div>
       <div class="gck-note">Golden's own ship-to records${GCART.shipScope==="branch"?" for your branch":""}. Golden applies any handling terms for the address you choose.</div>`);
@@ -3159,7 +3237,7 @@ function gckRender(){
   const res=r?gckResultHtml(r):"";
   const step=gckStep();
   const tip=(!gckTipSeen()&&GCART.items.length)?`<div class="gck-tip" role="note"><p><b>New: checkout in three steps.</b> Choose where Golden ships the order and check your contact details — Golden then prices it (merchandise, freight and S&amp;H) and verifies it automatically. Nothing is ordered until you press <b>Place order with Golden</b>.</p><button type="button" class="gck-btn" data-gck-tip>Got it</button></div>`:"";
-  const a=document.activeElement, fk=a&&ov.contains(a)?['data-rm','data-dq','data-gck-retry','data-gck-tip','data-gck-close','data-f'].map(k=>a.hasAttribute(k)?`[${k}="${a.getAttribute(k)}"]${k==='data-dq'?`[data-d="${a.getAttribute('data-d')}"]`:''}`:null).find(Boolean)||(a.name==='gckship'?`input[name="gckship"][value="${a.value}"]`:null)||(a.classList&&a.classList.contains('gck-ref')?`.gck-ref[data-ix="${a.getAttribute('data-ix')}"][data-k="${a.getAttribute('data-k')}"]`:null):null;
+  const a=document.activeElement, fk=a&&ov.contains(a)?['data-rm','data-dq','data-gck-retry','data-gck-tip','data-gck-close','data-f'].map(k=>a.hasAttribute(k)?`[${k}="${a.getAttribute(k)}"]${k==='data-dq'?`[data-d="${a.getAttribute('data-d')}"]`:''}`:null).find(Boolean)||(a.name==='gckship'?`input[name="gckship"][value="${a.value}"]`:null)||(a.hasAttribute&&a.hasAttribute('data-af')?`[data-af="${a.getAttribute('data-af')}"]`:null)||(a.classList&&a.classList.contains('gck-ref')?`.gck-ref[data-ix="${a.getAttribute('data-ix')}"][data-k="${a.getAttribute('data-k')}"]`:null):null;
   let caret=null; try{ if(fk&&typeof a.selectionStart==="number") caret=[a.selectionStart,a.selectionEnd]; }catch(x){}   // email inputs: null or a throw in some browsers
   GCART.open=GCART.open||{}; ov.querySelectorAll('details[data-gk]').forEach(d=>{ GCART.open[d.getAttribute('data-gk')]=d.open; });
   const fkSum=(!fk&&a&&ov.contains(a)&&a.tagName==="SUMMARY"&&a.parentElement&&a.parentElement.getAttribute('data-gk'))?`details[data-gk="${a.parentElement.getAttribute('data-gk')}"]>summary`:null;
@@ -3199,8 +3277,8 @@ function gckNextHtml(){
     :(r.ordering_enabled!==true&&gckOrderingOpen()?"Golden verified this order, but Golden is not accepting orders from the 360 Dealer Portal for this account yet. Nothing will be placed."
     :"Golden verified this order. Ordering from the 360 Dealer Portal is not open yet — nothing will be placed.");
   else if(GCART.err||(GCART.shipErr&&sl&&!sl.length)) t="Something needs your attention below.";
-  else if(sl==null){ t="Loading Golden's ship-to addresses…"; busy=true; }
-  else if(!sl.length) t="Golden has no ship-to address for this account yet.";
+  else if(sl==null){ t="Loading your shipping addresses…"; busy=true; }
+  else if(!sl.length) t=GCART.book?"Add a <b>shipping address</b> below — it is saved for your account and used for this order.":"Golden has no ship-to address for this account yet.";
   else if(!GCART.ship) t="Choose the <b>ship-to address</b> for this order below.";
   else if(GCART.busyKind==="quote"||!GCART.quote||GCART.quoteSig!==JSON.stringify([gckReq(),GCART.ship])){ t="Getting Golden's price, freight and S&amp;H…"; busy=true; }
   else if(!(f.name.trim()&&f.phone.trim())) t="Add a <b>contact name and phone</b> below — Golden needs them for delivery.";
@@ -3275,7 +3353,7 @@ async function gckQuote(){
   const seq=GCART.seq;
   // split_order:true = Golden's own default: in-stock and build chairs ship as separate shipments, each with its own
   // freight and S&H (Golden treats a single-group order as one shipment). Never a merged order without Golden's hold note.
-  const j=await goldenCall("quote",{lines:gckReq(),ship_to:{id:GCART.ship},split_order:true});
+  const j=await goldenCall("quote",{lines:gckReq(),ship_to:gckShipRef(),split_order:true});
   if(seq!==GCART.seq) return;
   GCART.busy=false; GCART.busyKind=null;
   if(sig!==JSON.stringify([gckReq(),GCART.ship])){ gckRender(); return; }   // the cart changed while Golden answered
@@ -3283,14 +3361,16 @@ async function gckQuote(){
     GCART.quote=null;
     const R={prices_not_visible:"Golden ordering needs a linked Golden account with dealer pricing.",ship_to_invalid:"Golden no longer lists that ship-to address. Please choose another.",not_offered:"Golden can't build one of these chairs as configured"+(j&&j.line!=null?" (line "+(j.line+1)+")":"")+". Please remove it and configure it again.",pricing_unavailable:"Golden's pricing is not available right now. Please try again shortly."};
     GCART.err=(j&&R[j.reason])||"Golden's price could not be loaded right now. Please try again shortly.";
-    if(j&&j.reason==="ship_to_invalid"){ GCART.ship=null; GCART.shipList=null; gckShipTo().then(gckRender); }
+    if(j&&j.reason==="ship_to_not_found") GCART.err="That address is no longer in your address book. Please choose another.";
+    if(j&&j.reason==="ship_to_incomplete") GCART.err="That address is incomplete for Golden. Please choose another or add a complete one.";
+    if(j&&/^(ship_to_invalid|ship_to_not_found|ship_to_incomplete)$/.test(j.reason)){ GCART.ship=null; GCART.shipList=null; gckShipTo().then(gckRender); }
   } else { if(GCART.quote&&GCART.quoteSig===sig&&GCART.quote.quote_hash!==j.quote.quote_hash) GCART.priceNotice=true; GCART.quote=j.quote; GCART.quoteSig=sig; GCART.quoteAsOf=j.as_of||null; }
   gckRender();
 }
 function gckOrderBody(){
   const f=GCART.form, q=GCART.quote;
   const lines=gckReq().map((l,ix)=>{ const refs=(GCART.items[ix].refs||[]).slice(0,l.qty).map(x=>String(x||"").trim()); while(refs.length&&!refs[refs.length-1]) refs.pop(); return refs.length?Object.assign({},l,{reference_names:refs}):l; });
-  const b={quote_hash:q.quote_hash,lines,ship_to:{id:GCART.ship},split_order:true,contact:{name:f.name.trim(),phone:f.phone.trim()}};
+  const b={quote_hash:q.quote_hash,lines,ship_to:gckShipRef(),split_order:true,contact:{name:f.name.trim(),phone:f.phone.trim()}};
   if(f.email.trim()) b.contact.email=f.email.trim();
   if(f.po.trim()) b.po_number=f.po.trim(); if(f.attention.trim()) b.attention=f.attention.trim(); if(f.notes.trim()) b.notes=f.notes.trim();
   return b;
@@ -3368,6 +3448,8 @@ async function gckPlace(recheck){
     body=gckOrderBody();
     if(JSON.stringify(body)!==GCART.attempt.sig||JSON.stringify([gckReq(),GCART.ship])!==GCART.quoteSig){ GCART.result=null; gckRender(); return; }   // re-checked automatically; never placed as it was
     key=GCART.attempt.key;
+    // B7: placing an HCPS address names the exact address Golden verified (its id); HCPS refuses a changed one.
+    if(body.ship_to&&body.ship_to.ref){ const sid=r.order&&r.order.ship_to&&r.order.ship_to.id; if(!/^hcps-[0-9a-f]{24}$/.test(String(sid||""))){ GCART.result=null; gckRender(); return; } body.ship_to=Object.assign({},body.ship_to,{reviewed:sid}); }
     GCART.pending={key, body, at:Date.now()}; gckPendSave();   // from here on, only this attempt may be sent
   }
   const seq=GCART.seq;
@@ -3377,7 +3459,7 @@ async function gckPlace(recheck){
   GCART.busy=false; GCART.busyKind=null;
   GCART.pendMsg=null;
   if(j&&j.placed===true&&typeof j.order_ref==="string"){
-    try{ localStorage.setItem(gckPlacedKey(), JSON.stringify({ref:j.order_ref, sig:gckCartSig(body.lines, body.ship_to&&body.ship_to.id), at:Date.now(), tab:GCK_TAB})); }catch(e){}
+    try{ localStorage.setItem(gckPlacedKey(), JSON.stringify({ref:j.order_ref, sig:gckCartSig(body.lines, body.ship_to&&(body.ship_to.id||body.ship_to.ref)), at:Date.now(), tab:GCK_TAB})); }catch(e){}
     GCART.placed=j; GCART.pending=null; gckPendSave();
     GCART.items=[]; GCART.quote=null; GCART.quoteSig=null; GCART.attempt=null; GCART.result=null; gckSave();   // emptied only now
     try{ if(typeof GH!=="undefined"&&document.getElementById("goldenHist")){ ghReset(); goldenHistoryLoad(false); } }catch(e){}
@@ -3417,13 +3499,16 @@ function gckWire(ov){
     if(t.closest('[data-gck-done]')){ GCART.placed=null; gckPill(); return goldenCartClose(); }
     if(t.closest('[data-gck-myorders]')){ if(GCART.placed) GCART.placed=null; goldenCartClose(); gckPill(); if(typeof showView==="function") showView('orders'); return; }
     if(GCART.pending||GCART.placed) return;   // an order attempt waiting for Golden (or done) can't be edited
+    if(gckBookClick(t)) return;
     const rm=t.closest('[data-rm]'); if(rm){ GCART.items.splice(+rm.getAttribute('data-rm'),1); gckChanged(); return gckRender(); }
     const dq=t.closest('[data-dq]'); if(dq){ const i=GCART.items[+dq.getAttribute('data-dq')]; if(!i) return; i.qty=Math.min(GCK_MAX_QTY,Math.max(1,i.qty+Number(dq.getAttribute('data-d')))); i.refs=i.refs.slice(0,i.qty); gckChanged(); return gckRender(); }
   });
   ov.addEventListener('change',e=>{ const t=e.target; if(GCART.busy||GCART.pending||GCART.placed) return; if(t.name==='gckship'){ GCART.ship=t.value; GCART.quote=null; GCART.result=null; GCART.err=null; GCART.priceNotice=false; gckRender(); }
+    else if(t.matches('[data-af]')){ GCART.af=GCART.af||{}; GCART.af[t.getAttribute('data-af')]=t.type==='checkbox'?t.checked:t.value; }
     else if(t.matches('[data-f],.gck-ref')) gckSchedule(0); });   // leaving a field verifies at once
   ov.addEventListener('input',e=>{
     const t=e.target; let touched=false; if(GCART.pending||GCART.placed||(GCART.busy&&GCART.busyKind==="place")) return;   // typing stays possible while Golden prices / verifies
+    if(t.matches('[data-af]')){ GCART.af=GCART.af||{}; GCART.af[t.getAttribute('data-af')]=t.type==='checkbox'?t.checked:t.value; return; }   // the address form never touches the order
     if(t.matches('[data-f]')){ GCART.form[t.getAttribute('data-f')]=t.value; touched=true; }
     else if(t.matches('.gck-ref')){ const i=GCART.items[+t.getAttribute('data-ix')]; if(i){ i.refs[+t.getAttribute('data-k')]=t.value; gckSave(); touched=true; } }
     if(!touched) return;
