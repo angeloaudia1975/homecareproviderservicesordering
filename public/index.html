@@ -7823,10 +7823,14 @@ function quoteImg(p){ let u=String((p&&(p.image||(Array.isArray(p.images)&&p.ima
 function quoteEntry(p, line, upgrade){
   const q=upgrade?withUpgrade(p,upgrade):p; if(!q) return null;
   const m=Number(q.msrp); const msrp=(!q._msrp_suggested&&isFinite(m)&&m>0)?m:null;
+  /* C3-07 owner 2026-11-06 15:23: no official MSRP → HCPS calculated retail (2 × the STANDARD dealer price — the shop's own
+     _msrp_suggested figure, never a contract price), labelled "Retail price (HCPS calculated)"; the server decides it again
+     under the manufacturer's advertising rules when the quote or brochure is made */
+  const calc=(msrp==null&&!upgrade&&q._msrp_suggested&&isFinite(m)&&m>0)?m:null;
   let cost=null; try{ const u=Number(unitPrice(q,1)); cost=isFinite(u)&&u>0?u:null; }catch(e){}
   const opt=quoteOptionText(p);
   return {key:line.slug+'|'+p.code+(upgrade?'|u='+upgrade:''), code:p.code, mfr:line.slug, mfrName:line.name, family:groupDisplayName(p)||p.name||p.code,
-    option:[opt, upgrade?('Upgrade: '+upgrade):''].filter(Boolean).join(' · '), name:p.name||p.code, msrp, msrpEach:!!(msrp!=null&&typeof msrpIsEach==='function'&&msrpIsEach(q)),
+    option:[opt, upgrade?('Upgrade: '+upgrade):''].filter(Boolean).join(' · '), name:p.name||p.code, msrp:msrp!=null?msrp:calc, msrpCalc:msrp==null&&calc!=null, msrpEach:!!(msrp!=null&&typeof msrpIsEach==='function'&&msrpIsEach(q)),
     cost, map:(q.map!=null&&q.map!==''&&isFinite(Number(q.map)))?Number(q.map):null, category:p.category||'', upgrade:upgrade||'', image:quoteImg(p)};
 }
 let QUOTE_UNAVAILABLE=[];   /* lines whose catalog could not be loaded — said on screen, never silently missing */
@@ -8277,7 +8281,7 @@ function renderRetailView(){
       ${atLoc&&RP.head_office?`<div class="lead-note">A location's own price replaces the company price there. Leave it empty to use the company price (shown in grey).</div>`:''}
       ${!RP.head_office?`<div class="lead-note">These are your location's own prices. Your head office's company prices (shown in grey) apply wherever you haven't set one.</div>`:''}
       <div class="rp-bulk"><span><b id="rpCount">${rows.length}</b> listed</span>
-        <button type="button" class="btn gh acsm" onclick="rpBulk('msrp')">Set to MSRP</button>
+        <button type="button" class="btn gh acsm" onclick="rpBulk('msrp')" title="Official MSRP, or HCPS calculated retail (2 × standard dealer price) where there is none">Set to MSRP / default retail</button>
         <span class="rp-mk"><button type="button" class="btn gh acsm" onclick="rpBulk('markup')">Markup on cost ×</button><input id="rpMk" inputmode="decimal" value="1.8" aria-label="Markup multiplier" style="width:64px"></span>
         <label class="rp-only"><input type="checkbox" id="rpOnlyEmpty" checked> only where empty</label>
         <button type="button" class="btn gh acsm" onclick="rpBulk('clear')">Clear</button>
@@ -8299,7 +8303,7 @@ function rpTableHtml(shown,total){
     const k=p.mfr+'|'+p.code, v=rpValue(k), edited=Object.prototype.hasOwnProperty.call(RP.edits,k), fallback=(atLoc||!RP.head_office)?rpCompany(k):null;
     const eff=v!=null?v:fallback, m=(eff!=null&&p.cost>0)?Math.round((eff-p.cost)/eff*100):null;
     return `<tr${edited?' class="rp-ed"':''}><td><b>${esc(p.name)}</b><div style="font-size:11px;color:var(--muted)">#${esc(p.code)} · ${esc(p.mfrName)}</div></td>
-      <td class="n tnum">${p.cost!=null?rpMoney(p.cost):'—'}</td><td class="n tnum">${p.msrp!=null?rpMoney(p.msrp):'—'}</td>
+      <td class="n tnum">${p.cost!=null?rpMoney(p.cost):'—'}</td><td class="n tnum">${p.msrp!=null?rpMoney(p.msrp)+(p.msrpCalc?'<div style="font-size:10px;color:var(--muted)">HCPS calculated</div>':''):'—'}</td>
       <td class="n"><input class="rp-in" inputmode="decimal" value="${v!=null?Number(v).toFixed(2):''}" placeholder="${fallback!=null?Number(fallback).toFixed(2):'—'}" aria-label="Retail price for ${esc(p.name)}" data-k="${esc(k)}" onchange="rpEdit(this.dataset.k,this.value)"></td>
       <td class="n tnum">${m!=null?`<span class="${m<0?'rp-neg':''}">${m}%</span>`:'—'}</td>
       <td class="n"><a class="btn gh acsm" data-m="${esc(p.mfr)}" data-c="${esc(p.code)}" data-n="${esc(p.name)}" onclick="rpHistory(this.dataset.m,this.dataset.c,this.dataset.n)">History</a></td></tr>`; }).join('')}</tbody></table></div>

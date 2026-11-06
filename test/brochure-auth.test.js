@@ -31,6 +31,9 @@ global.fetch=async(url,o)=>{ const u=String(url);
   if(u.startsWith('https://sb.test/rest/v1/product_skus')) return {ok:true,json:async()=>(/code=eq\.REC1/.test(u)?[{msrp:199.99}]:/code=eq\.RECNONE/.test(u)?[{msrp:null}]:[])};
   if(u.startsWith('https://sb.test/rest/v1/product_overrides')) return {ok:true,json:async()=>(/code=eq\.OV1/.test(u)?[{patch:{msrp:88}}]:[])};
   if(u.startsWith('https://sb.test/rest/v1/custom_products')) return {ok:true,json:async()=>[]};
+  if(u==='https://homecareproviderservices.netlify.app/.netlify/functions/dealer-quotes-api'){ global.DQ=(global.DQ||[]).concat([{h:o.headers,b:JSON.parse(o.body)}]);
+    const b=JSON.parse(o.body); const ans=b.code==='CALC1'?{ok:true,price:80,label:'Price',source:'calculated'}:b.code==='REC1'?{ok:true,price:199.99,label:'MSRP',source:'msrp'}:{ok:true,price:null,label:null,source:'none'};
+    return {ok:true,json:async()=>ans}; }
   if(u==='https://homecareproviderservices.netlify.app/.netlify/functions/golden-proxy'){ global.GPROXY=(global.GPROXY||[]).concat([{h:o.headers,b:JSON.parse(o.body)}]);
     const b=JSON.parse(o.body); const ans=b.code==='PR501-SMA'?{ok:true,price:2499,label:'MSRP',source:'msrp'}:b.code==='GB121'?{ok:true,price:1400,label:'Price',source:'calculated'}:{ok:true,price:null,label:null,source:'none'};
     return {ok:true,json:async()=>ans}; }
@@ -96,5 +99,10 @@ await t('Golden: a configured chair is priced by its configuration key; signed o
   const n=GPROXY.length; const h=await ghtml({name:'Cloud',code:'PR501-SMA',_mfrSlug:'golden-technologies',msrp:2499}); ok(GPROXY.length===n&&!h.includes('2,499'),'signed out');
   const h2=await ghtml({name:'W',code:'REC1',_mfrSlug:'bemis',msrp_calculated:true}); ok(/suggested retail/i.test(h2)&&!/Retail price/.test(h2),'flag from request');
   const h3=await ghtml({name:'Cloud',code:'PR501-SMA',_mfrSlug:'golden-technologies'},null,{'x-hcps-preview':'a'.repeat(48)}); ok(h3.includes('$2,499.00')&&GPROXY[GPROXY.length-1].h['x-hcps-preview']==='a'.repeat(48),'staff view-as'); });
+await t('signed in: any line\'s default price from the server — official MSRP, else HCPS calculated retail labelled "Retail price"; the page\'s figure ignored',async()=>{ global.DQ=[];
+  const h=await ghtml({name:'W',code:'CALC1',_mfrSlug:'ovation-medical',msrp:1.11},'good'); ok(h.includes('$80.00')&&/Retail price/.test(h)&&!/suggested retail/i.test(h)&&!h.includes('1.11'),'calculated');
+  ok(DQ[0].b.action==='default_retail'&&DQ[0].b.manufacturer==='ovation-medical'&&DQ[0].h.authorization==='Bearer good','server call with the dealer sign-in');
+  const h2=await ghtml({name:'W',code:'REC1',_mfrSlug:'bemis'},'good'); ok(h2.includes('$199.99')&&/suggested retail/i.test(h2),'official MSRP');
+  const h3=await ghtml({name:'W',code:'NONE1',_mfrSlug:'bemis',msrp:50},'good'); ok(!h3.includes('50.00'),'nothing printed when there is no price'); });
 console.log(`brochure auth: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
 })();

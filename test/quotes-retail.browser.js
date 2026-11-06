@@ -147,6 +147,9 @@ const layout = page => page.evaluate(() => {
       await page.evaluate(() => __T(`closeModal()`));
       const L2 = await layout(page); await page.screenshot({ path: path.join(SHOTS, label + '-retail.png'), fullPage: false });
       await t(label + ': retail prices — no horizontal page scroll, nothing broken' + (w < 768 ? ', 44 px touch targets' : ''), () => { ok(L2.overflow <= 1, 'overflow ' + L2.overflow); ok(!L2.broken, 'broken'); if (w < 768) ok(!L2.small.length, 'small: ' + L2.small.join(' | ')); });
+      if (label === 'desktop') await t('default retail (owner 2026-11-06): no official MSRP → HCPS calculated retail (2 × standard), flagged and labelled — an official MSRP stays MSRP; upgrades get none', async () => {
+        const r = await page.evaluate(() => __T(`(()=>{ const L={slug:'yuwell',name:'Yuwell'}; const a=quoteEntry({code:'X1',name:'X',base_price:10,msrp:20,_msrp_suggested:true},L), b=quoteEntry({code:'X2',name:'Y',base_price:10,msrp:35},L); return [a.msrp,a.msrpCalc,b.msrp,b.msrpCalc]; })()`));
+        ok(JSON.stringify(r) === JSON.stringify([20, true, 35, false]), JSON.stringify(r)); });
       await ctx.close();
     }
     /* ---------- a head office requests a change FOR a branch (Account Center) ---------- */
