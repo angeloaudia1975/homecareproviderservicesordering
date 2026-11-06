@@ -1,7 +1,7 @@
 {
   "review_id": "a32756ff20fc",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T04:12:21Z",
+  "built_at": "2026-11-06T04:15:32Z",
   "main": "a797dd8367fb7a81345c4529fd65d9e323beacde",
   "included": [
     {
@@ -13,5 +13,12 @@
       "other_files": 6
     }
   ],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 54,
+      "title": "C3-07 Stage 5: Manufacturer Account Setup Center",
+      "branch": "c7/s5-applications",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
