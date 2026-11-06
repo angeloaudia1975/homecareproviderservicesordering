@@ -1,17 +1,8 @@
 {
-  "review_id": "7fda8e799e57",
+  "review_id": "b0515263d41d",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T18:41:41Z",
-  "main": "fe1999da53ce4c17f4e024ba7771539a8e80f414",
-  "included": [
-    {
-      "pr": 59,
-      "title": "C3-07 Stage 8: dealer-branded promotional downloads",
-      "branch": "c7/s8-demand",
-      "head": "b9b212baa5a92524d16ee737eece36af97af19ef",
-      "manufacturers": [],
-      "other_files": 2
-    }
-  ],
+  "built_at": "2026-11-06T18:43:09Z",
+  "main": "bc28e3db9750e5cfabc9955a8440cc7ae7af3893",
+  "included": [],
   "skipped": []
 }
