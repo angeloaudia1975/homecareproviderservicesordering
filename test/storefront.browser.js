@@ -106,6 +106,10 @@ const layout = (page, sel) => page.evaluate((sel) => {
         return R({ ok: true }); });
       await page.evaluate(() => { PREVIEW = null; window.__PREVIEW__ = null; window.confirm = () => true; });
       await page.evaluate(() => showP360('storefront')); await page.waitForSelector('#sfSlug');
+      await t(label + ': the account\'s phone and email are never pre-filled — only placeholders, or the person taps "Use my account"', async () => {
+        ok(await page.evaluate(() => document.getElementById('sfPhone').value === '' && document.getElementById('sfEmail').value === '' && /hq@acme\.test/.test(document.getElementById('sfEmail').placeholder)), 'pre-filled');
+        await page.evaluate(() => sfUseAccount()); ok(await page.evaluate(() => document.getElementById('sfEmail').value === 'hq@acme.test'), 'use account');
+        await page.evaluate(() => { document.getElementById('sfEmail').value = ''; document.getElementById('sfPhone').value = ''; }); });
       await t(label + ': My Storefront tab, settings save exactly what was typed', async () => {
         ok(await page.evaluate(() => [...document.querySelectorAll('.navtab span')].some((s) => s.textContent === 'My Storefront')), 'tab');
         await page.fill('#sfHead', 'Welcome'); await page.check('#sfOn'); await page.uncheck('#sfAll'); await page.uncheck('.sf-line[value="strongback"]'); await page.selectOption('#sfPrice', 'call');
