@@ -1,8 +1,8 @@
 {
-  "review_id": "081e33584b72",
+  "review_id": "590d61c574ba",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T03:06:04Z",
-  "main": "731a3af24fc63ac5c242875497c2dee09f8ada86",
+  "built_at": "2026-11-06T03:09:06Z",
+  "main": "4b8a24bd89e394ddebfa0f67d8e909c6e009932f",
   "included": [
     {
       "pr": 52,
