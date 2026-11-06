@@ -21,7 +21,7 @@ const sales = [S(HQ, 'strongback', `${Y}-01-01`, 'SB1', 2, 600), S(HQ, 'strongba
 const locations = [{ id: HQ, name: 'Acme Medical', city: 'Dayton' }, { id: BR, name: 'Acme Branch', city: 'Xenia' }];
 const build = (scope) => REP.build({ year: String(Y), today: TODAY, locations, scope, sales, orders: [{ dealer_id: HQ, manufacturer: 'strongback', status: 'submitted', subtotal: 250, submitted_at: `${Y}-01-15T00:00:00Z` }],
   quotes: [{ location_id: HQ, status: 'sent', created_at: `${Y}-01-03`, lines: [{}] }], catalog: { strongback: { SB1: { name: 'Excursion', category: 'Wheelchairs' } }, bemis: { BE1: { name: 'Seat', category: 'Bath Safety' } } },
-  mfrName: { strongback: 'Strongback', bemis: 'Bemis' }, coverageStart: { strongback: `${Y - 2}-03`, bemis: `${Y}-01` }, network: [] });
+  mfrName: { strongback: 'Strongback', bemis: 'Bemis' }, reportedMonths: { strongback: [`${Y - 2}-03`, `${Y - 1}-01`, `${Y}-01`], bemis: [`${Y}-01`] }, network: [] });
 
 function fake(page, st) {
   return page.route('**/functions/dealer-reports-api', async (route) => {
@@ -44,6 +44,12 @@ const layout = (page) => page.evaluate(() => {
 });
 
 (async () => {
+  await t('Excel export: a cell starting = + - @ is never a formula (numbers, negatives included, untouched)', () => {
+    const src = require('fs').readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8').match(/function csvCell\(v\)\{[^\n]*?\}(?=\s)/)[0];
+    const csvCell = new Function(src + '; return csvCell;')();
+    ok(csvCell('=HYPERLINK("x")') === '"\'=HYPERLINK(""x"")"', csvCell('=HYPERLINK("x")')); ok(csvCell('@SUM(A1)') === "'@SUM(A1)", '@'); ok(csvCell('+1') === '+1' || csvCell('+1') === "'+1", '+');
+    ok(csvCell('-5.3') === '-5.3' && csvCell(-5.3) === '-5.3' && csvCell('Chair') === 'Chair', 'plain values untouched');
+  });
   const browser = await chromium.launch();
   try {
     for (const [w, h, label] of [[390, 844, 'iphone'], [768, 1024, 'tablet'], [1280, 900, 'desktop']]) {
@@ -54,8 +60,8 @@ const layout = (page) => page.evaluate(() => {
       await page.waitForFunction(() => /Vital Signs/.test((document.querySelector('#view-reports') || {}).innerText || ''), null, { timeout: 20000 });
       const txt = await page.evaluate(() => document.querySelector('#view-reports').textContent);
       await t(label + ': company view — purchases manufacturer-reported, portal orders and quotes apart, "—" where history is missing', () => {
-        ok(/Acme Medical — all locations/.test(txt), 'scope name'); ok(/\$1,000/.test(txt), 'company purchases 1000'); ok(/No full prior-year history/.test(txt), 'company YoY withheld (Bemis history starts this year)');
-        ok(/Portal orders/.test(txt) && /shown apart/.test(txt) && /never added to purchases/.test(txt), 'portal apart'); ok(/Quotes created \/ sent\s*1 \/ 1/.test(txt), 'quotes'); ok(/HCPS history from/.test(txt), 'history note');
+        ok(/Acme Medical — all locations/.test(txt), 'scope name'); ok(/\$1,000/.test(txt), 'company purchases 1000'); ok(/Same months last year/.test(txt) && /This year, same months/.test(txt), 'company like-for-like (Bemis not reported last year)');
+        ok(/Portal orders/.test(txt) && /shown apart/.test(txt) && /never added to purchases/.test(txt), 'portal apart'); ok(/Quotes created \/ sent\s*1 \/ 1/.test(txt), 'quotes'); ok(/HCPS history from/.test(txt), 'history note'); ok(/No year-over-year comparison for: Bemis/.test(txt), 'note');
         ok(/Acme Branch/.test(txt) && /Locations/.test(txt), 'locations table'); ok(!/<b>name<\/b>/.test(txt) || true, 'escaped');
       });
       await t(label + ': HCPS read-only preview shows no AI button', async () => ok(!(await page.$('#rptAi')), 'AI button in preview'));
