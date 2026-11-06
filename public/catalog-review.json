@@ -1,17 +1,8 @@
 {
-  "review_id": "2ab6f95fe23d",
+  "review_id": "b3ebcb84946c",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T02:03:46Z",
-  "main": "1fccd697d5cff98d6a7bb7c8a5d7698bef1098e2",
-  "included": [
-    {
-      "pr": 48,
-      "title": "Turn on Golden inside Partner 360 (go-live): 3 page switches",
-      "branch": "golden-turn-on-checkout",
-      "head": "69d6be7839fed5dce40796891540de2ab6f4df2d",
-      "manufacturers": [],
-      "other_files": 3
-    }
-  ],
+  "built_at": "2026-11-06T02:04:54Z",
+  "main": "ed3a15b84ad21c0142b7c1706e61ee025053eed0",
+  "included": [],
   "skipped": []
 }
