@@ -8,7 +8,7 @@ const t=async(n,f)=>{ try{ await f(); pass++; console.log('ok  ',n); }catch(e){ 
 const ok=(c,m)=>{ if(!c) throw new Error(m||'assertion failed'); };
 const grabFn=n=>{ const i=H.indexOf('function '+n+'('); if(i<0) throw new Error('missing '+n); const st=H.lastIndexOf('\n',i)+1; let d=0,j=H.indexOf('{',i); for(;j<H.length;j++){ if(H[j]==='{')d++; else if(H[j]==='}'){ d--; if(!d) break; } } return H.slice(st,j+1); };
 const grabLine=a=>{ const i=H.indexOf(a); if(i<0) throw new Error('missing '+a); return H.slice(i,H.indexOf('\n',i)); };
-const GFNS=['goldenPreviewEnv','goldenCall','goldenInit','goldenEntitled','goldenToProduct','goldenCatalogProducts','goldenStockHtml','goldenPriceHtml','goldenCardNote','gckOrderingOpen','goldenCardHtml'];
+const GFNS=['goldenPreviewEnv','goldenCall','goldenInit','goldenEntitled','goldenToProduct','goldenCatalogProducts','goldenStockHtml','goldenPriceHtml','goldenOrderKind','goldenCardNote','gckOrderingOpen','goldenCardHtml'];
 
 function sandbox(o){
   o=o||{};
@@ -19,7 +19,7 @@ function sandbox(o){
     money:n=>'$'+Number(n).toFixed(2), variantSummary:v=>v.length+' sizes', calls, console, Promise, JSON, Object, Array, Number, String, Math, Date };
   ctx.fetch=async(url,init)=>{ calls.push({url,init}); const b=JSON.parse(init.body); const r=(o.answers||{})[b.action]; return { ok:true, json:async()=>r }; };
   vm.createContext(ctx);
-  vm.runInContext(grabLine('const GOLDEN={')+'\n'+GFNS.map(grabFn).join('\n').replace(/^const GOLDEN=/m,'var GOLDEN=')+'\nthis.GOLDEN=GOLDEN;', ctx);
+  vm.runInContext(grabLine('const GOLDEN={')+'\n'+grabLine('const GMOB_RE=').replace(/^const /,'var ')+'\n'+GFNS.map(grabFn).join('\n').replace(/^const GOLDEN=/m,'var GOLDEN=')+'\nthis.GOLDEN=GOLDEN;', ctx);
   return ctx;
 }
 const ELIG=(over)=>Object.assign({ ok:true, enabled:true, available:true, state:'browse_only', capabilities:{ see_prices:false } }, over||{});
@@ -81,7 +81,10 @@ const PROD=(over)=>Object.assign({ sku:'PR535-MED', family:'PR535', family_name:
     // ordering note: a configurable lift chair has none once ordering is open; anything else is Browse only; never "being finished"
     c.CONFIG.GOLDEN_ORDERING_ENABLED=true;
     ok(c.goldenCardNote({ _goldenAction:'configure', code:'PR535-MED' })==='', 'orderable lift chair: no note');
-    ok(/Browse only/.test(c.goldenCardNote({ _goldenAction:'view', code:'GB116' })), 'scooter / bed: browse only');
+    // B8 (contract 1.9.0): scooters, power chairs and Passport beds are orderable too; anything else stays Browse only
+    ok(c.goldenCardNote({ _goldenAction:'add', code:'GB116' })==='', 'scooter: orderable, no note');
+    ok(c.goldenCardNote({ _goldenAction:'add', code:'GP620M' })==='' && c.goldenCardNote({ _goldenAction:'configure', code:'BD100A-QB' })==='', 'power chair / bed: orderable');
+    ok(/Browse only/.test(c.goldenCardNote({ _goldenAction:'none', code:'MBA-RBASK' })), 'an item with no Golden order path: browse only');
     c.CONFIG.GOLDEN_ORDERING_ENABLED=false; c.GOLDEN.preview=false;
     ok(/Browse only/.test(c.goldenCardNote({ _goldenAction:'configure', code:'PR535-MED' })), 'ordering closed: browse only');
     ok(!/being finished/.test(html), 'no stale "being finished" copy');
