@@ -1,6 +1,6 @@
 // Golden ⇄ Partner 360 batch B0 (O0): the storefront never invents a Golden order and never records one.
 //   node test/golden-o0.test.js            (SHOP_FILE overrides the page under test)
-// - Golden inside Partner 360 is OFF (CONFIG.GOLDEN_ENABLED false) until Stage 2 is built and switched on.
+// - Golden inside Partner 360 is ON since the owner's go-live (2026-11-05); every price and order is still Golden's (server switches + links).
 // - Golden account holders get the working link to the Golden platform instead of an empty in-platform catalog.
 // - Checkout never submits Golden lines from the browser, never fabricates a "G-…" id, never sends Golden orders
 //   to orders-api; Golden lines stay in the cart.
@@ -12,7 +12,7 @@ const t=(n,f)=>{ try{ f(); pass++; console.log('ok  ',n); }catch(e){ fail++; con
 const ok=(c,m)=>{ if(!c) throw new Error(m||'assertion failed'); };
 const grab=(start,end)=>{ const i=src.indexOf(start); if(i<0) throw new Error('missing '+start); const j=src.indexOf(end,i); if(j<0) throw new Error('missing end '+end); return src.slice(i,j); };
 
-t('Golden in-platform shopping is OFF', ()=>{ ok(/GOLDEN_ENABLED:\s*false,/.test(src), 'CONFIG.GOLDEN_ENABLED must be false'); });
+t('Golden in-platform shopping is ON (owner go-live 2026-11-05)', ()=>{ ok(/GOLDEN_ENABLED:\s*true,/.test(src), 'CONFIG.GOLDEN_ENABLED must be true'); });
 t('Golden base is the Golden platform', ()=>{ ok(/GOLDEN_BASE:\s*"https:\/\/goldenonlineordering\.netlify\.app"/.test(src)); });
 t('no fabricated Golden order id anywhere', ()=>{ ok(!/'G-'\s*\+\s*Date\.now/.test(src) && !/"G-"\s*\+\s*Date\.now/.test(src), 'found G-<time> id'); });
 t('browser never calls a Golden order endpoint', ()=>{ ok(!/fetch\(\s*CONFIG\.GOLDEN_ORDER_ENDPOINT/.test(src)); ok(!/async function submitGoldenOrder/.test(src)); });

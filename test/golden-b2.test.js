@@ -88,7 +88,8 @@ const PROD=(over)=>Object.assign({ sku:'PR535-MED', family:'PR535', family_name:
     const sec=grabFn('goldenSectionHtml'); const inPl=sec.slice(sec.indexOf('const btn=inPlatform'), sec.indexOf(': (url'));
     ok(!/href=/.test(inPl),'in-platform: no link out to the Golden platform');
     ok(!/goldenonlineordering\.netlify\.app\/(v1|\.netlify)/.test(H),'the browser never calls Golden');
-    ok(/CONFIG\.GOLDEN_ENABLED: false|GOLDEN_ENABLED: false,/.test(H),'master switch still off on the live site');
+    // Owner go-live (2026-11-05): Golden is shown, cart + ordering open on the live site; the server still decides.
+    ok(/GOLDEN_ENABLED:\s*true,/.test(H) && /GOLDEN_CHECKOUT_ENABLED:\s*true,/.test(H) && /GOLDEN_ORDERING_ENABLED:\s*true,/.test(H),'Golden switched on on the live site (owner go-live)');
   });
   await t('Golden prices never pass through HCPS pricing: showroom designer and featured tiles skip Golden; photos only from Golden hosts', ()=>{
     const sd=H.slice(H.indexOf('window.sdPreloadCatalog'), H.indexOf('window.sdPreloadCatalog')+1200);
