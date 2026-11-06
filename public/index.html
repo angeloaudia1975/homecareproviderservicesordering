@@ -3885,7 +3885,20 @@ async function loadFeatured(){
   return DASH.featured;
 }
 // Load a line's products (with image overrides + MSRP fill), cached, without disturbing state.products.
-async function loadLine(slug){
+/* One request per line at a time: a caller arriving while the same line is already loading (the
+   Showroom, global search and the home page can all ask at once) shares that load instead of
+   starting a second copy. Settled loads leave the in-flight map, so a failure is never remembered. */
+const _lineInflight={};
+function loadLine(slug){
+  if(DASH.lineCache[slug]) return Promise.resolve(DASH.lineCache[slug]);
+  if(_lineInflight[slug]) return _lineInflight[slug];
+  const p=_loadLineOnce(slug);
+  _lineInflight[slug]=p;
+  const done=()=>{ if(_lineInflight[slug]===p) delete _lineInflight[slug]; };
+  p.then(done,done);
+  return p;
+}
+async function _loadLineOnce(slug){
   if(DASH.lineCache[slug]) return DASH.lineCache[slug];
   let prods=[];
   if(isGoldenSlug(slug)){ if(!goldenEntitled()) return []; try{ prods=await goldenCatalogProducts(); }catch(e){ return []; } DASH.lineCache[slug]=prods; return prods; }
@@ -8981,11 +8994,16 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     if(window.__sdCatalogLoaded) return _sdCatalog;
     var lines=[]; try{ lines=(typeof entitledManufacturers==='function')?entitledManufacturers():[]; }catch(e){}
     var out=[], catBy={}, imgBy={}, msrp={};
-    for(var i=0;i<lines.length;i++){
-      var m=lines[i]; if(!m.hasData) continue;
-      // Golden prices are Golden's answer, never run through HCPS pricing or saved in HCPS layouts (B2 rule).
-      if(typeof isGoldenSlug==='function'&&isGoldenSlug(m.slug)) continue;
-      var prods=[]; try{ prods=await loadLine(m.slug)||[]; }catch(e){ prods=[]; }
+    // Golden prices are Golden's answer, never run through HCPS pricing or saved in HCPS layouts (B2 rule).
+    var use=lines.filter(function(m){ return m.hasData && !(typeof isGoldenSlug==='function'&&isGoldenSlug(m.slug)); });
+    /* PARALLEL (2026-11-05): the lines used to load one after another — 11 lines x ~1s of chained
+       requests = ~12s before the Showroom appeared, which looked broken to a dealer. They now load
+       together (as the home page and global search already do); results are used in the SAME line
+       order, so the equipment list is identical to the sequential build. */
+    var loaded=await Promise.all(use.map(function(m){ return Promise.resolve().then(function(){ return loadLine(m.slug); }).then(function(p){ return p||[]; }, function(){ return []; }); }));
+    for(var i=0;i<use.length;i++){
+      var m=use[i];
+      var prods=loaded[i];
       for(var j=0;j<prods.length;j++){
         var p=prods[j]; if(!p||!p.code) continue;
         var cat=catOf({category:p.category,name:p.name,family:p.family,manufacturer:m.slug,mname:m.name});
