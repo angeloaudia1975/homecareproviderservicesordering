@@ -2961,7 +2961,7 @@ async function goldenBrochure(sku, cur){
   const b=goldenBrochurePayload(p,G);
   /* From the configurator, the brochure shows the chair as configured: its options and Golden's retail for that exact
      configuration (null = MSRP not shown). Without a configuration it is the size's own Golden MSRP. */
-  if(cur&&cur.q&&cur.sel&&cur.sel.color){ const r=goldenQuoteRecord(p,cur).rec; b.tagline=r.option||""; b.msrp=r.msrp; }
+  if(cur&&cur.q&&cur.sel&&cur.sel.color){ const gq=goldenQuoteRecord(p,cur), r=gq.rec; b.tagline=r.option||""; b.msrp=r.msrp; b._goldenKey=gq.key.slice(7); }
   GBROCH[sku]=b;
   openBrochure(sku, goldenOfficialDocs(G));
 }
@@ -2996,6 +2996,8 @@ function goldenQuoteAdd(sku, cur){
   const {key,rec}=goldenQuoteRecord(p, cur);
   GQUOTE[key]=rec;
   if(window.P360Quote&&window.P360Quote.add) window.P360Quote.add(key);
+  /* C3-07 P4: no Golden MSRP → HCPS calculated retail (2× Golden's standard price, at or above eMAP), read on the server */
+  if(rec.msrp==null&&!/\|u=/.test(key)) goldenCall("retail",{code:key.slice(7)}).then(j=>{ if(j&&Number(j.price)>0&&GQUOTE[key]===rec){ rec.msrp=Number(j.price); rec.msrpCalc=j.source==="calculated"; if(typeof renderQuotes==="function"){ try{ renderQuotes(); }catch(e){} } } }).catch(()=>{});
   toast("Added to your customer quote"+(rec.msrp==null?" — Golden publishes no retail price for this configuration, so it shows “MSRP not provided”":""));
   if(typeof showP360==="function") showP360("quotes");
 }
@@ -6537,6 +6539,7 @@ async function _brPost(body){
   if(body&&body.action==='email'&&typeof ensureFreshSession==='function'){ try{ await ensureFreshSession(); }catch(e){} }
   const hdr={'Content-Type':'application/json'};
   if(typeof AUTH!=='undefined'&&AUTH&&AUTH.session&&AUTH.session.access_token) hdr.authorization='Bearer '+AUTH.session.access_token;   // email needs the dealer's sign-in
+  else if(window.__PREVIEW__&&window.__PREVIEW__.token) hdr['x-hcps-preview']=window.__PREVIEW__.token;   // C3-07 P4: Golden's price for a staff "view as dealer" brochure
   return fetch('/.netlify/functions/brochure',{method:'POST',headers:hdr,body:JSON.stringify(body)})
     .then(r=>r.json());
 }
@@ -8061,7 +8064,7 @@ function quotableLine(slug){ if(typeof isRetiredSlug==="function"&&isRetiredSlug
 function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">MSRP not provided</span>'; }
 function quoteItemHtml(r){ return `${esc(r.name)}<div style="font-size:10.5px;color:var(--muted)">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)}</div>`; }
 function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const sn=(typeof QSNAP!=="undefined"&&QSNAP[k])||{};const p=(PRICE&&PRICE[k])||((typeof GQUOTE!=="undefined"&&GQUOTE[k])||sn);
-  return {key:k,mfr,code,sku:p.sku||sn.sku||code.split("|u=")[0],name:p.name||sn.name||code,option:p.option||sn.option||"",mfrName:p.mfrName||sn.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach,image:p.image||sn.image||""};}); }
+  return {key:k,mfr,code,sku:p.sku||sn.sku||code.split("|u=")[0],name:p.name||sn.name||code,option:p.option||sn.option||"",mfrName:p.mfrName||sn.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach,msrpCalc:!!p.msrpCalc,image:p.image||sn.image||""};}); }
 /* ---------- C3-07 Stage 4: CUSTOMER QUOTES (owner 2026-11-05; pricing choices D3) ----------
    Each line has a quantity and ONE customer price basis — the three approved choices:
      MSRP     the manufacturer's verified suggested retail (never a 2x estimate; an upgraded configuration has none)
@@ -8099,7 +8102,7 @@ function quotePaperHtml(picked,total){
     <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>${QSAVED?esc(QSAVED.quote_no):"Draft"}</b><div class="qc">Valid ${esc(QCUST.valid||"30 days")}</div></div></div>
     ${QCUST.name||QCUST.title?`<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">${QCUST.name?`Prepared for <b>${esc(QCUST.name)}</b>`:""}${QCUST.title?`<div>${esc(QCUST.title)}</div>`:""}</div>`:""}
     <table class="qtbl"><thead><tr><th>Product</th><th style="text-align:right">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Amount</th></tr></thead><tbody>${picked.map(r=>{ const u=qUnit(r), q=qMeta(r).qty;
-      return `<tr><td>${quoteItemHtml(r)}</td><td style="text-align:right">${q}</td><td style="text-align:right">${u!=null?qMoney(u)+(qMeta(r).basis==='msrp'&&r.msrpEach?' each':'')+(qMeta(r).basis==='msrp'?'<div style="font-size:9.5px;color:var(--muted)">MSRP</div>':''):(qMsrpOk(r)?'<span class="est">Price on request</span>':'<span class="est">MSRP not provided</span>')}</td><td style="text-align:right">${u!=null?qMoney(u*q):'—'}</td></tr>`; }).join("")||'<tr><td colspan="4" style="color:var(--muted)">Add products to build the quote.</td></tr>'}</tbody></table>
+      return `<tr><td>${quoteItemHtml(r)}</td><td style="text-align:right">${q}</td><td style="text-align:right">${u!=null?qMoney(u)+(qMeta(r).basis==='msrp'&&r.msrpEach?' each':'')+(qMeta(r).basis==='msrp'?'<div style="font-size:9.5px;color:var(--muted)">'+(r.msrpCalc?'Retail price (HCPS calculated)':'MSRP')+'</div>':''):(qMsrpOk(r)?'<span class="est">Price on request</span>':'<span class="est">MSRP not provided</span>')}</td><td style="text-align:right">${u!=null?qMoney(u*q):'—'}</td></tr>`; }).join("")||'<tr><td colspan="4" style="color:var(--muted)">Add products to build the quote.</td></tr>'}</tbody></table>
     <div class="qtot">Total: ${qMoney(total)}</div>
     ${QCUST.notes?`<div style="font-size:11px;margin-top:8px;white-space:pre-wrap">${esc(QCUST.notes)}</div>`:""}
     <div style="font-size:10px;color:var(--muted);margin-top:10px">Prices quoted by ${esc(biz)}.${picked.some(r=>qUnit(r)==null)?" Items without a price are not in the total.":""} The printed / emailed quote is checked against HCPS's records.</div>`;
@@ -8121,7 +8124,7 @@ function qLineHtml(r,i){
   const opt=(v,label,on)=>`<option value="${v}" ${m.basis===v?'selected':''} ${on?'':'disabled'}>${label}</option>`;
   return `<div class="rl qline"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)} · ${esc(r.mfrName)}</div>
     <div class="qctl"><label>Qty <input type="number" min="1" max="9999" step="1" value="${m.qty}" aria-label="Quantity for ${esc(r.name)}" onchange="qSetQty(${i},this.value)"></label>
-      <select aria-label="Customer price for ${esc(r.name)}" onchange="qSetBasis(${i},this.value)">${opt('msrp','MSRP '+(qMsrpOk(r)?qMoney(r.msrp)+(r.msrpEach?' each':''):'— not published'),qMsrpOk(r))}${opt('retail','My retail '+(saved!=null?qMoney(saved):'— none saved'),saved!=null)}${opt('once','One-time price',true)}</select>
+      <select aria-label="Customer price for ${esc(r.name)}" onchange="qSetBasis(${i},this.value)">${opt('msrp',(r.msrpCalc?'Retail price (HCPS calculated) ':'MSRP ')+(qMsrpOk(r)?qMoney(r.msrp)+(r.msrpEach?' each':''):'— not published'),qMsrpOk(r))}${opt('retail','My retail '+(saved!=null?qMoney(saved):'— none saved'),saved!=null)}${opt('once','One-time price',true)}</select>
       ${m.basis==='once'?`<input class="qonce" inputmode="decimal" placeholder="$0.00" value="${m.unit>0?m.unit:''}" aria-label="One-time price for ${esc(r.name)}" onchange="qSetUnit(${i},this.value)">
         <button type="button" class="btn gh acsm" onclick="qSaveRetail(${i})" ${m.unit>0&&!QLOCRETAIL?'':'disabled'} ${QLOCRETAIL?'title="Set this location\'s prices in My Retail Prices"':''}>Save as my retail price</button>`:''}
       <span class="qamt">${u!=null?qMoney(u*m.qty):'<span class="est">Price on request</span>'}</span></div></div>
@@ -8727,14 +8730,30 @@ function renderApply(){
     acts.push(`<a class="btn pri" onclick="apSign()">${APCUR.signing?'Sign electronically':'Electronic signing opens shortly'}</a>`); acts.push('<a class="btn gh" onclick="apOffline()">Print to sign by hand</a>'); }
   if(a.status==='signing') acts.push('<a class="btn pri" onclick="apLink()">Continue to signing</a>','<a class="btn gh" onclick="apRefresh()">I signed it — check</a>');
   if(['draft','queued','signing','signing_failed'].includes(a.status)) acts.push('<a class="btn gh" onclick="apWithdraw()">Withdraw</a>');
+  /* Stage 5 follow-ups: a hand-signed copy uploaded here goes to HCPS for review; a guarantee page (Dalton) is printed and
+     signed by each guarantor by hand — never e-signed — then uploaded with the application */
+  const paper=edit||APCUR.guarantee?`<div class="lead-note" style="margin-top:12px"><b>Signed on paper?</b> Upload the PDF (4 MB or less) — it goes privately to HCPS for review.
+      <div class="qacts" style="margin-top:8px;flex-wrap:wrap;align-items:center"><input type="file" id="apPaper" accept="application/pdf" aria-label="Hand-signed PDF" style="max-width:100%;min-height:44px;font-size:16px">
+      ${edit?'<a class="btn gh" onclick="apUpload(\'signed\')">Upload hand-signed application</a>':''}
+      ${APCUR.guarantee?'<a class="btn gh" onclick="apGuarantee()">Download the guarantee page</a><a class="btn gh" onclick="apUpload(\'guarantee\')">Upload signed guarantee page</a>':''}</div></div>`:'';
   host.innerHTML=`<div class="ph"><div><h1>${esc(a.name)} application</h1><div class="sub">${esc(a.location_name||'')} · ${esc(AP_LABEL[a.status]||a.status)}</div></div>
       <div class="qacts"><a class="btn gh" onclick="apClose()">← All applications</a></div></div>
     <div class="card" style="margin-top:0">
       <div class="lead-note">These answers fill in ${esc(a.name)}'s own application form. Details already on file with HCPS are filled in — check them. ${APCUR.notice?'<b>'+esc(APCUR.notice)+'</b> ':''}Bank account and Social Security numbers are never stored by HCPS: if the form asks for them, the signer types them on the signing screen. <b>The authorised signer signs from their own 360 Dealer Portal login</b> — if that is someone else, they sign in and open this application to sign.</div>
       <div id="apMsg" class="lead-note" role="status" style="min-height:18px"></div>
       ${sec}
-      <div class="qacts" style="margin-top:12px;flex-wrap:wrap">${acts.join(' ')}</div></div>`;
+      <div class="qacts" style="margin-top:12px;flex-wrap:wrap">${acts.join(' ')}</div>${paper}</div>`;
 }
+async function apGuarantee(){ const r=await appsCall({action:'app_guarantee_page',id:APCUR.application.id}); if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not open it.',true); return; } apOpenPdf(r.pdf_base64,r.file); }
+async function apUpload(kind){
+  if(kind==='signed'&&APDIRTY){ const s=await apSave(true); if(!s) return; }
+  const f=$("#apPaper")&&$("#apPaper").files&&$("#apPaper").files[0]; if(!f){ apToast('Choose the PDF first.',true); return; }
+  if(f.size>4*1024*1024){ apToast('Choose a PDF of 4 MB or less.',true); return; }
+  if(kind==='signed'&&!confirm('Send this hand-signed application to HCPS for review? It can no longer be edited afterwards.')) return;
+  const b64=await new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(',')[1]||''); fr.onerror=rej; fr.readAsDataURL(f); });
+  apToast('Uploading…'); const a=APCUR.application;
+  const r=await appsCall({action:'app_upload_paper',id:a.id,version:a.version,kind,pdf_base64:b64}); if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not upload.',true); return; }
+  await apOpen(a.id); apToast(kind==='signed'?'Sent to HCPS for review.':'Guarantee page uploaded.'); }
 function apCollect(){ const o={}; document.querySelectorAll('#view-apply [data-k]').forEach(el=>{ if(el.value) o[el.dataset.k]=el.value; }); return o; }
 async function apSave(quiet){
   if(APBUSY) return false; APBUSY=true; if(!quiet) apToast('Saving…');
@@ -8986,7 +9005,7 @@ async function sfSave(enabled){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfPreview,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfPreview,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};

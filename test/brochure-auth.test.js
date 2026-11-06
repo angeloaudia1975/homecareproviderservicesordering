@@ -31,6 +31,9 @@ global.fetch=async(url,o)=>{ const u=String(url);
   if(u.startsWith('https://sb.test/rest/v1/product_skus')) return {ok:true,json:async()=>(/code=eq\.REC1/.test(u)?[{msrp:199.99}]:/code=eq\.RECNONE/.test(u)?[{msrp:null}]:[])};
   if(u.startsWith('https://sb.test/rest/v1/product_overrides')) return {ok:true,json:async()=>(/code=eq\.OV1/.test(u)?[{patch:{msrp:88}}]:[])};
   if(u.startsWith('https://sb.test/rest/v1/custom_products')) return {ok:true,json:async()=>[]};
+  if(u==='https://homecareproviderservices.netlify.app/.netlify/functions/golden-proxy'){ global.GPROXY=(global.GPROXY||[]).concat([{h:o.headers,b:JSON.parse(o.body)}]);
+    const b=JSON.parse(o.body); const ans=b.code==='PR501-SMA'?{ok:true,price:2499,label:'MSRP',source:'msrp'}:b.code==='GB121'?{ok:true,price:1400,label:'Price',source:'calculated'}:{ok:true,price:null,label:null,source:'none'};
+    return {ok:true,json:async()=>ans}; }
   throw new Error('unexpected '+u); };
 const B=require(path.join(__dirname,'..','netlify','functions','brochure.js'));
 const ev=(body,tok)=>({httpMethod:'POST',headers:tok?{authorization:'Bearer '+tok}:{},body:JSON.stringify(body)});
@@ -81,5 +84,17 @@ await t('review fix: the From display name is quoted; "$" in a message is text; 
   const r=await B.handler(ev({action:'email',product:P,to:'q@x.com',message:"price $' ok"},'good')); ok(r.statusCode===200,r.statusCode);
   const m=sent[sent.length-1]; ok(/^"Acme Branch via HCPS" <[^<>]+>$/.test(m.from),m.from); ok(m.html.includes("price $' ok")&&(m.html.match(/class="sheet"/g)||[]).length===1,'message / duplicated body');
   ok(SENDS[0].dealer_id==='hq',SENDS[0].dealer_id); });
+/* ---- C3-07 P4: Golden's brochure price is read from Golden on the server, never the page's ---- */
+const ghtml=async(pr,tok,hd)=>JSON.parse((await B.handler({httpMethod:'POST',headers:Object.assign(tok?{authorization:'Bearer '+tok}:{},hd||{}),body:JSON.stringify({action:'html',product:pr,include_msrp:true})})).body).html;
+await t('Golden: Golden\'s MSRP read through golden-proxy with the dealer\'s own sign-in; the page\'s figure ignored',async()=>{ global.GPROXY=[];
+  const h=await ghtml({name:'Cloud',code:'PR501-SMA',_mfrSlug:'golden-technologies',msrp:1.23},'good'); ok(h.includes('$2,499.00')&&!h.includes('1.23')&&/suggested retail/i.test(h),'msrp');
+  ok(GPROXY.length===1&&GPROXY[0].b.action==='retail'&&GPROXY[0].b.code==='PR501-SMA'&&GPROXY[0].h.authorization==='Bearer good','proxy call'); });
+await t('Golden: no MSRP → HCPS calculated retail, printed as "Retail price", never as MSRP',async()=>{ const h=await ghtml({name:'Buzz',code:'GB121',_mfrSlug:'golden-technologies',msrp:null},'good');
+  ok(h.includes('$1,400.00')&&/Retail price/.test(h)&&!/suggested retail/i.test(h),'calculated'); });
+await t('Golden: a configured chair is priced by its configuration key; signed out → no price; a posted "calculated" flag is ignored',async()=>{ global.GPROXY=[];
+  await ghtml({name:'Cloud',code:'PR501-SMA',_goldenKey:'PR501-SMA|xover|ABC|irheat|1',_mfrSlug:'golden-technologies'},'good'); ok(GPROXY[0].b.code==='PR501-SMA|xover|ABC|irheat|1','key');
+  const n=GPROXY.length; const h=await ghtml({name:'Cloud',code:'PR501-SMA',_mfrSlug:'golden-technologies',msrp:2499}); ok(GPROXY.length===n&&!h.includes('2,499'),'signed out');
+  const h2=await ghtml({name:'W',code:'REC1',_mfrSlug:'bemis',msrp_calculated:true}); ok(/suggested retail/i.test(h2)&&!/Retail price/.test(h2),'flag from request');
+  const h3=await ghtml({name:'Cloud',code:'PR501-SMA',_mfrSlug:'golden-technologies'},null,{'x-hcps-preview':'a'.repeat(48)}); ok(h3.includes('$2,499.00')&&GPROXY[GPROXY.length-1].h['x-hcps-preview']==='a'.repeat(48),'staff view-as'); });
 console.log(`brochure auth: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
 })();
