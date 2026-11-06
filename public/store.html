@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storefront</title>
+<meta name="description" content="Home medical equipment from your local dealer.">
+<style>
+/* C3-07 Stage 7 — a dealer's public storefront (shareable link /store/<address>). No checkout; prices are the manufacturer's
+   verified MSRP or "Call for Price"; requests go to the dealer. No cookies or local storage; product views are counted
+   anonymously (D4). All data comes from storefront-public and every value is escaped before it is shown. */
+:root{--navy:#0b1f33;--blue:#1681c2;--orange:#ef6325;--ink:#0b0d0f;--ink2:#3d4752;--muted:#6b7480;--line:#e2e6ea;--bg:#f5f7f9;--card:#fff}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);overflow-x:hidden}
+a{color:var(--blue)}button,input,select,textarea{font:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+header.top{background:var(--card);border-bottom:3px solid var(--orange)}
+.top .wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:18px 16px}
+.logo{max-height:64px;max-width:180px;object-fit:contain}
+.who{flex:1 1 260px;min-width:0}.who h1{margin:0;font-size:24px;color:var(--navy)}.who .hl{color:var(--ink2);margin-top:4px}
+.acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 18px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--navy);font-weight:700;text-decoration:none;cursor:pointer}
+.btn.pri{background:var(--orange);border-color:var(--orange);color:#fff}
+.info{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:var(--ink2);padding:10px 16px 16px}
+.about{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:16px 0;white-space:pre-wrap;color:var(--ink2)}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:16px 0}
+.tools input,.tools select{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:16px}
+.tools input{flex:1 1 240px;min-width:0}.tools select{flex:0 1 220px;max-width:100%}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.chip{min-height:44px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:600;color:var(--ink2)}.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:28px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;text-align:left;padding:0}
+.card .im{aspect-ratio:1/1;background:#fff;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line)}
+.card .im img{max-width:88%;max-height:88%;object-fit:contain}
+.card .bd{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.card .ln{font-size:12px;color:var(--muted)}.card .nm{font-weight:700;color:var(--navy);font-size:14.5px;line-height:1.3}
+.price{margin-top:auto;font-weight:800;color:var(--ink)}.price small{font-weight:600;color:var(--muted)}.price.call{color:var(--orange)}
+.empty,.msg{padding:28px;text-align:center;color:var(--muted)}
+.note{font-size:12.5px;color:var(--muted);margin:6px 0 24px}
+.ov{position:fixed;inset:0;background:rgba(11,31,51,.55);display:none;align-items:flex-start;justify-content:center;padding:4vh 12px;z-index:50;overflow:auto}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:16px;max-width:760px;width:100%;padding:20px;position:relative}
+.x{position:absolute;top:8px;right:8px;width:44px;height:44px;border:0;background:transparent;font-size:24px;cursor:pointer;color:var(--ink2)}
+.pd{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:20px}.pd img{width:100%;max-height:340px;object-fit:contain}
+.attrs{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px}.attrs td{border-top:1px solid var(--line);padding:6px 4px;vertical-align:top}.attrs td:first-child{color:var(--muted);width:42%}
+form label{display:block;margin:10px 0;font-size:14px;font-weight:600;color:var(--ink2)}form input,form textarea{width:100%;margin-top:4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:16px}
+.chk{display:flex!important;gap:10px;align-items:flex-start;font-weight:400!important}.chk input{width:22px;height:22px;margin-top:2px;flex:none}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.err{color:#b42318;font-size:14px;min-height:20px}.ok{color:#14532d;font-weight:700}
+footer{border-top:1px solid var(--line);background:#fff;color:var(--muted);font-size:12.5px;padding:16px 0}
+@media(max-width:640px){.pd{grid-template-columns:1fr}.who h1{font-size:20px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.acts{width:100%}.acts .btn{flex:1}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap" id="hdr"><div class="who"><h1>Loading…</h1></div></div><div class="wrap info" id="info"></div></header>
+<main class="wrap" id="main"><div class="msg">Loading products…</div></main>
+<footer><div class="wrap" id="foot">Storefront provided through the HomeCare Provider Services 360 Dealer Portal.</div></footer>
+<div class="ov" id="ov" role="dialog" aria-modal="true"><div class="dlg" id="dlg"></div></div>
+<script>
+(function(){
+  'use strict';
+  var API='https://homecareproviderservices.netlify.app/.netlify/functions/storefront-public';
+  var PH='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#f1f3f5"/><path d="M38 78l14-18 10 12 8-10 12 16z" fill="#c4cad1"/><circle cx="47" cy="47" r="7" fill="#c4cad1"/></svg>');
+  var slug=(location.pathname.match(/\/store\/([a-z0-9-]{3,50})\/?$/i)||[])[1]||new URLSearchParams(location.search).get('s')||'';
+  slug=String(slug).toLowerCase();
+  var D=null, F={line:'',cat:'',q:''}, VIEWQ=[], SEEN={}, LOADED=Date.now();
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function $(id){return document.getElementById(id);}
+  function money(n){return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function tel(p){return String(p||'').replace(/[^0-9+]/g,'');}
+  function img(src,alt){return '<img src="'+esc(src||PH)+'" alt="'+esc(alt)+'" loading="lazy" onerror="this.onerror=null;this.src=\''+PH+'\'">';}
+  function priceHtml(p){return p.price?'<div class="price">'+money(p.price)+' <small>MSRP</small></div>':'<div class="price call">Call for Price</div>';}
+  function fail(msg){document.title='Storefront';$('hdr').innerHTML='<div class="who"><h1>Storefront</h1></div>';$('info').innerHTML='';$('main').innerHTML='<div class="msg">'+esc(msg)+'</div>';}
+  function load(){
+    if(!/^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])$/.test(slug)) return fail('This storefront isn\'t available.');
+    fetch(API+'?s='+encodeURIComponent(slug)).then(function(r){return r.json().then(function(j){return {s:r.status,j:j};});}).then(function(x){
+      if(!x.j||!x.j.ok) return fail((x.j&&x.j.error)||'This storefront isn\'t available.');
+      D=x.j; render();
+    }).catch(function(){fail('This storefront can\'t be shown just now — please try again shortly.');});
+  }
+  function render(){
+    var d=D.dealer; document.title=d.name+' — Storefront';
+    var a=d.address||{}, where=[a.street,a.city,[a.state,a.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    $('hdr').innerHTML=(d.logo?'<img class="logo" src="'+esc(d.logo)+'" alt="'+esc(d.name)+' logo" onerror="this.remove()">':'')+
+      '<div class="who"><h1>'+esc(d.name)+'</h1>'+(d.headline?'<div class="hl">'+esc(d.headline)+'</div>':'')+'</div>'+
+      '<div class="acts">'+(d.phone?'<a class="btn" href="tel:'+esc(tel(d.phone))+'">📞 Call '+esc(d.phone)+'</a>':'')+'<button class="btn pri" type="button" data-ask="">Request information</button></div>';
+    $('info').innerHTML=(where?'<span>📍 '+esc(where)+'</span>':'')+(d.hours?'<span>🕘 '+esc(d.hours)+'</span>':'')+(d.email?'<span>✉️ <a href="mailto:'+esc(d.email)+'">'+esc(d.email)+'</a></span>':'');
+    var cats={}; D.products.forEach(function(p){ if(!F.line||p.manufacturer===F.line) cats[p.category]=1; });
+    $('main').innerHTML=(d.about?'<div class="about">'+esc(d.about)+'</div>':'')+
+      '<div class="tools"><input id="q" type="search" placeholder="Search products" aria-label="Search products" value="'+esc(F.q)+'"><select id="cat" aria-label="Category"><option value="">All categories</option>'+Object.keys(cats).sort().map(function(c){return '<option'+(c===F.cat?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select></div>'+
+      (D.lines.length>1?'<div class="chips"><button type="button" class="chip'+(F.line?'':' on')+'" data-line="">All brands</button>'+D.lines.map(function(l){return '<button type="button" class="chip'+(F.line===l.slug?' on':'')+'" data-line="'+esc(l.slug)+'">'+esc(l.name)+'</button>';}).join('')+'</div>':'')+
+      '<div class="grid" id="grid"></div><div class="note">'+esc(D.price_note)+' Online ordering is not available — call the dealer or send a request.</div>';
+    $('q').addEventListener('input',function(){F.q=this.value;grid();});
+    $('cat').addEventListener('change',function(){F.cat=this.value;grid();});
+    grid();
+  }
+  function shown(){
+    var q=F.q.trim().toLowerCase();
+    return D.products.filter(function(p){ if(F.line&&p.manufacturer!==F.line) return false; if(F.cat&&p.category!==F.cat) return false;
+      if(q&&(p.name+' '+p.code+' '+p.category+' '+(p.brand||'')).toLowerCase().indexOf(q)<0) return false; return true; });
+  }
+  function lineName(s){var l=D.lines.filter(function(x){return x.slug===s;})[0];return l?l.name:'';}
+  function grid(){
+    var list=shown(), g=$('grid'); if(!g) return;
+    if(!list.length){g.innerHTML='<div class="empty">No products match.</div>';return;}
+    g.innerHTML=list.slice(0,300).map(function(p,i){return '<button type="button" class="card" data-i="'+D.products.indexOf(p)+'"><div class="im">'+img(p.image,p.name)+'</div><div class="bd"><div class="ln">'+esc(lineName(p.manufacturer))+'</div><div class="nm">'+esc(p.name)+'</div>'+priceHtml(p)+'</div></button>';}).join('')+
+      (list.length>300?'<div class="empty" style="grid-column:1/-1">Showing 300 of '+list.length+' — search or choose a category to narrow the list.</div>':'');
+  }
+  function view(p){ var k=p.manufacturer+'|'+p.code; if(SEEN[k]) return; SEEN[k]=1; VIEWQ.push({manufacturer:p.manufacturer,code:p.code}); if(VIEWQ.length>=10) flush(); }
+  function flush(){ if(!VIEWQ.length) return; var items=VIEWQ.splice(0,40);
+    try{ fetch(API,{method:'POST',keepalive:true,headers:{'content-type':'text/plain'},body:JSON.stringify({action:'view',s:slug,items:items})}).catch(function(){}); }catch(e){} }
+  setInterval(flush,8000); addEventListener('pagehide',flush);
+  function open(html){ $('dlg').innerHTML='<button class="x" type="button" aria-label="Close" data-close="1">×</button>'+html; $('ov').classList.add('on'); }
+  function close(){ $('ov').classList.remove('on'); $('dlg').innerHTML=''; }
+  function product(p){
+    view(p);
+    var at=Object.keys(p.attributes||{}); var d=D.dealer;
+    open('<div class="pd"><div>'+img(p.image,p.name)+'</div><div><div class="ln">'+esc(lineName(p.manufacturer))+(p.code?' · #'+esc(p.code):'')+'</div><h2 style="margin:4px 0 8px;color:var(--navy)">'+esc(p.name)+'</h2>'+priceHtml(p)+
+      (p.description?'<p style="color:var(--ink2)">'+esc(p.description)+'</p>':'')+
+      (at.length?'<table class="attrs">'+at.map(function(k){return '<tr><td>'+esc(k)+'</td><td>'+esc(p.attributes[k])+'</td></tr>';}).join('')+'</table>':'')+
+      '<div class="acts" style="margin-top:14px">'+(d.phone?'<a class="btn" href="tel:'+esc(tel(d.phone))+'">📞 Call</a>':'')+'<button class="btn pri" type="button" data-ask="'+D.products.indexOf(p)+'">Request information</button></div></div></div>');
+  }
+  function ask(p){
+    open('<h2 style="margin:0 0 4px;color:var(--navy)">Request information</h2><div style="color:var(--ink2)">'+(p?'About: <b>'+esc(p.name)+'</b>':'Send a message to '+esc(D.dealer.name))+'</div>'+
+      '<form id="f" novalidate><label>Your name<input name="name" maxlength="120" autocomplete="name" required></label><label>Email<input name="email" type="email" maxlength="200" autocomplete="email"></label>'+
+      '<label>Phone<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label><label>Message<textarea name="message" rows="4" maxlength="2000"></textarea></label>'+
+      '<div class="hp" aria-hidden="true"><label>Leave empty<input name="hp" tabindex="-1" autocomplete="off"></label></div>'+
+      '<label class="chk"><input type="checkbox" name="consent"> <span>I agree that '+esc(D.dealer.name)+' may contact me about this request.</span></label>'+
+      '<div class="note" style="margin:6px 0">'+esc(D.privacy)+'</div><div class="err" id="ferr"></div><button class="btn pri" type="submit" id="fsend">Send request</button></form>');
+    $('f').addEventListener('submit',function(ev){ ev.preventDefault(); var f=ev.target, b=$('fsend');
+      var body={action:'inquiry',s:slug,name:f.name.value,email:f.email.value,phone:f.phone.value,message:f.message.value,hp:f.hp.value,consent:f.consent.checked};
+      if(p) body.product={manufacturer:p.manufacturer,code:p.code,name:p.name};
+      if(Date.now()-LOADED<2500){ $('ferr').textContent='Please take a moment to fill in the form.'; return; }
+      b.disabled=true; $('ferr').textContent='';
+      fetch(API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(j){
+        if(j&&j.ok){ $('dlg').innerHTML='<button class="x" type="button" aria-label="Close" data-close="1">×</button><h2 style="color:var(--navy)">Thank you</h2><p class="ok">Your request was sent to '+esc(D.dealer.name)+'.</p><p>They will contact you soon.'+(D.dealer.phone?' To talk now, call <a href="tel:'+esc(tel(D.dealer.phone))+'">'+esc(D.dealer.phone)+'</a>.':'')+'</p>'; return; }
+        b.disabled=false; $('ferr').textContent=(j&&j.error)||'Your request could not be sent — please call the dealer.';
+      }).catch(function(){ b.disabled=false; $('ferr').textContent='Your request could not be sent — please call the dealer.'; });
+    });
+  }
+  document.addEventListener('click',function(e){
+    var t=e.target.closest?e.target:null; if(!t) return;
+    if(t.closest('[data-close]')||t.id==='ov'){ close(); return; }
+    var c=t.closest('[data-line]'); if(c){ F.line=c.getAttribute('data-line'); F.cat=''; render(); return; }
+    var k=t.closest('.card[data-i]'); if(k){ product(D.products[+k.getAttribute('data-i')]); return; }
+    var a=t.closest('[data-ask]'); if(a){ var i=a.getAttribute('data-ask'); ask(i===''?null:D.products[+i]); }
+  });
+  addEventListener('keydown',function(e){ if(e.key==='Escape') close(); });
+  load();
+})();
+</script>
+</body>
+</html>
