@@ -36,11 +36,11 @@ function world(entitled){
     withUpgrade:(p,l)=>{ const u=(p.upgrades||[]).find(x=>x.label===l); return u?Object.assign({},p,{_upgrade:l,base_price:p.base_price+u.price_add,msrp:Math.round((p.msrp*(p.base_price+u.price_add)/p.base_price)*100)/100}):null; },
     msrpIsEach:p=>!!(p&&p.case_qty>1&&p.msrp_each===true),
     money:v=>'$'+Number(v).toFixed(2), esc:s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'),
-    brandLogoHtml:()=>'', PROFILE:{name:'Dealer X'}, QCUST:{name:'',valid:'30 days'}, FAVS:new Set(), BRANDING:{}, encodeURIComponent };
+    brandLogoHtml:()=>'', PROFILE:{name:'Dealer X'}, QCUST:{name:'',valid:'30 days'}, FAVS:new Set(), BRANDING:{}, encodeURIComponent, location:{origin:'https://p360.test'} };
   const els={}; ctx.$=sel=>els[sel]||(els[sel]={innerHTML:'',value:''}); ctx.els=els;
   vm.createContext(ctx);
-  vm.runInContext('var PRICE=null,PRICELIST=null,QUOTELIST=null,MFRLIST=null,QUOTE=[],QSEARCH="",QUOTE_UNAVAILABLE=[],_quoteSig=null,_quoteBuild=null;'+
-    retiredDecls(H)+'\n'+extract(H)+'\n'+grabDecl(H,'function axesOf')+'\n'+['quotableLine','quoteOptionText','quoteEntry','hubStoreCatalog','ensureQuoteCatalog','buildQuoteCatalog','loadPricing','quoteMsrp','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qDelAt','qFilter'].map(grab).join('\n')+
+  vm.runInContext('var QMETA={},QSNAP={},QSAVED=null,QLIST=[],QDIRTY=false,RETAIL=null,AC=null,QLOCRETAIL=null; const qIsUpgrade=k=>/\\|u=/.test(k); function qLoadList(){}\nvar PRICE=null,PRICELIST=null,QUOTELIST=null,MFRLIST=null,QUOTE=[],QSEARCH="",QUOTE_UNAVAILABLE=[],_quoteSig=null,_quoteBuild=null;'+
+    retiredDecls(H)+'\n'+extract(H)+'\n'+grabDecl(H,'function axesOf')+'\n'+['quotableLine','quoteOptionText','quoteEntry','hubStoreCatalog','ensureQuoteCatalog','buildQuoteCatalog','loadPricing','quoteMsrp','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qDelAt','qFilter','quoteImg','qSaved','qMsrpOk','qMeta','qUnit','qMoney','qLineHtml','qListHtml'].map(grab).join('\n')+
     ';this.S=()=>({PRICE,PRICELIST,QUOTELIST,QUOTE_UNAVAILABLE,QUOTE}); this.setQ=q=>{QUOTE=q;};',ctx);
   ctx.ent=entitled; return ctx;
 }
@@ -63,7 +63,10 @@ await t('the customer quote shows name, options, part #, MSRP or "MSRP not provi
   w.renderQuotes(); const paper=w.els['#view-quotes'].innerHTML;
   for(const s of ['Walker','Small','#A1','Large','#A2','Upgrade: Handrail &#39;Pro&#39;','$30.00 each','MSRP not provided']) if(!paper.includes(s)) throw new Error('missing '+s);
   for(const s of ['$50.00','$55.00','$40.00','$80.00','$400.00','$450.00','$100.00']) if(paper.includes(s)) throw new Error('dealer cost or derived MSRP shown: '+s);
-  const picked=w.quotePicked(); eq(w.quoteTotal(picked),120+675+30,'A1 + upgraded A5 + BC1 each'); });
+  const picked=w.quotePicked(); /* C3-07 Stage 4 review: an upgraded configuration has no verified manufacturer MSRP (the storefront's scaled figure is
+     not the manufacturer's), so it is "MSRP not provided" and out of the total — as the server-rendered quote prints it. */
+  eq(w.quoteTotal(picked),120+30,'A1 + BC1 each (upgrade: no verified MSRP)');
+  if(!/Handrail[\s\S]{0,600}MSRP not provided/.test(paper)) throw new Error('upgrade line not "MSRP not provided"'); });
 await t('search narrows by name, option or part number; Remove takes out exactly that line (upgrades included)',async()=>{
   const w=world(['line-a','line-b']); await w.loadPricing(); w.renderQuotes();
   w.qFilter('walker large'); eq((w.els['#qsel'].innerHTML.match(/<option /g)||[]).length,1); if(!/value="line-a\|A2"/.test(w.els['#qsel'].innerHTML)) throw new Error('A2 not found');

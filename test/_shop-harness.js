@@ -26,6 +26,7 @@ async function open(browser, w, h, opts) {
     if (u.origin === HOST && !u.pathname.startsWith('/.netlify/')) {
       let f = path.join(PUB, decodeURIComponent(u.pathname)); if (u.pathname === '/' || !path.extname(f)) f = path.join(PUB, 'index.html');
       if (!fs.existsSync(f)) return route.fulfill({ status: 404, body: '' });
+      if (opts.html && f.endsWith('index.html')) return route.fulfill({ status: 200, contentType: 'text/html', body: opts.html(fs.readFileSync(f, 'utf8')) });   // a test may add a probe
       return route.fulfill({ status: 200, contentType: TYPES[path.extname(f)] || 'application/octet-stream', body: fs.readFileSync(f) });
     }
     if (/\/functions\/dealer-auth/.test(u.pathname) && req.method() === 'POST')
