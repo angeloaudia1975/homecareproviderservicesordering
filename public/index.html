@@ -7516,7 +7516,7 @@ const HISTORY_ENDPOINT=API_BASE+"/order-history-api";
 const TOOLS_ENDPOINT=API_BASE+"/dealer-tools-api";
 
 const $=s=>document.querySelector(s);
-const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=n=>"$"+Math.round(Number(n)||0).toLocaleString();
 /* An ORDER's amount is shown to the cent and includes the freight the server stored on it (agreed
    2026-10-09): My Orders and the dashboard's recent orders read the same total as the dealer's
@@ -8795,7 +8795,7 @@ async function loadStorefrontView(){
   const host=$("#view-storefront"); if(!host) return; host.innerHTML='<div class="msg">Loading your storefront…</div>';
   const [g,q]=await Promise.all([api(SF_API,{action:'sf_get'}),api(SF_API,{action:'sf_inquiries'})]);
   if(!g||!g.ok){ host.innerHTML=`<div class="ph"><div><h1>My Storefront</h1></div></div><div class="card"><div class="msg">${esc((g&&g.error)||'Your storefront could not be loaded just now — please try again.')}</div><a class="btn pri" onclick="loadStorefrontView()">Try again</a></div>`; return; }
-  SFD=g; SFINQ=(q&&q.ok&&q.inquiries)||[]; if(!SFLOC||!SFD.locations.some(l=>l.id===SFLOC)) SFLOC=(SFD.locations.find(l=>l.can_edit)||SFD.locations[0]||{}).id;
+  SFD=g; SFINQ=(q&&q.ok&&q.inquiries)||[]; SFD.hidden_in_preview=!!(q&&q.hidden_in_preview); if(!SFLOC||!SFD.locations.some(l=>l.id===SFLOC)) SFLOC=(SFD.locations.find(l=>l.can_edit)||SFD.locations[0]||{}).id;
   renderStorefront();
 }
 function sfLoc(v){ SFLOC=v; renderStorefront(); }
@@ -8817,8 +8817,9 @@ function renderStorefront(){
     <label class="sf-check"><input type="checkbox" id="sfOn"${s.enabled?' checked':''}${dis}> Storefront is on (anyone with the link can see it)</label>
     <label class="fld2"><span class="rp-l">Headline</span><input id="sfHead" maxlength="120" value="${esc(s.headline||'')}" placeholder="e.g. Home medical equipment for Dayton families"${dis}></label>
     <label class="fld2"><span class="rp-l">About your business</span><textarea id="sfAbout" maxlength="1500" rows="4"${dis}>${esc(s.about||'')}</textarea></label>
-    <div class="sf-row"><label class="fld2"><span class="rp-l">Phone for customers</span><input id="sfPhone" maxlength="40" value="${esc(s.phone||'')}" placeholder="${esc(L.default_phone||'')}"${dis}></label>
-     <label class="fld2"><span class="rp-l">Email for requests</span><input id="sfEmail" type="email" maxlength="200" value="${esc(s.email||'')}" placeholder="${esc(L.default_email||'')}"${dis}></label></div>
+    <div class="sf-row"><label class="fld2"><span class="rp-l">Phone for customers (shown publicly)</span><input id="sfPhone" maxlength="40" value="${esc(L.storefront?(s.phone||''):(L.default_phone||''))}"${dis}></label>
+     <label class="fld2"><span class="rp-l">Email for requests (shown publicly)</span><input id="sfEmail" type="email" maxlength="200" value="${esc(L.storefront?(s.email||''):(L.default_email||''))}"${dis}></label></div>
+    <div class="sf-note">Only the phone and email entered here appear on your storefront — clear one to keep it private. Requests are emailed to the address above.</div>
     <label class="fld2"><span class="rp-l">Hours</span><input id="sfHours" maxlength="300" value="${esc(s.hours||'')}" placeholder="e.g. Mon–Fri 9–5, Sat 9–12"${dis}></label>
     <label class="sf-check"><input type="checkbox" id="sfAddr"${s.show_address===false?'':' checked'}${dis}> Show my street address</label>
     <label class="fld2"><span class="rp-l">Prices</span><select id="sfPrice"${dis}><option value="msrp"${s.price_mode!=='call'?' selected':''}>Show the manufacturer's MSRP where HCPS has verified it — otherwise "Call for Price"</option><option value="call"${s.price_mode==='call'?' selected':''}>"Call for Price" on everything</option></select></label>
@@ -8828,8 +8829,8 @@ function renderStorefront(){
     ${ed?`<a class="btn pri" id="sfSave" onclick="sfSave()">Save storefront</a> <span id="sfMsg" class="sf-msg"></span>`:''}
    </div>
    <div class="card sf-card"><div class="sf-head"><h3>Customer requests</h3><span class="sf-pill">${inq.filter(x=>x.status==='new').length} new</span></div>
-    <div class="sf-note">Requests sent from your storefront. They are emailed to you and kept here for 24 months; delete one at any time.</div>
-    ${inq.length?inq.map(x=>`<div class="sf-inq${x.status==='new'?' new':''}"><div class="sf-inq-h"><b>${esc(x.name)}</b><span>${esc(new Date(x.created_at).toLocaleDateString())}</span></div>
+    <div class="sf-note">Requests sent from your storefront. They are emailed to you and kept here for 24 months; delete one at any time. Copies in your own mailbox are yours to keep or delete.</div>
+    ${SFD.hidden_in_preview?'<div class="msg">Customer requests are not shown in a preview — they stay with the dealer.</div>':inq.length?inq.map(x=>`<div class="sf-inq${x.status==='new'?' new':''}"><div class="sf-inq-h"><b>${esc(x.name)}</b><span>${esc(new Date(x.created_at).toLocaleDateString())}</span></div>
       <div>${x.email?`<a href="mailto:${esc(x.email)}">${esc(x.email)}</a>`:''}${x.email&&x.phone?' · ':''}${x.phone?`<a href="tel:${esc(String(x.phone).replace(/[^0-9+]/g,''))}">${esc(x.phone)}</a>`:''}</div>
       ${x.product_name?`<div class="sf-s">About: ${esc(x.product_name)}${x.product_code?' (#'+esc(x.product_code)+')':''}</div>`:''}${x.message?`<div class="sf-msgtxt">${esc(x.message)}</div>`:''}
       ${ed?`<div class="sf-act"><a class="btn gh" onclick="sfInq('${esc(x.id)}','${x.status==='new'?'handled':'new'}')">${x.status==='new'?'Mark handled':'Mark new'}</a><a class="btn gh" onclick="sfInqDel('${esc(x.id)}')">Delete</a></div>`:''}</div>`).join(''):'<div class="msg">No requests yet.</div>'}

@@ -19,13 +19,18 @@ const PUBLIC = { ok: true, dealer: { name: 'Acme <script>x</script> Medical', he
   lines: [{ slug: 'bemis', name: 'Bemis', count: 2 }, { slug: 'strongback', name: 'Strongback', count: 1 }],
   products: [{ manufacturer: 'bemis', code: 'B1', name: 'Raised seat', category: 'Bath Safety', description: 'Nice <b>seat</b>', image: '/assets/products/bemis/B1.jpg', attributes: { Width: '18"' }, price: 99.99, price_label: 'MSRP' },
     { manufacturer: 'bemis', code: 'B2', name: 'Grab bar', category: 'Bath Safety', image: '/assets/missing.jpg', attributes: {}, price: null, price_label: 'Call for Price' },
-    { manufacturer: 'strongback', code: 'S1', name: 'Excursion chair', category: 'Wheelchairs', image: null, attributes: {}, price: null, price_label: 'Call for Price' }],
+    { manufacturer: 'strongback', code: 'S1', name: 'Excursion chair', category: 'Wheelchairs', image: null, attributes: {}, price: null, price_label: 'Call for Price' },
+    { manufacturer: 'bemis', code: 'B9', name: 'Seat case', category: 'Parts', image: null, attributes: {}, price: 120, price_label: 'MSRP', price_unit: 'per Case (2 each)' }],
   price_note: 'Prices shown are the manufacturer\'s suggested retail price (MSRP).', privacy: 'Your request is sent only to this dealer…' };
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
+/* the live Content-Security-Policy, read from netlify.toml — the page must work under it (no inline script) */
+const CSP = (fs.readFileSync(path.join(PUB, '..', 'netlify.toml'), 'utf8').match(/for = "\/store\.html"[\s\S]*?Content-Security-Policy = "([^"]+)"/) || [])[1];
+if (!CSP) { console.log('FAIL no CSP for /store.html in netlify.toml'); process.exit(1); }
 async function publicPage(browser, w, h) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: w < 768, hasTouch: w < 1024 });
-  const page = await ctx.newPage(); const st = { posts: [] };
+  const page = await ctx.newPage(); const st = { posts: [], csp: [] };
+  page.on('console', (m) => { if (/Content Security Policy/i.test(m.text())) st.csp.push(m.text()); });
   await page.route('**/*', async (route) => { const req = route.request(), u = new URL(req.url());
     if (u.host === 'homecareproviderservices.netlify.app' && /storefront-public/.test(u.pathname)) {
       if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS, body: '' });
@@ -33,7 +38,8 @@ async function publicPage(browser, w, h) {
       const b = JSON.parse(req.postData() || '{}'); st.posts.push(b);
       if (b.action === 'inquiry' && b.consent !== true) return route.fulfill({ status: 400, contentType: 'application/json', headers: CORS, body: JSON.stringify({ ok: false, error: 'Please agree to the dealer contacting you about your request.' }) });
       return route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: '{"ok":true}' }); }
-    if (u.origin === HOST && u.pathname.startsWith('/store/')) return route.fulfill({ status: 200, contentType: 'text/html', body: fs.readFileSync(path.join(PUB, 'store.html')) });
+    if (u.origin === HOST && u.pathname.startsWith('/store/')) return route.fulfill({ status: 200, contentType: 'text/html', headers: { 'content-security-policy': CSP }, body: fs.readFileSync(path.join(PUB, 'store.html')) });
+    if (u.origin === HOST && u.pathname === '/store.js') return route.fulfill({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(path.join(PUB, 'store.js')) });
     if (u.origin === HOST && u.pathname === '/assets/products/bemis/B1.jpg') return route.fulfill({ status: 200, contentType: 'image/png', body: PNG });
     return route.fulfill({ status: 404, body: '' }); });
   await page.goto(HOST + '/store/acme-medical'); await page.waitForSelector('.card');
@@ -53,7 +59,8 @@ const layout = (page, sel) => page.evaluate((sel) => {
       const { ctx, page, st } = await publicPage(browser, w, h);
       await t(label + ': public page shows the dealer (escaped), a Call link and products with MSRP or Call for Price', async () => {
         const r = await page.evaluate(() => [document.querySelector('h1').textContent, !!document.querySelector('h1 script'), document.querySelector('a[href^="tel:"]').getAttribute('href'), [...document.querySelectorAll('.card')].map((c) => c.querySelector('.price').textContent)]);
-        ok(r[0] === 'Acme <script>x</script> Medical' && !r[1], 'name escaped'); ok(r[2] === 'tel:5550100100', r[2]); ok(JSON.stringify(r[3]) === JSON.stringify(['$99.99 MSRP', 'Call for Price', 'Call for Price']), JSON.stringify(r[3]));
+        ok(r[0] === 'Acme <script>x</script> Medical' && !r[1], 'name escaped'); ok(r[2] === 'tel:5550100100', r[2]); ok(JSON.stringify(r[3]) === JSON.stringify(['$99.99 MSRP', 'Call for Price', 'Call for Price', '$120.00 MSRP per Case (2 each)']), JSON.stringify(r[3]));
+        ok(!st.csp.length, 'CSP violations: ' + st.csp.join(' | '));
       });
       await page.waitForTimeout(400);
       await t(label + ': a missing photo becomes a placeholder (never a broken image)', async () => ok(await page.evaluate(() => [...document.querySelectorAll('.card img')].every((i) => i.complete && i.naturalWidth > 0)), 'broken image'));
@@ -65,6 +72,12 @@ const layout = (page, sel) => page.evaluate((sel) => {
       const L = await layout(page, '.btn, .chip, .tools input, .tools select');
       await t(label + ': no horizontal scroll; 44 px targets; 16 px inputs', () => { ok(L.overflow <= 1, 'overflow ' + L.overflow); ok(!L.small.length, 'small: ' + L.small.join('|')); ok(!L.tiny, 'tiny inputs'); });
       await page.click('.card[data-i="0"]'); await page.waitForSelector('.pd');
+      await t(label + ': the product dialog takes focus, is named, keeps Tab inside and gives focus back on Escape', async () => {
+        const f = await page.evaluate(() => [document.getElementById('ov').getAttribute('aria-label'), document.getElementById('dlg').contains(document.activeElement)]);
+        ok(f[0] === 'Raised seat' && f[1], JSON.stringify(f));
+        for (let i = 0; i < 6; i++) await page.keyboard.press('Tab'); ok(await page.evaluate(() => document.getElementById('dlg').contains(document.activeElement)), 'tab escaped the dialog');
+        await page.keyboard.press('Escape'); ok(await page.evaluate(() => !document.getElementById('ov').classList.contains('on') && document.activeElement && document.activeElement.matches('.card[data-i="0"]')), 'focus not returned');
+        await page.click('.card[data-i="0"]'); await page.waitForSelector('.pd'); });
       await t(label + ': a product opens with its details (escaped) and counts one anonymous view', async () => {
         ok(await page.evaluate(() => document.querySelector('.pd p').textContent === 'Nice <b>seat</b>' && !document.querySelector('.pd p b')), 'description escaped');
         await page.evaluate(() => dispatchEvent(new Event('pagehide'))); await page.waitForTimeout(300);
