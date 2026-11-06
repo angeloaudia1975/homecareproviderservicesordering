@@ -1,8 +1,15 @@
 {
   "review_id": "79d276de2d0d",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T17:59:13Z",
+  "built_at": "2026-11-06T18:28:40Z",
   "main": "5a4a1ff0fcdc73e11cc624a627a3901702b2cf92",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 58,
+      "title": "C3-07 Stage 7: public storefront page + My Storefront",
+      "branch": "c7/s7-storefront",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
