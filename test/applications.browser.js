@@ -51,7 +51,7 @@ const layout = (page) => page.evaluate(() => {
       const { ctx, page } = await open(browser, w, h, {});
       await fake(page, S);
       await page.evaluate(() => { PREVIEW = null; window.__PREVIEW__ = null; AUTH.session = { access_token: 'tok' }; window.ensureFreshSession = async () => {}; window.confirm = () => true;
-        window.__opened = []; window.open = (u) => { window.__opened.push(String(u)); return {}; }; });
+        window.__opened = []; window.open = (u) => { const w = { closed: false, opener: 1, location: { href: String(u) }, close() { this.closed = true; } }; window.__opened.push(w); return w; }; });
       await page.evaluate(() => showP360('apply'));
       await page.waitForFunction(() => /Manufacturer Account Setup/.test((document.querySelector('#view-apply') || {}).innerText || '') && /Access4U/.test(document.querySelector('#view-apply').innerText), null, { timeout: 20000 });
       const list = await page.evaluate(() => document.querySelector('#view-apply').innerText);
@@ -66,13 +66,13 @@ const layout = (page) => page.evaluate(() => {
       await t(label + ': typing marks it changed and Save sends exactly the typed answers (inline handlers reach the page code)', () => {
         const s = S.calls.filter((c) => c.action === 'app_save').pop(); ok(s && s.answers['biz.ein'] === '00-0000000' && s.answers['biz.entity'] === 'llc' && s.answers['signer.name'] === 'Jordan Owner' && s.version === 1, JSON.stringify(s)); });
       await page.evaluate(() => apPreview()); await page.waitForTimeout(400);
-      await t(label + ': Review opens the completed PDF', async () => ok((await page.evaluate(() => window.__opened)).some((u) => /^blob:/.test(u)), 'pdf not opened'));
+      await t(label + ': Review opens the completed PDF', async () => ok((await page.evaluate(() => window.__opened.map((w) => w.location.href))).some((u) => /^blob:/.test(u)), 'pdf not opened'));
       const L = await layout(page);
       await t(label + ': no horizontal scroll' + (w < 768 ? '; 16 px inputs and 44 px targets on phones' : ''), () => { ok(L.overflow <= 1, 'overflow ' + L.overflow); if (w < 768) { ok(!L.tiny, 'small inputs ' + L.tiny); ok(!L.small.length, 'small: ' + L.small.join(' | ')); } });
       await page.evaluate(() => apSign()); await page.waitForTimeout(600);
       await t(label + ': Sign saves first, then opens the signing link in a new tab', async () => {
         const acts = S.calls.map((c) => c.action); const i = acts.lastIndexOf('app_sign'); ok(i > 0 && acts[i - 1] === 'app_save', acts.join(','));
-        ok((await page.evaluate(() => window.__opened)).includes('https://app.documenso.com/sign/tok1'), 'link'); });
+        const tabs = await page.evaluate(() => window.__opened.map((w) => [w.location.href, w.opener, w.closed])); ok(tabs.some((x) => x[0] === 'https://app.documenso.com/sign/tok1' && x[1] === null && !x[2]), JSON.stringify(tabs)); });
       await t(label + ': while with the signer the form is read only, with "Continue to signing"', async () => {
         const r = await page.evaluate(() => [document.querySelector('[data-k="biz.ein"]').disabled, /Continue to signing/.test(document.querySelector('#view-apply').innerText)]); ok(r[0] && r[1], JSON.stringify(r)); });
       if (label === 'desktop') {

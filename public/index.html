@@ -8485,7 +8485,7 @@ function renderApply(){
   host.innerHTML=`<div class="ph"><div><h1>${esc(a.name)} application</h1><div class="sub">${esc(a.location_name||'')} · ${esc(AP_LABEL[a.status]||a.status)}</div></div>
       <div class="qacts"><a class="btn gh" onclick="apClose()">← All applications</a></div></div>
     <div class="card" style="margin-top:0">
-      <div class="lead-note">These answers fill in ${esc(a.name)}'s own application form. Details already on file with HCPS are filled in — check them. ${APCUR.notice?'<b>'+esc(APCUR.notice)+'</b> ':''}Bank account and Social Security numbers are never stored by HCPS: if the form asks for them, the signer types them on the signing screen.</div>
+      <div class="lead-note">These answers fill in ${esc(a.name)}'s own application form. Details already on file with HCPS are filled in — check them. ${APCUR.notice?'<b>'+esc(APCUR.notice)+'</b> ':''}Bank account and Social Security numbers are never stored by HCPS: if the form asks for them, the signer types them on the signing screen. <b>The authorised signer signs from their own 360 Dealer Portal login</b> — if that is someone else, they sign in and open this application to sign.</div>
       <div id="apMsg" class="lead-note" role="status" style="min-height:18px"></div>
       ${sec}
       <div class="qacts" style="margin-top:12px;flex-wrap:wrap">${acts.join(' ')}</div></div>`;
@@ -8500,9 +8500,15 @@ async function apSave(quiet){
   return r;
 }
 function apOpenPdf(b64,name){ const bin=atob(b64), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
-  const url=URL.createObjectURL(new Blob([u8],{type:'application/pdf'})); const w=window.open(url,'_blank','noopener');
+  const url=URL.createObjectURL(new Blob([u8],{type:'application/pdf'}));
+  /* a same-origin blob tab (no "noopener": that always returns null and would force a download of the dealer's credit
+     details); only a blocked pop-up falls back to a download */
+  const w=window.open(url,'_blank');
   if(!w){ const l=document.createElement('a'); l.href=url; l.download=name||'application.pdf'; document.body.appendChild(l); l.click(); l.remove(); }
-  setTimeout(()=>URL.revokeObjectURL(url),60000); }
+  setTimeout(()=>URL.revokeObjectURL(url),120000); }
+/* the signing page opens from the click itself (a tab opened after an await is pop-up-blocked), then is sent to the link */
+function apTab(){ let w=null; try{ w=window.open('about:blank','_blank'); if(w) w.opener=null; }catch(e){} return w; }
+function apGo(w,url){ if(w&&!w.closed){ try{ w.location.href=url; return; }catch(e){} } window.location.href=url; }
 async function apPreview(){ if(APDIRTY){ const s=await apSave(true); if(!s) return; } apToast('Building the completed form…');
   const r=await appsCall({action:'app_preview',id:APCUR.application.id}); if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not build it.',true); return; }
   apOpenPdf(r.pdf_base64,r.file); apToast('Opened the completed form — the orange boxes show where the signer signs.'); }
@@ -8513,15 +8519,16 @@ async function apSign(){
   if(!APCUR.signing){ apToast('Electronic signing opens shortly — use “Print to sign by hand” meanwhile.',true); return; }
   const s=await apSave(true); if(!s) return;
   if(s.missing&&s.missing.length){ apToast('Please complete: '+s.missing.slice(0,6).join(', ')+(s.missing.length>6?'…':''),true); return; }
-  if(!confirm('Send this application to the signer? It can no longer be edited after this (you can withdraw it).')) return;
-  apToast('Preparing the signing document…');
+  if(!confirm('Sign this application now? It can no longer be edited after this (you can withdraw it).')) return;
+  const tab=apTab(); apToast('Preparing the signing document…');
   const r=await appsCall({action:'app_sign',id:APCUR.application.id,version:APCUR.application.version});
-  if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not prepare it.',true); return; }
+  if(!(r&&r.ok)){ if(tab) tab.close(); apToast((r&&r.error)||'Could not prepare it.',true); return; }
+  if(!r.url&&tab) tab.close();
   if(r.queued){ await apOpen(APCUR.application.id); apToast('This month’s free signing slots are used — HCPS has been told and will send it for signing. You can also print it to sign by hand.'); return; }
-  await apOpen(APCUR.application.id); if(r.url) window.open(r.url,'_blank','noopener');
+  await apOpen(APCUR.application.id); if(r.url) apGo(tab,r.url);
   apToast('The signing page opened in a new tab. Come back and press “I signed it — check” when done.');
 }
-async function apLink(){ const r=await appsCall({action:'app_signing_link',id:APCUR.application.id}); if(r&&r.ok&&r.url) window.open(r.url,'_blank','noopener'); else apToast((r&&r.error)||'Could not open it.',true); }
+async function apLink(){ const tab=apTab(); const r=await appsCall({action:'app_signing_link',id:APCUR.application.id}); if(r&&r.ok&&r.url) apGo(tab,r.url); else { if(tab) tab.close(); apToast((r&&r.error)||'Could not open it.',true); } }
 async function apRefresh(){ const r=await appsCall({action:'app_refresh',id:APCUR.application.id}); if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not check just now.',true); return; }
   await apOpen(APCUR.application.id); apToast(r.application&&/signed/.test(r.application.status)?'Signed — HCPS has it now.':'Not signed yet.'); }
 async function apWithdraw(){ if(!confirm('Withdraw this application?')) return; const r=await appsCall({action:'app_withdraw',id:APCUR.application.id});
