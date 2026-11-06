@@ -27,11 +27,13 @@ function fake(page, S) {
       applications: app ? [{ id: app.id, manufacturer: app.manufacturer, name: 'Access4U', location_id: 'hq', status: app.status, version: app.version, updated_at: '2026-11-05T12:00:00Z' }] : [] });
     if (b.action === 'app_start') { S.app = { id: 'a1', manufacturer: b.manufacturer, status: 'draft', version: 1, answers: { 'biz.legal_name': 'TEST Medical', 'signer.email': 'owner@example.invalid' } }; return reply(route, { ok: true, application: { id: 'a1', version: 1 } }); }
     if (b.action === 'app_get') return reply(route, { ok: true, application: { id: app.id, manufacturer: app.manufacturer, name: 'Access4U', location_name: 'TEST HQ', status: app.status, version: app.version, answers: app.answers },
-      sections: SECTIONS, entities: { corporation: 'Corporation', llc: 'LLC' }, notice: '', can_edit: ['draft', 'signing_failed', 'queued'].includes(app.status), signing: true });
+      sections: SECTIONS, entities: { corporation: 'Corporation', llc: 'LLC' }, notice: '', can_edit: ['draft', 'signing_failed', 'queued'].includes(app.status), signing: true, guarantee: !!S.guarantee });
     if (b.action === 'app_save') { if (b.version !== app.version) return reply(route, { ok: false, error: 'changed' }, 409); app.version++; app.answers = b.answers;
       const miss = ['biz.ein', 'signer.name'].filter((k) => !b.answers[k]); return reply(route, { ok: true, application: { id: app.id, version: app.version, status: 'draft' }, missing: miss }); }
     if (b.action === 'app_preview' || b.action === 'app_offline') return reply(route, { ok: true, pdf_base64: Buffer.from('%PDF-1.4 test').toString('base64'), file: 'access4u-application.pdf' });
     if (b.action === 'app_sign') { if (S.queue) { app.status = 'queued'; return reply(route, { ok: true, queued: true }); } app.status = 'signing'; return reply(route, { ok: true, url: 'https://app.documenso.com/sign/tok1' }); }
+    if (b.action === 'app_upload_paper') { S.upload = b; if (b.kind === 'signed') { app.status = 'offline_signed'; app.version++; } return reply(route, { ok: true, application: { id: app.id, status: app.status, version: app.version } }); }
+    if (b.action === 'app_guarantee_page') return reply(route, { ok: true, pdf_base64: Buffer.from('%PDF-1.4 page4').toString('base64'), file: 'dalton-personal-guarantee.pdf' });
     if (b.action === 'app_signing_link') return reply(route, { ok: true, url: 'https://app.documenso.com/sign/tok1' });
     return reply(route, { ok: false }, 400);
   });
@@ -79,6 +81,18 @@ const layout = (page) => page.evaluate(() => {
         S.app.status = 'draft'; S.queue = true; await page.evaluate(() => apOpen('a1')); await page.waitForTimeout(300);
         await page.evaluate(() => apSign()); await page.waitForTimeout(600);
         await t('the free monthly limit → "HCPS has been told", no signing tab', async () => ok(/HCPS has been told/.test(await page.evaluate(() => document.querySelector('#apMsg') ? document.querySelector('#apMsg').innerText : document.body.innerText)), 'message'));
+        /* Stage 5 follow-ups: a hand-signed copy is uploaded; a guarantee page is downloaded and uploaded */
+        S.app.status = 'draft'; S.queue = false; S.guarantee = true; await page.evaluate(() => apOpen('a1')); await page.waitForTimeout(300);
+        await page.setInputFiles('#apPaper', { name: 'signed.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n' + 'x'.repeat(300)) });
+        await page.evaluate(() => apGuarantee()); await page.waitForTimeout(300);
+        await page.evaluate(() => apUpload('guarantee')); await page.waitForTimeout(500);
+        await t('guarantee page: downloaded to print, the hand-signed page uploaded (base64 PDF)', async () => {
+          ok(S.calls.some((c) => c.action === 'app_guarantee_page'), 'download'); ok(S.upload && S.upload.kind === 'guarantee' && Buffer.from(S.upload.pdf_base64, 'base64').slice(0, 5).toString() === '%PDF-', JSON.stringify(S.upload && S.upload.kind)); });
+        await page.setInputFiles('#apPaper', { name: 'signed.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n' + 'y'.repeat(300)) });
+        await page.evaluate(() => apUpload('signed')); await page.waitForTimeout(600);
+        await t('hand-signed application: saved first, uploaded, then read only (with HCPS for review)', async () => {
+          const acts = S.calls.map((c) => c.action); const i = acts.lastIndexOf('app_upload_paper'); ok(S.upload.kind === 'signed' && i > 0, acts.join(','));
+          ok(await page.evaluate(() => document.querySelector('[data-k="biz.ein"]').disabled), 'read only'); });
         await page.evaluate(() => showP360('account')); await page.waitForTimeout(1500);
       }
       await ctx.close();
