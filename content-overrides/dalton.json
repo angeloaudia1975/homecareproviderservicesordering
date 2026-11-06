@@ -16150,10 +16150,17 @@
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/r-cart-6-oxygen-cart-6-sets-box/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/r-cart-6-oxygen-cart-6-sets-box/ (read 2026-11-03)",
    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/r-cart-6-oxygen-cart-6-sets-box/ (read 2026-11-03)",
-   "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
+   "images": "2026-11-05: wrong photos removed by the owner (Dalton photo review export); correct cart photo supplied by the owner the same day"
   },
-  "image": "",
-  "images_gallery": []
+  "image": "/assets/products/dalton/gallery/b1c10301f0610fd9e153.jpg",
+  "images_gallery": [
+   {
+    "url": "/assets/products/dalton/gallery/b1c10301f0610fd9e153.jpg",
+    "primary": true,
+    "caption": "",
+    "source": "owner-supplied photo (Angelo Audia, 2026-11-05)"
+   }
+  ]
  },
  "oxygen-cpap-tubing-adaptor-10-pk": {
   "description": "The Dalton Medical R-RES019 is an oxygen enrichment adapter that supports prescribed supplemental-oxygen bleed-in with appropriate CPAP and respiratory circuits. It has a standard 22 mm circuit connection and a rotating 6 mm barbed oxygen stem that helps position oxygen tubing conveniently. Packed 10 adapters per package.",

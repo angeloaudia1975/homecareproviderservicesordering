@@ -6,7 +6,7 @@ const ROOT = path.join(__dirname, '..');
 const BASE = process.env.BASE_REF || 'origin/main';
 const gitRaw = p => execFileSync('git', ['-C', ROOT, 'show', `${BASE}:${p}`], { encoding: 'utf8', maxBuffer: 256 << 20 });
 /* Owner removed the wrong photo 2026-11-05 and will supply the correct one; until then the shop shows its "No image" placeholder. */
-const AWAITING_PHOTO = ['R-CART-6'];
+const AWAITING_PHOTO = [];  // R-CART-6 received its correct photo from the owner 2026-11-05
 const read = p => JSON.parse(fs.readFileSync(path.join(ROOT, p), 'utf8'));
 let pass = 0, fail = 0;
 const t = (n, f) => { try { f(); pass++; console.log('ok   ' + n); } catch (e) { fail++; console.log('FAIL ' + n + '\n     ' + e.message); } };
