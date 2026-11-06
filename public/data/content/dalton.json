@@ -135,13 +135,21 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k477a16l15-16-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a16l15-16-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a16l15-16-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/7d5275f314a99af33d6d.jpg",
+   "image": "/assets/products/dalton/gallery/aaa3d9657d031e4a350b.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/7d5275f314a99af33d6d.jpg",
+     "url": "/assets/products/dalton/gallery/aaa3d9657d031e4a350b.jpg",
      "primary": true,
+     "caption": "",
+     "source": "https://daltonmedical.com/product/k477a16l15-16-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/",
+     "note": "reclining wheelchair with elevating legrests (upright, reclining sequence, front, rear) - official photo 4/7 from the Dalton product page (viewed)"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/7d5275f314a99af33d6d.jpg",
+     "primary": false,
      "caption": "",
      "source": "current catalog photo"
     },
@@ -158,13 +166,6 @@
      "caption": "",
      "source": "https://daltonmedical.com/product/k477a16l15-16-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/",
      "note": "reclining wheelchair with elevating legrests (upright, reclining sequence, front, rear) - official photo 3/7 from the Dalton product page (viewed)"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/aaa3d9657d031e4a350b.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/k477a16l15-16-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/",
-     "note": "reclining wheelchair with elevating legrests (upright, reclining sequence, front, rear) - official photo 4/7 from the Dalton product page (viewed)"
     },
     {
      "url": "/assets/products/dalton/gallery/02622d39f6268b6236ff.jpg",
@@ -900,7 +901,8 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/ (every number and claim checked against the page)",
     "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/ (read 2026-11-03)",
-    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/ (read 2026-11-03)"
+    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/4fe75cb0f1c5467a88cb.jpg",
    "images_gallery": [
@@ -917,13 +919,6 @@
      "caption": "",
      "source": "https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/",
      "note": "same white grab bar, horizontal view"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/add54ac9ebce75252e47.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/",
-     "note": "mounting hardware bag supplied with the grab bar"
     }
    ],
    "enrichment_flags": {
@@ -1085,13 +1080,21 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k477a18l15-18-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a18l15-18-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a18l15-18-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/967d87689df2e94487f4.jpg",
+   "image": "/assets/products/dalton/gallery/02622d39f6268b6236ff.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/967d87689df2e94487f4.jpg",
+     "url": "/assets/products/dalton/gallery/02622d39f6268b6236ff.jpg",
      "primary": true,
+     "caption": "",
+     "source": "https://daltonmedical.com/product/k477a18l15-18-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/",
+     "note": "reclining wheelchair with elevating legrests - official photo 5/7 from the Dalton product page (viewed)"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/967d87689df2e94487f4.jpg",
+     "primary": false,
      "caption": "",
      "source": "current catalog photo"
     },
@@ -1115,13 +1118,6 @@
      "caption": "",
      "source": "https://daltonmedical.com/product/k477a18l15-18-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/",
      "note": "reclining wheelchair with elevating legrests - official photo 4/7 from the Dalton product page (viewed)"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/02622d39f6268b6236ff.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/k477a18l15-18-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/",
-     "note": "reclining wheelchair with elevating legrests - official photo 5/7 from the Dalton product page (viewed)"
     },
     {
      "url": "/assets/products/dalton/gallery/171365e501722574f99c.jpg",
@@ -1487,19 +1483,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k409f18-18-inch-transformer-wheelchair-with-footrests-and-quick-release-wheels/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k409f18-18-inch-transformer-wheelchair-with-footrests-and-quick-release-wheels/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k409f18-18-inch-transformer-wheelchair-with-footrests-and-quick-release-wheels/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/d056a05bae397e1f7509.jpg",
+   "image": "/assets/products/dalton/gallery/7694fe4521a1a424cf2f.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/d056a05bae397e1f7509.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/7694fe4521a1a424cf2f.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "current catalog photo"
     }
@@ -2448,22 +2439,23 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k09fx19f15-19-inch-transport-wheelchair-with-fixed-arms-and-footrests/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k09fx19f15-19-inch-transport-wheelchair-with-fixed-arms-and-footrests/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k09fx19f15-19-inch-transport-wheelchair-with-fixed-arms-and-footrests/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/53590bb81bca600312ce.jpg",
+   "image": "/assets/products/dalton/gallery/526a153b84fcf9eb3159.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/53590bb81bca600312ce.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "current catalog photo"
-    },
-    {
      "url": "/assets/products/dalton/gallery/526a153b84fcf9eb3159.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "https://daltonmedical.com/product/k09fx19f15-19-inch-transport-wheelchair-with-fixed-arms-and-footrests/",
      "note": "19in transport chair (angles, folded) - official photo 2/6 from the Dalton product page (viewed)"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/53590bb81bca600312ce.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "current catalog photo"
     },
     {
      "url": "/assets/products/dalton/gallery/4faa6fcbf4eb894d8371.jpg",
@@ -2815,22 +2807,23 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k477a20l15-20-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a20l15-20-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a20l15-20-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/967d87689df2e94487f4.jpg",
+   "image": "/assets/products/dalton/gallery/1764a0cccb0d103319fb.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/967d87689df2e94487f4.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "current catalog photo"
-    },
-    {
      "url": "/assets/products/dalton/gallery/1764a0cccb0d103319fb.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "https://daltonmedical.com/product/k477a20l15-20-inch-reclining-wheelchair-with-leg-rests-and-anti-tippers/",
      "note": "reclining wheelchair with elevating legrests - official photo 2/7 from the Dalton product page (viewed)"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/967d87689df2e94487f4.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "current catalog photo"
     },
     {
      "url": "/assets/products/dalton/gallery/6f78c9921bee5dc3ddaf.jpg",
@@ -4610,7 +4603,8 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/ (every number and claim checked against the page)",
     "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/ (read 2026-11-03)",
-    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/ (read 2026-11-03)"
+    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/4fe75cb0f1c5467a88cb.jpg",
    "images_gallery": [
@@ -4627,13 +4621,6 @@
      "caption": "",
      "source": "https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/",
      "note": "same white grab bar, horizontal view"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/add54ac9ebce75252e47.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/",
-     "note": "mounting hardware bag supplied with the grab bar"
     }
    ],
    "enrichment_flags": {
@@ -5017,7 +5004,8 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/ (every number and claim checked against the page)",
     "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/ (read 2026-11-03)",
-    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/ (read 2026-11-03)"
+    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/4fe75cb0f1c5467a88cb.jpg",
    "images_gallery": [
@@ -5034,13 +5022,6 @@
      "caption": "",
      "source": "https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/",
      "note": "same white grab bar, horizontal view"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/add54ac9ebce75252e47.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/bs-h218pw-bs-h224pw-bs-h232pw-white-powder-coated-steel-grab-bars/",
-     "note": "mounting hardware bag supplied with the grab bar"
     }
    ],
    "enrichment_flags": {
@@ -5135,7 +5116,8 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-matt-m442-advantage-10-ltc-gel-infused-pressure-redist-mattress-42x80x6-600lb-wt-cap/ (every number and claim checked against the page)",
     "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m442-advantage-10-ltc-gel-infused-pressure-redist-mattress-42x80x6-600lb-wt-cap/ (read 2026-11-03)",
-    "name": "B-MATT-M442: dealer-facing name corrected — HCPS name said 36\"x80\"x6\", 450 lb; Dalton lists B-MATT-M442 as 42″ x 80″ x 6″, 600 lb (title and specifications agree)"
+    "name": "B-MATT-M442: dealer-facing name corrected — HCPS name said 36\"x80\"x6\", 450 lb; Dalton lists B-MATT-M442 as 42″ x 80″ x 6″, 600 lb (title and specifications agree)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/ceff14cbbecf3faada3f.png",
    "images_gallery": [
@@ -5150,12 +5132,6 @@
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/c383e638b5b79a458a8f.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -6285,7 +6261,8 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-matt-m236-5-zone-therapeutic-mattress-36x80x6-e0184/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m236-5-zone-therapeutic-mattress-36x80x6-e0184/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m236-5-zone-therapeutic-mattress-36x80x6-e0184/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/4746c985f3b3f174bf23.png",
    "images_gallery": [
@@ -6294,12 +6271,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/672237fcad9b28ff3cce.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -7622,7 +7593,8 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-matt-m436-advantage-10-ltc-gel-infused-pressure-redist-mattress-36x80x6-450lb-wt-cap/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m436-advantage-10-ltc-gel-infused-pressure-redist-mattress-36x80x6-450lb-wt-cap/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m436-advantage-10-ltc-gel-infused-pressure-redist-mattress-36x80x6-450lb-wt-cap/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/ceff14cbbecf3faada3f.png",
    "images_gallery": [
@@ -7637,12 +7609,6 @@
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/c383e638b5b79a458a8f.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -8733,7 +8699,8 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS product name only — no official Dalton product page exists for this SKU (Dalton sitemap checked 2026-11-03); no features or specifications published",
     "features": "none published — no manufacturer source",
-    "specs": "none published — no manufacturer source"
+    "specs": "none published — no manufacturer source",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/cd8474b264f0631a7dbe.jpg",
    "images_gallery": [
@@ -8757,13 +8724,6 @@
      "caption": "",
      "source": "https://daltonmedical.com/wp-json/wp/v2/media/166 (Dalton media library; title: \"same title, BS-5004-1\")",
      "note": "front view, alternate angle"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/c6503d2ad2eac513bfd4.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/wp-json/wp/v2/media/169 (Dalton media library; title: \"same title, BS-5004-1\")",
-     "note": "close-up of height-adjustable leg"
     }
    ],
    "enrichment_flags": {
@@ -9423,7 +9383,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-xcell2000-app-system-50-60hz-pressure-range-70-130mmhg-e0181/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-xcell2000-app-system-50-60hz-pressure-range-70-130mmhg-e0181/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-xcell2000-app-system-50-60hz-pressure-range-70-130mmhg-e0181/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/4e3811c7a324ecae23d3.jpg",
    "images_gallery": [
@@ -9432,12 +9393,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/b267ed49ef235f62d1a5.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -9646,7 +9601,8 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-matt-m242-bariatirc-5-zone-therapectic-mattress-42x80x6-500lb-wt-cap-e0184/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m242-bariatirc-5-zone-therapectic-mattress-42x80x6-500lb-wt-cap-e0184/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m242-bariatirc-5-zone-therapectic-mattress-42x80x6-500lb-wt-cap-e0184/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/4746c985f3b3f174bf23.png",
    "images_gallery": [
@@ -9655,12 +9611,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/672237fcad9b28ff3cce.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -9877,7 +9827,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k07dk26lspw-bariatric-26-x-20-inch-wheelchair-with-leg-rests-500-lb-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k07dk26lspw-bariatric-26-x-20-inch-wheelchair-with-leg-rests-500-lb-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k07dk26lspw-bariatric-26-x-20-inch-wheelchair-with-leg-rests-500-lb-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/77057e60a7781b2a2ba6.jpg",
    "images_gallery": [
@@ -9886,13 +9837,6 @@
      "primary": true,
      "caption": "",
      "source": "current catalog photo"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/d96cbf50ba970f9bc657.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/k07dk26lspw-bariatric-26-x-20-inch-wheelchair-with-leg-rests-500-lb-capacity/",
-     "note": "bariatric wheelchair (front view / with elevating legrests) - official photo 2/2 from the Dalton product page (viewed)"
     }
    ],
    "enrichment_flags": {
@@ -10229,7 +10173,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k07dk28lspw-bariatric-28-x-20-inch-wheelchair-with-leg-rests-550-lb-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k07dk28lspw-bariatric-28-x-20-inch-wheelchair-with-leg-rests-550-lb-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k07dk28lspw-bariatric-28-x-20-inch-wheelchair-with-leg-rests-550-lb-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/77057e60a7781b2a2ba6.jpg",
    "images_gallery": [
@@ -10238,13 +10183,6 @@
      "primary": true,
      "caption": "",
      "source": "current catalog photo"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/d96cbf50ba970f9bc657.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/k07dk28lspw-bariatric-28-x-20-inch-wheelchair-with-leg-rests-550-lb-capacity/",
-     "note": "bariatric wheelchair (photo set titled 26in, reused on this page) - official photo 2/2 from the Dalton product page (viewed)"
     }
    ],
    "enrichment_flags": {
@@ -11649,7 +11587,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/com-650hd-2-bariatric-commode-extra-wide-seat-650-lb-weight-capacity-2-case/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/com-650hd-2-bariatric-commode-extra-wide-seat-650-lb-weight-capacity-2-case/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/com-650hd-2-bariatric-commode-extra-wide-seat-650-lb-weight-capacity-2-case/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/9e3f68fc51d13c7be492.jpg",
    "images_gallery": [
@@ -11667,12 +11606,6 @@
     },
     {
      "url": "/assets/products/dalton/gallery/e025c1f1fec979d57fdb.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/e380295c135ae24323f1.jpg",
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
@@ -11935,7 +11868,8 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl-l511x-bariatric-electric-patient-lifter-w-power-legs-700lb-wt-cap/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-l511x-bariatric-electric-patient-lifter-w-power-legs-700lb-wt-cap/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-l511x-bariatric-electric-patient-lifter-w-power-legs-700lb-wt-cap/ (read 2026-11-03)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/f3d661b5dc9de095d9d3.png",
    "images_gallery": [
@@ -11944,24 +11878,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/cdd7f8c4da72fba827dc.png",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/001e95b38647c684017f.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/fad63f6e7044e260ee67.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -12187,19 +12103,14 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl650hd-bariatric-electric-patient-lifter-600lb-weight-capacity/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl650hd-bariatric-electric-patient-lifter-600lb-weight-capacity/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl650hd-bariatric-electric-patient-lifter-600lb-weight-capacity/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/147fef60e0fe95180334.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/147fef60e0fe95180334.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/5e624e4a1e731693967b.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -12906,25 +12817,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pl-lps55xxl-bariatric-full-body-sling-1000-weight-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl-lps55xxl-bariatric-full-body-sling-1000-weight-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl-lps55xxl-bariatric-full-body-sling-1000-weight-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/20a96a3b21b6e352317b.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/20a96a3b21b6e352317b.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/86858bcc08aae1771d86.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/39ccf6cf9a5b5ddcc90e.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -13707,7 +13607,8 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl-l550-bariatric-max-electric-patient-lifter-w-power-leg-1000lb-weight-capacity/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-l550-bariatric-max-electric-patient-lifter-w-power-leg-1000lb-weight-capacity/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-l550-bariatric-max-electric-patient-lifter-w-power-leg-1000lb-weight-capacity/ (read 2026-11-03)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/cdd7f8c4da72fba827dc.png",
    "images_gallery": [
@@ -13716,24 +13617,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/147fef60e0fe95180334.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/001e95b38647c684017f.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/a657fcf23bddd67c8724.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -13941,19 +13824,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/b-t923-bed-transporter-with-board-for-bed2300-and-bed3300/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-t923-bed-transporter-with-board-for-bed2300-and-bed3300/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-t923-bed-transporter-with-board-for-bed2300-and-bed3300/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/9997b45604a56bb48253.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/9997b45604a56bb48253.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/690253644b3e62de647d.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -15641,11 +15519,16 @@
      "sku": "MC30",
      "name": "Cardiac Board",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Owner retirement decision in the Dalton photo review: remove from platform",
+      "decided": "2026-11-05",
+      "ref": "Dalton photo review export 2026-11-05 (dalton-photo-fixes.json)"
+     }
     }
    ],
    "sku_count": 1,
@@ -15659,17 +15542,11 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/mc30-cardiac-board/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/mc30-cardiac-board/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/mc30-cardiac-board/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/af353f78e13073780131.jpg",
-   "images_gallery": [
-    {
-     "url": "/assets/products/dalton/gallery/af353f78e13073780131.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    }
-   ],
+   "image": "",
+   "images_gallery": [],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -16580,7 +16457,8 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/accurart-premium-emergency-cart/ (every number and claim checked against the page)",
     "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/accurart-premium-emergency-cart/ (read 2026-11-03)",
-    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/accurart-premium-emergency-cart/ (read 2026-11-03); size line for this model from the family page"
+    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/accurart-premium-emergency-cart/ (read 2026-11-03); size line for this model from the family page",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/e87d35dd6edc84795aea.jpg",
    "images_gallery": [
@@ -16597,13 +16475,6 @@
      "caption": "",
      "source": "https://daltonmedical.com/product/accurart-premium-emergency-cart/",
      "note": "front view of MCE360 emergency cart, red option, labelled MCE360"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/cb97746d81ec3da76d22.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/accurart-premium-emergency-cart/",
-     "note": "Accucart emergency cart, angled full view with O2 holder and IV pole (family photo)"
     }
    ],
    "enrichment_flags": {
@@ -18749,7 +18620,8 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl-lpw20-digital-weight-scale-for-patient-lifter-1000lb-weight-capacity/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-lpw20-digital-weight-scale-for-patient-lifter-1000lb-weight-capacity/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-lpw20-digital-weight-scale-for-patient-lifter-1000lb-weight-capacity/ (read 2026-11-03)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/ce5a03cad1d946bc2a98.png",
    "images_gallery": [
@@ -18758,24 +18630,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/147fef60e0fe95180334.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/5c9c918c898ba6d835e6.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/cfc8c47e72d419b4a7f3.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -19629,19 +19483,14 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl-lps21-divided-leg-sling/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-lps21-divided-leg-sling/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-lps21-divided-leg-sling/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/6370e1b751fead969645.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/6370e1b751fead969645.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/20a96a3b21b6e352317b.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -19829,19 +19678,14 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl-lps21-divided-leg-sling/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-lps21-divided-leg-sling/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-lps21-divided-leg-sling/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/6370e1b751fead969645.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/6370e1b751fead969645.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/20a96a3b21b6e352317b.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -20958,7 +20802,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/0437a1ca16815371c3c3.png",
    "images_gallery": [
@@ -20967,18 +20812,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/3af4dad5a2dff350c11f.png",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/3d21ec48483635b59b73.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -21446,7 +21279,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gg16163-e2603-comfy-gel-wheelchair-cushion/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gg16163-e2603-comfy-gel-wheelchair-cushion/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gg16163-e2603-comfy-gel-wheelchair-cushion/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/3af4dad5a2dff350c11f.png",
    "images_gallery": [
@@ -21455,18 +21289,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/920ca8786e5dd582a25b.png",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/e1a5ff6a093afaccc65b.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -21994,7 +21816,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/3af4dad5a2dff350c11f.png",
    "images_gallery": [
@@ -22003,18 +21826,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/de761cbdd32505860d40.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/e1a5ff6a093afaccc65b.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -22895,7 +22706,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/920ca8786e5dd582a25b.png",
    "images_gallery": [
@@ -22904,24 +22716,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/3af4dad5a2dff350c11f.png",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/de761cbdd32505860d40.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/34f459325f3fadfe288b.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -23436,7 +23230,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/b8ee925f977eaa560e89.png",
    "images_gallery": [
@@ -23445,18 +23240,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/3af4dad5a2dff350c11f.png",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/75ec575f6aedfad3eee7.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -24521,25 +24304,14 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl-l430c-electric-patient-lifter-w-low-base-450lb-weight-capacity/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-l430c-electric-patient-lifter-w-low-base-450lb-weight-capacity/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-l430c-electric-patient-lifter-w-low-base-450lb-weight-capacity/ (read 2026-11-03)",
+    "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/86858bcc08aae1771d86.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/86858bcc08aae1771d86.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/5c9c918c898ba6d835e6.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/001e95b38647c684017f.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -24986,25 +24758,14 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl-l440c-electric-stand-assist-patient-lifter-400lb-weight-capacity/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-l440c-electric-stand-assist-patient-lifter-400lb-weight-capacity/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-l440c-electric-stand-assist-patient-lifter-400lb-weight-capacity/ (read 2026-11-03)",
+    "images": "2026-11-05: 2 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/5e624e4a1e731693967b.jpg",
+   "image": "/assets/products/dalton/gallery/001e95b38647c684017f.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/5e624e4a1e731693967b.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/f3d661b5dc9de095d9d3.png",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/001e95b38647c684017f.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -25475,7 +25236,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/ar-n1010bl-blue-euro-style-rollator-with-10-inch-wheels-300-lb-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ar-n1010bl-blue-euro-style-rollator-with-10-inch-wheels-300-lb-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ar-n1010bl-blue-euro-style-rollator-with-10-inch-wheels-300-lb-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/728679298fc7b287b81f.png",
    "images_gallery": [
@@ -25493,12 +25255,6 @@
     },
     {
      "url": "/assets/products/dalton/gallery/569cbf8b3f550882633c.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/34f7dfe8b48cd8a8b9af.png",
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
@@ -25816,19 +25572,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/ar-n1010ar-red-euro-style-rollator-with-10-inch-wheels-300-lb-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ar-n1010ar-red-euro-style-rollator-with-10-inch-wheels-300-lb-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ar-n1010ar-red-euro-style-rollator-with-10-inch-wheels-300-lb-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/34f7dfe8b48cd8a8b9af.png",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/34f7dfe8b48cd8a8b9af.png",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/569cbf8b3f550882633c.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     },
@@ -26461,7 +26212,8 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/dalton-medical-heavy-duty-3-in-1-height-adjustable-extra-wide-drop-arm-commode-weight-limit-500-lbs-com-da500hd-1/ (every number and claim checked against the page)",
     "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/dalton-medical-heavy-duty-3-in-1-height-adjustable-extra-wide-drop-arm-commode-weight-limit-500-lbs-com-da500hd-1/ (read 2026-11-03)",
-    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/dalton-medical-heavy-duty-3-in-1-height-adjustable-extra-wide-drop-arm-commode-weight-limit-500-lbs-com-da500hd-1/ (read 2026-11-03)"
+    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/dalton-medical-heavy-duty-3-in-1-height-adjustable-extra-wide-drop-arm-commode-weight-limit-500-lbs-com-da500hd-1/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/95a8d9dcf8d33ebd3492.jpg",
    "images_gallery": [
@@ -26484,13 +26236,6 @@
      "caption": "",
      "source": "https://daltonmedical.com/product/dalton-medical-heavy-duty-3-in-1-height-adjustable-extra-wide-drop-arm-commode-weight-limit-500-lbs-com-da500hd-1/",
      "note": "extra-wide drop-arm commode (front, arm lowered, side, leg detail) - official photo 3/4 from the Dalton product page (viewed)"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/07ceb8035c2324d94a11.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/dalton-medical-heavy-duty-3-in-1-height-adjustable-extra-wide-drop-arm-commode-weight-limit-500-lbs-com-da500hd-1/",
-     "note": "extra-wide drop-arm commode (front, arm lowered, side, leg detail) - official photo 4/4 from the Dalton product page (viewed)"
     }
    ],
    "enrichment_flags": {
@@ -26654,19 +26399,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pmb-261118-1-foam-back-cushion-16x17x2-5-each/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pmb-261118-1-foam-back-cushion-16x17x2-5-each/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pmb-261118-1-foam-back-cushion-16x17x2-5-each/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/3af4dad5a2dff350c11f.png",
+   "image": "/assets/products/dalton/gallery/2105f7886deffe4fc8bd.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/3af4dad5a2dff350c11f.png",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/2105f7886deffe4fc8bd.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "current catalog photo"
     }
@@ -26865,25 +26605,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pmb-261118-1-foam-back-cushion-18x17x2-5-each/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pmb-261118-1-foam-back-cushion-18x17x2-5-each/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pmb-261118-1-foam-back-cushion-18x17x2-5-each/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 2 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/920ca8786e5dd582a25b.png",
+   "image": "/assets/products/dalton/gallery/2105f7886deffe4fc8bd.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/920ca8786e5dd582a25b.png",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/3af4dad5a2dff350c11f.png",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/2105f7886deffe4fc8bd.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "current catalog photo"
     }
@@ -27324,19 +27053,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pmb-261120-1-foam-back-cushion-20-x-19-x-2-5-inch-each/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pmb-261120-1-foam-back-cushion-20-x-19-x-2-5-inch-each/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pmb-261120-1-foam-back-cushion-20-x-19-x-2-5-inch-each/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/920ca8786e5dd582a25b.png",
+   "image": "/assets/products/dalton/gallery/c1419668c243854baf01.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/920ca8786e5dd582a25b.png",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/c1419668c243854baf01.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "current catalog photo"
     }
@@ -27574,19 +27298,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/wheelchair-back-cushion-22-19-e2612-pmb-261222-1/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/wheelchair-back-cushion-22-19-e2612-pmb-261222-1/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/wheelchair-back-cushion-22-19-e2612-pmb-261222-1/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/0437a1ca16815371c3c3.png",
+   "image": "/assets/products/dalton/gallery/2105f7886deffe4fc8bd.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/0437a1ca16815371c3c3.png",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/2105f7886deffe4fc8bd.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "current catalog photo"
     }
@@ -27824,7 +27543,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pmb-261224-1-foam-back-cushion-24-x-19-x-2-5-inch-with-cover-and-buckle-strap-each/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pmb-261224-1-foam-back-cushion-24-x-19-x-2-5-inch-with-cover-and-buckle-strap-each/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pmb-261224-1-foam-back-cushion-24-x-19-x-2-5-inch-with-cover-and-buckle-strap-each/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/b8ee925f977eaa560e89.png",
    "images_gallery": [
@@ -27833,12 +27553,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/5d5474fff3352a68c1e0.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -28028,30 +27742,24 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS product name only — no official Dalton product page exists for this SKU (Dalton sitemap checked 2026-11-03); no features or specifications published",
     "features": "none published — no manufacturer source",
-    "specs": "none published — no manufacturer source"
+    "specs": "none published — no manufacturer source",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/479f8da759ea97bfe845.jpg",
+   "image": "/assets/products/dalton/gallery/e9d6523fb9e9b069a3a0.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/479f8da759ea97bfe845.jpg",
+     "url": "/assets/products/dalton/gallery/e9d6523fb9e9b069a3a0.jpg",
      "primary": true,
      "caption": "",
      "source": "https://daltonmedical.com/product/pmc-260222-1-foam-seat-cushion-with-cover-and-buckle-strap-22-x-18-x-3-inch-400-lb-capacity/",
-     "note": "grey foam seat cushion with cover and buckle strap, top view - Dalton family photo for the PMC-2601/2602 foam seat cushion line (size not distinguishable)"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/2ee0fae1ad922c28bec8.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/pmc-260222-1-foam-seat-cushion-with-cover-and-buckle-strap-22-x-18-x-3-inch-400-lb-capacity/",
-     "note": "same cushion, angled view with strap"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/e9d6523fb9e9b069a3a0.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/pmc-260222-1-foam-seat-cushion-with-cover-and-buckle-strap-22-x-18-x-3-inch-400-lb-capacity/",
      "note": "same cushion standing, strap/buckle visible"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/479f8da759ea97bfe845.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "https://daltonmedical.com/product/pmc-260222-1-foam-seat-cushion-with-cover-and-buckle-strap-22-x-18-x-3-inch-400-lb-capacity/",
+     "note": "grey foam seat cushion with cover and buckle strap, top view - Dalton family photo for the PMC-2601/2602 foam seat cushion line (size not distinguishable)"
     },
     {
      "url": "/assets/products/dalton/gallery/0fb8c6bb2d74698aa6a5.jpg",
@@ -28127,20 +27835,14 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS product name only — no official Dalton product page exists for this SKU (Dalton sitemap checked 2026-11-03); no features or specifications published",
     "features": "none published — no manufacturer source",
-    "specs": "none published — no manufacturer source"
+    "specs": "none published — no manufacturer source",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/479f8da759ea97bfe845.jpg",
+   "image": "/assets/products/dalton/gallery/2ee0fae1ad922c28bec8.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/479f8da759ea97bfe845.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/pmc-260222-1-foam-seat-cushion-with-cover-and-buckle-strap-22-x-18-x-3-inch-400-lb-capacity/",
-     "note": "grey foam seat cushion with cover and buckle strap, top view - Dalton family photo for the PMC-2601/2602 foam seat cushion line (size not distinguishable)"
-    },
-    {
      "url": "/assets/products/dalton/gallery/2ee0fae1ad922c28bec8.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "https://daltonmedical.com/product/pmc-260222-1-foam-seat-cushion-with-cover-and-buckle-strap-22-x-18-x-3-inch-400-lb-capacity/",
      "note": "same cushion, angled view with strap"
@@ -28226,16 +27928,17 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS product name only — no official Dalton product page exists for this SKU (Dalton sitemap checked 2026-11-03); no features or specifications published",
     "features": "none published — no manufacturer source",
-    "specs": "none published — no manufacturer source"
+    "specs": "none published — no manufacturer source",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/479f8da759ea97bfe845.jpg",
+   "image": "/assets/products/dalton/gallery/e9d6523fb9e9b069a3a0.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/479f8da759ea97bfe845.jpg",
+     "url": "/assets/products/dalton/gallery/e9d6523fb9e9b069a3a0.jpg",
      "primary": true,
      "caption": "",
      "source": "https://daltonmedical.com/product/pmc-260222-1-foam-seat-cushion-with-cover-and-buckle-strap-22-x-18-x-3-inch-400-lb-capacity/",
-     "note": "grey foam seat cushion with cover and buckle strap, top view - Dalton family photo for the PMC-2601/2602 foam seat cushion line (size not distinguishable)"
+     "note": "same cushion standing, strap/buckle visible"
     },
     {
      "url": "/assets/products/dalton/gallery/2ee0fae1ad922c28bec8.jpg",
@@ -28243,13 +27946,6 @@
      "caption": "",
      "source": "https://daltonmedical.com/product/pmc-260222-1-foam-seat-cushion-with-cover-and-buckle-strap-22-x-18-x-3-inch-400-lb-capacity/",
      "note": "same cushion, angled view with strap"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/e9d6523fb9e9b069a3a0.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/pmc-260222-1-foam-seat-cushion-with-cover-and-buckle-strap-22-x-18-x-3-inch-400-lb-capacity/",
-     "note": "same cushion standing, strap/buckle visible"
     },
     {
      "url": "/assets/products/dalton/gallery/0fb8c6bb2d74698aa6a5.jpg",
@@ -28366,19 +28062,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pmc-260222-1-foam-seat-cushion-with-cover-and-buckle-strap-22-x-18-x-3-inch-400-lb-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pmc-260222-1-foam-seat-cushion-with-cover-and-buckle-strap-22-x-18-x-3-inch-400-lb-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pmc-260222-1-foam-seat-cushion-with-cover-and-buckle-strap-22-x-18-x-3-inch-400-lb-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/6e95ff17412fc89862bf.jpg",
+   "image": "/assets/products/dalton/gallery/5e7db167d5d2120dcc62.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/6e95ff17412fc89862bf.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/5e7db167d5d2120dcc62.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "current catalog photo"
     }
@@ -28603,19 +28294,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pmc-260224-1-bariatric-foam-seat-cushion-with-cover-and-buckle-strap-24-x-18-x-3-inch-400-lb-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pmc-260224-1-bariatric-foam-seat-cushion-with-cover-and-buckle-strap-24-x-18-x-3-inch-400-lb-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pmc-260224-1-bariatric-foam-seat-cushion-with-cover-and-buckle-strap-24-x-18-x-3-inch-400-lb-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/6e95ff17412fc89862bf.jpg",
+   "image": "/assets/products/dalton/gallery/5e7db167d5d2120dcc62.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/6e95ff17412fc89862bf.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/5e7db167d5d2120dcc62.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "current catalog photo"
     }
@@ -30932,19 +30618,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/a-wa3200bl-gait-walker-blue-26-depth-32-24-32/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/a-wa3200bl-gait-walker-blue-26-depth-32-24-32/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/a-wa3200bl-gait-walker-blue-26-depth-32-24-32/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/6060a3796d7244411026.png",
+   "image": "/assets/products/dalton/gallery/adad76ea7367af2bf148.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/6060a3796d7244411026.png",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/adad76ea7367af2bf148.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "manufacturer page"
     },
@@ -31196,31 +30877,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/a-wa2200gn-gait-walker-green-width-24-depth-29-19-25/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/a-wa2200gn-gait-walker-green-width-24-depth-29-19-25/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/a-wa2200gn-gait-walker-green-width-24-depth-29-19-25/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/bee9660da2d8182b2bb2.jpg",
+   "image": "/assets/products/dalton/gallery/44ad4badf5022bb21c70.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/bee9660da2d8182b2bb2.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/adad76ea7367af2bf148.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/6060a3796d7244411026.png",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/44ad4badf5022bb21c70.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "current catalog photo"
     }
@@ -32057,19 +31721,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/bs-h232-1-grab-bar-32-chrome-steel/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/bs-h232-1-grab-bar-32-chrome-steel/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/bs-h232-1-grab-bar-32-chrome-steel/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/33f53e4c40eab80c7226.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/33f53e4c40eab80c7226.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/229972f525964ebd7970.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -32900,7 +32559,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/b-bpw300-c-head-foot-boards-for-bc320-cherry/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-bpw300-c-head-foot-boards-for-bc320-cherry/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-bpw300-c-head-foot-boards-for-bc320-cherry/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/3ac96502dcd410f88ad1.jpg",
    "images_gallery": [
@@ -32912,12 +32572,6 @@
     },
     {
      "url": "/assets/products/dalton/gallery/8d71f397f6914d161fb7.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/e4e934b0863fb1c48eed.png",
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
@@ -33143,7 +32797,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/b-bpw300-o-head-foot-boards-for-bc320-oak/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-bpw300-o-head-foot-boards-for-bc320-oak/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-bpw300-o-head-foot-boards-for-bc320-oak/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/7f77893d2fd9ae320c60.jpg",
    "images_gallery": [
@@ -33155,12 +32810,6 @@
     },
     {
      "url": "/assets/products/dalton/gallery/f57d4411ab2ef58c3168.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/79c7b585e950b0fe068a.png",
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
@@ -33757,13 +33406,21 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k477a22lhd-heavy-duty-22-inch-reclining-wheelchair-with-leg-rests-350-lb-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a22lhd-heavy-duty-22-inch-reclining-wheelchair-with-leg-rests-350-lb-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a22lhd-heavy-duty-22-inch-reclining-wheelchair-with-leg-rests-350-lb-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/967d87689df2e94487f4.jpg",
+   "image": "/assets/products/dalton/gallery/aaa3d9657d031e4a350b.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/967d87689df2e94487f4.jpg",
+     "url": "/assets/products/dalton/gallery/aaa3d9657d031e4a350b.jpg",
      "primary": true,
+     "caption": "",
+     "source": "https://daltonmedical.com/product/k477a22lhd-heavy-duty-22-inch-reclining-wheelchair-with-leg-rests-350-lb-capacity/",
+     "note": "heavy-duty reclining wheelchair with elevating legrests - official photo 4/7 from the Dalton product page (viewed)"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/967d87689df2e94487f4.jpg",
+     "primary": false,
      "caption": "",
      "source": "current catalog photo"
     },
@@ -33780,13 +33437,6 @@
      "caption": "",
      "source": "https://daltonmedical.com/product/k477a22lhd-heavy-duty-22-inch-reclining-wheelchair-with-leg-rests-350-lb-capacity/",
      "note": "heavy-duty reclining wheelchair with elevating legrests - official photo 3/7 from the Dalton product page (viewed)"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/aaa3d9657d031e4a350b.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/k477a22lhd-heavy-duty-22-inch-reclining-wheelchair-with-leg-rests-350-lb-capacity/",
-     "note": "heavy-duty reclining wheelchair with elevating legrests - official photo 4/7 from the Dalton product page (viewed)"
     },
     {
      "url": "/assets/products/dalton/gallery/02622d39f6268b6236ff.jpg",
@@ -34164,19 +33814,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k477a24lhd-heavy-duty-24-inch-reclining-wheelchair-with-leg-rests-370-lb-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a24lhd-heavy-duty-24-inch-reclining-wheelchair-with-leg-rests-370-lb-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a24lhd-heavy-duty-24-inch-reclining-wheelchair-with-leg-rests-370-lb-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/47167e09fbca61885125.png",
+   "image": "/assets/products/dalton/gallery/967d87689df2e94487f4.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/47167e09fbca61885125.png",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/967d87689df2e94487f4.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "current catalog photo"
     }
@@ -34915,25 +34560,14 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl4000h-r-hydraulic-patient-lifter-450lb-weight-capacity/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl4000h-r-hydraulic-patient-lifter-450lb-weight-capacity/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl4000h-r-hydraulic-patient-lifter-450lb-weight-capacity/ (read 2026-11-03)",
+    "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/001e95b38647c684017f.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/001e95b38647c684017f.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/cdd7f8c4da72fba827dc.png",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/5e624e4a1e731693967b.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -36917,12 +36551,13 @@
     "specs": "owner review (Dalton review editor, progress saved 2026-11-03T18:33Z)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "owner review (Dalton review editor, progress saved 2026-11-03T18:33Z)"
+    "description": "owner review (Dalton review editor, progress saved 2026-11-03T18:33Z)",
+    "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json)); main bed photo swapped with the semi-electric page — owner noted the photos were on the wrong SKU"
    },
-   "image": "/assets/products/dalton/gallery/3aa47e98500ba5725e1d.png",
+   "image": "/assets/products/dalton/gallery/1257de979f19837ccdda.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/3aa47e98500ba5725e1d.png",
+     "url": "/assets/products/dalton/gallery/1257de979f19837ccdda.jpg",
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
@@ -36938,18 +36573,6 @@
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/4917a540f3fa57c307b5.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/889fd34374e7dd8f8997.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -37257,9 +36880,10 @@
     "specs": "owner review (Dalton review editor, progress saved 2026-11-03T18:33Z)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "owner review (Dalton review editor, progress saved 2026-11-03T18:33Z)"
+    "description": "owner review (Dalton review editor, progress saved 2026-11-03T18:33Z)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json)); main bed photo swapped with the full-electric page — owner noted the photos were on the wrong SKU"
    },
-   "image": "/assets/products/dalton/gallery/1257de979f19837ccdda.jpg",
+   "image": "/assets/products/dalton/gallery/3aa47e98500ba5725e1d.png",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/1257de979f19837ccdda.jpg",
@@ -37275,12 +36899,6 @@
     },
     {
      "url": "/assets/products/dalton/gallery/baecc014ea0232788fe3.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/4917a540f3fa57c307b5.jpg",
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
@@ -37881,22 +37499,23 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k01dk16f15-k1-16-inch-wheelchair-with-footrests/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k01dk16f15-k1-16-inch-wheelchair-with-footrests/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k01dk16f15-k1-16-inch-wheelchair-with-footrests/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/e3c5b6cfb8eef29cc8bc.jpg",
+   "image": "/assets/products/dalton/gallery/5e4c545fb236250289e3.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/e3c5b6cfb8eef29cc8bc.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "current catalog photo"
-    },
-    {
      "url": "/assets/products/dalton/gallery/5e4c545fb236250289e3.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "https://daltonmedical.com/product/k01dk16f15-k1-16-inch-wheelchair-with-footrests/",
      "note": "K1 16in wheelchair with footrests (angles, front, rear) - official photo 2/5 from the Dalton product page (viewed)"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/e3c5b6cfb8eef29cc8bc.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "current catalog photo"
     },
     {
      "url": "/assets/products/dalton/gallery/e080fbbacf9870af2bcc.jpg",
@@ -39481,7 +39100,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k07dk20f02v-k1-20-inch-wheelchair-with-footrests-and-vinyl-upholstery-310-lb-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k07dk20f02v-k1-20-inch-wheelchair-with-footrests-and-vinyl-upholstery-310-lb-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k07dk20f02v-k1-20-inch-wheelchair-with-footrests-and-vinyl-upholstery-310-lb-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/47167e09fbca61885125.png",
    "images_gallery": [
@@ -39490,12 +39110,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/28c783850527c19e0431.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -40475,25 +40089,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k2dk16f-k2-16-inch-wheelchair-with-footrests/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k2dk16f-k2-16-inch-wheelchair-with-footrests/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k2dk16f-k2-16-inch-wheelchair-with-footrests/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/1fc2448f7455fbe61e50.png",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/1fc2448f7455fbe61e50.png",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/03cd5de6d6fc5705cf28.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/7f754c33370c765b7beb.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -40795,31 +40398,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k2dk16l-k2-16-inch-wheelchair-with-leg-rests/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k2dk16l-k2-16-inch-wheelchair-with-leg-rests/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k2dk16l-k2-16-inch-wheelchair-with-leg-rests/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/1fc2448f7455fbe61e50.png",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/1fc2448f7455fbe61e50.png",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/03cd5de6d6fc5705cf28.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/7f754c33370c765b7beb.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/38c021b9a5a0ce1f87ce.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -41120,31 +40706,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k2dk18f-k2-18-inch-wheelchair-with-footrests/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k2dk18f-k2-18-inch-wheelchair-with-footrests/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k2dk18f-k2-18-inch-wheelchair-with-footrests/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/1fc2448f7455fbe61e50.png",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/1fc2448f7455fbe61e50.png",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/03cd5de6d6fc5705cf28.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/7f754c33370c765b7beb.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/38c021b9a5a0ce1f87ce.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -41446,31 +41015,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k2dk18l-k2-18-inch-wheelchair-with-leg-rests/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k2dk18l-k2-18-inch-wheelchair-with-leg-rests/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k2dk18l-k2-18-inch-wheelchair-with-leg-rests/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/1fc2448f7455fbe61e50.png",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/1fc2448f7455fbe61e50.png",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/03cd5de6d6fc5705cf28.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/7f754c33370c765b7beb.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/38c021b9a5a0ce1f87ce.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -41771,31 +41323,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k2dk20fk2-20-wheelchair-w-footrest/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k2dk20fk2-20-wheelchair-w-footrest/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k2dk20fk2-20-wheelchair-w-footrest/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/1fc2448f7455fbe61e50.png",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/1fc2448f7455fbe61e50.png",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/03cd5de6d6fc5705cf28.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/7f754c33370c765b7beb.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/38c021b9a5a0ce1f87ce.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -42097,31 +41632,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k2dk20l-k2-20-inch-wheelchair-with-leg-rests/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k2dk20l-k2-20-inch-wheelchair-with-leg-rests/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k2dk20l-k2-20-inch-wheelchair-with-leg-rests/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/1fc2448f7455fbe61e50.png",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/1fc2448f7455fbe61e50.png",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/03cd5de6d6fc5705cf28.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/7f754c33370c765b7beb.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/38c021b9a5a0ce1f87ce.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -42450,18 +41968,19 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k3dk16ftadj-k3-16-inch-adjustable-height-arm-wheelchair-with-footrests-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k3dk16ftadj-k3-16-inch-adjustable-height-arm-wheelchair-with-footrests-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k3dk16ftadj-k3-16-inch-adjustable-height-arm-wheelchair-with-footrests-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/e7ccfc5b1cab2bee9d0c.jpg",
+   "image": "/assets/products/dalton/gallery/7b90c0245f08961bf4dc.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/e7ccfc5b1cab2bee9d0c.jpg",
+     "url": "/assets/products/dalton/gallery/7b90c0245f08961bf4dc.jpg",
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
     },
     {
-     "url": "/assets/products/dalton/gallery/7b90c0245f08961bf4dc.jpg",
+     "url": "/assets/products/dalton/gallery/e7ccfc5b1cab2bee9d0c.jpg",
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
@@ -42905,24 +42424,25 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k3dk18ftadj-k3-18-inch-adjustable-height-arm-wheelchair-with-footrests-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k3dk18ftadj-k3-18-inch-adjustable-height-arm-wheelchair-with-footrests-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k3dk18ftadj-k3-18-inch-adjustable-height-arm-wheelchair-with-footrests-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/e7ccfc5b1cab2bee9d0c.jpg",
+   "image": "/assets/products/dalton/gallery/7b90c0245f08961bf4dc.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/e7ccfc5b1cab2bee9d0c.jpg",
+     "url": "/assets/products/dalton/gallery/7b90c0245f08961bf4dc.jpg",
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
     },
     {
-     "url": "/assets/products/dalton/gallery/a76e55d70f77f3dc2a6b.jpg",
+     "url": "/assets/products/dalton/gallery/e7ccfc5b1cab2bee9d0c.jpg",
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
     },
     {
-     "url": "/assets/products/dalton/gallery/7b90c0245f08961bf4dc.jpg",
+     "url": "/assets/products/dalton/gallery/a76e55d70f77f3dc2a6b.jpg",
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
@@ -43280,13 +42800,21 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/elite-20-lightweight-wheelchair-with-anti-tippers-footrests-adjust-height-arm/ (every number and claim checked against the page)",
     "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/elite-20-lightweight-wheelchair-with-anti-tippers-footrests-adjust-height-arm/ (read 2026-11-03)",
-    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/elite-20-lightweight-wheelchair-with-anti-tippers-footrests-adjust-height-arm/ (read 2026-11-03)"
+    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/elite-20-lightweight-wheelchair-with-anti-tippers-footrests-adjust-height-arm/ (read 2026-11-03)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/c619f3a19fd5e9c18156.jpg",
+   "image": "/assets/products/dalton/gallery/89941e077c07bb42df30.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/c619f3a19fd5e9c18156.jpg",
+     "url": "/assets/products/dalton/gallery/89941e077c07bb42df30.jpg",
      "primary": true,
+     "caption": "",
+     "source": "https://daltonmedical.com/product/elite-20-lightweight-wheelchair-with-anti-tippers-footrests-adjust-height-arm/",
+     "note": "K3 20in adjustable-arm wheelchair with footrests (angles, front, rear) - official photo 4/6 from the Dalton product page (viewed)"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/c619f3a19fd5e9c18156.jpg",
+     "primary": false,
      "caption": "",
      "source": "current catalog photo"
     },
@@ -43303,13 +42831,6 @@
      "caption": "",
      "source": "https://daltonmedical.com/product/elite-20-lightweight-wheelchair-with-anti-tippers-footrests-adjust-height-arm/",
      "note": "K3 20in adjustable-arm wheelchair with footrests (angles, front, rear) - official photo 3/6 from the Dalton product page (viewed)"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/89941e077c07bb42df30.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/elite-20-lightweight-wheelchair-with-anti-tippers-footrests-adjust-height-arm/",
-     "note": "K3 20in adjustable-arm wheelchair with footrests (angles, front, rear) - official photo 4/6 from the Dalton product page (viewed)"
     },
     {
      "url": "/assets/products/dalton/gallery/9ac6106b7d740ccf737e.jpg",
@@ -43903,31 +43424,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k416fa0215-k4-16-inch-adjustable-height-arm-lightweight-wheelchair-with-footrests-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k416fa0215-k4-16-inch-adjustable-height-arm-lightweight-wheelchair-with-footrests-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k416fa0215-k4-16-inch-adjustable-height-arm-lightweight-wheelchair-with-footrests-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/a2329118c499d44307d3.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/a2329118c499d44307d3.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/03cd5de6d6fc5705cf28.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/7f754c33370c765b7beb.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/38c021b9a5a0ce1f87ce.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -44259,31 +43763,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k416la0215-k4-16-inch-adjustable-height-arm-lightweight-wheelchair-with-leg-rests-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k416la0215-k4-16-inch-adjustable-height-arm-lightweight-wheelchair-with-leg-rests-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k416la0215-k4-16-inch-adjustable-height-arm-lightweight-wheelchair-with-leg-rests-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/a2329118c499d44307d3.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/a2329118c499d44307d3.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/03cd5de6d6fc5705cf28.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/7f754c33370c765b7beb.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/38c021b9a5a0ce1f87ce.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -44615,31 +44102,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k418fa0215-k4-18-inch-adjustable-height-arm-lightweight-wheelchair-with-footrests-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k418fa0215-k4-18-inch-adjustable-height-arm-lightweight-wheelchair-with-footrests-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k418fa0215-k4-18-inch-adjustable-height-arm-lightweight-wheelchair-with-footrests-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/a2329118c499d44307d3.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/a2329118c499d44307d3.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/03cd5de6d6fc5705cf28.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/7f754c33370c765b7beb.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/38c021b9a5a0ce1f87ce.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -44971,31 +44441,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k418la0215-k4-18-inch-adjustable-height-arm-lightweight-wheelchair-with-leg-rests-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k418la0215-k4-18-inch-adjustable-height-arm-lightweight-wheelchair-with-leg-rests-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k418la0215-k4-18-inch-adjustable-height-arm-lightweight-wheelchair-with-leg-rests-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/a2329118c499d44307d3.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/a2329118c499d44307d3.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/03cd5de6d6fc5705cf28.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/7f754c33370c765b7beb.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/38c021b9a5a0ce1f87ce.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -45327,31 +44780,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k420fa0215-k4-20-inch-adjustable-height-arm-lightweight-wheelchair-with-footrests-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k420fa0215-k4-20-inch-adjustable-height-arm-lightweight-wheelchair-with-footrests-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k420fa0215-k4-20-inch-adjustable-height-arm-lightweight-wheelchair-with-footrests-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/a2329118c499d44307d3.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/a2329118c499d44307d3.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/03cd5de6d6fc5705cf28.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/7f754c33370c765b7beb.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/38c021b9a5a0ce1f87ce.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -45683,31 +45119,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k420la0215-k4-20-inch-adjustable-height-arm-lightweight-wheelchair-with-leg-rests-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k420la0215-k4-20-inch-adjustable-height-arm-lightweight-wheelchair-with-leg-rests-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k420la0215-k4-20-inch-adjustable-height-arm-lightweight-wheelchair-with-leg-rests-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/a2329118c499d44307d3.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/a2329118c499d44307d3.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/03cd5de6d6fc5705cf28.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/7f754c33370c765b7beb.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/38c021b9a5a0ce1f87ce.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -46140,25 +45559,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k516fa-k5-16-inch-ultra-light-wheelchair-with-footrests-adjustable-height-arms-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k516fa-k5-16-inch-ultra-light-wheelchair-with-footrests-adjustable-height-arms-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k516fa-k5-16-inch-ultra-light-wheelchair-with-footrests-adjustable-height-arms-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 2 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/e7ccfc5b1cab2bee9d0c.jpg",
+   "image": "/assets/products/dalton/gallery/7451012e5db99e6df9e9.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/e7ccfc5b1cab2bee9d0c.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/863e586cdf3a392c15c1.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/7451012e5db99e6df9e9.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -46488,18 +45896,19 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k518fa-k5-18-inch-ultra-light-wheelchair-with-footrests-adjustable-height-arms-and-anti-tippers/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k518fa-k5-18-inch-ultra-light-wheelchair-with-footrests-adjustable-height-arms-and-anti-tippers/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k518fa-k5-18-inch-ultra-light-wheelchair-with-footrests-adjustable-height-arms-and-anti-tippers/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/7451012e5db99e6df9e9.jpg",
+   "image": "/assets/products/dalton/gallery/5bb52c565666a29cc2b3.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/7451012e5db99e6df9e9.jpg",
+     "url": "/assets/products/dalton/gallery/5bb52c565666a29cc2b3.jpg",
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
     },
     {
-     "url": "/assets/products/dalton/gallery/5bb52c565666a29cc2b3.jpg",
+     "url": "/assets/products/dalton/gallery/7451012e5db99e6df9e9.jpg",
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
@@ -47722,22 +47131,23 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k07dk24f02v-k7-24-inch-heavy-duty-wheelchair-with-footrests-and-dual-axle-400-lb-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k07dk24f02v-k7-24-inch-heavy-duty-wheelchair-with-footrests-and-dual-axle-400-lb-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k07dk24f02v-k7-24-inch-heavy-duty-wheelchair-with-footrests-and-dual-axle-400-lb-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/28c783850527c19e0431.jpg",
+   "image": "/assets/products/dalton/gallery/57ec37cb90e1b0286701.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/28c783850527c19e0431.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "current catalog photo"
-    },
-    {
      "url": "/assets/products/dalton/gallery/57ec37cb90e1b0286701.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "https://daltonmedical.com/product/k07dk24f02v-k7-24-inch-heavy-duty-wheelchair-with-footrests-and-dual-axle-400-lb-capacity/",
      "note": "K7 24in heavy-duty wheelchair with swing-away footrests, dual axle - official photo 2/7 from the Dalton product page (viewed)"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/28c783850527c19e0431.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "current catalog photo"
     },
     {
      "url": "/assets/products/dalton/gallery/9075974020cf68f06cea.jpg",
@@ -52248,17 +51658,11 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/r-cart-6-oxygen-cart-6-sets-box/ (every number and claim checked against the page)",
     "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/r-cart-6-oxygen-cart-6-sets-box/ (read 2026-11-03)",
-    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/r-cart-6-oxygen-cart-6-sets-box/ (read 2026-11-03)"
+    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/r-cart-6-oxygen-cart-6-sets-box/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/46e3cae4d6b0f679f9f8.jpg",
-   "images_gallery": [
-    {
-     "url": "/assets/products/dalton/gallery/46e3cae4d6b0f679f9f8.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "current catalog photo"
-    }
-   ],
+   "image": "",
+   "images_gallery": [],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -53296,18 +52700,19 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k477a12l15-pediatric-12-inch-reclining-wheelchair-with-leg-rests/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a12l15-pediatric-12-inch-reclining-wheelchair-with-leg-rests/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a12l15-pediatric-12-inch-reclining-wheelchair-with-leg-rests/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/7451012e5db99e6df9e9.jpg",
+   "image": "/assets/products/dalton/gallery/521471f2927898df618c.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/7451012e5db99e6df9e9.jpg",
+     "url": "/assets/products/dalton/gallery/521471f2927898df618c.jpg",
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
     },
     {
-     "url": "/assets/products/dalton/gallery/521471f2927898df618c.jpg",
+     "url": "/assets/products/dalton/gallery/7451012e5db99e6df9e9.jpg",
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
@@ -54065,25 +53470,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k477a14l15-pediatric-14-inch-reclining-wheelchair-with-leg-rests/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a14l15-pediatric-14-inch-reclining-wheelchair-with-leg-rests/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k477a14l15-pediatric-14-inch-reclining-wheelchair-with-leg-rests/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/31cd8ecdb0aeeef7fb2d.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/31cd8ecdb0aeeef7fb2d.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/d056a05bae397e1f7509.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/521471f2927898df618c.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -54471,18 +53865,19 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k3dk14l-pediatric-14-inch-wheelchair-with-leg-rests/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k3dk14l-pediatric-14-inch-wheelchair-with-leg-rests/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k3dk14l-pediatric-14-inch-wheelchair-with-leg-rests/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/31cd8ecdb0aeeef7fb2d.jpg",
+   "image": "/assets/products/dalton/gallery/4d308ed161379ad2464d.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/31cd8ecdb0aeeef7fb2d.jpg",
+     "url": "/assets/products/dalton/gallery/4d308ed161379ad2464d.jpg",
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
     },
     {
-     "url": "/assets/products/dalton/gallery/4d308ed161379ad2464d.jpg",
+     "url": "/assets/products/dalton/gallery/31cd8ecdb0aeeef7fb2d.jpg",
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
@@ -55268,7 +54663,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pc-mp3cm3ar20-powerchair-20-seat-10-wheel-2-u1-batteries-300lb-wt-cap-k0823/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pc-mp3cm3ar20-powerchair-20-seat-10-wheel-2-u1-batteries-300lb-wt-cap-k0823/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pc-mp3cm3ar20-powerchair-20-seat-10-wheel-2-u1-batteries-300lb-wt-cap-k0823/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/80b385a75dc378198ccb.png",
    "images_gallery": [
@@ -55277,12 +54673,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/6b678af88991b9b0adb4.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -56141,7 +55531,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/a-qc4011lbk-quad-cane-black-large-base-1-each/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/a-qc4011lbk-quad-cane-black-large-base-1-each/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/a-qc4011lbk-quad-cane-black-large-base-1-each/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/6462f236ed7003441c52.png",
    "images_gallery": [
@@ -56150,12 +55541,6 @@
      "primary": true,
      "caption": "",
      "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/57f4000242618d746021.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "current catalog photo"
     }
    ],
    "enrichment_flags": {
@@ -56926,7 +56311,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/r-dcf950-r-doc5100-intake-compressor-filter-bf7000/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/r-dcf950-r-doc5100-intake-compressor-filter-bf7000/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/r-dcf950-r-doc5100-intake-compressor-filter-bf7000/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/1895c144d4dad9e8c643.jpg",
    "images_gallery": [
@@ -56938,12 +56324,6 @@
     },
     {
      "url": "/assets/products/dalton/gallery/958418acf25302a80aea.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/2901631b0008f044c356.jpg",
      "primary": false,
      "caption": "",
      "source": "manufacturer page"
@@ -57138,19 +56518,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/r-fcf5200-r-doc5200-foam-cabinet-filter-5-pk/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/r-fcf5200-r-doc5200-foam-cabinet-filter-5-pk/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/r-fcf5200-r-doc5200-foam-cabinet-filter-5-pk/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/2901631b0008f044c356.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/2901631b0008f044c356.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/1895c144d4dad9e8c643.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -57359,19 +56734,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/ramp-se005-ramp-5-long-single-600lb-weight-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ramp-se005-ramp-5-long-single-600lb-weight-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ramp-se005-ramp-5-long-single-600lb-weight-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/cdba4dcd31e4c12a3196.jpg",
+   "image": "/assets/products/dalton/gallery/843d83a1b0f62fac282b.png",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/cdba4dcd31e4c12a3196.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/843d83a1b0f62fac282b.png",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -57617,25 +56987,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/ramp-se006-ramp-6-long-single-600lb-weight-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ramp-se006-ramp-6-long-single-600lb-weight-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ramp-se006-ramp-6-long-single-600lb-weight-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/235e48596c081ce24917.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/235e48596c081ce24917.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/c53ebee8ae642c2ff20a.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/8405a5bbddc236ba3314.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -58436,19 +57795,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/bs-shc931m-rehab-shower-commode-chair-24-rear-wheel-1-each/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/bs-shc931m-rehab-shower-commode-chair-24-rear-wheel-1-each/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/bs-shc931m-rehab-shower-commode-chair-24-rear-wheel-1-each/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/727f2dfe651c3cfd6090.jpg",
+   "image": "/assets/products/dalton/gallery/0fa869c6c6d7e0c5aaa6.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/727f2dfe651c3cfd6090.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/0fa869c6c6d7e0c5aaa6.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "current catalog photo"
     }
@@ -58651,23 +58005,24 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS product name only — no official Dalton product page exists for this SKU (Dalton sitemap checked 2026-11-03); no features or specifications published",
     "features": "none published — no manufacturer source",
-    "specs": "none published — no manufacturer source"
+    "specs": "none published — no manufacturer source",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/0ed1e31a777445897931.jpg",
+   "image": "/assets/products/dalton/gallery/3082e8a08de70f336276.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/0ed1e31a777445897931.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "https://daltonmedical.com/wp-json/wp/v2/media/484 (Dalton media library; title: \"Rehab Tilt-in-Space - Adult, 18in Wide Tilt & Recline wheelchair with headrest, leg rests and anti-tippers\")",
-     "note": "rehab tilt-in-space wheelchair, front view: headrest, laterals, elevating legrests"
-    },
-    {
      "url": "/assets/products/dalton/gallery/3082e8a08de70f336276.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "https://daltonmedical.com/wp-json/wp/v2/media/483 (Dalton media library; title: \"same title, 18in\")",
      "note": "rehab tilt-in-space wheelchair, side view tilted"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/0ed1e31a777445897931.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "https://daltonmedical.com/wp-json/wp/v2/media/484 (Dalton media library; title: \"Rehab Tilt-in-Space - Adult, 18in Wide Tilt & Recline wheelchair with headrest, leg rests and anti-tippers\")",
+     "note": "rehab tilt-in-space wheelchair, front view: headrest, laterals, elevating legrests"
     }
    ],
    "enrichment_flags": {
@@ -58736,23 +58091,24 @@
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS product name only — no official Dalton product page exists for this SKU (Dalton sitemap checked 2026-11-03); no features or specifications published",
     "features": "none published — no manufacturer source",
-    "specs": "none published — no manufacturer source"
+    "specs": "none published — no manufacturer source",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/0ed1e31a777445897931.jpg",
+   "image": "/assets/products/dalton/gallery/3082e8a08de70f336276.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/0ed1e31a777445897931.jpg",
-     "primary": true,
-     "caption": "",
-     "source": "https://daltonmedical.com/wp-json/wp/v2/media/946 (Dalton media library; title: \"Rehab Tilt-in-Space-Adult-16in Tilt & Recline wheelchair with headrest, leg rests and anti-tippers\")",
-     "note": "rehab tilt-in-space wheelchair, front view: headrest, laterals, elevating legrests"
-    },
-    {
      "url": "/assets/products/dalton/gallery/3082e8a08de70f336276.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "https://daltonmedical.com/wp-json/wp/v2/media/945 (Dalton media library; title: \"same title, 16in\")",
      "note": "rehab tilt-in-space wheelchair, side view tilted"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/0ed1e31a777445897931.jpg",
+     "primary": false,
+     "caption": "",
+     "source": "https://daltonmedical.com/wp-json/wp/v2/media/946 (Dalton media library; title: \"Rehab Tilt-in-Space-Adult-16in Tilt & Recline wheelchair with headrest, leg rests and anti-tippers\")",
+     "note": "rehab tilt-in-space wheelchair, front view: headrest, laterals, elevating legrests"
     }
    ],
    "enrichment_flags": {
@@ -59146,19 +58502,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/ar-8411kdbl-rollator-4-wheels-steel-blue-300lb-weight-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ar-8411kdbl-rollator-4-wheels-steel-blue-300lb-weight-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ar-8411kdbl-rollator-4-wheels-steel-blue-300lb-weight-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/b25f8aa214c20a8cdfbd.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/b25f8aa214c20a8cdfbd.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/c53ebee8ae642c2ff20a.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -59420,19 +58771,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/ar-8411kdar-rollator-4-wheels-steel-red-300lb-weight-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ar-8411kdar-rollator-4-wheels-steel-red-300lb-weight-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ar-8411kdar-rollator-4-wheels-steel-red-300lb-weight-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: removed 34f7dfe8b48cd8a8b9af.png (Euro-style rollator photo, wrong product) at Angelo's request; front view 3a00d13657d6307af766.jpg is now the main photo"
    },
-   "image": "/assets/products/dalton/gallery/34f7dfe8b48cd8a8b9af.png",
+   "image": "/assets/products/dalton/gallery/3a00d13657d6307af766.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/34f7dfe8b48cd8a8b9af.png",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/3a00d13657d6307af766.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "manufacturer page"
     },
@@ -61865,19 +61211,14 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl-lps24-stand-up-sling/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-lps24-stand-up-sling/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-lps24-stand-up-sling/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/28507fa13cc90ec91135.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/28507fa13cc90ec91135.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/20a96a3b21b6e352317b.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -62053,19 +61394,14 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pl-lps24-stand-up-sling/ (every number and claim checked against the page)",
-    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-lps24-stand-up-sling/ (read 2026-11-03)"
+    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pl-lps24-stand-up-sling/ (read 2026-11-03)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/28507fa13cc90ec91135.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/28507fa13cc90ec91135.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/20a96a3b21b6e352317b.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }
@@ -64974,7 +64310,8 @@
     "specs": "owner review (Dalton review editor, progress saved 2026-11-03T18:33Z)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "owner review (Dalton review editor, progress saved 2026-11-03T18:33Z)"
+    "description": "owner review (Dalton review editor, progress saved 2026-11-03T18:33Z)",
+    "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/9b6c5968bc3d4096cc94.jpg",
    "images_gallery": [
@@ -64985,18 +64322,6 @@
      "source": "owner upload in Dalton review editor (upper trapeze.jpg, 2026-11-03)",
      "note": "owner-approved photo (main)",
      "approved": true
-    },
-    {
-     "url": "/assets/products/dalton/gallery/bd8e49244d99ec76d6f2.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/dda4a8f3815744f0987a.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "manufacturer page"
     }
    ],
    "enrichment_flags": {
@@ -67002,13 +66327,21 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k09fx17fa-17-inch-lightweight-transport-wheelchair-with-fixed-arms-and-footrests/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k09fx17fa-17-inch-lightweight-transport-wheelchair-with-fixed-arms-and-footrests/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k09fx17fa-17-inch-lightweight-transport-wheelchair-with-fixed-arms-and-footrests/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 0 wrong photo(s) removed, main photo changed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
-   "image": "/assets/products/dalton/gallery/8b27dffe5e9e084f7477.jpg",
+   "image": "/assets/products/dalton/gallery/4faa6fcbf4eb894d8371.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/8b27dffe5e9e084f7477.jpg",
+     "url": "/assets/products/dalton/gallery/4faa6fcbf4eb894d8371.jpg",
      "primary": true,
+     "caption": "",
+     "source": "https://daltonmedical.com/product/k09fx17fa-17-inch-lightweight-transport-wheelchair-with-fixed-arms-and-footrests/",
+     "note": "17in transport chair (angles, folded) - official photo 3/7 from the Dalton product page (viewed)"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/8b27dffe5e9e084f7477.jpg",
+     "primary": false,
      "caption": "",
      "source": "current catalog photo"
     },
@@ -67018,13 +66351,6 @@
      "caption": "",
      "source": "https://daltonmedical.com/product/k09fx17fa-17-inch-lightweight-transport-wheelchair-with-fixed-arms-and-footrests/",
      "note": "17in transport chair (angles, folded) - official photo 2/7 from the Dalton product page (viewed)"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/4faa6fcbf4eb894d8371.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/k09fx17fa-17-inch-lightweight-transport-wheelchair-with-fixed-arms-and-footrests/",
-     "note": "17in transport chair (angles, folded) - official photo 3/7 from the Dalton product page (viewed)"
     },
     {
      "url": "/assets/products/dalton/gallery/526a153b84fcf9eb3159.jpg",
@@ -67370,7 +66696,8 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/k07dk30lspw-bariatric-30-x-20-inch-wheelchair-with-leg-rests-600-lb-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k07dk30lspw-bariatric-30-x-20-inch-wheelchair-with-leg-rests-600-lb-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/k07dk30lspw-bariatric-30-x-20-inch-wheelchair-with-leg-rests-600-lb-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/77057e60a7781b2a2ba6.jpg",
    "images_gallery": [
@@ -67379,13 +66706,6 @@
      "primary": true,
      "caption": "",
      "source": "current catalog photo"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/d96cbf50ba970f9bc657.jpg",
-     "primary": false,
-     "caption": "",
-     "source": "https://daltonmedical.com/product/k07dk30lspw-bariatric-30-x-20-inch-wheelchair-with-leg-rests-600-lb-capacity/",
-     "note": "bariatric wheelchair (photo set titled 26in, reused on this page) - official photo 2/2 from the Dalton product page (viewed)"
     }
    ],
    "enrichment_flags": {
@@ -68332,19 +67652,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/a-wa6107w-2-youth-walker-2-button-folding-5-wheels-2-case/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/a-wa6107w-2-youth-walker-2-button-folding-5-wheels-2-case/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/a-wa6107w-2-youth-walker-2-button-folding-5-wheels-2-case/ (every number and claim checked against the page)",
+    "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
    },
    "image": "/assets/products/dalton/gallery/9a1fcb6c40f366b1902a.jpg",
    "images_gallery": [
     {
      "url": "/assets/products/dalton/gallery/9a1fcb6c40f366b1902a.jpg",
      "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
-     "url": "/assets/products/dalton/gallery/adad76ea7367af2bf148.jpg",
-     "primary": false,
      "caption": "",
      "source": "manufacturer page"
     }

@@ -1650,9 +1650,9 @@ const CONFIG = {
   // and never records a Golden order of its own; Golden owns the order and sends it back as events.
   // OFF until Stage 2 (catalog) is built and Angelo switches it on: with it off, Golden account holders get the
   // link to the Golden platform (where they order today) instead of an in-platform catalog that does not exist yet.
-  GOLDEN_CHECKOUT_ENABLED: false,      // B4: Golden cart + validate-only checkout outside a staff preview (also needs golden_p360_checkout on the server)
-  GOLDEN_ORDERING_ENABLED: false,      // B6: "Place order with Golden" on the live site (also needs golden_p360_ordering on the server AND Golden's ordering_enabled)
-  GOLDEN_ENABLED: false,               // surface Golden as a shoppable line inside Partner 360 (Stage 2+)
+  GOLDEN_CHECKOUT_ENABLED: true,       // B4: Golden cart + validate-only checkout outside a staff preview (also needs golden_p360_checkout on the server)
+  GOLDEN_ORDERING_ENABLED: true,       // B6: "Place order with Golden" on the live site (also needs golden_p360_ordering on the server AND Golden's ordering_enabled)
+  GOLDEN_ENABLED: true,                // surface Golden as a shoppable line inside Partner 360 (Stage 2+)
   GOLDEN_SLUG: "golden-technologies",  // manufacturer slug used for Golden across the platform
   GOLDEN_ORDER_ENDPOINT: "",           // unused: Golden orders go browser → golden-proxy (HCPS) → Golden /v1/orders (Stage 4). Never called from the browser.
   GOLDEN_CATALOG: "",                  // Golden catalog JSON for in-platform shopping. Blank → ./data/golden-technologies.json
@@ -3606,6 +3606,13 @@ function goldenPriceHtml(items){
 }
 /* One Golden card in the catalog-v2 design. Configuration, cart and checkout for Golden come in the next stages
    (B3/B4); until then the card opens the product page and says ordering is on its way — it never sends the dealer away. */
+/* The card's ordering note follows the same rule as the product page: a configurable lift chair (PR###-XXX) can be
+   ordered here when Golden ordering is open; everything else is "Browse only" until Golden's API accepts it. */
+function goldenCardNote(p){
+  const orderable=p._goldenAction==="configure" && /^PR\d{3}-[A-Z]{3}$/.test(p.code) && gckOrderingOpen();
+  if(orderable) return "";
+  return `<div class="gsoon">Browse only — ask your HCPS rep to order this with Golden.</div>`;
+}
 function goldenCardHtml(p){
   const items=Array.isArray(p._variants)&&p._variants.length?p._variants:[p];
   const multi=items.length>1;
@@ -3629,7 +3636,7 @@ function goldenCardHtml(p){
       ${goldenStockHtml(items)}
     </div>
     <div class="cv2-act"><div class="buy"><button class="chooseBtn" type="button" data-open="${esc(openCode)}">${p._goldenAction==="configure"?"View &amp; configure":"View details"} <span aria-hidden="true">→</span></button></div>
-      <div class="gsoon">Golden ordering in the 360 Dealer Portal is being finished — not orderable yet.</div></div></div>`;
+      ${goldenCardNote(p)}</div></div>`;
 }
 function goldenMfr(){
   let m=state.manufacturers.find(x=>isGoldenSlug(x.slug));
