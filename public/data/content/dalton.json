@@ -59420,19 +59420,14 @@
     "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/ar-8411kdar-rollator-4-wheels-steel-red-300lb-weight-capacity/ (read 2026-11-03)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ar-8411kdar-rollator-4-wheels-steel-red-300lb-weight-capacity/ (every number and claim checked against the page)"
+    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/ar-8411kdar-rollator-4-wheels-steel-red-300lb-weight-capacity/ (every number and claim checked against the page)",
+    "images": "2026-11-05: removed 34f7dfe8b48cd8a8b9af.png (Euro-style rollator photo, wrong product) at Angelo's request; front view 3a00d13657d6307af766.jpg is now the main photo"
    },
-   "image": "/assets/products/dalton/gallery/34f7dfe8b48cd8a8b9af.png",
+   "image": "/assets/products/dalton/gallery/3a00d13657d6307af766.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/dalton/gallery/34f7dfe8b48cd8a8b9af.png",
-     "primary": true,
-     "caption": "",
-     "source": "manufacturer page"
-    },
-    {
      "url": "/assets/products/dalton/gallery/3a00d13657d6307af766.jpg",
-     "primary": false,
+     "primary": true,
      "caption": "",
      "source": "manufacturer page"
     },
