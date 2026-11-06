@@ -171,6 +171,10 @@ async function modalErr(page) { return page.evaluate(() => { const e = document.
     await t('catalog placeholders read their family (not "Uncategorized") and their assign list opens for that family', async () => {
       const ttl = await page.evaluate(id => document.querySelector('#sd-grid .sd-item-block[data-id="' + id + '"]').title, placed.lift_chairs); ok(/Lift Chairs/.test(ttl), ttl);
       const panel = await page.evaluate(() => document.getElementById('sd-profit-panel').innerText); ok(!/Uncategorized/.test(panel), panel.replace(/\s+/g, ' '));
+      const lists = await page.evaluate(() => document.getElementById('sd-profit-panel').innerText + document.getElementById('sd-items-panel-list').innerText);
+      ok(!/Beds & Support Surfaces/.test(lists) && /Beds/.test(lists), 'bed family named "Beds"');
+      const badge = await page.evaluate(id => { const b = document.querySelector('#sd-grid .sd-item-block[data-id="' + id + '"] .sd-item-unassigned-badge').getBoundingClientRect(); return [Math.round(b.width), Math.round(b.height)]; }, placed.power_chairs);
+      ok(badge[0] <= 14 && badge[1] <= 14, 'small item keeps a corner tag, not a banner over its picture: ' + badge);
     });
     /* --- second floorplan for the sizing acceptance tests (room to work) --- */
     await page.evaluate(() => sdNewFloorplan()); await page.waitForSelector('#sd-width', { state: 'visible' });
