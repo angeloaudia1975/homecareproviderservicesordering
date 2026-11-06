@@ -34,7 +34,9 @@ const json = (code, obj) => ({ statusCode: code, headers: CORS, body: JSON.strin
 
 const SITE = (process.env.SITE_URL || 'https://homecareproviderservices.us').replace(/\/+$/, '');
 const FROM = process.env.BROCHURE_FROM || process.env.ORDER_EMAIL_FROM || 'HomeCare Provider Services <orders@homecareproviderservices.us>';
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+/* One plain address only — no display name, angle brackets or comments (they would let one person count as many
+   recipients for the send limit, and the mail provider would read them as a display name). */
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/;
 
 const esc = s => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -62,9 +64,21 @@ const str = (s, n) => String(s == null ? '' : s).slice(0, n || 4000);
 /* The brochure. One page where the content allows, flowing to a second where it
    does not — with print rules that keep a table or a feature list from being cut
    in half across the break, which is what makes a printed handout look amateur. */
+const dealerLogo = u => { const s = String(u || '').trim();
+  if (/^https:\/\/[^\s"'<>`]+$/i.test(s) && s.length <= 2000) return s;
+  if (/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/i.test(s) && s.length < 600000) return s;
+  return ''; };
 function renderBrochure(p, opts) {
   opts = opts || {};
   const showMsrp = !!opts.include_msrp;
+  /* C3-07 Stage 4: dealer-branded — the signed-in dealer's own name, logo and contact details, read from HCPS's dealer
+     record by the handler (never from the request). Signed out it stays an HCPS handout, as before. */
+  const D = opts.dealer || null;
+  const dName = D ? esc(str(D.business_name, 120)) : '';
+  /* the dealer's logo is dealer-supplied: https or a raster data URL only, and always attribute-escaped */
+  const dLogo = D ? esc(dealerLogo(D.logo_url)) : '';
+  const dAddr = D ? esc([str(D.address, 120), [str(D.city, 60), [str(D.state, 20), str(D.zip, 12)].filter(Boolean).join(' ')].filter(Boolean).join(', ')].filter(Boolean).join(' · ')) : '';
+  const dContact = D ? [str(D.phone, 40), str(D.email, 200), str(D.website, 200).replace(/^https?:\/\//i, '')].filter(Boolean).map(esc).join(' &nbsp;·&nbsp; ') : '';
 
   const name = esc(str(p.name, 200)) || 'Product';
   const code = esc(str(p.code, 60));
@@ -149,6 +163,8 @@ function renderBrochure(p, opts) {
   .foot .ft{font-size:10pt;color:#3c4855;line-height:1.45}
   .foot .ft b{color:#10263f}
   .foot .fr{margin-left:auto;text-align:right;font-size:9pt;color:#6b7580}
+  .mhead .spacer img.dlogo{max-height:40px;max-width:170px;object-fit:contain;margin-bottom:3px}
+  .hcpsline{font-size:8pt;color:#8a939c;text-align:center;margin-top:8px}
   .toolbar{position:sticky;top:0;background:#10263f;color:#fff;padding:10px 14px;display:flex;gap:9px;align-items:center;
     font-size:13px;z-index:5}
   .toolbar button{border:0;border-radius:7px;padding:8px 15px;font-weight:700;font-size:13px;cursor:pointer;
@@ -167,7 +183,7 @@ function renderBrochure(p, opts) {
   <div class="mhead">
     ${mfrLogo ? `<img src="${mfrLogo}" alt="${mfr} logo" onerror="this.style.display='none'">` : ''}
     <div class="mname">${mfr}</div>
-    <div class="spacer">Product Information${code ? `<br><b>Item ${code}</b>` : ''}</div>
+    <div class="spacer">${dName ? `${dLogo ? `<img class="dlogo" src="${dLogo}" alt="${dName} logo" onerror="this.style.display='none'"><br>` : ''}Presented by <b>${dName}</b>` : 'Product Information'}${code ? `<br><b>Item ${code}</b>` : ''}</div>
   </div>
 
   <h1>${name}</h1>
@@ -200,12 +216,17 @@ function renderBrochure(p, opts) {
       : '')}
   ${secHtml('Warranty', warranty ? `<p>${warranty}</p>` : '')}
 
-  <div class="foot">
+  ${dName ? `<div class="foot dfoot">
+    ${dLogo ? `<img src="${dLogo}" alt="${dName} logo" onerror="this.style.display='none'">` : ''}
+    <div class="ft"><b>${dName}</b>${dAddr ? `<br>${dAddr}` : ''}${dContact ? `<br>${dContact}` : ''}</div>
+    <div class="fr">Specifications subject to change<br>without notice.</div>
+  </div>
+  <div class="hcpsline">Product information supplied through HomeCare Provider Services</div>` : `<div class="foot">
     ${hcpsLogo ? `<img src="${hcpsLogo}" alt="HomeCare Provider Services" onerror="this.style.display='none'">` : ''}
     <div class="ft"><b>Provided by HomeCare Provider Services</b><br>
       ${esc(SITE.replace(/^https?:\/\//, ''))}${srcUrl ? ` &nbsp;·&nbsp; Manufacturer information available on request` : ''}</div>
     <div class="fr">Specifications subject to change<br>without notice.</div>
-  </div>
+  </div>`}
 </div>
 </body></html>`;
 }
@@ -252,6 +273,24 @@ async function approvedDealer(event) {
   } catch (e) { return null; }
 }
 
+/* The dealer's identity for a branded brochure — HCPS's own record of the signed-in dealer's location. website / logo_url
+   are read one at a time (a column not there yet is simply blank); a branch with no logo uses its head office's. Any
+   read failure → no branding (the HCPS handout), never a guess. */
+async function dealerBrand(dealerId) {
+  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE;
+  if (!url || !key || !dealerId) return null;
+  const H = { apikey: key, Authorization: `Bearer ${key}` };
+  const get = async path => { const r = await fetch(`${url}/rest/v1/${path}`, { headers: H }); if (!r.ok) return null; return r.json(); };
+  try {
+    const id = encodeURIComponent(dealerId);
+    const d = await get(`dealers?id=eq.${id}&select=id,parent_id,business_name,address,city,state,zip,phone,email`);
+    const self = d && d[0]; if (!self || !self.business_name) return null;
+    for (const col of ['website', 'logo_url']) { const r = await get(`dealers?id=eq.${id}&select=${col}`); self[col] = (r && r[0] && r[0][col]) || null; }
+    if (!self.logo_url && self.parent_id) { const r = await get(`dealers?id=eq.${encodeURIComponent(self.parent_id)}&select=logo_url`); self.logo_url = (r && r[0] && r[0].logo_url) || null; }
+    return self;
+  } catch (e) { console.error('brochure brand lookup failed', e && e.message); return null; }
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { ok: false, error: 'POST only' });
@@ -264,20 +303,22 @@ exports.handler = async (event) => {
      HCPS's own catalog records — never taken from the request — and is dropped when there is none (or for an upgraded
      configuration). Golden's brochures carry Golden's own official retail from golden-proxy (unchanged). */
   if (b.include_msrp) product.msrp = await verifiedMsrp(product);
-  const html = renderBrochure(product, { include_msrp: !!b.include_msrp });
   const action = String(b.action || 'html');
+  /* Branded only for a signed-in, approved dealer; a request cannot name or style the dealer. */
+  const who = await approvedDealer(event);
+  const brand = who ? await dealerBrand(who.dealer_id) : null;
+  const html = renderBrochure(product, { include_msrp: !!b.include_msrp, dealer: brand });
 
   if (action === 'html') return json(200, { ok: true, html });
 
   if (action === 'email') {
-    const who = await approvedDealer(event);
     if (!who) return json(401, { ok: false, error: 'Please sign in again to email a brochure.' });
     const to = String(b.to || '').trim();
     if (!EMAIL_RE.test(to)) return json(400, { ok: false, error: 'Enter a valid email address.' });
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) return json(500, { ok: false, error: 'Email is not configured on this site yet (RESEND_API_KEY).' });
     /* C3-07 Stage 4: per-dealer and per-recipient limits, recorded before sending (see _send_limit.js). */
-    const lim = await SEND.reserve({ url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SERVICE_ROLE, dealer_id: who.dealer_id, kind: 'brochure', to });
+    const lim = await SEND.reserve({ url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SERVICE_ROLE, dealer_id: (brand && brand.parent_id) || who.dealer_id, kind: 'brochure', to });   // limits per company (head office), not per branch login
     if (!lim.ok) return json(lim.status || 429, { ok: false, error: lim.error });
 
     const note = String(b.message || '').slice(0, 2000);
@@ -292,10 +333,10 @@ exports.handler = async (event) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: FROM, to: [to],
+        from: brand ? `"${String(brand.business_name).replace(/["\\<>\r\n]/g, '').slice(0, 70)} via HCPS" <${(FROM.match(/<([^>]+)>/) || [, FROM])[1]}>` : FROM, to: [to],   // display name quoted ("Smith Medical, LLC")
         reply_to: EMAIL_RE.test(who.email) ? who.email : undefined,
         subject,
-        html: body.replace('<body>', '<body>' + intro),
+        html: body.replace('<body>', () => '<body>' + intro),   // a function replacer: "$&" in a message is text, not a pattern
       }),
     });
     if (!res.ok) {

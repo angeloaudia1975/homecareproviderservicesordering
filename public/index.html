@@ -6297,6 +6297,16 @@ function brRenderPriceRow(){
     <div class="br-row" id="brOnceRow" style="display:${cur==='once'?'flex':'none'};gap:8px;align-items:center;flex-wrap:wrap"><input id="brOnce" inputmode="decimal" placeholder="$0.00" style="max-width:140px"><button type="button" class="ghost" onclick="brSaveRetail()">Save as my retail price</button></div>`;
   host.querySelectorAll('input[name="brPrice"]').forEach(r=>r.onchange=()=>{ const row=document.getElementById('brOnceRow'); if(row) row.style.display=brPriceChoice()==='once'?'flex':'none'; });
 }
+/* C3-07 Stage 4: "Add to a quote" on a product page puts THIS product on the dealer's current customer quote and opens the
+   quote builder (it used to open the builder empty). Golden chairs use their own configured flow (B6.1). */
+function pdAddQuote(code){
+  const p=(state.products||[]).find(x=>x&&String(x.code)===String(code)); if(!p) return;
+  const slug=String(p.manufacturer||state.active||''); if(!/^[a-z0-9-]{2,60}$/.test(slug)) return;
+  const line=(state.manufacturers||[]).find(m=>m.slug===slug);
+  if(window.P360Quote&&window.P360Quote.add) window.P360Quote.add(slug+'|'+p.code,{name:p.name||p.code,option:(typeof quoteOptionText==='function'?quoteOptionText(p):''),sku:p.code,mfrName:(line&&line.name)||'',image:(Array.isArray(p.images)&&p.images[0])||p.image||''});
+  if(typeof showP360==='function') showP360('quotes');
+}
+window.pdAddQuote=pdAddQuote;
 function openBrochure(code, officialDocs){
   const pl = brochurePayload(code); if(!pl) return;
   const docs = Array.isArray(officialDocs)?officialDocs:[];
@@ -7076,6 +7086,26 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .acpend{background:#fff8e6;border-color:#f4d58d}
   .acerr{color:#b42323;font-size:13px;min-height:16px;margin-top:6px}
   @media(max-width:640px){#p360wrap .acgrid{grid-template-columns:1fr}#p360wrap .acsm{min-height:44px}}
+  /* C3-07 Stage 4: quotes + retail prices */
+  #p360wrap .qacts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  #p360wrap .qline .qctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}
+  #p360wrap .qline .qctl input[type=number]{width:70px;border:1px solid var(--line);border-radius:8px;padding:6px}
+  #p360wrap .qline .qctl select{max-width:100%;border:1px solid var(--line);border-radius:8px;padding:6px;font-family:inherit;font-size:13px}
+  #p360wrap .qline .qonce{width:100px;border:1px solid var(--line);border-radius:8px;padding:6px}
+  #p360wrap .qline .qamt{margin-left:auto;font-weight:700}
+  #p360wrap .acloc-d{margin:8px 0 2px}
+  #p360wrap .rp-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}
+  #p360wrap .rp-bar select,#p360wrap .rp-bar input{border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit;font-size:14px;max-width:100%}
+  #p360wrap .rp-l{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px}
+  #p360wrap .rp-bulk{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:6px 0}
+  #p360wrap .rp-bulk .rp-sp{flex:1}#p360wrap .rp-mk{display:inline-flex;gap:4px;align-items:center}
+  #p360wrap .rp-mk input{border:1px solid var(--line);border-radius:8px;padding:6px}
+  #p360wrap .rp-only{font-size:12.5px;display:inline-flex;gap:4px;align-items:center}
+  #p360wrap .rp-in{width:96px;text-align:right;border:1px solid var(--line);border-radius:8px;padding:6px}
+  #p360wrap .rp-tbl tr.rp-ed td{background:#fff8e6}#p360wrap .rp-neg{color:#b42323}
+  #p360wrap .rp-save{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:12px;position:sticky;bottom:0;background:#fff;padding:8px 0}
+  #p360wrap .rp-save span{margin-right:auto;font-size:13px;color:var(--muted)}
+  @media(max-width:640px){#p360wrap .rp-in,#p360wrap .qline .qonce,#p360wrap .qline .qctl input[type=number],#p360wrap .rp-bar input,#p360wrap .rp-bar select{font-size:16px}#p360wrap .rp-in,#p360wrap .qline .qonce,#p360wrap .qline .qctl input[type=number],#p360wrap .qline .qctl select,#p360wrap .rp-bar input,#p360wrap .rp-bar select,#p360wrap .rp-mk input,#p360wrap #qsearch,#p360wrap #qsel,#p360wrap .fld2 input,#p360wrap .fld2 select{min-height:44px}#p360wrap .rp-mk input,#p360wrap #qsearch{font-size:16px}#p360wrap .qline .qamt{margin-left:0}}
   #p360wrap .rl:first-child{border-top:0}
   #p360wrap .rl .b{flex:1;min-width:0}
   #p360wrap .rl .n{font-size:13.5px;font-weight:700;color:var(--navy);line-height:1.2}
@@ -7228,6 +7258,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   <div class="view" id="view-orders"><div class="msg">Loading…</div></div>
   <div class="view" id="view-reports"><div class="msg">Loading…</div></div>
   <div class="view" id="view-quotes"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-retail"><div class="msg">Loading…</div></div>
   <div class="view" id="view-favorites"><div class="msg">Loading…</div></div>
   <div class="view" id="view-showroom"><div class="msg">Loading…</div></div>
   <div class="view" id="view-resources"><div class="msg">Loading…</div></div>
@@ -7529,6 +7560,7 @@ function quoteOptionText(p){
   if(!t){ const v=(typeof variantLabel==='function')?String(variantLabel(p)||''):''; if(v&&v!==p.code&&v!==groupDisplayName(p)) t=v; }
   return t;
 }
+function quoteImg(p){ let u=String((p&&(p.image||(Array.isArray(p.images)&&p.images[0])))||'').trim(); if(u&&typeof u==='object') u=''; if(u.startsWith('/')&&!u.startsWith('//')) u=location.origin+u; return /^https:\/\//i.test(u)?u:''; }
 function quoteEntry(p, line, upgrade){
   const q=upgrade?withUpgrade(p,upgrade):p; if(!q) return null;
   const m=Number(q.msrp); const msrp=(!q._msrp_suggested&&isFinite(m)&&m>0)?m:null;
@@ -7536,7 +7568,7 @@ function quoteEntry(p, line, upgrade){
   const opt=quoteOptionText(p);
   return {key:line.slug+'|'+p.code+(upgrade?'|u='+upgrade:''), code:p.code, mfr:line.slug, mfrName:line.name, family:groupDisplayName(p)||p.name||p.code,
     option:[opt, upgrade?('Upgrade: '+upgrade):''].filter(Boolean).join(' · '), name:p.name||p.code, msrp, msrpEach:!!(msrp!=null&&typeof msrpIsEach==='function'&&msrpIsEach(q)),
-    cost, map:(q.map!=null&&q.map!==''&&isFinite(Number(q.map)))?Number(q.map):null, category:p.category||'', upgrade:upgrade||''};
+    cost, map:(q.map!=null&&q.map!==''&&isFinite(Number(q.map)))?Number(q.map):null, category:p.category||'', upgrade:upgrade||'', image:quoteImg(p)};
 }
 let QUOTE_UNAVAILABLE=[];   /* lines whose catalog could not be loaded — said on screen, never silently missing */
 async function hubStoreCatalog(){
@@ -7616,7 +7648,7 @@ async function buildQuoteCatalog(sig){
         const opt={code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category};
         quote.push(opt);
         if(!e.upgrade) list.push({code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category});
-        PRICE[e.key]={msrp:e.msrp,map:e.map,cost:e.cost,category:e.category,name:e.family,option:e.option,sku:e.code,mfrName:e.mfrName,msrpEach:e.msrpEach,quotable:true};
+        PRICE[e.key]={msrp:e.msrp,map:e.map,cost:e.cost,category:e.category,name:e.family,option:e.option,sku:e.code,mfrName:e.mfrName,msrpEach:e.msrpEach,quotable:true,image:e.image};
       }
     }
   }catch(e){}
@@ -7671,7 +7703,7 @@ function renderReports(){
   const toprows=a.prod.slice(0,10).map(p=>`<tr><td><b>${esc(p.name)}</b><div style="font-size:11px;color:var(--muted)">${esc(p.mfrName)} · #${esc(p.code)}</div></td><td class="n tnum">${p.qty}</td><td class="n tnum">${money(p.spend)}</td><td class="n tnum" style="color:var(--green)">${money(p.retail)}${p.est?' <span class="est">est</span>':''}</td><td class="n tnum">${money(p.retail-p.spend)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No products in this period.</td></tr>';
   $("#view-reports").innerHTML=`
     <div class="ph"><div><h1>Reports</h1><div class="sub">Purchases, manufacturer performance &amp; retail opportunity</div></div>
-      <div><select class="btn gh" onchange="REPORT_YEAR=this.value;renderReports()">${yearOpts}</select> <a class="btn gh" onclick="exportReportCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a></div></div>
+      <div><select class="btn gh" onchange="p360ReportYear(this.value)">${yearOpts}</select> <a class="btn gh" onclick="exportReportCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a></div></div>
     <div class="kpis">
       <div class="kpi accent"><div class="kl">Spend${year==='all'?' — all time':' — '+year}</div><div class="kv o tnum">${money(a.spend)}</div><div class="ks">${num(a.units)} units</div></div>
       <div class="kpi"><div class="kl">Retail revenue opportunity</div><div class="kv g tnum">${money(a.retail)}</div><div class="ks">at MSRP / estimate</div></div>
@@ -7709,7 +7741,7 @@ window.exportHistoryCSV=exportHistoryCSV;window.exportReportCSV=exportReportCSV;
 
 /* ================= PHASE 3: favorites, branding, quotes, pricing requests ================= */
 let FAVS=new Set(), BRANDING={logo_url:null}, _catFavReady=false;
-let QUOTE=[], QCUST={name:"",valid:"30 days"};
+let QUOTE=[], QCUST={name:"",email:"",phone:"",title:"",valid:"30 days",notes:""};
 async function ensureCatalogFav(){ await loadPricing(); await ensureQuoteCatalog(); if(!_catFavReady){ await loadFavorites(); _catFavReady=true; } }
 
 async function loadFavorites(){
@@ -7742,25 +7774,58 @@ function applyBranding(){ const el=$("#brandLogo"); if(el)el.innerHTML=brandLogo
 
 /* quotes */
 function hashStr(s){let h=0;for(let i=0;i<String(s).length;i++){h=(h*31+String(s).charCodeAt(i))|0;}return h;}
-async function loadQuotesView(){ await ensureCatalogFav(); renderQuotes(); }
+async function loadQuotesView(){ await Promise.all([ensureCatalogFav(), (typeof loadRetail==='function'?loadRetail().catch(()=>null):null), (!AC&&!window.__PREVIEW__?api(TOOLS_ENDPOINT,{action:'account_center'}).then(a=>{ if(a&&a.ok) AC=a; }).catch(()=>null):null)]); renderQuotes(); }
 /* QUOTE RULES (owner, 2026-10-31). A quote shows only a manufacturer-provided MSRP. A product without one reads
    "MSRP not provided" and is left out of the total — never a 2x-dealer-cost estimate, and never the dealer's own
    price in its place. New quotes offer no product of an inactive line (manufacturers.json "quotable": false —
    Ohio Medical / GCE); an item already on a quote stays on it. */
 function quoteMsrp(p){ const v=p&&p.msrp!=null?Number(p.msrp):NaN; return (isFinite(v)&&v>0)?v:null; }
 function quotableLine(slug){ if(typeof isRetiredSlug==="function"&&isRetiredSlug(slug)) return false; const m=(MFRLIST||[]).find(x=>x.slug===slug); return !(m&&m.quotable===false); }
-function quoteTotal(picked){ return picked.reduce((s,r)=>s+(r.msrp!=null?r.msrp:0),0); }
 function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">MSRP not provided</span>'; }
 function quoteItemHtml(r){ return `${esc(r.name)}<div style="font-size:10.5px;color:var(--muted)">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)}</div>`; }
-function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const p=(PRICE&&PRICE[k])||((typeof GQUOTE!=="undefined"&&GQUOTE[k])||{});
-  return {key:k,mfr,code,sku:p.sku||code.split("|u=")[0],name:p.name||code,option:p.option||"",mfrName:p.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach};}); }
+function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const sn=(typeof QSNAP!=="undefined"&&QSNAP[k])||{};const p=(PRICE&&PRICE[k])||((typeof GQUOTE!=="undefined"&&GQUOTE[k])||sn);
+  return {key:k,mfr,code,sku:p.sku||sn.sku||code.split("|u=")[0],name:p.name||sn.name||code,option:p.option||sn.option||"",mfrName:p.mfrName||sn.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach,image:p.image||sn.image||""};}); }
+/* ---------- C3-07 Stage 4: CUSTOMER QUOTES (owner 2026-11-05; pricing choices D3) ----------
+   Each line has a quantity and ONE customer price basis — the three approved choices:
+     MSRP     the manufacturer's verified suggested retail (never a 2x estimate; an upgraded configuration has none)
+     My retail the dealer's saved retail price (dealer-retail-api; this location's own price wins over the company default)
+     One-time a price for this quote only — with "Save as my retail price" to keep it
+   The dealer's own cost NEVER appears on the quote, its preview, the PDF or the email. Quotes are saved, reopened, printed
+   (Save as PDF) and emailed through dealer-quotes-api, which re-checks every price on HCPS's records and brands the quote
+   from HCPS's own dealer record. */
+const QUOTES_API="https://homecareproviderservices.netlify.app/.netlify/functions/dealer-quotes-api";
+let QMETA={}, QSNAP={}, QSAVED=null, QLIST=null, QDIRTY=false, QBUSY=false, QLOCRETAIL=null;   // QLOCRETAIL: saved retail at an opened quote's OTHER location
+async function quotesCall(body){
+  if(typeof PREVIEW!=='undefined'&&PREVIEW) return {ok:false,error:'Read-only preview — saved quotes are not available here.'};
+  if(!(typeof AUTH!=='undefined'&&AUTH&&AUTH.session&&AUTH.session.access_token)) return {ok:false,error:'Please sign in again.'};
+  try{ await ensureFreshSession(); }catch(e){}
+  try{ const r=await fetch(QUOTES_API,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+AUTH.session.access_token},body:JSON.stringify(body)});
+    return await r.json().catch(()=>({ok:false,error:'Please try again.'})); }catch(e){ return {ok:false,error:'Please try again.'}; }
+}
+const qIsUpgrade=k=>/\|u=/.test(k);
+function qSaved(r){ const k=r.mfr+'|'+r.code; if(QLOCRETAIL) return QLOCRETAIL[k]!=null?Number(QLOCRETAIL[k]):null; const x=(typeof RETAIL!=='undefined'&&RETAIL&&RETAIL.byKey)?RETAIL.byKey[k]:null; return x?Number(x.price):null; }
+function qMsrpOk(r){ return r.msrp!=null&&!qIsUpgrade(r.key); }
+function qMeta(r){
+  let m=QMETA[r.key]; if(!m){ m=QMETA[r.key]={qty:1,basis:qSaved(r)!=null?'retail':(qMsrpOk(r)?'msrp':'once'),unit:null}; }
+  if(m.basis==='retail'&&qSaved(r)==null&&RETAIL) m.basis=qMsrpOk(r)?'msrp':'once';
+  if(m.basis==='msrp'&&!qMsrpOk(r)) m.basis=qSaved(r)!=null?'retail':'once';
+  return m;
+}
+function qUnit(r){ const m=qMeta(r); return m.basis==='msrp'?r.msrp:m.basis==='retail'?qSaved(r):(m.unit>0?m.unit:null); }
+function quoteTotal(picked){ return picked.reduce((s,r)=>{ const u=qUnit(r); return s+(u!=null?u*qMeta(r).qty:0); },0); }
+function qMoney(v){ return '$'+Number(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
 function quotePaperHtml(picked,total){
-  return `<div class="qhead"><div style="display:flex;gap:11px;align-items:center">${brandLogoHtml(46)}<div><div class="qbiz">${esc((PROFILE&&PROFILE.name)||"Your Business")}</div></div></div>
-    <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>#Q-${(Math.abs(hashStr((PROFILE&&PROFILE.name)||"x"))%9000+1000)}</b><div class="qc">Valid ${esc(QCUST.valid||"")}</div></div></div>
-    ${QCUST.name?`<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">Prepared for <b>${esc(QCUST.name)}</b></div>`:""}
-    <table class="qtbl"><thead><tr><th>Product</th><th>Mfr</th><th style="text-align:right">MSRP</th></tr></thead><tbody>${picked.map(r=>`<tr><td>${quoteItemHtml(r)}</td><td>${esc(String(r.mfrName).split(" ")[0])}</td><td style="text-align:right">${quoteMsrpHtml(r)}</td></tr>`).join("")||'<tr><td colspan="3" style="color:#9aa4ae">No items yet.</td></tr>'}</tbody></table>
-    <div class="qtot">Total MSRP: ${money(total)}</div>
-    <div style="font-size:10px;color:var(--muted);margin-top:10px">Manufacturer suggested retail. Prepared by ${esc((PROFILE&&PROFILE.name)||"your business")} via HCPS.${picked.some(r=>r.msrp==null)?" Items marked “MSRP not provided” have no manufacturer MSRP and are not in the total.":""}</div>`;
+  const co=(typeof AC!=='undefined'&&AC&&AC.company)||{};
+  const biz=co.business_name||(PROFILE&&PROFILE.name)||"Your Business";
+  const logo=co.logo_url||BRANDING.logo_url;
+  return `<div class="qhead"><div style="display:flex;gap:11px;align-items:center">${logo?`<img src="${esc(logo)}" alt="" style="max-width:120px;max-height:46px;object-fit:contain" onerror="this.remove()">`:brandLogoHtml(46)}<div><div class="qbiz">${esc(biz)}</div><div class="qc">${esc([co.phone,co.email].filter(Boolean).join(" · "))}</div></div></div>
+    <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>${QSAVED?esc(QSAVED.quote_no):"Draft"}</b><div class="qc">Valid ${esc(QCUST.valid||"30 days")}</div></div></div>
+    ${QCUST.name||QCUST.title?`<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">${QCUST.name?`Prepared for <b>${esc(QCUST.name)}</b>`:""}${QCUST.title?`<div>${esc(QCUST.title)}</div>`:""}</div>`:""}
+    <table class="qtbl"><thead><tr><th>Product</th><th style="text-align:right">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Amount</th></tr></thead><tbody>${picked.map(r=>{ const u=qUnit(r), q=qMeta(r).qty;
+      return `<tr><td>${quoteItemHtml(r)}</td><td style="text-align:right">${q}</td><td style="text-align:right">${u!=null?qMoney(u)+(qMeta(r).basis==='msrp'&&r.msrpEach?' each':'')+(qMeta(r).basis==='msrp'?'<div style="font-size:9.5px;color:var(--muted)">MSRP</div>':''):(qMsrpOk(r)?'<span class="est">Price on request</span>':'<span class="est">MSRP not provided</span>')}</td><td style="text-align:right">${u!=null?qMoney(u*q):'—'}</td></tr>`; }).join("")||'<tr><td colspan="4" style="color:var(--muted)">Add products to build the quote.</td></tr>'}</tbody></table>
+    <div class="qtot">Total: ${qMoney(total)}</div>
+    ${QCUST.notes?`<div style="font-size:11px;margin-top:8px;white-space:pre-wrap">${esc(QCUST.notes)}</div>`:""}
+    <div style="font-size:10px;color:var(--muted);margin-top:10px">Prices quoted by ${esc(biz)}.${picked.some(r=>qUnit(r)==null)?" Items without a price are not in the total.":""} The printed / emailed quote is checked against HCPS's records.</div>`;
 }
 /* The quote picker: every product this dealer may quote now (QUOTELIST — see hubStoreCatalog), one group per manufacturer,
    products by name, each SKU with its exact options; a search box narrows it by name, option, part number or line. */
@@ -7769,37 +7834,278 @@ function quoteOptionsHtml(){
   const words=String(QSEARCH||"").toLowerCase().split(/\s+/).filter(Boolean);
   const avail=(QUOTELIST||[]).filter(p=>quotableLine(p.mfr)&&!QUOTE.includes(p.mfr+"|"+p.code)&&(!words.length||words.every(w=>(p.name+" "+p.code+" "+p.mfrName).toLowerCase().includes(w))));
   const byLine=new Map(); avail.forEach(p=>{ if(!byLine.has(p.mfrName)) byLine.set(p.mfrName,[]); byLine.get(p.mfrName).push(p); });
-  const html=[...byLine.keys()].sort((a,b)=>String(a).localeCompare(String(b))).map(n=>`<optgroup label="${esc(n)}">`+byLine.get(n).slice().sort((x,y)=>String(x.name).localeCompare(String(y.name),undefined,{numeric:true})||String(x.code).localeCompare(String(y.code))).map(p=>`<option value="${esc(p.mfr+"|"+p.code)}">${esc(p.name)} (#${esc(p.code.split("|u=")[0])})</option>`).join("")+`</optgroup>`).join("");
+  const html=[...byLine.keys()].sort((a,b)=>String(a).localeCompare(String(b))).map(n=>`<optgroup label="${esc(n)}">`+byLine.get(n).slice().sort((x,y)=>String(x.name).localeCompare(String(y.name),undefined,{numeric:true})||String(x.code).localeCompare(String(y.code))).map(p=>`<option value="${esc(p.mfr+"|"+p.code)}">${esc(p.name)} · #${esc(String(p.code).split("|u=")[0])}</option>`).join("")+`</optgroup>`).join("");
   return {html, count:avail.length};
 }
 function qFilter(v){ QSEARCH=String(v||""); const sel=$("#qsel"); if(!sel) return; const o=quoteOptionsHtml(); sel.innerHTML=o.html; const c=$("#qcount"); if(c) c.textContent=o.count+" product"+(o.count===1?"":"s"); }
-function qDelAt(i){ const k=quotePicked()[i]; if(k){ QUOTE=QUOTE.filter(x=>x!==k.key); renderQuotes(); } }
+function qDelAt(i){ const k=quotePicked()[i]; if(k){ QUOTE=QUOTE.filter(x=>x!==k.key); delete QMETA[k.key]; QDIRTY=true; renderQuotes(); } }
+function qLineHtml(r,i){
+  const m=qMeta(r), saved=qSaved(r), u=qUnit(r);
+  const opt=(v,label,on)=>`<option value="${v}" ${m.basis===v?'selected':''} ${on?'':'disabled'}>${label}</option>`;
+  return `<div class="rl qline"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)} · ${esc(r.mfrName)}</div>
+    <div class="qctl"><label>Qty <input type="number" min="1" max="9999" step="1" value="${m.qty}" aria-label="Quantity for ${esc(r.name)}" onchange="qSetQty(${i},this.value)"></label>
+      <select aria-label="Customer price for ${esc(r.name)}" onchange="qSetBasis(${i},this.value)">${opt('msrp','MSRP '+(qMsrpOk(r)?qMoney(r.msrp)+(r.msrpEach?' each':''):'— not published'),qMsrpOk(r))}${opt('retail','My retail '+(saved!=null?qMoney(saved):'— none saved'),saved!=null)}${opt('once','One-time price',true)}</select>
+      ${m.basis==='once'?`<input class="qonce" inputmode="decimal" placeholder="$0.00" value="${m.unit>0?m.unit:''}" aria-label="One-time price for ${esc(r.name)}" onchange="qSetUnit(${i},this.value)">
+        <button type="button" class="btn gh acsm" onclick="qSaveRetail(${i})" ${m.unit>0&&!QLOCRETAIL?'':'disabled'} ${QLOCRETAIL?'title="Set this location\'s prices in My Retail Prices"':''}>Save as my retail price</button>`:''}
+      <span class="qamt">${u!=null?qMoney(u*m.qty):'<span class="est">Price on request</span>'}</span></div></div>
+    <a class="btn gh" title="Remove" aria-label="Remove ${esc(r.name)}" onclick="qDelAt(${i})">✕</a></div>`;
+}
+function qSetQty(i,v){ const r=quotePicked()[i]; if(!r) return; const n=Math.max(1,Math.min(9999,Math.round(Number(v)||1))); qMeta(r).qty=n; QDIRTY=true; renderQuotes(); }
+function qSetBasis(i,v){ const r=quotePicked()[i]; if(!r) return; qMeta(r).basis=v; QDIRTY=true; renderQuotes(); }
+function qSetUnit(i,v){ const r=quotePicked()[i]; if(!r) return; const n=Number(String(v).replace(/[$,\s]/g,'')); qMeta(r).unit=(n>0&&n<=1000000)?Math.round(n*100)/100:null; QDIRTY=true; renderQuotes(); }
+async function qSaveRetail(i){ const r=quotePicked()[i]; if(!r) return; const m=qMeta(r); if(!(m.unit>0)) return;
+  const res=await retailCall({action:'retail_set',rows:[{manufacturer:r.mfr,code:r.code,price:m.unit}]});
+  if(res&&res.ok){ await loadRetail(true); m.basis='retail'; QDIRTY=true; qToast('Saved as your retail price for #'+r.sku+'.'); renderQuotes(); } else qToast((res&&res.error)||'Could not save just now.',true); }
+function qToast(msg,bad){ const el=$("#qmsg"); if(el){ el.textContent=msg; el.style.color=bad?'#b42323':''; } }
+function qLinesPayload(){ return quotePicked().map(r=>{ const m=qMeta(r); const golden=/^golden(-technologies)?$/.test(r.mfr);
+  return {mfr:r.mfr,code:r.code,sku:r.sku,name:r.name,option:r.option||'',mfrName:r.mfrName,qty:m.qty,basis:m.basis,unit:m.basis==='once'?m.unit:(m.basis==='msrp'&&golden?r.msrp:null),image:r.image||''}; }); }
+function qHeaderPayload(){ return {title:QCUST.title||'',customer_name:QCUST.name||'',customer_email:QCUST.email||'',customer_phone:QCUST.phone||'',valid_for:QCUST.valid||'30 days',notes:QCUST.notes||''}; }
+function qCheckLines(){ const p=quotePicked(); if(!p.length) return 'Add at least one product.'; const bad=p.find(r=>qMeta(r).basis==='once'&&!(qMeta(r).unit>0)); return bad?('Enter the one-time price for '+bad.name+'.'):''; }
+async function qSave(){
+  if(QBUSY) return false; const e=qCheckLines(); if(e){ qToast(e,true); return false; }
+  QBUSY=true; qToast('Saving…');
+  const body={action:'quote_save',header:qHeaderPayload(),lines:qLinesPayload()}; if(QSAVED){ body.id=QSAVED.id; body.updated_at=QSAVED.updated_at; }
+  const r=await quotesCall(body); QBUSY=false;
+  if(r&&r.ok&&r.quote){ QSAVED={id:r.quote.id,quote_no:r.quote.quote_no,updated_at:r.quote.updated_at,status:r.quote.status}; QDIRTY=false; QLIST=null; qToast('Saved as quote '+r.quote.quote_no+'.'); renderQuotes(); return true; }
+  qToast((r&&r.error)||'Could not save just now.',true); return false;
+}
+function qNew(){ if(QDIRTY&&!confirm('Start a new quote? Unsaved changes to this one will be lost.')) return; QUOTE=[]; QMETA={}; QSNAP={}; QSAVED=null; QLOCRETAIL=null; QDIRTY=false; QCUST={name:"",email:"",phone:"",title:"",valid:"30 days",notes:""}; renderQuotes(); }
+async function qOpen(id){
+  if(QDIRTY&&!confirm('Open this quote? Unsaved changes to the current one will be lost.')) return;
+  qToast('Opening…'); const r=await quotesCall({action:'quote_get',id});
+  if(!(r&&r.ok&&r.quote)){ qToast((r&&r.error)||'Could not open that quote.',true); return; }
+  const q=r.quote; QUOTE=[]; QMETA={}; QSNAP={};
+  (q.lines||[]).forEach(l=>{ const k=l.mfr+'|'+l.code; if(QUOTE.includes(k)) return; QUOTE.push(k); QMETA[k]={qty:l.qty||1,basis:l.basis,unit:l.basis==='once'?l.unit:null};
+    QSNAP[k]={name:l.name,option:l.option,sku:l.sku,mfrName:l.mfrName,msrp:(/^golden/.test(l.mfr)&&l.basis==='msrp')?l.unit:null,image:l.image}; });
+  QCUST={name:q.customer_name||"",email:q.customer_email||"",phone:q.customer_phone||"",title:q.title||"",valid:q.valid_for||"30 days",notes:q.notes||""};
+  QLOCRETAIL=r.own_location===false?(r.retail_at_location||{}):null;   // a branch's quote previews at that branch's prices
+  QSAVED={id:q.id,quote_no:q.quote_no,updated_at:q.updated_at,status:q.status}; QDIRTY=false; renderQuotes(); window.scrollTo({top:0}); }
+async function qDelete(id,no){ if(!confirm('Delete quote '+no+'? This cannot be undone.')) return;
+  const r=await quotesCall({action:'quote_delete',id}); if(r&&r.ok){ if(QSAVED&&QSAVED.id===id){ QSAVED=null; QDIRTY=QUOTE.length>0; } QLIST=null; renderQuotes(); } else qToast((r&&r.error)||'Could not delete just now.',true); }
+async function qPrint(){
+  const e=qCheckLines(); if(e){ qToast(e,true); return; }
+  qToast('Building your quote…');
+  const r=await quotesCall(QSAVED&&!QDIRTY?{action:'quote_render',id:QSAVED.id}:{action:'quote_render',header:qHeaderPayload(),lines:qLinesPayload()});
+  if(!(r&&r.ok&&r.html)){ qToast((r&&r.error)||'Could not build the quote.',true); return; }
+  const old=document.getElementById('qFrame'); if(old) old.remove();
+  const f=document.createElement('iframe'); f.id='qFrame'; f.setAttribute('title','Quote for printing'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0';
+  document.body.appendChild(f);
+  f.onload=function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(x){} qToast('Quote ready — choose “Save as PDF” in the print dialog to keep a copy.'); };
+  f.srcdoc=r.html;
+}
+async function qEmailOpen(){
+  if(!QSAVED||QDIRTY){ const ok=await qSave(); if(!ok) return; }
+  $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Email quote ${esc(QSAVED.quote_no)}</h3><a class="mx" onclick="closeModal()">✕</a></div>
+    <div class="fld2"><label for="qTo">Customer email</label><input id="qTo" type="email" value="${esc(QCUST.email||'')}" autocomplete="off"></div>
+    <div class="fld2"><label for="qMsg">Message (optional)</label><textarea id="qMsg" rows="4" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:16px"></textarea></div>
+    <div class="lead-note">Sent from HCPS on your behalf with your name and logo; replies come to your email. One customer per send.</div>
+    <div class="acerr" id="qErr" role="alert"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><a class="btn gh" onclick="closeModal()">Cancel</a><a class="btn pri" id="qSend">Send quote</a></div></div>`;
+  $("#modal").classList.add("on");
+  $("#qSend").onclick=async()=>{ const btn=$("#qSend"); btn.style.pointerEvents="none"; btn.textContent="Sending…";
+    const r=await quotesCall({action:'quote_email',id:QSAVED.id,to:($("#qTo").value||'').trim(),message:$("#qMsg").value||''});
+    if(r&&r.ok){ closeModal(); QLIST=null; qToast('Quote '+QSAVED.quote_no+' sent to '+r.sent_to+'.'); const g=await quotesCall({action:'quote_get',id:QSAVED.id}); if(g&&g.ok&&g.quote) QSAVED.updated_at=g.quote.updated_at; renderQuotes(); return; }
+    btn.style.pointerEvents=""; btn.textContent="Send quote"; $("#qErr").textContent=(r&&r.error)||'Could not send just now.'; };
+}
+async function qLoadList(){ if(QLIST) return; const r=await quotesCall({action:'quote_list'}); QLIST=(r&&r.ok)?r.quotes:{error:(r&&r.error)||'Could not load your saved quotes.'}; renderQuotes(); }
+function qListHtml(){
+  if(!QLIST) return '<div class="m" style="color:var(--muted)">Loading your saved quotes…</div>';
+  if(QLIST.error) return `<div class="m" style="color:var(--muted)">${esc(QLIST.error)}</div>`;
+  if(!QLIST.length) return '<div class="m" style="color:var(--muted)">No saved quotes yet — build one above and press Save.</div>';
+  return `<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Quote</th><th>Customer</th><th>Updated</th><th>Status</th><th></th></tr></thead><tbody>${QLIST.map(q=>`<tr><td><b>${esc(q.quote_no)}</b>${q.title?`<div style="font-size:11px;color:var(--muted)">${esc(q.title)}</div>`:''}${q.location_name?`<div style="font-size:11px;color:var(--muted)">${esc(q.location_name)}</div>`:''}</td><td>${esc(q.customer_name||'—')}</td><td>${dateShort(q.updated_at)}</td><td>${q.status==='sent'?`<span class="pill done">Sent${q.sent_count>1?' ×'+q.sent_count:''}</span>`:'<span class="pill open">Draft</span>'}</td>
+    <td class="n" style="white-space:nowrap"><a class="btn gh acsm" data-id="${esc(q.id)}" onclick="qOpen(this.dataset.id)">Open</a> <a class="btn gh acsm" data-id="${esc(q.id)}" data-no="${esc(q.quote_no)}" onclick="qDelete(this.dataset.id,this.dataset.no)">Delete</a></td></tr>`).join('')}</tbody></table></div>`;
+}
 function renderQuotes(){
   const picked=quotePicked(); const total=quoteTotal(picked);
   const o=quoteOptionsHtml(); const opts=o.html;
   const unavailable=(QUOTE_UNAVAILABLE||[]).length?`<div style="font-size:12px;color:#b9791a;margin-bottom:8px">Could not load right now: ${esc(QUOTE_UNAVAILABLE.join(", "))} — reload to try again.</div>`:"";
-  $("#view-quotes").innerHTML=`<div class="ph"><div><h1>Customer MSRP Quotes</h1><div class="sub">Build a branded quote for your customer from any HCPS product</div></div>
-     <div><a class="btn gh" onclick="printPDF()">⬇ Print / PDF</a> <a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
+  const fld=(id,label,key,extra)=>`<div class="fld2"><label for="${id}">${label}</label><input id="${id}" value="${esc(QCUST[key]||"")}" ${extra||""} oninput="qCust('${key}',this.value)"></div>`;
+  $("#view-quotes").innerHTML=`<div class="ph"><div><h1>Customer Quotes</h1><div class="sub">Build, save, print and email a quote on your own letterhead — MSRP, your retail price or a one-time price</div></div>
+     <div class="qacts"><a class="btn gh" onclick="qNew()">＋ New quote</a> <a class="btn gh" onclick="qPrint()">⬇ Print / PDF</a> <a class="btn gh" onclick="qEmailOpen()">✉ Email</a> <a class="btn pri" onclick="qSave()">${QSAVED?'Save changes':'Save quote'}</a></div></div>
+   <div id="qmsg" class="lead-note" role="status" style="min-height:18px;margin:-4px 0 8px">${QSAVED?`Quote ${esc(QSAVED.quote_no)}${QDIRTY?' — unsaved changes':''}`:(QDIRTY?'Not saved yet':'')}</div>
    <div class="qbuild">
-    <div class="card" style="margin-top:0"><h3>Build the quote</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">MSRP is the manufacturer’s suggested retail; a product without one shows “MSRP not provided”.</div>
-      ${unavailable}<div style="display:flex;gap:8px;margin-bottom:6px;align-items:center"><input id="qsearch" type="search" placeholder="Search name, part # or option" aria-label="Search products for the quote" value="${esc(QSEARCH)}" oninput="qFilter(this.value)" style="flex:1;border:1px solid var(--line);border-radius:9px;padding:9px;font-family:inherit;font-size:13px;min-width:0"><span id="qcount" style="font-size:11.5px;color:var(--muted);white-space:nowrap">${o.count} product${o.count===1?"":"s"}</span></div>
+    <div class="card" style="margin-top:0"><h3>Products</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Choose each line's customer price. Your cost is never shown on the quote. <a onclick="showP360('retail')" style="cursor:pointer">Manage my retail prices →</a></div>
+      ${unavailable}<div style="display:flex;gap:8px;margin-bottom:6px;align-items:center"><input id="qsearch" type="search" placeholder="Search name, part # or option" aria-label="Search products for the quote" value="${esc(QSEARCH)}" oninput="qFilter(this.value)" style="flex:1;border:1px solid var(--line);border-radius:9px;padding:9px;font-family:inherit;font-size:16px"><span id="qcount" style="font-size:12px;color:var(--muted);white-space:nowrap">${o.count} product${o.count===1?"":"s"}</span></div>
       <div style="display:flex;gap:8px;margin-bottom:10px"><select id="qsel" aria-label="Product to add" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:9px;font-family:inherit;font-size:13px">${opts}</select><a class="btn nv" onclick="qAdd()">＋ Add</a></div>
-      <div class="rowlist">${picked.length?picked.map((r,i)=>`<div class="rl"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)} · ${esc(r.mfrName)} · ${quoteMsrpHtml(r,"MSRP ")}</div></div><a class="btn gh" title="Favorite" onclick="toggleFav('${esc(r.mfr)}','${esc(r.sku)}')">${FAVS.has(r.mfr+"|"+r.sku)?"♥":"♡"}</a> <a class="btn gh" onclick="qDelAt(${i})">Remove</a></div>`).join(""):`<div class="empty">Add a product above to start the quote.</div>`}</div>
+      <div class="rowlist">${picked.length?picked.map(qLineHtml).join(""):'<div class="m" style="color:var(--muted);padding:6px 0">No products yet — search and add above, or use “Add to a quote” on any product page.</div>'}</div>
       <div class="card" style="box-shadow:none;background:var(--surface-2);margin-top:14px">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Customer &amp; branding</div>
-        <div class="fld2"><label>Customer name</label><input value="${esc(QCUST.name)}" oninput="QCUST.name=this.value;qPreview()"></div>
-        <div class="fld2"><label>Valid for</label><input value="${esc(QCUST.valid)}" oninput="QCUST.valid=this.value;qPreview()"></div>
-        <div class="fld2"><label>Your logo URL (optional — shows on the quote)</label><input id="qlogo" value="${esc(BRANDING.logo_url||"")}" placeholder="https://…/logo.png"><a class="btn gh" style="margin-top:6px" onclick="saveBranding(document.getElementById('qlogo').value)">Save logo</a></div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Customer</div>
+        ${fld('qcn','Customer name','name')}${fld('qce','Customer email','email','type="email"')}${fld('qcp','Customer phone','phone','type="tel" inputmode="tel"')}
+        ${fld('qct','Project / reference (optional)','title')}${fld('qcv','Valid for','valid')}
+        <div class="fld2"><label for="qcnotes">Notes on the quote (optional)</label><textarea id="qcnotes" rows="3" oninput="qCust('notes',this.value)" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:16px">${esc(QCUST.notes||"")}</textarea></div>
       </div>
     </div>
     <div><div class="qprevlbl" style="font-size:12px;color:var(--muted);margin-bottom:8px">Live preview — what your customer sees</div><div id="qpaper" class="qpaper">${quotePaperHtml(picked,total)}</div></div>
-   </div>`;
+   </div>
+   <div class="card"><h3>Saved quotes</h3>${qListHtml()}</div>`;
+  if(!QLIST) qLoadList();
 }
+/* inline handlers run in the page's global scope, so the customer fields and the retail editor's controls go through
+   these two exported helpers (the quote / retail state lives inside this script) */
+function qCust(k,v){ if(!['name','email','phone','title','valid','notes'].includes(k)) return; QCUST[k]=String(v==null?'':v).slice(0,k==='notes'?2000:200); QDIRTY=true; qPreview(); }
+function rpUi(kind,v){ if(!RP) return;
+  if(kind==='line'){ RP.mfr=String(v||''); RP.limit=200; renderRetailView(); }
+  else if(kind==='search'){ RP.q=String(v||''); RP.limit=200; rpRefreshTable(); }
+  else if(kind==='discard'){ RP.edits={}; RP.msg=''; renderRetailView(); }
+  else if(kind==='more'){ RP.limit+=300; rpRefreshTable(); } }
 function qPreview(){ const picked=quotePicked(); const total=quoteTotal(picked); const el=$("#qpaper"); if(el)el.innerHTML=quotePaperHtml(picked,total); }
-function qAdd(){ const v=$("#qsel").value; if(v&&!QUOTE.includes(v))QUOTE.push(v); renderQuotes(); }
-function qDel(mfr,code){ QUOTE=QUOTE.filter(x=>x!==mfr+"|"+code); renderQuotes(); }
+function qAdd(){ const v=$("#qsel").value; if(v&&!QUOTE.includes(v)){ QUOTE.push(v); QDIRTY=true; } renderQuotes(); }
+function qDel(mfr,code){ QUOTE=QUOTE.filter(x=>x!==mfr+"|"+code); QDIRTY=true; renderQuotes(); }
+/* ---------- C3-07 Stage 4: MY RETAIL PRICES (owner 2026-11-05; D2 / D3) ----------
+   The dealer's own selling prices, used on quotes and brochures. A head office sets the COMPANY price and, where a location
+   sells differently, that location's own price; a branch login sets its own location's price only (the server decides —
+   dealer-retail-api). Bulk tools work on the products listed by the current search/filter; CSV import fills the editor
+   for review (nothing is saved until "Save changes"); every change is kept in the price history.
+   This page is dealer-only: it shows the dealer's cost and margin to help set a price. Neither ever reaches a customer. */
+let RP=null;   // {head_office, self_id, locations, prices:[…], target:"company"|<location id>, edits:{key:price|null}, q, mfr, limit}
+async function loadRetailView(){
+  const host=$("#view-retail"); if(host) host.innerHTML=`<div class="ph"><div><h1>My Retail Prices</h1><div class="sub">Loading your prices…</div></div></div>`;
+  if(window.__PREVIEW__){ host.innerHTML=`<div class="ph"><div><h1>My Retail Prices</h1></div></div><div class="card" style="margin-top:0">Read-only preview — retail prices are shown only when the dealer is signed in.</div>`; return; }
+  const [r]=await Promise.all([retailCall({action:'retail_list'}), ensureCatalogFav().catch(()=>null)]);
+  if(!(r&&r.ok)){ host.innerHTML=`<div class="ph"><div><h1>My Retail Prices</h1></div></div><div class="card" style="margin-top:0">${esc((r&&r.error)||'Your prices could not be loaded just now.')} <a class="btn gh" onclick="loadRetailView()">Try again</a></div>`; return; }
+  const keep=RP||{};
+  RP={head_office:!!r.head_office,self_id:String(r.self_id||''),locations:r.locations||[],prices:r.prices||[],
+    target:keep.target&&(keep.target==='company'?r.head_office:(r.locations||[]).some(l=>String(l.id)===keep.target))?keep.target:(r.head_office?'company':String(r.self_id||'')),
+    edits:{},q:keep.q||'',mfr:keep.mfr||'',limit:200,msg:''};
+  if(typeof loadRetail==='function') loadRetail(true).catch(()=>null);
+  renderRetailView();
+}
+function rpLoc(){ return RP.target==='company'?null:RP.target; }
+function rpCurrent(k){ const loc=rpLoc(); const x=RP.prices.find(p=>(p.manufacturer+'|'+p.code)===k&&String(p.location_id||'')===String(loc||'')); return x?Number(x.price):null; }
+function rpCompany(k){ const x=RP.prices.find(p=>(p.manufacturer+'|'+p.code)===k&&!p.location_id); return x?Number(x.price):null; }
+function rpValue(k){ return Object.prototype.hasOwnProperty.call(RP.edits,k)?RP.edits[k]:rpCurrent(k); }
+function rpRows(){
+  const words=String(RP.q||'').toLowerCase().split(/\s+/).filter(Boolean);
+  return (PRICELIST||[]).filter(p=>p&&p.code&&!/\|u=/.test(p.code)&&(!RP.mfr||p.mfr===RP.mfr)&&(!words.length||words.every(w=>(p.name+' '+p.code+' '+p.mfrName).toLowerCase().includes(w))))
+    .sort((a,b)=>String(a.mfrName).localeCompare(String(b.mfrName))||String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
+}
+function rpMoney(v){ return v==null||!isFinite(v)?'':'$'+Number(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+function renderRetailView(){
+  const host=$("#view-retail"); if(!host||!RP) return;
+  const rows=rpRows(), shown=rows.slice(0,RP.limit), nEdits=Object.keys(RP.edits).length;
+  const lines=[...new Map((PRICELIST||[]).map(p=>[p.mfr,p.mfrName])).entries()].sort((a,b)=>String(a[1]).localeCompare(String(b[1])));
+  const locOpts=(RP.head_office?[`<option value="company" ${RP.target==='company'?'selected':''}>Company price (all locations)</option>`]:[])
+    .concat(RP.locations.filter(l=>RP.head_office||String(l.id)===RP.self_id).map(l=>`<option value="${esc(l.id)}" ${RP.target===String(l.id)?'selected':''}>${esc(l.name||'This location')}${String(l.id)===RP.self_id?' (this login)':''} — own price</option>`)).join('');
+  const atLoc=RP.target!=='company';
+  host.innerHTML=`<div class="ph"><div><h1>My Retail Prices</h1><div class="sub">Your own selling prices for quotes and brochures. Never shown to customers as your cost.</div></div>
+      <div class="qacts"><a class="btn gh" onclick="showP360('quotes')">Customer quotes →</a></div></div>
+    <div class="card" style="margin-top:0">
+      <div class="rp-bar">
+        <label class="fld2" style="margin:0"><span class="rp-l">Prices for</span><select id="rpTarget" onchange="rpSetTarget(this.value)" ${RP.head_office?'':'disabled'}>${locOpts}</select></label>
+        <label class="fld2" style="margin:0"><span class="rp-l">Line</span><select onchange="rpUi('line',this.value)"><option value="">All lines</option>${lines.map(([s,n])=>`<option value="${esc(s)}" ${RP.mfr===s?'selected':''}>${esc(n)}</option>`).join('')}</select></label>
+        <label class="fld2" style="margin:0;flex:1;min-width:180px"><span class="rp-l">Search</span><input type="search" value="${esc(RP.q)}" placeholder="Name or part #" oninput="rpUi('search',this.value)"></label>
+      </div>
+      ${atLoc&&RP.head_office?`<div class="lead-note">A location's own price replaces the company price there. Leave it empty to use the company price (shown in grey).</div>`:''}
+      ${!RP.head_office?`<div class="lead-note">These are your location's own prices. Your head office's company prices (shown in grey) apply wherever you haven't set one.</div>`:''}
+      <div class="rp-bulk"><span><b id="rpCount">${rows.length}</b> listed</span>
+        <button type="button" class="btn gh acsm" onclick="rpBulk('msrp')">Set to MSRP</button>
+        <span class="rp-mk"><button type="button" class="btn gh acsm" onclick="rpBulk('markup')">Markup on cost ×</button><input id="rpMk" inputmode="decimal" value="1.8" aria-label="Markup multiplier" style="width:64px"></span>
+        <label class="rp-only"><input type="checkbox" id="rpOnlyEmpty" checked> only where empty</label>
+        <button type="button" class="btn gh acsm" onclick="rpBulk('clear')">Clear</button>
+        <span class="rp-sp"></span>
+        <label class="btn gh acsm" style="cursor:pointer">Import CSV<input type="file" accept=".csv,text/csv" style="display:none" onchange="rpImport(this)"></label>
+        <button type="button" class="btn gh acsm" onclick="rpExport()">Export CSV</button>
+      </div>
+      <div id="rpMsg" class="lead-note" role="status" style="min-height:18px">${esc(RP.msg||'')}</div>
+      <div id="rpTable">${rpTableHtml(shown,rows.length)}</div>
+      <div class="rp-save"><span>${nEdits?`<b>${nEdits}</b> unsaved change${nEdits===1?'':'s'}`:'No unsaved changes'}</span><a class="btn gh" onclick="rpUi('discard')" ${nEdits?'':'style="opacity:.5;pointer-events:none"'}>Discard</a><a class="btn pri" id="rpSave" onclick="rpSave()" ${nEdits?'':'style="opacity:.5;pointer-events:none"'}>Save changes</a></div>
+    </div>`;
+}
+function rpRefreshTable(){ const rows=rpRows(); const t=$("#rpTable"); if(t) t.innerHTML=rpTableHtml(rows.slice(0,RP.limit),rows.length); const c=$("#rpCount"); if(c) c.textContent=rows.length; }
+function rpTableHtml(shown,total){
+  if(!PRICELIST||!PRICELIST.length) return '<div class="m" style="color:var(--muted)">No products to price yet — your lines appear here once your account is set up.</div>';
+  if(!shown.length) return '<div class="m" style="color:var(--muted)">No products match.</div>';
+  const atLoc=RP.target!=='company';
+  return `<div style="overflow-x:auto"><table class="tbl rp-tbl"><thead><tr><th>Product</th><th class="n">Your cost</th><th class="n">MSRP</th><th class="n">Retail price</th><th class="n">Margin</th><th></th></tr></thead><tbody>${shown.map(p=>{
+    const k=p.mfr+'|'+p.code, v=rpValue(k), edited=Object.prototype.hasOwnProperty.call(RP.edits,k), fallback=(atLoc||!RP.head_office)?rpCompany(k):null;
+    const eff=v!=null?v:fallback, m=(eff!=null&&p.cost>0)?Math.round((eff-p.cost)/eff*100):null;
+    return `<tr${edited?' class="rp-ed"':''}><td><b>${esc(p.name)}</b><div style="font-size:11px;color:var(--muted)">#${esc(p.code)} · ${esc(p.mfrName)}</div></td>
+      <td class="n tnum">${p.cost!=null?rpMoney(p.cost):'—'}</td><td class="n tnum">${p.msrp!=null?rpMoney(p.msrp):'—'}</td>
+      <td class="n"><input class="rp-in" inputmode="decimal" value="${v!=null?Number(v).toFixed(2):''}" placeholder="${fallback!=null?Number(fallback).toFixed(2):'—'}" aria-label="Retail price for ${esc(p.name)}" data-k="${esc(k)}" onchange="rpEdit(this.dataset.k,this.value)"></td>
+      <td class="n tnum">${m!=null?`<span class="${m<0?'rp-neg':''}">${m}%</span>`:'—'}</td>
+      <td class="n"><a class="btn gh acsm" data-m="${esc(p.mfr)}" data-c="${esc(p.code)}" data-n="${esc(p.name)}" onclick="rpHistory(this.dataset.m,this.dataset.c,this.dataset.n)">History</a></td></tr>`; }).join('')}</tbody></table></div>
+    ${total>shown.length?`<div style="text-align:center;margin-top:10px"><a class="btn gh" onclick="rpUi('more')">Show more (${total-shown.length} more)</a></div>`:''}`;
+}
+function rpParse(v){ const s=String(v==null?'':v).replace(/[$,\s]/g,''); if(s==='') return null; const n=Number(s); return (isFinite(n)&&n>0&&n<=1000000)?Math.round(n*100)/100:NaN; }
+function rpEdit(k,v){ const n=rpParse(v); if(Number.isNaN(n)){ RP.msg='Enter a price greater than zero, or leave it empty.'; const m=$("#rpMsg"); if(m) m.textContent=RP.msg; return; }
+  if(n===rpCurrent(k)) delete RP.edits[k]; else RP.edits[k]=n; RP.msg=''; renderRetailView(); }
+function rpSetTarget(v){ if(Object.keys(RP.edits).length&&!confirm('Switch prices? Your unsaved changes here will be discarded.')){ renderRetailView(); return; } RP.target=v; RP.edits={}; RP.msg=''; renderRetailView(); }
+function rpBulk(kind){
+  const rows=rpRows(), only=!!(($("#rpOnlyEmpty")||{}).checked); let n=0, skipped=0;
+  const mk=Number(String((($("#rpMk")||{}).value)||'').replace(/[^0-9.]/g,''));
+  if(kind==='markup'&&!(mk>1&&mk<=20)){ RP.msg='Enter a markup multiplier above 1 (for example 1.8).'; renderRetailView(); return; }
+  for(const p of rows){ const k=p.mfr+'|'+p.code; const cur=rpValue(k);
+    if(only&&cur!=null&&kind!=='clear') continue;
+    let v;
+    if(kind==='msrp'){ if(p.msrp==null){ skipped++; continue; } v=p.msrp; }
+    else if(kind==='markup'){ if(!(p.cost>0)){ skipped++; continue; } v=Math.round(p.cost*mk*100)/100; }
+    else v=null;
+    if(v===rpCurrent(k)) delete RP.edits[k]; else RP.edits[k]=v; n++; }
+  RP.msg=`${n} price${n===1?'':'s'} ${kind==='clear'?'cleared':'filled in'} — review and press Save changes.${skipped?` ${skipped} skipped (${kind==='msrp'?'no verified MSRP':'no cost on file'}).`:''}`;
+  renderRetailView();
+}
+/* CSV import: columns found by header name — item / part / sku / code, price / retail, and optionally manufacturer / line.
+   Matches your catalog's part numbers; nothing is saved until you press Save changes. */
+function rpCsvRows(text){
+  const out=[]; let row=[], f='', q=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){ f+='"'; i++; } else q=false; } else f+=c; }
+    else if(c==='"') q=true; else if(c===','){ row.push(f); f=''; } else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(f); out.push(row); row=[]; f=''; } else f+=c; }
+  if(f!==''||row.length){ row.push(f); out.push(row); }
+  return out.filter(r=>r.some(x=>String(x).trim()!==''));
+}
+function rpImport(inp){
+  const file=inp&&inp.files&&inp.files[0]; if(!file) return; inp.value='';
+  if(file.size>2*1024*1024){ RP.msg='That file is larger than 2 MB.'; renderRetailView(); return; }
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const rows=rpCsvRows(String(rd.result||'')); if(rows.length<2){ RP.msg='The file has no price rows.'; renderRetailView(); return; }
+    const h=rows[0].map(x=>String(x).trim().toLowerCase());
+    const ci=h.findIndex(x=>/^(item|item ?#|part|part ?#|part number|sku|code|item number|model)$/.test(x)), pi=h.findIndex(x=>/(retail|price)/.test(x)&&!/cost|msrp|map/.test(x)), mi=h.findIndex(x=>/^(manufacturer|line|brand)$/.test(x));
+    if(ci<0||pi<0){ RP.msg='The first row needs an "Item" (or Part / SKU) column and a "Retail price" (or Price) column.'; renderRetailView(); return; }
+    const byCode=new Map(); (PRICELIST||[]).filter(p=>!/\|u=/.test(p.code)).forEach(p=>{ const c=String(p.code).toLowerCase(); if(!byCode.has(c)) byCode.set(c,[]); byCode.get(c).push(p); });
+    let ok=0; const missing=[], ambiguous=[], bad=[];
+    rows.slice(1).forEach((r,i)=>{ const code=String(r[ci]||'').trim(); if(!code) return; const price=rpParse(r[pi]);
+      if(Number.isNaN(price)){ bad.push(code); return; }
+      let c=byCode.get(code.toLowerCase())||[];
+      if(c.length>1&&mi>=0){ const mn=String(r[mi]||'').trim().toLowerCase(); c=c.filter(p=>p.mfr===mn||String(p.mfrName).toLowerCase()===mn); }
+      if(!c.length){ missing.push(code); return; } if(c.length>1){ ambiguous.push(code); return; }
+      const k=c[0].mfr+'|'+c[0].code; if(price===rpCurrent(k)) delete RP.edits[k]; else RP.edits[k]=price; ok++; });
+    RP.msg=`${ok} price${ok===1?'':'s'} read from ${file.name} — review and press Save changes.`+(missing.length?` Not in your catalog: ${missing.length} (${missing.slice(0,8).join(', ')}${missing.length>8?'…':''}).`:'')+(ambiguous.length?` Part number used by more than one line — add a Manufacturer column: ${ambiguous.slice(0,8).join(', ')}.`:'')+(bad.length?` Unreadable price: ${bad.slice(0,8).join(', ')}.`:'');
+    renderRetailView();
+  };
+  rd.readAsText(file);
+}
+function rpExport(){
+  const rows=[['Manufacturer','Line','Item','Product','Your cost','MSRP','Retail price']];
+  rpRows().forEach(p=>{ const v=rpValue(p.mfr+'|'+p.code); rows.push([p.mfr,p.mfrName,p.code,p.name,p.cost!=null?p.cost:'',p.msrp!=null?p.msrp:'',v!=null?v:'']); });
+  const loc=RP.target==='company'?'company':(RP.locations.find(l=>String(l.id)===RP.target)||{}).name||'location';
+  dl('retail-prices-'+String(loc).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.csv',toCSV(rows));
+}
+async function rpSave(){
+  const keys=Object.keys(RP.edits); if(!keys.length) return;
+  const btn=$("#rpSave"); if(btn){ btn.style.pointerEvents='none'; btn.textContent='Saving…'; }
+  const loc=rpLoc(); let saved=0, err='';
+  for(let i=0;i<keys.length;i+=500){
+    const chunk=keys.slice(i,i+500).map(k=>{ const j=k.indexOf('|'); return {manufacturer:k.slice(0,j),code:k.slice(j+1),price:RP.edits[k],location_id:loc}; });
+    const r=await retailCall({action:'retail_set',rows:chunk});
+    if(!(r&&r.ok)){ err=(r&&r.error)||'Could not save just now.'; break; }
+    saved+=(r.saved||0)+(r.removed||0); chunk.forEach(c=>delete RP.edits[c.manufacturer+'|'+c.code]);
+  }
+  const r=await retailCall({action:'retail_list'}); if(r&&r.ok) RP.prices=r.prices||[];
+  if(typeof loadRetail==='function') loadRetail(true).catch(()=>null);
+  RP.msg=err?(`Saved ${saved}; `+err):`Saved ${saved} price${saved===1?'':'s'}.`;
+  renderRetailView();
+}
+async function rpHistory(m,c,n){
+  $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Price history — ${esc(n)}</h3><a class="mx" onclick="closeModal()">✕</a></div><div id="rpHist">Loading…</div></div>`;
+  $("#modal").classList.add("on");
+  const r=await retailCall({action:'retail_history',manufacturer:m,code:c}); const el=$("#rpHist"); if(!el) return;
+  if(!(r&&r.ok)){ el.textContent=(r&&r.error)||'History could not be loaded just now.'; return; }
+  const name=id=>id?((RP.locations.find(l=>String(l.id)===String(id))||{}).name||'A location'):'Company price';
+  el.innerHTML=(r.history||[]).length?`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>When</th><th>Where</th><th class="n">Old</th><th class="n">New</th>${RP.head_office?'<th>By</th>':''}</tr></thead><tbody>${r.history.map(h=>`<tr><td>${dateShort(h.changed_at)}</td><td>${esc(name(h.location_id))}</td><td class="n tnum">${h.old_price!=null?rpMoney(h.old_price):'—'}</td><td class="n tnum">${h.new_price!=null?rpMoney(h.new_price):'removed'}</td>${RP.head_office?`<td>${esc(h.changed_by||'')}</td>`:''}</tr>`).join('')}</tbody></table></div>`:'<div class="m" style="color:var(--muted)">No changes recorded yet.</div>';
+}
 /* B6.1: the storefront adds a configured Golden chair to the quote (its record lives in the storefront's GQUOTE). */
-window.P360Quote={ add:function(k){ if(typeof k==="string"&&/^golden\|/.test(k)&&!QUOTE.includes(k)) QUOTE.push(k); }, picked:function(){ return quotePicked(); },
+window.P360Quote={ add:function(k,snap){ if(typeof k==="string"&&/^[a-z0-9-]{2,60}\|.{1,120}$/.test(k)&&!QUOTE.includes(k)&&quotableLine(k.split("|")[0])){ QUOTE.push(k); QDIRTY=true; if(snap&&typeof snap==="object") QSNAP[k]={name:String(snap.name||""),option:String(snap.option||""),sku:String(snap.sku||""),mfrName:String(snap.mfrName||""),image:quoteImg({image:snap.image})}; } }, picked:function(){ return quotePicked(); },
   paper:function(){ const p=quotePicked(); return quotePaperHtml(p, quoteTotal(p)); } };
 
 /* volume-pricing request modal */
@@ -7953,6 +8259,23 @@ async function loadAccountView(){
 function termsForLines(){ const map={}; (ACCOUNT.terms||[]).forEach(t=>{map[t.manufacturer]=t.terms;}); const slugs=(LINES&&LINES.length)?LINES.map(l=>l.slug):(MFRLIST||[]).map(m=>m.slug); return slugs.map(s=>({slug:s,name:mfrNameOf(s),terms:map[s]||map[mfrNameOf(s)]||"—"})); }
 function acAddr(a){ return [a.address,[a.city,a.state].filter(Boolean).join(", "),a.zip].filter(Boolean).join(" · "); }
 function acChip(st){ const m={verified:["ok","Verified"],pending:["warn","Pending"],none:["none","No account"]}[st]||["none","No account"]; return `<span class="acchip ${m[0]}">${m[1]}</span>`; }
+/* C3-07 Stage 3 (D2): a head office sees each of its locations' address and main contact and can send a change for that
+   location to HCPS (the request is filed on the location; HCPS's approval applies it there). A branch login never sees this. */
+function acLocHtml(l){
+  const a=[l.address,[l.city,l.state].filter(Boolean).join(", "),l.zip].filter(Boolean).join(" · ");
+  const c=[l.contact_name,l.phone,l.email].filter(Boolean).join(" · ");
+  return `<div class="acgrid acloc-d"><div><span>Address</span><b>${esc(a||"—")}</b></div><div><span>Main contact</span><b>${esc(c||"—")}</b></div></div>`
+    +(l.can_request?`<div style="margin:6px 0 8px"><button type="button" class="btn gh acsm" data-loc="${esc(l.id)}" onclick="acLocOpen(this.dataset.loc)">Request a change for this location</button></div>`:"");
+}
+function acLocOpen(id){ const l=((AC&&AC.locations)||[]).find(x=>String(x.id)===String(id)); if(!l) return;
+  acModal("Request a change — "+(l.name||"location"),acF("acLn","Main contact",l.contact_name)+acF("acLp","Phone",l.phone,'type="tel" inputmode="tel"')+acF("acLe","Email",l.email,'type="email"')
+    +acF("acLa","Street",l.address)+`<div style="display:grid;grid-template-columns:2fr 1fr 1.2fr;gap:8px">${acF("acLc","City",l.city)}${acF("acLs","State",l.state,'maxlength="2"')}${acF("acLz","ZIP",l.zip,'inputmode="numeric"')}</div>`
+    +`<div class="lead-note">Sent to HCPS for approval; the change applies to this location once approved.</div>`,
+    ()=>{ const changes={}; const co={}; const m={contact_name:"acLn",phone:"acLp",email:"acLe"}; Object.keys(m).forEach(k=>{ if(acV(m[k])!==String(l[k]||"")) co[k]=acV(m[k]); });
+      if(Object.keys(co).length) changes.company=co;
+      const ad={address:acV("acLa"),city:acV("acLc"),state:acV("acLs"),zip:acV("acLz")};
+      if(ad.address!==String(l.address||"")||ad.city!==String(l.city||"")||ad.state!==String(l.state||"")||ad.zip!==String(l.zip||"")) changes.business=ad;
+      if(!Object.keys(changes).length){ $("#acErr").textContent="Nothing changed."; return; } acSend(changes,l.id); }); }
 function acAccountsHtml(loc){
   const canClaim=loc.is_self;
   return `<div class="acaccts">${loc.accounts.map(x=>{
@@ -7996,7 +8319,7 @@ function renderAccount(){
       <details style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px">Use a logo link instead</summary><div class="fld2" style="margin-top:6px"><input id="acctLogo" value="${esc(co.logo_url&&!/dealer-logos/.test(co.logo_url)?co.logo_url:"")}" placeholder="https://…/logo.png"></div><a class="btn gh acsm" onclick="saveBranding(document.getElementById('acctLogo').value).then(loadAccountView)">Save link</a></details></div>
     <div class="card"><h3>Your manufacturer accounts</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Green = verified by HCPS · Amber = waiting on HCPS · Red = no account. Ordering access is set separately by HCPS.</div>
       ${acAccountsHtml(self)}
-      ${others.length?`<h4 style="margin:14px 0 6px">Your other locations</h4>${others.map(l=>`<details class="acloc"><summary><b>${esc(l.name)}</b> <span class="m">${esc([l.city,l.state].filter(Boolean).join(", "))}</span> <span class="m">· ${l.accounts.filter(x=>x.status==="verified").length} verified</span></summary>${acAccountsHtml(l)}</details>`).join("")}`:""}</div>
+      ${others.length?`<h4 style="margin:14px 0 6px">Your other locations</h4>${others.map(l=>`<details class="acloc"><summary><b>${esc(l.name)}</b> <span class="m">${esc([l.city,l.state].filter(Boolean).join(", "))}</span> <span class="m">· ${l.accounts.filter(x=>x.status==="verified").length} verified</span></summary>${acLocHtml(l)}${acAccountsHtml(l)}</details>`).join("")}`:""}</div>
     <div class="card"><div class="chead"><h3>Your terms by line</h3><span style="font-size:11px;color:var(--muted)">Set by HCPS per manufacturer</span></div>
       <div class="rowlist">${terms.length?terms.map(t=>`<div class="rl"><div class="b"><div class="n">${esc(t.name)}</div></div><span class="pill ${String(t.terms).toLowerCase()==="prepay"?"open":"done"}">${esc(t.terms)}</span></div>`).join(""):`<div class="m" style="color:var(--muted)">No lines yet.</div>`}</div></div>
     <div class="card"><h3>Resale / tax-exemption certificate</h3><p class="m" style="margin:0 0 8px">${resaleOn?("On file"+(ACCOUNT.resale.reference?" · "+esc(ACCOUNT.resale.reference):"")):"Add your certificate reference, then email the certificate file to HCPS."}</p>
@@ -8011,9 +8334,9 @@ function acModal(title,body,onSave){
 }
 const acF=(id,label,val,extra)=>`<div class="fld2"><label for="${id}">${label}</label><input id="${id}" value="${esc(val||"")}" ${extra||""}></div>`;
 const acV=id=>(($("#"+id)||{}).value||"").trim();
-async function acSend(changes){
+async function acSend(changes,locationId){
   const err=$("#acErr"), btn=$("#acSave"); if(btn){ btn.style.pointerEvents="none"; btn.textContent="Sending…"; }
-  const r=await api(TOOLS_ENDPOINT,{action:"account_change_request",changes}).catch(()=>null);
+  const r=await api(TOOLS_ENDPOINT,Object.assign({action:"account_change_request",changes},locationId?{location_id:locationId}:{})).catch(()=>null);
   if(r&&r.ok){ closeModal(); acToast(r.message||"Sent to HCPS for approval."); loadAccountView(); return; }
   if(btn){ btn.style.pointerEvents=""; btn.textContent="Send to HCPS"; }
   if(err) err.textContent=(r&&r.error)||"Could not send just now — please try again.";
@@ -8065,6 +8388,7 @@ function showView(v){
   if(v==="orders")loadOrders();
   if(v==="reports")loadReports();
   if(v==="quotes")loadQuotesView();
+  if(v==="retail")loadRetailView();
   if(v==="favorites")loadFavView();
   if(v==="showroom")loadShowroom();
   if(v==="resources")loadResourcesView();
@@ -8076,7 +8400,7 @@ window.showView=showView;
    Quotes, the showroom wall buttons, the price-request / literature / credit / resale forms and the favourite star did
    nothing. Exported once here. The showroom zone's clear is exported as p360SwClear because the storefront's Strongback
    wall builder already owns the global swClear(). */
-Object.assign(window,{acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{p360ReportYear:v=>{ REPORT_YEAR=v; renderReports(); },qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
@@ -8259,7 +8583,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
             ${p._golden?"":(isOvation(p)?`<button class="pd-sample" onclick="requestSample('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Request a Sample</button>`:"")}
             ${p._golden?"":`<button class="pd-broch" onclick="openBrochure('${esc(p.code)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>Print Brochure</button>`}
             ${p._golden?"":`<div class="pd-sub">
-              <a onclick="showP360&&showP360('quotes')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Add to a quote</a>
+              <a role="button" tabindex="0" data-code="${esc(p.code)}" onclick="pdAddQuote(this.dataset.code)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pdAddQuote(this.dataset.code)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Add to a quote</a>
             </div>`}
           </div>
         </div>
@@ -8503,9 +8827,15 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
         +'</div>'
         +'<div class="qh-card" onclick="showP360(\'quotes\')">'
           +'<div class="qh-ic">&#129534;</div>'
-          +'<h3>Customer MSRP Quote</h3>'
-          +'<p>Build a branded, print-ready quote for your customer from any HCPS product, on your own letterhead.</p>'
+          +'<h3>Customer Quotes</h3>'
+          +'<p>Build, save, print and email a quote on your own letterhead — manufacturer MSRP, your retail price or a one-time price.</p>'
           +'<span class="qh-go">Open quote builder &rarr;</span>'
+        +'</div>'
+        +'<div class="qh-card" onclick="showP360(\'retail\')">'
+          +'<div class="qh-ic">&#128178;</div>'
+          +'<h3>My Retail Prices</h3>'
+          +'<p>Set your selling prices once — company-wide or per location — with bulk tools, CSV import and price history.</p>'
+          +'<span class="qh-go">Manage retail prices &rarr;</span>'
         +'</div>'
       +'</div>'
       +'<div class="qh-saved">'
