@@ -961,6 +961,7 @@ body.sdon.sdloading #sdLoading{display:block;}
 .sd-profit-cat b{margin-left:4px;}
 .sd-profit-note{font-size:11px;color:#9CA3AF;}
 .sd-modal-overlay{position:fixed;inset:0;background:rgba(13,27,42,.55);display:flex;align-items:center;justify-content:center;z-index:9999;}
+#sd-item-modal.sd-modal-overlay{background:rgba(13,27,42,.22);}  /* Showroom Designer: the Edit Size outline on the floor stays visible behind the item panel */
 .sd-modal{background:#fff;border-radius:12px;padding:22px;max-width:340px;width:90%;position:relative;}
 .sd-modal-close{position:absolute;top:10px;right:12px;border:none;background:none;font-size:15px;cursor:pointer;color:#9CA3AF;}
 .sd-modal-badge{display:inline-block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;border-radius:5px;padding:2px 8px;margin-bottom:8px;}
@@ -1053,6 +1054,8 @@ body.sdon.sdloading #sdLoading{display:block;}
 .sd-items-panel-list{display:flex;flex-direction:column;gap:6px;}
 .sd-items-panel-row{border:1px solid #F3F4F6;border-radius:7px;padding:8px 10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
 .sd-items-panel-row:hover{border-color:var(--gold);background:#FEF9EF;}
+.sd-items-panel-edit{border:1px solid #D1D5DB;background:#fff;border-radius:6px;padding:4px 10px;font:inherit;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;min-height:32px;}
+.sd-items-panel-edit:focus-visible,#sd-grid .sd-item-block:focus-visible{outline:3px solid #2563eb;outline-offset:1px;}
 .sd-items-panel-row-body{display:flex;align-items:center;gap:8px;min-width:0;}
 .sd-items-panel-row-main{display:flex;flex-direction:column;gap:1px;min-width:0;}
 .sd-items-panel-row-name{font-size:12.5px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px;}
@@ -9411,6 +9414,10 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       total_showroom_cost:cost, estimated_monthly_revenue:revO, estimated_monthly_profit:proO
     };
   }
+  /* The signed-in dealer (AUTH is the page's own sign-in state; it is a script-level binding, not on window). */
+  function sdDealerId(){ try{ return (typeof AUTH!=='undefined' && AUTH && AUTH.dealer && AUTH.dealer.id) ? String(AUTH.dealer.id) : ''; }catch(e){ return ''; } }
+  window.__sdDealerId = sdDealerId;
+  function myDefaults(s){ var d=sdDealerId(); return (d && s.type_defaults_by_dealer && s.type_defaults_by_dealer[d]) || {}; }
   function resp(obj){ return Promise.resolve({ ok:true, status:200, json:function(){return Promise.resolve(obj);}, text:function(){return Promise.resolve(JSON.stringify(obj));} }); }
 
   function handle(url, opts){
@@ -9423,21 +9430,24 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
 
     // ----- designs list -----
     if(method==='GET' && action==='designs'){ return resp({designs:Object.keys(s.designs).map(function(k){return listShape(s.designs[k]);})}); }
-    // ----- Showroom Designer: this dealer's saved default sizes per equipment type -----
-    // Lives in this dealer's own store (storeKey is per dealer), so one dealer's defaults never reach another.
-    // Saving or resetting a default never touches a placed item.
-    if(method==='GET' && action==='type_defaults'){ return resp({defaults:s.type_defaults||{}}); }
+    // ----- Showroom Designer: the signed-in dealer's saved default sizes per equipment type -----
+    // NOTE: this browser store is shared by everyone who signs in on the same browser (storeKey() resolves to
+    // 'hcps_sd_dealer' — a pre-existing limit of the floorplans too). Defaults are therefore filed under the signed-in
+    // dealer's id inside it, so one dealer's defaults never reach another. Saving or resetting never touches an item.
+    if(method==='GET' && action==='type_defaults'){ return resp({defaults:myDefaults(s)}); }
     if(method==='POST' && action==='type_defaults'){
+      var did=sdDealerId(); if(!did) return resp({ok:false, error:'not signed in', defaults:{}});
       var tid=String(body.type||''); var known=EQUIPMENT.some(function(e){ return e.id===tid; });
-      if(!known) return resp({ok:false, error:'unknown type', defaults:s.type_defaults||{}});
-      s.type_defaults=s.type_defaults||{};
-      if(body.reset){ delete s.type_defaults[tid]; }
+      if(!known) return resp({ok:false, error:'unknown type', defaults:myDefaults(s)});
+      s.type_defaults_by_dealer=s.type_defaults_by_dealer||{}; var mine=s.type_defaults_by_dealer[did]=s.type_defaults_by_dealer[did]||{};
+      if(body.reset){ delete mine[tid]; }
       else {
-        var dw=Number(body.width_cells), dh=Number(body.height_cells);
-        if(!(Number.isInteger(dw)&&Number.isInteger(dh)&&dw>=1&&dh>=1&&dw<=150&&dh<=150)) return resp({ok:false, error:'invalid size', defaults:s.type_defaults});
-        s.type_defaults[tid]={width_cells:dw, height_cells:dh};
+        var dw=Number(body.width_cells), dh=Number(body.height_cells), dr=Number(body.rotation_deg||0);
+        if(!(Number.isInteger(dw)&&Number.isInteger(dh)&&dw>=1&&dh>=1&&dw<=150&&dh<=150)) return resp({ok:false, error:'invalid size', defaults:mine});
+        if([0,90,180,270].indexOf(dr)<0) return resp({ok:false, error:'invalid rotation', defaults:mine});
+        mine[tid]={width_cells:dw, height_cells:dh, rotation_deg:dr};
       }
-      commit(); return resp({ok:true, defaults:s.type_defaults});
+      commit(); return resp({ok:true, defaults:mine});
     }
     // ----- footprints / presets -----
     if(method==='GET' && action==='footprints'){ return resp({footprints:Object.keys(FP).map(function(k){return FP[k];})}); }
@@ -10275,7 +10285,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   // match -> plain-block fallback, unchanged from Phase 3) when the caches
   // aren't loaded yet or nothing matches. ----------
   /* ---------- Showroom Designer equipment registry (host: window.__sdEquipment, 24 types) ---------- */
-  var _sdTypeDefaults=null;          // this dealer's saved default sizes, by type id (loaded from the store)
+  var _sdTypeDefaults=null, _sdTypeDefaultsFor=null;   // the signed-in dealer's saved default sizes by type id, and whose they are
   function sdEquipList(){ return Array.isArray(window.__sdEquipment) ? window.__sdEquipment : []; }
   function sdEquipById(id){ id=String(id||''); return sdEquipList().filter(function(e){ return e.id===id; })[0]||null; }
   // Which of the 24 types a placed item is. New items carry equipment_type; items saved before the upgrade are
@@ -10298,23 +10308,26 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   // The starting size for a NEW placement of a type: this dealer's saved default, else the manifest size.
   function sdEquipDefaultSize(e){
     var d = _sdTypeDefaults && _sdTypeDefaults[e.id];
-    return d ? {w:d.width_cells, h:d.height_cells, mine:true} : {w:e.w, h:e.h, mine:false};
+    return d ? {w:d.width_cells, h:d.height_cells, rot:Number(d.rotation_deg)||0, mine:true} : {w:e.w, h:e.h, rot:0, mine:false};
   }
+  function sdCurrentDealerId(){ try{ return typeof window.__sdDealerId==='function' ? window.__sdDealerId() : ''; }catch(e){ return ''; } }
   function sdLoadTypeDefaults(){
-    if(_sdTypeDefaults) return Promise.resolve(_sdTypeDefaults);
+    // re-read whenever the signed-in dealer differs from the one the cache belongs to (sign-out / sign-in, no reload)
+    if(_sdTypeDefaults && _sdTypeDefaultsFor===sdCurrentDealerId()) return Promise.resolve(_sdTypeDefaults);
+    _sdTypeDefaultsFor = sdCurrentDealerId();
     return fetch(FN+'?action=type_defaults&dealer_id='+encodeURIComponent(DEALER()))
       .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
       .then(function(res){ _sdTypeDefaults = (res&&res.defaults)||{}; return _sdTypeDefaults; })
       .catch(function(){ _sdTypeDefaults = {}; return _sdTypeDefaults; });
   }
   // Whole-foot size check shared by every size control (1 cell = 1 ft). Returns {ok,w,h} or {ok:false,reason}.
-  function sdCheckSize(wRaw, hRaw){
+  function sdCheckSize(wRaw, hRaw, skipFloorFit){
     var w = Number(String(wRaw==null?'':wRaw).trim()), h = Number(String(hRaw==null?'':hRaw).trim());
     if(String(wRaw).trim()==='' || String(hRaw).trim()==='' || !Number.isFinite(w) || !Number.isFinite(h)) return {ok:false, reason:'Enter a width and a depth in feet.'};
     if(!Number.isInteger(w) || !Number.isInteger(h)) return {ok:false, reason:'Use whole feet — the floor grid is 1 ft per square.'};
     if(w<1 || h<1) return {ok:false, reason:'Width and depth must be at least 1 ft.'};
     if(w>MAX_DIM || h>MAX_DIM) return {ok:false, reason:'Width and depth can be at most '+MAX_DIM+' ft.'};
-    if(gridWidth && gridHeight && (w>gridWidth || h>gridHeight)) return {ok:false, reason:'That is bigger than your floor ('+gridWidth+' × '+gridHeight+' ft).'};
+    if(!skipFloorFit && gridWidth && gridHeight && (w>gridWidth || h>gridHeight)) return {ok:false, reason:'That is bigger than your floor ('+gridWidth+' × '+gridHeight+' ft).'};
     return {ok:true, w:w, h:h};
   }
   function sdImageForItem(item){
@@ -10530,7 +10543,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       +       '<div class="sd-field"><label for="sd-equip-h">Depth (ft)</label><input type="number" id="sd-equip-h" min="1" max="'+MAX_DIM+'" step="1" inputmode="numeric" value="'+d.h+'" oninput="sdEquipInput()"></div>'
       +     '</div>'
       +     '<div class="sd-equip-sqft" aria-live="polite">Footprint: <b id="sd-equip-sqft">'+(d.w*d.h)+'</b> sq ft</div>'
-      +     '<div class="sd-equip-note">Whole feet only — 1 square on the floor = 1 ft × 1 ft. '+(def.mine?'Starting from your saved default ('+def.w+' × '+def.h+' ft).':'Factory size '+e.w+' × '+e.h+' ft.')+'</div>'
+      +     '<div class="sd-equip-note">Whole feet only — 1 square on the floor = 1 ft × 1 ft. '+(def.mine?'Starting from your saved default ('+def.w+' × '+def.h+' ft'+(def.rot?', turned '+def.rot+'°':'')+').':'Factory size '+e.w+' × '+e.h+' ft.')+'</div>'
       +     '<div class="sd-setup-err" id="sd-equip-err" role="alert"></div>'
       +     '<div class="sd-equip-actions">'
       +       '<button type="button" class="sd-modal-action-btn" onclick="sdEquipRotate()">🔄 Rotate 90°</button>'
@@ -10552,7 +10565,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     if(sdMode!=='items'){ sdMode='items'; sdApplyModeUI(); }
     sdLoadTypeDefaults().then(function(){
       var d=sdEquipDefaultSize(e);
-      _sdEquipDraft={id:e.id, w:d.w, h:d.h, rot:0};
+      _sdEquipDraft={id:e.id, w:d.w, h:d.h, rot:d.rot||0};
       var f=document.getElementById('sd-equip-form'); if(!f) return;
       f.innerHTML=sdEquipFormHtml(); f.style.display='block';
       var wi=document.getElementById('sd-equip-w'); if(wi){ try{ wi.focus({preventScroll:true}); }catch(_){ wi.focus(); } }
@@ -10566,7 +10579,8 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     if(v.ok && _sdEquipDraft){ _sdEquipDraft.w=v.w; _sdEquipDraft.h=v.h; }
   };
   window.sdEquipRotate=function(){
-    var v=sdEquipRead(); if(!v.ok){ sdEquipErr(v.reason); return; }
+    // the shape is checked AFTER turning: 2 × 18 may not fit a 20 × 15 floor, but 18 × 2 does
+    var v=sdCheckSize((document.getElementById('sd-equip-w')||{}).value, (document.getElementById('sd-equip-h')||{}).value, true); if(!v.ok){ sdEquipErr(v.reason); return; }
     _sdEquipDraft.w=v.h; _sdEquipDraft.h=v.w; _sdEquipDraft.rot=(_sdEquipDraft.rot+90)%360;
     var wi=document.getElementById('sd-equip-w'), hi=document.getElementById('sd-equip-h'), im=document.getElementById('sd-equip-img');
     if(wi) wi.value=_sdEquipDraft.w; if(hi) hi.value=_sdEquipDraft.h; if(im) im.style.transform='rotate('+_sdEquipDraft.rot+'deg)';
@@ -10590,12 +10604,12 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   function sdSaveTypeDefault(body){
     return fetch(FN+'?action=type_defaults', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({dealer_id:DEALER()}, body))})
       .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(function(res){ if(!res || res.ok===false) throw new Error((res&&res.error)||'not saved'); _sdTypeDefaults=res.defaults||{}; return res; });
+      .then(function(res){ if(!res || res.ok===false) throw new Error((res&&res.error)||'not saved'); _sdTypeDefaults=res.defaults||{}; _sdTypeDefaultsFor=sdCurrentDealerId(); return res; });
   }
   window.sdEquipSaveDefault=function(){
     var d=_sdEquipDraft, e=d&&sdEquipById(d.id); if(!e) return;
     var v=sdEquipRead(); if(!v.ok){ sdEquipErr(v.reason); return; }
-    sdSaveTypeDefault({type:e.id, width_cells:v.w, height_cells:v.h}).then(function(){
+    sdSaveTypeDefault({type:e.id, width_cells:v.w, height_cells:v.h, rotation_deg:d.rot||0}).then(function(){
       toast(e.label+': your default is now '+v.w+' × '+v.h+' ft ✓ (placed items are unchanged)');
       var f=document.getElementById('sd-equip-form'); if(f) f.innerHTML=sdEquipFormHtml();
       sdRenderGallery();
@@ -11161,7 +11175,8 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       var _eqIt = sdEquipForItem(it);
       var label = it.item_type==='golden' ? (it.model || (_eqIt ? _eqIt.label : sdCategoryLabel(sdCategoryOf(it) || 'uncategorized'))) : it.custom_name;
       el.title = (label||'') + ' · ' + w + ' × ' + h + ' ft' + (unassigned ? ' (needs a product assigned)' : '');
-      el.setAttribute('aria-label', el.title);
+      el.setAttribute('aria-label', el.title+'. Press Enter to edit');
+      el.setAttribute('role','button'); el.tabIndex = 0;
       // A 1-ft-deep (or 1-ft-wide) item is too thin for a name tag over its picture: the picture shows, the name is in
       // the tooltip and the Placed Items list.
       if(imgSrc && (w<2 || h<2)) el.classList.add('sd-item-thin');
@@ -11274,6 +11289,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
         +   '<span class="'+estCls+'" title="Est. monthly profit">'+estTxt+'</span>'
         + '</div>'
         + (unassigned ? '<span class="sd-items-panel-row-flag">Needs product</span>' : '')
+        + '<button type="button" class="sd-items-panel-edit" onclick="event.stopPropagation();sdOpenItem(&quot;'+it.id+'&quot;)" aria-label="'+sdAttrEsc('Edit '+label+' ('+w+' × '+h+' ft): size, rotate, move, product')+'">Edit</button>'
         + '</div>';
     }).join('');
   }
@@ -11303,12 +11319,28 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   //      an optional, skippable cost/price entry (Part 2's simpler "assign"
   //      step for non-Golden presets)
   //   3. everything else -> the original read-only details view, unchanged
+  // Keyboard / screen-reader path to a placed item: the Placed Items "Edit" buttons, or Enter/Space on a focused item.
+  window.sdOpenItem=function(id){
+    var item = itemsList.filter(function(x){ return String(x.id)===String(id); })[0]; if(!item) return;
+    window.sdCancelPlacement(); sdShowItemDetails(item);
+  };
+  document.addEventListener('keydown', function(e){
+    var m=document.getElementById('sd-item-modal');
+    if(e.key==='Escape' && m && m.style.display!=='none'){ window.sdCloseItemModal(); return; }
+    var blk = e.target && e.target.closest && e.target.closest('#sd-grid .sd-item-block');
+    if(blk && (e.key==='Enter' || e.key===' ')){ e.preventDefault(); window.sdOpenItem(blk.dataset.id); }
+  });
   function sdShowItemDetails(item){
     var modal = document.getElementById('sd-item-modal');
     if(!modal) return;
+    if(!pendingPlacement && !_sdDrag) sdClearPreview();   // a size outline from before a rotate/redraw never lingers
     if(item.item_type==='golden' && !item.model) sdRenderAssignBody(item);
     else sdRenderDetailsBody(item);
     modal.style.display='flex';
+    // a dialog that takes focus, so keyboard and screen-reader users land in it (Escape closes it)
+    var dlg = modal.querySelector('.sd-modal'); if(dlg){ dlg.setAttribute('role','dialog'); dlg.setAttribute('aria-modal','true'); dlg.setAttribute('aria-label','Placed item'); }
+    var first = modal.querySelector('#sd-resize-w') || modal.querySelector('button');
+    if(first){ try{ first.focus({preventScroll:true}); }catch(_){ first.focus(); } }
   }
   /* ---------- Showroom Designer: size AFTER placing (one item only) ----------
      The existing #207 Resize, made the one visible path: current Width × Depth and sq ft, an Edit Size form whose
@@ -11327,9 +11359,21 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       + '<div class="sd-equip-sqft" aria-live="polite">New footprint: <b id="sd-resize-sqft">'+(w*h)+'</b> sq ft</div>'
       + '<div class="sd-equip-note">Whole feet only (1 square = 1 ft). The new size is outlined on your floor before you apply it.</div>'
       + '<div class="sd-setup-err" id="sd-resize-err" role="alert"></div>'
+      + '<div class="sd-equip-actions">'
       + '<button class="sd-modal-save-btn" onclick="sdResizeItem(&quot;'+item.id+'&quot;)">Apply Size</button>'
+      + (eq ? '<button type="button" class="sd-link-btn" onclick="sdResizeFactory(&quot;'+item.id+'&quot;)">Use factory size ('+eq.w+' × '+eq.h+' ft)</button>' : '')
+      + '</div>'
       + '</div>';
   }
+  // Fills Edit Size with the type's factory size (in this item's current orientation) and outlines it; Apply Size saves.
+  window.sdResizeFactory=function(itemId){
+    var item = itemsList.filter(function(x){ return String(x.id)===String(itemId); })[0]; if(!item) return;
+    var eq = sdEquipForItem(item); if(!eq) return;
+    var deg = ((parseInt(item.rotation_deg,10)||0)%360+360)%360, sw = (deg===90||deg===270);
+    var wi=document.getElementById('sd-resize-w'), hi=document.getElementById('sd-resize-h');
+    if(wi) wi.value = sw ? eq.h : eq.w; if(hi) hi.value = sw ? eq.w : eq.h;
+    window.sdResizeInput(itemId);
+  };
   window.sdResizeInput=function(itemId){
     var item = itemsList.filter(function(x){ return String(x.id)===String(itemId); })[0]; if(!item) return;
     var v = sdCheckSize((document.getElementById('sd-resize-w')||{}).value, (document.getElementById('sd-resize-h')||{}).value);
@@ -11524,11 +11568,13 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   window.sdShowChangeProduct=function(itemId){
     var item = itemsList.filter(function(x){ return String(x.id)===String(itemId); })[0];
     if(!item) return;
+    if(!pendingPlacement && !_sdDrag) sdClearPreview();
     sdRenderAssignBody(item, true);
   };
   window.sdCancelChangeProduct=function(itemId){
     var item = itemsList.filter(function(x){ return String(x.id)===String(itemId); })[0];
     if(!item) return;
+    if(!pendingPlacement && !_sdDrag) sdClearPreview();
     sdRenderDetailsBody(item);
   };
   // sdRenderCustomProductForm / sdSaveCustomProduct (issue #257): the "+
@@ -12275,7 +12321,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       text:'Enter your showroom’s width and depth here, then click “Generate Grid” to create your floor. Once it’s set up, open this tour again to walk through equipment, profit tracking, and more.' },
     { target:function(){ return document.getElementById('sd-gallery'); }, placement:'bottom',
       title:'Equipment gallery',
-      text:'This is your equipment gallery. Click an item, then click a spot on your floor to place it — you’ll choose the exact product afterward.' },
+      text:'This is your equipment gallery: the 24 Showroom Designer pieces. Pick one, set its width and depth (or rotate it), press Place Item, then click a spot on your floor. Lift chairs, power chairs, scooters and beds take a real product afterward. Every placed item can be resized later with Edit Size.' },
     { target:function(){ return document.getElementById('sd-grid'); }, placement:'top',
       title:'Your floor',
       text:'Use “✏️ Edit Floor Shape” to mark which cells count as usable retail space, and “📦 Place Items” to add equipment. You can switch between the two modes anytime.' },

@@ -255,8 +255,58 @@ async function modalErr(page) { return page.evaluate(() => { const e = document.
       const card = await page.evaluate(() => document.querySelector('#sd-gallery-grid .sd-gallery-card').innerText); ok(/5 × 5 ft/.test(card) && !/★/.test(card), card);
       eq((await items(page, D4)).map(x => [x.id, x.width_cells, x.height_cells]), before); await page.evaluate(() => sdCloseForms());
     });
-    await t('defaults are stored in this dealer\'s own store only', async () => {
-      const keys = await page.evaluate(() => Object.keys(localStorage).filter(k => /^hcps_sd_/.test(k))); eq(keys, [KEY]);
+    await t('a default saved while rotated keeps its angle: the next one opens turned and lands turned', async () => {
+      await page.evaluate(() => sdOpenEquip('stairlifts')); await page.waitForSelector('#sd-equip-w', { state: 'visible' });
+      await page.click('#sd-equip-form button:has-text("Rotate 90°")'); await page.click('#sd-equip-form button:has-text("Save as my default")'); await page.waitForTimeout(300);
+      await page.evaluate(() => sdCloseForms()); await page.evaluate(() => sdOpenEquip('stairlifts')); await page.waitForSelector('#sd-equip-w', { state: 'visible' });
+      const r = await page.evaluate(() => [document.getElementById('sd-equip-w').value, document.getElementById('sd-equip-h').value, document.getElementById('sd-equip-img').style.transform]);
+      eq(r, ['6', '2', 'rotate(90deg)']);
+      const it = await place(page, D4, 'stairlifts', 6, 2, 10, 15); eq([it.width_cells, it.height_cells, it.rotation_deg], [6, 2, 90]);
+      const d = await drawn(page, it.id); ok(d.img.rot === '90' && d.img.w === 2 && d.img.h === 6, JSON.stringify(d.img));
+      await page.evaluate(() => sdOpenEquip('stairlifts')); await page.waitForSelector('#sd-equip-w', { state: 'visible' });
+      await page.click('#sd-equip-form button:has-text("Reset to factory size")'); await page.waitForTimeout(300); await page.evaluate(() => sdCloseForms());
+    });
+    await t("defaults belong to the signed-in dealer: another dealer on this browser starts from the factory size", async () => {
+      await page.evaluate(() => sdOpenEquip('beds')); await page.waitForSelector('#sd-equip-w', { state: 'visible' });
+      await page.fill('#sd-equip-w', '4'); await page.fill('#sd-equip-h', '9'); await page.click('#sd-equip-form button:has-text("Save as my default")'); await page.waitForTimeout(300); await page.evaluate(() => sdCloseForms());
+      const realId = await page.evaluate(() => AUTH.dealer.id);
+      await page.evaluate(() => { AUTH.dealer = Object.assign({}, AUTH.dealer, { id: 'd-other-dealer' }); });
+      await page.evaluate(() => sdOpenEquip('beds')); await page.waitForSelector('#sd-equip-w', { state: 'visible' });
+      eq([await page.inputValue('#sd-equip-w'), await page.inputValue('#sd-equip-h')], ['5', '8'], 'other dealer');
+      await page.evaluate(() => sdCloseForms()); await page.evaluate(id => { AUTH.dealer = Object.assign({}, AUTH.dealer, { id }); }, realId);
+      await page.evaluate(() => sdOpenEquip('beds')); await page.waitForSelector('#sd-equip-w', { state: 'visible' });
+      eq([await page.inputValue('#sd-equip-w'), await page.inputValue('#sd-equip-h')], ['4', '9'], 'own default back');
+      await page.click('#sd-equip-form button:has-text("Reset to factory size")'); await page.waitForTimeout(300); await page.evaluate(() => sdCloseForms());
+    });
+    await t('Rotate in the size panel works when only the turned shape fits the floor (2 × 25 → 25 × 2 on a 30 × 20 floor)', async () => {
+      await page.evaluate(() => sdOpenEquip('double_doors')); await page.waitForSelector('#sd-equip-w', { state: 'visible' });
+      await page.fill('#sd-equip-w', '2'); await page.fill('#sd-equip-h', '25'); await page.click('#sd-equip-form button:has-text("Rotate 90°")');
+      eq([await page.inputValue('#sd-equip-w'), await page.inputValue('#sd-equip-h'), await page.evaluate(() => document.getElementById('sd-equip-err').textContent)], ['25', '2', '']);
+      await page.evaluate(() => sdCloseForms());
+    });
+    await t('keyboard: Tab reaches a placed item, Enter opens it with focus in Width; Escape closes; Placed Items has Edit buttons', async () => {
+      const r = await page.evaluate(id => { const el = document.querySelector('#sd-grid .sd-item-block[data-id="' + id + '"]'); el.focus(); return { focused: document.activeElement === el, role: el.getAttribute('role'), tab: el.tabIndex, label: el.getAttribute('aria-label') }; }, lcB.id);
+      ok(r.focused && r.role === 'button' && r.tab === 0 && /Lift Chairs|Pride/.test(r.label), JSON.stringify(r));
+      await page.keyboard.press('Enter'); await page.waitForSelector('#sd-item-modal #sd-resize-w', { state: 'visible' });
+      const f = await page.evaluate(() => ({ id: document.activeElement.id, role: document.querySelector('#sd-item-modal .sd-modal').getAttribute('role') })); eq(f, { id: 'sd-resize-w', role: 'dialog' });
+      await page.keyboard.press('Escape'); ok(await page.evaluate(() => document.getElementById('sd-item-modal').style.display === 'none'), 'escape');
+      const edits = await page.evaluate(() => [...document.querySelectorAll('#sd-items-panel-list .sd-items-panel-edit')].map(b => b.tagName + ':' + b.getAttribute('aria-label')));
+      ok(edits.length === (await items(page, D4)).length && edits.every(x => /^BUTTON:Edit /.test(x)), edits.join('|'));
+      await page.focus('#sd-items-panel-list .sd-items-panel-edit'); await page.keyboard.press('Enter'); await page.waitForSelector('#sd-item-modal #sd-resize-w', { state: 'visible' });
+      await page.keyboard.press('Escape');
+    });
+    await t('Edit Size outline never lingers after Rotate, and "Use factory size" fills the type size in the item\'s orientation', async () => {
+      await page.evaluate(id => sdOpenItem(id), lcB.id); await page.waitForSelector('#sd-item-modal #sd-resize-w', { state: 'visible' });
+      await page.fill('#sd-resize-w', '6'); await page.fill('#sd-resize-h', '6'); await page.dispatchEvent('#sd-resize-w', 'input');
+      ok(await page.evaluate(() => document.querySelectorAll('.sd-cell-preview-ok,.sd-cell-preview-bad').length) > 0, 'no outline drawn');
+      await page.click('#sd-item-modal button:has-text("Rotate 90°")'); await page.waitForTimeout(300);
+      eq(await page.evaluate(() => document.querySelectorAll('.sd-cell-preview-ok,.sd-cell-preview-bad').length), 0, 'outline left behind');
+      await page.fill('#sd-resize-w', '2'); await page.fill('#sd-resize-h', '2'); await page.click('#sd-item-modal button:has-text("Apply Size")'); await page.waitForTimeout(300);
+      await page.click('#sd-item-modal button:has-text("Use factory size")');
+      eq([await page.inputValue('#sd-resize-w'), await page.inputValue('#sd-resize-h')], ['5', '5']);
+      await page.click('#sd-item-modal button:has-text("Apply Size")'); await page.waitForTimeout(300);
+      const s2 = (await items(page, D4)).find(x => x.id === lcB.id); eq([s2.width_cells, s2.height_cells], [5, 5]);
+      await page.evaluate(() => sdCloseItemModal());
     });
     /* --- snapshot + restore with custom sizes --- */
     let snapSizes;

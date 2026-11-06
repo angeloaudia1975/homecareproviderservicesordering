@@ -1,17 +1,16 @@
 {
-  "review_id": "9f359ff950df",
+  "review_id": "f14b725705f7",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T05:08:38Z",
+  "built_at": "2026-11-06T05:08:55Z",
   "main": "82be09a10afa1233f48f3c28fb0be53495a654c4",
   "included": [
     {
       "pr": 55,
       "title": "Showroom Designer: 24 top-view equipment types with editable sizes",
       "branch": "showroom/designer-24",
-      "head": "649c3f4ed870c2f7f27c6343c3ec72bd1fbc5a10",
+      "head": "0566fad88534ea3ae2092253c64a0f098fd2d647",
       "manufacturers": [],
-      "other_files": 53,
-      "note": "newer commit 0566fad still being checked — showing the last validated version"
+      "other_files": 53
     }
   ],
   "skipped": []
