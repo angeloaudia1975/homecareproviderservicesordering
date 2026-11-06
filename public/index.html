@@ -7923,7 +7923,7 @@ function renderReports(){
     <div class="ph"><div><h1>Reports</h1><div class="sub">${esc(RPT.scope_name)} · ${esc(R.period.label)}</div></div>
       <div class="rpt-ctl">${scopeSel}${yearSel}<a class="btn gh" onclick="exportReportCSV()">⬇ Excel</a><a class="btn gh" id="rptPdf" onclick="rptPdf()">⬇ PDF report</a></div></div>
     <div class="kpis">
-      <div class="kpi accent"><div class="kl">Purchases</div><div class="kv o tnum">${money(R.purchases.total)}</div><div class="ks">${R.purchases.prior!=null?`Same months last year ${money(R.purchases.prior)} ${pctB(R.purchases.change_pct)}`:'No comparable reports last year'}</div></div>
+      <div class="kpi accent"><div class="kl">Purchases</div><div class="kv o tnum">${money(R.purchases.total)}</div><div class="ks">${R.purchases.prior==null?'No comparable reports last year':R.purchases.partial?`Same months: ${money(R.purchases.current_compared)} vs ${money(R.purchases.prior)} last year ${pctB(R.purchases.change_pct)}`:`Same months last year ${money(R.purchases.prior)} ${pctB(R.purchases.change_pct)}`}</div></div>
       <div class="kpi"><div class="kl">Average month (12 mo.)</div><div class="kv tnum">${money(sc.avg_month_12m)}</div><div class="ks">${sc.active_lines_12m} active line${sc.active_lines_12m===1?'':'s'}</div></div>
       <div class="kpi"><div class="kl">Last reported purchase</div><div class="kv tnum" style="font-size:22px">${esc(sc.last_purchase_month||'—')}</div><div class="ks">${sc.last_portal_order?'Last portal order '+esc(sc.last_portal_order):'No portal orders yet'}</div></div>
       <div class="kpi"><div class="kl">Portal orders</div><div class="kv tnum">${R.portal.orders}</div><div class="ks">${money(R.portal.merchandise)} · shown apart</div></div>

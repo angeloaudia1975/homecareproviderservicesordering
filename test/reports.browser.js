@@ -60,7 +60,7 @@ const layout = (page) => page.evaluate(() => {
       await page.waitForFunction(() => /Vital Signs/.test((document.querySelector('#view-reports') || {}).innerText || ''), null, { timeout: 20000 });
       const txt = await page.evaluate(() => document.querySelector('#view-reports').textContent);
       await t(label + ': company view — purchases manufacturer-reported, portal orders and quotes apart, "—" where history is missing', () => {
-        ok(/Acme Medical — all locations/.test(txt), 'scope name'); ok(/\$1,000/.test(txt), 'company purchases 1000'); ok(/Same months last year/.test(txt) && /This year, same months/.test(txt), 'company like-for-like (Bemis not reported last year)');
+        ok(/Acme Medical — all locations/.test(txt), 'scope name'); ok(/\$1,000/.test(txt), 'company purchases 1000'); ok(/Same months: \$600 vs \$1,300 last year/.test(txt) && /This year, same months/.test(txt), 'company like-for-like (Bemis not reported last year)');
         ok(/Portal orders/.test(txt) && /shown apart/.test(txt) && /never added to purchases/.test(txt), 'portal apart'); ok(/Quotes created \/ sent\s*1 \/ 1/.test(txt), 'quotes'); ok(/HCPS history from/.test(txt), 'history note'); ok(/No year-over-year comparison for: Bemis/.test(txt), 'note');
         ok(/Acme Branch/.test(txt) && /Locations/.test(txt), 'locations table'); ok(!/<b>name<\/b>/.test(txt) || true, 'escaped');
       });

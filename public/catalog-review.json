@@ -1,15 +1,17 @@
 {
-  "review_id": "36189eb16e19",
+  "review_id": "1e5865231297",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T17:58:37Z",
+  "built_at": "2026-11-06T17:58:56Z",
   "main": "0b4e88bcc41d457beb28def7536e48d568392586",
-  "included": [],
-  "skipped": [
+  "included": [
     {
       "pr": 57,
       "title": "Reports: clearer like-for-like purchases tile",
       "branch": "c7/s6-fix1",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
+      "head": "9723e8bc4766fc4fa41b760f1d867ca80580da09",
+      "manufacturers": [],
+      "other_files": 2
     }
-  ]
+  ],
+  "skipped": []
 }
