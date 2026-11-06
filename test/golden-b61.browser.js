@@ -30,7 +30,11 @@ const CFG = require(path.join(gFN, 'lib', 'golden-config.js'));
 const PRICING = [{ sku: 'PR511-LAR', dealer_cost: 1188 }, { sku: 'PR511-MXW', dealer_cost: 1266 }];
 const products = C.buildCatalog({ data: DATA, merch: {}, pricing: PRICING, seePrices: true });
 const familyAnswer = fam => { const f = C.buildFamily({ data: DATA, enrichment: ENRICH, merch: {}, pricing: PRICING, seePrices: true, linked: true, family: fam }); return f ? { prices_visible: true, linked: true, enrichment_as_of: ENRICH.as_of, family: f } : { available: false, reason: 'not_found' }; };
-const configAnswer = b => { const c = CFG.configure({ sku: String(b.sku || ''), fabric: b.fabric || 'std', color: b.color || null, tier: b.tier || null, footrest: b.footrest === true, pricing: PRICING, invRows: [] });
+const MOB = require(path.join(gFN, 'lib', 'golden-mobility.js'));
+const configAnswer = b => {
+  if (MOB.isMobilitySku(String(b.sku || '')) || MOB.isBedSku(String(b.sku || ''))) { const o = MOB.options({ sku: String(b.sku), pricing: PRICING, invRows: [], seePrices: true, linked: true });
+    return o.ok ? { prices_visible: true, linked: true, options: o.options } : { available: false, reason: 'not_found' }; }
+  const c = CFG.configure({ sku: String(b.sku || ''), fabric: b.fabric || 'std', color: b.color || null, tier: b.tier || null, footrest: b.footrest === true, pricing: PRICING, invRows: [] });
   if (!c.ok || (c.quote && !c.quote.ok)) return { available: false, reason: 'not_offered' };
   return { prices_visible: true, linked: true, config: CFG.present(c, { seePrices: true, linked: true }) }; };
 
@@ -197,10 +201,10 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
         ok(!/1188|1608|dealer_price|dealer_cost|unit_price/.test(s), 'no dealer price in the brochure payload');
         ok(b1.links.length >= 1 && b1.links.every(h => /^https:\/\//.test(h)) && /Sell Sheet/i.test(b1.modal), 'official sell sheet ' + JSON.stringify(b1.links)); });
       await page.evaluate(() => closeBrochure());
-      // ── 4. browse-only Golden product ──
-      await page.evaluate(() => openProductDetail('GA541D')); await page.waitForTimeout(1500);
-      const sc = await page.evaluate(() => ({ cfg: !!document.querySelector('.gcfg'), note: (document.querySelector('.gbrowse') || {}).innerText || '', add: [...document.querySelectorAll('.pd .addbtn, .pd .gaddbtn')].length, broch: !!document.querySelector('.pd .pd-broch'), quote: /Add to a quote/.test(document.querySelector('.pd').innerText) }));
-      await t(`${label}: a Golden scooter says "Browse only", offers no Add to cart, keeps Print Brochure and Add to a quote`, () => ok(!sc.cfg && /Browse only/.test(sc.note) && sc.add === 0 && sc.broch && sc.quote, JSON.stringify(sc)));
+      // ── 4. a Golden scooter (B8, contract 1.9.0): ordered here like a chair — Golden's colours + accessories, Add to cart ──
+      await page.evaluate(() => openProductDetail('GA541D')); await page.waitForSelector('#gmob [data-gmcol]', { timeout: 15000 });
+      const sc = await page.evaluate(() => ({ mob: !!document.querySelector('#gmob'), note: (document.querySelector('.gbrowse') || {}).innerText || '', add: [...document.querySelectorAll('.pd .gaddbtn[data-gmadd]')].length, broch: !!document.querySelector('.pd .pd-broch'), quote: /Add to a quote/.test(document.querySelector('.pd').innerText) }));
+      await t(`${label}: a Golden scooter has the order panel (no "Browse only"), Add to cart, Print Brochure and Add to a quote`, () => ok(sc.mob && !/Browse only/.test(sc.note) && sc.add === 1 && sc.broch && sc.quote, JSON.stringify(sc)));
       const scq = await page.evaluate(() => { const a = document.querySelector('.pd [data-gb-quote]'); const h = a.getBoundingClientRect().height, inline = a.hasAttribute('onclick'); a.click();
         return { h, inline, picked: window.P360Quote.picked().map(r => r.sku), view: document.querySelector('#p360 .view.on, [data-view].on') ? 1 : 0 }; });
       await t(`${label}: the browse-only "Add to a quote" is a ≥ 44px control with no inline script, and adds the scooter to the quote`, () => ok(scq.h >= 44 && !scq.inline && scq.picked.includes('GA541D'), JSON.stringify(scq)));
@@ -212,7 +216,7 @@ const pageBody = async (page, sel) => page.evaluate(s => (document.querySelector
       const m1 = await page.evaluate(() => ({ groups: [...document.querySelectorAll('#cartGroups .mgroup')].map(g => g.querySelector('.mghead').innerText.replace(/\s+/g, ' ')), badge: document.getElementById('cartCount').textContent,
         gtxt: document.querySelector('.gmgroup').innerText, sum: getComputedStyle(document.getElementById('gSumRow')).display, btn: document.getElementById('submitOrder').textContent, orders: hcpsCartOrders().map(o => o.manufacturer_slug) }));
       await t(`${label}: mixed cart — Strongback and Golden groups side by side, header count 3, Golden priced by Golden, Golden never an HCPS order`, () => {
-        ok(m1.groups.length === 2 && /Golden Technologies/.test(m1.groups[1]) && /2 chairs/.test(m1.groups[1]), m1.groups.join(' | ')); ok(m1.badge === '3', 'badge ' + m1.badge);
+        ok(m1.groups.length === 2 && /Golden Technologies/.test(m1.groups[1]) && /2 items/.test(m1.groups[1]), m1.groups.join(' | ')); ok(m1.badge === '3', 'badge ' + m1.badge);
         ok(/Priced by Golden at review/.test(m1.gtxt) && /separate order/.test(m1.gtxt) && /Checkout Golden order/.test(m1.gtxt), m1.gtxt.slice(0, 300));
         ok(m1.sum !== 'none' && /Place order/.test(m1.btn) && JSON.stringify(m1.orders) === '["strongback-mobility"]', JSON.stringify(m1)); });
       // Golden prices the group for a ship-to → the group shows Golden's subtotal, S&H and total

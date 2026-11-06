@@ -1381,6 +1381,12 @@ table.gspec th.on,table.gspec td.on{background:#fff7e0}table.gspec td.v{white-sp
 @media (max-width:760px){.gdocs,.gvids{grid-template-columns:1fr}.ghls{grid-template-columns:repeat(2,1fr)}}
 .gcfg{margin-top:12px;border:1px solid #dfe6ee;border-radius:12px;padding:12px 14px;background:#fff}
 .gcfg h3{margin:0 0 8px;font-size:14.5px;color:#0b1f33}.gcfg .gl{font-size:12px;font-weight:700;color:#5b6676;text-transform:uppercase;letter-spacing:.04em;margin:10px 0 6px}
+.gacc{margin-top:12px;border:1px solid #e3e9f2;border-radius:10px;padding:0 12px}.gacc>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700}
+.gacc-list{max-height:420px;overflow:auto;padding-bottom:8px}.gacc-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #eef2f7;font-size:13.5px}
+.gacc-row small{display:block;color:#64748b}.gacc-r{display:flex;align-items:center;gap:8px;flex:0 0 auto}.gacc-p{font-weight:700}.gacc-r .qtyin{width:64px;min-height:44px}
+.pd .gaddbtn.gacc-add,.gaddbtn.gacc-add{flex:0 0 auto;min-height:44px;padding:8px 14px;font-size:14px}
+.gck-fq{margin-top:10px;padding:10px 12px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;font-size:13.5px}.gck-fq label{display:flex;gap:10px;align-items:flex-start;min-height:44px;cursor:pointer}.gck-fq input{width:22px;height:22px;flex:0 0 auto;margin-top:2px}
+@media(max-width:560px){.gacc-row{flex-wrap:wrap}.gacc-r{width:100%;justify-content:flex-end}}
 .gcfg-tabs,.gcfg-tiers{display:flex;flex-wrap:wrap;gap:6px}.gcfg-tab,.gcfg-tier{min-height:44px;padding:8px 12px;border:1px solid #cdd8e6;border-radius:999px;background:#fff;cursor:pointer;font:inherit;font-size:13px}
 .gcfg-tab.on,.gcfg-tier.on{background:#0b1f33;color:#fff;border-color:#0b1f33}.gcfg-tab small,.gcfg-tier small{opacity:.75;margin-left:4px}
 .gcfg-sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}.gcfg-c{position:relative;min-height:44px;border:2px solid transparent;border-radius:10px;padding:3px;background:#f6f8fb;cursor:pointer;font:inherit;font-size:11px;text-align:center;color:#2b3440}
@@ -2989,6 +2995,96 @@ function goldenConfigWire(host){
   box.addEventListener('change',function(e){ if(!e.target.matches('[data-gfoot]')) return; const sel=GCFG.sel[fam]||(GCFG.sel[fam]={fabric:"std"}); sel.footrest=!!e.target.checked; goldenConfigLoad(host, sku, fam); });
   goldenConfigLoad(host, sku, fam);
 }
+/* B8 (contract 1.9.0) — the order panel of a Golden scooter, power wheelchair or Passport bed, in the HCPS design.
+   Everything comes from Golden (golden-proxy "config" → /v1/config options): the card's colours with Golden's stock, its
+   accessory panel, a bed's configurations and delivery choices, and — when Golden shows this dealer's prices — Golden's
+   dealer prices. Add to cart keeps only the selection; Golden prices it (with freight and S&H) at checkout. */
+const GMOB={ sel:{}, seq:0, cur:null };
+const GBED_DLV={retailer:"To-Retailer (dock / business)",curbside:"Curbside (residential)",wg:"White-Glove complete set-up"};
+function goldenMobHtml(p){ return `<div class="gcfg" id="gmob" data-sku="${esc(p.code)}"><h3>${GBED_RE.test(p.code)?"Configure this bed":"Order this "+(p.category==="Power Wheelchairs"?"power chair":"scooter")}</h3><div class="gcfg-note">Loading Golden's options…</div></div>`; }
+async function goldenMobLoad(host, sku){
+  const box=host.querySelector('#gmob'); if(!box) return;
+  const my=++GMOB.seq; box.classList.add('gcfg-busy');
+  const j=await goldenCall("config",{sku});
+  if(my!==GMOB.seq||!host.querySelector('#gmob')) return;
+  box.classList.remove('gcfg-busy');
+  if(!j||j.available!==true||!j.options){ box.innerHTML=`<h3>Order this item</h3><div class="gcfg-note">Golden's ordering options aren't available right now. Please try again shortly.</div>`; return; }
+  const o=j.options, sel=GMOB.sel[sku]||(GMOB.sel[sku]={color:null,config:"set",delivery:"retailer",rural:false});
+  if(o.kind==="mobility"&&o.color_required&&!sel.color){ const first=(o.colors||[]).find(c=>c.status!=="out")||(o.colors||[])[0]; sel.color=first?first.code:null; }
+  GMOB.cur={ sku, o, pv:j.prices_visible===true };
+  box.innerHTML=goldenMobBody(o, j.prices_visible===true, sel);
+}
+function goldenMobBody(o, pv, sel){
+  const stat={in:"In stock",low:"Low stock",out:"Out of stock — ships when built"};
+  const open=goldenCartOpen()&&gckOrderingOpen();
+  const acc=(o.accessories||[]).length?`<details class="gacc"><summary>Accessories (${o.accessories.length})</summary><div class="gacc-list">${o.accessories.map(a=>`<div class="gacc-row">
+      <div><b>${esc(a.description)}</b><small>${esc(a.id)}${a.group==="shroud"?" · shroud kit":""}</small></div>
+      <div class="gacc-r">${pv&&typeof a.dealer_price==="number"?`<span class="gacc-p">${money(a.dealer_price)}</span>`:""}<input class="qtyin" type="number" min="1" max="${GCK_MAX_QTY}" value="1" aria-label="Quantity of ${esc(a.description)}" data-gaccq="${esc(a.id)}"${open?"":" disabled"}>
+        <button type="button" class="gaddbtn gacc-add" data-gacc="${esc(a.id)}"${open?"":" disabled"}>Add</button></div></div>`).join("")}</div></details>`:"";
+  let body="", price=null, ready=true;
+  if(o.kind==="mobility"){
+    price=pv&&typeof o.dealer_price==="number"?o.dealer_price:null;
+    if(o.color_required){
+      const sw=(o.colors||[]).map(c=>`<button type="button" class="gcfg-c${c.code===sel.color?" on":""}" data-gmcol="${esc(c.code)}" aria-pressed="${c.code===sel.color}" title="${esc(c.name)} — ${esc(stat[c.status]||"")}${c.qty!=null?" ("+esc(c.qty)+")":""}"><span class="gsw" style="${c.hex&&/^#[0-9a-f]{3,6}$/i.test(c.hex)?"background:"+c.hex:"background:#e5e7eb"}"></span><span class="gdot ${esc(c.status)}"></span>${esc(c.name)}</button>`).join("");
+      const cur=(o.colors||[]).find(c=>c.code===sel.color);
+      body=`<div class="gl">Colour</div><div class="gcfg-sw">${sw}</div>${cur?`<div class="${cur.status==="out"?"gcu":"gin"}">${esc(stat[cur.status]||"")}</div>`:""}`;
+      ready=!!cur;
+    } else body=`${o.color_note?`<div class="gl">Colour</div><div class="gcfg-note" style="margin-top:0">${esc(o.color_note)}</div>`:""}${o.stock?`<div class="${o.stock.status==="out"?"gcu":"gin"}">${esc(stat[o.stock.status]||"")}</div>`:""}`;
+    if(!o.orderable) ready=false;
+  } else {
+    const cfg=(o.configs||[]).find(c=>c.key===sel.config)||(o.configs||[])[0]; sel.config=cfg?cfg.key:"set";
+    if(sel.delivery==="wg"&&sel.config!=="set") sel.delivery="retailer";
+    price=pv&&cfg&&typeof cfg.dealer_price==="number"?cfg.dealer_price:null;
+    const wg=(o.deliveries||[]).find(d=>d.key==="wg");
+    body=`<div class="gl">Configuration</div><div class="gcfg-tiers">${(o.configs||[]).map(c=>`<button type="button" class="gcfg-tier${c.key===sel.config?" on":""}" data-gbcfg="${esc(c.key)}" aria-pressed="${c.key===sel.config}">${esc(c.label)}${pv&&typeof c.dealer_price==="number"?` <small>${money(c.dealer_price)}</small>`:""}</button>`).join("")}</div>
+      <div class="gl">Delivery</div><div class="gcfg-tiers">${(o.deliveries||[]).map(d=>{ const dis=d.requires==="set"&&sel.config!=="set"; return `<button type="button" class="gcfg-tier${d.key===sel.delivery?" on":""}" data-gbdlv="${esc(d.key)}" aria-pressed="${d.key===sel.delivery}"${dis?" disabled":""}>${esc(d.label)}${dis?" <small>(complete set only)</small>":""}</button>`; }).join("")}</div>
+      ${sel.delivery==="wg"&&wg?`<label class="gcfg-fr"><input type="checkbox" data-gbrural${sel.rural?" checked":""}> Rural delivery${typeof wg.rural_option==="number"?" (+"+money(wg.rural_option)+")":""}</label>`:""}
+      <div class="gcfg-note">Golden ships the base as head and foot sections. Golden's bed freight is priced at checkout${o.multi_bed_note?"; "+esc(o.multi_bed_note):"."}</div>`;
+  }
+  const q=`<div class="gcfg-q">${price!=null?`<div class="gp">${money(price)}</div>`:`<div class="gbd">${pv?"":(GOLDEN.state==="account"?"Dealer pricing isn't shown for your Golden account.":"Dealer price shows once your Golden account is linked.")}</div>`}
+    <div class="gitem">Golden item # ${esc(o.sku)}</div></div>`;
+  return `<h3>${o.kind==="bed"?"Configure this bed":"Order this item"}</h3>${body}${q}${goldenMobActions(ready&&pv, o)}${acc}`;
+}
+function goldenMobActions(orderable, o){
+  const open=goldenCartOpen()&&gckOrderingOpen(), can=open&&orderable;
+  return `<div class="pd-buy buy gbuy"><input class="qtyin" type="number" min="1" max="${GCK_MAX_QTY}" value="1" aria-label="Quantity" data-gmqty${can?"":" disabled"}>
+      <button type="button" class="gaddbtn" data-gmadd${can?"":" disabled aria-disabled=\"true\""}>🛒 Add to cart</button></div>
+    ${!open?`<div class="gcfg-note">Golden ordering in the 360 Dealer Portal isn't open for your account — you can print a brochure or add it to a customer quote.</div>`
+      :(orderable?"":`<div class="gcfg-note">${o&&o.kind==="mobility"&&o.color_required?"Choose a colour to add this to your cart.":"Golden pricing is needed to order this here."}</div>`)}
+    <button type="button" class="pd-broch" data-gb-broch="${esc(o.sku)}">${BROCH_ICON}Print Brochure</button>
+    <div class="pd-sub"><a role="button" tabindex="0" data-gb-quote="${esc(o.sku)}">${QUOTE_ICON}Add to a quote</a></div>
+    <div class="gcfg-note">Priced by Golden Technologies. Golden prices freight and shipping &amp; handling for the ship-to you choose at checkout.</div>`;
+}
+function goldenMobWire(host){
+  const box=host.querySelector('#gmob'); if(!box||box._wired) return; box._wired=true;
+  const sku=box.getAttribute('data-sku');
+  const p=()=>(state.products||[]).find(x=>x.code===sku)||{};
+  box.addEventListener('click',function(e){
+    const sel=GMOB.sel[sku]||(GMOB.sel[sku]={color:null,config:"set",delivery:"retailer",rural:false});
+    const cur=GMOB.cur&&GMOB.cur.sku===sku?GMOB.cur:null;
+    const c=e.target.closest('[data-gmcol]'), bc=e.target.closest('[data-gbcfg]'), bd=e.target.closest('[data-gbdlv]');
+    if(c){ sel.color=c.getAttribute('data-gmcol'); if(cur) box.innerHTML=goldenMobBody(cur.o,cur.pv,sel); return; }
+    if(bc){ sel.config=bc.getAttribute('data-gbcfg'); if(cur) box.innerHTML=goldenMobBody(cur.o,cur.pv,sel); return; }
+    if(bd&&!bd.disabled){ sel.delivery=bd.getAttribute('data-gbdlv'); if(sel.delivery!=="wg") sel.rural=false; if(cur) box.innerHTML=goldenMobBody(cur.o,cur.pv,sel); return; }
+    if(!cur||box.classList.contains('gcfg-busy')) return;
+    const o=cur.o;
+    if(e.target.closest('[data-gmadd]')){
+      const qi=box.querySelector('[data-gmqty]'), qty=qi?qi.value:1;
+      if(o.kind==="mobility"){ const col=(o.colors||[]).find(x=>x.code===sel.color);
+        goldenCartAddItem({kind:"mobility",sku,color:o.color_required?sel.color:null,qty,label:(p().name||o.name||sku),detail:col?"Color: "+col.name:(o.color_note?"Color: "+o.color_note:"")}); }
+      else { const cfg=(o.configs||[]).find(x=>x.key===sel.config);
+        goldenCartAddItem({kind:"bed",sku,size:o.size,config:sel.config,delivery:sel.delivery,rural:sel.delivery==="wg"&&sel.rural,qty,label:o.name||sku,
+          detail:[cfg&&cfg.label, GBED_DLV[sel.delivery]+(sel.delivery==="wg"&&sel.rural?" (rural)":"")].filter(Boolean).join(" · ")}); }
+      return;
+    }
+    const ab=e.target.closest('[data-gacc]');
+    if(ab){ const id=ab.getAttribute('data-gacc'), a=(o.accessories||[]).find(x=>x.id===id); if(!a) return;
+      const qi=box.querySelector(`[data-gaccq="${id}"]`);
+      goldenCartAddItem({kind:"accessory",sku:id,for:sku,qty:qi?qi.value:1,label:a.description,detail:"Accessory · "+(p().name||o.name||sku)}); }
+  });
+  box.addEventListener('change',function(e){ if(!e.target.matches('[data-gbrural]')) return; const sel=GMOB.sel[sku]; if(!sel) return; sel.rural=!!e.target.checked; const cur=GMOB.cur; if(cur&&cur.sku===sku) box.innerHTML=goldenMobBody(cur.o,cur.pv,sel); });
+  goldenMobLoad(host, sku);
+}
 /* B4 — the Golden cart and order review (owner 2026-11-03). A SEPARATE cart: Golden lines never enter the HCPS cart,
    orders-api or an HCPS price. It keeps only the dealer's selection (Golden item, fabric, colour, upgrade, footrest,
    quantity, reference names) — never a price. Golden prices it: `quote` (bound to one of Golden's own ship-to records,
@@ -3025,8 +3121,8 @@ function gckSyncFromStorage(){
   if(p&&(!GCART.pending||GCART.pending.key!==p.key)){ GCART.pending=p; GCART.result=null; GCART.attempt=null; return "pending"; }
   if(!p&&GCART.pending&&!GCART.busy){ GCART.pending=null; }
   let stored=null; try{ stored=JSON.parse(localStorage.getItem(gckStoreKey())||"null"); }catch(e){}
-  if(Array.isArray(stored)&&JSON.stringify(stored.map(i=>[i.sku,i.fabric,i.color,i.tier||null,!!i.footrest,i.qty]))!==JSON.stringify(GCART.items.map(i=>[i.sku,i.fabric,i.color,i.tier||null,!!i.footrest,i.qty]))){
-    gckLoad(); GCART.quote=null; GCART.quoteSig=null; GCART.result=null; GCART.attempt=null; return "Your Golden chairs changed in another window. Please review them again.";
+  if(Array.isArray(stored)&&JSON.stringify(stored.map(gckNorm).filter(Boolean).map(gckLine))!==JSON.stringify(gckReq())){
+    gckLoad(); GCART.quote=null; GCART.quoteSig=null; GCART.result=null; GCART.attempt=null; return "Your Golden items changed in another window. Please review them again.";
   }
   const m=gckPlacedRead();
   // only a cart this window held BEFORE another window placed it (a stale copy) — a dealer may deliberately re-order the same chairs
@@ -3035,13 +3131,33 @@ function gckSyncFromStorage(){
 }
 function goldenCartOpen(){ return goldenEntitled() && GOLDEN.prices===true && (GOLDEN.preview===true || CONFIG.GOLDEN_CHECKOUT_ENABLED===true); }
 function gckStoreKey(){ const d=AUTH.dealer||{}; return "hcps_golden_cart_v1:"+(GOLDEN.preview?"preview:":"")+String(d.id||"anon"); }
-function gckSave(){ try{ localStorage.setItem(gckStoreKey(), JSON.stringify(GCART.items.map(i=>({sku:i.sku,fabric:i.fabric,color:i.color,tier:i.tier||null,footrest:!!i.footrest,qty:i.qty,refs:i.refs,label:i.label,detail:i.detail})))); }catch(e){} }
+function gckSave(){ try{ localStorage.setItem(gckStoreKey(), JSON.stringify(GCART.items.map(i=>Object.assign({},i)))); }catch(e){} }
+/* B8 (contract 1.9.0, owner 2026-11-05): the Golden cart holds every Golden family — a configured lift chair (no kind),
+   a scooter / power chair ("mobility", in one of Golden's colours), an accessory of one ("accessory", for = its model or
+   bed size) or a Passport bed ("bed": size × set|base × delivery). Only the dealer's selection is kept — never a price. */
+const GMOB_RE=/^(GB|GL|GC|GA|GR|GP)\d{3}[A-Z]?(?:-[A-Z]{3})?$/, GBED_RE=/^BD100A-(TB|QB|KB)$/, GACC_RE=/^[A-Z0-9][A-Z0-9-]{1,40}$/;
+function gckNorm(i){
+  if(!i||typeof i!=="object") return null;
+  const qty=Math.min(GCK_MAX_QTY,Math.max(1,parseInt(i.qty,10)||1));
+  const base={qty,refs:Array.isArray(i.refs)?i.refs.slice(0,GCK_MAX_QTY).map(x=>String(x||"").slice(0,40)):[],label:String(i.label||i.sku||"").slice(0,120),detail:String(i.detail||"").slice(0,200)};
+  if(i.kind==="mobility"){ if(!GMOB_RE.test(String(i.sku))||(i.color!=null&&!/^[A-Z0-9]{3}$/.test(String(i.color)))) return null; return Object.assign({kind:"mobility",sku:i.sku,color:i.color||null},base); }
+  if(i.kind==="accessory"){ if(!GACC_RE.test(String(i.sku))||!(GMOB_RE.test(String(i.for))||GBED_RE.test(String(i.for)))) return null; return Object.assign({kind:"accessory",sku:i.sku,for:i.for},base); }
+  if(i.kind==="bed"){ const sz=String(i.size||""); if(!["TB","QB","KB"].includes(sz)||!["set","base"].includes(i.config)||!["retailer","curbside","wg"].includes(i.delivery)||(i.delivery==="wg"&&i.config!=="set")) return null;
+    return Object.assign({kind:"bed",sku:"BD100A-"+sz,size:sz,config:i.config,delivery:i.delivery,rural:i.delivery==="wg"&&i.rural===true},base); }
+  if(i.kind!=null||!/^PR\d{3}-[A-Z]{3}$/.test(String(i.sku))||!/^[A-Z0-9]{1,8}$/.test(String(i.color||""))) return null;
+  return Object.assign({sku:i.sku,fabric:String(i.fabric||"std"),color:i.color,tier:i.tier||null,footrest:i.footrest===true},base);
+}
+// What Golden is asked for one line: only the selection (contract §4d / §4j).
+function gckLine(i){
+  if(i.kind==="mobility"){ const o={kind:"mobility",sku:i.sku,qty:i.qty}; if(i.color) o.color=i.color; return o; }
+  if(i.kind==="accessory") return {kind:"accessory",sku:i.sku,for:i.for,qty:i.qty};
+  if(i.kind==="bed"){ const o={kind:"bed",size:i.size,config:i.config,delivery:i.delivery,qty:i.qty}; if(i.rural) o.rural=true; return o; }
+  const o={sku:i.sku,fabric:i.fabric,color:i.color,qty:i.qty}; if(i.tier) o.tier=i.tier; if(i.footrest) o.footrest=true; return o;
+}
 function gckLoad(){
   try{
     const a=JSON.parse(localStorage.getItem(gckStoreKey())||"[]");
-    GCART.items=(Array.isArray(a)?a:[]).filter(i=>i&&/^PR\d{3}-[A-Z]{3}$/.test(i.sku)&&/^[A-Z0-9]{1,8}$/.test(String(i.color||""))).slice(0,GCK_MAX_LINES)
-      .map(i=>({sku:i.sku,fabric:String(i.fabric||"std"),color:i.color,tier:i.tier||null,footrest:i.footrest===true,qty:Math.min(GCK_MAX_QTY,Math.max(1,parseInt(i.qty,10)||1)),
-        refs:Array.isArray(i.refs)?i.refs.slice(0,GCK_MAX_QTY).map(x=>String(x||"").slice(0,40)):[],label:String(i.label||i.sku).slice(0,120),detail:String(i.detail||"").slice(0,200)}));
+    GCART.items=(Array.isArray(a)?a:[]).map(gckNorm).filter(Boolean).slice(0,GCK_MAX_LINES);
   }catch(e){ GCART.items=[]; }
   GCART.cartAt=Date.now();
   gckPendLoad();
@@ -3050,7 +3166,7 @@ function gckLoad(){
 // The words shown for a saved line — never a price (Golden's live, priced description comes with its quote).
 function gckDetail(sel, cq){ const F={std:"Standard fabric",xover:"Cross-Over fabric",brisa:"Brisa fabric"}, T={standard:"",irheat:"Infrared heat",hvib:"Heat & vibration",nirvana:"Nirvana™ massage + heat"};
   return [F[sel.fabric]||"", String((cq&&cq.color_name)||sel.color||""), T[sel.tier]||"", sel.footrest?"Footrest extension":""].filter(Boolean).join(" · ").replace(/\$[\d,.]+/g,"").slice(0,200); }
-const gckKey=i=>[i.sku,i.fabric,i.color,i.tier||"",i.footrest?1:0].join("|");
+const gckKey=i=>JSON.stringify(Object.assign(gckLine(i),{qty:0}));
 function gckReset(){
   clearTimeout(GCART.auto); { const lv=document.getElementById('gckLive'); if(lv) lv.remove(); }
   const ov=document.getElementById('gckView'); if(ov) ov.remove(); const pl=document.getElementById('gcartPill'); if(pl) pl.remove();
@@ -3059,7 +3175,7 @@ function gckReset(){
   if(typeof GOLDEN!=="undefined"){ GOLDEN.on=false; GOLDEN.checked=false; }
   if(typeof cartBadgeRefresh==="function") try{ cartBadgeRefresh(); }catch(e){}
 }
-function gckChanged(){ GCART.pcCount=0; GCART.cartAt=Date.now(); GCART.quote=null; GCART.quoteSig=null; GCART.result=null; GCART.err=null; GCART.priceNotice=false; gckSave(); gckPill(); }
+function gckChanged(){ GCART.fqAck=false; GCART.pcCount=0; GCART.cartAt=Date.now(); GCART.quote=null; GCART.quoteSig=null; GCART.result=null; GCART.err=null; GCART.priceNotice=false; gckSave(); gckPill(); }
 /* Golden state changed (this tab or another): refresh the cart without taking the dealer's place. If the dealer is typing
    in an HCPS field of the cart, only the Golden group is replaced; a Golden control that had focus gets it back. */
 function gckRefreshCart(){ try{
@@ -3092,6 +3208,16 @@ function goldenCartAdd(sku, sel, cq, qty){
   else { if(GCART.items.length>=GCK_MAX_LINES){ showToast&&showToast("A Golden order holds up to "+GCK_MAX_LINES+" lines."); return; } GCART.items.push(it); }
   gckChanged(); showToast&&showToast(`Added ${n} × ${it.label} to your cart`);
 }
+// Any Golden line (scooter, accessory, bed) — the same rules as a chair: merged with an identical line, capped, never priced here.
+function goldenCartAddItem(raw){
+  if(!goldenCartOpen()) return false;
+  if(GCART.pending||gckPendRead()){ showToast&&showToast("Finish confirming your Golden order first — open your cart."); return false; }
+  const it=gckNorm(raw); if(!it) return false;
+  const same=GCART.items.find(x=>gckKey(x)===gckKey(it));
+  if(same){ if(same.qty+it.qty>GCK_MAX_QTY){ showToast&&showToast("Golden's limit is "+GCK_MAX_QTY+" per line."); return false; } same.qty+=it.qty; }
+  else { if(GCART.items.length>=GCK_MAX_LINES){ showToast&&showToast("A Golden order holds up to "+GCK_MAX_LINES+" lines."); return false; } GCART.items.push(it); }
+  gckChanged(); showToast&&showToast(`Added ${it.qty} × ${it.label} to your cart`); return true;
+}
 // Golden chairs in the HCPS cart (the Golden order group). Counted only where the Golden cart is open to this dealer.
 function gckCount(){ return (typeof goldenCartOpen==="function"&&goldenCartOpen())?GCART.items.reduce((s,i)=>s+i.qty,0):0; }
 /* B6.1: Golden chairs live in the HCPS cart (header count + their own order group), so there is no separate Golden cart
@@ -3103,7 +3229,7 @@ function gckPill(){
   if(!el){ el=document.createElement('button'); el.type='button'; el.id='gcartPill'; el.className='gck-pill'; el.addEventListener('click',goldenCartShow); document.body.appendChild(el); }
   el.textContent="Golden order · confirming";
 }
-function gckReq(){ return GCART.items.map(i=>{ const o={sku:i.sku,fabric:i.fabric,color:i.color,qty:i.qty}; if(i.tier) o.tier=i.tier; if(i.footrest) o.footrest=true; return o; }); }
+function gckReq(){ return GCART.items.map(gckLine); }
 /* B7 (owner 2026-11-05): HCPS is the ship-to system of record. When the address book is switched on (golden-addresses-api
    answers enabled:true) the dealer chooses from the book of every location sharing their Golden account number, adds a new
    address on the spot (saved in HCPS, usable at once, no approval) and keeps a personal default. HCPS's server resolves
@@ -3234,8 +3360,8 @@ function gckRender(){
       <div><span>Merchandise</span><b>${money(q.totals.subtotal)}</b></div>
       <div><span>Freight</span><b>${gckFreight(q.totals)}</b></div>
       <div><span>Shipping &amp; handling${q.totals.sh_waived?" (waived for this ship-to)":""}</span><b>${money(q.totals.sh_total)}</b></div>
-      ${(q.totals.shipments||[]).length>1?q.totals.shipments.map(s=>`<div class="gck-sm"><span>${s.group==="in_stock"?"Ships now":s.group==="build"?"Built to order":"Shipment"}</span><span>${money(s.subtotal)}${s.freight!=null?` + ${Number(s.freight)===0?"free freight":money(s.freight)+" freight"}`:""} + ${money(s.sh)} S&amp;H</span></div>`).join(""):""}
-      <div class="gck-gt"><span>Golden total</span><b>${money(q.totals.grand_total)}</b></div>
+      ${(q.totals.shipments||[]).length>1?q.totals.shipments.map(s=>`<div class="gck-sm"><span>${s.group==="in_stock"?"Ships now":s.group==="build"?"Built to order":"Shipment"}</span><span>${money(s.subtotal)}${gckShipFreight(s)} + ${money(s.sh)} S&amp;H</span></div>`).join(""):""}
+      <div class="gck-gt"><span>Golden total${q.totals.freight_quote_required?" (freight to be quoted)":""}</span><b>${money(q.totals.grand_total)}</b></div>
       <div class="gck-note">Priced by Golden Technologies${GCART.quoteAsOf?" · "+esc(new Date(GCART.quoteAsOf).toLocaleString()):""}.${q.freight&&q.freight.note?" "+esc(q.freight.note):""}</div></div>`:"";
   const changed=GCART.priceNotice?`<div class="gck-warn" role="alert"><b>Golden's prices changed.</b> The totals below are Golden's new prices — please check them before you place the order.</div>`:"";
   const err=GCART.err?`<div class="gck-warn" role="alert">${esc(GCART.err)}</div>`:"";
@@ -3250,13 +3376,13 @@ function gckRender(){
   gckHost(ov).innerHTML=`<span class="gck-ft" tabindex="0" data-trap="start"></span><div class="gck-box">
     <div class="gck-hd"><h2>Checkout · Golden Technologies${(typeof STAGING!=="undefined"&&STAGING)?' <span class="gck-prev">Private preview</span>':""}</h2><button type="button" class="gck-close" data-gck-close aria-label="Close the Golden checkout">Close</button></div>
     ${gckStepsHtml(step)}${gckNextHtml()}${tip}${gckHelpHtml()}
-    ${GCART.items.length?`<div class="gck-sec"><h3>1 · Your Golden chairs</h3>${lines}</div>`:`<div class="gck-sec"><p class="gck-note">No Golden chairs in your cart. Configure a lift chair and choose “Add to cart”.</p></div>`}
+    ${GCART.items.length?`<div class="gck-sec"><h3>1 · Your Golden items</h3>${lines}</div>`:`<div class="gck-sec"><p class="gck-note">No Golden items in your cart. Choose a Golden product and “Add to cart”.</p></div>`}
     ${GCART.items.length?`<div class="gck-sec"><h3>2 · Ship to</h3>${ship}</div>
     <div class="gck-sec"><h3>Contact &amp; PO</h3><div class="gck-grid">
       ${field("po","PO number (optional)",30)}${field("attention","Attention (optional)",60)}
       ${field("name","Contact name",80,"text",' autocomplete="name"')}${field("phone","Contact phone",30,"tel",' autocomplete="tel"')}${field("email","Contact email (optional)",190,"email",' autocomplete="email"')}
       <label class="gck-f gck-wide"><span>Notes for Golden (optional)</span><textarea class="gck-in" data-f="notes" maxlength="500" rows="3"${RO}>${esc(f.notes)}</textarea></label></div></div>
-    <div class="gck-sec"><h3>${r&&r.valid===true?"3 · Place order":"Total"}</h3>${changed}${err}${retry}${r&&r.valid===true?"":totals}${res}</div>${gckPlaceBarHtml(r)}`:""}
+    <div class="gck-sec"><h3>${r&&r.valid===true?"3 · Place order":"Total"}</h3>${changed}${err}${retry}${r&&r.valid===true?"":totals}${gckFqHtml(DIS)}${res}</div>${gckPlaceBarHtml(r)}`:""}
   </div><span class="gck-ft" tabindex="0" data-trap="end"></span>`;
   const want=(!GCART.busy&&GCART._refocus)?GCART._refocus:(fk||fkSum);
   if(want){ let el=null; try{ el=ov.querySelector(want); }catch(e){}
@@ -3278,7 +3404,7 @@ function gckStepsHtml(step){ const L=["Review cart","Shipping & total","Place or
     return `<li class="gck-step ${st}"${n===step?' aria-current="step"':""}><i aria-hidden="true">${n<step?"✓":n}</i><span>${esc(l)}</span>${n<step?'<b class="gck-ft"> — done</b>':""}</li>`; }).join("")}</ol>`; }
 function gckNextHtml(){
   const f=GCART.form, sl=GCART.shipList, r=GCART.result; let t, busy=false;
-  if(!GCART.items.length) t="Your Golden cart is empty. Configure a lift chair and choose <b>Add to cart</b>.";
+  if(!GCART.items.length) t="Your Golden cart is empty. Choose a Golden product and <b>Add to cart</b>.";
   else if(r&&r.valid===true) t=gckCanPlace(r)?"Golden verified this order. Check the total, then press <b>Place order with Golden</b>."
     :(r.ordering_enabled!==true&&gckOrderingOpen()?"Golden verified this order, but Golden is not accepting orders from the 360 Dealer Portal for this account yet. Nothing will be placed."
     :"Golden verified this order. Ordering from the 360 Dealer Portal is not open yet — nothing will be placed.");
@@ -3288,6 +3414,7 @@ function gckNextHtml(){
   else if(!GCART.ship) t="Choose the <b>ship-to address</b> for this order below.";
   else if(GCART.busyKind==="quote"||!GCART.quote||GCART.quoteSig!==JSON.stringify([gckReq(),GCART.ship])){ t="Getting Golden's price, freight and S&amp;H…"; busy=true; }
   else if(!(f.name.trim()&&f.phone.trim())) t="Add a <b>contact name and phone</b> below — Golden needs them for delivery.";
+  else if(gckFq()&&!GCART.fqAck) t="Golden quotes the freight for this order. Read and tick the <b>freight box</b> below to continue.";
   else { t="Golden is verifying your order…"; busy=true; }
   gckAnnounce(t);
   return `<div class="gck-next${busy?" busy":""}">${t}</div>`;
@@ -3317,17 +3444,25 @@ function gckSchedule(delay){
   const f=GCART.form;
   const sinceTyping=Date.now()-(GCART.lastInput||0), wait=Math.max(delay|0, 1200-sinceTyping, 0);   // never validate half-typed text
   if(GCART.result||!(f.name.trim()&&f.phone.trim())) return;
+  if(gckFq()&&!GCART.fqAck) return;   // Golden-quoted freight: the dealer's acknowledgement comes first
   GCART.auto=setTimeout(()=>{ GCART.auto=null; if(Date.now()-(GCART.lastInput||0)<1200) return gckSchedule(0); gckValidate(); }, wait);
 }
 /* Golden's freight (contract 1.7.0) is its own line, exactly as Golden priced it — never estimated here. */
-function gckFreight(t){ const v=t&&t.freight_total; return v==null||!(Number(v)>=0)?"priced by Golden":Number(v)===0?"Free — Golden pays":money(v); }
+function gckFreight(t){ const v=t&&t.freight_total;
+  // B8: freight Golden quotes by hand (oversized scooter, 2+ beds) is never shown as $0 — only the part Golden priced, plus the quote.
+  if(t&&t.freight_quote_required===true) return Number(v)>0?money(v)+" + freight quoted by Golden":"To be quoted by Golden";
+  return v==null||!(Number(v)>=0)?"priced by Golden":Number(v)===0?"Free — Golden pays":money(v); }
+const gckShipFreight=x=>x.freight_quote===true?" + freight quoted by Golden":(x.freight!=null?` + ${Number(x.freight)===0?"free freight":money(x.freight)+" freight"}`:"");
+const gckFq=()=>!!(GCART.quote&&GCART.quote.totals&&GCART.quote.totals.freight_quote_required===true);
+function gckFqHtml(DIS){ if(!gckFq()) return "";
+  return `<div class="gck-fq" role="group" aria-label="Freight quoted by Golden"><label><input type="checkbox" data-gck-fq${GCART.fqAck?" checked":""}${DIS}><span><b>Golden quotes the freight for this order</b> (an oversized scooter, or 2 or more beds in one shipment). It is not included in the total below — Golden confirms the freight charge with you before the order ships. I understand.</span></label></div>`; }
 function gckCanPlace(r){ return !!(r&&r.valid===true&&r.ordering_enabled===true&&gckOrderingOpen()&&GCART.attempt&&!GCART.busy); }
 // The one Place button lives in a footer that stays on screen at step 3 (sticky inside the dialog).
 function gckPlaceBarHtml(r){
   if(!r||!gckCanPlace(r)) return "";
   const t=r.quote&&r.quote.totals;
   return `<div class="gck-foot">${r.test_mode===true?`<div class="gck-warn"><b>Test mode.</b> Golden will place a TEST order: its emails go only to Golden's test mailbox, never to Golden's order desk or to you.</div>`:""}
-    <button type="button" class="gck-btn primary gck-placebtn" data-gck-place>Place order with Golden · ${t?money(t.grand_total):""}</button>
+    <button type="button" class="gck-btn primary gck-placebtn" data-gck-place>Place order with Golden · ${t?money(t.grand_total):""}${t&&t.freight_quote_required?" + freight quoted by Golden":""}</button>
     <p class="gck-note">One click sends this order to Golden Technologies exactly as verified. Golden is the order of record; nothing is placed until you click.</p></div>`;
 }
 function gckResultHtml(r){
@@ -3337,7 +3472,7 @@ function gckResultHtml(r){
     ${r.idempotent_replay?`<p class="gck-note">Golden returned the result it already recorded for this attempt.</p>`:""}
     <div class="gck-vt"><span>Golden total</span><b>${t?money(t.grand_total):""}</b></div>
     <div class="gck-note">Merchandise ${t?money(t.subtotal):""} · Freight ${t?gckFreight(t):""} · Shipping &amp; handling ${t?money(t.sh_total):""}${t&&t.sh_waived?" (waived for this ship-to)":""} · ship to ${esc((o.ship_to&&o.ship_to.label)||"")}${o.po_number?` · PO ${esc(o.po_number)}${o.po_auto?" (Golden will assign this)":""}`:""}</div>
-    ${t&&(t.shipments||[]).length>1?`<div class="gck-tot">${t.shipments.map(x=>`<div class="gck-sm"><span>${x.group==="in_stock"?"Ships now":x.group==="build"?"Built to order":"Shipment"}</span><span>${money(x.subtotal)}${x.freight!=null?` + ${Number(x.freight)===0?"free freight":money(x.freight)+" freight"}`:""} + ${money(x.sh)} S&amp;H</span></div>`).join("")}</div>`:""}
+    ${t&&(t.shipments||[]).length>1?`<div class="gck-tot">${t.shipments.map(x=>`<div class="gck-sm"><span>${x.group==="in_stock"?"Ships now":x.group==="build"?"Built to order":"Shipment"}</span><span>${money(x.subtotal)}${gckShipFreight(x)} + ${money(x.sh)} S&amp;H</span></div>`).join("")}</div>`:""}
     ${can?`<p class="gck-note"><b>No order has been placed yet.</b> Use <b>Place order with Golden</b> at the bottom of this window.</p>`:`<p class="gck-note"><b>No order has been placed.</b></p>`}
     <details class="gck-more" data-gk="more"${GCART.open&&GCART.open.more?" open":""}><summary>Order details and Golden's email previews</summary>
     <div class="gck-kv"><div><span>PO number</span><b>${esc(o.po_number||"")}${o.po_auto?" (Golden will assign this)":""}</b></div>
@@ -3379,6 +3514,7 @@ function gckOrderBody(){
   const b={quote_hash:q.quote_hash,lines,ship_to:gckShipRef(),split_order:true,contact:{name:f.name.trim(),phone:f.phone.trim()}};
   if(f.email.trim()) b.contact.email=f.email.trim();
   if(f.po.trim()) b.po_number=f.po.trim(); if(f.attention.trim()) b.attention=f.attention.trim(); if(f.notes.trim()) b.notes=f.notes.trim();
+  if(q&&q.totals&&q.totals.freight_quote_required===true&&GCART.fqAck===true) b.freight_quote_ack=true;
   return b;
 }
 function gckUuid(){ if(window.crypto&&crypto.randomUUID) return crypto.randomUUID(); const a=crypto.getRandomValues(new Uint8Array(16)); a[6]=(a[6]&15)|64; a[8]=(a[8]&63)|128; const h=[...a].map(x=>x.toString(16).padStart(2,"0")).join(""); return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`; }
@@ -3405,7 +3541,8 @@ async function gckValidate(){
     else { GCART.quote=null; GCART.quoteSig=null; } }
   else if(j&&j.reason==="not_found"){ GCART.attempt=null; GCART.err="Golden no longer offers one of these chairs as configured. Please remove it and configure it again."; }
   else if(j&&j.reason==="ordering_disabled"){ GCART.attempt=null; GCART.err="Golden is not accepting orders from the 360 Dealer Portal right now."; }
-  else if(j&&j.reason==="invalid"){ const m=String(j.field||"").match(/^(reference_names|color|qty|sku|fabric|tier|footrest)@(\d{1,2})$/); GCART.err=m?`Golden could not accept line ${Number(m[2])+1} (${m[1].replace("_"," ")}). Please check it.`:`Golden could not accept ${GCK_FIELD[j.field]||"this order"}. Please check it.`; GCART.attempt=null; }
+  else if(j&&j.reason==="freight_quote_ack_required"){ GCART.attempt=null; GCART.fqAck=false; GCART.err="Golden quotes the freight for this order. Please tick the freight box, then choose Try again."; }
+  else if(j&&j.reason==="invalid"){ const m=String(j.field||"").match(/^(reference_names|color|qty|sku|fabric|tier|footrest|kind|for|size|config|delivery|rural|line_field)@(\d{1,2})$/); GCART.err=m?`Golden could not accept line ${Number(m[2])+1} (${m[1].replace("_"," ")}). Please check it.`:`Golden could not accept ${GCK_FIELD[j.field]||"this order"}. Please check it.`; GCART.attempt=null; }
   else if(j&&j.reason==="idempotency_in_progress") GCART.err="Golden is still checking this order. Please wait a moment and try again.";
   else if(j&&j.reason==="idempotency_conflict"){ GCART.err="This attempt was already used for a different order. Please try again."; GCART.attempt=null; }
   else if(j&&j.reason==="checkout_switched_off") GCART.err="Golden ordering in the 360 Dealer Portal is not open yet.";
@@ -3480,7 +3617,7 @@ async function gckPlace(recheck){
       if(j.quote&&j.quote.lines&&j.quote.lines.length===GCART.items.length){ GCART.quote=j.quote; GCART.quoteSig=JSON.stringify([gckReq(),GCART.ship]); }
       else { GCART.quote=null; GCART.quoteSig=null; }
       GCART.priceNotice=true; GCART.err="Golden's prices changed before the order was placed. Nothing was placed — check the new totals, then choose Try again.";
-    } else if(j.reason==="invalid"){ const m=String(j.field||"").match(/^(reference_names|color|qty|sku|fabric|tier|footrest)@(\d{1,2})$/); GCART.err=(m?`Golden could not accept line ${Number(m[2])+1} (${m[1].replace("_"," ")}).`:`Golden could not accept ${GCK_FIELD[j.field]||"this order"}.`)+" Nothing was placed."; }
+    } else if(j.reason==="invalid"){ const m=String(j.field||"").match(/^(reference_names|color|qty|sku|fabric|tier|footrest|kind|for|size|config|delivery|rural|line_field)@(\d{1,2})$/); GCART.err=(m?`Golden could not accept line ${Number(m[2])+1} (${m[1].replace("_"," ")}).`:`Golden could not accept ${GCK_FIELD[j.field]||"this order"}.`)+" Nothing was placed."; }
     else GCART.err=R[j.reason]||"Golden did not place this order. Nothing was placed — choose Try again.";
   } else if(j&&j.enabled===false&&!recheck){
     // HCPS's own switch answered before Golden was asked, and this attempt was never sent before: nothing can exist.
@@ -3509,7 +3646,9 @@ function gckWire(ov){
     const rm=t.closest('[data-rm]'); if(rm){ GCART.items.splice(+rm.getAttribute('data-rm'),1); gckChanged(); return gckRender(); }
     const dq=t.closest('[data-dq]'); if(dq){ const i=GCART.items[+dq.getAttribute('data-dq')]; if(!i) return; i.qty=Math.min(GCK_MAX_QTY,Math.max(1,i.qty+Number(dq.getAttribute('data-d')))); i.refs=i.refs.slice(0,i.qty); gckChanged(); return gckRender(); }
   });
-  ov.addEventListener('change',e=>{ const t=e.target; if(GCART.busy||GCART.pending||GCART.placed) return; if(t.name==='gckship'){ GCART.ship=t.value; GCART.quote=null; GCART.result=null; GCART.err=null; GCART.priceNotice=false; gckRender(); }
+  ov.addEventListener('change',e=>{ const t=e.target; if(GCART.busy||GCART.pending||GCART.placed) return;
+    if(t.matches&&t.matches('[data-gck-fq]')){ GCART.fqAck=!!t.checked; GCART.result=null; GCART.attempt=null; GCART.err=null; GCART._refocus='[data-gck-fq]'; gckRender(); return; }
+    if(t.name==='gckship'){ GCART.ship=t.value; GCART.quote=null; GCART.result=null; GCART.err=null; GCART.priceNotice=false; gckRender(); }
     else if(t.matches('[data-af]')){ GCART.af=GCART.af||{}; GCART.af[t.getAttribute('data-af')]=t.type==='checkbox'?t.checked:t.value; }
     else if(t.matches('[data-f],.gck-ref')) gckSchedule(0); });   // leaving a field verifies at once
   ov.addEventListener('input',e=>{
@@ -3614,8 +3753,16 @@ function goldenPriceHtml(items){
    (B3/B4); until then the card opens the product page and says ordering is on its way — it never sends the dealer away. */
 /* The card's ordering note follows the same rule as the product page: a configurable lift chair (PR###-XXX) can be
    ordered here when Golden ordering is open; everything else is "Browse only" until Golden's API accepts it. */
+// Which Golden products are ordered in the 360 Dealer Portal (contract 1.9.0): lift chairs, scooters, power chairs, beds.
+function goldenOrderKind(p){
+  const c=String(p&&p.code||"");
+  if(p&&p._goldenAction==="configure"&&/^PR\d{3}-[A-Z]{3}$/.test(c)) return "chair";
+  if(GMOB_RE.test(c)) return "mobility";
+  if(GBED_RE.test(c)) return "bed";
+  return null;
+}
 function goldenCardNote(p){
-  const orderable=p._goldenAction==="configure" && /^PR\d{3}-[A-Z]{3}$/.test(p.code) && gckOrderingOpen();
+  const orderable=!!goldenOrderKind(p) && gckOrderingOpen();
   if(orderable) return "";
   return `<div class="gsoon">Browse only — ask your HCPS rep to order this with Golden.</div>`;
 }
@@ -3641,7 +3788,7 @@ function goldenCardHtml(p){
       ${goldenPriceHtml(items)}
       ${goldenStockHtml(items)}
     </div>
-    <div class="cv2-act"><div class="buy"><button class="chooseBtn" type="button" data-open="${esc(openCode)}">${p._goldenAction==="configure"?"View &amp; configure":"View details"} <span aria-hidden="true">→</span></button></div>
+    <div class="cv2-act"><div class="buy"><button class="chooseBtn" type="button" data-open="${esc(openCode)}">${p._goldenAction==="configure"?"View &amp; configure":goldenOrderKind(p)?"View &amp; order":"View details"} <span aria-hidden="true">→</span></button></div>
       ${goldenCardNote(p)}</div></div>`;
 }
 function goldenMfr(){
@@ -5218,9 +5365,9 @@ function goldenCartGroupHtml(){
     :`<div class="r"><span>Subtotal</span><span>at review</span></div><div class="r"><span>Freight</span><span>at review</span></div><div class="r"><span>Shipping &amp; handling</span><span>at review</span></div>
       <div class="r tot"><span>Golden Technologies total</span><span>priced by Golden</span></div>`;
   return `<div class="mgroup gmgroup" data-slug="golden">
-    <div class="mghead"><span>Golden Technologies</span><span class="cnt">${n} chair${n===1?"":"s"}</span></div>
+    <div class="mghead"><span>Golden Technologies</span><span class="cnt">${n} item${n===1?"":"s"}</span></div>
     <div class="mgbody">
-      ${pend?`<div class="gwarn" role="alert"><b>Your Golden order is being confirmed with Golden.</b> These chairs stay as they are until Golden answers — open the review to check again.</div>`:""}
+      ${pend?`<div class="gwarn" role="alert"><b>Your Golden order is being confirmed with Golden.</b> These items stay as they are until Golden answers — open the review to check again.</div>`:""}
       ${rows}
       <div class="gnote">Golden Technologies prices this order — merchandise and shipping &amp; handling for the Golden ship-to address you choose — validates it and places it. It is a separate order with its own confirmation, shown in My Orders.</div>
       <div class="mgtot">${tot}</div>
@@ -7514,7 +7661,7 @@ function ghRender(){
     return '<tr class="gh-row" data-ghref="'+esc(o.order_ref)+'"><td data-l="Placed">'+ghDay(o.placed_on)+'</td>'
       +'<td data-l="Golden order #"><button type="button" class="gh-open" data-ghbtn="'+esc(o.order_ref)+'" aria-expanded="'+isOpen+'"'+(isOpen?' aria-controls="'+did+'"':'')+'>'+esc(ref)+'<span class="gh-sr"> — '+(isOpen?'hide':'show')+' items and tracking</span></button></td>'
       +'<td data-l="PO">'+esc(o.po_number||"—")+'</td><td data-l="Ship to">'+ghWhere(o)+'</td><td data-l="Units" class="n tnum">'+ghQty((o.items||[]).reduce((s,i)=>s+(Number.isInteger(i.qty)?i.qty:0),0))+'</td>'
-      +(GH.pv?'<td data-l="Total" class="n tnum">'+(o.totals&&o.totals.total!=null?esc(cents(o.totals.total)):"—")+'</td>':'')
+      +(GH.pv?'<td data-l="Total" class="n tnum">'+(o.totals&&o.totals.total!=null?esc(cents(o.totals.total)):"—")+(o.freight_status==="to_be_quoted"?'<br><small>+ freight to be quoted</small>':'')+'</td>':'')
       +'<td data-l="Status">'+ghPill(o.status)+'</td><td data-l="Expected">'+(o.expected_date?ghDay(o.expected_date):"—")+'</td></tr>'
       +(isOpen?'<tr class="gh-detail" id="'+did+'"><td colspan="'+cols+'">'+ghDetail(o)+'</td></tr>':'');
   }).join("");
@@ -7530,7 +7677,11 @@ function ghDetail(o){
   const trk=(o.tracking||[]).map(t=>'<li>'+(t.ship_date?ghDay(t.ship_date)+' · ':'')+esc(t.carrier||"Carrier not given")+(t.tracking_number?' · Tracking <span class="tnum">'+esc(t.tracking_number)+'</span>':' · no tracking number yet')+(t.so_number?' (SO '+esc(t.so_number)+')':'')+'</li>').join("")||'<li>Not shipped yet.</li>';
   const life=(o.lifecycle||[]).map(e=>'<li>'+(e.at?ghDay(e.at)+' · ':'')+esc(e.label||GH_EVENT[e.type]||e.type)+(e.so_number?' (SO '+esc(e.so_number)+')':'')+'</li>').join("")||'<li>—</li>';
   const m=v=>v!=null?esc(cents(v)):"—";
-  const tot=(GH.pv&&o.totals)?'<div class="gh-col"><h4>Totals</h4><ul><li>Merchandise '+m(o.totals.subtotal)+'</li><li>Freight '+m(o.totals.freight)+'</li><li>S&amp;H '+m(o.totals.sh)+'</li><li><b>Total '+m(o.totals.total)+'</b></li></ul></div>':'';
+  // B8: an order whose freight Golden quotes by hand says so until Golden ships / invoices it with the final charge.
+  const fq=o.freight_status==="to_be_quoted", fc=o.freight_status==="charged_by_golden";
+  const frt=fq?'Freight <b>to be quoted by Golden</b>'+(Number(o.totals&&o.totals.freight)>0?' (plus '+m(o.totals.freight)+' already priced)':''):fc?'Freight charged by Golden on its invoice':'Freight '+m(o.totals&&o.totals.freight);
+  const tot=(GH.pv&&o.totals)?'<div class="gh-col"><h4>Totals</h4><ul><li>Merchandise '+m(o.totals.subtotal)+'</li><li>'+frt+'</li><li>S&amp;H '+m(o.totals.sh)+'</li><li><b>Total '+m(o.totals.total)+(fq?' + freight to be quoted':'')+'</b></li></ul></div>'
+    :(fq?'<div class="gh-col"><h4>Freight</h4><ul><li>To be quoted by Golden — Golden confirms it with you before shipping.</li></ul></div>':'');
   return '<div class="gh-detail-in"><div class="gh-col"><h4>Items</h4><ul>'+items+'</ul></div><div class="gh-col"><h4>Tracking</h4><ul>'+trk+'</ul></div><div class="gh-col"><h4>History</h4><ul>'+life+'</ul></div>'+tot+'</div>';
 }
 async function ghToggle(ref){
@@ -8594,8 +8745,10 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
               ${p._golden&&msrp?`<div class="pd-msrp">MSRP ${money(msrp)}</div>`:""}${p._golden&&mapPrice?`<div class="pd-map">eMAP ${money(mapPrice)}</div>`:""}`}
             ${variantSel}
             ${p._golden?goldenStockHtml([p]):""}
-            ${p._golden&&p._goldenAction==="configure"&&/^PR\d{3}-[A-Z]{3}$/.test(p.code)
+            ${p._golden&&goldenOrderKind(p)==="chair"
               ? goldenConfigHtml(p)
+              : p._golden&&goldenOrderKind(p)
+              ? goldenMobHtml(p)
               : p._golden
               ? `<div class="gbrowse"><b>Browse only.</b> ${p._goldenAction==="configure"?"This Golden model can't be configured and ordered in the 360 Dealer Portal yet.":"Golden "+esc(String(p.category||"products").toLowerCase())+" can't be ordered in the 360 Dealer Portal yet."} Ask your HCPS rep to order it with Golden.</div>
                  <button type="button" class="pd-broch" data-gb-broch="${esc(p.code)}">${BROCH_ICON}Print Brochure</button>
@@ -8634,7 +8787,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       ${curatedAlt.length?`<div class="pd-sect"><h2>Also available from other HCPS manufacturers</h2><div class="pd-rel">${curatedAlt.map(r=>{const mn=((state.manufacturers||[]).find(x=>x.slug===r.related_manufacturer)||{}).name||r.related_manufacturer||"";return `<div class="pd-relc"><div class="ri">${r.related_image?`<img src="${esc(r.related_image)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain" onerror="imgFail(this)">`:'<span class="ph">No image</span>'}</div><div class="rb"><div class="rn">${esc(r.related_name||r.related_code)}</div><div class="rp" style="font-weight:600;color:#6b7580;font-size:12px">${esc(mn)}</div></div></div>`;}).join("")}</div><div style="font-size:12px;color:#6b7580;margin-top:6px">Comparable options carried by HCPS — ask your rep about lines you don't yet have access to.</div></div>`:""}
     </div>`;
     if(typeof wireAdd==="function") wireAdd(host);
-    if(p._golden) goldenConfigWire(host);
+    if(p._golden){ goldenConfigWire(host); goldenMobWire(host); }
     if(G) host.querySelectorAll('[data-gcmp]').forEach(b=>b.addEventListener('click',function(){ host.querySelectorAll('[data-gcmp]').forEach(x=>x.classList.toggle('on',x===b)); const out=host.querySelector('#gcmpOut'); if(out) out.innerHTML='<p class="gmuted">Loading…</p>'; goldenCompare(G,b.getAttribute('data-gcmp'),out); }));
     if(!opts.keepScroll) window.scrollTo({top:0,behavior:"smooth"});
     try{ track&&track('product_view',p.manufacturer,p.code); }catch(e){}
