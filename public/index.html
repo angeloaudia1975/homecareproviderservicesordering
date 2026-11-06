@@ -7356,7 +7356,21 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #view-storefront .sf-msg{font-size:13px;color:var(--ink-2)}#view-storefront .sf-inq{padding:10px 0;border-bottom:1px solid var(--line,#e5e7eb);font-size:13.5px}#view-storefront .sf-inq.new{border-left:3px solid var(--orange,#ef6325);padding-left:10px}
   #view-storefront .sf-inq-h{display:flex;justify-content:space-between;gap:8px}#view-storefront .sf-s{font-size:12px;color:var(--muted)}#view-storefront .sf-msgtxt{white-space:pre-wrap;margin-top:4px}#view-storefront .sf-act{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
   #view-storefront .sf-promo{display:flex;flex-wrap:wrap;gap:8px}
-  @media(max-width:760px){#view-storefront .sf-row{grid-template-columns:1fr}#view-storefront .btn,#view-storefront select,#view-storefront .fld2 input,#view-storefront .sf-check input{min-height:44px}#view-storefront input,#view-storefront select,#view-storefront textarea{font-size:16px}#view-storefront .sf-check{min-height:44px}}
+  #view-storefront .sf-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+  #view-storefront .sfp-pol{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ink-2);margin:10px 0}
+  #view-storefront .sfp-tools,#view-storefront .sfp-scope,#view-storefront .sfp-bulk{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0;font-size:13px}
+  #view-storefront .sfp-tools select,#view-storefront .sfp-tools input,#view-storefront .sfp-bulk input{padding:8px 9px;border:1px solid var(--line,#d6dbe1);border-radius:8px;font:inherit;min-height:40px}
+  #view-storefront .sfp-bulk input{width:80px}
+  #view-storefront .sfp-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #view-storefront .sfp{width:100%;border-collapse:collapse;font-size:13px}#view-storefront .sfp th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--line,#e5e7eb);padding:6px 4px}
+  #view-storefront .sfp td{border-bottom:1px solid var(--line,#eef1f4);padding:7px 4px;vertical-align:top}#view-storefront .sfp-in{width:110px;padding:8px;border:1px solid var(--line,#d6dbe1);border-radius:8px;font:inherit;min-height:40px}
+  #view-storefront .sfp-src{font-size:11px;font-weight:800;padding:2px 7px;border-radius:999px;background:#eef1f4;white-space:nowrap}#view-storefront .sfp-src.s-dealer{background:#e7f1fb;color:#0f5c8f}#view-storefront .sfp-src.s-msrp{background:#e5f4e4;color:#14532d}#view-storefront .sfp-src.s-calculated{background:#f9eeda;color:#7a4b00}
+  #view-storefront .sfp-why{font-size:12px;color:#991b1b;margin-top:3px}
+  .sf-prev-ov{position:fixed;inset:0;z-index:9999;background:rgba(11,31,51,.55);display:flex;align-items:stretch;justify-content:center;padding:12px}
+  .sf-prev-box{background:#fff;border-radius:12px;width:min(1200px,100%);display:flex;flex-direction:column;overflow:hidden}
+  .sf-prev-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:14px}
+  .sf-prev-box iframe{flex:1;border:0;width:100%;min-height:0}
+  @media(max-width:760px){#view-storefront .sfp-tools select,#view-storefront .sfp-tools input,#view-storefront .sfp-in,#view-storefront .sfp-bulk input{font-size:16px;min-height:44px}#view-storefront .sf-row{grid-template-columns:1fr}#view-storefront .btn,#view-storefront select,#view-storefront .fld2 input,#view-storefront .sf-check input{min-height:44px}#view-storefront input,#view-storefront select,#view-storefront textarea{font-size:16px}#view-storefront .sf-check{min-height:44px}}
   /* C3-07 Stage 6 reports */
   #view-reports .rpt-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   #view-reports .rpt-ctl select{max-width:100%}
@@ -8815,7 +8829,6 @@ function renderStorefront(){
     ${L.link?`<div class="sf-link"><input readonly value="${esc(L.link)}" aria-label="Your storefront link"><a class="btn gh" onclick="sfCopy()">Copy link</a><a class="btn gh" href="${esc(L.link)}" target="_blank" rel="noopener">Open</a></div>`:''}
     ${!ed?`<div class="msg">${SFD.preview?'Read-only preview.':'Your head office manages this location\'s storefront.'}</div>`:''}
     <label class="fld2"><span class="rp-l">Web address</span><div class="sf-slug"><span>${esc(SFD.base)}</span><input id="sfSlug" value="${esc(s.slug||L.suggested_slug||'')}" maxlength="50" autocomplete="off"${dis}></div></label>
-    <label class="sf-check"><input type="checkbox" id="sfOn"${s.enabled?' checked':''}${dis}> Storefront is on (anyone with the link can see it)</label>
     <label class="fld2"><span class="rp-l">Headline</span><input id="sfHead" maxlength="120" value="${esc(s.headline||'')}" placeholder="e.g. Home medical equipment for Dayton families"${dis}></label>
     <label class="fld2"><span class="rp-l">About your business</span><textarea id="sfAbout" maxlength="1500" rows="4"${dis}>${esc(s.about||'')}</textarea></label>
     <div class="sf-row"><label class="fld2"><span class="rp-l">Phone for customers (shown publicly)</span><input id="sfPhone" maxlength="40" value="${esc(s.phone||'')}" placeholder="${esc(L.default_phone?'e.g. '+L.default_phone:'')}"${dis}></label>
@@ -8824,11 +8837,14 @@ function renderStorefront(){
     <div class="sf-note">Only the phone and email entered here appear on your storefront — nothing from your account is published unless you put it here. Requests are emailed to the address above.</div>
     <label class="fld2"><span class="rp-l">Hours</span><input id="sfHours" maxlength="300" value="${esc(s.hours||'')}" placeholder="e.g. Mon–Fri 9–5, Sat 9–12"${dis}></label>
     <label class="sf-check"><input type="checkbox" id="sfAddr"${s.show_address===false?'':' checked'}${dis}> Show my street address</label>
-    <label class="fld2"><span class="rp-l">Prices</span><select id="sfPrice"${dis}><option value="msrp"${s.price_mode!=='call'?' selected':''}>Show the manufacturer's MSRP where HCPS has verified it — otherwise "Call for Price"</option><option value="call"${s.price_mode==='call'?' selected':''}>"Call for Price" on everything</option></select></label>
+    <label class="fld2"><span class="rp-l">Prices</span><select id="sfPrice"${dis}><option value="msrp"${s.price_mode!=='call'?' selected':''}>Show prices — your price, the manufacturer's MSRP or HCPS calculated retail, where the manufacturer allows it</option><option value="call"${s.price_mode==='call'?' selected':''}>"Call for Price" on everything</option></select></label>
     <div class="fld2"><span class="rp-l">Lines to show</span>${L.lines.length?`<label class="sf-check"><input type="checkbox" id="sfAll"${lines?'':' checked'}${dis} onchange="document.querySelectorAll('.sf-line').forEach(x=>x.disabled=this.checked||${ed?'false':'true'})"> All my lines</label><div class="sf-lines">${L.lines.map(l=>`<label class="sf-check"><input type="checkbox" class="sf-line" value="${esc(l.slug)}"${!lines||lines.includes(l.slug)?' checked':''}${!ed||!lines?' disabled':''}> ${esc(l.name)}</label>`).join('')}</div>`:'<div class="msg">No manufacturer accounts are active on this location yet.</div>'}</div>
     <label class="fld2"><span class="rp-l">Categories to hide (comma-separated)</span><input id="sfHide" value="${esc((s.hidden_categories||[]).join(', '))}"${dis}></label>
     <div class="sf-note">Your dealer cost, account numbers and contract prices are never shown. Customers can't order online — they call you or send a request.</div>
-    ${ed?`<a class="btn pri" id="sfSave" onclick="sfSave()">Save storefront</a> <span id="sfMsg" class="sf-msg"></span>`:''}
+    <div class="sf-acts">${ed?(s.enabled&&L.storefront?`<a class="btn pri" id="sfSave" onclick="sfSave(true)">Save changes</a>`:`<a class="btn gh" id="sfSave" onclick="sfSave(false)">Save without publishing</a>`):''}
+     <a class="btn gh" onclick="sfPreview()">Preview as customers see it</a>
+     ${ed?(s.enabled&&L.storefront?`<a class="btn gh" onclick="sfSave(false)">Unpublish</a>`:`<a class="btn pri" id="sfPublish" onclick="sfSave(true)">Publish storefront</a>`):''}</div>
+    <span id="sfMsg" class="sf-msg"></span>
    </div>
    <div class="card sf-card"><div class="sf-head"><h3>Customer requests</h3><span class="sf-pill">${inq.filter(x=>x.status==='new').length} new</span></div>
     <div class="sf-note">Requests sent from your storefront. They are emailed to you and kept here for 24 months; delete one at any time. Copies in your own mailbox are yours to keep or delete.</div>
@@ -8838,6 +8854,9 @@ function renderStorefront(){
       ${ed?`<div class="sf-act"><a class="btn gh" onclick="sfInq('${esc(x.id)}','${x.status==='new'?'handled':'new'}')">${x.status==='new'?'Mark handled':'Mark new'}</a><a class="btn gh" onclick="sfInqDel('${esc(x.id)}')">Delete</a></div>`:''}</div>`).join(''):'<div class="msg">No requests yet.</div>'}
    </div>
   </div>
+  <div class="card sf-card" id="sfPrices"><div class="sf-head"><h3>Storefront prices</h3></div>
+    <div class="sf-note">What customers will see for each product, and where it comes from. Set your own retail price for any product or in bulk — it is checked against the manufacturer's advertising rules before it is shown. Saved prices are also your quote and brochure prices.</div>
+    <a class="btn gh" onclick="sfPricesLoad()">Review and set prices</a><div id="sfPricesBody"></div></div>
   ${L.link&&L.live?`<div class="card sf-card"><div class="sf-head"><h3>Promote your storefront</h3></div>
     <div class="sf-note">Ready-made images with your name, contact details and storefront link, to post on your own social pages or print. They download to your device — nothing is posted for you.</div>
     <div class="sf-promo">${SF_PROMO.map(p=>`<a class="btn gh" onclick="sfPromo('${p.k}')">⬇ ${esc(p.label)}</a>`).join('')}</div></div>`:''}`;
@@ -8875,23 +8894,99 @@ function sfPromo(k){
   c.toBlob(b=>{ if(!b) return; const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000); },'image/png');
 }
 function sfUseAccount(){ const L=SFD&&SFD.locations.find(l=>l.id===SFLOC); if(!L) return; const p=document.getElementById('sfPhone'), e=document.getElementById('sfEmail'); if(p&&L.default_phone) p.value=L.default_phone; if(e&&L.default_email) e.value=L.default_email; }
+/* PREVIEW — the public page inside the portal, fed the exact public answer for the settings on screen (saved or not).
+   The page counts nothing and can't send requests in preview. */
+async function sfPreview(){
+  const L=SFD&&SFD.locations.find(l=>l.id===SFLOC); if(!L) return;
+  let ov=document.getElementById('sfPrevOv'); if(ov) ov.remove();
+  ov=document.createElement('div'); ov.id='sfPrevOv'; ov.className='sf-prev-ov'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label','Storefront preview');
+  ov.innerHTML='<div class="sf-prev-box"><div class="sf-prev-bar"><b>Preview — what customers will see</b><button type="button" class="btn gh" id="sfPrevClose">Close preview</button></div><div class="sf-prev-load msg">Loading your preview…</div><iframe title="Storefront preview" src="/store.html#preview"></iframe></div>';
+  document.body.appendChild(ov); const fr=ov.querySelector('iframe'); const close=()=>{ window.removeEventListener('message',onMsg); ov.remove(); };
+  ov.querySelector('#sfPrevClose').onclick=close; ov.querySelector('#sfPrevClose').focus();
+  const data=api(SF_API,{action:'sf_preview',location_id:L.id,settings:sfSettings()});
+  async function onMsg(e){ if(e.origin!==location.origin||e.source!==fr.contentWindow||!e.data||e.data.type!=='hcps-storefront-preview-ready') return;
+    const d=await data; const ld=ov.querySelector('.sf-prev-load'); if(ld) ld.remove(); fr.contentWindow.postMessage({type:'hcps-storefront-preview',data:d},location.origin); }
+  window.addEventListener('message',onMsg);
+}
+/* STOREFRONT PRICES — each product's public price and where it comes from (the server's one rule), the dealer's own price
+   (company default or this location), bulk changes; saved through the EXISTING saved-retail store (dealer-retail-api). */
+let SFP=null;
+const SFP_SRC={dealer:'Your price',msrp:'MSRP',calculated:'HCPS calculated retail',call:'Call for Price'};
+async function sfPricesLoad(){
+  const L=SFD&&SFD.locations.find(l=>l.id===SFLOC); if(!L) return; const box=$("#sfPricesBody"); if(!box) return;
+  box.innerHTML='<div class="msg">Loading prices…</div>';
+  const d=await api(SF_API,{action:'sf_prices',location_id:L.id,settings:sfSettings()});
+  if(!d||!d.ok){ box.innerHTML=`<div class="msg">${esc((d&&d.error)||'Prices could not be loaded — please try again.')}</div>`; return; }
+  SFP={loc:L.id,data:d,f:{m:'',c:'',q:'',only:''},scope:d.head_office?'company':'location',dirty:{},msg:''}; sfPricesRender();
+}
+function sfpKey(p){ return p.manufacturer+'|'+p.code; }
+function sfpRows(){ const f=SFP.f, q=f.q.trim().toLowerCase();
+  return SFP.data.products.filter(p=>(!f.m||p.manufacturer===f.m)&&(!f.c||p.category===f.c)&&(!q||(p.name+' '+p.code).toLowerCase().includes(q))&&(!f.only||(f.only==='held'?p.flags.length:f.only==='call'?p.price==null:p.source===f.only))); }
+function sfpCurrent(p){ return SFP.scope==='location'?p.your_price_here:p.company_price; }
+function sfPricesRender(){
+  const box=$("#sfPricesBody"); if(!box||!SFP) return; const d=SFP.data, ed=d.can_edit&&!SFD.preview;
+  const cats=[...new Set(d.products.filter(p=>!SFP.f.m||p.manufacturer===SFP.f.m).map(p=>p.category))].sort();
+  const rows=sfpRows(), shown=rows.slice(0,200);
+  const pol={unknown:'rules not recorded yet — MSRP only',open:'no restriction',map:'at or above the minimum advertised price (MAP/eMAP)',msrp_only:'MSRP only',no_price:'no public prices'};
+  const n=Object.keys(SFP.dirty).length;
+  box.innerHTML=`<div class="sfp-pol">${d.lines.map(l=>`<span><b>${esc(l.name)}:</b> ${esc(pol[d.policies[l.slug]]||pol.unknown)}</span>`).join('')}</div>
+   <div class="sfp-tools"><select aria-label="Manufacturer" onchange="sfpF('m',this.value)"><option value="">All manufacturers</option>${d.lines.map(l=>`<option value="${esc(l.slug)}"${l.slug===SFP.f.m?' selected':''}>${esc(l.name)}</option>`).join('')}</select>
+    <select aria-label="Category" onchange="sfpF('c',this.value)"><option value="">All categories</option>${cats.map(c=>`<option${c===SFP.f.c?' selected':''}>${esc(c)}</option>`).join('')}</select>
+    <select aria-label="Show" onchange="sfpF('only',this.value)"><option value="">All products</option>${[['dealer','Your price'],['msrp','MSRP'],['calculated','HCPS calculated retail'],['call','Call for Price'],['held','Your price held back']].map(o=>`<option value="${o[0]}"${o[0]===SFP.f.only?' selected':''}>${o[1]}</option>`).join('')}</select>
+    <input type="search" placeholder="Search" aria-label="Search products" value="${esc(SFP.f.q)}" oninput="sfpF('q',this.value)"></div>
+   ${ed&&d.head_office?`<div class="sfp-scope"><label><input type="radio" name="sfpScope" value="company"${SFP.scope==='company'?' checked':''} onchange="sfpScope('company')"> Company price (all locations)</label><label><input type="radio" name="sfpScope" value="location"${SFP.scope==='location'?' checked':''} onchange="sfpScope('location')"> This location only</label></div>`:''}
+   ${ed?`<div class="sfp-bulk"><span>For the ${rows.length} product${rows.length===1?'':'s'} listed:</span> <label>set your price to <input id="sfpPct" type="number" min="1" max="1000" step="1" value="100" aria-label="Percent"> % of the MSRP (or HCPS calculated retail when there is no MSRP)</label> <a class="btn gh" onclick="sfpBulk('pct')">Apply</a> <a class="btn gh" onclick="sfpBulk('clear')">Clear your prices</a></div>`:''}
+   <div class="sfp-wrap"><table class="sfp"><thead><tr><th>Product</th><th>Customers see</th><th>${ed?'Your retail price':'Your saved price'}</th></tr></thead><tbody>
+   ${shown.map(p=>{ const k=sfpKey(p), dv=SFP.dirty[k], cur=dv!==undefined?dv:sfpCurrent(p);
+     const why=(p.flags||[]).map(x=>d.flag_text[x.flag]+(x.map?' MAP '+money(x.map)+'.':'')).filter(Boolean)[0];
+     return `<tr><td><b>${esc(p.name)}</b><div class="sf-s">${esc(p.code)} · ${esc(p.category)}</div></td>
+       <td>${p.price!=null?money(p.price):'—'} <span class="sfp-src s-${esc(p.source)}">${esc(SFP_SRC[p.source]||'')}</span>${p.price_unit?`<div class="sf-s">${esc(p.price_unit)}</div>`:''}${why?`<div class="sfp-why">${esc(why)}</div>`:''}${p.calculated&&p.source!=='calculated'?`<div class="sf-s">HCPS calculated retail: ${money(p.calculated)}</div>`:''}</td>
+       <td>${ed?`<input class="sfp-in" inputmode="decimal" aria-label="Your price for ${esc(p.name)}" data-k="${esc(k)}" value="${cur!=null?esc(Number(cur).toFixed(2)):''}" placeholder="—" onchange="sfpSet(this)">`:(cur!=null?money(cur):'—')}</td></tr>`; }).join('')}
+   </tbody></table></div>${rows.length>200?`<div class="sf-s">Showing 200 of ${rows.length} — narrow the list to see the rest.</div>`:''}
+   ${ed?`<div class="sf-acts"><a class="btn pri" onclick="sfpSave()">${n?`Save ${n} price change${n===1?'':'s'}`:'Save prices'}</a> <span class="sf-msg" id="sfpMsg">${esc(SFP.msg)}</span></div>`:''}`;
+}
+let SFP_T=null;
+function sfpF(k,v){ if(!SFP) return; SFP.f[k]=v; if(k==='m') SFP.f.c='';
+  if(k==='q'){ clearTimeout(SFP_T); SFP_T=setTimeout(()=>{ const a=document.activeElement, pos=a&&a.selectionStart; sfPricesRender(); const q=document.querySelector('#sfPricesBody input[type=search]'); if(q){ q.focus(); try{ q.setSelectionRange(pos,pos); }catch(e){} } },250); return; }
+  sfPricesRender(); }
+function sfpScope(v){ if(!SFP) return; if(Object.keys(SFP.dirty).length&&!confirm('Switching discards the changes you haven\'t saved. Continue?')) return sfPricesRender(); SFP.scope=v; SFP.dirty={}; SFP.msg=''; sfPricesRender(); }
+function sfpSet(el){ const k=el.getAttribute('data-k'); const raw=String(el.value).replace(/[$,\s]/g,''); if(raw===''){ SFP.dirty[k]=null; return; }
+  const v=Number(raw); if(!isFinite(v)||v<=0||v>1000000){ el.value=''; SFP.msg='Prices must be more than $0.'; sfPricesRender(); return; } SFP.dirty[k]=Math.round(v*100)/100; SFP.msg=''; }
+function sfpBulk(mode){ const pct=Number((document.getElementById('sfpPct')||{}).value);
+  if(mode==='pct'&&!(pct>0&&pct<=1000)){ SFP.msg='Enter a percentage.'; return sfPricesRender(); }
+  let n=0; for(const p of sfpRows()){ const k=sfpKey(p); if(mode==='clear'){ if(sfpCurrent(p)!=null||SFP.dirty[k]!=null){ SFP.dirty[k]=null; n++; } continue; }
+    const base=p.msrp||p.calculated; if(!base) continue; SFP.dirty[k]=Math.round(base*pct)/100; n++; }
+  SFP.msg=n?`${n} change${n===1?'':'s'} ready — not saved yet.`:'Nothing to change in this list.'; sfPricesRender(); }
+async function sfpSave(){
+  const keys=Object.keys(SFP.dirty); if(!keys.length){ SFP.msg='Nothing to save.'; return sfPricesRender(); }
+  const loc=SFP.scope==='location'?SFP.loc:null; const rows=keys.map(k=>{ const i=k.indexOf('|'); return {manufacturer:k.slice(0,i),code:k.slice(i+1),price:SFP.dirty[k],location_id:loc}; });
+  SFP.msg='Saving…'; sfPricesRender(); let saved=0;
+  for(let i=0;i<rows.length;i+=500){ const r=await retailCall({action:'retail_set',rows:rows.slice(i,i+500)}); if(!r||!r.ok){ SFP.msg=(r&&r.error)||'Could not save — please try again.'; return sfPricesRender(); } saved+=(r.saved||0)+(r.removed||0); }
+  const scope=SFP.scope, f=SFP.f; await sfPricesLoad(); if(SFP){ SFP.scope=scope; SFP.f=f; SFP.msg=`Saved. ${SFD.locations.find(l=>l.id===SFP.loc)&&SFD.locations.find(l=>l.id===SFP.loc).live?'Your storefront shows the new prices within about a minute.':'Customers will see them once you publish.'}`; sfPricesRender(); }
+  if(typeof loadRetail==='function'){ try{ loadRetail(true); }catch(e){} }
+}
 function sfCopy(){ const i=document.querySelector('.sf-link input'); if(!i) return; try{ navigator.clipboard.writeText(i.value); }catch(e){ i.select(); document.execCommand&&document.execCommand('copy'); } const m=$("#sfMsg"); if(m) m.textContent='Link copied.'; }
-async function sfSave(){
-  if(SFBUSY) return; const L=SFD.locations.find(l=>l.id===SFLOC); if(!L) return;
+function sfSettings(){
   const v=id=>{ const e=document.getElementById(id); return e?e.value:''; };
   const all=document.getElementById('sfAll');
-  const settings={slug:v('sfSlug').trim().toLowerCase(),enabled:document.getElementById('sfOn').checked,headline:v('sfHead'),about:v('sfAbout'),phone:v('sfPhone'),email:v('sfEmail'),hours:v('sfHours'),
-    show_address:document.getElementById('sfAddr').checked,price_mode:v('sfPrice'),hidden_categories:v('sfHide').split(',').map(x=>x.trim()).filter(Boolean)};
+  const settings={slug:v('sfSlug').trim().toLowerCase(),headline:v('sfHead'),about:v('sfAbout'),phone:v('sfPhone'),email:v('sfEmail'),hours:v('sfHours'),
+    show_address:!!(document.getElementById('sfAddr')||{}).checked,price_mode:v('sfPrice'),hidden_categories:v('sfHide').split(',').map(x=>x.trim()).filter(Boolean)};
   if(all) settings.lines=all.checked?null:[...document.querySelectorAll('.sf-line:checked')].map(x=>x.value);
-  SFBUSY=true; const b=$("#sfSave"), m=$("#sfMsg"); if(b) b.style.pointerEvents='none'; if(m) m.textContent='Saving…';
+  return settings;
+}
+/* Save without publishing (enabled false) · Publish / Save changes (enabled true) · Unpublish (false) */
+async function sfSave(enabled){
+  if(SFBUSY) return; const L=SFD.locations.find(l=>l.id===SFLOC); if(!L) return;
+  const settings=Object.assign(sfSettings(),{enabled:enabled===true});
+  SFBUSY=true; const b=$("#sfSave"), m=$("#sfMsg"); if(b) b.style.pointerEvents='none'; if(m) m.textContent=enabled?'Publishing…':'Saving…';
   const d=await api(SF_API,{action:'sf_save',location_id:L.id,version:L.storefront?L.storefront.version:undefined,settings});
   SFBUSY=false; if(b) b.style.pointerEvents='';
   if(!d||!d.ok){ if(m) m.textContent=(d&&d.error)||'Could not save — please try again.'; return; }
-  L.storefront=d.storefront; L.link=d.link; L.live=d.live; renderStorefront(); const m2=$("#sfMsg"); if(m2) m2.textContent=d.live?'Saved — your storefront is live.':'Saved — your storefront is off.';
+  L.storefront=d.storefront; L.link=d.link; L.live=d.live; renderStorefront(); const m2=$("#sfMsg"); if(m2) m2.textContent=d.live?'Saved — your storefront is live.':(d.storefront&&d.storefront.hcps_blocked?'Saved — paused by HCPS, so it stays off.':'Saved — not published. Customers can\'t see it yet.');
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfPreview,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};

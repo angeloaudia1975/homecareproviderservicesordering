@@ -14,9 +14,18 @@
   function img(src,alt){return '<img src="'+esc(src||PH)+'" alt="'+esc(alt)+'" loading="lazy" data-ph="1">';}
   /* zero broken images: a picture that fails becomes the placeholder (one listener — no inline handlers, so a strict CSP holds) */
   document.addEventListener('error',function(e){ var t=e.target; if(t&&t.tagName==='IMG'&&t.getAttribute('data-ph')==='1'&&t.src!==PH){ t.removeAttribute('data-ph'); t.src=PH; } else if(t&&t.tagName==='IMG'&&t.getAttribute('data-logo')==='1') t.remove(); },true);
-  function priceHtml(p){return p.price?'<div class="price">'+money(p.price)+' <small>MSRP'+(p.price_unit?' '+esc(p.price_unit):'')+'</small></div>':'<div class="price call">Call for Price</div>';}
+  /* the server decides the price and how it may be described: "MSRP" only for the manufacturer's own figure, else "Price" */
+  function priceHtml(p){ if(!p.price) return '<div class="price call">Call for Price</div>';
+    var tag=p.price_label==='MSRP'?'MSRP':''; var unit=p.price_unit?(tag?' ':'')+esc(p.price_unit):'';
+    return '<div class="price">'+money(p.price)+(tag||unit?' <small>'+tag+unit+'</small>':'')+'</div>'; }
+  /* PREVIEW (the dealer's own portal, before publishing): the page is opened inside the portal, which sends it the exact
+     public answer for the unsaved settings. Nothing is counted and no request can be sent from a preview. */
+  var PREVIEW=location.hash==='#preview'&&window.parent!==window;
   function fail(msg){document.title='Storefront';$('hdr').innerHTML='<div class="who"><h1>Storefront</h1></div>';$('info').innerHTML='';$('main').innerHTML='<div class="msg">'+esc(msg)+'</div>';}
   function load(){
+    if(PREVIEW){ window.addEventListener('message',function(e){ if(e.origin!==location.origin||e.source!==window.parent||!e.data||e.data.type!=='hcps-storefront-preview') return;
+        var j=e.data.data; if(!j||!j.ok) return fail((j&&j.error)||'The preview could not be loaded.'); D=j; render(); });
+      window.parent.postMessage({type:'hcps-storefront-preview-ready'},location.origin); return; }
     if(!/^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])$/.test(slug)) return fail('This storefront isn\'t available.');
     fetch(API+'?s='+encodeURIComponent(slug)).then(function(r){return r.json().then(function(j){return {s:r.status,j:j};});}).then(function(x){
       if(!x.j||!x.j.ok) return fail((x.j&&x.j.error)||'This storefront isn\'t available.');
@@ -51,7 +60,7 @@
     g.innerHTML=list.slice(0,300).map(function(p,i){return '<button type="button" class="card" data-i="'+D.products.indexOf(p)+'"><div class="im">'+img(p.image,p.name)+'</div><div class="bd"><div class="ln">'+esc(lineName(p.manufacturer))+'</div><div class="nm">'+esc(p.name)+'</div>'+priceHtml(p)+'</div></button>';}).join('')+
       (list.length>300?'<div class="empty" style="grid-column:1/-1">Showing 300 of '+list.length+' — search or choose a category to narrow the list.</div>':'');
   }
-  function view(p){ var k=p.manufacturer+'|'+p.code; if(SEEN[k]) return; SEEN[k]=1; VIEWQ.push({manufacturer:p.manufacturer,code:p.code}); if(VIEWQ.length>=10) flush(); }
+  function view(p){ if(PREVIEW) return; var k=p.manufacturer+'|'+p.code; if(SEEN[k]) return; SEEN[k]=1; VIEWQ.push({manufacturer:p.manufacturer,code:p.code}); if(VIEWQ.length>=10) flush(); }
   function flush(){ if(!VIEWQ.length) return; var items=VIEWQ.splice(0,40);
     try{ fetch(API,{method:'POST',keepalive:true,headers:{'content-type':'text/plain'},body:JSON.stringify({action:'view',s:slug,items:items})}).catch(function(){}); }catch(e){} }
   setInterval(flush,8000); addEventListener('pagehide',flush);
@@ -66,6 +75,7 @@
     var at=Object.keys(p.attributes||{}); var d=D.dealer;
     open('<div class="pd"><div>'+img(p.image,p.name)+'</div><div><div class="ln">'+esc(lineName(p.manufacturer))+(p.code?' · #'+esc(p.code):'')+'</div><h2 style="margin:4px 0 8px;color:var(--navy)">'+esc(p.name)+'</h2>'+priceHtml(p)+
       (p.description?'<p style="color:var(--ink2)">'+esc(p.description)+'</p>':'')+
+      (p.features&&p.features.length?'<ul class="feats">'+p.features.map(function(f){return '<li>'+esc(f)+'</li>';}).join('')+'</ul>':'')+
       (at.length?'<table class="attrs">'+at.map(function(k){return '<tr><td>'+esc(k)+'</td><td>'+esc(p.attributes[k])+'</td></tr>';}).join('')+'</table>':'')+
       '<div class="acts" style="margin-top:14px">'+(d.phone?'<a class="btn" href="tel:'+esc(tel(d.phone))+'">📞 Call</a>':'')+'<button class="btn pri" type="button" data-ask="'+D.products.indexOf(p)+'">Request information</button></div></div></div>',p.name);
   }
@@ -77,6 +87,7 @@
       '<label class="chk"><input type="checkbox" name="consent"> <span>I agree that '+esc(D.dealer.name)+' may contact me about this request.</span></label>'+
       '<div class="note" style="margin:6px 0">'+esc(D.privacy)+'</div><div class="err" id="ferr" role="alert"></div><button class="btn pri" type="submit" id="fsend">Send request</button></form>','Request information');
     $('f').addEventListener('submit',function(ev){ ev.preventDefault(); var f=ev.target, b=$('fsend');
+      if(PREVIEW){ $('ferr').textContent='This is a preview — requests can be sent once your storefront is published.'; return; }
       var body={action:'inquiry',s:slug,name:f.name.value,email:f.email.value,phone:f.phone.value,message:f.message.value,hp:f.hp.value,consent:f.consent.checked};
       if(p) body.product={manufacturer:p.manufacturer,code:p.code,name:p.name};
       if(Date.now()-LOADED<2500){ $('ferr').textContent='Please take a moment to fill in the form.'; return; }
