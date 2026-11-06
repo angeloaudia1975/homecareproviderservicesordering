@@ -1,7 +1,7 @@
 {
   "review_id": "9f359ff950df",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T04:54:53Z",
+  "built_at": "2026-11-06T05:08:38Z",
   "main": "82be09a10afa1233f48f3c28fb0be53495a654c4",
   "included": [
     {
@@ -10,7 +10,8 @@
       "branch": "showroom/designer-24",
       "head": "649c3f4ed870c2f7f27c6343c3ec72bd1fbc5a10",
       "manufacturers": [],
-      "other_files": 53
+      "other_files": 53,
+      "note": "newer commit 0566fad still being checked — showing the last validated version"
     }
   ],
   "skipped": []
