@@ -8,7 +8,7 @@ const t=async(n,f)=>{ try{ await f(); pass++; console.log('ok  ',n); }catch(e){ 
 const ok=(c,m)=>{ if(!c) throw new Error(m||'assertion failed'); };
 const grabFn=n=>{ const i=H.indexOf('function '+n+'('); if(i<0) throw new Error('missing '+n); const st=H.lastIndexOf('\n',i)+1; let d=0,j=H.indexOf('{',i); for(;j<H.length;j++){ if(H[j]==='{')d++; else if(H[j]==='}'){ d--; if(!d) break; } } return H.slice(st,j+1); };
 const grabLine=a=>{ const i=H.indexOf(a); if(i<0) throw new Error('missing '+a); return H.slice(i,H.indexOf('\n',i)); };
-const GFNS=['goldenPreviewEnv','goldenCall','goldenInit','goldenEntitled','goldenToProduct','goldenCatalogProducts','goldenStockHtml','goldenPriceHtml','goldenCardHtml'];
+const GFNS=['goldenPreviewEnv','goldenCall','goldenInit','goldenEntitled','goldenToProduct','goldenCatalogProducts','goldenStockHtml','goldenPriceHtml','goldenCardNote','gckOrderingOpen','goldenCardHtml'];
 
 function sandbox(o){
   o=o||{};
@@ -78,6 +78,13 @@ const PROD=(over)=>Object.assign({ sku:'PR535-MED', family:'PR535', family_name:
     c.GOLDEN.cat={ prices:false };
     const u=c.goldenToProduct(PROD({}),{}); const h2=c.goldenCardHtml(Object.assign({},u,{ _variants:[u] }));
     ok(h2.includes('Dealer price shows once your Golden account is linked') && !h2.includes('$922'));
+    // ordering note: a configurable lift chair has none once ordering is open; anything else is Browse only; never "being finished"
+    c.CONFIG.GOLDEN_ORDERING_ENABLED=true;
+    ok(c.goldenCardNote({ _goldenAction:'configure', code:'PR535-MED' })==='', 'orderable lift chair: no note');
+    ok(/Browse only/.test(c.goldenCardNote({ _goldenAction:'view', code:'GB116' })), 'scooter / bed: browse only');
+    c.CONFIG.GOLDEN_ORDERING_ENABLED=false; c.GOLDEN.preview=false;
+    ok(/Browse only/.test(c.goldenCardNote({ _goldenAction:'configure', code:'PR535-MED' })), 'ordering closed: browse only');
+    ok(!/being finished/.test(html), 'no stale "being finished" copy');
   });
   await t('storefront wiring: loadProducts reads Golden live (no file, no HCPS layers), cart refuses Golden, no redirect', ()=>{
     const lp=grabFn('loadProducts');
