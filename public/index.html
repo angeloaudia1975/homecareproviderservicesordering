@@ -865,6 +865,7 @@ body.sdon.sdloading #sdLoading{display:block;}
    space). Fallback (no image match) renders exactly as Phase 3 did — the
    .sd-item-has-img modifier is only added when an image is actually shown. */
 .sd-item-img{width:100%;height:100%;object-fit:contain;pointer-events:none;display:block;}
+.sd-item-block.sd-item-thin .sd-item-label{display:none;}
 .sd-item-block.sd-item-has-img .sd-item-label{position:absolute;left:2px;right:2px;bottom:1px;width:auto;max-width:none;text-align:center;}
 /* ---- Issue #213/#215/#229 (rotation state is the explicit item.rotation_deg
    value -- 0/90/180/270, not inferred from dimensions): visually rotate the
@@ -908,6 +909,25 @@ body.sdon.sdloading #sdLoading{display:block;}
 .sd-gallery-card:hover{border-color:var(--gold);background:#FEF9EF;}
 .sd-gallery-thumb{width:100%;height:52px;display:flex;align-items:center;justify-content:center;}
 .sd-gallery-thumb img{max-width:100%;max-height:100%;object-fit:contain;}
+/* ---- Showroom Designer (2026-11-05): 24 top-view types, size panel before placing, Edit Size after ---- */
+#sec-showroom h1.section-title{margin:0;}
+.sd-gallery-thumb{height:64px;}
+.sd-gallery-mine{font-style:normal;color:var(--gold);}
+.sd-gallery-card:focus-visible,.sd-link-btn:focus-visible,.sd-equip-form button:focus-visible{outline:3px solid #2563eb;outline-offset:2px;}
+.sd-equip-form{border:1px solid #D1D5DB;background:#fff;border-radius:10px;padding:12px 14px;margin:10px 0;}
+.sd-equip-body{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;}
+.sd-equip-preview{width:120px;height:120px;flex:0 0 120px;display:flex;align-items:center;justify-content:center;background:#F7F5EF;border-radius:8px;}
+.sd-equip-preview img{max-width:96px;max-height:96px;object-fit:contain;transition:transform .2s;}
+.sd-equip-fields{flex:1;min-width:220px;}
+.sd-equip-sqft{font-size:14px;margin:4px 0;color:var(--navy);}
+.sd-equip-note{font-size:12px;color:#6B7280;margin:2px 0 6px;}
+.sd-equip-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;}
+.sd-equip-actions .sd-setup-btn{margin:0;}
+.sd-equip-defaults{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;}
+.sd-link-btn{background:none;border:0;padding:4px 0;color:#1f5fa8;text-decoration:underline;cursor:pointer;font:inherit;font-size:13px;min-height:32px;}
+.sd-resize-sub{font-weight:400;color:#6B7280;font-size:12px;}
+.sd-equip-form input[type=number],.sd-modal-resize input[type=number]{min-height:40px;font-size:16px;}
+@media (max-width:600px){.sd-equip-preview{width:84px;height:84px;flex-basis:84px;}.sd-equip-preview img{max-width:70px;max-height:70px;}}
 .sd-gallery-name{font-size:11.5px;font-weight:700;color:var(--navy);line-height:1.2;}
 .sd-gallery-dims{font-size:10px;color:#9CA3AF;}
 .sd-gallery-loading{font-size:12px;color:#9CA3AF;padding:6px 0;}
@@ -1046,7 +1066,7 @@ body.sdon.sdloading #sdLoading{display:block;}
 .sd-row-thumb{width:32px;height:32px;border-radius:6px;flex-shrink:0;overflow:hidden;background:#F1F5F9;border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;}
 .sd-row-thumb img{width:100%;height:100%;object-fit:contain;padding:2px;}
 .sd-row-thumb-empty::before{content:'🪑';font-size:15px;color:#CBD5E1;}
-@media(max-width:900px){.sd-floor-row{flex-direction:column;}.sd-items-panel{width:100%;max-height:240px;}}
+@media(max-width:900px){.sd-floor-row{flex-direction:column;align-items:stretch;}.sd-floor-row .sd-viewport{width:100%;max-width:100%;flex:none;}.sd-items-panel{width:100%;max-height:240px;}}  /* stacked: the floor scrolls inside its own box, never the page (2026-11-05) */
 
 /* ---- Guided walkthrough (issue #247): native overlay/spotlight tour built
    from scratch (no external tour library), reusing this file's existing
@@ -3828,7 +3848,7 @@ function renderTabs(){
     ['shop','Shop',()=>showShop(), inShop],
     ['reports','Reports',()=>showP360('reports'), a==='p360:reports'],
     ['quotes','Quotes',()=>showQuotesHub(), a==='p360:quotes'],
-    ['showroom','Showroom',()=>showShowroomStudio(), a==='p360:showroom'],
+    ['showroom','Showroom Designer',()=>showShowroomStudio(), a==='p360:showroom'],
     ['account','Account',()=>showP360('account'), a==='p360:account'],
     ['resources','Resources',()=>showP360('resources'), a==='p360:resources']
   ];
@@ -9242,15 +9262,53 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     {key:'mobility',    label:'Mobility & Walking',     w:2, h:3},
     {key:'accessory',   label:'Accessories',            w:1, h:1}
   ];
+
+  /* ---------- Showroom Designer equipment (owner package v2, 2026-11-05) ----------
+     The 24 pickable types, in the owner's order — docs/showroom/showroom_equipment_manifest.json is the source
+     (test/showroom-designer.test.js holds this list equal to it). One stable id per type, each with its own top-view
+     picker icon and floor-plan sprite, so no two types share an image. w × h are STARTING sizes in feet (1 cell = 1 ft);
+     every one is editable before and after placement. `catalog` = the four product families a dealer assigns a real
+     HCPS SKU to (placed as catalog placeholders, category = the catOf() key below); every other type is an
+     independent showroom fixture/display record (placed as a custom item whose custom_category is the type id). */
+  var EQUIPMENT = [
+    {"id":"lift_chairs","label":"Lift Chairs","w":5,"h":5,"icon":"/assets/showroom/icons/lift_chairs.png","plan":"/assets/showroom/floorplan/lift_chairs.png","catalog":"lift_chair"},
+    {"id":"power_chairs","label":"Power Chairs","w":3,"h":3,"icon":"/assets/showroom/icons/power_chairs.png","plan":"/assets/showroom/floorplan/power_chairs.png","catalog":"power_chair"},
+    {"id":"scooters","label":"Scooters","w":3,"h":5,"icon":"/assets/showroom/icons/scooters.png","plan":"/assets/showroom/floorplan/scooters.png","catalog":"scooter"},
+    {"id":"beds","label":"Beds","w":5,"h":8,"icon":"/assets/showroom/icons/beds.png","plan":"/assets/showroom/floorplan/beds.png","catalog":"bed"},
+    {"id":"stairlifts","label":"Stairlifts","w":2,"h":6,"icon":"/assets/showroom/icons/stairlifts.png","plan":"/assets/showroom/floorplan/stairlifts.png"},
+    {"id":"modular_ramp_display","label":"Modular Ramp Display","w":3,"h":6,"icon":"/assets/showroom/icons/modular_ramp_display.png","plan":"/assets/showroom/floorplan/modular_ramp_display.png"},
+    {"id":"portable_ramp_display","label":"Portable Ramp Display","w":3,"h":4,"icon":"/assets/showroom/icons/portable_ramp_display.png","plan":"/assets/showroom/floorplan/portable_ramp_display.png"},
+    {"id":"golden_flagship_liftchair","label":"Golden Flagship Liftchair","w":2,"h":2,"icon":"/assets/showroom/icons/golden_flagship_liftchair.png","plan":"/assets/showroom/floorplan/golden_flagship_liftchair.png"},
+    {"id":"golden_flagship_mobility","label":"Golden Flagship Mobility","w":2,"h":2,"icon":"/assets/showroom/icons/golden_flagship_mobility.png","plan":"/assets/showroom/floorplan/golden_flagship_mobility.png"},
+    {"id":"bath_benches","label":"Bath Benches","w":2,"h":2,"icon":"/assets/showroom/icons/bath_benches.png","plan":"/assets/showroom/floorplan/bath_benches.png"},
+    {"id":"commodes","label":"Commodes","w":2,"h":2,"icon":"/assets/showroom/icons/commodes.png","plan":"/assets/showroom/floorplan/commodes.png"},
+    {"id":"transfer_benches","label":"Transfer Benches","w":4,"h":2,"icon":"/assets/showroom/icons/transfer_benches.png","plan":"/assets/showroom/floorplan/transfer_benches.png"},
+    {"id":"rollators","label":"Rollators","w":3,"h":3,"icon":"/assets/showroom/icons/rollators.png","plan":"/assets/showroom/floorplan/rollators.png"},
+    {"id":"transport_chair","label":"Transport Chair","w":3,"h":3,"icon":"/assets/showroom/icons/transport_chair.png","plan":"/assets/showroom/floorplan/transport_chair.png"},
+    {"id":"wheelchair","label":"Wheelchair","w":3,"h":3,"icon":"/assets/showroom/icons/wheelchair.png","plan":"/assets/showroom/floorplan/wheelchair.png"},
+    {"id":"two_button_walker","label":"2-Button Walker","w":2,"h":2,"icon":"/assets/showroom/icons/two_button_walker.png","plan":"/assets/showroom/floorplan/two_button_walker.png"},
+    {"id":"patient_lift","label":"Patient Lift","w":4,"h":4,"icon":"/assets/showroom/icons/patient_lift.png","plan":"/assets/showroom/floorplan/patient_lift.png"},
+    {"id":"round_table","label":"Round Table","w":4,"h":4,"icon":"/assets/showroom/icons/round_table.png","plan":"/assets/showroom/floorplan/round_table.png"},
+    {"id":"square_table","label":"Square Table","w":4,"h":4,"icon":"/assets/showroom/icons/square_table.png","plan":"/assets/showroom/floorplan/square_table.png"},
+    {"id":"chairs","label":"Chairs","w":2,"h":2,"icon":"/assets/showroom/icons/chairs.png","plan":"/assets/showroom/floorplan/chairs.png"},
+    {"id":"checkout_counter","label":"Checkout Counter","w":3,"h":2,"icon":"/assets/showroom/icons/checkout_counter.png","plan":"/assets/showroom/floorplan/checkout_counter.png"},
+    {"id":"doors","label":"Doors","w":3,"h":1,"icon":"/assets/showroom/icons/doors.png","plan":"/assets/showroom/floorplan/doors.png"},
+    {"id":"double_doors","label":"Double Doors","w":6,"h":1,"icon":"/assets/showroom/icons/double_doors.png","plan":"/assets/showroom/floorplan/double_doors.png"},
+    {"id":"display_shelving","label":"Display Shelving","w":3,"h":1,"icon":"/assets/showroom/icons/display_shelving.png","plan":"/assets/showroom/floorplan/display_shelving.png"}
+  ];
+  window.__sdEquipment = EQUIPMENT;
+  /* Read-only mapping for records saved BEFORE the upgrade (never rewritten): an old catalog placeholder keeps its
+     catOf() category and shows its family's sprite; the two old quick-add fixtures whose names match a new type show
+     that type's sprite. Every other old record keeps its original plain-block look and its saved size. */
+  window.__sdLegacyEquipment = { category:{ lift_chair:'lift_chairs', power_chair:'power_chairs', scooter:'scooters', bed:'beds' },
+    customName:{ 'display shelving':'display_shelving', 'checkout counter':'checkout_counter' } };
   window.__sdGalleryCategories = CATS.map(function(c){return c.key;});
   window.__sdCategoryLabels = CATS.reduce(function(m,c){ m[c.key]=c.label; return m; },{});
+  EQUIPMENT.forEach(function(e){ window.__sdCategoryLabels[e.id]=e.label; });
   var FP = CATS.reduce(function(m,c){ m[c.key]={category:c.key,width_cells:c.w,height_cells:c.h,image_path:null}; return m; },{});
-  var PRESETS = [
-    {id:'ps_reception', name:'Reception Desk',   category:'accessory', width_cells:5, height_cells:2, image_path:null},
-    {id:'ps_shelf',     name:'Display Shelving',  category:'accessory', width_cells:3, height_cells:1, image_path:null},
-    {id:'ps_wait',      name:'Waiting Seating',   category:'seating',   width_cells:4, height_cells:2, image_path:null},
-    {id:'ps_counter',   name:'Checkout Counter',  category:'accessory', width_cells:3, height_cells:2, image_path:null}
-  ];
+  /* The four old quick-add presets (Reception Desk, Display Shelving, Waiting Seating, Checkout Counter) are superseded by
+     the 24 Showroom Designer types: no longer offered as NEW choices. Items already placed from them are untouched. */
+  var PRESETS = [];
 
   function catOf(p){
     var s=((p.category||'')+' '+(p.name||'')+' '+(p.family||'')+' '+(p.manufacturer||'')+' '+(p.mname||'')).toLowerCase();
@@ -9335,7 +9393,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       var sq=(it.width_cells||1)*(it.height_cells||1);
       var isG=(it.item_type==='golden');
       (isG?g:o).count++; (isG?g:o).sqft+=sq;
-      var cat=it.item_type==='golden'?(window.__sdCatByCode[it.model]||it.pending_category||'uncategorized'):(it.custom_category||'uncategorized');
+      var cat=it.item_type==='golden'?(window.__sdCatByCode[it.model]||it.pending_category||it.category||'uncategorized'):(it.custom_category||'uncategorized');
       byCat[cat]=byCat[cat]||{count:0,sqft:0}; byCat[cat].count++; byCat[cat].sqft+=sq;
       if(it.dealer_cost!=null) cost+=Number(it.dealer_cost);
       if(it.dealer_cost!=null && it.sales_price!=null){
@@ -9365,6 +9423,22 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
 
     // ----- designs list -----
     if(method==='GET' && action==='designs'){ return resp({designs:Object.keys(s.designs).map(function(k){return listShape(s.designs[k]);})}); }
+    // ----- Showroom Designer: this dealer's saved default sizes per equipment type -----
+    // Lives in this dealer's own store (storeKey is per dealer), so one dealer's defaults never reach another.
+    // Saving or resetting a default never touches a placed item.
+    if(method==='GET' && action==='type_defaults'){ return resp({defaults:s.type_defaults||{}}); }
+    if(method==='POST' && action==='type_defaults'){
+      var tid=String(body.type||''); var known=EQUIPMENT.some(function(e){ return e.id===tid; });
+      if(!known) return resp({ok:false, error:'unknown type', defaults:s.type_defaults||{}});
+      s.type_defaults=s.type_defaults||{};
+      if(body.reset){ delete s.type_defaults[tid]; }
+      else {
+        var dw=Number(body.width_cells), dh=Number(body.height_cells);
+        if(!(Number.isInteger(dw)&&Number.isInteger(dh)&&dw>=1&&dh>=1&&dw<=150&&dh<=150)) return resp({ok:false, error:'invalid size', defaults:s.type_defaults});
+        s.type_defaults[tid]={width_cells:dw, height_cells:dh};
+      }
+      commit(); return resp({ok:true, defaults:s.type_defaults});
+    }
     // ----- footprints / presets -----
     if(method==='GET' && action==='footprints'){ return resp({footprints:Object.keys(FP).map(function(k){return FP[k];})}); }
     if(method==='GET' && action==='presets'){ return resp({presets:PRESETS.slice()}); }
@@ -9384,7 +9458,11 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       var it;
       if(body.id && di.items[body.id]){ it=di.items[body.id]; }
       else { di.itemSeq=(di.itemSeq||0)+1; it={ id:'it'+di.id+'_'+di.itemSeq }; di.items[it.id]=it; }
-      ['cell_x','cell_y','item_type','model','width_cells','height_cells','dealer_cost','turn_rate_weeks','rotation_deg','pending_category','category','custom_name','custom_category','custom_manufacturer','custom_model'].forEach(function(k){ if(body[k]!==undefined) it[k]=body[k]; });
+      ['cell_x','cell_y','item_type','model','width_cells','height_cells','dealer_cost','turn_rate_weeks','rotation_deg','pending_category','category','custom_name','custom_category','custom_manufacturer','custom_model','equipment_type'].forEach(function(k){ if(body[k]!==undefined) it[k]=body[k]; });
+      /* A catalog placeholder arrives as {category} (the engine's contract with the real backend, which stores it as
+         pending_category). This shim never copied it, so placeholders read as "Uncategorized" and the assign list was
+         empty. Store it where the engine reads it; older records that only have `category` are read the same way. */
+      if(it.item_type==='golden' && body.category!==undefined && !it.model) it.pending_category=body.category;
       if(it.item_type==='golden'){ it.sales_price = (body.sales_price!==undefined?body.sales_price:resolveSalesPrice(it.model)); }
       else if(body.sales_price!==undefined){ it.sales_price=body.sales_price; }
       if(it.turn_rate_weeks==null) it.turn_rate_weeks=4;
@@ -9512,7 +9590,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     var nav=document.querySelector('.nav-tabs'); if(!nav)return;
     var b=document.createElement('button'); b.className='nav-tab'; b.id='sd-tab';
     b.setAttribute('onclick',"showSec('showroom',this)");
-    b.innerHTML='📐 Showroom Design';
+    b.innerHTML='📐 Showroom Designer';
     // Place the Showroom Design tab immediately after "Order Status & Tracking".
     var anchor=null;
     nav.querySelectorAll('.nav-tab').forEach(function(x){ if(/showSec\(\s*'status'/.test(x.getAttribute('onclick')||''))anchor=x; });
@@ -9526,9 +9604,9 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     var anchor=document.getElementById('sec-history')||document.getElementById('sec-chairs'); if(!anchor)return;
     var d=document.createElement('div'); d.id='sec-showroom'; d.className='section'; d.style.display='none';
     d.innerHTML=''
-      +'<div class="section-hdr"><div><div class="section-title">Showroom <span>Design</span></div>'
+      +'<div class="section-hdr"><div><h1 class="section-title">Showroom <span>Designer</span></h1>'
       +'<div class="sd-section-note">Enhance your showroom to maximize the retail potential with your HCPS product lines. Shape your showroom floor — mark the cells that are usable retail floor space. 1 cell = 1 sq ft.</div></div>'
-      +'<button class="sd-tour-launch-btn" id="sd-tour-btn" onclick="sdStartTour()" title="Take a guided tour of the Showroom Design tool">❓ Take a Tour</button>'
+      +'<button class="sd-tour-launch-btn" id="sd-tour-btn" onclick="sdStartTour()" title="Take a guided tour of the Showroom Designer">❓ Take a Tour</button>'
       +'</div>'
       +'<div id="sd-loading" style="text-align:center;padding:40px;color:#9CA3AF;">⟳ Loading your showroom…</div>'
       +'<div id="sd-setup" class="sd-setup" style="display:none;">'
@@ -9572,9 +9650,10 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       +  '</div>'
       +  '<div class="sd-gallery" id="sd-gallery">'
       +    '<div class="sd-gallery-hdr">Equipment</div>'
-      +    '<div class="sd-gallery-note">Click a piece of equipment, then click a spot on your floor to place it — pick the exact product afterward.</div>'
+      +    '<div class="sd-gallery-note">Pick a piece of equipment, set its width and depth, then click a spot on your floor to place it. Lift chairs, power chairs, scooters and beds take a real product afterward.</div>'
       +    '<div class="sd-gallery-grid" id="sd-gallery-grid"><div class="sd-gallery-loading">Loading equipment…</div></div>'
       +  '</div>'
+      +  '<div class="sd-equip-form" id="sd-equip-form" role="region" aria-label="Equipment size before placing" style="display:none;"></div>'
       +  '<div class="sd-additem-bar" id="sd-additem-bar">'
       +    '<button class="sd-additem-btn sd-additem-btn-alt" onclick="sdOpenCustomForm()">+ Custom / Other Item</button>'
       +  '</div>'
@@ -10087,7 +10166,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   // placement time) — never let this drift from the backend copy.
   function sdCategoryOf(item){
     if(!item) return null;
-    if(item.item_type==='golden') return sdCategoryForModel(item.model) || (String(item.pending_category||'').trim().toLowerCase() || null);
+    if(item.item_type==='golden') return sdCategoryForModel(item.model) || (String(item.pending_category||item.category||'').trim().toLowerCase() || null);
     var c = String(item.custom_category||'').trim().toLowerCase();
     return c || null;
   }
@@ -10195,8 +10274,53 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   // category matches custom_category, case-insensitively. Returns null (no
   // match -> plain-block fallback, unchanged from Phase 3) when the caches
   // aren't loaded yet or nothing matches. ----------
+  /* ---------- Showroom Designer equipment registry (host: window.__sdEquipment, 24 types) ---------- */
+  var _sdTypeDefaults=null;          // this dealer's saved default sizes, by type id (loaded from the store)
+  function sdEquipList(){ return Array.isArray(window.__sdEquipment) ? window.__sdEquipment : []; }
+  function sdEquipById(id){ id=String(id||''); return sdEquipList().filter(function(e){ return e.id===id; })[0]||null; }
+  // Which of the 24 types a placed item is. New items carry equipment_type; items saved before the upgrade are
+  // READ through the legacy map (never rewritten): an old catalog placeholder by its family, an old custom item whose
+  // category is already a type id, or one of the two old quick-add fixtures by name. Anything else: null (plain block).
+  function sdEquipForItem(item){
+    if(!item) return null;
+    var e = item.equipment_type ? sdEquipById(item.equipment_type) : null;
+    if(e) return e;
+    var L = window.__sdLegacyEquipment||{category:{},customName:{}};
+    if(item.item_type==='golden'){
+      var cat = sdCategoryForModel(item.model) || String(item.pending_category||item.category||'').trim().toLowerCase();
+      return (cat && L.category[cat]) ? sdEquipById(L.category[cat]) : null;
+    }
+    var cc = String(item.custom_category||'').trim().toLowerCase();
+    if(cc && sdEquipById(cc)) return sdEquipById(cc);
+    var nm = String(item.custom_name||'').trim().toLowerCase();
+    return (nm && L.customName[nm]) ? sdEquipById(L.customName[nm]) : null;
+  }
+  // The starting size for a NEW placement of a type: this dealer's saved default, else the manifest size.
+  function sdEquipDefaultSize(e){
+    var d = _sdTypeDefaults && _sdTypeDefaults[e.id];
+    return d ? {w:d.width_cells, h:d.height_cells, mine:true} : {w:e.w, h:e.h, mine:false};
+  }
+  function sdLoadTypeDefaults(){
+    if(_sdTypeDefaults) return Promise.resolve(_sdTypeDefaults);
+    return fetch(FN+'?action=type_defaults&dealer_id='+encodeURIComponent(DEALER()))
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(res){ _sdTypeDefaults = (res&&res.defaults)||{}; return _sdTypeDefaults; })
+      .catch(function(){ _sdTypeDefaults = {}; return _sdTypeDefaults; });
+  }
+  // Whole-foot size check shared by every size control (1 cell = 1 ft). Returns {ok,w,h} or {ok:false,reason}.
+  function sdCheckSize(wRaw, hRaw){
+    var w = Number(String(wRaw==null?'':wRaw).trim()), h = Number(String(hRaw==null?'':hRaw).trim());
+    if(String(wRaw).trim()==='' || String(hRaw).trim()==='' || !Number.isFinite(w) || !Number.isFinite(h)) return {ok:false, reason:'Enter a width and a depth in feet.'};
+    if(!Number.isInteger(w) || !Number.isInteger(h)) return {ok:false, reason:'Use whole feet — the floor grid is 1 ft per square.'};
+    if(w<1 || h<1) return {ok:false, reason:'Width and depth must be at least 1 ft.'};
+    if(w>MAX_DIM || h>MAX_DIM) return {ok:false, reason:'Width and depth can be at most '+MAX_DIM+' ft.'};
+    if(gridWidth && gridHeight && (w>gridWidth || h>gridHeight)) return {ok:false, reason:'That is bigger than your floor ('+gridWidth+' × '+gridHeight+' ft).'};
+    return {ok:true, w:w, h:h};
+  }
   function sdImageForItem(item){
     if(!item) return null;
+    var _eq = sdEquipForItem(item);
+    if(_eq) return _eq.plan;
     if(item.item_type==='golden'){
       var cat = sdCategoryForModel(item.model) || (String(item.pending_category||'').trim().toLowerCase() || null);
       var fp = cat && _sdFootprintsCache && _sdFootprintsCache[cat];
@@ -10231,17 +10355,16 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   // object-fit:contain look for those, which is an explicit non-goal, not a
   // bug (see issue #213). ----------
   function sdNaturalDimsForItem(item){
+    /* Showroom Designer (2026-11-05): sizes are editable per item, so the image's un-rotated box is derived from the
+       item's OWN stored size and angle — never from a category default. 0/180: the box is width × depth; 90/270: the
+       stored footprint is the rotated one, so the un-rotated box swaps back. The image is drawn in that box (contain,
+       never stretched or cropped) and spun by the stored angle, so it always fills exactly the occupied cells. */
     if(!item) return null;
-    if(item.item_type==='golden'){
-      var cat = sdCategoryForModel(item.model) || (String(item.pending_category||'').trim().toLowerCase() || null);
-      var fp = cat && _sdFootprintsCache && _sdFootprintsCache[cat];
-      return fp ? {w:Number(fp.width_cells)||1, h:Number(fp.height_cells)||1} : null;
-    }
-    var cat2 = String(item.custom_category||'').trim().toLowerCase();
-    if(!cat2 || !_sdPresetsCache) return null;
-    var preset = _sdPresetsCache.filter(function(p){ return String(p&&p.category||'').toLowerCase()===cat2; })[0];
-    return preset ? {w:Number(preset.width_cells)||1, h:Number(preset.height_cells)||1} : null;
+    var w = Number(item.width_cells)||1, h = Number(item.height_cells)||1;
+    var deg = ((parseInt(item.rotation_deg,10)||0) % 360 + 360) % 360;
+    return (deg===90||deg===270) ? {w:h, h:w} : {w:w, h:h};
   }
+
   // sdImageSrc — image_path values are stored root-relative without a
   // leading slash (e.g. "assets/showroom-presets/foo.png", matching what's
   // written by config/migrate-dealer-showroom-design-presets.sql), since the
@@ -10363,32 +10486,130 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
   // sdValidatePlacement()/sdPreviewPlacement() flow Phase 3 already built —
   // unchanged by this issue. ----------
   var GOLDEN_GALLERY_CATEGORIES = (window.__sdGalleryCategories && window.__sdGalleryCategories.length) ? window.__sdGalleryCategories.slice() : ['lift_chair','scooter','power_chair','bed'];
-  function sdGalleryCardHtml(name, w, h, imagePath, onclickAttr){
+  function sdGalleryCardHtml(name, w, h, imagePath, onclickAttr, mine){
     var src = sdImageSrc(imagePath);
     var thumb = src ? '<img src="'+sdAttrEsc(src)+'" alt="" onerror="this.remove()">' : '';
-    return '<button type="button" class="sd-gallery-card" onclick="'+onclickAttr+'">'
+    return '<button type="button" class="sd-gallery-card" onclick="'+onclickAttr+'" aria-label="'+sdAttrEsc(name+', '+w+' by '+h+' feet'+(mine?' (your default size)':'')+'. Set size and place')+'">'
       + '<span class="sd-gallery-thumb">'+thumb+'</span>'
       + '<span class="sd-gallery-name">'+sdEsc(name)+'</span>'
-      + '<span class="sd-gallery-dims">'+w+' × '+h+' ft</span>'
+      + '<span class="sd-gallery-dims">'+w+' × '+h+' ft'+(mine?' <i class="sd-gallery-mine" title="Your saved default size">★</i>':'')+'</span>'
       + '</button>';
   }
+  /* Showroom Designer (2026-11-05): the picker is exactly the 24 owner-approved types, in the owner's order. The old
+     category cards and quick-add presets are no longer offered as new choices (items already placed from them keep
+     working). A card opens the size panel (sdOpenEquip) — nothing is placed until the dealer confirms a size. */
   function sdRenderGallery(){
     var grid = document.getElementById('sd-gallery-grid');
     if(!grid) return;
-    Promise.all([sdLoadFootprints(), sdLoadPresets()]).then(function(res){
+    Promise.all([sdLoadFootprints(), sdLoadPresets(), sdLoadTypeDefaults()]).then(function(){
       grid = document.getElementById('sd-gallery-grid');
       if(!grid) return; // section closed while loading
-      var fmap = res[0] || {}, presets = res[1] || [];
-      var cards = GOLDEN_GALLERY_CATEGORIES.map(function(cat){
-        var fp = fmap[cat];
-        var w = fp ? fp.width_cells : 1, h = fp ? fp.height_cells : 1;
-        return sdGalleryCardHtml(sdCategoryLabel(cat), w, h, fp&&fp.image_path, 'sdArmGoldenCategory(&quot;'+cat+'&quot;)');
-      }).concat(presets.map(function(p){
-        return sdGalleryCardHtml(p.name, p.width_cells, p.height_cells, p.image_path, 'sdArmPreset(&quot;'+String(p.id).replace(/"/g,'&quot;')+'&quot;)');
-      }));
+      var cards = sdEquipList().map(function(e){
+        var d = sdEquipDefaultSize(e);
+        return sdGalleryCardHtml(e.label, d.w, d.h, e.icon, 'sdOpenEquip(&quot;'+e.id+'&quot;)', d.mine);
+      });
       grid.innerHTML = cards.join('') || '<div class="sd-gallery-loading">No equipment available.</div>';
     });
   }
+
+  /* ---------- Showroom Designer: size BEFORE placing ----------
+     Width/Depth start from this dealer's saved default for the type, else the manifest size. Footprint (sq ft) updates
+     live; Rotate 90° swaps the two; Place Item arms the normal click-to-place flow at exactly that size (nothing is
+     placed until the dealer clicks the floor, and the banner shows the size). "Save as my default" changes only FUTURE
+     placements of this type for this dealer; "Reset" returns it to the factory size. Neither touches placed items. */
+  var _sdEquipDraft=null;   // {id, w, h, rot}
+  function sdEquipFormHtml(){
+    var d=_sdEquipDraft, e=d&&sdEquipById(d.id); if(!e) return '';
+    var def=sdEquipDefaultSize(e);
+    return '<div class="sd-form-hdr">'+sdEsc(e.label)+'<button class="sd-form-close" onclick="sdCloseForms()" aria-label="Close size panel">✕</button></div>'
+      + '<div class="sd-equip-body">'
+      +   '<div class="sd-equip-preview" aria-hidden="true"><img src="'+sdAttrEsc(sdImageSrc(e.plan))+'" alt="" id="sd-equip-img" style="transform:rotate('+d.rot+'deg)" onerror="this.remove()"></div>'
+      +   '<div class="sd-equip-fields">'
+      +     '<div class="sd-setup-row">'
+      +       '<div class="sd-field"><label for="sd-equip-w">Width (ft)</label><input type="number" id="sd-equip-w" min="1" max="'+MAX_DIM+'" step="1" inputmode="numeric" value="'+d.w+'" oninput="sdEquipInput()"></div>'
+      +       '<div class="sd-field"><label for="sd-equip-h">Depth (ft)</label><input type="number" id="sd-equip-h" min="1" max="'+MAX_DIM+'" step="1" inputmode="numeric" value="'+d.h+'" oninput="sdEquipInput()"></div>'
+      +     '</div>'
+      +     '<div class="sd-equip-sqft" aria-live="polite">Footprint: <b id="sd-equip-sqft">'+(d.w*d.h)+'</b> sq ft</div>'
+      +     '<div class="sd-equip-note">Whole feet only — 1 square on the floor = 1 ft × 1 ft. '+(def.mine?'Starting from your saved default ('+def.w+' × '+def.h+' ft).':'Factory size '+e.w+' × '+e.h+' ft.')+'</div>'
+      +     '<div class="sd-setup-err" id="sd-equip-err" role="alert"></div>'
+      +     '<div class="sd-equip-actions">'
+      +       '<button type="button" class="sd-modal-action-btn" onclick="sdEquipRotate()">🔄 Rotate 90°</button>'
+      +       '<button type="button" class="sd-setup-btn" id="sd-equip-place" onclick="sdEquipPlace()">Place Item →</button>'
+      +     '</div>'
+      +     '<div class="sd-equip-defaults">'
+      +       '<button type="button" class="sd-link-btn" onclick="sdEquipSaveDefault()">Save as my default for future placements</button>'
+      +       (def.mine ? '<button type="button" class="sd-link-btn" onclick="sdEquipResetDefault()">Reset to factory size ('+e.w+' × '+e.h+' ft)</button>' : '')
+      +     '</div>'
+      +   '</div>'
+      + '</div>';
+  }
+  function sdEquipErr(msg){ var el=document.getElementById('sd-equip-err'); if(el){ el.textContent=msg||''; el.style.display=msg?'block':'none'; } }
+  function sdEquipRead(){ return sdCheckSize((document.getElementById('sd-equip-w')||{}).value, (document.getElementById('sd-equip-h')||{}).value); }
+  window.sdOpenEquip=function(id){
+    var e=sdEquipById(id); if(!e) return;
+    sdCancelPlacement();
+    sdCloseForms();
+    if(sdMode!=='items'){ sdMode='items'; sdApplyModeUI(); }
+    sdLoadTypeDefaults().then(function(){
+      var d=sdEquipDefaultSize(e);
+      _sdEquipDraft={id:e.id, w:d.w, h:d.h, rot:0};
+      var f=document.getElementById('sd-equip-form'); if(!f) return;
+      f.innerHTML=sdEquipFormHtml(); f.style.display='block';
+      var wi=document.getElementById('sd-equip-w'); if(wi){ try{ wi.focus({preventScroll:true}); }catch(_){ wi.focus(); } }
+      try{ f.scrollIntoView({block:'nearest'}); }catch(_){}
+    });
+  };
+  window.sdEquipInput=function(){
+    var v=sdEquipRead(), sq=document.getElementById('sd-equip-sqft');
+    if(sq) sq.textContent = v.ok ? (v.w*v.h) : '—';
+    sdEquipErr(v.ok ? '' : v.reason);
+    if(v.ok && _sdEquipDraft){ _sdEquipDraft.w=v.w; _sdEquipDraft.h=v.h; }
+  };
+  window.sdEquipRotate=function(){
+    var v=sdEquipRead(); if(!v.ok){ sdEquipErr(v.reason); return; }
+    _sdEquipDraft.w=v.h; _sdEquipDraft.h=v.w; _sdEquipDraft.rot=(_sdEquipDraft.rot+90)%360;
+    var wi=document.getElementById('sd-equip-w'), hi=document.getElementById('sd-equip-h'), im=document.getElementById('sd-equip-img');
+    if(wi) wi.value=_sdEquipDraft.w; if(hi) hi.value=_sdEquipDraft.h; if(im) im.style.transform='rotate('+_sdEquipDraft.rot+'deg)';
+    window.sdEquipInput();
+  };
+  window.sdEquipPlace=function(){
+    var d=_sdEquipDraft, e=d&&sdEquipById(d.id); if(!e) return;
+    var v=sdEquipRead(); if(!v.ok){ sdEquipErr(v.reason); return; }
+    sdEquipErr('');
+    var rot=d.rot;
+    sdCloseForms();
+    if(e.catalog){
+      pendingPlacement = { item_type:'golden', model:null, category:e.catalog, equipment_type:e.id, rotation_deg:rot,
+        width_cells:v.w, height_cells:v.h, dealer_cost:null, label:e.label };
+    } else {
+      pendingPlacement = { item_type:'custom', custom_name:e.label, custom_category:e.id, equipment_type:e.id, rotation_deg:rot,
+        width_cells:v.w, height_cells:v.h, dealer_cost:null, sales_price:null, label:e.label };
+    }
+    sdArmPlacement();
+  };
+  function sdSaveTypeDefault(body){
+    return fetch(FN+'?action=type_defaults', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.assign({dealer_id:DEALER()}, body))})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(res){ if(!res || res.ok===false) throw new Error((res&&res.error)||'not saved'); _sdTypeDefaults=res.defaults||{}; return res; });
+  }
+  window.sdEquipSaveDefault=function(){
+    var d=_sdEquipDraft, e=d&&sdEquipById(d.id); if(!e) return;
+    var v=sdEquipRead(); if(!v.ok){ sdEquipErr(v.reason); return; }
+    sdSaveTypeDefault({type:e.id, width_cells:v.w, height_cells:v.h}).then(function(){
+      toast(e.label+': your default is now '+v.w+' × '+v.h+' ft ✓ (placed items are unchanged)');
+      var f=document.getElementById('sd-equip-form'); if(f) f.innerHTML=sdEquipFormHtml();
+      sdRenderGallery();
+    }).catch(function(){ sdEquipErr('Could not save your default — try again.'); });
+  };
+  window.sdEquipResetDefault=function(){
+    var d=_sdEquipDraft, e=d&&sdEquipById(d.id); if(!e) return;
+    sdSaveTypeDefault({type:e.id, reset:true}).then(function(){
+      _sdEquipDraft={id:e.id, w:e.w, h:e.h, rot:0};
+      var f=document.getElementById('sd-equip-form'); if(f) f.innerHTML=sdEquipFormHtml();
+      toast(e.label+': back to the factory size '+e.w+' × '+e.h+' ft ✓ (placed items are unchanged)');
+      sdRenderGallery();
+    }).catch(function(){ sdEquipErr('Could not reset — try again.'); });
+  };
   window.sdArmGoldenCategory=function(cat){
     sdCancelPlacement();
     sdCloseForms();
@@ -10501,7 +10722,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     });
   };
   window.sdCloseForms=function(){
-    ['sd-custom-form'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
+    ['sd-custom-form','sd-equip-form'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
   };
 
   // ======================================================================
@@ -10539,7 +10760,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     var verb = pendingPlacement.move_item_id
       ? 'Click a cell for the new top-left corner of'
       : 'Click a cell on the grid for the top-left corner of';
-    if(txt) txt.textContent = verb+' "'+pendingPlacement.label+'" ('+pendingPlacement.width_cells+'×'+pendingPlacement.height_cells+' ft)';
+    if(txt) txt.textContent = verb+' "'+pendingPlacement.label+'" ('+pendingPlacement.width_cells+' × '+pendingPlacement.height_cells+' ft = '+(pendingPlacement.width_cells*pendingPlacement.height_cells)+' sq ft)';
     if(banner) banner.style.display='flex';
     var gridEl=document.getElementById('sd-grid');
     if(gridEl) gridEl.classList.add('sd-placing');
@@ -10678,6 +10899,8 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
         width_cells: draft.width_cells, height_cells: draft.height_cells,
         dealer_cost: draft.dealer_cost
       };
+      if(draft.equipment_type) body.equipment_type = draft.equipment_type;   // Showroom Designer type (image + label)
+      if(draft.rotation_deg) body.rotation_deg = draft.rotation_deg;         // rotated in the size panel before placing
       if(draft.item_type==='golden'){
         // Showroom Design redesign (issue #203): a category card from the
         // gallery arms placement with no model — the item is stored
@@ -10843,12 +11066,12 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     var item = itemsList.filter(function(x){ return String(x.id)===String(itemId); })[0];
     if(!item){ toast('Could not find that item — try reopening it.'); return; }
     var errEl = document.getElementById('sd-resize-err');
-    var w = parseInt((document.getElementById('sd-resize-w')||{}).value,10);
-    var h = parseInt((document.getElementById('sd-resize-h')||{}).value,10);
-    if(!Number.isFinite(w) || w<1 || !Number.isFinite(h) || h<1){
-      if(errEl){ errEl.textContent='Enter a width and depth of at least 1 ft.'; errEl.style.display='block'; }
+    var c = sdCheckSize((document.getElementById('sd-resize-w')||{}).value, (document.getElementById('sd-resize-h')||{}).value);
+    if(!c.ok){
+      if(errEl){ errEl.textContent=c.reason; errEl.style.display='block'; }
       return;
     }
+    var w=c.w, h=c.h;
     var v = sdValidatePlacement(Number(item.cell_x)||0, Number(item.cell_y)||0, w, h, item.id);
     if(!v.ok){
       if(errEl){ errEl.textContent=v.reason||"That size doesn't fit there."; errEl.style.display='block'; }
@@ -10856,11 +11079,13 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       return;
     }
     if(errEl) errEl.style.display='none';
+    sdClearPreview();
     sdPatchItem(item, {width_cells:w, height_cells:h}, function(updated){
       sdShowItemDetails(updated);
-      toast('Item resized ✓');
+      toast('Item resized to '+w+' × '+h+' ft ✓');
     });
   };
+
 
   // ---------- Turn rate (issue #232): editable weeks-to-sell field in the
   // details modal, alongside Rotate/Move/Resize (same #207 per-item-edit UI
@@ -10921,7 +11146,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       var rotDeg = ((parseInt(it.rotation_deg,10)||0) % 360 + 360) % 360;
       var rotSwapped = (rotDeg===90 || rotDeg===270);
       var rotDimsOk = !!(natDims && (rotSwapped ? (w===natDims.h && h===natDims.w) : (w===natDims.w && h===natDims.h)));
-      var imgRotated = rotDeg!==0 && rotDimsOk;
+      var imgRotated = !!natDims;   // Showroom Designer: every image is drawn in its own un-rotated box and spun by the stored angle (0 included)
       // Showroom Design redesign (issue #203): a Golden item with no model
       // yet is an unassigned placeholder — mark it clearly so it's obvious
       // at a glance which placed items still need a product assigned.
@@ -10933,8 +11158,13 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       el.style.width = (w*CELL_PX)+'px';
       el.style.height = (h*CELL_PX)+'px';
       el.dataset.id = it.id;
-      var label = it.item_type==='golden' ? (it.model || sdCategoryLabel(sdCategoryOf(it) || 'uncategorized')) : it.custom_name;
-      el.title = (label||'') + (unassigned ? ' (needs a product assigned)' : '');
+      var _eqIt = sdEquipForItem(it);
+      var label = it.item_type==='golden' ? (it.model || (_eqIt ? _eqIt.label : sdCategoryLabel(sdCategoryOf(it) || 'uncategorized'))) : it.custom_name;
+      el.title = (label||'') + ' · ' + w + ' × ' + h + ' ft' + (unassigned ? ' (needs a product assigned)' : '');
+      el.setAttribute('aria-label', el.title);
+      // A 1-ft-deep (or 1-ft-wide) item is too thin for a name tag over its picture: the picture shows, the name is in
+      // the tooltip and the Placed Items list.
+      if(imgSrc && (w<2 || h<2)) el.classList.add('sd-item-thin');
       var html = '';
       if(imgSrc){
         // onerror: a broken/missing image never ships (see this repo's
@@ -11080,6 +11310,35 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     else sdRenderDetailsBody(item);
     modal.style.display='flex';
   }
+  /* ---------- Showroom Designer: size AFTER placing (one item only) ----------
+     The existing #207 Resize, made the one visible path: current Width × Depth and sq ft, an Edit Size form whose
+     numbers outline the new footprint on the floor as the dealer types (green = fits, red = conflicts), and Apply Size,
+     which re-checks edges, "Not floor" squares and other items before saving. A rejected size changes nothing.
+     Changing this item never changes the type's default or any other item. */
+  function sdSizeEditorHtml(item){
+    var w=Number(item.width_cells)||1, h=Number(item.height_cells)||1, eq=sdEquipForItem(item);
+    return '<div class="sd-modal-resize" role="group" aria-labelledby="sd-resize-hdr">'
+      + '<div class="sd-modal-resize-hdr" id="sd-resize-hdr">Edit Size'+(eq?' <span class="sd-resize-sub">('+sdEsc(eq.label)+' · factory '+eq.w+' × '+eq.h+' ft)</span>':'')+'</div>'
+      + '<div class="sd-modal-row"><span>Current size</span><b id="sd-resize-cur">'+w+' × '+h+' ft · '+(w*h)+' sq ft</b></div>'
+      + '<div class="sd-setup-row">'
+      + '<div class="sd-field"><label for="sd-resize-w">Width (ft)</label><input type="number" id="sd-resize-w" min="1" max="'+MAX_DIM+'" step="1" inputmode="numeric" value="'+w+'" oninput="sdResizeInput(&quot;'+item.id+'&quot;)"></div>'
+      + '<div class="sd-field"><label for="sd-resize-h">Depth (ft)</label><input type="number" id="sd-resize-h" min="1" max="'+MAX_DIM+'" step="1" inputmode="numeric" value="'+h+'" oninput="sdResizeInput(&quot;'+item.id+'&quot;)"></div>'
+      + '</div>'
+      + '<div class="sd-equip-sqft" aria-live="polite">New footprint: <b id="sd-resize-sqft">'+(w*h)+'</b> sq ft</div>'
+      + '<div class="sd-equip-note">Whole feet only (1 square = 1 ft). The new size is outlined on your floor before you apply it.</div>'
+      + '<div class="sd-setup-err" id="sd-resize-err" role="alert"></div>'
+      + '<button class="sd-modal-save-btn" onclick="sdResizeItem(&quot;'+item.id+'&quot;)">Apply Size</button>'
+      + '</div>';
+  }
+  window.sdResizeInput=function(itemId){
+    var item = itemsList.filter(function(x){ return String(x.id)===String(itemId); })[0]; if(!item) return;
+    var v = sdCheckSize((document.getElementById('sd-resize-w')||{}).value, (document.getElementById('sd-resize-h')||{}).value);
+    var sq=document.getElementById('sd-resize-sqft'), err=document.getElementById('sd-resize-err');
+    if(sq) sq.textContent = v.ok ? (v.w*v.h) : '—';
+    if(!v.ok){ sdClearPreview(); if(err){ err.textContent=v.reason; err.style.display='block'; } return; }
+    var pv = sdPaintPreview(Number(item.cell_x)||0, Number(item.cell_y)||0, v.w, v.h, item.id);
+    if(err){ err.textContent = pv.ok ? '' : (pv.reason||''); err.style.display = pv.ok ? 'none' : 'block'; }
+  };
   function sdRenderDetailsBody(item){
     var body = document.getElementById('sd-item-modal-body');
     if(!body) return;
@@ -11098,6 +11357,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       + '<div class="sd-modal-badge '+(item.item_type==='golden'?'golden':'custom')+'">'+(item.item_type==='golden'?'Catalog':'Custom')+'</div>'
       + '<h3>'+sdEsc(name)+'</h3>'
       + '<div class="sd-modal-row"><span>Category</span><b>'+sdEsc(cat?sdCategoryLabel(cat):'—')+'</b></div>'
+      + (sdEquipForItem(item) && sdCategoryLabel(cat||'')!==sdEquipForItem(item).label ? '<div class="sd-modal-row"><span>Equipment</span><b>'+sdEsc(sdEquipForItem(item).label)+'</b></div>' : '')
       + mfrModelHtml
       + '<div class="sd-modal-row"><span>Footprint</span><b>'+(item.width_cells||1)+' × '+(item.height_cells||1)+' ft</b></div>';
     if(needsPricing){
@@ -11143,18 +11403,10 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       // different SKU, instead of forcing delete + re-place. Custom items
       // have no product to swap, so this is golden-only.
       + (item.item_type==='golden' ? '<button class="sd-modal-action-btn" onclick="sdShowChangeProduct(&quot;'+item.id+'&quot;)">🔁 Change Product</button>' : '')
-      + '<button class="sd-modal-action-btn" onclick="sdRotateItem(&quot;'+item.id+'&quot;)">🔄 Rotate</button>'
+      + '<button class="sd-modal-action-btn" onclick="sdRotateItem(&quot;'+item.id+'&quot;)">🔄 Rotate 90°</button>'
       + '<button class="sd-modal-action-btn" onclick="sdArmMove(&quot;'+item.id+'&quot;)">✥ Move</button>'
       + '</div>'
-      + '<div class="sd-modal-resize">'
-      + '<div class="sd-modal-resize-hdr">Resize footprint</div>'
-      + '<div class="sd-setup-row">'
-      + '<div class="sd-field"><label>Width (ft)</label><input type="number" id="sd-resize-w" min="1" step="1" value="'+(item.width_cells||1)+'"></div>'
-      + '<div class="sd-field"><label>Depth (ft)</label><input type="number" id="sd-resize-h" min="1" step="1" value="'+(item.height_cells||1)+'"></div>'
-      + '</div>'
-      + '<div class="sd-setup-err" id="sd-resize-err"></div>'
-      + '<button class="sd-modal-save-btn" onclick="sdResizeItem(&quot;'+item.id+'&quot;)">Save Size</button>'
-      + '</div>'
+      + sdSizeEditorHtml(item)
       // Issue #232: per-item turn rate (expected weeks to sell one unit) —
       // same editable-field-in-the-details-modal pattern as Resize above,
       // PATCHed via the same sdPatchItem path. Available regardless of the
@@ -11263,6 +11515,10 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       // placeholder picker and (changeMode) #230's Change Product flow, since
       // both share this one render function.
       + '<button class="sd-assign-custom-btn" onclick="sdShowCustomProductForm(&quot;'+item.id+'&quot;,'+(changeMode?'true':'false')+')">+ Enter a different product (custom)</button>'
+      + (changeMode ? '' : '<div class="sd-modal-actions">'
+        + '<button class="sd-modal-action-btn" onclick="sdRotateItem(&quot;'+item.id+'&quot;)">🔄 Rotate 90°</button>'
+        + '<button class="sd-modal-action-btn" onclick="sdArmMove(&quot;'+item.id+'&quot;)">✥ Move</button>'
+        + '</div>' + sdSizeEditorHtml(item))
       + footerHtml;
   }
   window.sdShowChangeProduct=function(itemId){
@@ -11441,7 +11697,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
       })
       .catch(function(){ toast('Could not save pricing — try again.'); });
   };
-  window.sdCloseItemModal=function(){ var m=document.getElementById('sd-item-modal'); if(m) m.style.display='none'; };
+  window.sdCloseItemModal=function(){ var m=document.getElementById('sd-item-modal'); if(m) m.style.display='none'; if(!pendingPlacement && !_sdDrag) sdClearPreview(); };
   window.sdDeleteItem=function(id){
     if(!confirm('Remove this item from your showroom floor?')) return;
     fetch(FN+'?action=items&id='+encodeURIComponent(id), {method:'DELETE'})
@@ -11949,7 +12205,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
     sdPersistFloorShape()
       .then(function(){
         if(st){st.textContent='✓ Saved'; st.className='sd-save-status ok';}
-        toast('Showroom design saved ✓');
+        toast('Showroom saved ✓');
       })
       .catch(function(){
         if(st){st.textContent='✗ Save failed — try again'; st.className='sd-save-status err';}
