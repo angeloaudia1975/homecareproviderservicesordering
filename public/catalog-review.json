@@ -1,8 +1,8 @@
 {
-  "review_id": "8fec5fe1dd22",
+  "review_id": "45658060ee1b",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T04:16:04Z",
-  "main": "a797dd8367fb7a81345c4529fd65d9e323beacde",
+  "built_at": "2026-11-06T04:18:46Z",
+  "main": "b2d6ad4caef453c492e5480aff08ae030310b37e",
   "included": [
     {
       "pr": 53,
@@ -11,14 +11,6 @@
       "head": "faf18f74dccdd051b059c8f17e6b497fc1a729bf",
       "manufacturers": [],
       "other_files": 6
-    },
-    {
-      "pr": 54,
-      "title": "C3-07 Stage 5: Manufacturer Account Setup Center",
-      "branch": "c7/s5-applications",
-      "head": "ce8569c7cd75559b70daebe3a7cb8a10cc377118",
-      "manufacturers": [],
-      "other_files": 3
     }
   ],
   "skipped": []
