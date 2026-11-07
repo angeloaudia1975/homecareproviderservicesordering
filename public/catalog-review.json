@@ -1,7 +1,7 @@
 {
   "review_id": "176daac9971c",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T00:27:55Z",
+  "built_at": "2026-11-07T00:33:37Z",
   "main": "0619af71463aca8d187953577b7219584fc0f03b",
   "included": [
     {
@@ -10,7 +10,8 @@
       "branch": "c8/total-sales-ui",
       "head": "5919a97468ab09399b81c74573858f3fa3b551d7",
       "manufacturers": [],
-      "other_files": 2
+      "other_files": 2,
+      "note": "newer commit 4415371 still being checked — showing the last validated version"
     }
   ],
   "skipped": []
