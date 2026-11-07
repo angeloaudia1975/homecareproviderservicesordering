@@ -1,8 +1,15 @@
 {
   "review_id": "9b9fa8d31cfa",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T18:50:15Z",
+  "built_at": "2026-11-07T19:28:29Z",
   "main": "b2098393e5a054965dce0a4082e1261c6d4a2fb7",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 74,
+      "title": "My Storefront: Displays & Merchandising opt-in",
+      "branch": "c9/storefront-displays",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
