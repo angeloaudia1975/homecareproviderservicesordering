@@ -7522,6 +7522,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
     <a onclick="showView('showroom')">Showroom</a>
     <a onclick="showView('reports')">Reports</a>
     <a onclick="showView('quotes')">Quotes</a>
+    <a onclick="showView('ads')">Social Ads</a>
     <a class="soon" title="Coming in a later phase">My Manufacturers</a>
     <a onclick="showView('resources')">Resources</a>
     <a onclick="showView('account')">Account &amp; Pricing</a>
@@ -7540,6 +7541,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   <div class="view" id="view-showroom"><div class="msg">Loading…</div></div>
   <div class="view" id="view-resources"><div class="msg">Loading…</div></div>
   <div class="view" id="view-account"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-ads"><div class="msg">Loading…</div></div>
   <div class="foot" id="foot"></div>
   <div class="modal" id="modal"></div>
 </div>
@@ -8892,7 +8894,7 @@ function showView(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
   $("#view-"+v).classList.add("on");
   document.querySelectorAll("#nav a").forEach(a=>a.classList.remove("on"));
-  const idx={dash:0,orders:2,showroom:3,reports:4,quotes:5,resources:7,account:8}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
+  const idx={dash:0,orders:2,showroom:3,reports:4,quotes:5,ads:6,resources:8,account:9}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
   window.scrollTo({top:0});
   if(v==="orders")loadOrders();
   if(v==="reports")loadReports();
@@ -8904,8 +8906,18 @@ function showView(v){
   if(v==="showroom")loadShowroom();
   if(v==="resources")loadResourcesView();
   if(v==="account")loadAccountView();
+  if(v==="ads")loadAdsView();
 }
 window.showView=showView;
+/* Catalog 4 §8 — Social Ads: the builder lives in /assets/ad-builder.js (loaded the first time the view opens);
+   server: dealer-ads-api (admin repo). */
+const ADS_API=API_BASE+"/dealer-ads-api"; let ADS_JS=null;
+async function loadAdsView(){
+  const host=$("#view-ads"); if(!host) return;
+  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=1"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
+  try{ await ADS_JS; }catch(e){ host.innerHTML='<div class="ph"><div><h1>Social Ads</h1></div></div><div class="card"><div class="msg">The ad builder could not be loaded — please try again.</div></div>'; return; }
+  window.HCPSAdBuilder.mount(host,{ api:(b)=>api(ADS_API,b), esc });
+}
 /* THE HUB'S BUTTONS NEED THEIR FUNCTIONS ON window (2026-10-31). Everything above lives inside this IIFE, but the views
    are HTML strings with inline onclick="qAdd()" etc., which look the name up on window — so "+ Add" on Customer MSRP
    Quotes, the showroom wall buttons, the price-request / literature / credit / resale forms and the favourite star did
