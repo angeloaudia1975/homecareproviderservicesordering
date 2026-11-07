@@ -161,7 +161,7 @@ const layout = page => page.evaluate(() => {
       locations: [{ id: 'hq', name: 'TEST HQ', is_self: true, can_request: true, accounts: [] }, { id: 'br', name: 'TEST Branch', city: 'Xenia', state: 'OH', address: '2 Side St', zip: '45385', contact_name: 'Bea', phone: '555-0200', email: 'br@acme.test', is_self: false, can_request: true, accounts: [] }] };
     const { ctx, page } = await open(browser, 390, 844, { html: PROBE, tools: b => { if (b.action === 'account_center') return JSON.parse(JSON.stringify(center)); if (b.action === 'account_change_request') { reqs.push(b); return { ok: true, message: 'Sent to HCPS for approval.' }; } return { ok: true }; } });
     await page.evaluate(() => __T(`{ window.__PREVIEW__ = null; showP360('account'); }`));
-    await page.waitForFunction(() => __T(`/TEST Branch/.test((document.querySelector('#view-account') || {}).innerText || '')`), null, { timeout: 20000 });
+    await page.waitForFunction(() => __T(`/TEST Branch/.test((document.querySelector('#view-account') || {}).textContent || '')`), null, { timeout: 20000 });
     await t('branch card shows its address and contact', async () => { const tx = await page.evaluate(() => __T(`document.querySelector('#view-account').textContent`)); ok(/2 Side St/.test(tx) && /Bea/.test(tx) && /555-0200/.test(tx), tx.slice(0, 400)); });
     await page.evaluate(() => __T(`acLocOpen('br')`)); await page.waitForSelector('#modal.on input');
     const ins = await page.$$('#modal.on input'); await ins[1].fill('555-0299');

@@ -65,10 +65,15 @@ async function openCenter(page) {
             let p = e.parentElement; while (p && p !== document.body) { if (/auto|hidden|scroll|clip/.test(getComputedStyle(p).overflowX)) return false; p = p.parentElement; } return true; }).slice(0, 3).map(e => e.tagName + '#' + e.id + '.' + String(e.className).slice(0, 30)),
           broken: [...v.querySelectorAll('img')].filter(i => i.complete && i.naturalWidth === 0 && vis(i)).length,
           small: [...v.querySelectorAll('a.btn,button,label.btn')].filter(vis).map(b => b.getBoundingClientRect().height).filter(x => x < 44).length,
-          credit: !!v.querySelector('#caEin,#caBank') };
+          credit: !!v.querySelector('#caEin,#caBank'),
+          /* owner 2026-11-06: the three account-management cards sit in the LEFT column directly under Addresses */
+          order: (() => { const cols = v.querySelectorAll('.grid2 > div'); const left = cols[0] ? [...cols[0].querySelectorAll(':scope > .card h3')].map(h => h.textContent.trim()) : []; return left; })() };
       });
       await t(`${label}: every section renders (company, contacts, addresses, logo, manufacturer accounts, terms, applications)`, () => {
-        ['Company', 'Contacts', 'Addresses', 'Your logo', 'Your manufacturer accounts', 'Your terms by line', 'Manufacturer account applications', 'Acme Branch'].forEach(s => ok(r.text.toLowerCase().includes(s.toLowerCase()), 'missing ' + s)); });
+        ['Company', 'Contacts', 'Addresses', 'Your logo', 'Your manufacturer accounts', 'Manufacturer account applications', 'Pricing export', 'Resale / tax-exemption certificate', 'Acme Branch'].forEach(s => ok(r.text.toLowerCase().includes(s.toLowerCase()), 'missing ' + s));
+        ok(!/Your terms by line/i.test(r.text), 'the terms card is removed'); });
+      await t(`${label}: Resale certificate, Manufacturer account applications and Pricing export sit directly under Addresses (left column)`, () => {
+        ok(r.order.join('|') === 'Company|Contacts|Addresses|Resale / tax-exemption certificate|Manufacturer account applications|Pricing export', r.order.join('|')); });
       await t(`${label}: statuses green / amber / red with their meaning`, () => {
         ok(r.chips.includes('ok:Verified') && r.chips.includes('warn:Pending') && r.chips.includes('none:No account'), r.chips.join('|'));
         ok(/Ordering access is set separately by HCPS/.test(r.text), 'separate from ordering'); });
@@ -101,7 +106,7 @@ async function openCenter(page) {
       // logo upload with a real JPEG file
       const jpg = path.join(__dirname, '..', 'public', 'assets', 'logos', 'yuwell.jpg');
       await page.setInputFiles('#view-account input[type=file]', jpg);
-      await page.waitForFunction(() => (window.__lastToolsLogo = 1) && /Your logo/.test(document.querySelector('#view-account').innerText) && document.querySelector('#view-account img[alt="Your logo"]'), null, { timeout: 15000 });
+      await page.waitForFunction(() => (window.__lastToolsLogo = 1) && /Your logo/.test(document.querySelector('#view-account').textContent) && document.querySelector('#view-account img[alt="Your logo"]'), null, { timeout: 15000 });
       const up = (seen.toolCalls || []).filter(b => b.action === 'logo_upload').pop();
       await t(`${label}: logo upload sends the image itself (JPEG data) and shows it`, () => ok(up && /^data:image\/jpeg;base64,\/9j\//.test(up.data), String(up && up.data).slice(0, 40)));
       await t(`${label}: nothing tried to send a credit application`, () => ok(!(seen.toolCalls || []).some(b => b.action === 'credit_application')));

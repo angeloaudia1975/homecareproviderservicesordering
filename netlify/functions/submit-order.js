@@ -65,6 +65,8 @@ function applyServerPrices(orders, recorded) {
     const fee = serverFreight ? r2(rec.freight_fee) : (Number(o.freight_fee) > 0 ? Number(o.freight_fee) : 0);
     const extra = serverFreight ? { freight_fee: fee, freight_lines: rec.freight_lines || o.freight_lines || [] } : {};
     const notice = rec.account_notice ? { account_notice: String(rec.account_notice) } : {};
+    if (rec.account_hold === true) notice.account_hold = true;   // owner 2026-11-06: held — Pending Manufacturer Account Setup
+    if (rec.account_unchecked === true) notice.account_unchecked = true;   // the account could not be read: held all the same (fail closed)
     return Object.assign({}, o, extra, notice, { items, items_subtotal: sub, estimated_total: r2(sub + fee), order_id: rec.order_id });
   });
 }
@@ -177,7 +179,7 @@ function buildEmail(dealer, order, submittedAt) {
       <div style="font:600 11px Arial,sans-serif;color:#9fb0c4;letter-spacing:2px;text-transform:uppercase;">New Dealer Order — ${esc(order.manufacturer_name)}</div>
     </div>
     <div style="background:#fff7e6;border-bottom:1px solid #f1d9a6;padding:10px 22px;font:600 12px Arial,sans-serif;color:#8a5a00;">Received by HCPS — NOT yet placed with ${esc(order.manufacturer_name)}. Nothing was sent to the manufacturer; HCPS places this order and sends the dealer the confirmation.</div>
-    ${order.account_notice ? `<div style="background:#fdecea;border-bottom:1px solid #f3b8b0;padding:10px 22px;font:700 13px Arial,sans-serif;color:#9b1c1c;">⚠ ${esc(order.account_notice)} — the dealer has no ${esc(order.manufacturer_name)} account number on file. Open the account (dealer application) before placing this order. The order is recorded and was not blocked.</div>` : ""}
+    ${order.account_hold ? `<div style="background:#fdecea;border-bottom:1px solid #f3b8b0;padding:10px 22px;font:700 13px Arial,sans-serif;color:#9b1c1c;">⚠ PENDING MANUFACTURER ACCOUNT SETUP — ${order.account_unchecked ? `the dealer's ${esc(order.manufacturer_name)} account could not be checked when this order came in (held to be safe; check Dealer 360)` : `no ${esc(order.manufacturer_name)} account is on file for this dealer`}. The order is recorded and HELD: ${order.account_unchecked ? "confirm the account in Dealer 360 (or open it from the dealer's application)" : "review the dealer's application, open the account, record it in Dealer 360"}, then release the order in Order Review. Do not place it before that.</div>` : order.account_notice ? `<div style="background:#fdecea;border-bottom:1px solid #f3b8b0;padding:10px 22px;font:700 13px Arial,sans-serif;color:#9b1c1c;">⚠ ${esc(order.account_notice)} — the dealer has no ${esc(order.manufacturer_name)} account number on file. Open the account (dealer application) before placing this order. The order is recorded and was not blocked.</div>` : ""}
     <div style="padding:22px;">
       <table style="border-collapse:collapse;width:100%;margin-bottom:8px;">
         ${field("Manufacturer", order.manufacturer_name)}
@@ -235,7 +237,8 @@ function buildEmail(dealer, order, submittedAt) {
     `Submitted         : ${submittedStr}`,
     `HCPS order ID     : ${order.order_id || "—"}`,
     "STATUS: Received by HCPS — NOT yet placed with the manufacturer. Nothing was sent to the manufacturer.",
-    order.account_notice ? `*** ${order.account_notice} — no ${order.manufacturer_name} account number on file. Open the account (dealer application) before placing this order. The order is recorded and was not blocked. ***` : "",
+    order.account_hold ? `*** PENDING MANUFACTURER ACCOUNT SETUP — ${order.account_unchecked ? `the ${order.manufacturer_name} account could not be checked (held to be safe; check Dealer 360)` : `no ${order.manufacturer_name} account on file`}. The order is recorded and HELD: ${order.account_unchecked ? "confirm the account in Dealer 360" : "open the account, record it in Dealer 360"}, then release it in Order Review. Do not place it before that. ***`
+      : order.account_notice ? `*** ${order.account_notice} — no ${order.manufacturer_name} account number on file. Open the account (dealer application) before placing this order. The order is recorded and was not blocked. ***` : "",
     "",
     "ITEMS",
     "=====",
@@ -248,7 +251,7 @@ function buildEmail(dealer, order, submittedAt) {
     order.notes ? `\nNOTES\n-----\n${order.notes}` : "",
   ].join("\n");
 
-  const subject = (order.account_notice ? "[New account required] " : "") +
+  const subject = (order.account_hold ? "[Pending account setup] " : order.account_notice ? "[New account required] " : "") +
     `New order — ${dealer.business || "Dealer"} — ${order.manufacturer_name}` +
     ` · PO ${order.po || "—"} · ${order.items_count} item${Number(order.items_count) === 1 ? "" : "s"} · ${money(order.estimated_total)}`;
 
