@@ -1,17 +1,8 @@
 {
-  "review_id": "24009670c86f",
+  "review_id": "312b0ea8b238",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T00:40:55Z",
-  "main": "95cb92e8988bf4d6a05358ca1f9d77430e553c97",
-  "included": [
-    {
-      "pr": 65,
-      "title": "Account Center visible in staff preview",
-      "branch": "c8/preview-account",
-      "head": "952cded4c7be47e2f4dcf54acb7083b71532fd88",
-      "manufacturers": [],
-      "other_files": 1
-    }
-  ],
+  "built_at": "2026-11-07T00:41:20Z",
+  "main": "b7c35a1816b3b4924caf1afd5ec5604664b0b8ac",
+  "included": [],
   "skipped": []
 }
