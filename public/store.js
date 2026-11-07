@@ -13,7 +13,7 @@
   var PH='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#f1f3f5"/><path d="M38 78l14-18 10 12 8-10 12 16z" fill="#c4cad1"/><circle cx="47" cy="47" r="7" fill="#c4cad1"/></svg>');
   var slug=(location.pathname.match(/\/store\/([a-z0-9-]{3,50})\/?$/i)||[])[1]||new URLSearchParams(location.search).get('s')||'';
   slug=String(slug).toLowerCase();
-  var D=null, FAM=[], BYKEY={}, VIEWQ=[], SEEN={}, LOADED=Date.now();
+  var D=null, FAM=[], BYKEY=Object.create(null), VIEWQ=[], SEEN={}, LOADED=Date.now();
   var F={q:'',cats:{},mfrs:{},min:'',max:'',cap:{},seat:{},feat:{},sort:'name',view:'grid',shown:48};
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function $(id){return document.getElementById(id);}
@@ -40,8 +40,9 @@
   function lineName(s){var l=(D.lines||[]).filter(function(x){return x.slug===s;})[0];return l?l.name:'';}
   function num(re,v){var m=String(v||'').replace(/,/g,'').match(re);return m?Number(m[1]):null;}
   function attr(p,re){var a=p.attributes||{};for(var k in a){if(re.test(k))return a[k];}return null;}
-  function capOf(p){var v=attr(p,/weight capacity|^capacity$|max(imum)? weight/i);return v?num(/(\d{2,4})\s*(?:lb|lbs|pounds)?/i,v):null;}
-  function seatOf(p){var v=attr(p,/^seat width/i);return v?num(/(\d{1,2}(?:\.\d)?)/,v):null;}
+  /* only values in the units the buckets use: pounds (or a bare number), inches (or a bare number) — kg / cm are skipped, never converted by guess */
+  function capOf(p){var v=attr(p,/weight capacity|^capacity$|max(imum)? weight/i);if(!v||/\b(kg|kilo)/i.test(v))return null;return num(/(\d{2,4})\s*(?:lb|lbs|pounds|#)?\b/i,v);}
+  function seatOf(p){var v=attr(p,/^seat width/i);if(!v||/\b(cm|mm|centim|millim)/i.test(v))return null;return num(/(\d{1,2}(?:\.\d)?)/,v);}
   var FEAT_KEYS=/^(zones|comfort zones|positioning|recline|product type|type|style)$/i;
   function commonName(ps){ var n=ps.map(function(p){return p.name;}); if(n.length<2) return n[0];
     var a=n[0]; for(var i=1;i<n.length;i++){ while(a&&n[i].indexOf(a)!==0) a=a.slice(0,-1); } a=a.replace(/[\s\-–—,(/]+$/,'').trim(); return a.length>=6?a:n[0]; }
@@ -87,7 +88,7 @@
     var out=[]; if(idx[0]>0) out.push(s.slice(0,idx[0]).trim()); for(var i=0;i<idx.length;i++) out.push(s.slice(idx[i],idx[i+1]).trim()); return out.filter(Boolean); }
   function header(){
     var d=D.dealer; var a=d.address||{}, where=[a.street,a.city,[a.state,a.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-    $('hdr').innerHTML='<a class="brand" href="#">'+(d.logo?'<img class="logo" src="'+esc(d.logo)+'" alt="'+esc(d.name)+' logo" data-logo="1">':'')+
+    $('hdr').innerHTML='<a class="brand" href="#" data-home="1">'+(d.logo?'<img class="logo" src="'+esc(d.logo)+'" alt="'+esc(d.name)+' logo" data-logo="1">':'')+
       '<div><h1>'+esc(d.name)+'</h1>'+(d.headline?'<div class="hl">'+esc(d.headline)+'</div>':'')+'</div></a>'+
       '<form class="search" role="search" id="sform"><label class="sr" for="sq" style="position:absolute;left:-9999px">Search products</label><input id="sq" type="search" placeholder="Search lift chairs, scooters, walkers…" value="'+esc(F.q)+'" autocomplete="off"><button type="submit">Search</button></form>'+
       '<div class="acts">'+(d.phone?'<a class="btn" href="tel:'+esc(tel(d.phone))+'">📞 '+esc(d.phone)+'</a>':'')+'<button class="btn pri" type="button" data-ask="">Request information</button></div>';
@@ -96,7 +97,7 @@
       (hl.length?(hl.length>1?'<details class="hours"><summary>🕘 '+esc(th?('Today — '+th.replace(/^[A-Za-z]+\s*:\s*/,'')):'Business hours')+'</summary><div class="hlist">'+hl.map(function(l){return '<div>'+esc(l)+'</div>';}).join('')+'</div></details>':'<span>🕘 '+esc(hl[0])+'</span>'):'')+
       (d.email?'<span>✉️ <a href="mailto:'+esc(d.email)+'">'+esc(d.email)+'</a></span>':'');
     $('foot').innerHTML='<b>'+esc(d.name)+'</b>'+(where?' · '+esc(where):'')+(d.phone?' · <a href="tel:'+esc(tel(d.phone))+'">'+esc(d.phone)+'</a>':'')+'<br>'+esc(D.price_note)+' Products shown are available to order through this dealer; availability is confirmed when you contact them. Online purchase is not available — call or send a request. Storefront provided through the HomeCare Provider Services 360 Dealer Portal.';
-    $('sform').addEventListener('submit',function(e){e.preventDefault();F.q=$('sq').value;F.shown=48;if(location.hash&&location.hash!=='#') location.hash=''; else listing();});
+    $('sform').addEventListener('submit',function(e){e.preventDefault();F.q=$('sq').value;F.shown=48;if(!PREVIEW&&location.hash&&location.hash!=='#') location.hash=''; else listing();});
   }
   function catTiles(){
     var cats={}; FAM.forEach(function(f){ var c=cats[f.cat]||(cats[f.cat]={n:0,img:null}); c.n++; if(!c.img&&f.lead.image) c.img=f.lead.image; });
@@ -109,7 +110,9 @@
   /* ---------- listing ---------- */
   function priceHtml(f){
     if(f.min==null) return '<div class="price call">Call for Price</div>';
-    var p=f.ps.filter(function(x){return x.price===f.min;})[0]; var tag=p.price_label==='MSRP'?'MSRP':''; var unit=p.price_unit?(tag?' ':'')+esc(p.price_unit):'';
+    var p=f.ps.filter(function(x){return x.price===f.min;})[0]; var tag=p.price_label==='MSRP'?'MSRP':'';
+    var units={}; f.ps.forEach(function(x){ if(x.price!=null) units[x.price_unit||'']=1; }); var mixed=Object.keys(units).length>1;   /* a family mixing per-pack and each prices names no unit on the card */
+    var unit=p.price_unit&&!mixed?(tag?' ':'')+esc(p.price_unit):'';
     var from=(f.min!==f.max||!f.allPriced)?'<span class="from">From</span>':'';
     return '<div class="price">'+from+money(f.min)+(tag||unit?'<small>'+tag+unit+'</small>':'')+'</div>'; }
   function optWord(f){ var n=f.ps.length; if(n<2) return ''; var sized=f.ps.every(function(p){return p.attributes&&p.attributes.Size;}); return n+' '+(sized?'sizes':'options'); }
@@ -118,7 +121,7 @@
     return '<article class="card"><a class="im" href="'+href+'" tabindex="-1" aria-hidden="true">'+img(f.lead.image,f.name)+'</a><div class="bd"><div class="mf">'+esc(lineName(f.mfr))+'</div>'+
       '<a class="nm" href="'+href+'">'+esc(f.name)+'</a>'+(optWord(f)?'<div class="opts">'+esc(optWord(f))+'</div>':'')+
       (f.feats.length?'<ul class="ben">'+f.feats.slice(0,3).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'')+priceHtml(f)+
-      '<div class="cact"><a class="btn" href="'+href+'">View details</a><button class="btn" type="button" data-ask="'+f.ps[0]._i+'">Ask about it</button></div></div></article>'; }
+      '<div class="cact"><a class="btn" href="'+href+'">View details</a><button class="btn" type="button" data-askf="'+esc(f.key)+'">Ask about it</button></div></div></article>'; }
   function facet(title,id,items,sel,skip){ if(items.length<2&&!count(sel)) return '';
     return '<div class="fg"><h3>'+esc(title)+'</h3>'+items.map(function(it){ return '<label><input type="checkbox" data-f="'+id+'" value="'+esc(it[0])+'"'+(sel[it[0]]?' checked':'')+'> '+esc(it[1])+'<span class="n">'+it[2]+'</span></label>'; }).join('')+'</div>'; }
   function facetCounts(skip,keyFn){ var m={}; FAM.forEach(function(f){ if(!pass(f,skip)) return; keyFn(f).forEach(function(k){ m[k]=(m[k]||0)+1; }); }); return m; }
@@ -167,7 +170,7 @@
   /* ---------- product page ---------- */
   function optLabel(f,p){ var a=p.attributes||{}; if(a.Size) return a.Size; var n=p.name.replace(f.name,'').replace(/^[\s\-–—,(]+|[\s)]+$/g,''); return n||('#'+p.code); }
   function pdp(key,code){
-    var f=BYKEY[key]; if(!f){ location.hash=''; return; }
+    var f=Object.prototype.hasOwnProperty.call(BYKEY,key)?BYKEY[key]:null; if(!f){ if(PREVIEW) listing(); else location.hash=''; return; }
     var p=f.ps.filter(function(x){return x.code===code;})[0]||f.ps[0]; view(p); catTiles();
     var d=D.dealer, gal=[]; (p.gallery&&p.gallery.length?p.gallery:[p.image]).concat(f.ps.map(function(x){return x.image;})).forEach(function(u){ if(u&&gal.indexOf(u)<0) gal.push(u); });
     var at=Object.keys(p.attributes||{}), a=d.address||{}, where=[a.street,a.city,[a.state,a.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
@@ -184,7 +187,7 @@
       '<div class="stocknote">Ask '+esc(d.name)+' about availability and delivery — products are ordered for you through the dealer.</div></div></div>'+
       (feats.length?'<h3>What it does for you</h3><ul class="feats">'+feats.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'')+
       (at.length?'<h3>Specifications</h3><table class="attrs">'+at.map(function(k){return '<tr><td>'+esc(k)+'</td><td>'+esc(p.attributes[k])+'</td></tr>';}).join('')+'</table>':'')+
-      ((p.documents||[]).length?'<h3>Brochures</h3><div class="docs">'+p.documents.map(function(x){return '<a href="'+esc(x.url)+'" target="_blank" rel="noopener">📄 '+esc(x.title)+'</a>';}).join('<br>')+'</div>':'')+
+      ((p.documents||[]).length?'<h3>Product documents</h3><div class="docs">'+p.documents.map(function(x){return '<a href="'+esc(x.url)+'" target="_blank" rel="noopener">📄 '+esc(x.title)+'</a>';}).join('<br>')+'</div>':'')+
       '<div class="contact"><b>'+esc(d.name)+'</b>'+(where?'<br>'+esc(where):'')+(d.phone?'<br><a href="tel:'+esc(tel(d.phone))+'">'+esc(d.phone)+'</a>':'')+(d.hours?'<br>'+esc(hoursLines(d.hours).join(' · ')):'')+'</div></article>'+
       (rel.length?'<h3>More in '+esc(f.cat)+'</h3><div class="related grid">'+rel.map(card).join('')+'</div>':'')+'<div class="note">'+esc(D.price_note)+'</div>';
     document.title=f.name+' — '+d.name; window.scrollTo(0,0);
@@ -194,9 +197,9 @@
   /* ---------- routing: #category/<name>, #product/<key>[/<code>] — shareable, and Back works ---------- */
   function route(){
     if(!D) return; header();
-    var h=decodeURIComponent(location.hash.replace(/^#/,''));
+    var h=''; try{ h=decodeURIComponent(location.hash.replace(/^#/,'')); }catch(x){ h=''; }   /* a malformed link shows the catalog */
     var m=h.match(/^product\/(.+?)(?:\/\/(.+))?$/);
-    if(m&&BYKEY[m[1]]) { pdp(m[1],m[2]); return; }
+    if(m&&Object.prototype.hasOwnProperty.call(BYKEY,m[1])) { pdp(m[1],m[2]); return; }
     var c=h.match(/^category\/(.+)$/); if(c){ F.cats={}; F.cats[c[1]]=true; F.shown=48; }
     document.title=D.dealer.name+' — Storefront'; listing();
   }
@@ -215,10 +218,12 @@
     $('dlg').innerHTML='<button class="x" type="button" aria-label="Close" data-close="1">×</button>'+html; $('ov').setAttribute('aria-label',label||'Request information'); $('ov').classList.add('on');
     var f=$('dlg').querySelector('h2'); if(f){ f.setAttribute('tabindex','-1'); f.focus(); } else $('dlg').focus(); }
   function close(){ if(!$('ov').classList.contains('on')) return; $('ov').classList.remove('on'); $('dlg').innerHTML=''; if(RETURN&&RETURN.focus&&document.contains(RETURN)) RETURN.focus(); RETURN=null; }
-  function ask(p){
-    open('<h2 style="margin:0 0 4px">Request information</h2><div style="color:var(--ink2)">'+(p?'About: <b>'+esc(p.name)+'</b>'+(p.code?' (#'+esc(p.code)+')':''):'Send a message to '+esc(D.dealer.name))+'</div>'+
+  /* p = the exact SKU (product page, or a one-option card) · about = a family name when no option was chosen: the request
+     then names no SKU (review #70: never a size the visitor did not pick) and the message starts with the product's name */
+  function ask(p,about){
+    open('<h2 style="margin:0 0 4px">Request information</h2><div style="color:var(--ink2)">'+(p?'About: <b>'+esc(p.name)+'</b>'+(p.code?' (#'+esc(p.code)+')':''):about?'About: <b>'+esc(about)+'</b>':'Send a message to '+esc(D.dealer.name))+'</div>'+
       '<form id="f" novalidate><label>Your name<input name="name" maxlength="120" autocomplete="name" required></label><label>Email<input name="email" type="email" maxlength="200" autocomplete="email"></label>'+
-      '<label>Phone<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label><label>Message<textarea name="message" rows="4" maxlength="2000"></textarea></label>'+
+      '<label>Phone<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label><label>Message<textarea name="message" rows="4" maxlength="2000">'+(about?esc('I would like information about the '+about+'.'):'')+'</textarea></label>'+
       '<div class="hp" aria-hidden="true"><label>Leave empty<input name="hp" tabindex="-1" autocomplete="off"></label></div>'+
       '<label class="chk"><input type="checkbox" name="consent"> <span>I agree that '+esc(D.dealer.name)+' may contact me about this request.</span></label>'+
       '<div class="note" style="margin:6px 0">'+esc(D.privacy)+'</div><div class="err" id="ferr" role="alert"></div><button class="btn pri" type="submit" id="fsend">Send request</button></form>','Request information');
@@ -241,10 +246,11 @@
     var t=e.target.closest?e.target:null; if(!t) return;
     if(t.closest('[data-close]')||t.id==='ov'){ close(); return; }
     var a=t.closest('a[href^="#"]'); if(a&&PREVIEW){ e.preventDefault(); var hh=a.getAttribute('href'); if(hh==='#'){F.cats={};listing();} else setHash(hh); return; }
-    if(t.closest('[data-home]')){ e.preventDefault(); F.cats={}; F.mfrs={}; F.q=''; if(PREVIEW) listing(); else location.hash=''; return; }
+    if(t.closest('[data-home]')){ e.preventDefault(); F.q='';F.cats={};F.mfrs={};F.min='';F.max='';F.cap={};F.seat={};F.feat={};F.shown=48; var sq=$('sq'); if(sq) sq.value=''; if(PREVIEW||!location.hash||location.hash==='#') listing(); else location.hash=''; return; }
     var c=t.closest('[data-cat]'); if(c){ var name=c.getAttribute('data-cat'); var on=F.cats[name]&&count(F.cats)===1; F.cats={}; if(!on) F.cats[name]=true; F.shown=48; if(!PREVIEW&&location.hash.indexOf('#product/')===0) location.hash=on?'':'category/'+encodeURIComponent(name); else listing(); return; }
     var o=t.closest('[data-opt]'); if(o){ var key=decodeURIComponent(location.hash.replace(/^#product\//,'')).split('//')[0]; var cur=PREVIEW?(o.closest('.pdp')&&o.closest('.pdp').getAttribute('data-k')):key; setHash('#product/'+encodeURIComponent((cur||key)+'//'+o.getAttribute('data-opt'))); return; }
     var g=t.closest('[data-g]'); if(g){ $('gmain').innerHTML=img(g.getAttribute('data-g'),''); [].forEach.call(document.querySelectorAll('[data-g]'),function(b){b.setAttribute('aria-pressed',String(b===g));}); return; }
+    var af=t.closest('[data-askf]'); if(af){ var ff=BYKEY[af.getAttribute('data-askf')]; if(ff) ask(ff.ps.length===1?ff.ps[0]:null, ff.ps.length>1?ff.name:null); return; }
     var ak=t.closest('[data-ask]'); if(ak){ var i=ak.getAttribute('data-ask'); ask(i===''?null:D.products[+i]); return; }
     var cb=t.closest('input[data-f]'); if(cb){ F[cb.getAttribute('data-f')][cb.value]=cb.checked; F.shown=48; listing(); return; }
     var rm=t.closest('[data-rm]'); if(rm){ var g2=rm.getAttribute('data-rm'), v=rm.getAttribute('data-v'); if(g2==='q') F.q=''; else if(g2==='min') F.min=''; else if(g2==='max') F.max=''; else F[g2][v]=false; listing(); return; }

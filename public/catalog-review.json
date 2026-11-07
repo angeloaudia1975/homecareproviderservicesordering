@@ -1,18 +1,8 @@
 {
-  "review_id": "0f8f7d16668c",
+  "review_id": "e8ee920e1759",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T15:53:10Z",
-  "main": "7fe9e2a8a2790cfe53e22fa382f1b14f5475f84b",
-  "included": [
-    {
-      "pr": 70,
-      "title": "Storefront v2: retail catalog layout and product pages",
-      "branch": "c9/storefront-v2",
-      "head": "b6ee66c38e5f3bcc5cf52e841245600217008782",
-      "manufacturers": [],
-      "other_files": 3,
-      "note": "newer commit 10f4a11 still being checked — showing the last validated version"
-    }
-  ],
+  "built_at": "2026-11-07T15:53:27Z",
+  "main": "a2f869102354a27222c39f1a9d30631d0396bf3f",
+  "included": [],
   "skipped": []
 }
