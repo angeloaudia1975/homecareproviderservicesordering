@@ -1,7 +1,7 @@
 {
   "review_id": "ac697f137ed0",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T03:47:49Z",
+  "built_at": "2026-11-07T03:54:20Z",
   "main": "cd17c402f2af6a3beeccd93968850a4d4a5bd615",
   "included": [
     {
@@ -10,7 +10,8 @@
       "branch": "c8/ad-builder",
       "head": "c2746a802e91f5fa4cfacae50f442c23c42c98e8",
       "manufacturers": [],
-      "other_files": 2
+      "other_files": 2,
+      "note": "newer commit 24bbbae still being checked — showing the last validated version"
     }
   ],
   "skipped": []
