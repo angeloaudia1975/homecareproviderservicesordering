@@ -7392,6 +7392,40 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #view-storefront .sfp td{border-bottom:1px solid var(--line,#eef1f4);padding:7px 4px;vertical-align:top}#view-storefront .sfp-in{width:110px;padding:8px;border:1px solid var(--line,#d6dbe1);border-radius:8px;font:inherit;min-height:40px}
   #view-storefront .sfp-src{font-size:11px;font-weight:800;padding:2px 7px;border-radius:999px;background:#eef1f4;white-space:nowrap}#view-storefront .sfp-src.s-dealer{background:#e7f1fb;color:#0f5c8f}#view-storefront .sfp-src.s-msrp{background:#e5f4e4;color:#14532d}#view-storefront .sfp-src.s-calculated{background:#f9eeda;color:#7a4b00}
   #view-storefront .sfp-why{font-size:12px;color:#991b1b;margin-top:3px}
+  /* Storefront design upgrade (2026-11-07): studio layout */
+  #view-storefront .sfx{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
+  #view-storefront .sfx-pv{position:sticky;top:10px}
+  #view-storefront .sfx-sec{border-top:1px solid var(--line,#e5e7eb);padding:4px 0}#view-storefront .sfx-sec>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:15px;list-style:none}
+  #view-storefront .sfx-sec>summary::before{content:'▸';margin-right:8px;color:var(--muted)}#view-storefront .sfx-sec[open]>summary::before{content:'▾'}
+  #view-storefront .sfx-b{padding:0 0 12px}
+  #view-storefront .sfx-logo{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border:1px dashed var(--line,#d6dbe1);border-radius:12px;padding:14px;background:#fff}
+  #view-storefront .sfx-logo img{max-height:84px;max-width:280px;width:auto;height:auto;object-fit:contain}#view-storefront .sfx-logo.bad img{display:none}
+  #view-storefront .sfx-word{font-weight:800;font-size:22px;color:#0b2f5b}
+  #view-storefront .sfx-themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:6px 0 10px}
+  #view-storefront .sfx-th{display:flex;align-items:center;gap:8px;border:1px solid var(--line,#d6dbe1);border-radius:10px;padding:8px 10px;cursor:pointer;min-height:44px;font-size:13.5px}
+  #view-storefront .sfx-th.on,#view-storefront .sfx-lay.on{border:2px solid #0f5c8f;background:#f3f8fc}#view-storefront .sfx-th input,#view-storefront .sfx-lay input{position:absolute;opacity:0;pointer-events:none}
+  #view-storefront .sfx-th:focus-within,#view-storefront .sfx-lay:focus-within{outline:3px solid #f59e0b;outline-offset:2px}
+  #view-storefront .sw{display:inline-flex;border-radius:6px;overflow:hidden;flex:none;border:1px solid rgba(0,0,0,.1)}#view-storefront .sw i{width:16px;height:26px;display:block}
+  #view-storefront .sfx-col{display:flex;gap:8px;align-items:center}#view-storefront .sfx-col input[type=color]{width:52px;height:44px;padding:2px;border:1px solid var(--line,#d6dbe1);border-radius:8px;flex:none}
+  #view-storefront .sfx-lays{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:6px 0}
+  #view-storefront .sfx-lay{position:relative;display:flex;flex-direction:column;gap:4px;border:1px solid var(--line,#d6dbe1);border-radius:10px;padding:10px;cursor:pointer;font-size:13.5px}#view-storefront .sfx-lay small{color:var(--muted);font-size:12px;font-weight:400}
+  #view-storefront .sfx-mini{display:grid;gap:3px;height:60px;border-radius:6px;background:#f3f5f8;padding:5px}#view-storefront .sfx-mini i{background:#c9d4e2;border-radius:3px}
+  #view-storefront .m-professional{grid-template-columns:2fr 1fr;grid-template-rows:8px 1fr 12px}#view-storefront .m-professional i:nth-child(1){grid-column:1/3;background:#0b2f5b}#view-storefront .m-professional i:nth-child(4){grid-column:1/3}
+  #view-storefront .m-modern{grid-template-columns:repeat(4,1fr);grid-template-rows:8px 14px 1fr}#view-storefront .m-modern i:nth-child(1){grid-column:1/5;background:#14532d}#view-storefront .m-modern i:nth-child(2){grid-column:1/5;background:#2f855a}
+  #view-storefront .m-classic{grid-template-columns:1fr 1fr;grid-template-rows:12px 1fr 10px}#view-storefront .m-classic i:nth-child(1){grid-column:1/3;background:#5c1a28}#view-storefront .m-classic i:nth-child(4){grid-column:1/3;background:#e6c9cf}
+  #view-storefront .m-standard{grid-template-columns:repeat(4,1fr);grid-template-rows:10px 14px 1fr}#view-storefront .m-standard i:nth-child(1){grid-column:1/5}#view-storefront .m-standard i:nth-child(2){grid-column:1/5;background:#16202b}
+  #view-storefront .sfx-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}#view-storefront .sfx-tabs .btn.on,#view-storefront .sfx-dev .btn.on{background:#0f5c8f;color:#fff;border-color:#0f5c8f}
+  #view-storefront .sfx-cats{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto;border:1px solid var(--line,#e5e7eb);border-radius:10px}
+  #view-storefront .sfx-cat{display:flex;align-items:center;gap:8px;padding:4px 8px;border-bottom:1px solid var(--line,#eef1f4);background:#fff}#view-storefront .sfx-cat.off label{color:var(--muted)}
+  #view-storefront .sfx-cat .h{cursor:grab;color:var(--muted);user-select:none}#view-storefront .sfx-cat label{display:flex;align-items:center;gap:8px;flex:1;min-height:44px;font-size:14px;cursor:pointer}#view-storefront .sfx-cat input{width:18px;height:18px}
+  #view-storefront .sfx-cat .mv{display:flex;gap:4px}#view-storefront .sfx-cat .mv .btn{min-width:44px;min-height:44px;padding:0}#view-storefront .sfx-tag{background:#fff4e5;color:#92400e;border-radius:999px;padding:1px 8px}
+  #view-storefront .sfx-mfr{border:1px solid var(--line,#e5e7eb);border-radius:10px;padding:8px 12px;margin:8px 0}
+  #view-storefront .sf-pill.warn{background:#fff4e5;color:#92400e}
+  #view-storefront .sfx-dev{display:flex;gap:6px}
+  #view-storefront .sfx-frame{position:relative;overflow:hidden;border:1px solid var(--line,#e5e7eb);border-radius:10px;background:#f4f6f8;height:600px}
+  #view-storefront .sfx-frame iframe{position:absolute;left:0;top:0;border:0;transform-origin:0 0;background:#fff}
+  @media(max-width:1100px){#view-storefront .sfx{grid-template-columns:1fr}#view-storefront .sfx-pv{position:static}}
+  @media(max-width:760px){#view-storefront .sfx-dev .btn,#view-storefront .sfx-tabs .btn{min-height:44px}#view-storefront .sfx-col input{font-size:16px}}
   .sf-prev-ov{position:fixed;inset:0;z-index:9999;background:rgba(11,31,51,.55);display:flex;align-items:stretch;justify-content:center;padding:12px}
   .sf-prev-box{background:#fff;border-radius:12px;width:min(1200px,100%);display:flex;flex-direction:column;overflow:hidden}
   .sf-prev-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:14px}
@@ -8938,41 +8972,153 @@ async function loadStorefrontView(){
   SFD=g; SFINQ=(q&&q.ok&&q.inquiries)||[]; SFD.hidden_in_preview=!!(q&&q.hidden_in_preview); if(!SFLOC||!SFD.locations.some(l=>l.id===SFLOC)) SFLOC=(SFD.locations.find(l=>l.can_edit)||SFD.locations[0]||{}).id;
   renderStorefront();
 }
-function sfLoc(v){ SFLOC=v; renderStorefront(); }
+function sfLoc(v){ SFLOC=v; SFE=null; renderStorefront(); }
+/* ===== Storefront design upgrade (owner 2026-11-07 14:53 CT) — My Storefront as an editing studio: identity (the Account
+   Center logo), appearance (themes + custom colors), layout, visual category management, contact & hours, introduction,
+   pricing, and Preview & Publish with a live preview (desktop / tablet / mobile). On a LIVE storefront changes are saved as
+   a DRAFT and reach customers only when the dealer presses Publish. ===== */
+let SFE=null, SFPV=null, SFPVT=null;
+const SF_LAYOUTS=[{k:'professional',n:'Professional',d:'Prominent logo, hero banner, highlights and category cards',rec:1},{k:'modern',n:'Modern',d:'Compact, image-first categories for browsing'},{k:'classic',n:'Classic',d:'Your brand and services first, traditional retail'}];
+const SF_HL_NOTE='Tick only what your business really offers — nothing is added to your storefront for you.';
+function sfEff(L){ const s=L.storefront||{}; return Object.assign({},s,s.draft||{}); }
+function sfInitEdit(L){
+  if(SFE&&SFE.loc===L.id) return SFE;
+  const e=sfEff(L), hc=(e.hidden_categories||[]).map(String), d=(e.design&&typeof e.design==='object')?e.design:{};
+  const livePub=!!(L.storefront&&L.storefront.enabled);   /* a storefront already published keeps its current look until the dealer publishes a new design */
+  SFE={loc:L.id, layout:d.layout||(livePub?'standard':'professional'), theme:d.theme||'blue', primary:d.primary||'#0b2f5b', accent:d.accent||'#c2410c', cols:d.cat_cols||4,
+    order:(d.cat_order||[]).slice(), hl:(d.highlights||[]).slice(), hidden:hc.filter(x=>x[0]!=='+'), displays:hc.some(x=>x.trim().toLowerCase()==='+displays & merchandising'),
+    cats:null, catErr:'', tab:'cat', device:'desktop', dirty:false};
+  return SFE;
+}
+function sfTheme(k){ const t=(SFD&&SFD.locations[0]&&SFD.locations[0].themes)||{}; return t[k]||null; }
+function sfStudio(L,s,ed,dis,status,lines){
+  const E=sfInitEdit(L), eff=Object.assign({},sfEff(L),E.f||{}), themes=L.themes||{}, hls=L.highlights||{}, lg=L.logo||{};
+  const draft=!!(s.draft&&L.storefront), live=!!(L.storefront&&s.enabled&&!s.hcps_blocked);
+  const sec=(id,title,body,open)=>`<details class="sfx-sec" id="sfx-${id}"${open?' open':''}><summary><b>${title}</b></summary><div class="sfx-b">${body}</div></details>`;
+  const logo=lg.url?`<div class="sfx-logo"><img src="${esc(lg.url)}" alt="Your logo" onerror="this.closest('.sfx-logo').classList.add('bad')"><span class="sf-pill on">✓ Logo loaded</span></div>`
+    :`<div class="sfx-logo none"><span class="sfx-word">${esc(L.name)}</span><span class="sf-pill">${lg.reason==='not_hosted'?'Logo needs re-uploading':'No logo yet'}</span></div>`;
+  const ident=`${logo}<div class="sf-note">Your logo comes from <b>Account → Your logo</b> (the same logo your quotes use)${lg.source==='head office'?' — this location uses your head office\'s logo':''}.
+    ${lg.reason==='not_hosted'?' The saved logo is a link to another website, which a public storefront can\'t show — upload the file in Account and it appears here.':!lg.url?' Without one, your business name is shown in your theme color.':' It is shown full size on the left of your storefront header, never stretched or cropped.'}</div>
+    <a class="btn gh" onclick="showP360('account')">Manage logo in Account</a>
+    ${L.link?`<div class="sf-link" style="margin-top:10px"><input readonly value="${esc(L.link)}" aria-label="Your storefront link"><a class="btn gh" onclick="sfCopy()">Copy link</a><a class="btn gh" href="${esc(L.link)}" target="_blank" rel="noopener">Open</a></div>`:''}
+    <label class="fld2"><span class="rp-l">Web address</span><div class="sf-slug"><span>${esc(SFD.base)}</span><input id="sfSlug" value="${esc(eff.slug||s.slug||L.suggested_slug||'')}" maxlength="50" autocomplete="off"${dis}></div></label>
+    <label class="fld2"><span class="rp-l">Headline (shown under your name and on the banner)</span><input id="sfHead" maxlength="120" value="${esc(eff.headline||'')}" placeholder="e.g. Home medical equipment for Dayton families" oninput="sfDirty()"${dis}></label>`;
+  const tkeys=Object.keys(themes);
+  const appear=`<div class="sfx-themes" role="radiogroup" aria-label="Color theme">${tkeys.map(k=>`<label class="sfx-th${E.theme===k?' on':''}"><input type="radio" name="sfTheme" value="${k}"${E.theme===k?' checked':''}${dis} onchange="sfSet('theme','${k}')"><span class="sw"><i style="background:${esc(themes[k].primary)}"></i><i style="background:${esc(themes[k].accent)}"></i></span><span>${esc(themes[k].name)}${k==='blue'?' <small>(default)</small>':''}</span></label>`).join('')}
+    <label class="sfx-th${E.theme==='custom'?' on':''}"><input type="radio" name="sfTheme" value="custom"${E.theme==='custom'?' checked':''}${dis} onchange="sfSet('theme','custom')"><span class="sw"><i style="background:${esc(E.primary)}"></i><i style="background:${esc(E.accent)}"></i></span><span>Custom dealership colors</span></label></div>
+    ${E.theme==='custom'?`<div class="sf-row"><label class="fld2"><span class="rp-l">Main color (header bar, navigation)</span><span class="sfx-col"><input type="color" value="${esc(E.primary)}" oninput="sfColor('primary',this.value)"${dis} aria-label="Pick main color"><input id="sfPrim" value="${esc(E.primary)}" maxlength="7" onchange="sfColor('primary',this.value)"${dis} aria-label="Main color HEX"></span></label>
+      <label class="fld2"><span class="rp-l">Accent color (buttons)</span><span class="sfx-col"><input type="color" value="${esc(E.accent)}" oninput="sfColor('accent',this.value)"${dis} aria-label="Pick accent color"><input id="sfAcc" value="${esc(E.accent)}" maxlength="7" onchange="sfColor('accent',this.value)"${dis} aria-label="Accent color HEX"></span></label></div>
+      <div class="sf-note">Any color works: text on your colors is set to white or black automatically so it stays readable (WCAG contrast 4.5:1 or better).</div>`:''}`;
+  const lay=`<div class="sfx-lays">${SF_LAYOUTS.map(x=>`<label class="sfx-lay${E.layout===x.k?' on':''}"><input type="radio" name="sfLay" value="${x.k}"${E.layout===x.k?' checked':''}${dis} onchange="sfSet('layout','${x.k}')"><span class="sfx-mini m-${x.k}" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b>${x.n}${x.rec?' <small>(recommended)</small>':''}</b><small>${x.d}</small></label>`).join('')}
+    ${E.layout==='standard'||(live&&!((eff.design||{}).layout))?`<label class="sfx-lay${E.layout==='standard'?' on':''}"><input type="radio" name="sfLay" value="standard"${E.layout==='standard'?' checked':''}${dis} onchange="sfSet('layout','standard')"><span class="sfx-mini m-standard" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b>Current look</b><small>The design your storefront has today</small></label>`:''}</div>
+    <label class="fld2" style="max-width:260px"><span class="rp-l">Category cards per row (desktop)</span><select id="sfCols" onchange="sfSet('cols',+this.value)"${dis}>${[2,3,4].map(n=>`<option value="${n}"${E.cols===n?' selected':''}>${n} columns</option>`).join('')}</select></label>`;
+  const cats=`<div class="fld2"><span class="rp-l">Lines to show</span>${L.lines.length?`<label class="sf-check"><input type="checkbox" id="sfAll"${lines?'':' checked'}${dis} onchange="document.querySelectorAll('.sf-line').forEach(x=>x.disabled=this.checked||${ed?'false':'true'});sfDirty(1)"> All my lines</label><div class="sf-lines">${L.lines.map(l=>`<label class="sf-check"><input type="checkbox" class="sf-line" value="${esc(l.slug)}"${!lines||lines.includes(l.slug)?' checked':''}${!ed||!lines?' disabled':''} onchange="sfDirty(1)"> ${esc(l.name)}</label>`).join('')}</div>`:'<div class="msg">No manufacturer accounts are active on this location yet.</div>'}</div>
+    <div class="sf-note">Showing or hiding a category only changes your public storefront (and Social Ads, which use it). It never changes what you can order in the Shop or any product record.</div>
+    <div id="sfCatMgr">${sfCatMgr(L,ed)}</div>`;
+  const contact=`<div class="sf-row"><label class="fld2"><span class="rp-l">Phone for customers (shown publicly)</span><input id="sfPhone" maxlength="40" value="${esc(eff.phone||'')}" placeholder="${esc(L.default_phone?'e.g. '+L.default_phone:'')}" oninput="sfDirty()"${dis}></label>
+     <label class="fld2"><span class="rp-l">Email for requests (shown publicly)</span><input id="sfEmail" type="email" maxlength="200" value="${esc(eff.email||'')}" placeholder="${esc(L.default_email?'e.g. '+L.default_email:'')}" oninput="sfDirty()"${dis}></label></div>
+    ${ed&&(L.default_phone||L.default_email)?`<a class="btn gh" onclick="sfUseAccount();sfDirty()">Use my account phone and email</a>`:''}
+    <div class="sf-note">Only the phone and email entered here appear on your storefront, your click-to-call buttons and your Social Ads. Requests are emailed to the address above.</div>
+    <label class="fld2"><span class="rp-l">Hours</span><input id="sfHours" maxlength="300" value="${esc(eff.hours||'')}" placeholder="e.g. Mon: 9–5 Tue: 9–5 … Sat: Closed" oninput="sfDirty()"${dis}></label>
+    <label class="sf-check"><input type="checkbox" id="sfAddr"${eff.show_address===false?'':' checked'}${dis} onchange="sfDirty(1)"> Show my street address and directions</label>`;
+  const intro=`<label class="fld2"><span class="rp-l">About your business</span><textarea id="sfAbout" maxlength="1500" rows="5" oninput="sfDirty()"${dis}>${esc(eff.about||'')}</textarea></label>
+    <div class="sf-note">Shown as its own "About" section with call, directions and request buttons. The banner uses its first sentence.</div>
+    <div class="fld2"><span class="rp-l">Service highlights (optional, up to 4)</span><div class="sf-lines">${Object.keys(hls).map(k=>`<label class="sf-check"><input type="checkbox" class="sf-hl" value="${k}"${E.hl.includes(k)?' checked':''}${dis} onchange="sfHl()"> ${esc(hls[k])}</label>`).join('')}</div><div class="sf-note">${SF_HL_NOTE}</div></div>`;
+  const pricing=`<label class="fld2"><span class="rp-l">Prices</span><select id="sfPrice" onchange="sfDirty(1)"${dis}><option value="msrp"${eff.price_mode!=='call'?' selected':''}>Show prices — your price, the manufacturer's MSRP or HCPS calculated retail, where the manufacturer allows it</option><option value="call"${eff.price_mode==='call'?' selected':''}>"Call for Price" on everything</option></select></label>
+    <div class="sf-note">Your dealer cost, account numbers and contract prices are never shown. Customers can't order online — they call you or send a request.</div>`;
+  const pub=`<div class="sfx-state">${status}${draft?' <span class="sf-pill warn">Unpublished changes saved'+(s.draft_at?' '+esc(new Date(s.draft_at).toLocaleString()):'')+'</span>':''}${!L.design_ready?' <span class="sf-pill">Design options open shortly</span>':''}</div>
+    ${!ed?`<div class="msg">${SFD.preview?'Read-only preview.':'Your head office manages this location\'s storefront.'}</div>`:''}
+    <div class="sf-note">${live?'Your storefront is live. <b>Save draft</b> keeps your changes private; customers see them only when you press <b>Publish changes</b>.':'Nothing is public until you press <b>Publish storefront</b>.'}</div>
+    <div class="sf-acts">${ed?(live?`<a class="btn gh" id="sfSave" onclick="sfSave('draft')">Save draft</a><a class="btn pri" id="sfPublish" onclick="sfSave('publish')">Publish changes</a>${draft?`<a class="btn gh" onclick="sfSave('discard')">Discard draft</a>`:''}`:`<a class="btn gh" id="sfSave" onclick="sfSave('save')">Save without publishing</a><a class="btn pri" id="sfPublish" onclick="sfSave('publish')">Publish storefront</a>`):''}
+     <a class="btn gh" onclick="sfPreview()">Preview as customers see it</a>
+     ${ed&&live?`<a class="btn gh" onclick="sfSave('unpublish')">Unpublish</a>`:''}</div>
+    <span id="sfMsg" class="sf-msg" role="status"></span>`;
+  return `<div class="sfx">
+   <div class="sfx-set card sf-card"><div class="sf-head"><h3>Storefront settings</h3>${status}</div>
+    ${sec('id','Storefront identity',ident,1)}${sec('look','Appearance &amp; themes',appear,1)}${sec('layout','Layout selection',lay,1)}${sec('cats','Categories &amp; products',cats,1)}
+    ${sec('contact','Contact information &amp; hours',contact,1)}${sec('intro','Company introduction',intro,1)}${sec('price','Pricing &amp; visibility',pricing,1)}${sec('pub','Preview &amp; publish',pub,1)}
+   </div>
+   <div class="sfx-pv card sf-card"><div class="sf-head"><h3>Live preview — what customers will see</h3>
+     <div class="sfx-dev" role="group" aria-label="Preview size">${['desktop','tablet','mobile'].map(d=>`<button type="button" class="btn gh${E.device===d?' on':''}" aria-pressed="${E.device===d}" onclick="sfDev('${d}')">${d[0].toUpperCase()+d.slice(1)}</button>`).join('')}</div></div>
+     <div class="sf-note" id="sfPvNote">Updates as you change settings — nothing here is saved or published.</div>
+     <div class="sfx-frame" id="sfPvBox"><iframe id="sfPvF" title="Live storefront preview" src="/store.html#preview" tabindex="-1"></iframe></div>
+   </div></div>`;
+}
+/* the visual category manager: every category this location could show (from the server), show / hide with checkboxes,
+   per manufacturer, reorder with drag or ↑ ↓, Displays & Merchandising as an explicit opt-in, Restore defaults */
+function sfCatMgr(L,ed){
+  const E=SFE; if(!E) return '';
+  if(E.catErr) return `<div class="msg">${esc(E.catErr)} <a class="btn gh" onclick="sfCatLoad(true)">Try again</a></div>`;
+  if(!E.cats) return '<div class="msg">Loading your categories…</div>';
+  const DM='displays & merchandising', hid=new Set(E.hidden.map(x=>x.toLowerCase()));
+  const byCat=new Map(); E.cats.forEach(c=>{ const k=c.category; const v=byCat.get(k)||{name:k,count:0,lines:[],display:c.display}; v.count+=c.count; v.lines.push(c); v.display=v.display||c.display; byCat.set(k,v); });
+  const ord=E.order.map(x=>x.toLowerCase());
+  const list=[...byCat.values()].sort((a,b)=>{ let ia=ord.indexOf(a.name.toLowerCase()), ib=ord.indexOf(b.name.toLowerCase()); if(ia<0) ia=1e6; if(ib<0) ib=1e6; return ia-ib||b.count-a.count||a.name.localeCompare(b.name); });
+  E._list=list.map(x=>x.name);
+  const dis=ed?'':' disabled';
+  const rowsCat=list.map((c,i)=>{ const isD=c.display||c.name.toLowerCase()===DM; const on=isD?E.displays:!hid.has(c.name.toLowerCase());
+    return `<li class="sfx-cat${on?'':' off'}" draggable="${ed}" data-cat="${esc(c.name)}" ondragstart="sfDrag(event)" ondragover="event.preventDefault()" ondrop="sfDrop(event)">
+      <span class="h" aria-hidden="true">⋮⋮</span><label><input type="checkbox"${on?' checked':''}${dis} onchange="sfCatToggle(this.closest('li').dataset.cat,this.checked,${isD})"> <b>${esc(c.name)}</b> <small>(${c.count})</small>${isD?' <small class="sfx-tag">'+(E.displays?'shown — you opted in':'hidden by default')+'</small>':''}</label>
+      <span class="mv">${ed?`<button type="button" class="btn gh" aria-label="Move ${esc(c.name)} up" onclick="sfMove(${i},-1)"${i===0?' disabled':''}>↑</button><button type="button" class="btn gh" aria-label="Move ${esc(c.name)} down" onclick="sfMove(${i},1)"${i===list.length-1?' disabled':''}>↓</button>`:''}</span></li>`; }).join('');
+  const lines=[...new Set(E.cats.map(c=>c.manufacturer))];
+  const rowsMfr=lines.map(m=>{ const cs=E.cats.filter(c=>c.manufacturer===m).sort((a,b)=>b.count-a.count); const nm=(cs[0]&&cs[0].line)||m;
+    return `<div class="sfx-mfr"><b>${esc(nm)}</b><div class="sf-lines">${cs.map(c=>{ const isD=c.display||c.category.toLowerCase()===DM; const tok=('@'+m+'/'+c.category).toLowerCase(); const on=isD?E.displays:!(hid.has(c.category.toLowerCase())||hid.has(tok));
+      return `<label class="sf-check"><input type="checkbox"${on?' checked':''}${dis||isD||hid.has(c.category.toLowerCase())?' disabled':''} data-m="${esc(m)}" data-c="${esc(c.category)}" onchange="sfMfrToggle(this.dataset.m,this.dataset.c,this.checked)"> ${esc(c.category)} <small>(${c.count})</small></label>`; }).join('')}</div></div>`; }).join('');
+  return `<div class="sfx-tabs" role="tablist"><button type="button" role="tab" class="btn gh${E.tab==='cat'?' on':''}" aria-selected="${E.tab==='cat'}" onclick="sfTab('cat')">By category</button><button type="button" role="tab" class="btn gh${E.tab==='mfr'?' on':''}" aria-selected="${E.tab==='mfr'}" onclick="sfTab('mfr')">By manufacturer</button>
+    ${ed?'<a class="btn gh" onclick="sfCatReset()">Restore defaults</a>':''}</div>
+    ${E.tab==='cat'?`<div class="sf-note">Tick to show a category; drag (or use ↑ ↓) to set the order of your category cards. The first ones appear on your storefront home page.</div><ul class="sfx-cats">${rowsCat}</ul>`
+      :`<div class="sf-note">Hide a category for one manufacturer only — e.g. show Golden's lift chairs and scooters but hide another line's accessories. A category hidden for all lines on the other tab is greyed out here.</div>${rowsMfr}`}`;
+}
+async function sfCatLoad(force){
+  const L=SFD&&SFD.locations.find(l=>l.id===SFLOC); if(!L||!SFE) return; if(SFE.cats&&!force) return;
+  SFE.catErr=''; const box=document.getElementById('sfCatMgr'); if(box) box.innerHTML='<div class="msg">Loading your categories…</div>';
+  const d=await api(SF_API,{action:'sf_categories',location_id:L.id,settings:sfSettings()});
+  if(!d||!d.ok){ SFE.catErr=(d&&d.error)||'Your categories could not be loaded just now.'; } else SFE.cats=d.categories||[];
+  sfCatRender();
+}
+function sfCatRender(){ const L=SFD&&SFD.locations.find(l=>l.id===SFLOC); const box=document.getElementById('sfCatMgr'); if(box&&L) box.innerHTML=sfCatMgr(L,L.can_edit&&!SFD.preview); }
+function sfTab(t){ SFE.tab=t; sfCatRender(); }
+function sfCatToggle(name,on,isDisplay){ if(isDisplay){ SFE.displays=on; } else { const k=name.toLowerCase(); SFE.hidden=SFE.hidden.filter(x=>x.toLowerCase()!==k); if(!on) SFE.hidden.push(name); } sfCatRender(); sfDirty(1); }
+function sfMfrToggle(m,c,on){ const tok=('@'+m+'/'+c); SFE.hidden=SFE.hidden.filter(x=>x.toLowerCase()!==tok.toLowerCase()); if(!on) SFE.hidden.push(tok); sfCatRender(); sfDirty(1); }
+function sfMove(i,dir){ const L=SFE._list.slice(); const j=i+dir; if(j<0||j>=L.length) return; [L[i],L[j]]=[L[j],L[i]]; SFE.order=L; sfCatRender(); sfDirty(1);
+  const b=document.querySelectorAll('.sfx-cat')[j]; const f=b&&b.querySelector(dir<0?'.mv button':'.mv button:last-child'); if(f&&!f.disabled) f.focus(); }
+function sfDrag(e){ e.dataTransfer.setData('text/plain',e.currentTarget.dataset.cat); e.dataTransfer.effectAllowed='move'; }
+function sfDrop(e){ e.preventDefault(); const from=e.dataTransfer.getData('text/plain'), to=e.currentTarget.dataset.cat; if(!from||from===to) return; const L=SFE._list.filter(x=>x!==from); L.splice(L.indexOf(to),0,from); SFE.order=L; sfCatRender(); sfDirty(1); }
+function sfCatReset(){ SFE.hidden=[]; SFE.displays=false; SFE.order=[]; sfCatRender(); sfDirty(1); }
+function sfHl(){ const v=[...document.querySelectorAll('.sf-hl:checked')].map(x=>x.value); if(v.length>4){ const m=$("#sfMsg"); if(m) m.textContent='Choose up to four highlights.'; } SFE.hl=v.slice(0,4); sfDirty(1); }
+function sfCapture(){ if(!SFE) return; const x=sfSettings(); delete x.hidden_categories; delete x.design; SFE.f=x; }
+function sfSet(k,v){ sfCapture(); SFE[k]=v; renderStorefront(); sfDirty(1); }
+function sfColor(k,v){ v=String(v||'').trim(); if(!/^#[0-9a-f]{6}$/i.test(v)){ const m=$("#sfMsg"); if(m) m.textContent='Use a HEX color such as #0b2f5b.'; return; } SFE[k]=v.toLowerCase(); const t=document.getElementById(k==='primary'?'sfPrim':'sfAcc'); if(t) t.value=SFE[k]; sfDirty(1); }
+function sfDev(d){ SFE.device=d; document.querySelectorAll('.sfx-dev button').forEach(b=>{ const on=b.textContent.toLowerCase()===d; b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); }); sfPvFit(); }
+function sfPvFit(){ const box=document.getElementById('sfPvBox'), f=document.getElementById('sfPvF'); if(!box||!f||!SFE) return; const W={desktop:1280,tablet:768,mobile:390}[SFE.device]||1280, H=900;
+  const sc=Math.min(1,(box.clientWidth||W)/W); f.style.width=W+'px'; f.style.height=H+'px'; f.style.transform='scale('+sc+')'; box.style.height=Math.round(H*sc)+'px'; }
+function sfDesign(){ const E=SFE; const d={layout:E.layout,theme:E.theme,cat_cols:E.cols,cat_order:E.order,highlights:E.hl}; if(E.theme==='custom'){ d.primary=E.primary; d.accent=E.accent; } return d; }
+/* the live preview: the same public answer the storefront would give for the settings on screen (never stored) */
+function sfDirty(now){ if(SFE) SFE.dirty=true; clearTimeout(SFPVT); SFPVT=setTimeout(sfPvLoad, now?250:900); }
+async function sfPvLoad(){
+  const L=SFD&&SFD.locations.find(l=>l.id===SFLOC), f=document.getElementById('sfPvF'); if(!L||!f) return;
+  const n=document.getElementById('sfPvNote'); if(n) n.textContent='Updating preview…';
+  const seq=(SFPV=(SFPV||0)+1); const d=await api(SF_API,{action:'sf_preview',location_id:L.id,settings:sfSettings()}); if(seq!==SFPV) return;
+  if(n) n.textContent=d&&d.ok?'Updates as you change settings — nothing here is saved or published.':((d&&d.error)||'The preview could not be updated just now.');
+  const send=()=>{ try{ f.contentWindow.postMessage({type:'hcps-storefront-preview',data:d},location.origin); }catch(e){} };
+  if(f.dataset.ready==='1') send(); else f._pending=send;
+}
+window.addEventListener('message',e=>{ const f=document.getElementById('sfPvF'); if(!f||e.origin!==location.origin||e.source!==f.contentWindow||!e.data||e.data.type!=='hcps-storefront-preview-ready') return; f.dataset.ready='1'; if(f._pending){ const p=f._pending; f._pending=null; p(); } });
+window.addEventListener('resize',()=>sfPvFit());
+
 function renderStorefront(){
   const host=$("#view-storefront"); if(!host||!SFD) return;
   const L=SFD.locations.find(l=>l.id===SFLOC); if(!L){ host.innerHTML='<div class="msg">No location available.</div>'; return; }
   const s=L.storefront||{}, ed=L.can_edit&&!SFD.preview, dis=ed?'':' disabled';
-  const lines=Array.isArray(s.lines)?s.lines:null;
+  sfInitEdit(L); const effL=Object.assign({},sfEff(L),SFE.f||{});
+  const lines=Array.isArray(effL.lines)?effL.lines:null;
   const status=!L.storefront?'<span class="sf-pill">Not set up</span>':s.hcps_blocked?'<span class="sf-pill bad">Paused by HCPS</span>':s.enabled?'<span class="sf-pill on">Live</span>':'<span class="sf-pill">Off</span>';
   const inq=SFINQ.filter(x=>x.dealer_id===L.id);
   host.innerHTML=`
   <div class="ph"><div><h1>My Storefront</h1><div class="sub">A public page of your HCPS lines to share with customers — browse, call you or ask for information. No online checkout.</div></div></div>
   ${SFD.locations.length>1?`<label class="fld2 sf-loc"><span class="rp-l">Location</span><select onchange="sfLoc(this.value)">${SFD.locations.map(l=>`<option value="${esc(l.id)}"${l.id===L.id?' selected':''}>${esc(l.name)}${l.city?' — '+esc(l.city):''}</option>`).join('')}</select></label>`:''}
+  ${sfStudio(L,s,ed,dis,status,lines)}
   <div class="grid2 sf-grid">
-   <div class="card sf-card"><div class="sf-head"><h3>Storefront settings</h3>${status}</div>
-    ${L.link?`<div class="sf-link"><input readonly value="${esc(L.link)}" aria-label="Your storefront link"><a class="btn gh" onclick="sfCopy()">Copy link</a><a class="btn gh" href="${esc(L.link)}" target="_blank" rel="noopener">Open</a></div>`:''}
-    ${!ed?`<div class="msg">${SFD.preview?'Read-only preview.':'Your head office manages this location\'s storefront.'}</div>`:''}
-    <label class="fld2"><span class="rp-l">Web address</span><div class="sf-slug"><span>${esc(SFD.base)}</span><input id="sfSlug" value="${esc(s.slug||L.suggested_slug||'')}" maxlength="50" autocomplete="off"${dis}></div></label>
-    <label class="fld2"><span class="rp-l">Headline</span><input id="sfHead" maxlength="120" value="${esc(s.headline||'')}" placeholder="e.g. Home medical equipment for Dayton families"${dis}></label>
-    <label class="fld2"><span class="rp-l">About your business</span><textarea id="sfAbout" maxlength="1500" rows="4"${dis}>${esc(s.about||'')}</textarea></label>
-    <div class="sf-row"><label class="fld2"><span class="rp-l">Phone for customers (shown publicly)</span><input id="sfPhone" maxlength="40" value="${esc(s.phone||'')}" placeholder="${esc(L.default_phone?'e.g. '+L.default_phone:'')}"${dis}></label>
-     <label class="fld2"><span class="rp-l">Email for requests (shown publicly)</span><input id="sfEmail" type="email" maxlength="200" value="${esc(s.email||'')}" placeholder="${esc(L.default_email?'e.g. '+L.default_email:'')}"${dis}></label></div>
-    ${ed&&(L.default_phone||L.default_email)?`<a class="btn gh" onclick="sfUseAccount()">Use my account phone and email</a>`:''}
-    <div class="sf-note">Only the phone and email entered here appear on your storefront — nothing from your account is published unless you put it here. Requests are emailed to the address above.</div>
-    <label class="fld2"><span class="rp-l">Hours</span><input id="sfHours" maxlength="300" value="${esc(s.hours||'')}" placeholder="e.g. Mon–Fri 9–5, Sat 9–12"${dis}></label>
-    <label class="sf-check"><input type="checkbox" id="sfAddr"${s.show_address===false?'':' checked'}${dis}> Show my street address</label>
-    <label class="fld2"><span class="rp-l">Prices</span><select id="sfPrice"${dis}><option value="msrp"${s.price_mode!=='call'?' selected':''}>Show prices — your price, the manufacturer's MSRP or HCPS calculated retail, where the manufacturer allows it</option><option value="call"${s.price_mode==='call'?' selected':''}>"Call for Price" on everything</option></select></label>
-    <div class="fld2"><span class="rp-l">Lines to show</span>${L.lines.length?`<label class="sf-check"><input type="checkbox" id="sfAll"${lines?'':' checked'}${dis} onchange="document.querySelectorAll('.sf-line').forEach(x=>x.disabled=this.checked||${ed?'false':'true'})"> All my lines</label><div class="sf-lines">${L.lines.map(l=>`<label class="sf-check"><input type="checkbox" class="sf-line" value="${esc(l.slug)}"${!lines||lines.includes(l.slug)?' checked':''}${!ed||!lines?' disabled':''}> ${esc(l.name)}</label>`).join('')}</div>`:'<div class="msg">No manufacturer accounts are active on this location yet.</div>'}</div>
-    <label class="fld2"><span class="rp-l">Categories to hide (comma-separated)</span><input id="sfHide" value="${esc((s.hidden_categories||[]).filter(x=>String(x)[0]!=='+').join(', '))}"${dis}></label>
-    <label class="sf-check"><input type="checkbox" id="sfDisplays"${(s.hidden_categories||[]).some(x=>String(x).trim().toLowerCase()==='+displays & merchandising')?' checked':''}${dis}> Show Displays &amp; Merchandising (display signs, brochures, wobblers, planograms) to the public</label>
-    <div class="sf-note">Display and merchandising items are for your store, so they're hidden from your public storefront and Social Ads unless you tick this. They stay orderable in the Shop either way.</div>
-    <div class="sf-note">Your dealer cost, account numbers and contract prices are never shown. Customers can't order online — they call you or send a request.</div>
-    <div class="sf-acts">${ed?(s.enabled&&L.storefront?`<a class="btn pri" id="sfSave" onclick="sfSave(true)">Save changes</a>`:`<a class="btn gh" id="sfSave" onclick="sfSave(false)">Save without publishing</a>`):''}
-     <a class="btn gh" onclick="sfPreview()">Preview as customers see it</a>
-     ${ed?(s.enabled&&L.storefront?`<a class="btn gh" onclick="sfSave(false)">Unpublish</a>`:`<a class="btn pri" id="sfPublish" onclick="sfSave(true)">Publish storefront</a>`):''}</div>
-    <span id="sfMsg" class="sf-msg"></span>
-   </div>
    <div class="card sf-card"><div class="sf-head"><h3>Customer requests</h3><span class="sf-pill">${inq.filter(x=>x.status==='new').length} new</span></div>
     <div class="sf-note">Requests sent from your storefront. They are emailed to you and kept here for 24 months; delete one at any time. Copies in your own mailbox are yours to keep or delete.</div>
     ${SFD.hidden_in_preview?'<div class="msg">Customer requests are not shown in a preview — they stay with the dealer.</div>':inq.length?inq.map(x=>`<div class="sf-inq${x.status==='new'?' new':''}"><div class="sf-inq-h"><b>${esc(x.name)}</b><span>${esc(new Date(x.created_at).toLocaleDateString())}</span></div>
@@ -8987,6 +9133,7 @@ function renderStorefront(){
   ${L.link&&L.live?`<div class="card sf-card"><div class="sf-head"><h3>Promote your storefront</h3></div>
     <div class="sf-note">Ready-made images with your name, contact details and storefront link, to post on your own social pages or print. They download to your device — nothing is posted for you.</div>
     <div class="sf-promo">${SF_PROMO.map(p=>`<a class="btn gh" onclick="sfPromo('${p.k}')">⬇ ${esc(p.label)}</a>`).join('')}</div></div>`:''}`;
+  sfPvFit(); if(!SFE.cats&&!SFE.catErr) sfCatLoad(); clearTimeout(SFPVT); SFPVT=setTimeout(sfPvLoad,150);
 }
 /* C3-07 Stage 8 — dealer-branded promotional downloads: drawn in the browser from the storefront's own public details (name,
    headline, the phone entered for customers, the lines it shows, the link). Download only — never posted anywhere. */
@@ -9097,24 +9244,35 @@ function sfSettings(){
   const v=id=>{ const e=document.getElementById(id); return e?e.value:''; };
   const all=document.getElementById('sfAll');
   const settings={slug:v('sfSlug').trim().toLowerCase(),headline:v('sfHead'),about:v('sfAbout'),phone:v('sfPhone'),email:v('sfEmail'),hours:v('sfHours'),
-    show_address:!!(document.getElementById('sfAddr')||{}).checked,price_mode:v('sfPrice'),hidden_categories:v('sfHide').split(',').map(x=>x.trim()).filter(x=>x&&x[0]!=='+')};
-  if((document.getElementById('sfDisplays')||{}).checked) settings.hidden_categories.push('+Displays & Merchandising');   /* opt-in: display items shown publicly */
+    show_address:!!(document.getElementById('sfAddr')||{}).checked,price_mode:v('sfPrice')};
+  if(SFE){ settings.hidden_categories=SFE.hidden.slice(); if(SFE.displays) settings.hidden_categories.push('+Displays & Merchandising');   /* opt-in: display items shown publicly */
+    settings.design=sfDesign(); }
   if(all) settings.lines=all.checked?null:[...document.querySelectorAll('.sf-line:checked')].map(x=>x.value);
   return settings;
 }
-/* Save without publishing (enabled false) · Publish / Save changes (enabled true) · Unpublish (false) */
-async function sfSave(enabled){
+/* mode: 'save' (not live: store, stays private) · 'publish' (apply + go live) · 'draft' (LIVE: keep changes private) ·
+   'discard' (drop the unpublished draft) · 'unpublish'. Publishing is always an explicit button. */
+async function sfSave(mode){
   if(SFBUSY) return; const L=SFD.locations.find(l=>l.id===SFLOC); if(!L) return;
-  const settings=Object.assign(sfSettings(),{enabled:enabled===true});
-  SFBUSY=true; const b=$("#sfSave"), m=$("#sfMsg"); if(b) b.style.pointerEvents='none'; if(m) m.textContent=enabled?'Publishing…':'Saving…';
-  const d=await api(SF_API,{action:'sf_save',location_id:L.id,version:L.storefront?L.storefront.version:undefined,settings});
-  SFBUSY=false; if(b) b.style.pointerEvents='';
-  if(!d||!d.ok){ if(m) m.textContent=(d&&d.error)||'Could not save — please try again.'; return; }
-  L.storefront=d.storefront; L.link=d.link; L.live=d.live; renderStorefront(); const m2=$("#sfMsg"); if(m2) m2.textContent=d.live?'Saved — your storefront is live.':(d.storefront&&d.storefront.hcps_blocked?'Saved — paused by HCPS, so it stays off.':'Saved — not published. Customers can\'t see it yet.');
+  if(mode===true) mode='publish'; else if(mode===false) mode=L.live?'unpublish':'save';
+  if(mode==='discard'&&!confirm('Discard your unpublished changes? Your live storefront stays as it is.')) return;
+  let settings=sfSettings(); if(!L.design_ready) delete settings.design;
+  SFBUSY=true; const m=$("#sfMsg"); document.querySelectorAll('#sfx-pub .sf-acts .btn').forEach(b=>b.style.pointerEvents='none');
+  if(m) m.textContent={publish:'Publishing…',draft:'Saving your draft…',discard:'Discarding…',unpublish:'Unpublishing…'}[mode]||'Saving…';
+  const body={action:'sf_save',location_id:L.id,version:L.storefront?L.storefront.version:undefined,mode,settings:Object.assign(settings,mode==='publish'?{enabled:true}:mode==='unpublish'||mode==='save'?{enabled:false}:{})};
+  if(mode==='discard'||mode==='draft') delete body.settings.enabled;
+  let d=await api(SF_API,body);
+  if(d&&!d.ok&&d.design_pending){ delete body.settings.design; d=await api(SF_API,body); if(d&&d.ok) d._designPending=true; }
+  SFBUSY=false;
+  if(!d||!d.ok){ document.querySelectorAll('#sfx-pub .sf-acts .btn').forEach(b=>b.style.pointerEvents=''); if(m) m.textContent=(d&&d.error)||'Could not save — please try again.'; return; }
+  const keep=SFE?{cats:SFE.cats,tab:SFE.tab,device:SFE.device}:null;
+  L.storefront=d.storefront; L.link=d.link; L.live=d.live; SFE=null; renderStorefront(); if(keep) Object.assign(SFE,keep);
+  const m2=$("#sfMsg"); if(m2) m2.textContent=(mode==='draft'?'Draft saved — customers still see your published storefront.':mode==='discard'?'Draft discarded.':d.live?'Saved — your storefront is live.':(d.storefront&&d.storefront.hcps_blocked?'Saved — paused by HCPS, so it stays off.':'Saved — not published. Customers can\'t see it yet.'))+(d._designPending?' (Design options open shortly — your other settings were saved.)':'');
+  const pb=document.getElementById('sfx-pub'); if(pb) pb.open=true;
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfPreview,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
