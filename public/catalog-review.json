@@ -1,15 +1,17 @@
 {
-  "review_id": "5b43d0f0c65c",
+  "review_id": "176daac9971c",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T00:27:36Z",
+  "built_at": "2026-11-07T00:27:55Z",
   "main": "0619af71463aca8d187953577b7219584fc0f03b",
-  "included": [],
-  "skipped": [
+  "included": [
     {
       "pr": 64,
       "title": "Reports: Total Sales tab + server Excel",
       "branch": "c8/total-sales-ui",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
+      "head": "5919a97468ab09399b81c74573858f3fa3b551d7",
+      "manufacturers": [],
+      "other_files": 2
     }
-  ]
+  ],
+  "skipped": []
 }

@@ -7396,6 +7396,9 @@ $("#brandFilter").addEventListener("change",renderProducts);
   /* C3-07 Stage 6 reports */
   #view-reports .rpt-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   #view-reports .rpt-ctl select{max-width:100%}
+  #view-reports .rpt-tabs{display:flex;gap:4px;margin:12px 0 2px;border-bottom:1px solid var(--line,#e5e7eb)}
+  #view-reports .rpt-tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;min-height:44px;font:600 14px inherit;color:var(--ink-2);cursor:pointer}
+  #view-reports .rpt-tab.on{color:var(--ink,#0b1f33);border-bottom-color:#ef6325}
   #view-reports .rpt-pair{display:flex;align-items:flex-end;justify-content:center;gap:2px;width:100%;height:100%}
   #view-reports .rpt-pair .bar{width:42%}
   #view-reports .bar.rpt-prior{background:transparent;border:1.5px solid var(--muted);border-bottom:0}
@@ -7960,7 +7963,7 @@ function retailUnit(mfr,code,unitCost){
    Purchases = manufacturer-reported; portal orders, quotes and network opportunities are shown APART and never added to them;
    year-over-year only where HCPS history covers the period; AI suggestions only when asked; PDF built by HCPS's server. */
 const REPORTS_ENDPOINT=API_BASE+"/dealer-reports-api";
-let REPORT_YEAR=null, RPT=null, RPT_SCOPE=null, RPT_AI=null, RPT_AIBUSY=false, RPT_PDFBUSY=false;
+let REPORT_YEAR=null, RPT=null, RPT_SCOPE=null, RPT_AI=null, RPT_AIBUSY=false, RPT_PDFBUSY=false, RPT_TAB='overview', RPT_XLBUSY=false;
 async function loadReports(){
   $("#view-reports").innerHTML='<div class="msg">Loading your report…</div>';
   RPT_AI=null;
@@ -7989,9 +7992,11 @@ function renderReports(){
   const down=R.declining_categories.length?`<div class="rpt-alert"><b>Categories down versus last year:</b> ${R.declining_categories.map(c=>`${esc(c.category)} ${pctB(c.change_pct)}`).join(' · ')}</div>`:'';
   const opp=tbl([['Product'],['Category'],['Dealers ordering',1]],R.opportunities.map(o=>`<tr><td><b>${esc(o.name)}</b><div class="rpt-s">${esc(o.manufacturer_name)} · #${esc(o.code)}</div></td><td>${esc(o.category)}</td><td class="n tnum">${o.dealers}</td></tr>`),'No suggestions from the network data right now.');
   const ai=RPT_AI?(RPT_AI.error?`<div class="msg">${esc(RPT_AI.error)}</div>`:RPT_AI.list.map(r=>`<div class="rpt-ai"><b>${esc(r.title)}</b><div>${esc(r.detail)}</div></div>`).join('')):`<div class="rpt-sub">Suggestions written by AI from the figures on this page only — check them against your own knowledge of your market.</div>`;
-  $("#view-reports").innerHTML=`
-    <div class="ph"><div><h1>Reports</h1><div class="sub">${esc(RPT.scope_name)} · ${esc(R.period.label)}</div></div>
-      <div class="rpt-ctl">${scopeSel}${yearSel}<a class="btn gh" onclick="exportReportCSV()">⬇ Excel</a><a class="btn gh" id="rptPdf" onclick="rptPdf()">⬇ PDF report</a></div></div>
+  const head=`<div class="ph"><div><h1>Reports</h1><div class="sub">${esc(RPT.scope_name)} · ${esc(R.period.label)}</div></div>
+      <div class="rpt-ctl">${scopeSel}${yearSel}<a class="btn gh" id="rptXl" onclick="rptExcel()">⬇ Excel</a><a class="btn gh" id="rptPdf" onclick="rptPdf()">⬇ PDF report</a></div></div>
+    <div class="rpt-tabs" role="tablist"><button role="tab" class="rpt-tab${RPT_TAB==='overview'?' on':''}" aria-selected="${RPT_TAB==='overview'}" onclick="rptTab('overview')">Overview</button><button role="tab" class="rpt-tab${RPT_TAB==='total'?' on':''}" aria-selected="${RPT_TAB==='total'}" onclick="rptTab('total')">Total Sales</button></div>`;
+  if(RPT_TAB==='total'){ $("#view-reports").innerHTML=head+renderTotalSales(R,tbl); return; }
+  $("#view-reports").innerHTML=head+`
     <div class="kpis">
       <div class="kpi accent"><div class="kl">Purchases</div><div class="kv o tnum">${money(R.purchases.total)}</div><div class="ks">${R.purchases.prior==null?'No comparable reports last year':R.purchases.partial?`Same months: ${money(R.purchases.current_compared)} vs ${money(R.purchases.prior)} last year ${pctB(R.purchases.change_pct)}`:`Same months last year ${money(R.purchases.prior)} ${pctB(R.purchases.change_pct)}`}</div></div>
       <div class="kpi"><div class="kl">Average month (12 mo.)</div><div class="kv tnum">${money(sc.avg_month_12m)}</div><div class="ks">${sc.active_lines_12m} active line${sc.active_lines_12m===1?'':'s'}</div></div>
@@ -8020,6 +8025,52 @@ function renderReports(){
     <div class="card"><div class="chead"><h3>Pricing export</h3></div><div style="font-size:13px;color:var(--ink-2)">Export your full HCPS product &amp; dealer-pricing file — SKU, manufacturer, description, dealer cost, MAP, MSRP, category — for billing, ERP, inventory or POS.</div>
       <a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">⬇ Export pricing file (Excel/CSV)</a></div>`;
 }
+function rptTab(t){ RPT_TAB=t==='total'?'total':'overview'; renderReports(); }
+/* TOTAL SALES (owner directive 2026-11-06, Priority 7). Every figure comes from the server's report (report.valuation) — the
+   same object the PDF and the Excel workbook are built from. Potential retail = the units purchased × today's Shop retail
+   reference (manufacturer MSRP, else HCPS calculated retail at 2× standard dealer cost); your own retail prices are shown
+   beside it, never in its place. It values inventory purchased — never sales made. */
+function renderTotalSales(R,tbl){
+  const V=R.valuation;
+  if(!V||!(V.matched_cost>0)) return `<div class="card rpt-card"><h3>Total Sales</h3><div class="msg">No purchases in this period could be valued against the Shop retail reference yet.</div>${V&&V.gaps&&V.gaps.length?`<div class="rpt-sub">${m2(V.gap_amount)} of purchases are not matched to a Shop product with an MSRP or standard cost.</div>`:''}</div>`;
+  const pm=v=>v==null?'—':v+'%';
+  const B=V.benchmark, C=V.custom;
+  const vcols=[['Wholesale',1],['Units',1],['Potential retail (Shop)',1],['Gross profit',1],['Margin',1],['Your retail prices',1],['Profit (yours)',1],['Margin (yours)',1]];
+  const vcell=x=>`<td class="n tnum">${m2(x.cost)}</td><td class="n tnum">${x.units}</td><td class="n tnum">${m2(x.retail)}</td><td class="n tnum">${m2(x.profit)}</td><td class="n tnum">${pm(x.margin_pct)}</td><td class="n tnum">${m2(x.custom_retail)}</td><td class="n tnum">${m2(x.custom_profit)}</td><td class="n tnum">${pm(x.custom_margin_pct)}</td>`;
+  const byM=tbl([['Manufacturer']].concat(vcols),V.by_manufacturer.map(x=>`<tr><td><b>${esc(x.name)}</b></td>${vcell(x)}</tr>`));
+  const byC=tbl([['Category']].concat(vcols),V.by_category.map(x=>`<tr><td><b>${esc(x.category)}</b></td>${vcell(x)}</tr>`));
+  const byP=tbl([['Product'],['Retail reference',1]].concat(vcols),V.by_product.slice(0,50).map(x=>`<tr><td><b>${esc(x.name)}</b><div class="rpt-s">${esc(x.manufacturer_name)} · #${esc(x.code)}${x.matched_by==='legacy'?' · matched to the current catalog item':x.matched_by==='golden_base'?' · Golden base model':''}</div></td><td class="n tnum">${m2(x.reference)}<div class="rpt-s">${x.reference_source==='msrp'?'MSRP':'2× standard cost'}</div></td>${vcell(x)}</tr>`));
+  const mon=tbl([['Month'],['Wholesale',1],['Potential retail (Shop)',1],['Gross profit',1],['Margin',1],['Your retail prices',1]],V.monthly.filter(x=>x.cost||x.retail).map(x=>`<tr><td>${esc(x.month)}</td><td class="n tnum">${m2(x.cost)}</td><td class="n tnum">${m2(x.retail)}</td><td class="n tnum">${m2(x.profit)}</td><td class="n tnum">${pm(x.margin_pct)}</td><td class="n tnum">${m2(x.custom_retail)}</td></tr>`));
+  const why={no_quantity:'No quantity reported',no_amount:'No amount',not_in_catalog:'Not matched to a Shop product',no_retail_reference:'No MSRP or standard cost in the Shop'};
+  const gaps=V.gaps.length?`<div class="card rpt-card"><h3>Not valued</h3><div class="rpt-sub">${m2(V.gap_amount)} of purchases have no Shop retail reference — left out of potential retail rather than estimated.</div>${tbl([['Product'],['Why'],['Units',1],['Purchases',1]],V.gaps.slice(0,40).map(g=>`<tr><td><b>${esc(g.name||g.code)}</b><div class="rpt-s">${esc(g.manufacturer_name)} · #${esc(g.code)}</div></td><td>${esc(why[g.reason]||g.reason)}</td><td class="n tnum">${g.units}</td><td class="n tnum">${m2(g.amount)}</td></tr>`))}</div>`:'';
+  const co=R.company?`<div class="card rpt-card"><h3>This location and the company</h3><div class="rpt-sub">The same period, from the same manufacturer reports — each purchase counted once, at the location it was shipped to.</div><div class="rpt-vs">
+      <div><span>This location's purchases</span><b>${m2(R.purchases.total)}</b></div><div><span>Company purchases (${R.company.locations} locations)</span><b>${m2(R.company.purchases)}</b></div>
+      <div><span>This location's share</span><b>${pm(R.company.branch_share_pct)}</b></div><div><span>Company product units</span><b>${R.company.units}</b></div>
+      <div><span>Company potential retail (Shop)</span><b>${m2(R.company.retail_benchmark)}</b></div><div><span>Company gross profit · margin</span><b>${m2(R.company.profit)} · ${pm(R.company.margin_pct)}</b></div>
+      <div><span>Company potential retail (your prices)</span><b>${m2(R.company.custom_retail)}</b></div><div><span>Company coverage</span><b>${pm(R.company.coverage_pct)}</b></div></div></div>`:'';
+  return `<div class="kpis">
+      <div class="kpi accent"><div class="kl">Wholesale purchases</div><div class="kv o tnum">${money(V.purchases_total)}</div><div class="ks">${m2(V.matched_cost)} valued · coverage ${pm(V.coverage_pct)}</div></div>
+      <div class="kpi"><div class="kl">Potential retail (Shop)</div><div class="kv tnum">${money(B.retail)}</div><div class="ks">Profit ${m2(B.profit)} · margin ${pm(B.margin_pct)}</div></div>
+      <div class="kpi"><div class="kl">Potential retail (your prices)</div><div class="kv tnum">${money(C.retail)}</div><div class="ks">${C.products_with_custom_price?`Profit ${m2(C.profit)} · margin ${pm(C.margin_pct)}`:'No retail prices of your own set yet'}</div></div>
+      <div class="kpi"><div class="kl">Your prices vs Shop</div><div class="kv tnum">${m2(V.difference)}</div><div class="ks">${C.products_with_custom_price} product${C.products_with_custom_price===1?'':'s'} with your own price</div></div>
+    </div>
+    <div class="rpt-note"><b>Potential retail, not sales.</b> The value of the inventory purchased at today's Shop retail reference (manufacturer MSRP, else HCPS calculated retail at 2× standard dealer cost). Historical purchases are valued at current prices. Gross profit = potential retail − the matching wholesale; margin = profit ÷ potential retail. Portal orders are not included.</div>
+    ${co}
+    <div class="card rpt-card"><h3>By manufacturer</h3>${byM}</div>
+    <div class="card rpt-card"><h3>By category</h3>${byC}</div>
+    <div class="card rpt-card"><h3>By product</h3><div class="rpt-sub">Top ${Math.min(50,V.by_product.length)} by potential retail.</div>${byP}</div>
+    <div class="card rpt-card"><h3>Monthly</h3>${mon}</div>
+    ${gaps}`;
+}
+async function rptExcel(){
+  if(RPT_XLBUSY) return; RPT_XLBUSY=true; const b=$("#rptXl"); if(b){b.textContent='Preparing Excel…';b.style.pointerEvents='none';}
+  const d=await api(REPORTS_ENDPOINT,{action:'report_excel',scope:RPT_SCOPE,year:RPT&&RPT.report.period.year});
+  RPT_XLBUSY=false; if(b){b.textContent='⬇ Excel';b.style.pointerEvents='';}
+  if(!d||!d.ok){ alertMsg((d&&d.error)||'The Excel file could not be prepared just now — please try again.'); return; }
+  const bin=atob(d.xlsx_base64), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  const url=URL.createObjectURL(new Blob([u8],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})); const a=document.createElement('a'); a.href=url; a.download=d.file||'hcps-total-sales.xlsx'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},2000);
+}
+window.rptTab=rptTab; window.rptExcel=rptExcel;
 async function rptAi(){
   if(RPT_AIBUSY) return; RPT_AIBUSY=true; const b=$("#rptAi"); if(b){b.textContent='Writing suggestions…';b.style.pointerEvents='none';}
   const d=await api(REPORTS_ENDPOINT,{action:'report_ai',scope:RPT_SCOPE,year:RPT&&RPT.report.period.year});
