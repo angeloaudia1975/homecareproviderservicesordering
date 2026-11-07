@@ -126,6 +126,15 @@ const layout = (page, sel) => page.evaluate((sel) => {
         ok(JSON.stringify(Object.keys(q).sort()) === JSON.stringify(['action', 'consent', 'email', 'hp', 'message', 'name', 'phone', 'product', 's']) && q.hp === '' && q.product.code === 'PR-501M' && q.product.manufacturer === 'golden-technologies', JSON.stringify(q)); });
       await page.keyboard.press('Escape');
       await t(label + ': Back returns to the catalog', async () => { await page.goBack(); await page.goBack(); await page.waitForSelector('.card'); ok(!(await page.$('.pdp')), 'still on product'); });
+      await t(label + ': "Ask about it" on a family card names the product, never a size the visitor did not choose', async () => {
+        await page.click('.card:has(.nm:text("Cloud lift chair")) [data-askf]'); await page.waitForSelector('#f');
+        ok(/About: Cloud lift chair/.test(await page.textContent('#dlg')) && /Cloud lift chair/.test(await page.inputValue('#f [name=message]')), 'family named'); await page.waitForTimeout(2600);
+        await page.fill('#f [name=name]', 'Pat'); await page.fill('#f [name=email]', 'pat@example.com'); await page.check('#f [name=consent]'); await page.click('#fsend'); await page.waitForSelector('.ok');
+        const q = st.posts.filter((p) => p.action === 'inquiry').pop(); ok(!('product' in q) && /Cloud lift chair/.test(q.message), JSON.stringify(q)); await page.keyboard.press('Escape');
+        await page.click('.card:has(.nm:text("Grab bar")) [data-askf]'); await page.waitForSelector('#f'); ok(/#B2/.test(await page.textContent('#dlg')), 'one-option card names its SKU'); await page.keyboard.press('Escape'); });
+      await t(label + ': a malformed or hostile link still shows the catalog', async () => {
+        for (const h of ['#%E0%A4%A', '#product/constructor', '#product/__proto__', '#product/' + encodeURIComponent('nope|X')]) { await page.evaluate((x) => { location.hash = x; }, h); await page.waitForTimeout(150); ok(await page.$$eval('.card', (c) => c.length) > 0, 'blank page for ' + h); }
+        await page.evaluate(() => { location.hash = ''; }); await page.waitForSelector('.card'); });
       await t(label + ': no cookies and no browser storage', async () => { const r = await page.evaluate(() => [document.cookie, localStorage.length, sessionStorage.length]); ok(r[0] === '' && r[1] === 0 && r[2] === 0, JSON.stringify(r)); ok((await ctx.cookies()).length === 0, 'cookies'); });
       await ctx.close();
     }
