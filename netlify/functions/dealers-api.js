@@ -189,12 +189,9 @@ exports.handler = async (event)=>{
         await sbSend("PATCH",`dealers?id=eq.${b.dealer_id}`,{status:null,updated_at:new Date().toISOString()},{Prefer:"return=minimal"});
         return json(200,{ok:true});
       }
-      if(act==="access"){
-        if(!b.dealer_id||!Array.isArray(b.manufacturers)) return json(400,{error:"dealer_id + manufacturers[] required"});
-        await sbSend("DELETE",`dealer_manufacturers?dealer_id=eq.${b.dealer_id}`,null,{Prefer:"return=minimal"});
-        if(b.manufacturers.length) await sbSend("POST","dealer_manufacturers",b.manufacturers.map(m=>({dealer_id:b.dealer_id,manufacturer:m,active:true})),{Prefer:"return=minimal"});
-        return json(200,{ok:true});
-      }
+      /* RETIRED (owner directive 2026-11-06 §2/§3): ordering access is set only in Connect 360 Dealer Manager. This legacy
+         endpoint erased account numbers and re-granted lines. */
+      if(act==="access") return json(410,{error:"retired",message:"Ordering access is managed in Connect 360 → Dealer Manager."});
       if(act==="rep"){
         if(!b.dealer_name) return json(400,{error:"dealer_name required"});
         const rep=(b.rep_name||"").trim()||null;
@@ -285,6 +282,8 @@ exports.handler = async (event)=>{
         let contactsStored=0, addressesStored=0, ents=0;
         for(const part of chunk(contactsArr,500)){ try{ await sbSend("POST","dealer_contacts?on_conflict=dealer_id,email",part,{Prefer:"resolution=merge-duplicates,return=minimal"}); contactsStored+=part.length; }catch(e){ errors.push("contacts: "+e.message); } }
         for(const part of chunk(addrArr,500)){ try{ await sbSend("POST","dealer_addresses?on_conflict=dealer_id,addr_key",part,{Prefer:"resolution=merge-duplicates,return=minimal"}); addressesStored+=part.length; }catch(e){ errors.push("addresses: "+e.message); } }
+        /* lines are no longer written by this legacy import (owner 2026-11-06 §3: an import never grants ordering) */
+        lineArr.length=0;
         for(const part of chunk(lineArr,500)){ try{ await sbSend("POST","dealer_manufacturers?on_conflict=dealer_id,manufacturer",part,{Prefer:"resolution=merge-duplicates,return=minimal"}); ents+=part.length; }catch(e){ errors.push("lines: "+e.message); } }
 
         // per-dealer: set contact/email/phone + promote the top-ranked (HQ) address
