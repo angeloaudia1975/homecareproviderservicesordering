@@ -1,8 +1,15 @@
 {
   "review_id": "f8af58eae941",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T16:24:27Z",
+  "built_at": "2026-11-07T16:27:06Z",
   "main": "b0300c387c88c08b0ceb56ebc1b92b42d2379e34",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 73,
+      "title": "Storefront: capacity filter reads stated capacity features",
+      "branch": "c9/storefront-capacity",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
