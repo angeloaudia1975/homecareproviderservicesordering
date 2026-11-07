@@ -1,8 +1,15 @@
 {
   "review_id": "f52781c8e07c",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T21:40:23Z",
+  "built_at": "2026-11-07T23:59:50Z",
   "main": "ca0b2b68548218fd683835940b6fbd3340a29e51",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 76,
+      "title": "Storefront product enrichment — full product pages (page)",
+      "branch": "c9/storefront-enrich",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
