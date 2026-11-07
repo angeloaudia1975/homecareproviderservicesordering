@@ -21,6 +21,7 @@ const sales = [S(HQ, 'strongback', `${Y}-01-01`, 'SB1', 2, 600), S(HQ, 'strongba
 const locations = [{ id: HQ, name: 'Acme Medical', city: 'Dayton' }, { id: BR, name: 'Acme Branch', city: 'Xenia' }];
 const build = (scope) => REP.build({ year: String(Y), today: TODAY, locations, scope, sales, orders: [{ dealer_id: HQ, manufacturer: 'strongback', status: 'submitted', subtotal: 250, submitted_at: `${Y}-01-15T00:00:00Z` }],
   quotes: [{ location_id: HQ, status: 'sent', created_at: `${Y}-01-03`, lines: [{}] }], catalog: { strongback: { SB1: { name: 'Excursion', category: 'Wheelchairs' } }, bemis: { BE1: { name: 'Seat', category: 'Bath Safety' } } },
+  resolve: (sl, c) => (sl === 'strongback' && c === 'SB1' ? { code: 'SB1', name: 'Excursion', category: 'Wheelchairs', ref: 500, ref_source: 'msrp' } : null), customPrice: (l, sl, c) => (c === 'SB1' ? 520 : null),
   mfrName: { strongback: 'Strongback', bemis: 'Bemis' }, reportedMonths: { strongback: [`${Y - 2}-03`, `${Y - 1}-01`, `${Y}-01`], bemis: [`${Y}-01`] }, network: [] });
 
 function fake(page, st) {
@@ -31,6 +32,7 @@ function fake(page, st) {
     const branch = !!st.branch; const scope = branch ? BR : (b.scope || 'company');
     if (b.action === 'report') return reply({ ok: true, report: build(scope), locations: branch ? [locations[1]] : locations, head_office: !branch, scope, scope_name: scope === 'company' ? 'Acme Medical — all locations' : (locations.find((l) => l.id === scope) || {}).name });
     if (b.action === 'report_pdf') return reply({ ok: true, pdf_base64: Buffer.from('%PDF-1.4 test').toString('base64'), file: 'hcps-dealer-report.pdf' });
+    if (b.action === 'report_excel') return reply({ ok: true, xlsx_base64: Buffer.from('PK test').toString('base64'), file: 'hcps-total-sales.xlsx' });
     if (b.action === 'report_ai') return reply({ ok: true, recommendations: [{ title: 'Review <img src=x onerror=alert(1)> wheelchairs', detail: 'Strongback is -53.8% versus last year.', refs: ['mfr0'] }] });
     return reply({ ok: false }, 400);
   });
@@ -38,7 +40,7 @@ function fake(page, st) {
 const layout = (page) => page.evaluate(() => {
   const vis = (el) => { const b = el.getBoundingClientRect(); const s = getComputedStyle(el); return b.width > 0 && b.height > 0 && s.display !== 'none' && s.visibility !== 'hidden'; };
   const v = document.querySelector('#view-reports');
-  const small = [...v.querySelectorAll('.rpt-ctl .btn, .rpt-ctl select, .rpt-aih .btn, a.rpt-link')].filter(vis).filter((e) => e.getBoundingClientRect().height < 43.5).map((e) => (e.textContent || e.tagName).trim().slice(0, 30));
+  const small = [...v.querySelectorAll('.rpt-ctl .btn, .rpt-ctl select, .rpt-aih .btn, a.rpt-link, .rpt-tab')].filter(vis).filter((e) => e.getBoundingClientRect().height < 43.5).map((e) => (e.textContent || e.tagName).trim().slice(0, 30));
   const tiny = [...v.querySelectorAll('select,input')].filter(vis).filter((e) => parseFloat(getComputedStyle(e).fontSize) < 16).length;
   return { overflow: document.documentElement.scrollWidth - window.innerWidth, small, tiny };
 });
@@ -81,7 +83,15 @@ const layout = (page) => page.evaluate(() => {
       await page.evaluate(() => rptPdf());
       const d = await dl;
       await t(label + ': PDF downloads the server-built file', () => ok(d && d.suggestedFilename() === 'hcps-dealer-report.pdf', 'download ' + (d && d.suggestedFilename())));
+      await page.evaluate(() => rptTab('total')); await page.waitForFunction(() => /Potential retail \(Shop\)/.test(document.querySelector('#view-reports').textContent), null, { timeout: 10000 });
+      await t(label + ': Total Sales tab — Shop potential retail, your prices apart, profit / margin, labelled potential (not sales)', async () => {
+        const tx = await page.evaluate(() => document.querySelector('#view-reports').textContent);
+        ok(/Potential retail, not sales/.test(tx), 'label'); ok(/Your prices vs Shop/.test(tx) && /By manufacturer/.test(tx) && /By category/.test(tx) && /By product/.test(tx) && /Monthly/.test(tx), 'sections');
+        ok(/coverage/i.test(tx), 'coverage'); });
+      const dx = page.waitForEvent('download', { timeout: 10000 }).catch(() => null); await page.evaluate(() => rptExcel()); const dxl = await dx;
+      await t(label + ': Excel downloads the server-built workbook (the same report)', () => { ok(dxl && dxl.suggestedFilename() === 'hcps-total-sales.xlsx', 'download'); ok(st.calls.some((c) => c.action === 'report_excel'), 'server call'); });
       const L = await layout(page);
+      await page.evaluate(() => rptTab('overview'));
       await t(label + ': no horizontal scroll' + (w < 768 ? '; 44 px targets and 16 px selects on phones' : ''), () => { ok(L.overflow <= 1, 'overflow ' + L.overflow); if (w < 768) { ok(!L.small.length, 'small: ' + L.small.join(' | ')); ok(!L.tiny, 'tiny selects ' + L.tiny); } });
       if (label === 'desktop') {
         st.branch = true; await page.evaluate(() => { RPT_SCOPE = null; loadReports(); }); await page.waitForTimeout(500);
