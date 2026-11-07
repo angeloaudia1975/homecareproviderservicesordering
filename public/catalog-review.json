@@ -1,7 +1,7 @@
 {
   "review_id": "4d9fe0e99fa3",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T21:28:48Z",
+  "built_at": "2026-11-07T21:37:17Z",
   "main": "47b3c18b67df6ddf0352535c1329a3eda6d6e31e",
   "included": [
     {
@@ -12,7 +12,8 @@
       "manufacturers": [
         "pedifix"
       ],
-      "other_files": 4
+      "other_files": 4,
+      "note": "newer commit fafaac1 still being checked — showing the last validated version"
     }
   ],
   "skipped": []
