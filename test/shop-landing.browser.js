@@ -37,9 +37,10 @@ const landingFacts = page => page.evaluate(() => {
       await page.waitForSelector('.shopland .sl-grid', { timeout: 20000 });
       await page.waitForTimeout(1500);
       const r = await landingFacts(page);
-      await t(`${label}: Shop opens the landing page (Shop tab active), 12 partners from the website roster`, () => {
-        ok(r.active === '__shopall__', r.active); ok(/Shop/.test(r.shopTab), r.shopTab); ok(r.n === 12, 'tiles ' + r.n + ' ' + r.names.join(','));
-        ok(r.names[0] === 'golden-technologies' && r.names.includes('dalton') && !r.names.includes('ohio-medical'), r.names.join(',')); ok(r.a4u.web, 'website artwork'); });
+      await t(`${label}: Shop opens the landing page (Shop tab active) with ONLY the lines HCPS approved for this dealer (owner 2026-11-06)`, () => {
+        ok(r.active === '__shopall__', r.active); ok(/Shop/.test(r.shopTab), r.shopTab); ok(r.n === 3, 'tiles ' + r.n + ' ' + r.names.join(','));
+        ok(r.names.join() === 'access4u,bemis,pedifix' || ['access4u','bemis','pedifix'].every(x => r.names.includes(x)), r.names.join(','));
+        ok(!r.names.includes('dalton') && !r.names.includes('yuwell') && !r.names.includes('golden-technologies') && !r.names.includes('ohio-medical'), 'unapproved lines shown: ' + r.names.join(',')); ok(r.a4u.web, 'website artwork'); });
       const cols = w < 641 ? 1 : w < 1200 ? 2 : 3;
       await t(`${label}: ${cols} a row, artwork uncropped, no broken image, no horizontal scroll`, () => {
         ok(r.firstRow === cols, 'first row ' + r.firstRow); ok(!r.cropped.length, r.cropped.join(',')); ok(!r.broken.length, r.broken.join(',')); ok(r.scrollW <= r.clientW + 1, r.scrollW + '>' + r.clientW); });
@@ -47,9 +48,7 @@ const landingFacts = page => page.evaluate(() => {
       await t(`${label}: each tile does what the account allows`, () => {
         ok(r.a4u.tag === 'BUTTON' && r.a4u.badge === 'Your account' && /Shop now/.test(r.a4u.act) && /Shop Access4U/.test(r.a4u.label), JSON.stringify(r.a4u));
         ok(r.bemis.tag === 'BUTTON' && r.bemis.badge === 'Available', JSON.stringify(r.bemis));
-        ok(r.dalton.tag === 'DIV' && /Request access/.test(r.dalton.act), JSON.stringify(r.dalton));
-        ok(r.yuwell.tag === 'DIV' && /ask your HCPS sales rep/.test(r.yuwell.act), JSON.stringify(r.yuwell));
-        ok(r.golden.tag === 'BUTTON' && /Open a Golden account/.test(r.golden.act), JSON.stringify(r.golden)); });
+        ok(!r.dalton && !r.yuwell && !r.golden, 'no Request access / Ask HCPS / Golden-account tile for lines the dealer is not approved for'); });
       await page.screenshot({ path: path.join(SHOTS, `landing-${label}.png`), fullPage: false });
       // ---- sidebar (desktop) / drawer (tablet, phone)
       const side = () => page.evaluate(() => { const sd = document.querySelector('#slSide'), b = sd.getBoundingClientRect(), btn = document.querySelector('.sl-drawerbtn');
@@ -58,7 +57,7 @@ const landingFacts = page => page.evaluate(() => {
           btn: btn && getComputedStyle(btn).display !== 'none' ? btn.getBoundingClientRect().height : 0, n: items.length, first: (items[0] || {}).textContent || '',
           minH: Math.min(...items.map(x => x.getBoundingClientRect().height || 99)), names: items.map(x => x.getAttribute('data-slm')) }; });
       const s0 = await side();
-      await t(`${label}: manufacturer list has All manufacturers + all 12 lines`, () => { ok(s0.n === 13, 'items ' + s0.n); ok(/All manufacturers/.test(s0.first), s0.first); });
+      await t(`${label}: manufacturer list has All manufacturers + the 3 approved lines`, () => { ok(s0.n === 4, 'items ' + s0.n + ' ' + s0.names.join(',')); ok(/All manufacturers/.test(s0.first), s0.first); });
       if (w >= 1200) {
         await t('desktop: sidebar shown beside the cards, no drawer button', () => { ok(s0.pos === 'sticky' && s0.inView, JSON.stringify(s0)); ok(!s0.btn, 'drawer button visible'); });
         await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); await page.waitForTimeout(300);
@@ -76,20 +75,15 @@ const landingFacts = page => page.evaluate(() => {
         await page.click('.sl-drawerbtn'); await page.waitForTimeout(400);
       }
       // find box filters the list AND the cards
-      await page.fill('#slFind', 'dal'); await page.waitForTimeout(150);
+      await page.fill('#slFind', 'bem'); await page.waitForTimeout(150);
       const f = await page.evaluate(() => ({ list: [...document.querySelectorAll('#slSide .sl-m[data-slm]:not([hidden])')].map(x => x.getAttribute('data-slm')).filter(Boolean),
         cards: [...document.querySelectorAll('.sl-grid .sl-tile:not([hidden])')].map(x => x.getAttribute('data-sl')), count: document.querySelector('#slCount').textContent }));
-      await t(`${label}: find box narrows list and cards to Dalton`, () => { ok(f.list.join() === 'dalton' && f.cards.join() === 'dalton', JSON.stringify(f)); ok(/1 of 12/.test(f.count), f.count); });
+      await t(`${label}: find box narrows list and cards to Bemis`, () => { ok(f.list.join() === 'bemis' && f.cards.join() === 'bemis', JSON.stringify(f)); ok(/1 of 3/.test(f.count), f.count); });
       await page.fill('#slFind', 'zzzz'); await page.waitForTimeout(150);
       const nm = await page.evaluate(() => !document.querySelector('#slNoMatch').hidden);
       await t(`${label}: no match says so`, () => ok(nm));
       await page.fill('#slFind', ''); await page.waitForTimeout(150);
-      // a request-only line jumps to its card (nothing sent); an orderable line opens its catalog
-      await page.click('#slSide .sl-m[data-slm="dalton"]'); await page.waitForTimeout(900);
-      const j = await page.evaluate(() => { const t = document.querySelector('.sl-tile[data-sl="dalton"]').getBoundingClientRect(); const w = document.getElementById('slWrap');
-        return { active: state.active, inView: t.top < innerHeight && t.bottom > 0, open: w.classList.contains('drawer-open'), all: document.querySelectorAll('.sl-grid .sl-tile:not([hidden])').length }; });
-      await t(`${label}: Dalton in the list jumps to its Request access card (drawer closes, nothing requested)`, () => { ok(j.active === '__shopall__' && j.inView && !j.open && j.all === 12, JSON.stringify(j)); ok(!seen.tools.length, 'sent'); });
-      if (w < 1200) { await page.click('.sl-drawerbtn'); await page.waitForTimeout(400); }
+      // an orderable line opens its catalog
       await page.click('#slSide .sl-m[data-slm="bemis"]');
       await page.waitForFunction(() => state.active === 'bemis', null, { timeout: 20000 });
       const lk = await page.evaluate(() => document.body.classList.contains('cv2-lock'));
@@ -100,7 +94,7 @@ const landingFacts = page => page.evaluate(() => {
       await page.waitForFunction(() => state.active === 'access4u' && document.querySelector('#cv2Crumb a[data-cv="all"]'), null, { timeout: 20000 });
       await t(`${label}: Access4U tile opens its catalog; the breadcrumb offers All manufacturers`, () => ok(true));
       await page.evaluate(() => document.querySelector('#cv2Crumb a[data-cv="all"]').click());
-      await page.waitForFunction(() => state.active === '__shopall__' && document.querySelectorAll('.shopland .sl-tile').length === 12, null, { timeout: 20000 });
+      await page.waitForFunction(() => state.active === '__shopall__' && document.querySelectorAll('.shopland .sl-tile').length === 3, null, { timeout: 20000 });
       await t(`${label}: All manufacturers returns to the landing page`, () => ok(true));
       const fac = await page.evaluate(async () => { showShop('bemis'); await new Promise(r => setTimeout(r, 1500)); const b = document.querySelector('#cv2Side [data-cv="all"], .cv2-lines [data-cv="all"]'); return { active: state.active, all: !!b }; });
       await t(`${label}: the Manufacturer filter lists All manufacturers too`, () => { ok(fac.active === 'bemis', fac.active); ok(fac.all, 'no All manufacturers in the filter'); });
@@ -118,15 +112,14 @@ const landingFacts = page => page.evaluate(() => {
     { const { ctx, page } = await open(browser, 1280, 900, { rosterFails: true });
       await page.evaluate(() => showShop()); await page.waitForSelector('.shopland .sl-grid'); await page.waitForTimeout(1200);
       const r = await landingFacts(page);
-      await t('website roster unreadable: the storefront list stands in (12 tiles, local logos, nothing broken)', () => {
-        ok(r.n === 12, 'tiles ' + r.n + ' ' + r.names.join(',')); ok(!r.broken.length, r.broken.join(',')); ok(r.scrollW <= r.clientW + 1); });
+      await t('website roster unreadable: the storefront list stands in (the 3 approved lines, local logos, nothing broken)', () => {
+        ok(r.n === 3, 'tiles ' + r.n + ' ' + r.names.join(',')); ok(!r.broken.length, r.broken.join(',')); ok(r.scrollW <= r.clientW + 1); });
       await ctx.close(); }
-    // request access from a tile (preview mode: refused locally, nothing sent)
-    { const { ctx, page, seen } = await open(browser, 390, 844, {});
-      await page.evaluate(() => showShop()); await page.waitForSelector('.sl-tile[data-sl="dalton"] .sl-req');
-      await page.click('.sl-tile[data-sl="dalton"] .sl-req'); await page.waitForTimeout(500);
-      const st = await page.evaluate(() => ({ active: state.active, req: (document.querySelector('.sl-tile[data-sl="dalton"] .sl-req') || {}).getBoundingClientRect().height }));
-      await t('phone: Request access button is ≥44px, stays on the landing page, a preview never sends it', () => { ok(st.active === '__shopall__', st.active); ok(st.req >= 44, 'height ' + st.req); ok(!seen.tools.length, 'sent'); });
+    // owner 2026-11-06: no Request access / Ask HCPS tile anywhere for a line HCPS has not approved
+    { const { ctx, page } = await open(browser, 390, 844, {});
+      await page.evaluate(() => showShop()); await page.waitForSelector('.shopland .sl-grid'); await page.waitForTimeout(800);
+      const st = await page.evaluate(() => ({ req: document.querySelectorAll('.shopland .sl-req').length, ask: /Ask HCPS|ask your HCPS sales rep/.test(document.querySelector('.shopland').innerText) }));
+      await t('phone: no Request access or Ask HCPS tile for unapproved lines', () => { ok(!st.req && !st.ask, JSON.stringify(st)); });
       await ctx.close(); }
   } finally { await browser.close(); }
   console.log(`\nshop landing: ${pass} passed, ${fail} failed`);

@@ -3910,7 +3910,12 @@ function shopPartnerList(roster){
   else { add(CONFIG.GOLDEN_SLUG,"Golden Technologies","",""); mf.filter(m=>!isGoldenSlug(m.slug)).forEach(m=>add(m.slug,m.name,"","")); }
   /* A line the dealer can order is never missing from the landing page, even if the website roster is behind. */
   entitledManufacturers().filter(m=>m.hasData&&!isGoldenSlug(m.slug)).forEach(m=>add(m.slug,m.name,"",""));
-  return out;
+  /* Owner directive 2026-11-06: a manufacturer HCPS has not approved for this dealer in Dealer Manager stays out of the
+     dealer's portal — no "Ask HCPS" or "Request access" tile (James Medical: no ABM, no Ovation). Golden follows its own
+     account status: shown for an account or a prospect, hidden when the dealer has none. */
+  return out.filter(t=>{ const a=shopTileAction(t.slug);
+    if(isGoldenSlug(t.slug)) return a.kind==="open"||String((AUTH.access&&AUTH.access.golden)||"None")!=="None";
+    return a.kind==="open"; });
 }
 function shopTileAction(slug){
   const lines=entitledManufacturers().filter(m=>m.hasData), owned=ownedSlugSet();
@@ -5325,6 +5330,7 @@ function renderCart(){
     html+=`<div class="mgroup" data-slug="${esc(slug)}">
       <div class="mghead"><span>${esc(info.name)}</span><span class="cnt">${cnt} item${cnt===1?"":"s"}</span></div>
       <div class="mgbody">
+        ${acctSetupNoticeHtml(slug,info.name)}
         ${items}
         ${f.rows.length?`<div class="freightbox">${freightRowsHtml(f)}</div>`:""}
         <div class="mgfields">
@@ -5351,6 +5357,18 @@ function renderCart(){
     po.oninput=()=>{MFR[slug].po=po.value;po.classList.remove("needpo");};
     notes.oninput=()=>{MFR[slug].notes=notes.value;};
   });
+}
+/* MANUFACTURER ACCOUNT SETUP AT CHECKOUT (owner 2026-11-06). The line is approved for this dealer, so it can be ordered — but
+   HCPS has no manufacturer account on file for it yet. The order is still recorded; the server holds it as "Pending
+   Manufacturer Account Setup" (orders-api, _account_setup.js) and HCPS releases it once the account is open — the dealer never
+   re-enters it. The application is the manufacturer's own, in the Account Setup Center (saved as they go; HCPS reviews it,
+   it is never sent automatically). Prices shown are standard pricing, pending confirmation with the account. */
+function acctSetupNeeded(slug){ const a=(typeof AUTH!=="undefined"&&AUTH)?AUTH.access:null; return !!(a&&Array.isArray(a.account_setup_needed)&&a.account_setup_needed.includes(slug)); }
+function acctSetupNoticeHtml(slug,name){
+  if(!acctSetupNeeded(slug)) return "";
+  return `<div class="acctsetup" role="note" style="margin:0 0 10px;padding:10px 12px;border:1px solid #f1d9a6;background:#fff7e6;border-radius:8px;font-size:13px;color:#7a4a00">
+    <b>${esc(name)} account setup needed.</b> You can place this order now — HCPS records it as <b>Pending Manufacturer Account Setup</b> and places it with ${esc(name)} once your account is open. Your cart, quantities and shipping stay with the order. Prices are standard pricing, pending confirmation with your account; if they change, HCPS confirms with you first.
+    <div style="margin-top:8px"><a class="btn gh acsm" style="cursor:pointer" onclick="showP360('apply')">Open the ${esc(name)} application</a> <span style="color:#8a6a3a">— saved as you go; you can finish it later</span></div></div>`;
 }
 function updateCart(){
   renderCart();
@@ -5650,7 +5668,7 @@ async function submitOrder(){
   const payload={dealer, orders:hcpsOrders, submitted_at:new Date().toISOString()};
   if(typeof STAGING!=="undefined"&&STAGING){ return stagingSubmit(payload,btn); }
   btn.disabled=true; btn.textContent="Submitting…";
-  let emailWarn=false, keep=new Set(), dupNote=false;
+  let emailWarn=false, keep=new Set(), dupNote=false, heldNames=[];
   try{
     // 1) HCPS lines -> submit-order, which records the order at the SERVER's prices (orders-api)
     //    and only then emails HCPS. If a price moved in the meantime, nothing is recorded or sent.
@@ -5672,6 +5690,7 @@ async function submitOrder(){
          in the cart, untouched, to be placed again. */
       (j.not_recorded||[]).forEach(sl=>keep.add(sl));
       if(j.status==="email_failed") emailWarn=true;   // recorded at the server's prices; only the HCPS email failed (flagged for HCPS staff)
+      heldNames=(j.orders||[]).filter(o=>o&&o.account_hold).map(o=>mfrInfo(o.manufacturer_slug).name);   // owner 2026-11-06: held for account setup
       DASH.orders=null;             // invalidate cache so the dashboard refetches
     }
     // 2) Golden lines stay in the cart (see above) — never submitted, never recorded by HCPS.
@@ -5694,7 +5713,7 @@ async function submitOrder(){
       return;
     }
     const goldenNext=(typeof gckCount==="function")&&gckCount()>0;
-    toast((dupNote?`Your order was already recorded ✓ — it was not placed twice. See My Orders.`:emailWarn?`Order recorded ✓ — HCPS has been flagged to confirm it with the manufacturer`:`Submitted ${parts.join(' + ')||'order'} ✓`)+(goldenNext?" — now review and place your Golden Technologies order":""));
+    toast((dupNote?`Your order was already recorded ✓ — it was not placed twice. See My Orders.`:emailWarn?`Order recorded ✓ — HCPS has been flagged to confirm it with the manufacturer`:`Submitted ${parts.join(' + ')||'order'} ✓`)+(heldNames.length?` — ${heldNames.join(", ")}: Pending Manufacturer Account Setup. Complete the application in Account → Manufacturer account applications; HCPS places it once the account is open.`:"")+(goldenNext?" — now review and place your Golden Technologies order":""));
     CART.clear(); PRICE_NOTES.clear(); for(const k in MFR) delete MFR[k]; clearCartRemote(); updateCart();
     if(goldenNext) goldenCartShow(); else closeCart();
   }catch(e){console.error(e);toast("Could not submit — please try again.");}
@@ -7657,7 +7676,7 @@ async function loadDash(){
   ensureCatalogFav().then(loadDashExtras);
 }
 function srcPill(s){return s==="golden"?'<span class="pill gold">Golden</span>':s==="portal"?'<span class="pill portal">Portal</span>':'<span class="pill imported">Imported</span>';}
-const ORDER_STATUS_LABEL={submitted:"Received by HCPS",open:"Received by HCPS",placed:"Placed with manufacturer by HCPS",confirmed:"Confirmed by manufacturer",shipped:"Shipped",completed:"Completed",delivered:"Delivered",cancelled:"Cancelled"};
+const ORDER_STATUS_LABEL={pending_account_setup:"Pending Manufacturer Account Setup",submitted:"Received by HCPS",open:"Received by HCPS",placed:"Placed with manufacturer by HCPS",confirmed:"Confirmed by manufacturer",shipped:"Shipped",completed:"Completed",delivered:"Delivered",cancelled:"Cancelled"};
 /* Order statuses say what actually happened (owner, 2026-10-27): HCPS receives the order and places it with the manufacturer itself. */
 function statPill(s){s=String(s||"").toLowerCase();const l=ORDER_STATUS_LABEL[s]||s||"—";return s==="delivered"||s==="completed"?'<span class="pill done">'+esc(l)+'</span>':(s==="submitted"||s==="open")?'<span class="pill open">'+esc(l)+'</span>':'<span class="pill portal">'+esc(l)+'</span>';}
 
@@ -7669,7 +7688,8 @@ async function loadOrders(){
     const canTrack=(o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="delivered"&&!o.tracking;
     /* PO, the tracking number HCPS recorded, and a new-account notice (C3-06) — all shown as text. */
     const extra=(o.po?`<div class="m">PO ${esc(o.po)}</div>`:"")+(o.tracking?`<div class="m">Tracking <span class="tnum">${esc(o.tracking)}</span></div>`:"")
-      +(o.account_notice?`<div class="m" style="color:#9b1c1c;font-weight:700">${esc(o.account_notice)} — HCPS will help you open it; your order is not held</div>`:"");
+      +(o.account_hold?`<div class="m" style="color:#9b1c1c;font-weight:700">Waiting for your ${esc(o.manufacturerName)} account — <a onclick="showP360('apply')" style="cursor:pointer;text-decoration:underline">complete the application</a>; HCPS places the order once the account is open</div>`
+        :o.account_notice?`<div class="m" style="color:#9b1c1c;font-weight:700">${esc(o.account_notice)} — HCPS will help you open it; your order is not held</div>`:"");
     const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
     return `<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b>${extra}</td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${cents(orderTotal(o))}${freightNote(o)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
   }).join("");
@@ -8586,7 +8606,7 @@ function acAccountsHtml(loc){
 function renderAccount(){
   const host=$("#view-account"); if(!host) return;
   const resaleOn=ACCOUNT.resale&&ACCOUNT.resale.status==="on_file";
-  const terms=termsForLines();
+  /* "Your terms by line" removed (owner 2026-11-06): manufacturer terms were never reliably available. */
   const head=`<div class="ph"><div><h1>Account Center</h1><div class="sub">Your company, contacts, addresses, logo and manufacturer accounts. Changes go to HCPS for approval.</div></div></div>`;
   if(AC_ERR==="preview"){ host.innerHTML=head+`<div class="card" style="margin-top:0">Read-only preview — the Account Center shows the dealer's own details only when they are signed in.</div>`; return; }
   if(!AC){ host.innerHTML=head+`<div class="card" style="margin-top:0">${esc(AC_ERR)} <a class="btn gh" onclick="loadAccountView()">Try again</a></div>`; return; }
@@ -8599,7 +8619,7 @@ function renderAccount(){
   ${pend.length?`<div class="card acpend" style="margin-top:0"><b>${pend.length} change${pend.length===1?"":"s"} waiting for HCPS approval</b> — your account updates once HCPS approves ${pend.length===1?"it":"them"}.</div>`:""}
   <div class="grid2"><div>
     <div class="card" style="margin-top:0"><div class="chead"><h3>Company</h3><a class="btn gh acsm" onclick="acCompanyOpen()">Request a change</a></div>
-      <div class="acgrid"><div><span>Business</span><b>${esc(co.business_name||"—")}</b></div><div><span>HCPS account</span><b>${esc(co.hcps_account||"—")}</b></div>
+      <div class="acgrid"><div><span>Business</span><b>${esc(co.business_name||"—")}</b></div><div><span>${esc(co.hcps_account_label||"HCPS account")}</span><b>${esc(co.hcps_account||"—")}</b></div>
         <div><span>Main contact</span><b>${esc(co.contact_name||"—")}</b></div><div><span>Phone</span><b>${esc(co.phone||"—")}</b></div>
         <div><span>Email</span><b>${esc(co.email||"—")}</b></div><div><span>Website</span><b>${co.website?(/^https?:\/\//i.test(co.website)?`<a href="${esc(co.website)}" target="_blank" rel="noopener">${esc(co.website)}</a>`:esc(co.website)):"—"}</b></div></div></div>
     <div class="card"><div class="chead"><h3>Contacts</h3><a class="btn gh acsm" onclick="acContactOpen()">Add a contact</a></div>
@@ -8610,6 +8630,10 @@ function renderAccount(){
           <div class="acr">${canShip&&def!==a.key?`<a class="btn gh acsm" data-k="${esc(a.key)}" onclick="acDefaultShip(this.dataset.k)">Make default</a> `:""}<a class="btn gh acsm" data-k="${esc(a.key)}" onclick="acAddrOpen(this.dataset.k)">Edit</a></div></div>`; }).join("")}
         ${(AC.addresses||[]).some(a=>/^bill/i.test(a.key))?"":`<div class="rl"><div class="b"><div class="n">Billing address</div><div class="m">Not on file</div></div><div class="acr"><a class="btn gh acsm" onclick="acAddrOpen('bill')">Add</a></div></div>`}</div>
       <div class="lead-note" style="margin-top:8px">${def?"Your default ship-to is pre-selected at checkout":"No default chosen yet — pick one with “Make default”"}; you can still choose another address on each order.</div></div>
+    <div class="card"><h3>Resale / tax-exemption certificate</h3><p class="m" style="margin:0 0 8px">${resaleOn?("On file"+(ACCOUNT.resale.reference?" · "+esc(ACCOUNT.resale.reference):"")):"Add your certificate reference, then email the certificate file to HCPS."}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="resaleRef" placeholder="Certificate # / reference" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.reference)||"")}" style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><input id="resaleState" placeholder="State" maxlength="2" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.state)||"")}" style="width:70px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><a class="btn gh acsm" onclick="submitResale()">Save</a></div></div>
+    <div class="card"><h3>Manufacturer account applications</h3><p class="m" style="margin:0 0 8px">Complete and sign each manufacturer's own application in the Account Setup Center — saved as you go, reviewed privately by HCPS, who sends it to the manufacturer.</p><a class="btn pri acsm" onclick="showP360('apply')">Open Account Setup Center</a>${appsHtml&&!/No applications on file/.test(appsHtml)?`<div class="rowlist" style="margin-top:10px">${appsHtml}</div>`:''}</div>
+    <div class="card"><h3>Pricing export</h3><div style="font-size:12.5px;color:var(--muted)">Your HCPS product &amp; dealer-pricing file for billing, ERP, inventory or POS.</div><a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">Download pricing CSV</a></div>
   </div><div>
     <div class="card" style="margin-top:0"><h3>Your logo</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Printed on your quotes, brochures and storefront. JPEG or PNG, 1 MB max.</div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">${co.logo_url?`<img src="${esc(co.logo_url)}" alt="Your logo" style="max-width:160px;max-height:64px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:8px;padding:4px" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'m',textContent:'Logo could not be shown — upload it again'}))">`:`<span class="m" style="color:var(--muted)">No logo yet</span>`}</div>
@@ -8618,12 +8642,6 @@ function renderAccount(){
     <div class="card"><h3>Your manufacturer accounts</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Green = verified by HCPS · Amber = waiting on HCPS · Red = no account. Ordering access is set separately by HCPS.</div>
       ${acAccountsHtml(self)}
       ${others.length?`<h4 style="margin:14px 0 6px">Your other locations</h4>${others.map(l=>`<details class="acloc"><summary><b>${esc(l.name)}</b> <span class="m">${esc([l.city,l.state].filter(Boolean).join(", "))}</span> <span class="m">· ${l.accounts.filter(x=>x.status==="verified").length} verified</span></summary>${acLocHtml(l)}${acAccountsHtml(l)}</details>`).join("")}`:""}</div>
-    <div class="card"><div class="chead"><h3>Your terms by line</h3><span style="font-size:11px;color:var(--muted)">Set by HCPS per manufacturer</span></div>
-      <div class="rowlist">${terms.length?terms.map(t=>`<div class="rl"><div class="b"><div class="n">${esc(t.name)}</div></div><span class="pill ${String(t.terms).toLowerCase()==="prepay"?"open":"done"}">${esc(t.terms)}</span></div>`).join(""):`<div class="m" style="color:var(--muted)">No lines yet.</div>`}</div></div>
-    <div class="card"><h3>Resale / tax-exemption certificate</h3><p class="m" style="margin:0 0 8px">${resaleOn?("On file"+(ACCOUNT.resale.reference?" · "+esc(ACCOUNT.resale.reference):"")):"Add your certificate reference, then email the certificate file to HCPS."}</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="resaleRef" placeholder="Certificate # / reference" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.reference)||"")}" style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><input id="resaleState" placeholder="State" maxlength="2" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.state)||"")}" style="width:70px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><a class="btn gh acsm" onclick="submitResale()">Save</a></div></div>
-    <div class="card"><h3>Manufacturer account applications</h3><p class="m" style="margin:0 0 8px">Complete and sign each manufacturer's own application in the Account Setup Center — saved as you go, reviewed privately by HCPS, who sends it to the manufacturer.</p><a class="btn pri acsm" onclick="showP360('apply')">Open Account Setup Center</a>${appsHtml&&!/No applications on file/.test(appsHtml)?`<div class="rowlist" style="margin-top:10px">${appsHtml}</div>`:''}</div>
-    <div class="card"><h3>Pricing export</h3><div style="font-size:12.5px;color:var(--muted)">Your HCPS product &amp; dealer-pricing file for billing, ERP, inventory or POS.</div><a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">Download pricing CSV</a></div>
   </div></div>`;
 }
 function acModal(title,body,onSave){
