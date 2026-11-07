@@ -404,7 +404,7 @@
   const CONSENT = {
     facebook: { via: 'Facebook', what: 'a Facebook Page you manage', perms: ['pages_show_list — list the Pages you manage so you can choose one', 'pages_read_engagement — read the chosen Page\'s basic details', 'pages_manage_posts — publish the posts you approve to that Page'] },
     instagram: { via: 'Facebook', what: 'an Instagram professional account linked to a Facebook Page you manage', perms: ['pages_show_list / pages_read_engagement — find the Page your Instagram account is linked to', 'instagram_basic — read the account\'s name and ID', 'instagram_content_publish — publish the posts you approve to it', 'business_management — reach Pages you manage through Meta Business Manager'] },
-    linkedin: { via: 'LinkedIn', what: 'a LinkedIn company page you administer', perms: ['r_organization_admin / rw_organization_admin — list the company pages you administer so you can choose one', 'w_organization_social — publish the posts you approve to that page'] },
+    linkedin: { via: 'LinkedIn', what: 'a LinkedIn company page you administer', perms: ['r_organization_admin — list the company pages you administer so you can choose one', 'w_organization_social — publish the posts you approve to that page'] },
   };
   function consentHtml(platform) {
     const c = CONSENT[platform]; if (!c) return '';
@@ -416,7 +416,8 @@
         <li>You choose which ${platform === 'linkedin' ? 'company page' : platform === 'instagram' ? 'account' : 'Page'} to connect. Access to anything you don't choose is deleted.</li>
         <li>HCPS publishes only posts you approve, one by one, in the calendar below. It does not read your messages, followers or ads.</li>
         <li>You stay in control of your account and can disconnect here at any time, or remove "HCPS Social Publishing" in ${e(c.via)}'s settings.</li>
-        <li>Already connected? Signing in again lists your accounts again — choose the one to keep, or its access is removed after about an hour.</li>
+        <li>Already connected? Signing in again just refreshes that account's access. Any other account it lists waits for you to choose it; if you don't, its access is removed after about an hour.</li>
+        <li>Each post you approve is tied to the account you approve it for. It never goes to a different Page or account; if that account is disconnected, the post doesn't publish.</li>
       </ul>
       <p style="font-size:12.5px">Read the <a href="${POLICY}#social" target="_blank" rel="noopener">HCPS Privacy Policy</a> and <a href="${DELETION}" target="_blank" rel="noopener">Data Deletion Instructions</a>.</p>
       <div class="adb-acts"><button type="button" class="btn pri" data-consent-go="${e(platform)}">Continue to ${e(c.via)}</button> <button type="button" class="btn gh" data-consent-cancel>Cancel</button></div>
@@ -445,6 +446,7 @@
     const posts = P.posts || [];
     if (posts.length) h += `<h3 style="margin:12px 0 6px">Calendar</h3>${posts.map((x) => `<div class="adb-card" style="margin-bottom:8px"><b>${e(new Date(x.scheduled_at).toLocaleString())}</b>
       <span>${e(x.platforms.map((p) => PNAME[p]).join(', '))} · ${e(STATUS[x.status] || x.status)}${x.last_error ? ' — ' + e(x.last_error) : ''}</span>
+      ${S.pick && S.pick.pid === x.id ? `<p style="font-size:12.5px;margin:6px 0 4px"><b>Post to which ${e({ facebook: 'Facebook Page', instagram: 'Instagram account', linkedin: 'LinkedIn page' }[S.pick.platform] || 'account')}?</b></p><div class="adb-opts">${S.pick.accounts.map((c) => `<button type="button" class="adb-opt" data-pick="${e(c.id)}">${e(c.name)}</button>`).join('')}</div>` : ''}
       <div class="r">${x.status === 'awaiting_approval' ? `<button type="button" class="btn pri acsm" data-pa="post_approve" data-pid="${e(x.id)}" data-pv="${e(x.version)}">Approve</button>` : ''}
       ${x.status === 'approved' ? `<button type="button" class="btn gh acsm" data-pa="post_pause" data-pid="${e(x.id)}" data-pv="${e(x.version)}">Pause</button>` : ''}
       ${x.status === 'paused' ? `<button type="button" class="btn gh acsm" data-pa="post_resume" data-pid="${e(x.id)}" data-pv="${e(x.version)}">Resume</button>` : ''}
@@ -465,8 +467,15 @@
     }; });
     host.querySelectorAll('[data-choose]').forEach((b) => { b.onclick = async () => { const r = await A.api({ action: 'social_connect_choose', id: b.getAttribute('data-choose') }); if (r && r.ok) { say('Connected.', 'ok'); loadSocial(); } else say((r && r.error) || 'Could not connect that account.', 'err'); }; });
     host.querySelectorAll('[data-disc]').forEach((b) => { b.onclick = async () => { if (!window.confirm('Disconnect this account? Scheduled posts to it will not publish.')) return; const r = await A.api({ action: 'social_disconnect', id: b.getAttribute('data-disc') }); if (r && r.ok) loadSocial(); else say((r && r.error) || 'Could not disconnect.', 'err'); }; });
+    /* approving names the account each platform posts to; with more than one connected account the dealer chooses */
+    const approve = async (pid, pv, picked) => { const r = await A.api({ action: 'post_approve', id: pid, version: pv, connections: picked });
+      if (r && r.ok) { S.pick = null; say('Approved — it will publish at the scheduled time to the account you chose.', 'ok'); loadSocial(); return; }
+      if (r && r.choose && Array.isArray(r.accounts)) { S.pick = { pid, pv, platform: r.choose, accounts: r.accounts, picked }; const el = $('#adbPub'); if (el) { el.innerHTML = '<h3>Schedule &amp; publish</h3>' + pubHtml(); bindPub(); } return; }
+      S.pick = null; say((r && r.error) || 'Could not approve the post.', 'err'); };
+    host.querySelectorAll('[data-pick]').forEach((b) => { b.onclick = () => { const P = S.pick; if (!P) return; approve(P.pid, P.pv, Object.assign({}, P.picked, { [P.platform]: b.getAttribute('data-pick') })); }; });
     host.querySelectorAll('[data-pa]').forEach((b) => { b.onclick = async () => { const act = b.getAttribute('data-pa'); if (act === 'post_cancel' && !window.confirm('Cancel this post?')) return;
-      const r = await A.api({ action: act, id: b.getAttribute('data-pid'), version: Number(b.getAttribute('data-pv')) }); if (r && r.ok) { say(act === 'post_approve' ? 'Approved — it will publish at the scheduled time.' : 'Updated.', 'ok'); loadSocial(); } else say((r && r.error) || 'Could not update the post.', 'err'); }; });
+      if (act === 'post_approve') return approve(b.getAttribute('data-pid'), Number(b.getAttribute('data-pv')), {});
+      const r = await A.api({ action: act, id: b.getAttribute('data-pid'), version: Number(b.getAttribute('data-pv')) }); if (r && r.ok) { say('Updated.', 'ok'); loadSocial(); } else say((r && r.error) || 'Could not update the post.', 'err'); }; });
     const sch = host.querySelector('#adbSched'); if (sch) sch.onclick = async () => {
       if (!S.row) { say('Save the ad first, then schedule it.', 'err'); return; }
       const platforms = [...host.querySelectorAll('[data-plat]:checked')].map((i) => i.getAttribute('data-plat')); const when = host.querySelector('#adbWhen').value;
