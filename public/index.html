@@ -8964,7 +8964,9 @@ function renderStorefront(){
     <label class="sf-check"><input type="checkbox" id="sfAddr"${s.show_address===false?'':' checked'}${dis}> Show my street address</label>
     <label class="fld2"><span class="rp-l">Prices</span><select id="sfPrice"${dis}><option value="msrp"${s.price_mode!=='call'?' selected':''}>Show prices — your price, the manufacturer's MSRP or HCPS calculated retail, where the manufacturer allows it</option><option value="call"${s.price_mode==='call'?' selected':''}>"Call for Price" on everything</option></select></label>
     <div class="fld2"><span class="rp-l">Lines to show</span>${L.lines.length?`<label class="sf-check"><input type="checkbox" id="sfAll"${lines?'':' checked'}${dis} onchange="document.querySelectorAll('.sf-line').forEach(x=>x.disabled=this.checked||${ed?'false':'true'})"> All my lines</label><div class="sf-lines">${L.lines.map(l=>`<label class="sf-check"><input type="checkbox" class="sf-line" value="${esc(l.slug)}"${!lines||lines.includes(l.slug)?' checked':''}${!ed||!lines?' disabled':''}> ${esc(l.name)}</label>`).join('')}</div>`:'<div class="msg">No manufacturer accounts are active on this location yet.</div>'}</div>
-    <label class="fld2"><span class="rp-l">Categories to hide (comma-separated)</span><input id="sfHide" value="${esc((s.hidden_categories||[]).join(', '))}"${dis}></label>
+    <label class="fld2"><span class="rp-l">Categories to hide (comma-separated)</span><input id="sfHide" value="${esc((s.hidden_categories||[]).filter(x=>String(x)[0]!=='+').join(', '))}"${dis}></label>
+    <label class="sf-check"><input type="checkbox" id="sfDisplays"${(s.hidden_categories||[]).some(x=>String(x).trim().toLowerCase()==='+displays & merchandising')?' checked':''}${dis}> Show Displays &amp; Merchandising (display signs, brochures, wobblers, planograms) to the public</label>
+    <div class="sf-note">Display and merchandising items are for your store, so they're hidden from your public storefront and Social Ads unless you tick this. They stay orderable in the Shop either way.</div>
     <div class="sf-note">Your dealer cost, account numbers and contract prices are never shown. Customers can't order online — they call you or send a request.</div>
     <div class="sf-acts">${ed?(s.enabled&&L.storefront?`<a class="btn pri" id="sfSave" onclick="sfSave(true)">Save changes</a>`:`<a class="btn gh" id="sfSave" onclick="sfSave(false)">Save without publishing</a>`):''}
      <a class="btn gh" onclick="sfPreview()">Preview as customers see it</a>
@@ -9095,7 +9097,8 @@ function sfSettings(){
   const v=id=>{ const e=document.getElementById(id); return e?e.value:''; };
   const all=document.getElementById('sfAll');
   const settings={slug:v('sfSlug').trim().toLowerCase(),headline:v('sfHead'),about:v('sfAbout'),phone:v('sfPhone'),email:v('sfEmail'),hours:v('sfHours'),
-    show_address:!!(document.getElementById('sfAddr')||{}).checked,price_mode:v('sfPrice'),hidden_categories:v('sfHide').split(',').map(x=>x.trim()).filter(Boolean)};
+    show_address:!!(document.getElementById('sfAddr')||{}).checked,price_mode:v('sfPrice'),hidden_categories:v('sfHide').split(',').map(x=>x.trim()).filter(x=>x&&x[0]!=='+')};
+  if((document.getElementById('sfDisplays')||{}).checked) settings.hidden_categories.push('+Displays & Merchandising');   /* opt-in: display items shown publicly */
   if(all) settings.lines=all.checked?null:[...document.querySelectorAll('.sf-line:checked')].map(x=>x.value);
   return settings;
 }
