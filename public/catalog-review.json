@@ -1,17 +1,8 @@
 {
-  "review_id": "3123e2efcb27",
+  "review_id": "a555f0d69cb1",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T03:02:57Z",
-  "main": "b7c35a1816b3b4924caf1afd5ec5604664b0b8ac",
-  "included": [
-    {
-      "pr": 66,
-      "title": "Account Center: correct a verified number",
-      "branch": "c8/claim-on-verified",
-      "head": "93c042b89d59098d9da5fd5b9e1d3136d33eed80",
-      "manufacturers": [],
-      "other_files": 1
-    }
-  ],
+  "built_at": "2026-11-07T03:03:48Z",
+  "main": "fd1696b9a215664653089b0216d9083ec1fac1ec",
+  "included": [],
   "skipped": []
 }
