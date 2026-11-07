@@ -1,17 +1,8 @@
 {
-  "review_id": "63995ae963d6",
+  "review_id": "ba89b2d3f7d4",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T16:27:20Z",
-  "main": "b0300c387c88c08b0ceb56ebc1b92b42d2379e34",
-  "included": [
-    {
-      "pr": 73,
-      "title": "Storefront: capacity filter reads stated capacity features",
-      "branch": "c9/storefront-capacity",
-      "head": "ae80d7430570ed972172cbfc9ae1eca921d18887",
-      "manufacturers": [],
-      "other_files": 2
-    }
-  ],
+  "built_at": "2026-11-07T16:27:35Z",
+  "main": "a256bafdae54752a9b41099e384b92b412f77aec",
+  "included": [],
   "skipped": []
 }
