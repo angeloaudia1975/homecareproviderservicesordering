@@ -1,17 +1,8 @@
 {
-  "review_id": "dd8e13ff8926",
+  "review_id": "5b43d0f0c65c",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T00:22:39Z",
-  "main": "688e4ae2182c133f35431ed6515a5c97d064e6b3",
-  "included": [
-    {
-      "pr": 63,
-      "title": "Shop shows only approved lines; checkout account-setup notice; Account Center layout",
-      "branch": "c8/account-setup",
-      "head": "c15d00e18f29234049337d8c38decdbbd4da06cd",
-      "manufacturers": [],
-      "other_files": 5
-    }
-  ],
+  "built_at": "2026-11-07T00:23:47Z",
+  "main": "0619af71463aca8d187953577b7219584fc0f03b",
+  "included": [],
   "skipped": []
 }
