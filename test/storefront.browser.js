@@ -20,7 +20,7 @@ const PUBLIC = { ok: true, dealer: { name: 'Acme <script>x</script> Medical', he
   lines: [{ slug: 'bemis', name: 'Bemis', count: 2 }, { slug: 'strongback', name: 'Strongback', count: 1 }],
   products: [{ manufacturer: 'bemis', code: 'B1', name: 'Raised seat', category: 'Bath Safety', description: 'Nice <b>seat</b>', image: '/assets/products/bemis/B1.jpg', attributes: { Width: '18"' }, price: 99.99, price_label: 'MSRP' },
     { manufacturer: 'bemis', code: 'B2', name: 'Grab bar', category: 'Bath Safety', image: '/assets/missing.jpg', attributes: {}, price: null, price_label: 'Call for Price' },
-    { manufacturer: 'strongback', code: 'S1', name: 'Excursion chair', category: 'Wheelchairs', image: null, attributes: {}, price: null, price_label: 'Call for Price' },
+    { manufacturer: 'strongback', code: 'S1', name: 'Excursion chair', category: 'Wheelchairs', image: null, attributes: {}, features: ['450 lbs max', 'Holds 9 parts'], price: null, price_label: 'Call for Price' },
     { manufacturer: 'bemis', code: 'B9', name: 'Seat case', category: 'Parts', image: null, attributes: {}, price: 120, price_label: 'MSRP', price_unit: 'per Case (2 each)' },
     { manufacturer: 'golden-technologies', code: 'PR-501', name: 'Cloud lift chair (Small)', family: 'PR-501', family_name: 'Cloud lift chair', category: 'Lift Chairs', image: 'https://d3325uqufdmhie.cloudfront.net/pr501.jpg', gallery: ['https://d3325uqufdmhie.cloudfront.net/pr501.jpg', 'https://d3325uqufdmhie.cloudfront.net/pr501b.jpg'], documents: [{ title: 'Cloud brochure', url: 'https://www.homecareproviderservices.org/assets/docs/cloud.pdf' }], attributes: { Size: 'Small', 'Weight Capacity': '375 lb' }, features: ['Infinite position', 'Zero-gravity seating'], price: 1899, price_label: 'Price', price_unit: null },
     { manufacturer: 'golden-technologies', code: 'PR-501M', name: 'Cloud lift chair (Medium)', family: 'PR-501', family_name: 'Cloud lift chair', category: 'Lift Chairs', image: 'https://d3325uqufdmhie.cloudfront.net/pr501.jpg', gallery: [], documents: [{ title: 'Cloud brochure', url: 'https://www.homecareproviderservices.org/assets/docs/cloud.pdf' }], attributes: { Size: 'Medium', 'Weight Capacity': '450 lb' }, features: ['Infinite position', 'Zero-gravity seating'], price: 1999, price_label: 'Price', price_unit: null }],
@@ -85,7 +85,7 @@ const layout = (page, sel) => page.evaluate((sel) => {
         await page.check('input[data-f="mfrs"][value="strongback"]'); ok((await page.$$eval('.card .nm', (c) => c.map((x) => x.textContent))).join() === 'Excursion chair', 'manufacturer');
         await page.click('aside [data-clear]');
         if (w < 980 && !(await page.isVisible('[data-fclose]'))) await page.click('[data-fopen]');
-        await page.check('input[data-f="cap"][value="401–500"]'); ok((await page.$$eval('.card .nm', (c) => c.map((x) => x.textContent))).join() === 'Cloud lift chair', 'capacity (only data that exists)');
+        await page.check('input[data-f="cap"][value="401–500"]'); ok((await page.$$eval('.card .nm', (c) => c.map((x) => x.textContent))).join() === 'Cloud lift chair,Excursion chair', 'capacity (a specification, or a feature that states it)');
         await page.click('aside [data-clear]');
         if (w < 980 && !(await page.isVisible('[data-fclose]'))) await page.click('[data-fopen]');
         await page.fill('#pmin', '100'); await page.dispatchEvent('#pmin', 'change'); ok((await page.$$eval('.card .nm', (c) => c.map((x) => x.textContent))).join() === 'Cloud lift chair,Seat case', 'price');
