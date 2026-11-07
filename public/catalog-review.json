@@ -1,17 +1,8 @@
 {
-  "review_id": "d4f2fb7c77b6",
+  "review_id": "c1951c4f44bb",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T19:28:45Z",
-  "main": "b2098393e5a054965dce0a4082e1261c6d4a2fb7",
-  "included": [
-    {
-      "pr": 74,
-      "title": "My Storefront: Displays & Merchandising opt-in",
-      "branch": "c9/storefront-displays",
-      "head": "a3f1433b951296acf170da2fc664433cad696e89",
-      "manufacturers": [],
-      "other_files": 2
-    }
-  ],
+  "built_at": "2026-11-07T19:31:37Z",
+  "main": "aace1398b92c460e47aa2cb1211d98ee68ffa60c",
+  "included": [],
   "skipped": []
 }
