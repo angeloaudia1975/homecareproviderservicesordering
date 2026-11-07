@@ -246,7 +246,7 @@
       '<div class="cgrid" style="margin-top:12px">'+cats.slice(0,lim).map(function(c){return '<button type="button" class="ccard" data-cat="'+esc(c.name)+'"><span class="ci">'+img(c.img,'')+'</span><span><b>'+esc(c.name)+'</b><small>'+c.n+' product'+(c.n===1?'':'s')+'</small></span><span class="chev">'+ico('chev')+'</span></button>';}).join('')+'</div></section>':'';
     var hls=(DS.highlights||[]).length?'<section class="hls" aria-label="Why customers choose us">'+DS.highlights.map(function(h){return '<div>'+ico('check')+esc(h.text)+'</div>';}).join('')+'</section>':'';
     var about=d.about?'<section class="aboutc" id="about" aria-label="About us"><div><h2>About '+esc(d.name)+'</h2><p>'+esc(d.about)+'</p></div><div class="acts">'+
-      (d.phone?'<a class="btn brand" href="tel:'+esc(tel(d.phone))+'">'+ico('phone')+' Call '+esc(d.phone)+'</a>':'')+(d.address&&d.address.street?'<a class="btn" href="'+esc(mapsUrl())+'" target="_blank" rel="noopener">'+ico('pin')+' Visit our showroom</a>':'')+
+      (d.phone?'<a class="btn brand" href="tel:'+esc(tel(d.phone))+'">'+ico('phone')+' Call '+esc(d.phone)+'</a>':'')+(d.address&&d.address.street?'<a class="btn" href="'+esc(mapsUrl())+'" target="_blank" rel="noopener">'+ico('pin')+((DS.highlights||[]).some(function(h){return h.key==='showroom';})?' Visit our showroom':' Get directions')+'</a>':'')+
       '<button class="btn pri" type="button" data-ask="">Request information</button></div></section>':'';
     var order=DS.layout==='classic'?[hero,hls,grid,about]:DS.layout==='modern'?[hero,grid,hls,about]:['<div class="hero">'+hero+card+'</div>',grid,hls,about];
     return '<div class="home">'+order.join('')+'</div>';
