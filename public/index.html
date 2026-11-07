@@ -9105,6 +9105,14 @@ async function sfPvLoad(){
 }
 window.addEventListener('message',e=>{ const f=document.getElementById('sfPvF'); if(!f||e.origin!==location.origin||e.source!==f.contentWindow||!e.data||e.data.type!=='hcps-storefront-preview-ready') return; f.dataset.ready='1'; if(f._pending){ const p=f._pending; f._pending=null; p(); } });
 window.addEventListener('resize',()=>sfPvFit());
+/* the preview's full product pages (enrichment upgrade 2026-11-07): the storefront page asks, the portal answers with the
+   product's page for the settings on screen (sf_detail — the same rule as the public page). Only our own /store.html frames. */
+window.addEventListener('message',async e=>{ if(e.origin!==location.origin||!e.data||e.data.type!=='hcps-storefront-detail-req') return;
+  const frames=[document.getElementById('sfPvF'),document.querySelector('#sfPrevOv iframe')].filter(Boolean);
+  if(!frames.some(f=>f.contentWindow===e.source)) return;
+  const L=SFD&&SFD.locations.find(l=>l.id===SFLOC); const id=Number(e.data.id)||0;
+  let d={ok:false}; if(L) d=await api(SF_API,{action:'sf_detail',location_id:L.id,settings:sfSettings(),manufacturer:String(e.data.manufacturer||'').slice(0,60),code:String(e.data.code||'').slice(0,80)});
+  try{ e.source.postMessage({type:'hcps-storefront-detail',id:id,data:d},location.origin); }catch(x){} });
 
 function renderStorefront(){
   const host=$("#view-storefront"); if(!host||!SFD) return;
