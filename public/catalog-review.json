@@ -1,17 +1,8 @@
 {
-  "review_id": "aac8a2d1ea11",
+  "review_id": "632cea824347",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T03:14:41Z",
-  "main": "fd1696b9a215664653089b0216d9083ec1fac1ec",
-  "included": [
-    {
-      "pr": 67,
-      "title": "Legacy dealers-api: never grants ordering",
-      "branch": "c8/legacy-no-grant",
-      "head": "0bf75445af4ed312aa393354e661db4cc5958576",
-      "manufacturers": [],
-      "other_files": 1
-    }
-  ],
+  "built_at": "2026-11-07T03:15:13Z",
+  "main": "02aea8bb56269270a8814b74dd297376b63bc973",
+  "included": [],
   "skipped": []
 }
