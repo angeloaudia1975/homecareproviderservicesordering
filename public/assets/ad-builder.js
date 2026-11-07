@@ -315,6 +315,8 @@
     if (!open.length) h += `<p style="font-size:13px;margin:0 0 8px">${e(S.ctx.publishing.note)}</p>`;
     else {
       h += `<div class="adb-opts">${open.map((x) => `<button type="button" class="adb-opt" data-conn="${e(x.platform)}">Connect ${e(PNAME[x.platform])}</button>`).join('')}</div>`;
+      const pend = P.connections.filter((c) => c.status === 'pending');
+      if (pend.length) h += `<p style="font-size:12.5px;margin:8px 0 4px"><b>Choose the account to post to:</b></p><div class="adb-opts">${pend.map((c) => `<button type="button" class="adb-opt" data-choose="${e(c.id)}">${e(PNAME[c.platform])}: ${e(c.account_name || c.external_id)}</button>`).join('')}</div>`;
       h += conns.length ? `<p style="font-size:12.5px;margin:8px 0 4px">Connected: ${conns.map((c) => `${e(PNAME[c.platform])} — ${e(c.account_name || c.external_id)} <button type="button" class="btn gh acsm" data-disc="${e(c.id)}">Disconnect</button>`).join(' · ')}</p>` : '';
       const usable = open.filter((x) => conns.some((c) => c.platform === x.platform));
       if (usable.length && S.ctx.can_edit) h += `<div class="adb-opts" style="margin-top:8px">${usable.map((x) => `<label class="adb-opt" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-plat="${e(x.platform)}"> ${e(PNAME[x.platform])}</label>`).join('')}</div>
@@ -333,7 +335,8 @@
   async function loadSocial() { const r = await A.api({ action: 'social_status', location_id: S.loc }); S.social = r && r.ok ? r : { platforms: [], connections: [], posts: [] }; const el = $('#adbPub'); if (el) { el.innerHTML = '<h3>Schedule &amp; publish</h3>' + pubHtml(); bindPub(); } }
   function bindPub() {
     const host = $('#adbPub'); if (!host) return;
-    host.querySelectorAll('[data-conn]').forEach((b) => { b.onclick = async () => { const r = await A.api({ action: 'social_connect', location_id: S.loc, platform: b.getAttribute('data-conn') }); if (r && r.ok && /^https:\/\/(www\.facebook\.com|www\.linkedin\.com)\//.test(r.url)) window.location.assign(r.url); else say((r && r.error) || 'Not available yet.', 'err'); }; });
+    host.querySelectorAll('[data-conn]').forEach((b) => { b.onclick = async () => { const r = await A.api({ action: 'social_connect', location_id: S.loc, platform: b.getAttribute('data-conn') }); if (r && r.ok && /^https:\/\/homecareproviderservices\.netlify\.app\/\.netlify\/functions\/social-oauth-callback\?begin=[0-9a-f]{32}$/.test(r.url)) window.location.assign(r.url); else say((r && r.error) || 'Not available yet.', 'err'); }; });
+    host.querySelectorAll('[data-choose]').forEach((b) => { b.onclick = async () => { const r = await A.api({ action: 'social_connect_choose', id: b.getAttribute('data-choose') }); if (r && r.ok) { say('Connected.', 'ok'); loadSocial(); } else say((r && r.error) || 'Could not connect that account.', 'err'); }; });
     host.querySelectorAll('[data-disc]').forEach((b) => { b.onclick = async () => { if (!window.confirm('Disconnect this account? Scheduled posts to it will not publish.')) return; const r = await A.api({ action: 'social_disconnect', id: b.getAttribute('data-disc') }); if (r && r.ok) loadSocial(); else say((r && r.error) || 'Could not disconnect.', 'err'); }; });
     host.querySelectorAll('[data-pa]').forEach((b) => { b.onclick = async () => { const act = b.getAttribute('data-pa'); if (act === 'post_cancel' && !window.confirm('Cancel this post?')) return;
       const r = await A.api({ action: act, id: b.getAttribute('data-pid'), version: Number(b.getAttribute('data-pv')) }); if (r && r.ok) { say(act === 'post_approve' ? 'Approved — it will publish at the scheduled time.' : 'Updated.', 'ok'); loadSocial(); } else say((r && r.error) || 'Could not update the post.', 'err'); }; });
@@ -342,7 +345,7 @@
       const platforms = [...host.querySelectorAll('[data-plat]:checked')].map((i) => i.getAttribute('data-plat')); const when = host.querySelector('#adbWhen').value;
       if (!platforms.length || !when) { say('Choose where and when to post.', 'err'); return; }
       if (!(await freshCheck())) return; const cv = document.createElement('canvas'); await draw(cv);
-      const r = await A.api({ action: 'post_save', ad_id: S.row.id, platforms, scheduled_at: new Date(when).toISOString(), caption: captionText(), media: cv.toDataURL('image/png') });
+      const r = await A.api({ action: 'post_save', ad_id: S.row.id, platforms, scheduled_at: new Date(when).toISOString(), caption: captionText(), media: cv.toDataURL('image/jpeg', 0.9) });   // JPEG keeps a story-size image under the request limit
       if (r && r.ok) { say('Scheduled. Approve it in the calendar below when you are ready — nothing posts without your approval.', 'ok'); loadSocial(); } else say((r && r.error) || 'Could not schedule.', 'err');
     };
   }
