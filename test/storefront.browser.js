@@ -1,7 +1,8 @@
 /* C3-07 Stage 7 — dealer storefronts in a real browser (nothing reaches HCPS, Supabase or an email provider).
    PUBLIC PAGE (public/store.html at /store/<address>, storefront-public answered locally): at 390 / 768 / 1280 px the dealer's
-   name, Call link and products show (escaped); MSRP vs "Call for Price"; search, brand chips and category filter; a broken
-   product photo becomes a placeholder; opening a product counts one anonymous view (no visitor data); the request form needs
+   name, Call link, directions and hours show (escaped); MSRP vs "From" vs "Call for Price"; a product family is one card;
+   image categories, search, manufacturer / price / capacity filters, chips, sort, list view; the product page (gallery, sizes,
+   benefits, specifications, brochure, contact); a broken photo becomes a placeholder; one anonymous view per SKU; the request form needs
    consent, sends only what was typed (+ an empty hidden field) and thanks the customer; no cookies or browser storage; no
    horizontal scroll; 44 px targets; 16 px inputs. PORTAL (index.html → My Storefront, dealer-storefront-api answered
    locally): the tab exists, settings save exactly what was typed, a branch's view of its head office is read-only,
@@ -21,7 +22,8 @@ const PUBLIC = { ok: true, dealer: { name: 'Acme <script>x</script> Medical', he
     { manufacturer: 'bemis', code: 'B2', name: 'Grab bar', category: 'Bath Safety', image: '/assets/missing.jpg', attributes: {}, price: null, price_label: 'Call for Price' },
     { manufacturer: 'strongback', code: 'S1', name: 'Excursion chair', category: 'Wheelchairs', image: null, attributes: {}, price: null, price_label: 'Call for Price' },
     { manufacturer: 'bemis', code: 'B9', name: 'Seat case', category: 'Parts', image: null, attributes: {}, price: 120, price_label: 'MSRP', price_unit: 'per Case (2 each)' },
-    { manufacturer: 'golden-technologies', code: 'PR-501', name: 'Cloud lift chair', category: 'Lift Chairs', image: 'https://d3325uqufdmhie.cloudfront.net/pr501.jpg', attributes: { Size: 'Small' }, features: ['Infinite position'], price: 1899, price_label: 'Price', price_unit: null }],
+    { manufacturer: 'golden-technologies', code: 'PR-501', name: 'Cloud lift chair (Small)', family: 'PR-501', family_name: 'Cloud lift chair', category: 'Lift Chairs', image: 'https://d3325uqufdmhie.cloudfront.net/pr501.jpg', gallery: ['https://d3325uqufdmhie.cloudfront.net/pr501.jpg', 'https://d3325uqufdmhie.cloudfront.net/pr501b.jpg'], documents: [{ title: 'Cloud brochure', url: 'https://www.homecareproviderservices.org/assets/docs/cloud.pdf' }], attributes: { Size: 'Small', 'Weight Capacity': '375 lb' }, features: ['Infinite position', 'Zero-gravity seating'], price: 1899, price_label: 'Price', price_unit: null },
+    { manufacturer: 'golden-technologies', code: 'PR-501M', name: 'Cloud lift chair (Medium)', family: 'PR-501', family_name: 'Cloud lift chair', category: 'Lift Chairs', image: 'https://d3325uqufdmhie.cloudfront.net/pr501.jpg', gallery: [], documents: [{ title: 'Cloud brochure', url: 'https://www.homecareproviderservices.org/assets/docs/cloud.pdf' }], attributes: { Size: 'Medium', 'Weight Capacity': '450 lb' }, features: ['Infinite position', 'Zero-gravity seating'], price: 1999, price_label: 'Price', price_unit: null }],
   price_note: 'Prices shown are the manufacturer\'s suggested retail price (MSRP).', privacy: 'Your request is sent only to this dealer…' };
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
@@ -59,40 +61,80 @@ const layout = (page, sel) => page.evaluate((sel) => {
   try {
     for (const [w, h, label] of [[390, 844, 'iphone'], [768, 1024, 'tablet'], [1280, 900, 'desktop']]) {
       const { ctx, page, st } = await publicPage(browser, w, h);
-      await t(label + ': public page shows the dealer (escaped), a Call link and products with MSRP or Call for Price', async () => {
-        const r = await page.evaluate(() => [document.querySelector('h1').textContent, !!document.querySelector('h1 script'), document.querySelector('a[href^="tel:"]').getAttribute('href'), [...document.querySelectorAll('.card')].map((c) => c.querySelector('.price').textContent)]);
-        ok(r[0] === 'Acme <script>x</script> Medical' && !r[1], 'name escaped'); ok(r[2] === 'tel:5550100100', r[2]); ok(JSON.stringify(r[3]) === JSON.stringify(['$99.99 MSRP', 'Call for Price', 'Call for Price', '$120.00 MSRP per Case (2 each)', '$1,899.00']), JSON.stringify(r[3]), 'a dealer / calculated price is never labelled MSRP');
+      await t(label + ': public page shows the dealer (escaped), Call, directions, hours and every card with MSRP / From / Call for Price', async () => {
+        const r = await page.evaluate(() => [document.querySelector('h1').textContent, !!document.querySelector('h1 script'), document.querySelector('a[href^="tel:"]').getAttribute('href'),
+          Object.fromEntries([...document.querySelectorAll('.card')].map((c) => [c.querySelector('.nm').textContent, c.querySelector('.price').textContent])), !!document.querySelector('#info a[href^="https://www.google.com/maps/"]'), document.querySelector('#info').textContent]);
+        ok(r[0] === 'Acme <script>x</script> Medical' && !r[1], 'name escaped'); ok(r[2] === 'tel:5550100100', r[2]); ok(r[4], 'directions link'); ok(/Mon–Fri 9–5/.test(r[5]), 'hours');
+        ok(JSON.stringify(r[3]) === JSON.stringify({ 'Cloud lift chair': 'From$1,899.00', 'Excursion chair': 'Call for Price', 'Grab bar': 'Call for Price', 'Raised seat': '$99.99MSRP', 'Seat case': '$120.00MSRP per Case (2 each)' }), JSON.stringify(r[3]), 'a dealer / calculated price is never labelled MSRP');
         ok(!st.csp.length, 'CSP violations: ' + st.csp.join(' | '));
       });
+      await t(label + ': SKUs of one product family are ONE card ("2 sizes"); different products are never merged; every SKU stays', async () => {
+        const r = await page.evaluate(() => [document.querySelectorAll('.card').length, [...document.querySelectorAll('.card .opts')].map((x) => x.textContent), document.querySelector('.count').textContent]);
+        ok(r[0] === 5 && JSON.stringify(r[1]) === '["2 sizes"]' && r[2] === '5 products', JSON.stringify(r)); });
       await page.waitForTimeout(400);
-      await t(label + ': a missing photo becomes a placeholder (never a broken image)', async () => ok(await page.evaluate(() => [...document.querySelectorAll('.card img')].every((i) => i.complete && i.naturalWidth > 0)), 'broken image'));
-      await page.fill('#q', 'grab');
-      await t(label + ': search, brand chips and category filter', async () => {
-        ok(await page.$$eval('.card', (c) => c.length) === 1, 'search'); await page.fill('#q', '');
-        await page.click('.chip[data-line="strongback"]'); ok((await page.$$eval('.card .nm', (c) => c.map((x) => x.textContent))).join() === 'Excursion chair', 'chip');
-        await page.click('.chip[data-line=""]'); await page.selectOption('#cat', 'Bath Safety'); ok(await page.$$eval('.card', (c) => c.length) === 2, 'category'); });
-      const L = await layout(page, '.btn, .chip, .tools input, .tools select');
+      await t(label + ': a missing photo becomes a placeholder (never a broken image)', async () => ok(await page.evaluate(() => [...document.querySelectorAll('img')].every((i) => i.complete && i.naturalWidth > 0)), 'broken image'));
+      await t(label + ': image category tiles filter, and a second tap clears', async () => {
+        ok(await page.$$eval('.cat', (c) => c.length) === 4, 'four categories');
+        await page.click('.cat[data-cat="Bath Safety"]'); ok(await page.$$eval('.card', (c) => c.length) === 2, 'category');
+        ok(/Bath Safety/.test(await page.textContent('.crumbs')), 'breadcrumb');
+        await page.click('.cat[data-cat="Bath Safety"]'); ok(await page.$$eval('.card', (c) => c.length) === 5, 'cleared'); });
+      await t(label + ': search, manufacturer, price, weight-capacity filters, chips and Clear all', async () => {
+        await page.fill('#sq', 'grab'); await page.click('#sform button'); ok(await page.$$eval('.card', (c) => c.length) === 1, 'search');
+        await page.click('.chip[data-rm="q"]'); ok(await page.$$eval('.card', (c) => c.length) === 5, 'chip removes search');
+        if (w < 980) { await page.click('[data-fopen]'); ok(await page.evaluate(() => getComputedStyle(document.getElementById('filters')).display !== 'none'), 'drawer opens'); }
+        await page.check('input[data-f="mfrs"][value="strongback"]'); ok((await page.$$eval('.card .nm', (c) => c.map((x) => x.textContent))).join() === 'Excursion chair', 'manufacturer');
+        await page.click('aside [data-clear]');
+        if (w < 980 && !(await page.isVisible('[data-fclose]'))) await page.click('[data-fopen]');
+        await page.check('input[data-f="cap"][value="401–500"]'); ok((await page.$$eval('.card .nm', (c) => c.map((x) => x.textContent))).join() === 'Cloud lift chair', 'capacity (only data that exists)');
+        await page.click('aside [data-clear]');
+        if (w < 980 && !(await page.isVisible('[data-fclose]'))) await page.click('[data-fopen]');
+        await page.fill('#pmin', '100'); await page.dispatchEvent('#pmin', 'change'); ok((await page.$$eval('.card .nm', (c) => c.map((x) => x.textContent))).join() === 'Cloud lift chair,Seat case', 'price');
+        await page.click('aside [data-clear]'); if (w < 980 && await page.isVisible('[data-fclose]')) await page.click('[data-fclose]'); ok(await page.$$eval('.card', (c) => c.length) === 5, 'clear all'); });
+      await t(label + ': sort by price and list view', async () => {
+        await page.selectOption('#sort', 'phl'); ok((await page.$$eval('.card .nm', (c) => c.map((x) => x.textContent))).slice(0, 2).join() === 'Cloud lift chair,Seat case', 'price high-low');
+        await page.click('[data-view="list"]'); ok(await page.evaluate(() => document.querySelector('.grid').classList.contains('list')), 'list'); await page.click('[data-view="grid"]'); await page.selectOption('#sort', 'name'); });
+      const L = await layout(page, '.btn, .cat, .tools input, .tools select, #sort, .chip');
       await t(label + ': no horizontal scroll; 44 px targets; 16 px inputs', () => { ok(L.overflow <= 1, 'overflow ' + L.overflow); ok(!L.small.length, 'small: ' + L.small.join('|')); ok(!L.tiny, 'tiny inputs'); });
-      await page.click('.card[data-i="0"]'); await page.waitForSelector('.pd');
-      await t(label + ': the product dialog takes focus, is named, keeps Tab inside and gives focus back on Escape', async () => {
-        const f = await page.evaluate(() => [document.getElementById('ov').getAttribute('aria-label'), document.getElementById('dlg').contains(document.activeElement)]);
-        ok(f[0] === 'Raised seat' && f[1], JSON.stringify(f));
-        for (let i = 0; i < 6; i++) await page.keyboard.press('Tab'); ok(await page.evaluate(() => document.getElementById('dlg').contains(document.activeElement)), 'tab escaped the dialog');
-        await page.keyboard.press('Escape'); ok(await page.evaluate(() => !document.getElementById('ov').classList.contains('on') && document.activeElement && document.activeElement.matches('.card[data-i="0"]')), 'focus not returned');
-        await page.click('.card[data-i="0"]'); await page.waitForSelector('.pd'); });
-      await t(label + ': a product opens with its details (escaped) and counts one anonymous view', async () => {
-        ok(await page.evaluate(() => document.querySelector('.pd p').textContent === 'Nice <b>seat</b>' && !document.querySelector('.pd p b')), 'description escaped');
+      await page.click('.card .nm >> text=Cloud lift chair'); await page.waitForSelector('.pdp');
+      await t(label + ': PRODUCT PAGE — gallery, sizes, benefits, specifications, brochure, related, dealer contact; shareable link', async () => {
+        const r = await page.evaluate(() => [location.hash, document.querySelector('.pdp h2').textContent, document.querySelectorAll('.thumbs button').length, [...document.querySelectorAll('[data-opt]')].map((b) => b.textContent + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')),
+          [...document.querySelectorAll('.feats li')].map((x) => x.textContent), [...document.querySelectorAll('.attrs tr')].map((x) => x.textContent), [...document.querySelectorAll('.docs a')].map((a) => a.getAttribute('href')), document.querySelector('.contact').textContent, document.querySelector('.pdp .price').textContent, document.activeElement && document.activeElement.tagName]);
+        ok(r[0] === '#product/' + encodeURIComponent('golden-technologies|PR-501'), r[0]); ok(r[1] === 'Cloud lift chair', r[1]); ok(r[2] === 2, 'gallery ' + r[2]);
+        ok(JSON.stringify(r[3]) === '["Small*","Medium"]', JSON.stringify(r[3])); ok(r[4].join('|') === 'Infinite position|Zero-gravity seating', JSON.stringify(r[4]));
+        ok(r[5].join('|') === 'SizeSmall|Weight Capacity375 lb', JSON.stringify(r[5])); ok(JSON.stringify(r[6]) === '["https://www.homecareproviderservices.org/assets/docs/cloud.pdf"]', JSON.stringify(r[6]));
+        ok(/1 Main/.test(r[7]) && /\(555\) 010-0100/.test(r[7]), r[7]); ok(r[8] === '$1,899.00', r[8]); ok(r[9] === 'H2', 'focus on the heading');
+        ok(!/in stock/i.test(await page.textContent('.pdp')), 'no stock implication'); });
+      await t(label + ': choosing a size shows that SKU\'s own price and specifications', async () => {
+        await page.click('[data-opt="PR-501M"]'); await page.waitForSelector('[data-opt="PR-501M"][aria-pressed="true"]');
+        const r = await page.evaluate(() => [document.querySelector('.pdp .price').textContent, [...document.querySelectorAll('.attrs tr')].map((x) => x.textContent).join('|')]);
+        ok(r[0] === '$1,999.00' && r[1] === 'SizeMedium|Weight Capacity450 lb', JSON.stringify(r)); });
+      await t(label + ': the product page counts one anonymous view per SKU seen', async () => {
         await page.evaluate(() => dispatchEvent(new Event('pagehide'))); await page.waitForTimeout(300);
-        const v = st.posts.filter((p) => p.action === 'view'); ok(v.length === 1 && JSON.stringify(v[0]) === JSON.stringify({ action: 'view', s: 'acme-medical', items: [{ manufacturer: 'bemis', code: 'B1' }] }), JSON.stringify(v)); });
-      await page.click('.pd [data-ask]'); await page.waitForSelector('#f');
+        const v = st.posts.filter((p) => p.action === 'view'); ok(v.length === 1 && JSON.stringify(v[0]) === JSON.stringify({ action: 'view', s: 'acme-medical', items: [{ manufacturer: 'golden-technologies', code: 'PR-501' }, { manufacturer: 'golden-technologies', code: 'PR-501M' }] }), JSON.stringify(v)); });
+      await page.click('.pdp [data-ask]'); await page.waitForSelector('#f');
+      await t(label + ': the request dialog takes focus, is named, keeps Tab inside', async () => {
+        const f = await page.evaluate(() => [document.getElementById('ov').getAttribute('aria-label'), document.getElementById('dlg').contains(document.activeElement)]);
+        ok(f[0] === 'Request information' && f[1], JSON.stringify(f));
+        for (let i = 0; i < 9; i++) await page.keyboard.press('Tab'); ok(await page.evaluate(() => document.getElementById('dlg').contains(document.activeElement)), 'tab escaped the dialog'); });
       await page.waitForTimeout(2600);
       await page.fill('#f [name=name]', 'Pat'); await page.fill('#f [name=email]', 'pat@example.com'); await page.fill('#f [name=message]', 'In stock?');
       await page.click('#fsend'); await page.waitForTimeout(400);
       await t(label + ': the request needs consent', async () => ok(/agree/.test(await page.textContent('#ferr')), 'consent error'));
       await page.check('#f [name=consent]'); await page.click('#fsend'); await page.waitForSelector('.ok');
-      await t(label + ': the request sends only what was typed and thanks the customer', async () => {
+      await t(label + ': the request names the size chosen, sends only what was typed and thanks the customer', async () => {
         const q = st.posts.filter((p) => p.action === 'inquiry').pop();
-        ok(JSON.stringify(Object.keys(q).sort()) === JSON.stringify(['action', 'consent', 'email', 'hp', 'message', 'name', 'phone', 'product', 's']) && q.hp === '' && q.product.code === 'B1', JSON.stringify(q)); });
+        ok(JSON.stringify(Object.keys(q).sort()) === JSON.stringify(['action', 'consent', 'email', 'hp', 'message', 'name', 'phone', 'product', 's']) && q.hp === '' && q.product.code === 'PR-501M' && q.product.manufacturer === 'golden-technologies', JSON.stringify(q)); });
+      await page.keyboard.press('Escape');
+      await t(label + ': Back returns to the catalog', async () => { await page.goBack(); await page.goBack(); await page.waitForSelector('.card'); ok(!(await page.$('.pdp')), 'still on product'); });
+      await t(label + ': "Ask about it" on a family card names the product, never a size the visitor did not choose', async () => {
+        await page.click('.card:has(.nm:text("Cloud lift chair")) [data-askf]'); await page.waitForSelector('#f');
+        ok(/About: Cloud lift chair/.test(await page.textContent('#dlg')) && /Cloud lift chair/.test(await page.inputValue('#f [name=message]')), 'family named'); await page.waitForTimeout(2600);
+        await page.fill('#f [name=name]', 'Pat'); await page.fill('#f [name=email]', 'pat@example.com'); await page.check('#f [name=consent]'); await page.click('#fsend'); await page.waitForSelector('.ok');
+        const q = st.posts.filter((p) => p.action === 'inquiry').pop(); ok(!('product' in q) && /Cloud lift chair/.test(q.message), JSON.stringify(q)); await page.keyboard.press('Escape');
+        await page.click('.card:has(.nm:text("Grab bar")) [data-askf]'); await page.waitForSelector('#f'); ok(/#B2/.test(await page.textContent('#dlg')), 'one-option card names its SKU'); await page.keyboard.press('Escape'); });
+      await t(label + ': a malformed or hostile link still shows the catalog', async () => {
+        for (const h of ['#%E0%A4%A', '#product/constructor', '#product/__proto__', '#product/' + encodeURIComponent('nope|X')]) { await page.evaluate((x) => { location.hash = x; }, h); await page.waitForTimeout(150); ok(await page.$$eval('.card', (c) => c.length) > 0, 'blank page for ' + h); }
+        await page.evaluate(() => { location.hash = ''; }); await page.waitForSelector('.card'); });
       await t(label + ': no cookies and no browser storage', async () => { const r = await page.evaluate(() => [document.cookie, localStorage.length, sessionStorage.length]); ok(r[0] === '' && r[1] === 0 && r[2] === 0, JSON.stringify(r)); ok((await ctx.cookies()).length === 0, 'cookies'); });
       await ctx.close();
     }
