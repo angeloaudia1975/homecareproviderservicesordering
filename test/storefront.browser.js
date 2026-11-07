@@ -173,6 +173,13 @@ const layout = (page, sel) => page.evaluate((sel) => {
         const s = S.calls.filter((c) => c.action === 'sf_save').pop();
         ok(s && s.location_id === 'br' && s.settings.slug === 'acme-medical' && s.settings.enabled === true && s.settings.headline === 'Welcome' && JSON.stringify(s.settings.lines) === '["bemis"]' && s.settings.price_mode === 'call' && s.version === 1, JSON.stringify(s));
         ok(/Saved — your storefront is live/.test(await page.textContent('#view-storefront')), 'saved message'); });
+      await t(label + ': DISPLAYS & MERCHANDISING — off by default; ticking it opts in ("+Displays & Merchandising"); hidden categories kept', async () => {
+        ok(!(await page.isChecked('#sfDisplays')), 'off by default');
+        const saved = async () => { await page.evaluate(() => sfSave(true)); await page.waitForTimeout(400); return S.calls.filter((c) => c.action === 'sf_save').pop().settings.hidden_categories; };
+        await page.fill('#sfHide', 'Parts'); let hc = await saved(); ok(JSON.stringify(hc) === '["Parts"]', JSON.stringify(hc));
+        await page.check('#sfDisplays'); hc = await saved(); ok(JSON.stringify(hc) === '["Parts","+Displays & Merchandising"]', JSON.stringify(hc));
+        ok(await page.isChecked('#sfDisplays') && await page.inputValue('#sfHide') === 'Parts', 'reopened with the opt-in ticked and no token in the text box');
+        await page.uncheck('#sfDisplays'); await page.fill('#sfHide', ''); await saved(); });
       await t(label + ': STOREFRONT PRICES — each product\'s public price and its source, why a price is held, your own price saved (company or this location), bulk % of MSRP / calculated', async () => {
         await page.evaluate(() => sfPricesLoad()); await page.waitForSelector('.sfp tbody tr');
         const r = await page.evaluate(() => [...document.querySelectorAll('.sfp tbody tr')].map((tr) => tr.textContent.replace(/\s+/g, ' ').trim()));
