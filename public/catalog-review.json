@@ -1,17 +1,8 @@
 {
-  "review_id": "2d5cdcbf1336",
+  "review_id": "339d8d39ec38",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T16:02:06Z",
-  "main": "a2f869102354a27222c39f1a9d30631d0396bf3f",
-  "included": [
-    {
-      "pr": 71,
-      "title": "Social Ads: AI Build My Ad and Generate Complete Campaign in the editor",
-      "branch": "c9/ai-ads",
-      "head": "def448e312a3821813b5691575f1b91b31eda857",
-      "manufacturers": [],
-      "other_files": 1
-    }
-  ],
+  "built_at": "2026-11-07T16:11:29Z",
+  "main": "f62e4b96ebc056ad1eaa0a27ecbf5bc9101e8970",
+  "included": [],
   "skipped": []
 }
