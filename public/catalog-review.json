@@ -1,8 +1,15 @@
 {
   "review_id": "632cea824347",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T03:15:13Z",
+  "built_at": "2026-11-07T03:22:28Z",
   "main": "02aea8bb56269270a8814b74dd297376b63bc973",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 68,
+      "title": "Reports: why-labels for unit review and Golden not connected",
+      "branch": "c8/report-why",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
