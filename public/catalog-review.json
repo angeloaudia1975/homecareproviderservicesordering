@@ -1,8 +1,15 @@
 {
   "review_id": "63beef8a9b7b",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T00:35:44Z",
+  "built_at": "2026-11-07T00:40:39Z",
   "main": "95cb92e8988bf4d6a05358ca1f9d77430e553c97",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 65,
+      "title": "Account Center visible in staff preview",
+      "branch": "c8/preview-account",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
