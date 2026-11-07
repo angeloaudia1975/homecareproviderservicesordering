@@ -120,10 +120,12 @@
     const fh = footer(ctx, W, H, s, logo);
     const M = 56 * s, top = 56 * s, bottom = H - fh - 36 * s, tall = H / W > 1.2, wide = W / H > 1.4;
     const ctaFg = contrast(c.accent);
-    const words = (x, y, w, align, big) => { let yy = y;
-      yy += textBox(ctx, S.cur.headline, x, yy, w, { size: (big || 78) * s, min: 40 * s, lines: 3, color: c.text, align, weight: 800 }); if (S.cur.headline) yy += 16 * s;
-      if (S.cur.subheadline) yy += textBox(ctx, S.cur.subheadline, x, yy, w, { size: 38 * s, min: 26 * s, lines: 2, color: c.text, align, weight: 600, lh: 1.25 }) + 14 * s;
-      yy += textBox(ctx, S.cur.body, x, yy, w, { size: 34 * s, min: 24 * s, lines: 4, color: c.text, align, weight: 500, lh: 1.3 }); if (S.cur.body) yy += 20 * s; return yy; };
+    /* live check 2026-11-07: with a subheadline and a long message the photo shrank to a thumbnail — on non-tall sizes the words
+       get fewer lines so the product photo keeps its room */
+    const words = (x, y, w, align, big, compact) => { let yy = y;
+      yy += textBox(ctx, S.cur.headline, x, yy, w, { size: (big || 78) * s, min: 40 * s, lines: compact && S.cur.subheadline ? 2 : 3, color: c.text, align, weight: 800 }); if (S.cur.headline) yy += 16 * s;
+      if (S.cur.subheadline) yy += textBox(ctx, S.cur.subheadline, x, yy, w, { size: 36 * s, min: 24 * s, lines: compact ? 1 : 2, color: c.text, align, weight: 600, lh: 1.25 }) + 14 * s;
+      yy += textBox(ctx, S.cur.body, x, yy, w, { size: 32 * s, min: 22 * s, lines: compact ? 2 : 4, color: c.text, align, weight: 500, lh: 1.3 }); if (S.cur.body) yy += 20 * s; return yy; };
     const tpl = S.cur.template;
     if (tpl === 'brand') {
       let y = top + (tall ? (bottom - top) * 0.16 : 20 * s);   // tall formats: the message sits higher than the middle, not at the very top
@@ -169,7 +171,7 @@
       return;
     }
     /* spotlight (and split on tall formats) */
-    let y = words(M, top, W - 2 * M, 'center', tall ? 84 : wide ? 54 : 70);
+    let y = words(M, top, W - 2 * M, 'center', tall ? 84 : wide ? 54 : 64, !tall);
     const feats = tall ? (S.cur.features || []).slice(0, 3) : []; if (feats.length) { for (const f of feats) y += textBox(ctx, '✓ ' + f, M, y, W - 2 * M, { size: 32 * s, min: 22 * s, lines: 1, color: c.text, weight: 600, align: 'center' }) + 6 * s; y += 12 * s; }
     const below = 150 * s + (S.cur.cta ? 70 * s : 0); const ph = Math.max(120 * s, bottom - y - below);
     const pw = wide ? Math.min(W * 0.5, ph * 1.3) : W - 2 * M; photo(ctx, img, (W - pw) / 2, y, pw, ph, s); y += ph + 20 * s;

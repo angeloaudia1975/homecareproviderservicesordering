@@ -8017,7 +8017,7 @@ function renderReports(){
         <div><span>Purchases ${esc(R.period.ytd?'year to date':year)}</span><b>${m2(R.purchases.total)}</b></div>
         <div><span>Same reported months last year</span><b>${R.purchases.prior!=null?m2(R.purchases.prior):'—'}</b></div>${R.purchases.partial&&R.purchases.prior!=null?`<div><span>This year, same months</span><b>${m2(R.purchases.current_compared)}</b></div>`:''}
         <div><span>Change</span><b>${pctB(R.purchases.change_pct)}</b></div>
-        <div><span>Units</span><b>${R.purchases.units}</b></div>
+        <div><span>Merchandise units</span><b>${R.purchases.units}</b>${R.purchases.marketing_units?`<small>+ ${R.purchases.marketing_units} marketing item(s), not counted</small>`:''}</div>
         <div><span>Top line</span><b>${esc(sc.top_line||'—')}</b></div>
         <div><span>Quotes created / sent</span><b>${R.quotes.created} / ${R.quotes.sent}</b></div></div></div>
     </div>
