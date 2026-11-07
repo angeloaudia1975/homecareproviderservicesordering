@@ -191,6 +191,8 @@
   .adb-prev canvas{width:auto;max-width:100%;max-height:78vh;margin:0 auto;height:auto;border-radius:12px;box-shadow:0 8px 30px rgba(11,31,51,.16);background:#e8edf2;display:block}
   .adb-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
   .adb-acts .btn{min-height:44px}
+  .adb button.btn,#adbNew{font:inherit;cursor:pointer}
+  .adb-card button.btn{min-height:44px}
   .adb-msg{font-size:13px;margin-top:8px;min-height:16px}.adb-msg.err{color:#b42323}.adb-msg.ok{color:#17663a}
   .adb-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:14px}
   .adb-card{border:1px solid var(--line,#dfe5ea);border-radius:12px;background:#fff;padding:12px;display:flex;flex-direction:column;gap:6px}
@@ -198,7 +200,7 @@
   .adb-card .r{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
   .adb-sw{display:flex;gap:6px;flex-wrap:wrap}.adb-sw button{width:44px;height:44px;border-radius:10px;border:2px solid #fff;box-shadow:0 0 0 1px #cfd8e0;cursor:pointer}
   .adb-colors{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}.adb-colors label{font-size:12.5px;display:flex;gap:6px;align-items:center}
-  .adb-colors input{width:44px;height:36px;border:0;padding:0;background:none}
+  .adb-colors input{width:48px;height:44px;border:0;padding:0;background:none}
   .adb-cap{border:1px dashed #cfd8e0;border-radius:10px;padding:8px 10px;margin-top:6px;font-size:13.5px;cursor:pointer}
   .adb-pub{background:#f6f8fa;border-style:dashed}
   @media(max-width:980px){.adb input[type=text],.adb textarea,.adb select{font-size:16px;min-height:44px}}`;
@@ -207,18 +209,19 @@
     const c = S.ctx;
     A.host.innerHTML = `<style>${CSS}</style>
       <div class="ph"><div><h1>Social Ads</h1><div class="sub">Make Facebook, Instagram and LinkedIn ads with your authorized products, official photos and your store details.</div></div>
-        <div><a class="btn pri" id="adbNew">+ New ad</a></div></div>
+        <div><button type="button" class="btn pri" id="adbNew">+ New ad</button></div></div>
       ${c.preview ? '<div class="card"><div class="msg">HCPS read-only preview — ads can be designed and downloaded but not saved.</div></div>' : ''}
+      ${c.blocked ? '<div class="card"><div class="msg">HCPS has paused public marketing for this location — please contact HCPS.</div></div>' : ''}
       <div id="adbList"></div>
       <div class="adb"><div id="adbForm"></div><div class="adb-prev"><canvas id="adbCanvas" role="img" aria-label="Ad preview"></canvas>
         <div class="adb-acts">
-          <a class="btn pri" id="adbSave">Save</a><a class="btn gh" id="adbDup">Save as a copy</a>
-          <a class="btn gh" id="adbPng">⬇ PNG</a><a class="btn gh" id="adbJpg">⬇ JPEG</a><a class="btn gh" id="adbCopy">Copy caption</a>
+          <button type="button" class="btn pri" id="adbSave">Save</button><button type="button" class="btn gh" id="adbDup">Save as a copy</button>
+          <button type="button" class="btn gh" id="adbPng">⬇ PNG</button><button type="button" class="btn gh" id="adbJpg">⬇ JPEG</button><button type="button" class="btn gh" id="adbCopy">Copy caption</button>
         </div><div class="adb-msg" id="adbMsg" role="status"></div></div></div>`;
     $('#adbNew').onclick = () => { S.cur = blank(); S.row = null; S.problems = []; S.suggestions = null; form(); redraw(); say(''); };
     $('#adbSave').onclick = () => save(false); $('#adbDup').onclick = () => save(true);
     $('#adbPng').onclick = () => download('png'); $('#adbJpg').onclick = () => download('jpeg');
-    $('#adbCopy').onclick = async () => { const t = captionText(); try { await navigator.clipboard.writeText(t); say('Caption copied.', 'ok'); } catch (x) { say('Copy did not work in this browser — select the caption text instead.', 'err'); } };
+    $('#adbCopy').onclick = async () => { if (!(await freshCheck())) return; const t = captionText(); try { await navigator.clipboard.writeText(t); say('Caption copied.', 'ok'); } catch (x) { say('Copy did not work in this browser — select the caption text instead.', 'err'); } };
   }
   const captionText = () => [S.cur.caption, S.cur.hashtags.map((h) => '#' + h).join(' ')].filter(Boolean).join('\n\n');
   function say(m, cls) { const el = $('#adbMsg'); if (el) { el.textContent = m || ''; el.className = 'adb-msg' + (cls ? ' ' + cls : ''); } }
@@ -229,7 +232,7 @@
     host.innerHTML = mine.length ? `<h3 style="margin:4px 0 8px">Your saved ads</h3><div class="adb-list">${mine.map((a) => `<div class="adb-card"><b>${e(a.title || a.headline || 'Untitled ad')}</b>
       <span>${e((S.ctx.templates[a.template] || {}).label || a.template)} · ${e((S.ctx.formats[a.format] || {}).label || a.format).split('—')[0]}</span>
       <span>Updated ${e(new Date(a.updated_at).toLocaleDateString())}</span>
-      <div class="r"><a class="btn gh acsm" data-open="${e(a.id)}">Open</a><a class="btn gh acsm" data-dup="${e(a.id)}">Duplicate</a>${S.ctx.can_edit ? `<a class="btn gh acsm" data-arch="${e(a.id)}">Archive</a>` : ''}</div></div>`).join('')}</div>` : '';
+      <div class="r"><button type="button" class="btn gh acsm" data-open="${e(a.id)}">Open</button><button type="button" class="btn gh acsm" data-dup="${e(a.id)}">Duplicate</button>${S.ctx.can_edit ? `<button type="button" class="btn gh acsm" data-arch="${e(a.id)}">Archive</button>` : ''}</div></div>`).join('')}</div>` : '';
     host.querySelectorAll('[data-open]').forEach((b) => { b.onclick = () => open(b.getAttribute('data-open')); });
     host.querySelectorAll('[data-dup]').forEach((b) => { b.onclick = async () => { const r = await A.api({ action: 'ads_duplicate', id: b.getAttribute('data-dup') }); if (r && r.ok) { await refreshList(); open(r.row.id); say(r.dropped ? `Copied. ${r.dropped} product(s) no longer authorized were left out.` : 'Copied.', 'ok'); } else say((r && r.error) || 'Could not copy.', 'err'); }; });
     host.querySelectorAll('[data-arch]').forEach((b) => { b.onclick = async () => { if (!window.confirm('Archive this ad? It leaves your list.')) return; const r = await A.api({ action: 'ads_archive', id: b.getAttribute('data-arch') }); if (r && r.ok) { if (S.row && S.row.id === b.getAttribute('data-arch')) { S.row = null; } await refreshList(); } else say((r && r.error) || 'Could not archive.', 'err'); }; });
@@ -258,7 +261,7 @@
       ${kind === 'general' ? '' : `<div class="adb-sec"><h3>3 · ${kind === 'single' ? 'Product' : `Products (2–${max})`}</h3>
         <input type="text" id="adbQ" placeholder="Search your authorized products (${c.products.length})" value="${e(S.q)}" aria-label="Search products">
         <div class="adb-sel">${cur.products.map((r, i) => { const p = productBy(r); return p ? `<span>${e(p.name)} <label><input type="checkbox" data-sp="${i}"${r.show_price !== false ? ' checked' : ''}> price</label><button type="button" data-rm="${i}" aria-label="Remove ${e(p.name)}">✕</button></span>` : ''; }).join('')}</div>
-        <div class="adb-plist" role="listbox" aria-label="Products">${plist.map((p) => `<div class="adb-p${cur.products.some((r) => keyOf(r) === keyOf(p)) ? ' on' : ''}" role="option" tabindex="0" data-pk="${e(keyOf(p))}">${p.image ? `<img alt="" loading="lazy" src="${e(/^\//.test(p.image) ? p.image : p.image)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph0'}))">` : '<div class="ph0"></div>'}<div class="n"><b>${e(p.name)}</b><span>${e(p.code)} · ${e(p.category || '')} · ${e(p.price != null ? (p.price_label ? p.price_label + ' ' : '') + money(p.price) : 'Call for Price')}</span></div></div>`).join('') || '<div class="adb-p">No products match.</div>'}</div></div>`}
+        <div class="adb-plist" role="listbox" aria-label="Products">${plist.map((p) => `<div class="adb-p${cur.products.some((r) => keyOf(r) === keyOf(p)) ? ' on' : ''}" role="option" tabindex="0" aria-selected="${cur.products.some((r) => keyOf(r) === keyOf(p)) ? 'true' : 'false'}" data-pk="${e(keyOf(p))}">${p.image ? `<img alt="" loading="lazy" src="${e(/^\//.test(p.image) ? p.image : p.image)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph0'}))">` : '<div class="ph0"></div>'}<div class="n"><b>${e(p.name)}</b><span>${e(p.code)} · ${e(p.category || '')} · ${e(p.price != null ? (p.price_label ? p.price_label + ' ' : '') + money(p.price) : 'Call for Price')}</span></div></div>`).join('') || '<div class="adb-p">No products match.</div>'}</div></div>`}
       <div class="adb-sec"><h3>${kind === 'general' ? '3' : '4'} · Words</h3>
         <label class="l" for="adbTitle">Name of this ad (only you see it)</label><input type="text" id="adbTitle" maxlength="${c.limits.title}" value="${e(cur.title || '')}">
         <label class="l" for="adbHead">Headline</label><input type="text" id="adbHead" maxlength="${c.limits.headline}" value="${e(cur.headline)}"><div class="warn" id="wHead"></div>
@@ -273,8 +276,8 @@
         ${c.dealer.has_logo ? '' : '<p style="font-size:12px;color:#5b6773">Add your logo in Account &amp; Pricing to show it on ads.</p>'}</div>
       <div class="adb-sec"><h3>Post caption</h3><textarea id="adbCap" maxlength="${c.limits.caption}" aria-label="Caption">${e(cur.caption)}</textarea><div class="warn" id="wCap"></div>
         <label class="l" for="adbTags">Hashtags</label><input type="text" id="adbTags" value="${e(cur.hashtags.map((h) => '#' + h).join(' '))}">
-        <div class="adb-acts"><a class="btn gh" id="adbSug">Suggest captions</a></div><div id="adbSugs">${(S.suggestions && S.suggestions.captions || []).map((t, i) => `<div class="adb-cap" tabindex="0" data-cap="${i}">${e(t)}</div>`).join('')}</div></div>
-      <div class="adb-sec adb-pub"><h3>Schedule &amp; publish</h3><p style="font-size:13px;margin:0">${e(c.publishing.note)}</p></div>`;
+        <div class="adb-acts"><button type="button" class="btn gh" id="adbSug">Suggest captions</button></div><div id="adbSugs">${(S.suggestions && S.suggestions.captions || []).map((t, i) => `<div class="adb-cap" tabindex="0" data-cap="${i}">${e(t)}</div>`).join('')}</div></div>
+      <div class="adb-sec adb-pub" id="adbPub"><h3>Schedule &amp; publish</h3>${pubHtml()}</div>`;
     const lsel = host.querySelector('#adbLoc'); if (lsel) lsel.onchange = async () => { await openLocation(lsel.value); };
     host.querySelectorAll('[data-tpl]').forEach((b) => { b.onclick = () => { cur.template = b.getAttribute('data-tpl'); const k = T().kind, mx = (c.templates[cur.template] || {}).max || 4;
       if (k === 'general') cur.products = []; else if (k === 'single') cur.products = cur.products.slice(0, 1); else cur.products = cur.products.slice(0, mx); form(); redraw(); }; });
@@ -298,10 +301,55 @@
     host.querySelector('#adbSug').onclick = async () => { const r = await A.api({ action: 'ads_suggest', location_id: S.loc, products: cur.products, cta: cur.cta }); if (r && r.ok) { S.suggestions = r; if (!cur.hashtags.length) cur.hashtags = r.hashtags.slice(); form(); } else say((r && r.error) || 'No suggestions just now.', 'err'); };
     host.querySelectorAll('[data-cap]').forEach((el) => { const use = () => { cur.caption = S.suggestions.captions[Number(el.getAttribute('data-cap'))]; form(); }; el.onclick = use; el.onkeydown = (ev) => { if (ev.key === 'Enter') use(); }; });
     const ro = !S.ctx.can_edit || S.ctx.preview; ['#adbSave', '#adbDup'].forEach((id) => { const b = $(id); if (b) b.style.display = ro ? 'none' : ''; });
+    bindPub();
+  }
+
+  /* ---------------- scheduling & publishing (off until the platforms approve HCPS's apps) ---------------- */
+  const PNAME = { facebook: 'Facebook Page', instagram: 'Instagram', linkedin: 'LinkedIn Page' };
+  const STATUS = { draft: 'Draft', awaiting_approval: 'Waiting for your approval', approved: 'Approved — scheduled', paused: 'Paused', publishing: 'Publishing…', published: 'Published', partially_published: 'Partly published', failed: 'Failed', cancelled: 'Cancelled' };
+  function pubHtml() {
+    const P = S.social; if (!P) return '<p style="font-size:13px;margin:0">Loading…</p>';
+    const open = P.platforms.filter((x) => x.ok);
+    const conns = P.connections.filter((c) => c.status === 'connected');
+    let h = '';
+    if (!open.length) h += `<p style="font-size:13px;margin:0 0 8px">${e(S.ctx.publishing.note)}</p>`;
+    else {
+      h += `<div class="adb-opts">${open.map((x) => `<button type="button" class="adb-opt" data-conn="${e(x.platform)}">Connect ${e(PNAME[x.platform])}</button>`).join('')}</div>`;
+      h += conns.length ? `<p style="font-size:12.5px;margin:8px 0 4px">Connected: ${conns.map((c) => `${e(PNAME[c.platform])} — ${e(c.account_name || c.external_id)} <button type="button" class="btn gh acsm" data-disc="${e(c.id)}">Disconnect</button>`).join(' · ')}</p>` : '';
+      const usable = open.filter((x) => conns.some((c) => c.platform === x.platform));
+      if (usable.length && S.ctx.can_edit) h += `<div class="adb-opts" style="margin-top:8px">${usable.map((x) => `<label class="adb-opt" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-plat="${e(x.platform)}"> ${e(PNAME[x.platform])}</label>`).join('')}</div>
+        <label class="l" for="adbWhen">Date and time</label><input type="datetime-local" id="adbWhen" style="min-height:44px;font-size:16px;border:1px solid #cfd8e0;border-radius:8px;padding:8px">
+        <div class="adb-acts"><button type="button" class="btn pri" id="adbSched">Schedule — I'll approve it next</button></div>`;
+    }
+    const posts = P.posts || [];
+    if (posts.length) h += `<h3 style="margin:12px 0 6px">Calendar</h3>${posts.map((x) => `<div class="adb-card" style="margin-bottom:8px"><b>${e(new Date(x.scheduled_at).toLocaleString())}</b>
+      <span>${e(x.platforms.map((p) => PNAME[p]).join(', '))} · ${e(STATUS[x.status] || x.status)}${x.last_error ? ' — ' + e(x.last_error) : ''}</span>
+      <div class="r">${x.status === 'awaiting_approval' ? `<button type="button" class="btn pri acsm" data-pa="post_approve" data-pid="${e(x.id)}" data-pv="${e(x.version)}">Approve</button>` : ''}
+      ${x.status === 'approved' ? `<button type="button" class="btn gh acsm" data-pa="post_pause" data-pid="${e(x.id)}" data-pv="${e(x.version)}">Pause</button>` : ''}
+      ${x.status === 'paused' ? `<button type="button" class="btn gh acsm" data-pa="post_resume" data-pid="${e(x.id)}" data-pv="${e(x.version)}">Resume</button>` : ''}
+      ${['draft', 'awaiting_approval', 'approved', 'paused', 'failed'].includes(x.status) ? `<button type="button" class="btn gh acsm" data-pa="post_cancel" data-pid="${e(x.id)}" data-pv="${e(x.version)}">Cancel</button>` : ''}</div></div>`).join('')}`;
+    return h;
+  }
+  async function loadSocial() { const r = await A.api({ action: 'social_status', location_id: S.loc }); S.social = r && r.ok ? r : { platforms: [], connections: [], posts: [] }; const el = $('#adbPub'); if (el) { el.innerHTML = '<h3>Schedule &amp; publish</h3>' + pubHtml(); bindPub(); } }
+  function bindPub() {
+    const host = $('#adbPub'); if (!host) return;
+    host.querySelectorAll('[data-conn]').forEach((b) => { b.onclick = async () => { const r = await A.api({ action: 'social_connect', location_id: S.loc, platform: b.getAttribute('data-conn') }); if (r && r.ok && /^https:\/\/(www\.facebook\.com|www\.linkedin\.com)\//.test(r.url)) window.location.assign(r.url); else say((r && r.error) || 'Not available yet.', 'err'); }; });
+    host.querySelectorAll('[data-disc]').forEach((b) => { b.onclick = async () => { if (!window.confirm('Disconnect this account? Scheduled posts to it will not publish.')) return; const r = await A.api({ action: 'social_disconnect', id: b.getAttribute('data-disc') }); if (r && r.ok) loadSocial(); else say((r && r.error) || 'Could not disconnect.', 'err'); }; });
+    host.querySelectorAll('[data-pa]').forEach((b) => { b.onclick = async () => { const act = b.getAttribute('data-pa'); if (act === 'post_cancel' && !window.confirm('Cancel this post?')) return;
+      const r = await A.api({ action: act, id: b.getAttribute('data-pid'), version: Number(b.getAttribute('data-pv')) }); if (r && r.ok) { say(act === 'post_approve' ? 'Approved — it will publish at the scheduled time.' : 'Updated.', 'ok'); loadSocial(); } else say((r && r.error) || 'Could not update the post.', 'err'); }; });
+    const sch = host.querySelector('#adbSched'); if (sch) sch.onclick = async () => {
+      if (!S.row) { say('Save the ad first, then schedule it.', 'err'); return; }
+      const platforms = [...host.querySelectorAll('[data-plat]:checked')].map((i) => i.getAttribute('data-plat')); const when = host.querySelector('#adbWhen').value;
+      if (!platforms.length || !when) { say('Choose where and when to post.', 'err'); return; }
+      if (!(await freshCheck())) return; const cv = document.createElement('canvas'); await draw(cv);
+      const r = await A.api({ action: 'post_save', ad_id: S.row.id, platforms, scheduled_at: new Date(when).toISOString(), caption: captionText(), media: cv.toDataURL('image/png') });
+      if (r && r.ok) { say('Scheduled. Approve it in the calendar below when you are ready — nothing posts without your approval.', 'ok'); loadSocial(); } else say((r && r.error) || 'Could not schedule.', 'err');
+    };
   }
 
   let drawing = null, again = false;
-  async function redraw() { if (drawing) { again = true; return; } const cv = $('#adbCanvas'); if (!cv) return; drawing = draw(cv).catch(() => {}); await drawing; drawing = null; if (again) { again = false; redraw(); } }
+  async function redraw() { if (drawing) { again = true; return; } const cv = $('#adbCanvas'); if (!cv) return;
+    cv.setAttribute('aria-label', 'Ad preview: ' + [S.cur.headline, ...S.cur.products.map((r) => (productBy(r) || {}).name).filter(Boolean), S.cur.cta].filter(Boolean).join(' — ')); drawing = draw(cv).catch(() => {}); await drawing; drawing = null; if (again) { again = false; redraw(); } }
 
   async function save(asCopy) {
     if (S.busy) return; S.busy = true; say('Saving…');
@@ -317,9 +365,8 @@
   async function download(kind) {
     if (S.busy) return; S.busy = true; say('Checking the ad…');
     try {
-      const r = await A.api({ action: 'ads_check', location_id: S.loc, ad: S.cur });
-      if (!r || !r.ok) { say((r && r.error) || 'The ad could not be checked just now — please try again.', 'err'); return; }
-      const cv = document.createElement('canvas'); await draw(cv);
+      if (!(await freshCheck())) return;   // review #115: the export is drawn from the prices the server just confirmed
+      const cv = document.createElement('canvas'); await draw(cv); redraw();
       const blob = await new Promise((res) => cv.toBlob(res, kind === 'png' ? 'image/png' : 'image/jpeg', 0.92));
       if (!blob) { say('This browser could not create the image.', 'err'); return; }
       const a = document.createElement('a'); const name = ((S.cur.title || S.cur.headline || 'hcps-ad').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'hcps-ad') + '-' + S.cur.format + '.' + (kind === 'png' ? 'png' : 'jpg');
@@ -327,13 +374,20 @@
       say(`Downloaded ${name}.`, 'ok');
     } finally { S.busy = false; }
   }
+  /* the server's check of the current ad; on success the products' current prices replace the ones loaded with the page */
+  async function freshCheck() {
+    const r = await A.api({ action: 'ads_check', location_id: S.loc, ad: S.cur });
+    if (!r || !r.ok) { say((r && r.error) || 'The ad could not be checked just now — please try again.', 'err'); return false; }
+    for (const p of r.products || []) { const i = S.ctx.products.findIndex((x) => keyOf(x) === keyOf(p)); if (i >= 0) S.ctx.products[i] = Object.assign({}, S.ctx.products[i], p); }
+    return true;
+  }
   async function openLocation(loc, keep) {
     const r = await A.api({ action: 'ads_context', location_id: loc });
     if (!r || !r.ok) { A.host.innerHTML = `<div class="ph"><div><h1>Social Ads</h1></div></div><div class="card"><div class="msg">${e((r && r.error) || 'The ad builder could not be loaded just now — please try again.')}</div></div>`; return false; }
     S.ctx = r; S.loc = r.location_id; S.images = new Map(); S.logo = null;
     if (!keep || !S.cur) { S.cur = blank(); S.row = null; }
     S.cur.products = (S.cur.products || []).filter((p) => productBy(p));
-    shell(); list(); form(); redraw(); return true;
+    S.social = null; shell(); list(); form(); redraw(); loadSocial(); return true;
   }
   window.HCPSAdBuilder = {
     async mount(host, deps) {
