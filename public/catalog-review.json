@@ -1,8 +1,15 @@
 {
   "review_id": "a555f0d69cb1",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T03:03:48Z",
+  "built_at": "2026-11-07T03:14:22Z",
   "main": "fd1696b9a215664653089b0216d9083ec1fac1ec",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 67,
+      "title": "Legacy dealers-api: never grants ordering",
+      "branch": "c8/legacy-no-grant",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
