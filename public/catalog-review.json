@@ -1,8 +1,15 @@
 {
   "review_id": "182146d895b6",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-06T22:34:51Z",
+  "built_at": "2026-11-07T00:07:41Z",
   "main": "688e4ae2182c133f35431ed6515a5c97d064e6b3",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 63,
+      "title": "Shop shows only approved lines; checkout account-setup notice; Account Center layout",
+      "branch": "c8/account-setup",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
