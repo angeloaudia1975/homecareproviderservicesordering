@@ -1,14 +1,14 @@
 {
-  "review_id": "96143c35e729",
+  "review_id": "ac697f137ed0",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T03:38:56Z",
+  "built_at": "2026-11-07T03:47:49Z",
   "main": "cd17c402f2af6a3beeccd93968850a4d4a5bd615",
   "included": [
     {
       "pr": 69,
       "title": "Portal: Social Ads view",
       "branch": "c8/ad-builder",
-      "head": "9bcc358bf3a775e8a6bfa3f6988ecae08e17141b",
+      "head": "c2746a802e91f5fa4cfacae50f442c23c42c98e8",
       "manufacturers": [],
       "other_files": 2
     }
