@@ -8617,8 +8617,9 @@ const acToast=m=>{ if(typeof window.toast==="function") window.toast(m); else al
 async function loadAccountView(){
   AC=null; AC_ERR="";
   const host=$("#view-account"); if(host) host.innerHTML=`<div class="ph"><div><h1>Account Center</h1><div class="sub">Loading your account…</div></div></div>`;
-  if(window.__PREVIEW__){ AC_ERR="preview"; }
-  else {
+  /* HCPS staff preview (2026-11-06): the server now answers the Account Center READ for a preview token (every change is
+     refused there with 403), so staff see what the dealer sees */
+  {
     const [a,c]=await Promise.all([ api(TOOLS_ENDPOINT,{action:"account_center"}).catch(()=>null), api(TOOLS_ENDPOINT,{action:"account_get"}).catch(()=>null), loadPricing().catch(()=>null) ]);
     if(a&&a.ok) AC=a; else AC_ERR=(a&&a.error)||"Your account details could not be loaded just now — please try again.";
     if(c&&c.ok) ACCOUNT={resale:c.resale||null,applications:c.applications||[],terms:c.terms||[]};
