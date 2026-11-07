@@ -168,6 +168,7 @@ const layout = (page, sel) => page.evaluate((sel) => {
         if (logo) ok(await page.evaluate(() => { const i = document.querySelector('#hdr .lg img'); const s = getComputedStyle(i); return i && s.objectFit === 'contain' && i.getBoundingClientRect().height <= 96; }), 'logo contained');
         else ok(await page.evaluate(() => document.querySelector('#hdr .wordmark') && !document.querySelector('#hdr img')), 'wordmark fallback');
         ok(/About Acme/.test(await page.textContent('#about')) && /Family owned\./.test(await page.textContent('#about')), 'about section');
+        ok(/Visit our showroom/.test(await page.textContent('#about')) === hl.includes('showroom') && (hl.includes('showroom') || /Get directions/.test(await page.textContent('#about'))), 'no showroom claim unless the dealer ticked it');
         const hls = await page.$$eval('.hls div', (d) => d.map((x) => x.textContent));
         ok(JSON.stringify(hls) === JSON.stringify(hl.map((k) => HLT[k])), 'highlights ' + JSON.stringify(hls));
         ok(!(await page.$('body script:not([src])')) && /Acme <script>x<\/script> Medical/.test(await page.textContent('#about h2')), 'escaped');

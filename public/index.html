@@ -8993,7 +8993,7 @@ function sfInitEdit(L){
 function sfTheme(k){ const t=(SFD&&SFD.locations[0]&&SFD.locations[0].themes)||{}; return t[k]||null; }
 function sfStudio(L,s,ed,dis,status,lines){
   const E=sfInitEdit(L), eff=Object.assign({},sfEff(L),E.f||{}), themes=L.themes||{}, hls=L.highlights||{}, lg=L.logo||{};
-  const draft=!!(s.draft&&L.storefront), live=!!(L.storefront&&s.enabled&&!s.hcps_blocked);
+  const draft=!!(s.draft&&L.storefront), live=!!(L.storefront&&s.enabled), drafts=live&&L.design_ready!==false;   /* switched on (also while HCPS has it paused) = changes wait for Publish */
   const sec=(id,title,body,open)=>`<details class="sfx-sec" id="sfx-${id}"${open?' open':''}><summary><b>${title}</b></summary><div class="sfx-b">${body}</div></details>`;
   const logo=lg.url?`<div class="sfx-logo"><img src="${esc(lg.url)}" alt="Your logo" onerror="this.closest('.sfx-logo').classList.add('bad')"><span class="sf-pill on">✓ Logo loaded</span></div>`
     :`<div class="sfx-logo none"><span class="sfx-word">${esc(L.name)}</span><span class="sf-pill">${lg.reason==='not_hosted'?'Logo needs re-uploading':'No logo yet'}</span></div>`;
@@ -9004,7 +9004,7 @@ function sfStudio(L,s,ed,dis,status,lines){
     <label class="fld2"><span class="rp-l">Web address</span><div class="sf-slug"><span>${esc(SFD.base)}</span><input id="sfSlug" value="${esc(eff.slug||s.slug||L.suggested_slug||'')}" maxlength="50" autocomplete="off"${dis}></div></label>
     <label class="fld2"><span class="rp-l">Headline (shown under your name and on the banner)</span><input id="sfHead" maxlength="120" value="${esc(eff.headline||'')}" placeholder="e.g. Home medical equipment for Dayton families" oninput="sfDirty()"${dis}></label>`;
   const tkeys=Object.keys(themes);
-  const appear=`<div class="sfx-themes" role="radiogroup" aria-label="Color theme">${tkeys.map(k=>`<label class="sfx-th${E.theme===k?' on':''}"><input type="radio" name="sfTheme" value="${k}"${E.theme===k?' checked':''}${dis} onchange="sfSet('theme','${k}')"><span class="sw"><i style="background:${esc(themes[k].primary)}"></i><i style="background:${esc(themes[k].accent)}"></i></span><span>${esc(themes[k].name)}${k==='blue'?' <small>(default)</small>':''}</span></label>`).join('')}
+  const appear=`${L.design_ready===false?'<div class="msg">Themes and layouts open as soon as HCPS finishes a one-step setup — your choices here are not saved yet, and the preview shows your current look.</div>':''}<div class="sfx-themes" role="radiogroup" aria-label="Color theme">${tkeys.map(k=>`<label class="sfx-th${E.theme===k?' on':''}"><input type="radio" name="sfTheme" value="${k}"${E.theme===k?' checked':''}${dis} onchange="sfSet('theme','${k}')"><span class="sw"><i style="background:${esc(themes[k].primary)}"></i><i style="background:${esc(themes[k].accent)}"></i></span><span>${esc(themes[k].name)}${k==='blue'?' <small>(default)</small>':''}</span></label>`).join('')}
     <label class="sfx-th${E.theme==='custom'?' on':''}"><input type="radio" name="sfTheme" value="custom"${E.theme==='custom'?' checked':''}${dis} onchange="sfSet('theme','custom')"><span class="sw"><i style="background:${esc(E.primary)}"></i><i style="background:${esc(E.accent)}"></i></span><span>Custom dealership colors</span></label></div>
     ${E.theme==='custom'?`<div class="sf-row"><label class="fld2"><span class="rp-l">Main color (header bar, navigation)</span><span class="sfx-col"><input type="color" value="${esc(E.primary)}" oninput="sfColor('primary',this.value)"${dis} aria-label="Pick main color"><input id="sfPrim" value="${esc(E.primary)}" maxlength="7" onchange="sfColor('primary',this.value)"${dis} aria-label="Main color HEX"></span></label>
       <label class="fld2"><span class="rp-l">Accent color (buttons)</span><span class="sfx-col"><input type="color" value="${esc(E.accent)}" oninput="sfColor('accent',this.value)"${dis} aria-label="Pick accent color"><input id="sfAcc" value="${esc(E.accent)}" maxlength="7" onchange="sfColor('accent',this.value)"${dis} aria-label="Accent color HEX"></span></label></div>
@@ -9028,8 +9028,8 @@ function sfStudio(L,s,ed,dis,status,lines){
     <div class="sf-note">Your dealer cost, account numbers and contract prices are never shown. Customers can't order online — they call you or send a request.</div>`;
   const pub=`<div class="sfx-state">${status}${draft?' <span class="sf-pill warn">Unpublished changes saved'+(s.draft_at?' '+esc(new Date(s.draft_at).toLocaleString()):'')+'</span>':''}${!L.design_ready?' <span class="sf-pill">Design options open shortly</span>':''}</div>
     ${!ed?`<div class="msg">${SFD.preview?'Read-only preview.':'Your head office manages this location\'s storefront.'}</div>`:''}
-    <div class="sf-note">${live?'Your storefront is live. <b>Save draft</b> keeps your changes private; customers see them only when you press <b>Publish changes</b>.':'Nothing is public until you press <b>Publish storefront</b>.'}</div>
-    <div class="sf-acts">${ed?(live?`<a class="btn gh" id="sfSave" onclick="sfSave('draft')">Save draft</a><a class="btn pri" id="sfPublish" onclick="sfSave('publish')">Publish changes</a>${draft?`<a class="btn gh" onclick="sfSave('discard')">Discard draft</a>`:''}`:`<a class="btn gh" id="sfSave" onclick="sfSave('save')">Save without publishing</a><a class="btn pri" id="sfPublish" onclick="sfSave('publish')">Publish storefront</a>`):''}
+    <div class="sf-note">${drafts?'Your storefront is switched on. <b>Save draft</b> keeps your changes private; customers see them only when you press <b>Publish changes</b>.':live?'Your storefront is live — <b>Save changes</b> publishes them.':'Nothing is public until you press <b>Publish storefront</b>.'}</div>
+    <div class="sf-acts">${ed?(drafts?`<a class="btn gh" id="sfSave" onclick="sfSave('draft')">Save draft</a><a class="btn pri" id="sfPublish" onclick="sfSave('publish')">Publish changes</a>${draft?`<a class="btn gh" onclick="sfSave('discard')">Discard draft</a>`:''}`:live?`<a class="btn pri" id="sfSave" onclick="sfSave('publish')">Save changes</a>`:`<a class="btn gh" id="sfSave" onclick="sfSave('save')">Save without publishing</a><a class="btn pri" id="sfPublish" onclick="sfSave('publish')">Publish storefront</a>`):''}
      <a class="btn gh" onclick="sfPreview()">Preview as customers see it</a>
      ${ed&&live?`<a class="btn gh" onclick="sfSave('unpublish')">Unpublish</a>`:''}</div>
     <span id="sfMsg" class="sf-msg" role="status"></span>`;
@@ -9246,7 +9246,7 @@ function sfSettings(){
   const settings={slug:v('sfSlug').trim().toLowerCase(),headline:v('sfHead'),about:v('sfAbout'),phone:v('sfPhone'),email:v('sfEmail'),hours:v('sfHours'),
     show_address:!!(document.getElementById('sfAddr')||{}).checked,price_mode:v('sfPrice')};
   if(SFE){ settings.hidden_categories=SFE.hidden.slice(); if(SFE.displays) settings.hidden_categories.push('+Displays & Merchandising');   /* opt-in: display items shown publicly */
-    settings.design=sfDesign(); }
+    const L0=SFD&&SFD.locations.find(l=>l.id===SFLOC); if(!L0||L0.design_ready!==false) settings.design=sfDesign(); }   /* before HCPS's design setup: the preview shows the look that would really publish */
   if(all) settings.lines=all.checked?null:[...document.querySelectorAll('.sf-line:checked')].map(x=>x.value);
   return settings;
 }
