@@ -1,8 +1,15 @@
 {
   "review_id": "3eca4c857394",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T19:52:22Z",
+  "built_at": "2026-11-07T21:28:30Z",
   "main": "47b3c18b67df6ddf0352535c1329a3eda6d6e31e",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 75,
+      "title": "Storefront design upgrade: Professional / Modern / Classic, themes, category grid, My Storefront studio; P3020",
+      "branch": "c9/storefront-design",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
