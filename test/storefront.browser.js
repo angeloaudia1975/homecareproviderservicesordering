@@ -30,20 +30,20 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 /* the live Content-Security-Policy, read from netlify.toml — the page must work under it (no inline script) */
 const CSP = (fs.readFileSync(path.join(PUB, '..', 'netlify.toml'), 'utf8').match(/for = "\/store\.html"[\s\S]*?Content-Security-Policy = "([^"]+)"/) || [])[1];
 if (!CSP) { console.log('FAIL no CSP for /store.html in netlify.toml'); process.exit(1); }
-async function publicPage(browser, w, h) {
+async function publicPage(browser, w, h, data) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: w < 768, hasTouch: w < 1024 });
   const page = await ctx.newPage(); const st = { posts: [], csp: [] };
   page.on('console', (m) => { if (/Content Security Policy/i.test(m.text())) st.csp.push(m.text()); });
   await page.route('**/*', async (route) => { const req = route.request(), u = new URL(req.url());
     if (u.host === 'homecareproviderservices.netlify.app' && /storefront-public/.test(u.pathname)) {
       if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS, body: '' });
-      if (req.method() === 'GET') return route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(PUBLIC) });
+      if (req.method() === 'GET') return route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(data || PUBLIC) });
       const b = JSON.parse(req.postData() || '{}'); st.posts.push(b);
       if (b.action === 'inquiry' && b.consent !== true) return route.fulfill({ status: 400, contentType: 'application/json', headers: CORS, body: JSON.stringify({ ok: false, error: 'Please agree to the dealer contacting you about your request.' }) });
       return route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: '{"ok":true}' }); }
     if (u.origin === HOST && u.pathname.startsWith('/store/')) return route.fulfill({ status: 200, contentType: 'text/html', headers: { 'content-security-policy': CSP }, body: fs.readFileSync(path.join(PUB, 'store.html')) });
     if (u.origin === HOST && u.pathname === '/store.js') return route.fulfill({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(path.join(PUB, 'store.js')) });
-    if (u.origin === HOST && u.pathname === '/assets/products/bemis/B1.jpg') return route.fulfill({ status: 200, contentType: 'image/png', body: PNG });
+    if (u.origin === HOST && (u.pathname === '/assets/products/bemis/B1.jpg' || u.pathname === '/assets/logo-test.png')) return route.fulfill({ status: 200, contentType: 'image/png', body: PNG });
     if (u.host === 'd3325uqufdmhie.cloudfront.net') return route.fulfill({ status: 200, contentType: 'image/png', body: PNG });
     return route.fulfill({ status: 404, body: '' }); });
   await page.goto(HOST + '/store/acme-medical'); await page.waitForSelector('.card');
@@ -138,24 +138,71 @@ const layout = (page, sel) => page.evaluate((sel) => {
       await t(label + ': no cookies and no browser storage', async () => { const r = await page.evaluate(() => [document.cookie, localStorage.length, sessionStorage.length]); ok(r[0] === '' && r[1] === 0 && r[2] === 0, JSON.stringify(r)); ok((await ctx.cookies()).length === 0, 'cookies'); });
       await ctx.close();
     }
+    // ---- DESIGN UPGRADE (owner 2026-11-07 14:53 CT): Professional / Modern / Classic, themes, category grid, logo, introduction
+    const HLT = { local: 'Local service & support', showroom: 'Visit our showroom', delivery: 'Delivery & setup' };
+    const TH = { blue: ['#0b2f5b', '#c2410c', '#ffffff'], green: ['#14532d', '#15803d', '#ffffff'], burgundy: ['#5c1a28', '#9b1c31', '#ffffff'], custom: ['#ffeb3b', '#777777', '#000000'] };   // as the server resolves them (_storefront.publicDesign)
+    const design0 = (lay, theme, hl) => ({ layout: lay, theme, primary: TH[theme][0], accent: TH[theme][1], on_primary: TH[theme][2], on_accent: '#ffffff', link: TH[theme][1], cat_cols: 3, cat_order: ['Cat L', 'Lift Chairs'], highlights: hl.map((k) => ({ key: k, text: HLT[k] })) });
+    const layoutCheck = (page) => layout(page, '.btn,.ccard,nav.mainnav a,nav.mainnav button,.chip');
+    const many = []; for (let i = 0; i < 12; i++) many.push({ manufacturer: 'bemis', code: 'C' + i, name: 'Item ' + i, category: 'Cat ' + String.fromCharCode(65 + i), image: '/assets/products/bemis/B1.jpg', attributes: {}, price: 10 + i, price_label: 'MSRP' });
+    for (const [lay, theme, w, h, logo, hl] of [['professional', 'blue', 1280, 900, true, ['local', 'showroom']], ['modern', 'green', 768, 1024, false, []], ['classic', 'burgundy', 390, 844, true, ['delivery']], ['professional', 'custom', 390, 844, false, []]]) {
+      const design = design0(lay, theme, hl);
+      const data = Object.assign({}, PUBLIC, { products: PUBLIC.products.concat(many), dealer: Object.assign({}, PUBLIC.dealer, { design, logo: logo ? HOST + '/assets/logo-test.png' : null }) });
+      const { ctx, page, st } = await publicPage(browser, w, h, data); const lab = lay + '/' + theme + ' ' + w;
+      await t(lab + ': one renderer — the same products, prices and inquiry; the layout and colors change only the presentation', async () => {
+        ok(await page.evaluate((l) => document.body.classList.contains('lay-' + l), lay), 'layout class');
+        const v = await page.evaluate(() => ({ brand: getComputedStyle(document.body).getPropertyValue('--brand').trim(), onb: getComputedStyle(document.body).getPropertyValue('--on-brand').trim(), nav: getComputedStyle(document.querySelector('nav.mainnav')).backgroundColor }));
+        ok(v.brand === design.primary && v.onb === design.on_primary, JSON.stringify(v));
+        ok((await page.$$('.card')).length > 0 && /Request information/.test(await page.textContent('#hdr')), 'cards + request');
+        ok(await page.evaluate(() => !document.querySelector('nav.cats .cat')), 'no horizontal category strip');
+      });
+      await t(lab + ': category GRID (dealer order first, configured columns, View all categories) — no horizontal scrolling', async () => {
+        const names = await page.$$eval('.ccard b', (b) => b.map((x) => x.textContent));
+        ok(names[0] === 'Cat L' && names[1] === 'Lift Chairs', 'dealer order: ' + names.slice(0, 3));
+        ok(names.length === 6, 'two rows of 3 first: ' + names.length);
+        await page.click('[data-catall]'); ok((await page.$$('.ccard')).length === 16, 'all categories: ' + (await page.$$('.ccard')).length);
+        const L = await layoutCheck(page); ok(L.overflow <= 0, 'overflow ' + L.overflow);
+        if (w >= 768) { const cols = await page.evaluate(() => getComputedStyle(document.querySelector('.cgrid')).gridTemplateColumns.split(' ').length); ok(cols === (w <= 820 ? 2 : lay === 'modern' ? 4 : 3), 'columns ' + cols); }
+        await page.click('.ccard[data-cat="Cat L"]'); await page.waitForTimeout(150); ok(/Cat L/.test(await page.textContent('.res-head h2')) && !(await page.$('.home')), 'category page');
+        await page.click('[data-home]'); await page.waitForSelector('.home'); });
+      await t(lab + ': logo shown whole (or the business name as a clean wordmark); introduction is its own section; highlights only when the dealer chose them', async () => {
+        if (logo) ok(await page.evaluate(() => { const i = document.querySelector('#hdr .lg img'); const s = getComputedStyle(i); return i && s.objectFit === 'contain' && i.getBoundingClientRect().height <= 96; }), 'logo contained');
+        else ok(await page.evaluate(() => document.querySelector('#hdr .wordmark') && !document.querySelector('#hdr img')), 'wordmark fallback');
+        ok(/About Acme/.test(await page.textContent('#about')) && /Family owned\./.test(await page.textContent('#about')), 'about section');
+        ok(/Visit our showroom/.test(await page.textContent('#about')) === hl.includes('showroom') && (hl.includes('showroom') || /Get directions/.test(await page.textContent('#about'))), 'no showroom claim unless the dealer ticked it');
+        const hls = await page.$$eval('.hls div', (d) => d.map((x) => x.textContent));
+        ok(JSON.stringify(hls) === JSON.stringify(hl.map((k) => HLT[k])), 'highlights ' + JSON.stringify(hls));
+        ok(!(await page.$('body script:not([src])')) && /Acme <script>x<\/script> Medical/.test(await page.textContent('#about h2')), 'escaped');
+        const L = await layoutCheck(page); ok(L.small.length === 0, 'small targets: ' + L.small.join(', ')); ok(st.csp.length === 0, 'CSP: ' + st.csp.join(' ')); });
+      await t(lab + ': Categories menu opens a grid, Escape closes it; search and Request information still work', async () => {
+        await page.click('#catbtn'); ok(await page.isVisible('#catdrop'), 'menu open'); await page.keyboard.press('Escape'); ok(!(await page.isVisible('#catdrop')), 'closed');
+        await page.fill('#sq', 'Item 3'); await page.press('#sq', 'Enter'); await page.waitForTimeout(150); ok(await page.textContent('.res-head .count') === '1 product', 'search: ' + await page.textContent('.res-head .count'));
+        await page.click('#hdr [data-ask]'); ok(await page.isVisible('#dlg form'), 'request form'); await page.keyboard.press('Escape'); });
+      await ctx.close();
+    }
+
     // ---- portal: My Storefront
     for (const [w, h, label] of [[390, 844, 'iphone'], [1280, 900, 'desktop']]) {
       const S = { calls: [] };
       const { ctx, page } = await open(browser, w, h, {});
-      const loc = (id, name, edit, sf) => ({ id, name, city: 'Dayton', state: 'OH', can_edit: edit, lines: [{ slug: 'bemis', name: 'Bemis' }, { slug: 'strongback', name: 'Strongback' }], default_email: 'hq@acme.test', default_phone: '555', storefront: sf, suggested_slug: 'acme-medical', link: sf ? HOST + '/store/' + sf.slug : null, live: !!(sf && sf.enabled) });
+      const THEMES = { blue: { name: 'Professional Blue', primary: '#0b2f5b', accent: '#c2410c' }, green: { name: 'Modern Green', primary: '#14532d', accent: '#15803d' }, burgundy: { name: 'Classic Burgundy', primary: '#5c1a28', accent: '#9b1c31' }, teal: { name: 'Healthcare Teal', primary: '#0f4c5c', accent: '#0e7490' }, purple: { name: 'Contemporary Purple', primary: '#3b1f63', accent: '#6d28d9' } };
+      const HL = { local: 'Local service & support', showroom: 'Visit our showroom', guidance: 'Help choosing the right product', delivery: 'Delivery & setup', repair: 'Service & repair', rental: 'Rentals available' };
+      const loc = (id, name, edit, sf, logo) => ({ id, name, city: 'Dayton', state: 'OH', can_edit: edit, lines: [{ slug: 'bemis', name: 'Bemis' }, { slug: 'strongback', name: 'Strongback' }], default_email: 'hq@acme.test', default_phone: '555', storefront: sf, suggested_slug: 'acme-medical', link: sf ? HOST + '/store/' + sf.slug : null, live: !!(sf && sf.enabled),
+        logo: logo || { url: null, source: null, reason: 'none' }, design_ready: true, themes: THEMES, highlights: HL });
       await page.route('**/functions/dealer-storefront-api', async (route) => { const b = JSON.parse(route.request().postData() || '{}'); S.calls.push(b); const R = (o) => route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(o) });
-        if (b.action === 'sf_get') return R({ ok: true, head_office: false, base: HOST + '/store/', locations: [loc('br', 'Acme Branch', true, null), loc('hq', 'Acme HQ', false, { slug: 'acme-hq', enabled: true, version: 3, lines: null, hidden_categories: [], price_mode: 'msrp' }), loc('off', 'Acme Off', true, { slug: 'acme-off', enabled: false, version: 1, lines: null, hidden_categories: [], price_mode: 'msrp' })] });
+        if (b.action === 'sf_get') return R({ ok: true, head_office: false, base: HOST + '/store/', locations: [loc('br', 'Acme Branch', true, null), loc('hq', 'Acme HQ', false, { slug: 'acme-hq', enabled: true, version: 3, lines: null, hidden_categories: [], price_mode: 'msrp' }), loc('off', 'Acme Off', true, { slug: 'acme-off', enabled: false, version: 1, lines: null, hidden_categories: [], price_mode: 'msrp' }), loc('live', 'Acme Live', true, { slug: 'acme-live', enabled: true, version: 4, lines: null, hidden_categories: [], price_mode: 'msrp', design: {}, draft: null, phone: '555' }, { url: HOST + '/assets/logo-test.png', source: 'head office', reason: null })] });
+        if (b.action === 'sf_categories') return R({ ok: true, categories: [{ manufacturer: 'bemis', line: 'Bemis', category: 'Bath Safety', count: 5, shown: 5, image: null, display: false }, { manufacturer: 'bemis', line: 'Bemis', category: 'Parts', count: 2, shown: 2, image: null, display: false }, { manufacturer: 'bemis', line: 'Bemis', category: 'Displays & Merchandising', count: 3, shown: 0, image: null, display: true }, { manufacturer: 'strongback', line: 'Strongback', category: 'Wheelchairs', count: 4, shown: 4, image: null, display: false }, { manufacturer: 'strongback', line: 'Strongback', category: 'Parts', count: 1, shown: 1, image: null, display: false }] });
         if (b.action === 'sf_inquiries') return R({ ok: true, inquiries: [{ id: 'i1', dealer_id: 'br', created_at: '2026-11-06T10:00:00Z', name: 'Pat <b>', email: 'pat@example.com', phone: null, message: 'Hi', product_name: 'Seat', product_code: 'B1', status: 'new' }] });
         if (b.action === 'sf_prices') return R({ ok: true, head_office: true, can_edit: true, lines: [{ slug: 'golden-technologies', name: 'Golden Technologies' }, { slug: 'bemis', name: 'Bemis' }], policies: { 'golden-technologies': 'map', bemis: 'unknown' },
           flag_text: { below_map: 'Below the minimum advertised price (MAP).', rules_unknown: 'Rules not recorded yet.' }, products: [
             { manufacturer: 'golden-technologies', code: 'PR-501', name: 'Cloud <i>', category: 'Lift Chairs', price: 2499, price_label: 'MSRP', source: 'msrp', calculated: 2200, msrp: 2499, flags: [{ on: 'dealer', flag: 'below_map', map: 1999 }], your_price: 1500, your_price_here: null, company_price: 1500 },
             { manufacturer: 'bemis', code: 'B1', name: 'Seat', category: 'Bath Safety', price: null, price_label: 'Call for Price', source: 'call', calculated: 111, msrp: null, flags: [{ on: 'calculated', flag: 'rules_unknown' }], your_price: null, your_price_here: null, company_price: null }] });
         if (b.action === 'sf_preview') return R(Object.assign({}, PUBLIC, { preview: true, dealer: Object.assign({}, PUBLIC.dealer, { name: 'Preview Dealer' }), price_note: 'Preview — this is what customers see.' }));
-        if (b.action === 'sf_save') return R({ ok: true, storefront: Object.assign({ version: 1, lines: b.settings.lines, hidden_categories: b.settings.hidden_categories, price_mode: b.settings.price_mode }, b.settings), link: HOST + '/store/' + b.settings.slug, live: b.settings.enabled });
+        if (b.action === 'sf_save') { const draft = b.mode === 'draft'; const sf = Object.assign({ version: 1, lines: b.settings.lines, hidden_categories: b.settings.hidden_categories, price_mode: b.settings.price_mode }, draft ? { slug: 'acme-live', enabled: true, design: {}, draft: b.settings, draft_at: '2026-11-07T20:00:00Z' } : b.settings); return R({ ok: true, storefront: sf, link: HOST + '/store/' + sf.slug, live: draft ? true : b.settings.enabled, draft }); }
         return R({ ok: true }); });
       await page.route('**/functions/dealer-retail-api', async (route) => { const b = JSON.parse(route.request().postData() || '{}'); S.calls.push(Object.assign({ api: 'retail' }, b)); return route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify({ ok: true, saved: (b.rows || []).filter((r) => r.price != null).length, removed: (b.rows || []).filter((r) => r.price == null).length, prices: [] }) }); });
       await page.route('**/store.html', (route) => route.fulfill({ status: 200, contentType: 'text/html', headers: { 'content-security-policy': CSP }, body: fs.readFileSync(path.join(PUB, 'store.html')) }));
       await page.route('**/store.js', (route) => route.fulfill({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(path.join(PUB, 'store.js')) }));
+      await page.route('**/assets/logo-test.png', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
       await page.evaluate(() => { PREVIEW = null; window.__PREVIEW__ = null; window.confirm = () => true; try { AUTH.session = { access_token: 'test-dealer-token', expires_at: Math.floor(Date.now() / 1000) + 3600 }; } catch (e) {} });
       await page.evaluate(() => showP360('storefront')); await page.waitForSelector('#sfSlug');
       await t(label + ': no promotion before the storefront has an address', async () => ok(await page.$$eval('.sf-promo', (b) => b.length) === 0, 'promo shown'));
@@ -173,13 +220,50 @@ const layout = (page, sel) => page.evaluate((sel) => {
         const s = S.calls.filter((c) => c.action === 'sf_save').pop();
         ok(s && s.location_id === 'br' && s.settings.slug === 'acme-medical' && s.settings.enabled === true && s.settings.headline === 'Welcome' && JSON.stringify(s.settings.lines) === '["bemis"]' && s.settings.price_mode === 'call' && s.version === 1, JSON.stringify(s));
         ok(/Saved — your storefront is live/.test(await page.textContent('#view-storefront')), 'saved message'); });
-      await t(label + ': DISPLAYS & MERCHANDISING — off by default; ticking it opts in ("+Displays & Merchandising"); hidden categories kept', async () => {
-        ok(!(await page.isChecked('#sfDisplays')), 'off by default');
-        const saved = async () => { await page.evaluate(() => sfSave(true)); await page.waitForTimeout(400); return S.calls.filter((c) => c.action === 'sf_save').pop().settings.hidden_categories; };
-        await page.fill('#sfHide', 'Parts'); let hc = await saved(); ok(JSON.stringify(hc) === '["Parts"]', JSON.stringify(hc));
-        await page.check('#sfDisplays'); hc = await saved(); ok(JSON.stringify(hc) === '["Parts","+Displays & Merchandising"]', JSON.stringify(hc));
-        ok(await page.isChecked('#sfDisplays') && await page.inputValue('#sfHide') === 'Parts', 'reopened with the opt-in ticked and no token in the text box');
-        await page.uncheck('#sfDisplays'); await page.fill('#sfHide', ''); await saved(); });
+      const lastSave = () => S.calls.filter((c) => c.action === 'sf_save').pop();
+      await t(label + ': CATEGORY MANAGER — every category with a checkbox; Displays & Merchandising hidden by default (opt-in); hide per manufacturer; reorder with ↑ ↓; Restore defaults', async () => {
+        await page.waitForSelector('.sfx-cat', { timeout: 5000 }).catch(async () => { throw new Error('mgr: ' + await page.evaluate(() => (document.getElementById('sfCatMgr') || {}).innerHTML)); });
+        const rows = await page.$$eval('.sfx-cat', (r) => r.map((x) => [x.dataset.cat, x.querySelector('input').checked]));
+        ok(JSON.stringify(rows.find((r) => r[0] === 'Displays & Merchandising')) === '["Displays & Merchandising",false]' && rows.filter((r) => r[1]).length === rows.length - 1, JSON.stringify(rows));
+        const saved = async () => { await page.evaluate(() => sfSave('publish')); await page.waitForTimeout(400); await page.waitForSelector('#sfCatMgr .sfx-tabs', { timeout: 5000 }).catch(async () => { throw new Error('after save: ' + await page.evaluate(() => (document.getElementById('sfCatMgr') || {}).innerHTML + ' | ' + (document.getElementById('sfMsg')||{}).textContent)); }); return lastSave().settings; };
+        await page.uncheck('.sfx-cat[data-cat="Parts"] input'); let st = await saved(); ok(JSON.stringify(st.hidden_categories) === '["Parts"]', JSON.stringify(st.hidden_categories));
+        await page.check('.sfx-cat[data-cat="Displays & Merchandising"] input'); st = await saved(); ok(JSON.stringify(st.hidden_categories) === '["Parts","+Displays & Merchandising"]', JSON.stringify(st.hidden_categories));
+        ok(await page.isChecked('.sfx-cat[data-cat="Displays & Merchandising"] input') && !(await page.isChecked('.sfx-cat[data-cat="Parts"] input')), 'reopened with the saved choices');
+        const first = await page.$eval('.sfx-cat', (x) => x.dataset.cat); await page.click('.sfx-cat .mv button[aria-label^="Move ' + first + ' down"]');
+        st = await saved(); ok(st.design.cat_order[1] === first, JSON.stringify(st.design.cat_order));
+        await page.evaluate(() => sfTab('mfr')); await page.uncheck('input[data-m="strongback"][data-c="Wheelchairs"]'); ok(await page.isDisabled('input[data-m="strongback"][data-c="Parts"]'), 'a category hidden for all lines is greyed out per line');
+        st = await saved(); ok(st.hidden_categories.includes('@strongback/Wheelchairs') && st.hidden_categories.includes('Parts'), JSON.stringify(st.hidden_categories));
+        await page.evaluate(() => sfTab('cat')); await page.evaluate(() => sfCatReset()); st = await saved();
+        ok(JSON.stringify(st.hidden_categories) === '[]' && JSON.stringify(st.design.cat_order) === '[]', 'restored defaults: ' + JSON.stringify(st)); });
+      await t(label + ': APPEARANCE & LAYOUT — Professional is the default for a new storefront; themes, custom HEX colors and layouts are saved as the design; nothing else changes', async () => {
+        await page.evaluate(() => sfLoc('br')); await page.waitForSelector('.sfx-lay');
+        ok(await page.isChecked('input[name="sfLay"][value="professional"]') && await page.isChecked('input[name="sfTheme"][value="blue"]'), 'defaults');
+        ok(!(await page.$('input[name="sfLay"][value="standard"]')), 'no "current look" option for a storefront that was never published');
+        await page.click('label.sfx-th:has(input[value="green"])'); await page.click('label.sfx-lay:has(input[value="modern"])');
+        await page.selectOption('#sfCols', '3'); await page.evaluate(() => { document.querySelector('.sf-hl[value="showroom"]').checked = true; sfHl(); });
+        await page.evaluate(() => sfSave('save')); await page.waitForTimeout(400); let d = lastSave().settings.design;
+        ok(d.theme === 'green' && d.layout === 'modern' && d.cat_cols === 3 && JSON.stringify(d.highlights) === '["showroom"]' && !('primary' in d), JSON.stringify(d));
+        await page.click('label.sfx-th:has(input[value="custom"])'); await page.fill('#sfPrim', '#123456'); await page.dispatchEvent('#sfPrim', 'change'); await page.fill('#sfAcc', '#ffcc00'); await page.dispatchEvent('#sfAcc', 'change');
+        await page.evaluate(() => sfSave('save')); await page.waitForTimeout(400); d = lastSave().settings.design;
+        ok(d.theme === 'custom' && d.primary === '#123456' && d.accent === '#ffcc00', JSON.stringify(d)); });
+      await t(label + ': LIVE PREVIEW — the panel shows the public page for the settings on screen (never saved) at desktop / tablet / mobile size', async () => {
+        const before = S.calls.filter((c) => c.action === 'sf_preview').length;
+        await page.click('label.sfx-th:has(input[value="teal"])'); await page.waitForTimeout(1200);
+        const pv = S.calls.filter((c) => c.action === 'sf_preview'); ok(pv.length > before && pv[pv.length - 1].settings.design.theme === 'teal', 'preview call with the screen design');
+        ok(!S.calls.slice(-3).some((c) => c.action === 'sf_save' && c.settings.design.theme === 'teal'), 'nothing saved by previewing');
+        await page.waitForFunction(() => { const f = document.getElementById('sfPvF'); return f && f.contentDocument && /Preview Dealer/.test(f.contentDocument.body.innerText); }, null, { timeout: 8000 });
+        for (const [dev, wpx] of [['mobile', 390], ['tablet', 768], ['desktop', 1280]]) { await page.evaluate((d) => sfDev(d), dev); ok(await page.evaluate(() => parseInt(document.getElementById('sfPvF').style.width)) === wpx, dev); } });
+      await t(label + ': LIVE storefront — Save draft keeps changes private (mode draft, no publish); Publish changes is explicit; Discard draft; the Account Center logo is shown', async () => {
+        await page.evaluate(() => sfLoc('live')); await page.waitForSelector('#sfx-pub .sf-acts');
+        ok(/Save draft/.test(await page.textContent('#sfSave')) && /Publish changes/.test(await page.textContent('#sfPublish')), 'draft + publish buttons');
+        ok(await page.isChecked('input[name="sfLay"][value="standard"]'), 'a published storefront keeps its current look until a new design is published');
+        ok(await page.$('.sfx-logo img') && /Logo loaded/.test(await page.textContent('.sfx-logo')) && /head office/.test(await page.textContent('#sfx-id')), 'logo + where it comes from');
+        await page.fill('#sfHead', 'New banner'); await page.evaluate(() => sfSave('draft')); await page.waitForTimeout(400);
+        let c = lastSave(); ok(c.mode === 'draft' && !('enabled' in c.settings) && c.settings.headline === 'New banner', JSON.stringify(c));
+        ok(/Draft saved — customers still see your published storefront/.test(await page.textContent('#view-storefront')) && /Unpublished changes saved/.test(await page.textContent('#sfx-pub')), 'draft state shown');
+        ok(await page.inputValue('#sfHead') === 'New banner', 'the draft is what the dealer keeps editing');
+        await page.evaluate(() => sfSave('discard')); await page.waitForTimeout(400); ok(lastSave().mode === 'discard', 'discard');
+        await page.evaluate(() => sfLoc('br')); await page.waitForSelector('#sfSlug'); });
       await t(label + ': STOREFRONT PRICES — each product\'s public price and its source, why a price is held, your own price saved (company or this location), bulk % of MSRP / calculated', async () => {
         await page.evaluate(() => sfPricesLoad()); await page.waitForSelector('.sfp tbody tr');
         const r = await page.evaluate(() => [...document.querySelectorAll('.sfp tbody tr')].map((tr) => tr.textContent.replace(/\s+/g, ' ').trim()));
@@ -192,7 +276,7 @@ const layout = (page, sel) => page.evaluate((sel) => {
         await page.evaluate(() => sfpScope('location')); await page.evaluate(() => sfpF('m', 'golden-technologies'));
         await page.fill('#sfpPct', '90'); await page.evaluate(() => sfpBulk('pct')); await page.evaluate(() => sfpSave()); await page.waitForTimeout(500);
         const sv2 = S.calls.filter((c) => c.api === 'retail' && c.action === 'retail_set').pop(); ok(sv2 && JSON.stringify(sv2.rows) === JSON.stringify([{ manufacturer: 'golden-technologies', code: 'PR-501', price: 2249.1, location_id: 'br' }]), "sv2: " + JSON.stringify(sv2));
-        ok(!S.calls.some((c) => c.action === 'sf_save' && c.settings && c.settings.enabled === undefined), 'prices never publish anything'); });
+        ok(!S.calls.some((c) => c.action === 'sf_save' && c.settings && c.settings.enabled === undefined && !['draft', 'discard'].includes(c.mode)), 'prices never publish anything'); });
       await t(label + ': PREVIEW — the public page inside the portal with the settings on screen; nothing counted, requests off', async () => {
         await page.evaluate(() => sfPreview()); const fr = await (await page.waitForSelector('#sfPrevOv iframe')).contentFrame(); await fr.waitForSelector('.card');
         ok(await fr.evaluate(() => document.querySelector('h1').textContent === 'Preview Dealer'), 'preview content');

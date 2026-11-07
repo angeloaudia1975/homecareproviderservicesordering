@@ -21,18 +21,48 @@
   function tel(p){return String(p||'').replace(/[^0-9+]/g,'');}
   function img(src,alt){return '<img src="'+esc(src||PH)+'" alt="'+esc(alt)+'" loading="lazy" data-ph="1">';}
   function count(o){return Object.keys(o).filter(function(k){return o[k];}).length;}
+  /* ---------- design (owner 2026-11-07 14:53 CT): layout + theme from the server; "standard" = the existing look ---------- */
+  var DS={layout:'standard'}, CATSHOW=false;
+  function isNew(){ return DS.layout==='professional'||DS.layout==='modern'||DS.layout==='classic'; }
+  var HEXRE=/^#[0-9a-f]{6}$/i;
+  function mix(hex,other,t){ var a=[1,3,5].map(function(i){return parseInt(hex.slice(i,i+2),16);}), b=[1,3,5].map(function(i){return parseInt(other.slice(i,i+2),16);});
+    return '#'+a.map(function(v,i){return Math.round(v*(1-t)+b[i]*t).toString(16).padStart(2,'0');}).join(''); }
+  function applyDesign(){
+    var d=(D.dealer&&D.dealer.design)||{}; DS=d&&typeof d==='object'?d:{layout:'standard'};
+    var b=document.body; b.classList.remove('lay','lay-professional','lay-modern','lay-classic');
+    if(!isNew()) return;
+    b.classList.add('lay','lay-'+DS.layout);
+    var r=document.body.style, ok=function(v){return HEXRE.test(String(v||''));};
+    if(ok(DS.primary)){ r.setProperty('--brand',DS.primary); r.setProperty('--brand-soft',mix(DS.primary,'#ffffff',0.92)); r.setProperty('--brand-dark',mix(DS.primary,'#000000',0.35)); }
+    if(ok(DS.on_primary)) r.setProperty('--on-brand',DS.on_primary);
+    if(ok(DS.accent)) r.setProperty('--cta',DS.accent);
+    if(ok(DS.on_accent)) r.setProperty('--on-cta',DS.on_accent);
+    if(ok(DS.link)) r.setProperty('--accent',DS.link);
+    var n=Number(DS.cat_cols); r.setProperty('--cols',String(n===2||n===3||n===4?n:4));
+  }
+  var ICO={phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+    pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>', clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+    info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>', home:'<path d="M3 10.5 12 3l9 7.5V21H3z"/><path d="M9 21v-7h6v7"/>', grid:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
+    tag:'<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>', chev:'<path d="m9 18 6-6-6-6"/>', mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+    check:'<circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/>', search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>'};
+  function ico(k){ return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">'+(ICO[k]||'')+'</svg>'; }
+  /* categories in the dealer's order (cat_order first), then by size — the same list for the grid and the menu */
+  function catList(){ var cats={}; FAM.forEach(function(f){ var c=cats[f.cat]||(cats[f.cat]={n:0,img:null}); c.n++; if(!c.img&&f.lead.image) c.img=f.lead.image; });
+    var ord=(DS.cat_order||[]).map(function(x){return String(x).toLowerCase();});
+    return Object.keys(cats).sort(function(a,b){ var ia=ord.indexOf(a.toLowerCase()), ib=ord.indexOf(b.toLowerCase()); if(ia<0) ia=1e6; if(ib<0) ib=1e6; return ia-ib||cats[b].n-cats[a].n||a.localeCompare(b); })
+      .map(function(c){ return {name:c,n:cats[c].n,img:cats[c].img}; }); }
   /* zero broken images: a picture that fails becomes the placeholder (one listener — no inline handlers, so a strict CSP holds) */
   document.addEventListener('error',function(e){ var t=e.target; if(t&&t.tagName==='IMG'&&t.getAttribute('data-ph')==='1'&&t.src!==PH){ t.removeAttribute('data-ph'); t.src=PH; } else if(t&&t.tagName==='IMG'&&t.getAttribute('data-logo')==='1') t.remove(); },true);
   var PREVIEW=location.hash==='#preview'&&window.parent!==window;
   function fail(msg){document.title='Storefront';$('hdr').innerHTML='<div class="brand"><h1>Storefront</h1></div>';$('info').innerHTML='';$('cats').innerHTML='';$('main').innerHTML='<div class="msg">'+esc(msg)+'</div>';}
   function load(){
     if(PREVIEW){ window.addEventListener('message',function(e){ if(e.origin!==location.origin||e.source!==window.parent||!e.data||e.data.type!=='hcps-storefront-preview') return;
-        var j=e.data.data; if(!j||!j.ok) return fail((j&&j.error)||'The preview could not be loaded.'); D=j; prepare(); route(); });
+        var j=e.data.data; if(!j||!j.ok) return fail((j&&j.error)||'The preview could not be loaded.'); D=j; prepare(); applyDesign(); route(); });
       window.parent.postMessage({type:'hcps-storefront-preview-ready'},location.origin); return; }
     if(!/^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])$/.test(slug)) return fail('This storefront isn\'t available.');
     fetch(API+'?s='+encodeURIComponent(slug)).then(function(r){return r.json().then(function(j){return {s:r.status,j:j};});}).then(function(x){
       if(!x.j||!x.j.ok) return fail((x.j&&x.j.error)||'This storefront isn\'t available.');
-      D=x.j; prepare(); route();
+      D=x.j; prepare(); applyDesign(); route();
     }).catch(function(){fail('This storefront can\'t be shown just now — please try again shortly.');});
   }
 
@@ -89,7 +119,31 @@
     while((m=re.exec(s))) idx.push(m.index);
     if(idx.length<2) return [s];
     var out=[]; if(idx[0]>0) out.push(s.slice(0,idx[0]).trim()); for(var i=0;i<idx.length;i++) out.push(s.slice(idx[i],idx[i+1]).trim()); return out.filter(Boolean); }
+  function todayLine(hl){ var today=DAYS[new Date().getDay()]; return hl.filter(function(l){return l.toLowerCase().indexOf(today.slice(0,3).toLowerCase())===0;})[0]||''; }
+  function where(){ var a=D.dealer.address||{}; return [a.street,a.city,[a.state,a.zip].filter(Boolean).join(' ')].filter(Boolean).join(', '); }
+  function mapsUrl(){ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(D.dealer.name+' '+where()); }
+  function header2(){
+    var d=D.dealer, w=where(), a=d.address||{};
+    var logo=d.logo?'<span class="lg" id="lgbox"><img src="'+esc(d.logo)+'" alt="'+esc(d.name)+'" data-logo="1"></span>':'<span class="wordmark">'+esc(d.name)+'</span>';
+    $('hdr').className='wrap sb';
+    $('hdr').innerHTML='<a class="brand" href="#" data-home="1" aria-label="'+esc(d.name)+' — storefront home">'+logo+'</a>'+
+      '<div class="bn">'+(d.logo?'<h1 class="n">'+esc(d.name)+'</h1>':'<h1 class="n" style="position:absolute;left:-9999px">'+esc(d.name)+'</h1>')+(d.headline?'<div class="t">'+esc(d.headline)+'</div>':'')+'</div>'+
+      '<div class="acts">'+(d.phone?'<a class="callnum" href="tel:'+esc(tel(d.phone))+'">'+ico('phone')+'<span><b>'+esc(d.phone)+'</b><small>Call us</small></span></a>':'')+
+      '<button class="btn pri" type="button" data-ask="">'+ico('info')+' Request information</button></div>';
+    var nav=$('mnav'); nav.hidden=false;
+    nav.innerHTML='<div class="wrap catpanel"><a href="#" data-home="1">'+ico('home')+' Home</a><a href="#" data-all="1">'+ico('grid')+' All products</a>'+
+      '<button type="button" class="nl" id="catbtn" aria-expanded="false" aria-controls="catdrop">'+ico('tag')+' Categories ▾</button>'+
+      (d.about?'<a href="#" data-about="1">'+ico('info')+' About us</a>':'')+(a.street?'<a href="'+esc(mapsUrl())+'" target="_blank" rel="noopener">'+ico('pin')+' Directions</a>':'')+
+      '<form class="search" role="search" id="sform"><label for="sq" style="position:absolute;left:-9999px">Search products</label><input id="sq" type="search" placeholder="Search lift chairs, scooters, wheelchairs…" value="'+esc(F.q)+'" autocomplete="off"><button type="submit" aria-label="Search">'+ico('search')+'</button></form>'+
+      '<div class="catdrop" id="catdrop" role="region" aria-label="All categories"><div class="cg">'+catList().map(function(c){return '<a href="#category/'+encodeURIComponent(c.name)+'" data-catlink="'+esc(c.name)+'">'+esc(c.name)+'<span>'+c.n+'</span></a>';}).join('')+'</div></div></div>';
+    $('info').innerHTML='';
+    $('foot').innerHTML='<b>'+esc(d.name)+'</b>'+(w?' · '+esc(w):'')+(d.phone?' · <a href="tel:'+esc(tel(d.phone))+'">'+esc(d.phone)+'</a>':'')+'<br>'+esc(D.price_note)+' Products shown are available to order through this dealer; availability is confirmed when you contact them. Online purchase is not available — call or send a request. Storefront provided through the HomeCare Provider Services 360 Dealer Portal.';
+    $('sform').addEventListener('submit',function(e){e.preventDefault();F.q=$('sq').value;F.shown=48;if(!PREVIEW&&location.hash&&location.hash!=='#') location.hash=''; else { listing(); toResults(); }});
+    var li=$('lgbox')&&$('lgbox').querySelector('img'); if(li){ var sq=function(){ if(li.naturalWidth&&li.naturalHeight&&li.naturalWidth/li.naturalHeight<1.6) $('lgbox').classList.add('sq'); }; if(li.complete) sq(); else li.addEventListener('load',sq); }
+  }
+  function toResults(){ var r=$('results'); if(r) r.scrollIntoView({behavior:'smooth',block:'start'}); }
   function header(){
+    if(isNew()) return header2();
     var d=D.dealer; var a=d.address||{}, where=[a.street,a.city,[a.state,a.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     $('hdr').innerHTML='<a class="brand" href="#" data-home="1">'+(d.logo?'<img class="logo" src="'+esc(d.logo)+'" alt="'+esc(d.name)+' logo" data-logo="1">':'')+
       '<div><h1>'+esc(d.name)+'</h1>'+(d.headline?'<div class="hl">'+esc(d.headline)+'</div>':'')+'</div></a>'+
@@ -103,6 +157,7 @@
     $('sform').addEventListener('submit',function(e){e.preventDefault();F.q=$('sq').value;F.shown=48;if(!PREVIEW&&location.hash&&location.hash!=='#') location.hash=''; else listing();});
   }
   function catTiles(){
+    if(isNew()){ $('cats').innerHTML=''; return; }
     var cats={}; FAM.forEach(function(f){ var c=cats[f.cat]||(cats[f.cat]={n:0,img:null}); c.n++; if(!c.img&&f.lead.image) c.img=f.lead.image; });
     var names=Object.keys(cats).sort(function(a,b){return cats[b].n-cats[a].n||a.localeCompare(b);});
     if(names.length<2){ $('cats').innerHTML=''; return; }
@@ -150,9 +205,10 @@
     if(!D) return; catTiles(); var drawer=!!($('filters')&&$('filters').classList.contains('on'));
     var L=results(), one=count(F.cats)===1?Object.keys(F.cats).filter(function(k){return F.cats[k];})[0]:'', d=D.dealer;
     var nf=count(F.cats)+count(F.mfrs)+count(F.cap)+count(F.seat)+count(F.feat)+(F.min?1:0)+(F.max?1:0);
-    $('main').innerHTML=(d.about&&!one&&!nf&&!F.q?'<div class="intro">'+esc(d.about)+'</div>':'')+
+    var home=!one&&!nf&&!F.q;
+    $('main').innerHTML=(isNew()?(home?homeHtml():''):(d.about&&home?'<div class="intro">'+esc(d.about)+'</div>':''))+
       '<div class="crumbs"><a href="#" data-home="1">Home</a> › '+(one?esc(one):'All products')+'</div>'+
-      '<div class="layout"><aside class="filters" id="filters" aria-label="Filters">'+filtersHtml()+'</aside><section aria-live="polite">'+
+      '<div class="layout" id="results"><aside class="filters" id="filters" aria-label="Filters">'+filtersHtml()+'</aside><section aria-live="polite">'+
       '<div class="res-head"><h2>'+(one?esc(one):'All products')+'</h2><span class="count">'+L.length+' product'+(L.length===1?'':'s')+'</span>'+
       '<button class="btn fbtn" type="button" data-fopen="1">Filters'+(nf?' ('+nf+')':'')+'</button>'+
       '<label class="sr" for="sort" style="position:absolute;left:-9999px">Sort by</label><select id="sort"><option value="name"'+(F.sort==='name'?' selected':'')+'>Name A–Z</option><option value="plh"'+(F.sort==='plh'?' selected':'')+'>Price: low to high</option><option value="phl"'+(F.sort==='phl'?' selected':'')+'>Price: high to low</option></select>'+
@@ -168,6 +224,32 @@
     var fq=$('fq'); if(fq) fq.addEventListener('change',function(){F.q=this.value;F.shown=48;listing();});
     ['pmin','pmax'].forEach(function(id){ var e=$(id); if(e) e.addEventListener('change',function(){ F[id==='pmin'?'min':'max']=this.value.replace(/[^0-9.]/g,''); F.shown=48; listing(); }); });
     var so=$('sort'); if(so) so.addEventListener('change',function(){F.sort=this.value;listing();});
+  }
+
+  /* ---------- home (Professional / Modern / Classic): hero, dealership card, category grid, highlights, introduction ----------
+     Only the dealer's own saved words and real catalog photos — nothing is invented about the business. */
+  function heroImage(){ var L=catList(); for(var i=0;i<L.length;i++){ var c=L[i]; var f=FAM.filter(function(x){return x.cat===c.name&&x.lead.image;})[0]; if(f) return {img:f.lead.image,cat:c.name,name:f.name}; } return null; }
+  function firstSentence(t){ var s=String(t||'').replace(/\s+/g,' ').trim(); var m=s.match(/^(.{20,220}?[.!?])(\s|$)/); return m?m[1]:(s.length>220?s.slice(0,217).replace(/\s+\S*$/,'')+'…':s); }
+  function homeHtml(){
+    var d=D.dealer, w=where(), hl=hoursLines(d.hours), th=todayLine(hl), hi=heroImage(), cats=catList(), N=cats.length, lim=CATSHOW?N:Math.min(N,(Number(DS.cat_cols)||4)*2);
+    var head=d.headline||('Home medical equipment from '+d.name);
+    var sub=d.about?firstSentence(d.about):'Browse the products we carry and ask us about anything you see.';
+    var hero='<section class="heroban" aria-label="Welcome"><div class="ht"><h2>'+esc(head)+'</h2><p>'+esc(sub)+'</p><div class="hb"><button class="btn pri" type="button" data-browse="1">Browse our products</button>'+
+      (d.phone?'<a class="btn ghost" href="tel:'+esc(tel(d.phone))+'">'+ico('phone')+' Call '+esc(d.phone)+'</a>':'<button class="btn ghost" type="button" data-ask="">Request information</button>')+'</div></div>'+
+      (hi?'<div class="hi"><img src="'+esc(hi.img)+'" alt="'+esc(hi.name)+'" data-ph="1"></div><a class="hcap" href="#category/'+encodeURIComponent(hi.cat)+'" data-catlink="'+esc(hi.cat)+'">View '+esc(hi.cat)+' →</a>':'')+'</section>';
+    var card='<aside class="infocard" aria-label="Visit or call"><h3>'+esc(d.name)+'</h3>'+
+      (w?'<div class="row">'+ico('pin')+'<div>'+esc(w)+(d.address&&d.address.street?'<br><a href="'+esc(mapsUrl())+'" target="_blank" rel="noopener">Get directions</a>':'')+'</div></div>':'')+
+      (hl.length?'<div class="row">'+ico('clock')+'<div>'+(hl.length>1?(th?'<b>Today:</b> '+esc(th.replace(/^[A-Za-z]+\s*:\s*/,'')):'<b>Business hours</b>')+'<details><summary>Hours this week</summary><div class="hl2">'+hl.map(function(l){return '<div>'+esc(l)+'</div>';}).join('')+'</div></details>':esc(hl[0]))+'</div></div>':'')+
+      (d.phone?'<div class="row">'+ico('phone')+'<a class="big" href="tel:'+esc(tel(d.phone))+'">'+esc(d.phone)+'</a></div>':'')+
+      (d.email?'<div class="row">'+ico('mail')+'<a href="mailto:'+esc(d.email)+'">'+esc(d.email)+'</a></div>':'')+'</aside>';
+    var grid=N?'<section aria-label="Shop by category"><div class="secth"><h2>Shop by category</h2>'+(N>lim||CATSHOW?'<button type="button" data-catall="1">'+(CATSHOW?'Show fewer categories':'View all categories ('+N+')')+' →</button>':'<button type="button" data-all="1">View all products →</button>')+'</div>'+
+      '<div class="cgrid" style="margin-top:12px">'+cats.slice(0,lim).map(function(c){return '<button type="button" class="ccard" data-cat="'+esc(c.name)+'"><span class="ci">'+img(c.img,'')+'</span><span><b>'+esc(c.name)+'</b><small>'+c.n+' product'+(c.n===1?'':'s')+'</small></span><span class="chev">'+ico('chev')+'</span></button>';}).join('')+'</div></section>':'';
+    var hls=(DS.highlights||[]).length?'<section class="hls" aria-label="Why customers choose us">'+DS.highlights.map(function(h){return '<div>'+ico('check')+esc(h.text)+'</div>';}).join('')+'</section>':'';
+    var about=d.about?'<section class="aboutc" id="about" aria-label="About us"><div><h2>About '+esc(d.name)+'</h2><p>'+esc(d.about)+'</p></div><div class="acts">'+
+      (d.phone?'<a class="btn brand" href="tel:'+esc(tel(d.phone))+'">'+ico('phone')+' Call '+esc(d.phone)+'</a>':'')+(d.address&&d.address.street?'<a class="btn" href="'+esc(mapsUrl())+'" target="_blank" rel="noopener">'+ico('pin')+((DS.highlights||[]).some(function(h){return h.key==='showroom';})?' Visit our showroom':' Get directions')+'</a>':'')+
+      '<button class="btn pri" type="button" data-ask="">Request information</button></div></section>':'';
+    var order=DS.layout==='classic'?[hero,hls,grid,about]:DS.layout==='modern'?[hero,grid,hls,about]:['<div class="hero">'+hero+card+'</div>',grid,hls,about];
+    return '<div class="home">'+order.join('')+'</div>';
   }
 
   /* ---------- product page ---------- */
@@ -249,8 +331,15 @@
     var t=e.target.closest?e.target:null; if(!t) return;
     if(t.closest('[data-close]')||t.id==='ov'){ close(); return; }
     var a=t.closest('a[href^="#"]'); if(a&&PREVIEW){ e.preventDefault(); var hh=a.getAttribute('href'); if(hh==='#'){F.cats={};listing();} else setHash(hh); return; }
+    if(t.closest('#catbtn')){ var dd=$('catdrop'), on=!dd.classList.contains('on'); dd.classList.toggle('on',on); $('catbtn').setAttribute('aria-expanded',String(on)); if(on){ var f1=dd.querySelector('a'); if(f1) f1.focus(); } return; }
+    var cl=t.closest('[data-catlink]'); if(cl){ e.preventDefault(); var cn=cl.getAttribute('data-catlink'); var dd2=$('catdrop'); if(dd2){ dd2.classList.remove('on'); $('catbtn').setAttribute('aria-expanded','false'); } F.cats={}; F.cats[cn]=true; F.shown=48; if(!PREVIEW) location.hash='category/'+encodeURIComponent(cn); else listing(); window.scrollTo(0,0); return; }
+    if(t.closest('[data-catall]')){ CATSHOW=!CATSHOW; listing(); return; }
+    if(t.closest('[data-browse]')){ toResults(); return; }
+    if(t.closest('[data-about]')){ e.preventDefault(); var ab=$('about'); if(!ab){ F.q='';F.cats={};F.mfrs={};F.min='';F.max='';F.cap={};F.seat={};F.feat={}; if(!PREVIEW&&location.hash&&location.hash!=='#'){ location.hash=''; setTimeout(function(){ var a2=$('about'); if(a2) a2.scrollIntoView(); },60); return; } listing(); ab=$('about'); } if(ab) ab.scrollIntoView({behavior:'smooth'}); return; }
+    if(t.closest('[data-all]')){ e.preventDefault(); F.q='';F.cats={};F.mfrs={};F.min='';F.max='';F.cap={};F.seat={};F.feat={};F.shown=48; var sq2=$('sq'); if(sq2) sq2.value=''; if(!PREVIEW&&location.hash&&location.hash!=='#'){ location.hash=''; setTimeout(toResults,60); } else { listing(); toResults(); } return; }
+    if(!t.closest('#catdrop')&&$('catdrop')&&$('catdrop').classList.contains('on')){ $('catdrop').classList.remove('on'); $('catbtn').setAttribute('aria-expanded','false'); }
     if(t.closest('[data-home]')){ e.preventDefault(); F.q='';F.cats={};F.mfrs={};F.min='';F.max='';F.cap={};F.seat={};F.feat={};F.shown=48; var sq=$('sq'); if(sq) sq.value=''; if(PREVIEW||!location.hash||location.hash==='#') listing(); else location.hash=''; return; }
-    var c=t.closest('[data-cat]'); if(c){ var name=c.getAttribute('data-cat'); var on=F.cats[name]&&count(F.cats)===1; F.cats={}; if(!on) F.cats[name]=true; F.shown=48; if(!PREVIEW&&location.hash.indexOf('#product/')===0) location.hash=on?'':'category/'+encodeURIComponent(name); else listing(); return; }
+    var c=t.closest('[data-cat]'); if(c){ var name=c.getAttribute('data-cat'); var on=F.cats[name]&&count(F.cats)===1; F.cats={}; if(!on) F.cats[name]=true; F.shown=48; if(!PREVIEW&&(location.hash.indexOf('#product/')===0||(isNew()&&!on))) location.hash=on?'':'category/'+encodeURIComponent(name); else listing(); if(isNew()) window.scrollTo(0,0); return; }
     var o=t.closest('[data-opt]'); if(o){ var key=decodeURIComponent(location.hash.replace(/^#product\//,'')).split('//')[0]; var cur=PREVIEW?(o.closest('.pdp')&&o.closest('.pdp').getAttribute('data-k')):key; setHash('#product/'+encodeURIComponent((cur||key)+'//'+o.getAttribute('data-opt'))); return; }
     var g=t.closest('[data-g]'); if(g){ $('gmain').innerHTML=img(g.getAttribute('data-g'),''); [].forEach.call(document.querySelectorAll('[data-g]'),function(b){b.setAttribute('aria-pressed',String(b===g));}); return; }
     var af=t.closest('[data-askf]'); if(af){ var ff=BYKEY[af.getAttribute('data-askf')]; if(ff) ask(ff.ps.length===1?ff.ps[0]:null, ff.ps.length>1?ff.name:null); return; }
@@ -264,7 +353,7 @@
     if(t.closest('[data-fclose]')){ $('filters').classList.remove('on'); return; }
   });
   addEventListener('keydown',function(e){
-    if(e.key==='Escape'){ if($('filters')&&$('filters').classList.contains('on')) $('filters').classList.remove('on'); close(); return; }
+    if(e.key==='Escape'){ if($('catdrop')&&$('catdrop').classList.contains('on')){ $('catdrop').classList.remove('on'); $('catbtn').setAttribute('aria-expanded','false'); $('catbtn').focus(); return; } if($('filters')&&$('filters').classList.contains('on')) $('filters').classList.remove('on'); close(); return; }
     if(e.key==='Tab'&&$('ov').classList.contains('on')){ var f=focusables(); if(!f.length) return; var first=f[0], last=f[f.length-1];
       if(e.shiftKey&&(document.activeElement===first||!$('dlg').contains(document.activeElement))){ e.preventDefault(); last.focus(); }
       else if(!e.shiftKey&&document.activeElement===last){ e.preventDefault(); first.focus(); } }
