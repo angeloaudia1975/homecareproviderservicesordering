@@ -190,6 +190,12 @@
   .adb-opt{border:1.5px solid var(--line,#dfe5ea);border-radius:10px;background:#fff;padding:8px 12px;min-height:44px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;color:var(--navy,#0b1f33)}
   .adb-opt.on{border-color:#ef6325;background:#fff4ec}
   .adb-opt small{display:block;font-weight:500;color:#5b6773;font-size:11.5px}
+  .adb-consent{border:1.5px solid #1681c2;border-radius:12px;background:#f3f8fc;padding:12px 14px;margin:10px 0;font-size:13.5px;line-height:1.5}
+  .adb-consent:focus{outline:3px solid #fcb21e;outline-offset:2px}
+  .adb-consent h4{margin:0 0 6px;font-size:15px;color:var(--navy,#0b1f33)}
+  .adb-consent ul{margin:6px 0 8px;padding-left:20px} .adb-consent li{margin:3px 0}
+  .adb-consent a{color:#0f5c8f;text-decoration:underline}
+  .adb-consent .btn{min-height:44px}
   .adb label.l{display:block;font-size:12px;font-weight:700;color:#5b6773;margin:8px 0 3px}
   .adb input[type=text],.adb textarea,.adb select{width:100%;box-sizing:border-box;border:1px solid var(--line,#cfd8e0);border-radius:8px;padding:9px 10px;font:inherit;font-size:14.5px}
   .adb textarea{min-height:70px}
@@ -392,6 +398,32 @@
 
   /* ---------------- scheduling & publishing (off until the platforms approve HCPS's apps) ---------------- */
   const PNAME = { facebook: 'Facebook Page', instagram: 'Instagram', linkedin: 'LinkedIn Page' };
+  /* Authorization notice shown BEFORE the platform's sign-in (owner directive 2026-11-07). The permission lists must match
+     _social_publish.js authorizeUrl() in the admin repo (test/social-consent.test.js checks it). */
+  const POLICY = 'https://www.homecareproviderservices.org/privacy/', DELETION = 'https://www.homecareproviderservices.org/data-deletion/';
+  const CONSENT = {
+    facebook: { via: 'Facebook', what: 'a Facebook Page you manage', perms: ['pages_show_list — list the Pages you manage so you can choose one', 'pages_read_engagement — read the chosen Page\'s basic details', 'pages_manage_posts — publish the posts you approve to that Page'] },
+    instagram: { via: 'Facebook', what: 'an Instagram professional account linked to a Facebook Page you manage', perms: ['pages_show_list / pages_read_engagement — find the Page your Instagram account is linked to', 'instagram_basic — read the account\'s name and ID', 'instagram_content_publish — publish the posts you approve to it', 'business_management — reach Pages you manage through Meta Business Manager'] },
+    linkedin: { via: 'LinkedIn', what: 'a LinkedIn company page you administer', perms: ['r_organization_admin / rw_organization_admin — list the company pages you administer so you can choose one', 'w_organization_social — publish the posts you approve to that page'] },
+  };
+  function consentHtml(platform) {
+    const c = CONSENT[platform]; if (!c) return '';
+    return `<div class="adb-consent" role="region" aria-labelledby="adbConsentH" tabindex="-1">
+      <h4 id="adbConsentH">Connect ${e(PNAME[platform])} to HCPS</h4>
+      <p>You are about to connect ${e(c.what)} to HomeCare Provider Services (HCPS) for this location. ${e(c.via)} will ask you to sign in and show the permissions HCPS requests:</p>
+      <ul>${c.perms.map((x) => `<li>${e(x)}</li>`).join('')}</ul>
+      <ul class="adb-consent-k">
+        <li>You choose which ${platform === 'linkedin' ? 'company page' : platform === 'instagram' ? 'account' : 'Page'} to connect. Access to anything you don't choose is deleted.</li>
+        <li>HCPS publishes only posts you approve, one by one, in the calendar below. It does not read your messages, followers or ads.</li>
+        <li>You stay in control of your account and can disconnect here at any time, or remove "HCPS Social Publishing" in ${e(c.via)}'s settings.</li>
+        <li>Already connected? Signing in again lists your accounts again — choose the one to keep, or its access is removed after about an hour.</li>
+      </ul>
+      <p style="font-size:12.5px">Read the <a href="${POLICY}#social" target="_blank" rel="noopener">HCPS Privacy Policy</a> and <a href="${DELETION}" target="_blank" rel="noopener">Data Deletion Instructions</a>.</p>
+      <div class="adb-acts"><button type="button" class="btn pri" data-consent-go="${e(platform)}">Continue to ${e(c.via)}</button> <button type="button" class="btn gh" data-consent-cancel>Cancel</button></div>
+    </div>`;
+  }
+  /* the begin link must be HCPS's own OAuth endpoint (the site's primary domain, or its Netlify name) — never another host */
+  const BEGIN_RE = /^https:\/\/(?:www\.homecareproviderservices\.org|homecareproviderservices\.netlify\.app)\/\.netlify\/functions\/social-oauth-callback\?begin=[0-9a-f]{32}$/;
   const STATUS = { draft: 'Draft', awaiting_approval: 'Waiting for your approval', approved: 'Approved — scheduled', paused: 'Paused', publishing: 'Publishing…', published: 'Published', partially_published: 'Partly published', failed: 'Failed', cancelled: 'Cancelled' };
   function pubHtml() {
     const P = S.social; if (!P) return '<p style="font-size:13px;margin:0">Loading…</p>';
@@ -401,6 +433,7 @@
     if (!open.length) h += `<p style="font-size:13px;margin:0 0 8px">${e(S.ctx.publishing.note)}</p>`;
     else {
       h += `<div class="adb-opts">${open.map((x) => `<button type="button" class="adb-opt" data-conn="${e(x.platform)}">Connect ${e(PNAME[x.platform])}</button>`).join('')}</div>`;
+      h += '<div id="adbConsent" aria-live="polite"></div>';
       const pend = P.connections.filter((c) => c.status === 'pending');
       if (pend.length) h += `<p style="font-size:12.5px;margin:8px 0 4px"><b>Choose the account to post to:</b></p><div class="adb-opts">${pend.map((c) => `<button type="button" class="adb-opt" data-choose="${e(c.id)}">${e(PNAME[c.platform])}: ${e(c.account_name || c.external_id)}</button>`).join('')}</div>`;
       h += conns.length ? `<p style="font-size:12.5px;margin:8px 0 4px">Connected: ${conns.map((c) => `${e(PNAME[c.platform])} — ${e(c.account_name || c.external_id)} <button type="button" class="btn gh acsm" data-disc="${e(c.id)}">Disconnect</button>`).join(' · ')}</p>` : '';
@@ -421,7 +454,15 @@
   async function loadSocial() { const r = await A.api({ action: 'social_status', location_id: S.loc }); S.social = r && r.ok ? r : { platforms: [], connections: [], posts: [] }; const el = $('#adbPub'); if (el) { el.innerHTML = '<h3>Schedule &amp; publish</h3>' + pubHtml(); bindPub(); } }
   function bindPub() {
     const host = $('#adbPub'); if (!host) return;
-    host.querySelectorAll('[data-conn]').forEach((b) => { b.onclick = async () => { const r = await A.api({ action: 'social_connect', location_id: S.loc, platform: b.getAttribute('data-conn') }); if (r && r.ok && /^https:\/\/homecareproviderservices\.netlify\.app\/\.netlify\/functions\/social-oauth-callback\?begin=[0-9a-f]{32}$/.test(r.url)) window.location.assign(r.url); else say((r && r.error) || 'Not available yet.', 'err'); }; });
+    host.querySelectorAll('[data-conn]').forEach((b) => { b.onclick = () => {
+      const box = $('#adbConsent'); if (!box) return; box.innerHTML = consentHtml(b.getAttribute('data-conn'));
+      const reg = box.querySelector('.adb-consent'); if (reg) reg.focus();
+      const cancel = box.querySelector('[data-consent-cancel]'); if (cancel) cancel.onclick = () => { box.innerHTML = ''; b.focus(); };
+      const go = box.querySelector('[data-consent-go]'); if (go) go.onclick = async () => {
+        go.disabled = true; const r = await A.api({ action: 'social_connect', location_id: S.loc, platform: go.getAttribute('data-consent-go') });
+        if (r && r.ok && BEGIN_RE.test(r.url)) window.location.assign(r.url); else { go.disabled = false; say((r && r.error) || 'Not available yet.', 'err'); }
+      };
+    }; });
     host.querySelectorAll('[data-choose]').forEach((b) => { b.onclick = async () => { const r = await A.api({ action: 'social_connect_choose', id: b.getAttribute('data-choose') }); if (r && r.ok) { say('Connected.', 'ok'); loadSocial(); } else say((r && r.error) || 'Could not connect that account.', 'err'); }; });
     host.querySelectorAll('[data-disc]').forEach((b) => { b.onclick = async () => { if (!window.confirm('Disconnect this account? Scheduled posts to it will not publish.')) return; const r = await A.api({ action: 'social_disconnect', id: b.getAttribute('data-disc') }); if (r && r.ok) loadSocial(); else say((r && r.error) || 'Could not disconnect.', 'err'); }; });
     host.querySelectorAll('[data-pa]').forEach((b) => { b.onclick = async () => { const act = b.getAttribute('data-pa'); if (act === 'post_cancel' && !window.confirm('Cancel this post?')) return;
