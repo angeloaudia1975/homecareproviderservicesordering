@@ -41,7 +41,10 @@
   function num(re,v){var m=String(v||'').replace(/,/g,'').match(re);return m?Number(m[1]):null;}
   function attr(p,re){var a=p.attributes||{};for(var k in a){if(re.test(k))return a[k];}return null;}
   /* only values in the units the buckets use: pounds (or a bare number), inches (or a bare number) — kg / cm are skipped, never converted by guess */
-  function capOf(p){var v=attr(p,/weight capacity|^capacity$|max(imum)? weight/i);if(!v||/\b(kg|kilo)/i.test(v))return null;return num(/(\d{2,4})\s*(?:lb|lbs|pounds|#)?\b/i,v);}
+  function capOf(p){var v=attr(p,/weight capacity|^capacity$|max(imum)? weight/i);
+    if(!v){ /* live check: Golden states it as a feature ("400 lbs max", "Weight capacity 350 lb") — only that exact wording counts */
+      (p.features||[]).some(function(f){ var m=String(f).match(/^\s*(?:(?:max(?:imum)?\s+)?(?:weight\s+)?capacity:?\s*(?:of\s+)?(\d{3,4})\s*(?:lb|lbs|pounds)\b|(\d{3,4})\s*(?:lb|lbs|pounds)\.?\s*(?:max(?:imum)?|capacity)\b)/i); if(m){ v=(m[1]||m[2])+' lb'; return true; } return false; }); }
+    if(!v||/\b(kg|kilo)/i.test(v))return null;return num(/(\d{2,4})\s*(?:lb|lbs|pounds|#)?\b/i,v);}
   function seatOf(p){var v=attr(p,/^seat width/i);if(!v||/\b(cm|mm|centim|millim)/i.test(v))return null;return num(/(\d{1,2}(?:\.\d)?)/,v);}
   var FEAT_KEYS=/^(zones|comfort zones|positioning|recline|product type|type|style)$/i;
   function commonName(ps){ var n=ps.map(function(p){return p.name;}); if(n.length<2) return n[0];
