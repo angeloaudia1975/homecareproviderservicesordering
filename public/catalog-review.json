@@ -1,7 +1,7 @@
 {
   "review_id": "f9a2016c5612",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T00:07:58Z",
+  "built_at": "2026-11-07T00:17:22Z",
   "main": "688e4ae2182c133f35431ed6515a5c97d064e6b3",
   "included": [
     {
@@ -10,7 +10,8 @@
       "branch": "c8/account-setup",
       "head": "e7076fc97eb231561cd139e35fcdadba368c7308",
       "manufacturers": [],
-      "other_files": 5
+      "other_files": 5,
+      "note": "newer commit f09779b still being checked — showing the last validated version"
     }
   ],
   "skipped": []
