@@ -8651,9 +8651,11 @@ function acAccountsHtml(loc){
   return `<div class="acaccts">${loc.accounts.map(x=>{
     const golden=x.slug==="golden-technologies"||x.slug==="golden";
     let act="";
-    if(canClaim&&!golden&&x.status!=="verified"&&!/Submitted/.test(x.label)) act=`<button type="button" class="btn gh acsm" data-slug="${esc(x.slug)}" data-name="${esc(x.name)}" onclick="acClaimOpen(this.dataset.slug,this.dataset.name)">${x.account_ref?"Correct the number":"I have an account"}</button>`;
+    /* owner rule 2026-11-06: a number on file is verified — the dealer can still send a correction (it stays a pending claim
+       until HCPS saves it), and a correction already sent is shown */
+    if(canClaim&&!golden&&!x.pending_claim&&!/Submitted/.test(x.label)) act=`<button type="button" class="btn gh acsm" data-slug="${esc(x.slug)}" data-name="${esc(x.name)}" onclick="acClaimOpen(this.dataset.slug,this.dataset.name)">${x.account_ref?"Correct the number":"I have an account"}</button>`;
     if(canClaim&&!golden&&x.status==="none"&&typeof window.needsAccess==="function"&&window.needsAccess(x.slug)) act+=` <button type="button" class="btn gh acsm" data-slug="${esc(x.slug)}" onclick="requestAccess(this.dataset.slug,this)">Request access</button>`;
-    return `<div class="acrow st-${esc(x.status)}"><div class="acn"><b>${esc(x.name)}</b><span>${esc(x.label)}${x.account_ref?" · # "+esc(x.account_ref):""}${x.ordering?" · ordering on":""}</span></div><div class="acr">${acChip(x.status)}${act}</div></div>`; }).join("")}</div>`;
+    return `<div class="acrow st-${esc(x.status)}"><div class="acn"><b>${esc(x.name)}</b><span>${esc(x.label)}${x.account_ref?" · # "+esc(x.account_ref):""}${x.ordering?" · ordering on":""}${x.pending_claim?` · you sent #${esc(x.pending_claim)} — HCPS is reviewing`:""}</span></div><div class="acr">${acChip(x.status)}${act}</div></div>`; }).join("")}</div>`;
 }
 function renderAccount(){
   const host=$("#view-account"); if(!host) return;
