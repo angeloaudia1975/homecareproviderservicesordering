@@ -1,17 +1,16 @@
 {
-  "review_id": "8bcfe84cf37b",
+  "review_id": "87196cdf0a85",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-07T16:23:01Z",
+  "built_at": "2026-11-07T16:23:19Z",
   "main": "f62e4b96ebc056ad1eaa0a27ecbf5bc9101e8970",
   "included": [
     {
       "pr": 72,
       "title": "Social Ads photo room + report units label",
       "branch": "c9/ai-polish",
-      "head": "1882ae89a961dd99bc4d9fda293b54f0165865b4",
+      "head": "3ef0552a1b80edbb4c39949d91d711e03b0e7ad2",
       "manufacturers": [],
-      "other_files": 2,
-      "note": "newer commit 3ef0552 still being checked — showing the last validated version"
+      "other_files": 2
     }
   ],
   "skipped": []

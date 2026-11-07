@@ -386,7 +386,7 @@
       if (campaign) { S.campaign = { campaign: r.campaign, ads: r.ads, saved: false }; S.cur = Object.assign(blank(), JSON.parse(JSON.stringify(r.ads[0]))); }
       else { const keepFmt = S.cur.format; S.cur = Object.assign(blank(), r.ad); S.cur.format = keepFmt; S.campaign = null; }
       S.row = null; S.aiResult = { why: r.why, alt_headlines: r.alt_headlines }; form(); redraw();
-      say(campaign ? 'Campaign ready — four sizes below. Edit any size, download, or save the campaign.' : 'Your ad is ready. Edit anything, try another headline, regenerate, or save it.' + (r.captions_ok === false ? ' (Captions could not be written this time — use Suggest captions.)' : ''), 'ok');
+      say((campaign ? 'Campaign ready — four sizes below. Edit any size, download, or save the campaign.' : 'Your ad is ready. Edit anything, try another headline, regenerate, or save it.') + (r.captions_source === 'rules' ? ' The AI captions didn\'t pass HCPS\'s checks this time, so HCPS\'s standard captions are filled in — regenerate for AI captions.' : ''), 'ok');
     } finally { S.busy = false; const b2 = $(campaign ? '#adbAiCamp' : '#adbAiGo'); if (b2) { b2.disabled = false; b2.textContent = campaign ? '✨ Generate Complete Campaign' : '✨ AI Build My Ad'; } }
   }
 
