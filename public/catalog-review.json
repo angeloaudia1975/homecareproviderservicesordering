@@ -1,15 +1,17 @@
 {
-  "review_id": "650763294d36",
+  "review_id": "eec04925f9c1",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-08T02:03:35Z",
+  "built_at": "2026-11-08T02:03:52Z",
   "main": "66f28d026d684ce5d85fc92b0eb376761834d958",
-  "included": [],
-  "skipped": [
+  "included": [
     {
       "pr": 80,
       "title": "My Storefront: line tick boxes sit beside their names",
       "branch": "c10/sf-lines-fix",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
+      "head": "59276587f9c6f5f1a7d3f32457e9a36665de3d25",
+      "manufacturers": [],
+      "other_files": 2
     }
-  ]
+  ],
+  "skipped": []
 }
