@@ -24,7 +24,7 @@
   /* ---------- design (owner 2026-11-07 14:53 CT): layout + theme from the server; "standard" = the existing look ---------- */
   var DS={layout:'standard'}, CATSHOW=false;
   function isNew(){ return DS.layout==='professional'||DS.layout==='modern'||DS.layout==='classic'; }
-  var HEXRE=/^#[0-9a-f]{6}$/i;
+  var HEXRE=/^#[0-9a-f]{6}$/i, HTTPS=/^https:\/\/[^\s"'<>\\]+$/;   /* links are https only, here as on the server */
   function mix(hex,other,t){ var a=[1,3,5].map(function(i){return parseInt(hex.slice(i,i+2),16);}), b=[1,3,5].map(function(i){return parseInt(other.slice(i,i+2),16);});
     return '#'+a.map(function(v,i){return Math.round(v*(1-t)+b[i]*t).toString(16).padStart(2,'0');}).join(''); }
   function applyDesign(){
@@ -294,7 +294,7 @@
       window.parent.postMessage({type:'hcps-storefront-detail-req',id:id,manufacturer:p.manufacturer,code:p.code},location.origin); return; }
     fetch(API+'?s='+encodeURIComponent(slug)+'&d='+encodeURIComponent(k)).then(function(r){return r.json();}).then(function(j){ done(j&&j.ok&&j.detail?j.detail:false); }).catch(function(){ cb(false); });
   }
-  var HEXRE=/^#[0-9a-f]{6}$/i;
+  var HEXRE=/^#[0-9a-f]{6}$/i, HTTPS=/^https:\/\/[^\s"'<>\\]+$/;   /* links are https only, here as on the server */
   function sec(id,title,html){ return html?{id:id,title:title,html:'<section class="pdsec" id="'+id+'" aria-labelledby="'+id+'-h"><h3 id="'+id+'-h">'+esc(title)+'</h3>'+html+'</section>'}:null; }
   function chipHtml(v){ var sw=v.swatch||(v.hex&&HEXRE.test(v.hex)?'':null);
     return '<span class="pd-chip'+(sw==null?' nosw':'')+'">'+(sw!=null?'<span class="pd-sw"'+(v.hex&&HEXRE.test(v.hex)?' style="background-color:'+v.hex+'"':'')+'>'+(v.swatch?'<img src="'+esc(v.swatch)+'" alt="" loading="lazy" data-ph="1">':'')+'</span>':'')+esc(v.name)+'</span>'; }
@@ -324,7 +324,7 @@
       if(!(d.specs&&d.specs.length)) specRows=[]; }
     if(specRows.length) specHtml+='<div class="stbl-wrap"'+(specHtml?' style="margin-top:6px"':'')+'><table class="stbl"><tbody>'+specRows.map(function(r){return '<tr><td class="k">'+esc(r.label)+'</td><td>'+esc(r.value)+'</td></tr>';}).join('')+'</tbody></table></div>';
     var sizing=d.sizing&&d.sizing.rows&&d.sizing.rows.length?tableHtml(d.sizing.columns||[],d.sizing.rows):'';
-    var docs=(d.documents||[]).slice(); (p.documents||[]).forEach(function(x){ if(!docs.some(function(y){return y.url===x.url;})) docs.push(x); });
+    var docs=(d.documents||[]).filter(function(x){return x&&HTTPS.test(x.url);}); d.videos=(d.videos||[]).filter(function(v){return v&&HTTPS.test(v.url);}); (p.documents||[]).forEach(function(x){ if(!docs.some(function(y){return y.url===x.url;})) docs.push(x); });
     var S=[
       sec('pd-overview','Overview',(paras.map(function(t){return '<p>'+esc(t)+'</p>';}).join(''))+((d.uses||[]).length?'<b>Recommended for</b><div class="pd-uses">'+d.uses.map(function(u){return '<span>'+esc(u)+'</span>';}).join('')+'</div>':'')),
       sec('pd-features','Features & benefits',feats.length?'<div class="fgrid">'+feats.map(function(g){return '<div>'+(feats.length>1?'<h4>'+esc(g.title)+'</h4>':'')+'<ul class="fcheck">'+g.items.map(function(i){return '<li>'+esc(i)+'</li>';}).join('')+'</ul></div>';}).join('')+'</div>':''),
@@ -336,7 +336,7 @@
     ].filter(Boolean);
     if(!S.length){ if(ld) ld.remove(); return; }
     x.innerHTML=(S.length>1?'<nav class="pdnav" aria-label="Product information">'+S.map(function(z){return '<a href="#'+z.id+'" data-jump="'+z.id+'">'+esc(z.title)+'</a>';}).join('')+'</nav>':'')+S.map(function(z){return z.html;}).join('')+
-      (d.source&&d.source.url?'<div class="pd-src">'+esc(d.source.label||'Manufacturer product information')+' — <a href="'+esc(d.source.url)+'" target="_blank" rel="noopener">manufacturer page</a></div>':'');
+      (d.source&&HTTPS.test(d.source.url||'')?'<div class="pd-src">'+esc(d.source.label||'Manufacturer product information')+' — <a href="'+esc(d.source.url)+'" target="_blank" rel="noopener">manufacturer page</a></div>':'');
   }
   function loadDetail(p,f,key,gal){ getDetail(p,function(d){ renderDetail(d,p,f,key,gal); }); }
 
