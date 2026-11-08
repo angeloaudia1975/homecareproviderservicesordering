@@ -44,10 +44,17 @@ const label = (p) => { const [y,m] = p.split("-"); return `${MONTH[parseInt(m,10
 
 exports.handler = async (event) => {
   try {
-    const need = process.env.ANALYTICS_TOKEN;
-    if (need) {
-      const got = event.headers["x-analytics-token"] || (event.queryStringParameters||{}).token || "";
-      if (got !== need) return json(401, { error: "unauthorized" });
+    /* FAILS CLOSED (Admin 360 B0, 2026-11-08): legacy endpoint that returns sales + commission rows with the
+       service key. It used to be open to anyone whenever ANALYTICS_TOKEN was unset; an unset token now refuses
+       every request. Production has the token set (anonymous GET → 401, verified 2026-11-08), so the existing
+       passcode keeps working exactly as before; the comparison is now constant-time. */
+    const need = process.env.ANALYTICS_TOKEN || "";
+    if (!need) return json(503, { error: "analytics is not configured (ANALYTICS_TOKEN unset) — refusing" });
+    {
+      const h = event.headers || {};
+      const got = String(h["x-analytics-token"] || h["X-Analytics-Token"] || (event.queryStringParameters||{}).token || "");
+      const A = Buffer.from(got), B = Buffer.from(need);
+      if (A.length !== B.length || !require("crypto").timingSafeEqual(A, B)) return json(401, { error: "unauthorized" });
     }
     if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Supabase env vars not set (SUPABASE_URL, SUPABASE_SERVICE_ROLE)" });
 

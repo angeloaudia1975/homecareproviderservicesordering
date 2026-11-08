@@ -1,5 +1,5 @@
 // HCPS admin — save a dealer's rep owner + HCPS account number to dealer_directory.
-// Writes with the service_role key (server-side). Gated by ANALYTICS_TOKEN if set.
+// Writes with the service_role key (server-side). Requires ANALYTICS_TOKEN (fails closed when unset).
 //
 //   POST /.netlify/functions/assign
 //   headers: x-analytics-token: <passcode>   (only if ANALYTICS_TOKEN is set)
@@ -12,10 +12,16 @@ const json = (code, obj) => ({ statusCode: code, headers: { "content-type": "app
 exports.handler = async (event) => {
   try {
     if (event.httpMethod !== "POST") return json(405, { error: "POST only" });
-    const need = process.env.ANALYTICS_TOKEN;
-    if (need) {
-      const got = event.headers["x-analytics-token"] || "";
-      if (got !== need) return json(401, { error: "unauthorized" });
+    /* FAILS CLOSED (Admin 360 B0, 2026-11-08): this legacy endpoint writes with the service key and used to be
+       open whenever ANALYTICS_TOKEN was unset. An unset token now refuses every request; the existing passcode keeps
+       working (constant-time comparison). */
+    const need = process.env.ANALYTICS_TOKEN || "";
+    if (!need) return json(503, { error: "assign is not configured (ANALYTICS_TOKEN unset) — refusing" });
+    {
+      const h = event.headers || {};
+      const got = String(h["x-analytics-token"] || h["X-Analytics-Token"] || "");
+      const A = Buffer.from(got), B = Buffer.from(need);
+      if (A.length !== B.length || !require("crypto").timingSafeEqual(A, B)) return json(401, { error: "unauthorized" });
     }
     if (!SUPABASE_URL || !SERVICE_ROLE) return json(500, { error: "Supabase env vars not set" });
 
