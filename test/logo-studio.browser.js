@@ -96,13 +96,32 @@ const layoutCheck = (page) => page.evaluate(() => { const vis = (el) => { const 
           ok(b.slice(1, 4).toString() === 'PNG' && b.readUInt32BE(16) === wid, btn + ' ' + b.readUInt32BE(16));
           const alpha = await page.evaluate(async (u) => { const i = new Image(); i.src = u; await i.decode(); const c = document.createElement('canvas'); c.width = 4; c.height = 4; const x = c.getContext('2d'); x.drawImage(i, 0, 0); return x.getImageData(0, 0, 1, 1).data[3]; }, 'data:image/png;base64,' + b.toString('base64'));
           ok(alpha === 0, 'transparent corner ' + alpha); } });
+      await t(`${label}: B14 large views — enlarge one design, compare all four, transparent / dark backgrounds, Escape closes`, async () => {
+        await page.click('[data-ls=zoom][data-v=cur]'); await page.waitForSelector('#lsRoot .ls-zoom img');
+        const big = await page.$eval('#lsRoot .ls-zoom img', (i) => i.getBoundingClientRect().width); ok(big > 300, 'large: ' + big);
+        await page.click('[data-ls=zbg][data-v=check]'); await page.click('[data-ls=zbg][data-v=dark]'); ok(await page.$('#lsRoot .ls-zgrid.bg-dark'));
+        await page.keyboard.press('Escape'); ok(!(await page.$('#lsRoot .ls-zoom')) && await page.$('#lsRoot .ls-pan'), 'Escape closes only the large view');
+        await page.click('[data-ls=compare]'); await page.waitForFunction(() => document.querySelectorAll('#lsRoot .ls-zoom figure img').length === 4);
+        const L = await layoutCheck(page); ok(L.sw <= L.cw + 1, 'no sideways scroll in compare'); await page.screenshot({ path: `${SHOTS}/${label}-compare.png` });
+        await page.click('[data-ls=unzoom]'); });
+      await t(`${label}: B16 horizontal / square / icon versions download as SVG and PNG at their sizes`, async () => {
+        await page.waitForSelector('#lsRoot .ls-fmt'); ok((await page.$$('#lsRoot .ls-fmt')).length === 4);
+        for (const k of ['horizontal', 'square', 'icon', 'reversed']) { const [d] = await Promise.all([page.waitForEvent('download'), page.click(`[data-ls=fsvg][data-v=${k}]`)]); ok(!LS.svgProblem(fs.readFileSync(await d.path(), 'utf8')), k); }
+        for (const [k, w, sq] of [['square', 1200, true], ['icon', 512, true], ['horizontal', 3000, false]]) { const [d] = await Promise.all([page.waitForEvent('download'), page.click(`[data-ls=fpng][data-v="${k}:${w}"]`)]); const b = fs.readFileSync(await d.path());
+          ok(b.readUInt32BE(16) === w && (sq ? b.readUInt32BE(20) === w : b.readUInt32BE(20) < w), `${k} ${b.readUInt32BE(16)}x${b.readUInt32BE(20)}`); } });
+      await t(`${label}: B15 "Show four different designs" gives a new distinct set; Recommended marked`, async () => {
+        const before = await page.evaluate(() => window.HCPSLogoStudio._S.concepts.map((c) => c.font + c.symbol).join());
+        ok(/Recommended/.test(await page.textContent('#lsRoot .ls-cards')));
+        await page.click('[data-ls=more]'); await page.waitForFunction((b) => { const S = window.HCPSLogoStudio._S; return S.concepts.length === 4 && S.concepts.map((c) => c.font + c.symbol).join() !== b && S.concepts.every((c) => c._svg); }, before, { timeout: 20000 });
+        const fonts = await page.evaluate(() => window.HCPSLogoStudio._S.concepts.map((c) => c.font)); ok(new Set(fonts).size === 4, fonts.join());
+        await page.click('[data-ls=pick][data-v="0"]'); await page.waitForFunction(() => window.HCPSLogoStudio._S.vars); W.lastPick = await page.evaluate(() => window.HCPSLogoStudio._S.cur.font); });
       await t(`${label}: no horizontal scroll, 44 px targets, 16 px inputs, no broken images`, async () => {
         const L = await layoutCheck(page); ok(L.sw <= L.cw + 1 && L.panW <= L.panC + 1, JSON.stringify(L)); ok(!L.small.length, L.small.join(' | ')); ok(L.font === 0 && L.broken === 0, JSON.stringify(L)); });
       await t(`${label}: publish → the one branding source and Account Center show it; the original stays in the history and is restored`, async () => {
         await page.click('[data-ls=publish]'); await page.waitForSelector('#lsRoot .ls-ok', { timeout: 20000 });
         ok(/studio-[0-9a-f]{32}\.png$/.test(W.db.dealers[0].logo_url), W.db.dealers[0].logo_url);
         const ev = W.db.dealer_logo_events.filter((e) => e.kind !== 'concepts'); ok(ev[0].kind === 'baseline' && ev[0].logo_url === ORIGINAL && ev[1].kind === 'studio' && !LS.svgProblem(ev[1].svg));
-        const v = LS.validSpec(ev[1].spec, W.db.dealers[0]); ok(!v.error && ev[1].spec.upper === true && ev[1].spec.font === 'lora' && ev[1].spec.colors.a === '#13a3b4', JSON.stringify(ev[1].spec));
+        const v = LS.validSpec(ev[1].spec, W.db.dealers[0]); ok(!v.error && ev[1].spec.font === W.lastPick, JSON.stringify(ev[1].spec) + ' vs ' + W.lastPick);
         await page.waitForSelector('#lsRoot .ls-h.on'); const hist = await page.$$eval('#lsRoot .ls-h', (x) => x.map((e) => e.textContent)); ok(hist.length === 2 && /In use/.test(hist[0]) && /Original logo/.test(hist[1]), hist.join(' | '));
         await page.click('#lsRoot [data-ls=restore]'); await page.waitForFunction(() => /Logo restored/.test(document.querySelector('#lsRoot').textContent));
         ok(W.db.dealers[0].logo_url === ORIGINAL, 'restored'); await page.screenshot({ path: `${SHOTS}/${label}-history.png`, fullPage: false });

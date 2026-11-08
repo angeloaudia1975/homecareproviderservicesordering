@@ -8778,7 +8778,7 @@ async function acDefaultShip(key){
 /* Dealer Brand & Logo Studio (Catalog 5, 2026-11-08): the button shows only where the server has opened the Studio
    (James Medical pilot first). The Studio lives in /assets/logo-studio/ and publishes to the same dealers.logo_url. */
 let LS_JS=null, LS_ON=null;
-function lsLoad(){ if(!LS_JS) LS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/logo-studio/logo-studio.js?v=1"; sc.onload=res; sc.onerror=()=>{ LS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return LS_JS; }
+function lsLoad(){ if(!LS_JS) LS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/logo-studio/logo-studio.js?v=2"; sc.onload=res; sc.onerror=()=>{ LS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return LS_JS; }
 async function lsEntry(){
   const el=document.getElementById("lsEntry"); if(!el) return;
   if(LS_ON===null){ try{ const r=await api(TOOLS_ENDPOINT,{action:"logo_studio_state"}); LS_ON=!!(r&&r.ok&&r.enabled); }catch(e){ LS_ON=false; } }

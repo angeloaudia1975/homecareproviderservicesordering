@@ -23,7 +23,8 @@
     return { d, x1: bb.x1, y1: bb.y1, x2: bb.x2, y2: bb.y2, w: bb.x2 - bb.x1, h: bb.y2 - bb.y1 };
   }
   /* render(spec, fonts) — fonts = { name: opentype.Font, sub: opentype.Font } for spec.font */
-  function render(spec, fonts) {
+  function render(spec, fonts, opts) {
+    opts = opts || {};
     const C = { name: hex(spec.colors.name), sub: hex(spec.colors.sub), a: hex(spec.colors.a), b: hex(spec.colors.b), w: '#ffffff' };
     const items = [];   // { d, fill, x, y, s (scale), rule, bb:{x1,y1,x2,y2} in local units }
     const addText = (t, x, y, fill) => { if (t.d) items.push({ d: t.d, fill, x, y, s: 1, bb: t }); };
@@ -44,12 +45,14 @@
       return { x1: x0, y1: top, x2: x0 + maxW, y2: bottom, h: bottom - top, w: maxW };
     }
     const nameH = (() => { const capH = Math.max(...lines.map((l) => -l.y1)); return capH + (lines.length - 1) * step + Math.max(...lines.map((l) => l.y2)); })();
-    if (spec.layout === 'left') {
+    if (spec.layout === 'icon') {   /* the symbol alone (a monogram keeps its initials) — profile pictures, favicons */
+      const S = 200; addSym(spec.symbol, 0, 0, S); if (MONO_IN[spec.symbol]) monogram(S, 0, 0, MONO_IN[spec.symbol]);
+    } else if (spec.layout === 'left') {
       const S = Math.max(nameH * 1.05, 120); addSym(spec.symbol, 0, 0, S);
       if (MONO_IN[spec.symbol]) monogram(S, 0, 0, MONO_IN[spec.symbol]);
       block(S * 1.16, (S - nameH) / 2, false);
     } else if (spec.layout === 'stack') {
-      const S = 175;
+      const blockW = Math.max(...lines.map((l) => l.w), sub ? sub.w : 0, tag ? tag.w : 0); const S = Math.min(320, Math.max(175, blockW * 0.3));
       const bx = block(0, S * 1.14, true); const cx = (bx.x2 - bx.x1) / 2; addSym(spec.symbol, cx - S / 2, 0, S);
       if (MONO_IN[spec.symbol]) monogram(S, cx - S / 2, 0, MONO_IN[spec.symbol]);
     } else if (spec.layout === 'badge') {
@@ -77,11 +80,23 @@
     /* bounds → viewBox with a small margin */
     let X1 = Infinity, Y1 = Infinity, X2 = -Infinity, Y2 = -Infinity;
     for (const it of items) { X1 = Math.min(X1, it.x + it.bb.x1 * it.s); Y1 = Math.min(Y1, it.y + it.bb.y1 * it.s); X2 = Math.max(X2, it.x + it.bb.x2 * it.s); Y2 = Math.max(Y2, it.y + it.bb.y2 * it.s); }
-    const m = Math.max(X2 - X1, Y2 - Y1) * 0.04; const W = r2(X2 - X1 + 2 * m), H = r2(Y2 - Y1 + 2 * m), ox = r2(m - X1), oy = r2(m - Y1);
+    const m = Math.max(X2 - X1, Y2 - Y1) * (opts.square ? 0.1 : 0.04); let W = X2 - X1 + 2 * m, H = Y2 - Y1 + 2 * m, ox = m - X1, oy = m - Y1;
+    if (opts.square) { const side = Math.max(W, H); ox += (side - W) / 2; oy += (side - H) / 2; W = H = side; }
+    W = r2(W); H = r2(H); ox = r2(ox); oy = r2(oy);
     const body = items.map((it) => `<g transform="translate(${r2(it.x + ox)} ${r2(it.y + oy)})${it.s !== 1 ? ` scale(${r2(it.s * 10000) / 10000})` : ''}"><path d="${it.d}" fill="${it.fill}"${it.rule === 'evenodd' ? ' fill-rule="evenodd"' : ''}/></g>`).join('');
     return { svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${body}</svg>`, w: W, h: H };
   }
   const FONT_FILES = (base, id) => ({ name: `${base}/fonts/${id}-name.woff`, sub: `${base}/fonts/${id}-sub.woff` });
-  const api = { render, SYMBOLS, FONT_FILES };
+  /* the chosen design in the shapes a business needs (checklist B16): the published master stays the design itself */
+  function variants(spec, fonts) {
+    const c = (o) => Object.assign({}, spec, o);
+    const horizontal = spec.layout === 'stack' ? c({ layout: 'left' }) : spec;
+    const two = (n) => { const w = n.join(' ').split(' '); if (n.length > 1 || w.length < 2) return n; let best = 1, bd = Infinity;
+      for (let i = 1; i < w.length; i++) { const d = Math.abs(w.slice(0, i).join(' ').length - w.slice(i).join(' ').length); if (d < bd) { bd = d; best = i; } } return [w.slice(0, best).join(' '), w.slice(best).join(' ')]; };
+    const square = c({ layout: 'stack', name: two(spec.name), symbol: spec.layout === 'word' ? 'swoosh' : spec.symbol });
+    const icon = c({ layout: 'icon', symbol: spec.layout === 'word' ? 'ring' : spec.symbol });
+    return { horizontal: render(horizontal, fonts), square: render(square, fonts, { square: true }), icon: render(icon, fonts, { square: true }) };
+  }
+  const api = { render, variants, SYMBOLS, FONT_FILES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LogoRender = api;
 })(typeof window !== 'undefined' ? window : globalThis);
