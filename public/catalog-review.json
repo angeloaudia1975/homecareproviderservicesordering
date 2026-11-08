@@ -1,8 +1,15 @@
 {
   "review_id": "9dbd4603e7c4",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-08T01:45:18Z",
+  "built_at": "2026-11-08T01:51:26Z",
   "main": "ef34d453f1d234ea69a213ff5747261212319752",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 79,
+      "title": "Studio polish: AI Director marks the chosen design",
+      "branch": "c10/studio-polish",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
