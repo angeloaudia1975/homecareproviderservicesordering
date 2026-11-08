@@ -8953,7 +8953,7 @@ window.showView=showView;
 const ADS_API=API_BASE+"/dealer-ads-api"; let ADS_JS=null;
 async function loadAdsView(){
   const host=$("#view-ads"); if(!host) return;
-  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=2"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
+  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=3"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
   try{ await ADS_JS; }catch(e){ host.innerHTML='<div class="ph"><div><h1>Social Ads</h1></div></div><div class="card"><div class="msg">The ad builder could not be loaded — please try again.</div></div>'; return; }
   window.HCPSAdBuilder.mount(host,{ api:(b)=>api(ADS_API,b), esc });
 }
