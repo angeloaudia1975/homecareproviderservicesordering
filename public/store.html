@@ -225,6 +225,49 @@ body.lay .price{color:var(--ink)}
   body.lay-modern .ccard .ci,body.lay-classic .ccard .ci{height:74px}
   .hls{grid-template-columns:1fr 1fr;padding:12px}.hls div{font-size:13.5px}.aboutc{padding:18px}}
 
+/* Full product page — enrichment upgrade 2026-11-07: overview, features & benefits, options, specifications, sizing, warranty,
+   documents and videos from the HCPS catalog / Golden's own catalog. Same look in every layout; colors from the theme. */
+.pd-tag{color:var(--accent);font-weight:800;font-size:15px;margin:2px 0 8px}
+.pd-hl{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:12px 0 4px}
+.pd-hl div{border:1px solid var(--line);border-radius:12px;padding:9px 11px;background:var(--bg)}
+.pd-hl span{display:block;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.pd-hl b{display:block;font-size:15.5px;margin-top:2px;color:var(--ink)}
+.pdnav{display:flex;gap:6px;flex-wrap:wrap;margin:22px 0 4px;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:2}
+.pdnav a{min-height:44px;display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;color:var(--ink2);text-decoration:none;font-weight:700;font-size:14px}
+.pdnav a:hover,.pdnav a:focus{background:var(--accent2);color:var(--ink)}
+.pdsec{padding:6px 0 4px;scroll-margin-top:64px}
+.pdsec>h3{font-size:19px;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+.pdsec>h3:before{content:"";width:4px;height:20px;border-radius:2px;background:var(--accent)}
+.pdsec p{color:var(--ink2);line-height:1.65;margin:0 0 10px;font-size:15.5px}
+.pd-uses{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.pd-uses span{background:var(--accent2);border-radius:999px;padding:5px 11px;font-size:13.5px;font-weight:600}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px 22px}
+.fgrid h4{margin:6px 0 6px;font-size:15px;color:var(--ink)}
+.fcheck{list-style:none;margin:0;padding:0}
+.fcheck li{position:relative;padding:4px 0 4px 26px;line-height:1.5;color:var(--ink2)}
+.fcheck li:before{content:"";position:absolute;left:2px;top:9px;width:13px;height:7px;border-left:2.5px solid var(--ok,#15803d);border-bottom:2.5px solid var(--ok,#15803d);transform:rotate(-45deg)}
+.pd-optg{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 10px}
+.pd-optg b{display:block;margin-bottom:8px}
+.pd-optv{display:flex;flex-wrap:wrap;gap:8px}
+.pd-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:5px 12px 5px 6px;font-size:13.5px;background:#fff;min-height:34px}
+.pd-chip.nosw{padding-left:12px}
+.pd-sw{width:24px;height:24px;border-radius:50%;border:1px solid rgba(0,0,0,.15);background:#e5e7eb center/cover no-repeat;flex:none;overflow:hidden}
+.pd-sw img{width:100%;height:100%;object-fit:cover;display:block}
+.pd-note{font-size:13px;color:var(--muted);margin:6px 0 0}
+.stbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px}
+.stbl{width:100%;border-collapse:collapse;font-size:14px;min-width:320px}
+.stbl th,.stbl td{padding:9px 10px;border-top:1px solid var(--line);text-align:left;vertical-align:top}
+.stbl thead th{border-top:0;background:var(--bg);font-size:13px}
+.stbl thead th small{display:block;color:var(--muted);font-weight:500}
+.stbl td.k{color:var(--muted);width:38%}
+.stbl .on{background:var(--accent2);font-weight:700}
+.dlinks{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+.dlinks a{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:48px;text-decoration:none;color:var(--ink);font-weight:600;background:#fff}
+.dlinks a:hover,.dlinks a:focus{border-color:var(--accent)}
+.dlinks i{font-style:normal;font-size:18px}
+.pd-src{font-size:12.5px;color:var(--muted);margin-top:14px}
+.pd-loading{color:var(--muted);font-size:14px;padding:10px 0}
+@media(max-width:640px){.pdnav{gap:2px}.pdnav a{padding:6px 9px;font-size:13px}.pd-hl{grid-template-columns:repeat(2,minmax(0,1fr))}.pdsec>h3{font-size:17px}}
 </style>
 </head>
 <body>

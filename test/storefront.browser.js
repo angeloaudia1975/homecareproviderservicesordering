@@ -25,18 +25,29 @@ const PUBLIC = { ok: true, dealer: { name: 'Acme <script>x</script> Medical', he
     { manufacturer: 'golden-technologies', code: 'PR-501', name: 'Cloud lift chair (Small)', family: 'PR-501', family_name: 'Cloud lift chair', category: 'Lift Chairs', image: 'https://d3325uqufdmhie.cloudfront.net/pr501.jpg', gallery: ['https://d3325uqufdmhie.cloudfront.net/pr501.jpg', 'https://d3325uqufdmhie.cloudfront.net/pr501b.jpg'], documents: [{ title: 'Cloud brochure', url: 'https://www.homecareproviderservices.org/assets/docs/cloud.pdf' }], attributes: { Size: 'Small', 'Weight Capacity': '375 lb' }, features: ['Infinite position', 'Zero-gravity seating'], price: 1899, price_label: 'Price', price_unit: null },
     { manufacturer: 'golden-technologies', code: 'PR-501M', name: 'Cloud lift chair (Medium)', family: 'PR-501', family_name: 'Cloud lift chair', category: 'Lift Chairs', image: 'https://d3325uqufdmhie.cloudfront.net/pr501.jpg', gallery: [], documents: [{ title: 'Cloud brochure', url: 'https://www.homecareproviderservices.org/assets/docs/cloud.pdf' }], attributes: { Size: 'Medium', 'Weight Capacity': '450 lb' }, features: ['Infinite position', 'Zero-gravity seating'], price: 1999, price_label: 'Price', price_unit: null }],
   price_note: 'Prices shown are the manufacturer\'s suggested retail price (MSRP).', privacy: 'Your request is sent only to this dealer…' };
+/* the full product page (enrichment upgrade 2026-11-07) — only PR-501 has one in the default fixture (others keep the summary) */
+const DETAILS = { 'golden-technologies|PR-501': { tagline: 'Sleep-friendly <comfort>', paragraphs: ['The Cloud is <b>soft</b>.', 'Second paragraph.'], highlights: [{ label: 'Weight capacity', value: '375 LBS' }, { label: 'Comfort zones', value: '5' }],
+  feature_groups: [{ title: 'Standard features', items: ['Twilight positioning', 'Lumbar'] }, { title: 'Benefits', items: ['Rest easy'] }], uses: ['Limited mobility'],
+  options: [{ label: 'Upholstery', values: [{ name: 'Standard' }, { name: 'Cross-Over' }] }, { label: 'Standard colors', values: [{ name: 'Ivory', hex: '#eeeeee', swatch: 'https://d3325uqufdmhie.cloudfront.net/sw.jpg' }, { name: 'Bad hex', hex: 'red;background:url(x)' }] }, { label: 'Upgrades', values: [{ name: 'Heat & vibration' }], note: 'Heat available' }],
+  option_note: 'Ask the dealer about available options, colors and upgrade pricing.',
+  spec_table: { columns: [{ code: 'PR-501', label: 'Small' }, { code: 'PR-501M', label: 'Medium' }], rows: [{ label: 'Seat width', values: { 'PR-501': '20"', 'PR-501M': '21"' } }] }, specs: [],
+  sizing: { columns: ['Size', 'Height'], rows: [['S', '5\'0"']] }, sizing_note: 'Measure seated.', warranty: ['Lifetime frame'],
+  documents: [{ title: 'Sell sheet', url: 'https://goldentech.com/s.pdf' }], videos: [{ title: 'Tour', url: 'https://www.youtube.com/watch?v=abcdefghijk' }],
+  gallery: ['https://d3325uqufdmhie.cloudfront.net/g2.jpg', 'https://d3325uqufdmhie.cloudfront.net/g3.jpg'], source: { label: 'Product information from Golden Technologies', url: 'https://goldentech.com/cloud' } } };
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
 /* the live Content-Security-Policy, read from netlify.toml — the page must work under it (no inline script) */
 const CSP = (fs.readFileSync(path.join(PUB, '..', 'netlify.toml'), 'utf8').match(/for = "\/store\.html"[\s\S]*?Content-Security-Policy = "([^"]+)"/) || [])[1];
 if (!CSP) { console.log('FAIL no CSP for /store.html in netlify.toml'); process.exit(1); }
-async function publicPage(browser, w, h, data) {
+async function publicPage(browser, w, h, data, details) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: w < 768, hasTouch: w < 1024 });
   const page = await ctx.newPage(); const st = { posts: [], csp: [] };
   page.on('console', (m) => { if (/Content Security Policy/i.test(m.text())) st.csp.push(m.text()); });
   await page.route('**/*', async (route) => { const req = route.request(), u = new URL(req.url());
     if (u.host === 'homecareproviderservices.netlify.app' && /storefront-public/.test(u.pathname)) {
       if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS, body: '' });
+      if (req.method() === 'GET' && u.searchParams.get('d')) { st.details = (st.details || []).concat(u.searchParams.get('d')); const dd = (details || {})[u.searchParams.get('d')];
+        return route.fulfill({ status: dd ? 200 : 404, contentType: 'application/json', headers: CORS, body: JSON.stringify(dd ? { ok: true, detail: dd } : { ok: false, error: 'Product not found.' }) }); }
       if (req.method() === 'GET') return route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(data || PUBLIC) });
       const b = JSON.parse(req.postData() || '{}'); st.posts.push(b);
       if (b.action === 'inquiry' && b.consent !== true) return route.fulfill({ status: 400, contentType: 'application/json', headers: CORS, body: JSON.stringify({ ok: false, error: 'Please agree to the dealer contacting you about your request.' }) });
@@ -180,6 +191,42 @@ const layout = (page, sel) => page.evaluate((sel) => {
       await ctx.close();
     }
 
+    // ---- the full product page (enrichment upgrade 2026-11-07)
+    for (const [w, h, label] of [[390, 844, 'iphone'], [1280, 900, 'desktop']]) {
+      const { ctx, page, st } = await publicPage(browser, w, h, null, DETAILS);
+      await page.click('.card .nm >> text=Cloud lift chair'); await page.waitForSelector('#pd-overview');
+      await t(label + ': ENRICHED product page — tagline, key specs, overview, features & benefits, options (names + swatches), spec table, sizing, warranty, documents & videos — escaped, no price per option', async () => {
+        const r = await page.evaluate(() => ({ tag: document.querySelector('.pd-tag').textContent, hl: [...document.querySelectorAll('.pd-hl div')].map((x) => x.textContent),
+          nav: [...document.querySelectorAll('.pdnav a')].map((a) => a.textContent), ov: document.querySelector('#pd-overview').textContent, bold: !!document.querySelector('#pd-overview b:not(:first-child) ~ x, #pd-overview p b'),
+          feats: [...document.querySelectorAll('#pd-features h4')].map((x) => x.textContent), opts: [...document.querySelectorAll('.pd-optg b')].map((x) => x.textContent),
+          chips: [...document.querySelectorAll('.pd-chip')].map((x) => x.textContent), sw: [...document.querySelectorAll('.pd-sw')].map((x) => x.getAttribute('style') || ''),
+          th: [...document.querySelectorAll('#pd-specs thead th')].map((x) => x.textContent + (x.classList.contains('on') ? '*' : '')), sizing: document.querySelector('#pd-sizing').textContent,
+          war: document.querySelector('#pd-warranty').textContent, links: [...document.querySelectorAll('#pd-docs a')].map((a) => [a.getAttribute('href'), a.getAttribute('target')]),
+          thumbs: document.querySelectorAll('.thumbs button').length, lead: document.querySelector('.pdp .lead') && document.querySelector('.pdp .lead').textContent, loading: !!document.getElementById('pdload'),
+          iframes: document.querySelectorAll('iframe').length, text: document.querySelector('.pdp').innerText }));
+        ok(r.tag === 'Sleep-friendly <comfort>', r.tag); ok(JSON.stringify(r.hl) === '["Weight capacity375 LBS","Comfort zones5"]', JSON.stringify(r.hl));
+        ok(JSON.stringify(r.nav) === '["Overview","Features & benefits","Options & configurations","Specifications","Sizing","Warranty","Documents & videos"]', JSON.stringify(r.nav));
+        ok(/The Cloud is <b>soft<\/b>\./.test(r.ov) && /Limited mobility/.test(r.ov) && !r.bold, 'overview escaped'); ok(r.feats.join('|') === 'Standard features|Benefits', r.feats.join('|'));
+        ok(r.opts.join('|') === 'Upholstery|Standard colors|Upgrades', r.opts.join('|')); ok(r.chips.includes('Ivory') && r.chips.includes('Cross-Over'), r.chips.join('|'));
+        ok(r.sw[0].includes('#eeeeee') && !r.sw.some((x) => /url\(/.test(x)), 'swatch colors validated: ' + JSON.stringify(r.sw));
+        ok(JSON.stringify(r.th) === '["Specification","SmallPR-501*","MediumPR-501M"]', JSON.stringify(r.th)); ok(/Measure seated/.test(r.sizing) && /5'0"/.test(r.sizing), r.sizing); ok(/Lifetime frame/.test(r.war), r.war);
+        ok(JSON.stringify(r.links) === JSON.stringify([['https://goldentech.com/s.pdf', '_blank'], ['https://www.homecareproviderservices.org/assets/docs/cloud.pdf', '_blank'], ['https://www.youtube.com/watch?v=abcdefghijk', '_blank']]), 'manufacturer + HCPS documents, then videos: ' + JSON.stringify(r.links));
+        ok(r.thumbs === 4, 'gallery merged: ' + r.thumbs); ok(r.lead === 'The Cloud is <b>soft</b>.', 'short lead: ' + r.lead); ok(!r.loading, 'loading note gone'); ok(!r.iframes, 'nothing embedded');
+        ok(/Ask the dealer about available options/.test(r.text) && !/\$\s?\d[\d,]*\.\d\d(?![\s\S]*From)/.test(r.text.replace(/\$1,899\.00/g, '')), 'option pricing is the dealer\'s');
+        ok(!st.csp.length, 'CSP violations: ' + st.csp.join(' | ')); ok(JSON.stringify(st.details) === '["golden-technologies|PR-501"]', JSON.stringify(st.details));
+      });
+      await t(label + ': section links scroll within the page and keep the product address; no horizontal scroll; 44 px targets', async () => {
+        const before = await page.evaluate(() => location.hash); await page.click('.pdnav a >> text=Specifications'); await page.waitForTimeout(400);
+        ok(await page.evaluate(() => location.hash) === before, 'route kept'); ok(await page.$('#pd-specs'), 'still on the product');
+        const L = await layout(page, '.pdnav a, .dlinks a, .pdp .btn'); ok(L.overflow <= 1, 'overflow ' + L.overflow); ok(!L.small.length, 'small: ' + L.small.join('|'));
+      });
+      await t(label + ': a product without a full page keeps its summary (no error, no loading note left)', async () => {
+        await page.click('[data-opt="PR-501M"]'); await page.waitForSelector('[data-opt="PR-501M"][aria-pressed="true"]'); await page.waitForTimeout(300);
+        const r = await page.evaluate(() => [!!document.getElementById('pdload'), !!document.getElementById('pd-overview'), [...document.querySelectorAll('.attrs tr')].length]);
+        ok(!r[0] && !r[1] && r[2] > 0, JSON.stringify(r)); });
+      await ctx.close();
+    }
+
     // ---- portal: My Storefront
     for (const [w, h, label] of [[390, 844, 'iphone'], [1280, 900, 'desktop']]) {
       const S = { calls: [] };
@@ -196,6 +243,7 @@ const layout = (page, sel) => page.evaluate((sel) => {
           flag_text: { below_map: 'Below the minimum advertised price (MAP).', rules_unknown: 'Rules not recorded yet.' }, products: [
             { manufacturer: 'golden-technologies', code: 'PR-501', name: 'Cloud <i>', category: 'Lift Chairs', price: 2499, price_label: 'MSRP', source: 'msrp', calculated: 2200, msrp: 2499, flags: [{ on: 'dealer', flag: 'below_map', map: 1999 }], your_price: 1500, your_price_here: null, company_price: 1500 },
             { manufacturer: 'bemis', code: 'B1', name: 'Seat', category: 'Bath Safety', price: null, price_label: 'Call for Price', source: 'call', calculated: 111, msrp: null, flags: [{ on: 'calculated', flag: 'rules_unknown' }], your_price: null, your_price_here: null, company_price: null }] });
+        if (b.action === 'sf_detail') return b.code === 'PR-501' ? R({ ok: true, detail: Object.assign({}, DETAILS['golden-technologies|PR-501'], { tagline: 'Preview detail' }) }) : R({ ok: false, error: 'That product is not shown on this storefront.' });
         if (b.action === 'sf_preview') return R(Object.assign({}, PUBLIC, { preview: true, dealer: Object.assign({}, PUBLIC.dealer, { name: 'Preview Dealer' }), price_note: 'Preview — this is what customers see.' }));
         if (b.action === 'sf_save') { const draft = b.mode === 'draft'; const sf = Object.assign({ version: 1, lines: b.settings.lines, hidden_categories: b.settings.hidden_categories, price_mode: b.settings.price_mode }, draft ? { slug: 'acme-live', enabled: true, design: {}, draft: b.settings, draft_at: '2026-11-07T20:00:00Z' } : b.settings); return R({ ok: true, storefront: sf, link: HOST + '/store/' + sf.slug, live: draft ? true : b.settings.enabled, draft }); }
         return R({ ok: true }); });
@@ -253,6 +301,10 @@ const layout = (page, sel) => page.evaluate((sel) => {
         ok(!S.calls.slice(-3).some((c) => c.action === 'sf_save' && c.settings.design.theme === 'teal'), 'nothing saved by previewing');
         await page.waitForFunction(() => { const f = document.getElementById('sfPvF'); return f && f.contentDocument && /Preview Dealer/.test(f.contentDocument.body.innerText); }, null, { timeout: 8000 });
         for (const [dev, wpx] of [['mobile', 390], ['tablet', 768], ['desktop', 1280]]) { await page.evaluate((d) => sfDev(d), dev); ok(await page.evaluate(() => parseInt(document.getElementById('sfPvF').style.width)) === wpx, dev); } });
+      await t(label + ': PREVIEW full product page — the preview asks the portal (sf_detail, with the settings on screen) and shows the enriched sections', async () => {
+        const f = await (await page.$('#sfPvF')).contentFrame(); await f.click('.card .nm >> text=Cloud lift chair'); await f.waitForSelector('#pd-overview', { timeout: 8000 });
+        ok((await f.textContent('.pd-tag')) === 'Preview detail', 'detail from the portal');
+        const c = S.calls.filter((x) => x.action === 'sf_detail').pop(); ok(c && c.manufacturer === 'golden-technologies' && c.code === 'PR-501' && c.settings && c.location_id, JSON.stringify(c)); });
       await t(label + ': LIVE storefront — Save draft keeps changes private (mode draft, no publish); Publish changes is explicit; Discard draft; the Account Center logo is shown', async () => {
         await page.evaluate(() => sfLoc('live')); await page.waitForSelector('#sfx-pub .sf-acts');
         ok(/Save draft/.test(await page.textContent('#sfSave')) && /Publish changes/.test(await page.textContent('#sfPublish')), 'draft + publish buttons');
