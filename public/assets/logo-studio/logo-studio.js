@@ -8,7 +8,7 @@
 (function () {
   'use strict';
   let A = null;   // { api(body), esc, base, onChange(url) }
-  const S = { st: null, prefs: { style: 'modern', palette: 'navy-green', symbol: '', location: true, tagline: '' }, concepts: [], cur: null, view: 'white', busy: false, err: '', msg: '', terms: false, svg: '', size: null };
+  const S = { st: null, zoom: null, prefs: { style: 'modern', palette: 'navy-green', symbol: '', location: true, tagline: '', variant: 0 }, concepts: [], cur: null, view: 'white', busy: false, err: '', msg: '', terms: false, svg: '', size: null };
   const FONTS = {};   // id -> Promise<{name, sub}>
   const LABEL = { left: 'Symbol + name', stack: 'Stacked', badge: 'Monogram badge', word: 'Wordmark' };
   const FONT_LABEL = { poppins: 'Poppins (modern)', montserrat: 'Montserrat (geometric)', raleway: 'Raleway (elegant)', nunito: 'Nunito (friendly)', oswald: 'Oswald (bold, condensed)', lora: 'Lora (classic serif)', merriweather: 'Merriweather (sturdy serif)', playfair: 'Playfair (refined serif)' };
@@ -23,6 +23,8 @@
     return FONTS[id];
   }
   async function draw(spec) { const f = await font(spec.font); return window.LogoRender.render(spec, f); }
+  /* the same design with light lettering, for dark backgrounds (preview + download; publishing keeps the design itself) */
+  const reversed = (spec) => Object.assign({}, spec, { colors: Object.assign({}, spec.colors, { name: '#ffffff', sub: '#dfe8f1' }) });
   function splitLines(primary, two) { const w = String(primary).split(' '); if (!two || w.length < 2) return [primary]; let best = 1, bd = Infinity;
     for (let i = 1; i < w.length; i++) { const d = Math.abs(w.slice(0, i).join(' ').length - w.slice(i).join(' ').length); if (d < bd) { bd = d; best = i; } } return [w.slice(0, best).join(' '), w.slice(best).join(' ')]; }
   const svgUrl = (svg) => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
@@ -57,8 +59,8 @@
       <div class="ls-grid2"><label class="ls-fld">Tagline (optional)<input id="lsTag" maxlength="${(st.limits && st.limits.taglineChars) || 48}" value="${esc(prefs.tagline)}" placeholder="e.g. Comfort and independence at home"></label>
       ${st.location ? `<label class="ls-chk"><input type="checkbox" id="lsLoc" ${prefs.location ? 'checked' : ''}> Show “${esc(st.location)}” under the name</label>` : ''}</div>
       <div class="ls-note">No phone numbers, addresses or web addresses in a logo — your storefront, ads and quotes show them separately.</div>
-      <button type="button" class="ls-btn pri" data-ls="concepts" ${S.busy ? 'disabled' : ''}>${S.concepts.length ? 'Show new designs' : 'Show my designs'}</button></div>`;
-    const step2 = S.concepts.length ? `<div class="ls-sec"><h3>2 · Pick a design</h3><div class="ls-cards">${S.concepts.map((c, i) => `<button type="button" class="ls-card${S.cur && S.cur._i === i ? ' on' : ''}" data-ls="pick" data-v="${i}"><img alt="Design ${i + 1}: ${esc(LABEL[c.layout])}" src="${c._svg ? svgUrl(c._svg) : ''}"><span>${esc(LABEL[c.layout])} · ${esc((FONT_LABEL[c.font] || c.font).split(' (')[0])}</span></button>`).join('')}</div></div>` : '';
+      <div class="ls-row"><button type="button" class="ls-btn pri" data-ls="concepts" ${S.busy ? 'disabled' : ''}>${S.concepts.length ? 'Update designs' : 'Show my designs'}</button>${S.concepts.length ? `<button type="button" class="ls-btn" data-ls="more" ${S.busy ? 'disabled' : ''}>Show four different designs</button>` : ''}</div></div>`;
+    const step2 = S.concepts.length ? `<div class="ls-sec"><div class="ls-hrow"><h3>2 · Pick a design</h3><button type="button" class="ls-btn sm" data-ls="compare">⤢ Compare large</button></div><div class="ls-note">Four different looks — each uses a different layout, lettering and symbol.</div><div class="ls-cards">${S.concepts.map((c, i) => `<div class="ls-cardw"><button type="button" class="ls-card${S.cur && S.cur._i === i ? ' on' : ''}" data-ls="pick" data-v="${i}">${c.recommended ? '<em class="ls-rec">Recommended</em>' : ''}<img alt="Design ${i + 1}: ${esc(LABEL[c.layout])}" src="${c._svg ? svgUrl(c._svg) : ''}"><span>${i + 1} · ${esc(LABEL[c.layout])} · ${esc((FONT_LABEL[c.font] || c.font).split(' (')[0])} · ${esc(SYM_LABEL[c.symbol] || '')}</span></button><button type="button" class="ls-zoombtn" data-ls="zoom" data-v="${i}" aria-label="Enlarge design ${i + 1}">⤢</button></div>`).join('')}</div></div>` : '';
     const c = S.cur;
     const step3 = c ? `<div class="ls-sec"><h3>3 · Make it yours</h3><div class="ls-edit">
       <div class="ls-ctl">
@@ -71,21 +73,35 @@
         ${st.location ? `<label class="ls-chk"><input type="checkbox" data-ed="loc" ${c.sub ? 'checked' : ''}> Show “${esc(st.location)}”</label>` : ''}
         <label class="ls-fld">Tagline<input data-ed="tagline" maxlength="${(st.limits && st.limits.taglineChars) || 48}" value="${esc(c.tagline)}"></label>
       </div>
-      <div class="ls-prev"><div class="ls-row">${[['white', 'On white'], ['dark', 'On dark'], ['store', 'Storefront'], ['ad', 'Ad footer'], ['small', 'Small']].map(([k, l]) => `<button type="button" class="ls-chip${S.view === k ? ' on' : ''}" data-ls="view" data-v="${k}">${l}</button>`).join('')}</div>${preview()}</div>
+      <div class="ls-prev"><div class="ls-row">${[['check', 'Transparent'], ['white', 'On white'], ['dark', 'On dark'], ['store', 'Storefront'], ['ad', 'Ad footer'], ['small', 'Small']].map(([k, l]) => `<button type="button" class="ls-chip${S.view === k ? ' on' : ''}" data-ls="view" data-v="${k}">${l}</button>`).join('')}<button type="button" class="ls-chip" data-ls="zoom" data-v="cur">⤢ Enlarge</button></div>${preview()}</div>
     </div></div>` : '';
     const step4 = c ? `<div class="ls-sec"><h3>4 · Download or publish</h3>
       <details class="ls-terms"><summary>Logo usage terms (${esc(st.terms_version)})</summary><ul>${(st.terms || []).map((t) => `<li>${esc(t)}</li>`).join('')}</ul></details>
       <label class="ls-chk"><input type="checkbox" id="lsTerms" ${S.terms ? 'checked' : ''}> I have read the logo usage terms</label>
       <div class="ls-row"><button type="button" class="ls-btn" data-ls="dl-svg" ${S.terms && S.svg ? '' : 'disabled'}>Download SVG (vector)</button><button type="button" class="ls-btn" data-ls="dl-png" ${S.terms && S.svg ? '' : 'disabled'}>Transparent PNG</button><button type="button" class="ls-btn" data-ls="dl-hi" ${S.terms && S.svg ? '' : 'disabled'}>High-resolution PNG</button></div>
+      ${formats()}
       <button type="button" class="ls-btn pri" data-ls="publish" ${S.terms && S.svg && !S.busy ? '' : 'disabled'}>Make this my logo</button>
       <div class="ls-note">Publishing shows this logo on your Account Center, storefront, Social Marketing Studio ads and quotes. Your current logo stays in your history and can be restored.</div></div>` : '';
     const hist = (st.history || []).length ? `<div class="ls-sec"><h3>Your logos</h3><div class="ls-hist">${st.history.map((h) => `<div class="ls-h${h.current ? ' on' : ''}"><img alt="" src="${esc(h.logo_url)}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ls-ph',textContent:'Image unavailable'}))"><span>${h.current ? '<b>In use</b>' : esc(h.kind === 'baseline' ? 'Original logo' : h.kind === 'studio' ? 'Studio design' : h.kind === 'upload' ? 'Uploaded' : h.kind === 'link' ? 'Linked' : 'Restored')}${h.at ? ' · ' + esc(new Date(h.at).toLocaleDateString()) : ''}</span>${!h.current && h.id ? `<button type="button" class="ls-btn sm" data-ls="restore" data-v="${h.id}">Restore</button>` : ''}${h.vector && h.id ? `<button type="button" class="ls-btn sm" data-ls="hsvg" data-v="${h.id}">SVG</button>` : ''}</div>`).join('')}</div></div>` : '';
-    shell(step1 + step2 + step3 + step4 + hist);
+    shell(step1 + step2 + step3 + step4 + hist + zoomView());
+  }
+  /* B16: the chosen design as a wide logo, a square logo and a symbol-only icon — downloads only; publishing keeps the design itself */
+  function formats() {
+    if (!S.vars) return '';
+    const on = S.terms ? '' : 'disabled';
+    const row = (k, title, use, sizes) => `<div class="ls-fmt"><div class="ls-fimg ${k === 'reversed' ? 'dk' : ''}"><img alt="${esc(title)}" src="${svgUrl(S.vars[k].svg)}"></div><b>${esc(title)}</b><span>${esc(use)}</span><div class="ls-row"><button type="button" class="ls-btn sm" data-ls="fsvg" data-v="${k}" ${on}>SVG</button>${sizes.map((w) => `<button type="button" class="ls-btn sm" data-ls="fpng" data-v="${k}:${w}" ${on}>PNG ${w}px</button>`).join('')}</div></div>`;
+    return `<div class="ls-lbl">Formats for every use</div><div class="ls-fmts">${row('horizontal', 'Horizontal', 'Website header, letterhead, signs, email signature', [1200, 3000])}${row('square', 'Square', 'Social media posts, flyers, window decals', [1200, 2400])}${row('icon', 'Icon', 'Profile picture, app / browser icon, stamps', [512, 1024])}${S.vars.reversed ? row('reversed', 'Light version', 'Dark backgrounds, vehicles, dark signs', [1200, 3000]) : ''}</div>`;
+  }
+  function zoomView() {
+    if (!S.zoom) return '';
+    const dark = S.zbg === 'dark'; const items = S.zoom === 'all' ? S.concepts.map((c, i) => [dark ? c._rev : c._svg, `${i + 1} · ${LABEL[c.layout]}`]) : [[dark && S.zoom === S.svg && S.vars && S.vars.reversed ? S.vars.reversed.svg : S.zoom, '']];
+    return `<div class="ls-zoom" role="dialog" aria-label="Large view"><div class="ls-zbar"><div class="ls-row">${['check', 'white', 'dark'].map((k) => `<button type="button" class="ls-chip${(S.zbg || 'white') === k ? ' on' : ''}" data-ls="zbg" data-v="${k}">${k === 'check' ? 'Transparent' : k === 'white' ? 'White' : 'Dark'}</button>`).join('')}</div><button type="button" class="ls-x" data-ls="unzoom" aria-label="Close large view">×</button></div><div class="ls-zgrid ${items.length > 1 ? 'four' : ''} bg-${S.zbg || 'white'}">${items.map(([svg, l]) => `<figure><img alt="${esc(l || 'Logo')}" src="${svg ? svgUrl(svg) : ''}">${l ? `<figcaption>${esc(l)}</figcaption>` : ''}</figure>`).join('')}</div></div>`;
   }
   function preview() {
     if (!S.svg) return '<div class="ls-stage">Drawing…</div>';
     const img = `<img alt="Logo preview" src="${svgUrl(S.svg)}">`;
-    if (S.view === 'dark') return `<div class="ls-stage dark">${img}<div class="ls-note" style="color:#cfd8e3">Light text versions come later — choose lighter colours if this logo will sit on dark backgrounds.</div></div>`;
+    if (S.view === 'check') return `<div class="ls-stage check">${img}</div>`;
+    if (S.view === 'dark') return `<div class="ls-stage dark"><img alt="Light version on dark" src="${svgUrl(S.vars && S.vars.reversed ? S.vars.reversed.svg : S.svg)}"><div class="ls-note" style="color:#cfd8e3">Light version for dark backgrounds — downloadable below.</div></div>`;
     if (S.view === 'store') return `<div class="ls-stage store"><div class="ls-mhead"><div class="ls-mlogo">${img}</div><div class="ls-mph">Phone and “Request information” are shown here by your storefront</div></div><div class="ls-mnav"><span>Home</span><span>Products</span><span>About us</span><span>Contact</span></div></div>`;
     if (S.view === 'ad') return `<div class="ls-stage ad"><div class="ls-mad"><div class="ls-mplate">${img}</div><div><b>${esc(S.st.full_name)}</b><span>Address and phone come from your account</span></div></div></div>`;
     if (S.view === 'small') return `<div class="ls-stage"><div class="ls-sm"><div style="height:40px">${img}</div><div style="height:24px">${img}</div></div></div>`;
@@ -93,21 +109,28 @@
   }
 
   /* ---------- actions ---------- */
-  async function refreshCur() { if (!S.cur) return; try { const r = await draw(S.cur); S.svg = r.svg; S.size = { w: r.w, h: r.h }; } catch (e) { S.err = 'The lettering could not be loaded — check your connection and try again.'; } render(); }
+  async function refreshCur() { if (!S.cur) return; try { const r = await draw(S.cur); S.svg = r.svg; S.size = { w: r.w, h: r.h }; S.vars = window.LogoRender.variants(S.cur, await font(S.cur.font)); S.vars.reversed = await draw(reversed(S.cur)); } catch (e) { S.err = 'The lettering could not be loaded — check your connection and try again.'; } render(); }
   async function onClick(ev) {
     const t = ev.target.closest('[data-ls]'); if (!t) return; const k = t.dataset.ls, v = t.dataset.v; S.err = ''; S.msg = '';
     if (k === 'close') { close(); return; }
     if (k === 'style' || k === 'palette' || k === 'symbol') { S.prefs[k] = v; render(); return; }
     if (k === 'view') { S.view = v; render(); return; }
-    if (k === 'concepts') {
+    if (k === 'zoom') { S.zoom = v === 'cur' ? S.svg : (S.concepts[Number(v)] || {})._svg || null; render(); return; }
+    if (k === 'compare') { S.zoom = 'all'; S.zbg = 'white'; render(); return; }
+    if (k === 'zbg') { S.zbg = v; render(); return; }
+    if (k === 'unzoom') { S.zoom = null; render(); return; }
+    if (k === 'fsvg' && S.vars && S.vars[v]) { download(fileBase() + '-logo-' + v + '.svg', svgUrl(S.vars[v].svg)); return; }
+    if (k === 'fpng') { const [f, w] = String(v).split(':'); if (!S.vars || !S.vars[f]) return; try { download(`${fileBase()}-logo-${f}-${w}px.png`, await toPng(S.vars[f].svg, Number(w))); } catch (e) { S.err = 'The PNG could not be made in this browser — download the SVG instead.'; render(); } return; }
+    if (k === 'more') { S.prefs.variant = ((S.prefs.variant || 0) + 1) % 8; }
+    if (k === 'concepts' || k === 'more') {
       S.busy = true; render();
       const r = await A.api({ action: 'logo_studio_concepts', prefs: S.prefs }).catch(() => null); S.busy = false;
       if (!r || !r.ok) { S.err = (r && r.error) || 'Designs could not be made just now — please try again.'; render(); return; }
       S.concepts = r.concepts.map((c, i) => Object.assign(c, { _i: i })); S.cur = null; S.svg = '';
-      await Promise.all(S.concepts.map(async (c) => { try { c._svg = (await draw(c)).svg; } catch (e) { c._svg = ''; } }));
+      await Promise.all(S.concepts.map(async (c) => { try { c._svg = (await draw(c)).svg; c._rev = (await draw(reversed(c))).svg; } catch (e) { c._svg = ''; } }));
       render(); return;
     }
-    if (k === 'pick') { const c = S.concepts[Number(v)]; S.cur = JSON.parse(JSON.stringify(c)); S.cur._i = Number(v); delete S.cur._svg; S.svg = c._svg || ''; render(); if (!S.svg) refreshCur(); return; }
+    if (k === 'pick') { const c = S.concepts[Number(v)]; S.cur = JSON.parse(JSON.stringify(c)); S.cur._i = Number(v); delete S.cur._svg; S.svg = c._svg || ''; S.vars = null; render(); refreshCur(); return; }
     if (k === 'dl-svg') { download(fileBase() + '-logo.svg', svgUrl(S.svg)); return; }
     if (k === 'dl-png' || k === 'dl-hi') { try { download(fileBase() + (k === 'dl-hi' ? '-logo-3000px.png' : '-logo.png'), await toPng(S.svg, k === 'dl-hi' ? 3000 : 1200)); } catch (e) { S.err = 'The PNG could not be made in this browser — download the SVG instead.'; render(); } return; }
     if (k === 'publish') {
@@ -144,12 +167,12 @@
   }
   function onInput(ev) { if (ev.target.id === 'lsTag') S.prefs.tagline = ev.target.value; }
   function close() { const r = document.getElementById('lsRoot'); if (r) r.remove(); document.removeEventListener('keydown', onKey); }
-  function onKey(e) { if (e.key === 'Escape') close(); }
+  function onKey(e) { if (e.key !== 'Escape') return; if (S.zoom) { S.zoom = null; render(); } else close(); }
   async function loadState() { const r = await A.api({ action: 'logo_studio_state' }).catch(() => null); if (!r || !r.ok) { S.err = (r && r.error) || 'Logo Studio could not be opened just now.'; S.st = { enabled: false, reason: S.err }; S.err = ''; } else S.st = r; render(); }
 
   async function open(opts) {
     A = opts; S.err = ''; S.msg = ''; S.st = null; render(); document.addEventListener('keydown', onKey);
-    try { await Promise.all([loadScript(A.base + '/opentype.min.js'), loadScript(A.base + '/logo-render.js')]); } catch (e) { S.st = { enabled: false, reason: 'Logo Studio could not be loaded — check your connection and try again.' }; render(); return; }
+    try { await Promise.all([loadScript(A.base + '/opentype.min.js'), loadScript(A.base + '/logo-render.js?v=2')]); } catch (e) { S.st = { enabled: false, reason: 'Logo Studio could not be loaded — check your connection and try again.' }; render(); return; }
     await loadState();
   }
   /* is the Studio open for this account? (Account Center shows its button only then) */
@@ -180,8 +203,17 @@
 #lsRoot .ls-mad{margin-top:auto;display:flex;gap:14px;align-items:center;background:#0b1f33;color:#fff;padding:14px}#lsRoot .ls-mplate{background:#fff;border-radius:10px;padding:8px;height:70px;width:42%}#lsRoot .ls-mplate img{height:54px;width:100%;object-fit:contain}#lsRoot .ls-mad b{display:block}#lsRoot .ls-mad span{font-size:12px;color:#c9d6e3}
 #lsRoot .ls-sm{display:flex;flex-direction:column;gap:16px;align-items:center}#lsRoot .ls-sm img{height:100%;width:auto}
 #lsRoot .ls-hist{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}#lsRoot .ls-h{border:1px solid #e3e9ef;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}#lsRoot .ls-h.on{border-color:#2f9e5b}#lsRoot .ls-h img{height:56px;width:100%;object-fit:contain;background:#f7f9fb;border-radius:8px}#lsRoot .ls-h span{font-size:12px;color:#56687a}#lsRoot .ls-ph{display:flex;align-items:center;justify-content:center;height:56px;background:#f2f4f7;border-radius:8px}
+#lsRoot .ls-hrow{display:flex;justify-content:space-between;align-items:center;gap:8px}#lsRoot .ls-hrow h3{margin:0}
+#lsRoot .ls-cardw{position:relative}#lsRoot .ls-cardw .ls-card{width:100%}#lsRoot .ls-zoombtn{position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:10px;border:1px solid #c9d4df;background:#fff;font-size:20px;cursor:pointer}
+#lsRoot .ls-rec{position:absolute;top:10px;left:10px;font-style:normal;font-size:11.5px;font-weight:800;background:#e9f7ee;color:#17603a;border-radius:999px;padding:3px 9px}#lsRoot .ls-card{position:relative;padding-top:34px}#lsRoot .ls-card img{height:150px}
+#lsRoot .ls-stage img{max-height:300px}#lsRoot .ls-stage.check,#lsRoot .ls-zgrid.bg-check{background:repeating-conic-gradient(#eef1f4 0 25%,#fff 0 50%) 0 0/18px 18px}
+#lsRoot .ls-fmts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:6px 0 10px}#lsRoot .ls-fmt{border:1px solid #e3e9ef;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:4px}#lsRoot .ls-fmt span{font-size:12px;color:#56687a}
+#lsRoot .ls-fimg{height:110px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#eef1f4 0 25%,#fff 0 50%) 0 0/14px 14px;border-radius:8px}#lsRoot .ls-fimg img{max-width:100%;max-height:100px}#lsRoot .ls-fimg.dk{background:#0b1f33}
+#lsRoot .ls-zoom{position:fixed;inset:0;z-index:2;background:rgba(8,20,36,.9);display:flex;flex-direction:column;padding:12px;overflow:auto}#lsRoot .ls-zbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+#lsRoot .ls-zgrid{flex:1;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;border-radius:14px;padding:16px;background:#fff}#lsRoot .ls-zgrid.four{grid-template-columns:repeat(2,minmax(0,1fr))}#lsRoot .ls-zgrid.bg-dark{background:#0b1f33}#lsRoot .ls-zgrid.bg-dark figcaption{color:#cfd8e3}
+#lsRoot .ls-zgrid figure{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px}#lsRoot .ls-zgrid img{width:100%;max-height:70vh;object-fit:contain}#lsRoot .ls-zgrid.four img{max-height:34vh}#lsRoot .ls-zgrid figcaption{font-size:13px;color:#56687a;margin-top:6px}
 #lsRoot .ls-terms{margin-bottom:6px}#lsRoot .ls-terms summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}#lsRoot .ls-terms li{margin:4px 0;font-size:13px;color:#33475b}
-@media(max-width:760px){#lsRoot{padding:0}#lsRoot .ls-pan{border-radius:0}#lsRoot .ls-edit,#lsRoot .ls-grid2{grid-template-columns:minmax(0,1fr)}#lsRoot .ls-cards{grid-template-columns:minmax(0,1fr)}#lsRoot .ls-mph{display:none}#lsRoot .ls-mlogo{max-width:100%}}
+@media(max-width:760px){#lsRoot{padding:0}#lsRoot .ls-pan{border-radius:0}#lsRoot .ls-edit,#lsRoot .ls-grid2{grid-template-columns:minmax(0,1fr)}#lsRoot .ls-cards{grid-template-columns:minmax(0,1fr)}#lsRoot .ls-fmts{grid-template-columns:minmax(0,1fr)}#lsRoot .ls-zgrid.four{grid-template-columns:minmax(0,1fr)}#lsRoot .ls-mph{display:none}#lsRoot .ls-mlogo{max-width:100%}}
 @media(prefers-reduced-motion:reduce){#lsRoot *{transition:none!important}}`;
     document.head.appendChild(s);
   }
