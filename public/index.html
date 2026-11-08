@@ -8699,7 +8699,8 @@ function acAccountsHtml(loc){
     if(canClaim&&!golden&&x.status==="none"&&typeof window.needsAccess==="function"&&window.needsAccess(x.slug)) act+=` <button type="button" class="btn gh acsm" data-slug="${esc(x.slug)}" onclick="requestAccess(this.dataset.slug,this)">Request access</button>`;
     return `<div class="acrow st-${esc(x.status)}"><div class="acn"><b>${esc(x.name)}</b><span>${esc(x.label)}${x.account_ref?" · # "+esc(x.account_ref):""}${x.ordering?" · ordering on":""}${x.pending_claim?` · you sent #${esc(x.pending_claim)} — HCPS is reviewing`:""}</span></div><div class="acr">${acChip(x.status)}${act}</div></div>`; }).join("")}</div>`;
 }
-function renderAccount(){
+function renderAccount(){ renderAccount0(); lsEntry(); }
+function renderAccount0(){
   const host=$("#view-account"); if(!host) return;
   const resaleOn=ACCOUNT.resale&&ACCOUNT.resale.status==="on_file";
   /* "Your terms by line" removed (owner 2026-11-06): manufacturer terms were never reliably available. */
@@ -8733,7 +8734,7 @@ function renderAccount(){
   </div><div>
     <div class="card" style="margin-top:0"><h3>Your logo</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Printed on your quotes, brochures and storefront. JPEG or PNG, 1 MB max.</div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">${co.logo_url?`<img src="${esc(co.logo_url)}" alt="Your logo" style="max-width:160px;max-height:64px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:8px;padding:4px" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'m',textContent:'Logo could not be shown — upload it again'}))">`:`<span class="m" style="color:var(--muted)">No logo yet</span>`}</div>
-      <label class="btn pri acsm" style="display:inline-block;cursor:pointer">Upload logo<input type="file" accept="image/jpeg,image/png" style="display:none" onchange="acLogoUpload(this)"></label>
+      <label class="btn pri acsm" style="display:inline-block;cursor:pointer">Upload logo<input type="file" accept="image/jpeg,image/png" style="display:none" onchange="acLogoUpload(this)"></label><span id="lsEntry"></span>
       <details style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px">Use a logo link instead</summary><div class="fld2" style="margin-top:6px"><input id="acctLogo" value="${esc(co.logo_url&&!/dealer-logos/.test(co.logo_url)?co.logo_url:"")}" placeholder="https://…/logo.png"></div><a class="btn gh acsm" onclick="saveBranding(document.getElementById('acctLogo').value).then(loadAccountView)">Save link</a></details></div>
     <div class="card"><h3>Your manufacturer accounts</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Green = verified by HCPS · Amber = waiting on HCPS · Red = no account. Ordering access is set separately by HCPS.</div>
       ${acAccountsHtml(self)}
@@ -8774,6 +8775,18 @@ async function acDefaultShip(key){
   if(r&&r.ok){ acToast("Default ship-to saved."); try{ if(typeof AUTH!=="undefined"&&AUTH.dealer) AUTH.dealer.default_ship_key=r.default_ship_key; const sel=document.getElementById("f_shipto"); if(sel) delete sel.dataset.init; }catch(e){} loadAccountView(); }
   else acToast((r&&r.error)||"Could not save just now — please try again.");
 }
+/* Dealer Brand & Logo Studio (Catalog 5, 2026-11-08): the button shows only where the server has opened the Studio
+   (James Medical pilot first). The Studio lives in /assets/logo-studio/ and publishes to the same dealers.logo_url. */
+let LS_JS=null, LS_ON=null;
+function lsLoad(){ if(!LS_JS) LS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/logo-studio/logo-studio.js?v=1"; sc.onload=res; sc.onerror=()=>{ LS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return LS_JS; }
+async function lsEntry(){
+  const el=document.getElementById("lsEntry"); if(!el) return;
+  if(LS_ON===null){ try{ const r=await api(TOOLS_ENDPOINT,{action:"logo_studio_state"}); LS_ON=!!(r&&r.ok&&r.enabled); }catch(e){ LS_ON=false; } }
+  const el2=document.getElementById("lsEntry"); if(!el2||!LS_ON) return;
+  el2.innerHTML=` <a class="btn gh acsm" style="display:inline-block" onclick="lsOpen()">✨ Design a logo — Brand &amp; Logo Studio</a><div class="m" style="font-size:12px;color:var(--muted);margin-top:6px">Included with your account: 4 professional designs from your business name, vector + PNG downloads, and you can restore your earlier logos anytime.</div>`;
+}
+async function lsOpen(){ try{ await lsLoad(); }catch(e){ acToast("Logo Studio could not be loaded — please try again."); return; }
+  window.HCPSLogoStudio.open({ api:(b)=>api(TOOLS_ENDPOINT,b), esc, base:"/assets/logo-studio", onChange:(url)=>{ BRANDING.logo_url=url; try{ applyBranding(); }catch(e){} loadAccountView(); } }); }
 async function acLogoUpload(inp){
   const f=inp&&inp.files&&inp.files[0]; if(!f) return;
   if(!/^image\/(jpeg|png)$/.test(f.type)) { acToast("The logo must be a JPEG or PNG image."); return; }
@@ -9282,7 +9295,7 @@ async function sfSave(mode){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
