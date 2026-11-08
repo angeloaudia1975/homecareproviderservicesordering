@@ -42,7 +42,7 @@ async function open(browser, w, h, opts) {
     if (/\/functions\/dealer-tools-api/.test(u.pathname) && opts.tools && req.method() === 'POST') {
       let b = {}; try { b = JSON.parse(req.postData() || '{}'); } catch (e) {}
       (seen.toolCalls = seen.toolCalls || []).push(b);
-      const ans = opts.tools(b);
+      const ans = await opts.tools(b);
       if (ans) return route.fulfill({ status: ans.status || 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(ans.body || ans) });
     }
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.host)) return route.fulfill({ status: 200, body: '' });
