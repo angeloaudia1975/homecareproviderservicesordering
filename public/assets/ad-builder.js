@@ -598,6 +598,15 @@
     bindStage();
   }
   const captionText = () => [S.cur.caption, S.cur.hashtags.map((h) => '#' + h).join(' ')].filter(Boolean).join('\n\n');
+  /* the saved feature list has no gaps: a cleared middle feature closes up, and the feature boxes are re-pointed so each
+     keeps showing its own words after reopening (review) */
+  function compactFeatures(cur) {
+    const f = cur.features || [], map = {}; let n = 0; const kept = [];
+    f.forEach((v, i) => { if (String(v).trim()) { map[i] = n++; kept.push(v); } });
+    if (kept.length === f.length) return; let spare = n; f.forEach((v, i) => { if (!(i in map)) map[i] = Math.min(3, spare++); });
+    cur.features = kept;
+    for (const els of Object.values(cur.layouts || {})) for (const x of els) if (x.type === 'text' && /^feature\d$/.test(x.bind || '')) { const i = Number(x.bind.slice(7)); if (i in map) x.bind = 'feature' + map[i]; }
+  }
   function say(m, cls) { const el = $('#adbMsg'); if (el) { el.textContent = m || ''; el.className = 'adb-msg' + (cls ? ' ' + cls : ''); } }
   /* the Brand Kit: the storefront's colors (or HCPS navy / orange) — the text color always readable on the background */
   function applyBrand(cur) { const b = (S.ctx && S.ctx.brand) || { primary: '#0b1f33', accent: '#ef6325' }; cur.colors = { bg: b.primary, accent: b.accent, text: onColor(b.primary) }; }
@@ -1062,6 +1071,7 @@
   async function save(asCopy) {
     if (S.busy) return; S.busy = true; say('Saving…');
     try {
+      compactFeatures(S.cur);
       const body = { action: 'ads_save', location_id: S.loc, ad: S.cur };
       if (S.row && !asCopy) { body.id = S.row.id; body.version = S.row.version; }
       if (asCopy) body.ad = Object.assign({}, S.cur, { title: ((S.cur.title || S.cur.headline || 'Ad').slice(0, 72)) + ' (copy)' });
