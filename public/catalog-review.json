@@ -1,17 +1,8 @@
 {
-  "review_id": "a735f3d5ccda",
+  "review_id": "f6848fd0a3e1",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-08T00:07:35Z",
-  "main": "ca0b2b68548218fd683835940b6fbd3340a29e51",
-  "included": [
-    {
-      "pr": 76,
-      "title": "Storefront product enrichment — full product pages (page)",
-      "branch": "c9/storefront-enrich",
-      "head": "f47d065b85a146f4388426af2faa9fd6d1200435",
-      "manufacturers": [],
-      "other_files": 4
-    }
-  ],
+  "built_at": "2026-11-08T00:10:30Z",
+  "main": "ad20d921cdc238fc98c4775e615c2affbd014b10",
+  "included": [],
   "skipped": []
 }
