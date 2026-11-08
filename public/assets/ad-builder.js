@@ -532,10 +532,12 @@
   .sms-brand{display:flex;gap:10px;align-items:center;border:1px solid var(--sms-line);border-radius:12px;padding:10px;background:#fff}
   .sms-brand .lg{width:96px;height:56px;display:flex;align-items:center;justify-content:center;background:#f3f6f8;border-radius:8px;font-size:11px;color:var(--sms-mut);text-align:center}
   .sms-brand img{max-width:96px;max-height:56px}
-  .sms-cd{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
-  .sms-cd div{border:1px solid var(--sms-line);border-radius:10px;padding:6px;background:#fff;text-align:center;font-size:12px}
-  .sms-cd canvas{width:100%;height:auto;display:block;border-radius:6px}
-  .sms-cd .btn{min-height:40px;width:100%;margin-top:6px}
+  .sms-cd{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
+  .sms-cd>div{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:center;border:1px solid var(--sms-line);border-radius:10px;padding:8px;background:#fff;font-size:13px}
+  .sms-cd>div.on{border-color:#ef6325;box-shadow:0 0 0 2px rgba(239,99,37,.25)}
+  .sms-cd canvas{width:96px;height:auto;display:block;border-radius:6px;cursor:pointer}
+  .sms-cd b{display:block;margin-bottom:6px}
+  .sms-cd .btn{min-height:44px;width:100%}
   .sms .adb-sec{margin-bottom:10px}
   @media(max-width:980px){
     .sms-wrap{grid-template-columns:minmax(0,1fr);min-height:0}
@@ -914,7 +916,7 @@
       ${R ? `<div class="adb-why"><b>Why this ad works</b><ul>${(R.why || []).map((w) => `<li>${e(w)}</li>`).join('')}</ul>
         ${(R.alt_headlines || []).length ? `<div style="margin-top:8px"><b>Other headlines</b> — tap to use:</div><div class="adb-alts">${R.alt_headlines.map((h, i) => `<button type="button" data-alt="${i}">${e(h)}</button>`).join('')}</div>` : ''}
         <div style="margin-top:8px;color:#5b6773;font-size:12px">Written by AI from your catalog's facts and checked by HCPS's ad rules. Review it before posting — results are never guaranteed.</div></div>` : ''}
-      ${S.cd ? `<div class="adb-why"><b>Three designs — pick the one you like</b><div class="sms-cd">${S.cd.cands.map((x, i) => `<div><canvas data-cdv="${i}" aria-label="Design ${i + 1}"></canvas><b>${e((S.ctx.templates[x.template] || {}).label || '')}</b><button type="button" class="btn ${i ? 'gh' : 'pri'}" data-cduse="${i}">Use this design</button></div>`).join('')}</div>
+      ${S.cd ? `<div class="adb-why"><b>Three designs — pick the one you like</b><div class="sms-cd">${S.cd.cands.map((x, i) => `<div class="${(S.cd.pick || 0) === i ? 'on' : ''}"><canvas data-cdv="${i}" aria-label="Design ${i + 1}"></canvas><div><b>${e((S.ctx.templates[x.template] || {}).label || '')}</b><button type="button" class="btn ${(S.cd.pick || 0) === i ? 'pri' : 'gh'}" data-cduse="${i}" aria-pressed="${(S.cd.pick || 0) === i}">${(S.cd.pick || 0) === i ? '✓ On the canvas' : 'Use this design'}</button></div></div>`).join('')}</div>
         <div style="font-size:12px;color:#5b6773;margin-top:6px">Every design uses the same checked words and your catalog prices. Not quite right? Create 3 designs again for new layouts.</div></div>` : ''}
       ${S.campaign ? campHtml() : ''}</div>`;
   }
@@ -948,7 +950,8 @@
     host.querySelectorAll('[data-cdl]').forEach((b) => { b.onclick = async () => { const keep = S.cur; S.cur = Object.assign(blank(), S.campaign.ads[Number(b.getAttribute('data-cdl'))]); try { await download('png'); } finally { S.cur = keep; redraw(); } }; });
     const cs = host.querySelector('#adbCampSave'); if (cs) cs.onclick = async () => { if (S.busy) return; S.busy = true; say('Saving the campaign…');
       try { const r = await A.api({ action: 'ads_campaign_save', location_id: S.loc, campaign: S.campaign.campaign, ads: S.campaign.ads }); if (r && r.ok) { S.campaign.saved = true; await refreshList(); form(); say(`Saved ${r.rows.length} ads as one campaign.`, 'ok'); } else say((r && r.error) || 'Could not save the campaign.', 'err'); } finally { S.busy = false; } };
-    host.querySelectorAll('[data-cduse]').forEach((b) => { b.onclick = () => { const x = S.cd.cands[Number(b.getAttribute('data-cduse'))]; snap(); S.cur = deep(x); S.row = null; ED.sel = null; form(); redraw(); say('Design chosen — click anything on the canvas to change it, then save.', 'ok'); }; });
+    host.querySelectorAll('[data-cdv]').forEach((cv) => { cv.onclick = () => { const bb = host.querySelector(`[data-cduse="${cv.getAttribute('data-cdv')}"]`); if (bb) bb.click(); }; });
+    host.querySelectorAll('[data-cduse]').forEach((b) => { b.onclick = () => { const x = S.cd.cands[Number(b.getAttribute('data-cduse'))]; S.cd.pick = Number(b.getAttribute('data-cduse')); snap(); S.cur = deep(x); S.row = null; ED.sel = null; form(); redraw(); say('Design chosen — click anything on the canvas to change it, then save.', 'ok'); }; });
     if (S.cd) drawCandidates();
     const cc = host.querySelector('#adbCampClose'); if (cc) cc.onclick = () => { S.campaign = null; form(); };
     if (S.campaign) drawCampaign();
