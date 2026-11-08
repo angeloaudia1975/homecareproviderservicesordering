@@ -705,7 +705,7 @@
   function swatches(name, val, allowNone) {
     const opts = (allowNone ? [['none', 'None']] : []).concat(COLOR_TOKENS);
     return `<div class="sms-sw">${opts.map(([k, l]) => `<button type="button" data-${name}="${k}" aria-pressed="${val === k}" title="${l}" aria-label="${l}" style="background:${k === 'none' ? 'repeating-linear-gradient(45deg,#fff 0 4px,#e3e8ee 4px 8px)' : tok(k)}"></button>`).join('')}
-      <input type="color" data-${name}c aria-label="Custom color" value="${/^#/.test(val || '') ? val : tok(val) || '#ffffff'}"></div>`;
+      <input type="color" data-${name}c aria-label="Custom color" value="${e(/^#[0-9a-f]{6}$/i.test(val || '') ? val : tok(val) || '#ffffff')}"></div>`;
   }
   function inspHtml() {
     const x = selEl(); if (!x) return '<div class="sms-insp"><h4>Nothing selected</h4><div style="font-size:12.5px;color:#5b6773">Tap a layer on the canvas to move, resize or restyle it. Ctrl+Z undoes.</div></div>';
@@ -745,7 +745,9 @@
     const ch = (f) => (ev) => { once(); f(ev); redraw(); };
     const t = host.querySelector('#smsTxt');
     if (t) { if (t.tagName === 'SELECT') t.onchange = ch(() => { S.cur.cta = t.value; });
-      else t.oninput = ch(() => { const v = t.value; if (x.bind === 'custom') x.text = v; else if (/^feature/.test(x.bind)) { const i = Number(x.bind.slice(7)); const f = (S.cur.features || []).slice(); while (f.length <= i) f.push(''); f[i] = v; S.cur.features = f.map((s) => s.trim()).filter(Boolean).length ? f : []; } else S.cur[x.bind] = v;
+      else t.oninput = ch(() => { const v = t.value; if (x.bind === 'custom') x.text = v; else if (/^feature/.test(x.bind)) { const i = Number(x.bind.slice(7)); const f = (S.cur.features || []).slice(); const filled = f.filter((s) => String(s).trim()).length;
+          /* the saved list has no gaps — a box past the filled features keeps its words as its own text box (review) */
+          if (i > filled && i >= f.length) { x.bind = 'custom'; x.text = v; } else { while (f.length <= i) f.push(''); f[i] = v; S.cur.features = f; } } else S.cur[x.bind] = v;
         const w = warnWords(v, allow), wt = host.querySelector('#wTxt'); if (wt) wt.textContent = w ? `"${w}" can't be used in an ad (prices, discounts, offers or claims).` : ''; }); }
     const f = host.querySelector('#smsFont'); if (f) f.onchange = ch(() => { x.font = f.value || null; });
     const sz = host.querySelector('#smsSize'), szn = host.querySelector('#smsSizeN');
@@ -830,9 +832,9 @@
       if (i >= 0) cur.products.splice(i, 1); else if (kind === 'single') cur.products = [{ manufacturer: p.manufacturer, code: p.code, show_price: true }];
       else if (kind === 'general') { say('This template shows no product — choose a product template first.', 'err'); return; }
       else if (cur.products.length < max) cur.products.push({ manufacturer: p.manufacturer, code: p.code, show_price: true }); else { say(`This template shows up to ${max} products.`, 'err'); return; }
-      if (kind === 'multi') cur.layouts = null;   // the grid re-flows for the new number of products
+      if (kind === 'multi' && cur.layouts) { cur.layouts = null; say('The grid was re-laid for the new number of products — Undo (Ctrl+Z) brings back your previous design.', 'ok'); }   // the grid re-flows for the new number of products
       form(); redraw(); }; el.onclick = pick; el.onkeydown = (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(); } }; });
-    host.querySelectorAll('[data-rm]').forEach((b) => { b.onclick = () => { snap(); cur.products.splice(Number(b.getAttribute('data-rm')), 1); if (kind === 'multi') cur.layouts = null; else if (cur.layouts) for (const f of Object.keys(cur.layouts)) cur.layouts[f] = cur.layouts[f].filter((x) => x.product == null || x.product < cur.products.length); form(); redraw(); }; });
+    host.querySelectorAll('[data-rm]').forEach((b) => { b.onclick = () => { snap(); const ri = Number(b.getAttribute('data-rm')); cur.products.splice(ri, 1); if (kind === 'multi' && cur.layouts) { cur.layouts = null; say('The grid was re-laid for the new number of products — Undo (Ctrl+Z) brings back your previous design.', 'ok'); } else if (cur.layouts) for (const f of Object.keys(cur.layouts)) cur.layouts[f] = cur.layouts[f].filter((x) => x.product !== ri).map((x) => (x.product != null && x.product > ri ? Object.assign({}, x, { product: x.product - 1 }) : x)); form(); redraw(); }; });
     host.querySelectorAll('[data-sp]').forEach((b) => { b.onchange = () => { snap(); cur.products[Number(b.getAttribute('data-sp'))].show_price = b.checked; redraw(); }; });
     const qq = host.querySelector('#adbQ'); if (qq) qq.oninput = () => { S.q = qq.value; const pos = qq.selectionStart; form(); const n = $('#adbQ'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (x) {} } };
     let typed = false; const once = () => { if (!typed) { snap(); typed = true; } };
