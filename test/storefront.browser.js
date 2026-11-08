@@ -258,6 +258,9 @@ const layout = (page, sel) => page.evaluate((sel) => {
         ok(await page.evaluate(() => document.getElementById('sfPhone').value === '' && document.getElementById('sfEmail').value === '' && /hq@acme\.test/.test(document.getElementById('sfEmail').placeholder)), 'pre-filled');
         await page.evaluate(() => sfUseAccount()); ok(await page.evaluate(() => document.getElementById('sfEmail').value === 'hq@acme.test'), 'use account');
         await page.evaluate(() => { document.getElementById('sfEmail').value = ''; document.getElementById('sfPhone').value = ''; }); });
+      await t(label + ': each line\'s tick box sits beside its name (not stacked above it)', async () => {
+        const r = await page.evaluate(() => [...document.querySelectorAll('#view-storefront .sf-check')].filter((l) => l.offsetParent).map((l) => { const i = l.querySelector('input').getBoundingClientRect(), b = l.getBoundingClientRect(); return { w: i.width, dy: Math.abs((i.top + i.bottom) / 2 - (b.top + b.bottom) / 2), h: b.height }; }));
+        ok(r.length >= 2 && r.every((x) => x.w < 60 && x.dy < 6), JSON.stringify(r)); });
       await t(label + ': My Storefront tab, settings save exactly what was typed', async () => {
         ok(await page.evaluate(() => [...document.querySelectorAll('.navtab span')].some((s) => s.textContent === 'My Storefront')), 'tab');
         await page.fill('#sfHead', 'Welcome'); await page.uncheck('#sfAll'); await page.uncheck('.sf-line[value="strongback"]'); await page.selectOption('#sfPrice', 'call');
