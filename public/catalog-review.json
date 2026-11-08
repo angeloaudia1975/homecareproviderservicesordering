@@ -1,17 +1,8 @@
 {
-  "review_id": "eec04925f9c1",
+  "review_id": "6886bc96e025",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-08T02:03:52Z",
-  "main": "66f28d026d684ce5d85fc92b0eb376761834d958",
-  "included": [
-    {
-      "pr": 80,
-      "title": "My Storefront: line tick boxes sit beside their names",
-      "branch": "c10/sf-lines-fix",
-      "head": "59276587f9c6f5f1a7d3f32457e9a36665de3d25",
-      "manufacturers": [],
-      "other_files": 2
-    }
-  ],
+  "built_at": "2026-11-08T02:04:08Z",
+  "main": "275bb27765ffabf86f1930c201bf5bf70d2bb170",
+  "included": [],
   "skipped": []
 }
