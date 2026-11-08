@@ -1,17 +1,8 @@
 {
-  "review_id": "6f241fd9d289",
+  "review_id": "6eea897a51e1",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-08T00:35:45Z",
-  "main": "ad20d921cdc238fc98c4775e615c2affbd014b10",
-  "included": [
-    {
-      "pr": 77,
-      "title": "Storefront: bump store.js cache version",
-      "branch": "c9/enrich-speed",
-      "head": "782cff2ff6a0d14cf2ba5791f15118fd526bc0c4",
-      "manufacturers": [],
-      "other_files": 1
-    }
-  ],
+  "built_at": "2026-11-08T00:37:10Z",
+  "main": "ce1e5b5922cc7bb9ebd83db2b619669c3975d670",
+  "included": [],
   "skipped": []
 }
