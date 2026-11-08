@@ -1,7 +1,7 @@
 {
   "review_id": "0cf5ac178129",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-08T00:00:12Z",
+  "built_at": "2026-11-08T00:07:17Z",
   "main": "ca0b2b68548218fd683835940b6fbd3340a29e51",
   "included": [
     {
@@ -10,7 +10,8 @@
       "branch": "c9/storefront-enrich",
       "head": "1e2a654f198eb16c222a54d8ccc49ad684d198bf",
       "manufacturers": [],
-      "other_files": 4
+      "other_files": 4,
+      "note": "newer commit f47d065 still being checked — showing the last validated version"
     }
   ],
   "skipped": []
