@@ -25,10 +25,22 @@ concurrency:
 jobs:
   catalog-review-sandbox-sync:
     # The sandbox PR's own pushes do not rebuild it, and PRs from forks are never merged into it.
+    # Trigger narrowing (Admin 360 B0, 2026-11-08 — Actions minutes become metered once the repo is private). A job
+    # whose `if` is false is skipped without a runner, so it costs no minutes. Skipped, because they can never change
+    # the sandbox: a status still "pending" (the finished status arrives as its own event); a status or check suite on
+    # the sandbox's OWN branch (its deploy preview used to re-trigger this workflow); one on main (the push event to main
+    # already rebuilt it). Every event that can add, update or remove a PR still runs, unchanged.
     if: >-
-      github.event_name != 'pull_request_target' ||
-      (github.event.pull_request.head.ref != 'catalog-review' &&
-       github.event.pull_request.head.repo.full_name == github.repository)
+      (github.event_name != 'pull_request_target' ||
+       (github.event.pull_request.head.ref != 'catalog-review' &&
+        github.event.pull_request.head.repo.full_name == github.repository)) &&
+      (github.event_name != 'status' ||
+       (github.event.state != 'pending' &&
+        !contains(github.event.branches.*.name, 'catalog-review') &&
+        !contains(github.event.branches.*.name, 'main'))) &&
+      (github.event_name != 'check_suite' ||
+       (github.event.check_suite.head_branch != 'catalog-review' &&
+        github.event.check_suite.head_branch != 'main'))
     runs-on: ubuntu-latest
     steps:
       # Always main's script, whatever the event.
