@@ -1,15 +1,17 @@
 {
-  "review_id": "6eea897a51e1",
+  "review_id": "2c959fda7aa6",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-08T01:29:00Z",
+  "built_at": "2026-11-08T01:29:17Z",
   "main": "ce1e5b5922cc7bb9ebd83db2b619669c3975d670",
-  "included": [],
-  "skipped": [
+  "included": [
     {
       "pr": 78,
       "title": "Social Marketing Studio (Concept 3) — dealer canvas editor",
       "branch": "c10/studio",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
+      "head": "a4d84f3b0dae9094f85af258ed5b102e6d843cfe",
+      "manufacturers": [],
+      "other_files": 2
     }
-  ]
+  ],
+  "skipped": []
 }

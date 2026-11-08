@@ -7269,6 +7269,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .mn-in a:hover{color:#fff}#p360wrap .mn-in a.on{color:#fff;border-color:var(--orange)}
   #p360wrap .mn-in a.soon{color:#6b7d90;cursor:default}#p360wrap .mn-in a.soon:hover{color:#8a97a8}
   #p360wrap .page{max-width:1240px;margin:0 auto;padding:22px 22px 70px}
+  #p360wrap .page:has(#view-ads.on){max-width:1560px}   /* Social Marketing Studio: room for the tools, the canvas and its toolbar */
   #p360wrap .view{display:none}#p360wrap .view.on{display:block}
   #p360wrap .ph{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
   #p360wrap .ph h1{margin:0;font-size:26px;font-weight:800;color:var(--navy)}
@@ -8952,7 +8953,7 @@ window.showView=showView;
 const ADS_API=API_BASE+"/dealer-ads-api"; let ADS_JS=null;
 async function loadAdsView(){
   const host=$("#view-ads"); if(!host) return;
-  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=1"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
+  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=2"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
   try{ await ADS_JS; }catch(e){ host.innerHTML='<div class="ph"><div><h1>Social Ads</h1></div></div><div class="card"><div class="msg">The ad builder could not be loaded — please try again.</div></div>'; return; }
   window.HCPSAdBuilder.mount(host,{ api:(b)=>api(ADS_API,b), esc });
 }
