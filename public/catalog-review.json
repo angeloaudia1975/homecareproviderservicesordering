@@ -1,8 +1,15 @@
 {
   "review_id": "f6848fd0a3e1",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-08T00:10:30Z",
+  "built_at": "2026-11-08T00:35:27Z",
   "main": "ad20d921cdc238fc98c4775e615c2affbd014b10",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 77,
+      "title": "Storefront: bump store.js cache version",
+      "branch": "c9/enrich-speed",
+      "reason": "checks pending on its latest commit — added automatically once they pass"
+    }
+  ]
 }
