@@ -67,6 +67,8 @@
   }
 
   /* ---------- data: families, facets ---------- */
+  /* the dealer's manufacturer order (design.line_order, Catalog 5 Part C); lines not ordered follow alphabetically */
+  function lineCmp(a,b){var o=((D.dealer&&D.dealer.design&&D.dealer.design.line_order)||[]),ia=o.indexOf(a),ib=o.indexOf(b);if(ia<0)ia=1e6;if(ib<0)ib=1e6;return ia-ib||lineName(a).localeCompare(lineName(b));}
   function lineName(s){var l=(D.lines||[]).filter(function(x){return x.slug===s;})[0];return l?l.name:'';}
   function num(re,v){var m=String(v||'').replace(/,/g,'').match(re);return m?Number(m[1]):null;}
   function attr(p,re){var a=p.attributes||{};for(var k in a){if(re.test(k))return a[k];}return null;}
@@ -190,7 +192,7 @@
     return '<div class="fclose"><b>Filters</b><button class="btn" type="button" data-fclose="1">Done</button></div>'+
       '<div class="fg"><h3>Search these results</h3><input type="search" id="fq" value="'+esc(F.q)+'" placeholder="Name or keyword" aria-label="Search these results"></div>'+
       facet('Category','cats',Object.keys(cc).sort().map(function(c){return [c,c,cc[c]];}),F.cats)+
-      facet('Manufacturer','mfrs',Object.keys(mc).sort(function(a,b){return lineName(a).localeCompare(lineName(b));}).map(function(m){return [m,lineName(m),mc[m]];}),F.mfrs)+
+      facet('Manufacturer','mfrs',Object.keys(mc).sort(lineCmp).map(function(m){return [m,lineName(m),mc[m]];}),F.mfrs)+
       (FAM.some(function(f){return f.min!=null;})?'<div class="fg"><h3>Price</h3><div class="range"><input type="number" id="pmin" min="0" inputmode="numeric" placeholder="$ Min" aria-label="Minimum price" value="'+esc(F.min)+'"><span>–</span><input type="number" id="pmax" min="0" inputmode="numeric" placeholder="$ Max" aria-label="Maximum price" value="'+esc(F.max)+'"></div></div>':'')+
       facet('Weight capacity (lb)','cap',buckets('cap',function(f){return f.caps;},CAPB),F.cap)+
       facet('Seat width','seat',buckets('seat',function(f){return f.seats;},SEATB),F.seat)+
