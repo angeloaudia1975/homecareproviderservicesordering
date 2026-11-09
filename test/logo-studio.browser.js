@@ -20,7 +20,7 @@ function world(enabled) {
   const db = { dealers: [{ id: 'd-test', business_name: 'James Medical Equipment Bowling Green', city: 'Bowling Green', state: 'KY', parent_id: null, logo_url: ORIGINAL }],
     app_settings: enabled ? [{ key: 'logo_studio', value: { all: false, pilot_dealers: ['d-test'] } }] : [], dealer_logo_events: [], n: 1 };
   const where = (rows, q) => { for (const part of (q || '').split('&')) { const [k, v] = part.split('='); if (!v || ['select', 'order', 'limit'].includes(k)) continue; const val = decodeURIComponent(v);
-    if (val.startsWith('eq.')) rows = rows.filter((r) => String(r[k]) === val.slice(3)); else if (val.startsWith('in.(')) { const s = val.slice(4, -1).split(','); rows = rows.filter((r) => s.includes(String(r[k]))); } else if (val.startsWith('gte.')) rows = rows.filter((r) => r[k] >= val.slice(4)); } return rows; };
+    if (val.startsWith('eq.')) rows = rows.filter((r) => String(r[k]) === val.slice(3)); else if (val.startsWith('in.(')) { const s = val.slice(4, -1).split(','); rows = rows.filter((r) => s.includes(String(r[k]))); } else if (val.startsWith('gte.')) rows = rows.filter((r) => r[k] >= val.slice(4)); else if (k === 'or') { const cs = val.slice(1, -1).split(',').map((c) => c.split('.eq.')); rows = rows.filter((r) => cs.some(([f, x]) => String(r[f]) === x)); } } return rows; };
   const sb = async (m, p, body) => { const [tb, q] = p.split('?'); const rows = db[tb];
     if (m === 'GET') { let r = where(rows, q); if (/order=created_at\.desc/.test(q)) r = r.slice().reverse(); return JSON.parse(JSON.stringify(r)); }
     if (m === 'POST') { const row = Object.assign({ id: db.n++, created_at: new Date(Date.now() + db.n * 1000).toISOString() }, body); rows.push(row); return [row]; }
@@ -128,6 +128,24 @@ const layoutCheck = (page) => page.evaluate(() => { const vis = (el) => { const 
         await page.click('[data-ls=close]'); await page.waitForFunction((u) => [...document.querySelectorAll('#view-account img')].some((i) => i.src === u), ORIGINAL, { timeout: 15000 }); });
       await ctx.close();
     }
+    await t('PART A (desktop + iphone): Russell Springs starts from the Bowling Green Studio design, sees its OWN city, and publishes it itself; Bowling Green untouched', async () => {
+      for (const [w, h] of [[1280, 900], [390, 844]]) {
+        const W = world(true); const RS = W.db.dealers[0]; Object.assign(RS, { business_name: 'James Medical Equipment Russell Springs', city: 'Russell Springs', logo_url: null });
+        const BG = { id: 'd-bg', business_name: 'James Medical Equipment Bowling Green', city: 'Bowling Green', state: 'KY', parent_id: 'd-test', logo_url: ORIGINAL }; W.db.dealers.push(BG);
+        const spec = LS.validSpec(Object.assign({}, LS.concepts(BG, {})[0], { sub: 'Bowling Green' }), BG).spec;
+        W.db.dealer_logo_events.push({ id: 900, dealer_id: 'd-bg', kind: 'studio', logo_url: ORIGINAL, spec, svg: '<svg/>', terms_version: 'LS-1', created_at: '2026-11-08T23:18:00Z' });
+        const center = JSON.parse(JSON.stringify(CENTER)); center.company.business_name = RS.business_name;
+        const { ctx, page } = await open(browser, w, h, { tools: tools(W, center) }); page.on('dialog', (d) => d.accept()); await openCenter(page);
+        await page.click('#lsEntry a'); await page.waitForSelector('#lsRoot .ls-fam', { timeout: 20000 });
+        ok(/Bowling Green location already has a Studio logo/.test(await page.textContent('#lsRoot .ls-fam')), 'offer shown');
+        await page.click('#lsRoot [data-ls=fam]'); await page.waitForSelector('#lsRoot [data-ls=publish]', { timeout: 20000 });
+        ok(W.db.dealer_logo_events.filter((e) => e.dealer_id === 'd-test').length === 0 && !RS.logo_url, 'nothing published by choosing it');
+        await page.check('#lsTerms'); await page.waitForFunction(() => !document.querySelector('#lsRoot [data-ls=publish]').disabled, null, { timeout: 20000 });
+        await page.click('#lsRoot [data-ls=publish]'); await page.waitForSelector('#lsRoot .ls-ok', { timeout: 20000 });
+        const ev = W.db.dealer_logo_events.filter((e) => e.dealer_id === 'd-test' && e.kind === 'studio'); ok(ev.length === 1 && ev[0].spec.sub === 'Russell Springs' && ev[0].spec.font === spec.font && ev[0].spec.symbol === spec.symbol && ev[0].terms_version === LS.TERMS_VERSION, JSON.stringify(ev[0] && ev[0].spec));
+        ok(/studio-[0-9a-f]{32}\.png$/.test(RS.logo_url) && BG.logo_url === ORIGINAL, 'each location its own logo');
+        const L = await layoutCheck(page); ok(L.sw <= L.cw + 1 && L.broken === 0, JSON.stringify(L));
+        await ctx.close(); } });
   } finally { await browser.close(); try { fs.unlinkSync(path.join(__dirname, '..', 'public', 'assets', 'logos', '_ls_test.png')); } catch (e) {} }
   console.log(`\nlogo studio (browser): ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
 })();
