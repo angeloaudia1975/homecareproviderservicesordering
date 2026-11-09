@@ -8874,7 +8874,7 @@ function apField(f,v,edit){
 }
 function renderApply(){
   const host=$("#view-apply"); const a=APCUR.application, ans=a.answers||{}, edit=!!APCUR.can_edit;
-  const sec=APCUR.sections.map(s=>`<details class="apsec" ${['Business','Signer','Contacts'].includes(s.title)||!edit?'open':''}><summary>${esc(s.title)}</summary><div class="apgrid">${s.fields.map(f=>apField(f,ans[f.key],edit)).join('')}</div></details>`).join('');
+  const sec=APCUR.sections.map(s=>`<details class="apsec" ${['Business','Signer','Contacts'].includes(s.title)||!edit||(s.title==='Trade references'&&(APCUR.trade_refs||[]).length)?'open':''}><summary>${esc(s.title)}</summary>${s.title==='Trade references'?apTradeRefs(edit):''}<div class="apgrid">${s.fields.map(f=>apField(f,ans[f.key],edit)).join('')}</div></details>`).join('');
   const acts=[];
   if(edit){ acts.push('<a class="btn gh" onclick="apSave()">Save</a>','<a class="btn gh" onclick="apPreview()">Review completed form</a>');
     acts.push(`<a class="btn pri" onclick="apSign()">${APCUR.signing?'Sign electronically':'Electronic signing opens shortly'}</a>`); acts.push('<a class="btn gh" onclick="apOffline()">Print to sign by hand</a>'); }
@@ -8894,6 +8894,15 @@ function renderApply(){
       ${sec}
       <div class="qacts" style="margin-top:12px;flex-wrap:wrap">${acts.join(' ')}</div>${paper}</div>`;
 }
+/* trade references (Catalog 5, 2026-11-09): pick one of this location's VERIFIED HCPS manufacturer accounts (Dealer 360 CRM)
+   to fill a reference's business name and "your account # with them" — the dealer adds the manufacturer's credit contact,
+   phone and address (HCPS has no manufacturer credit-department contacts on record, and never invents one) */
+function apTradeRefs(edit){ const T=APCUR.trade_refs||[]; if(!edit||!T.length) return '';
+  return `<div class="lead-note" style="margin:6px 0 10px">Use a manufacturer you already have a verified account with as a trade reference — it fills in the business name and your account number. Add their credit department's contact and phone.
+    <div class="apgrid" style="margin-top:8px">${[1,2,3].map(n=>`<div class="fld2"><label for="apTr${n}">Reference ${n}</label><select id="apTr${n}" onchange="apTradeRef(${n},this.value)"><option value="">Choose a verified HCPS account…</option>${T.map(t=>`<option value="${esc(t.slug)}">${esc(t.name)}${t.account_ref?' · #'+esc(t.account_ref):''}</option>`).join('')}</select></div>`).join('')}</div></div>`; }
+function apTradeRef(n,slug){ const t=(APCUR.trade_refs||[]).find(x=>x.slug===slug); if(!t) return;
+  const set=(k,v)=>{ const e=document.getElementById('ap_ref'+n+'_'+k); if(e){ e.value=v||''; } };
+  set('name',t.name); set('account',t.account_ref); apDirty(); apToast(`Reference ${n}: ${t.name} filled in — add their credit contact and phone, then Save.`); }
 async function apGuarantee(){ const r=await appsCall({action:'app_guarantee_page',id:APCUR.application.id}); if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not open it.',true); return; } apOpenPdf(r.pdf_base64,r.file); }
 async function apUpload(kind){
   if(kind==='signed'&&APDIRTY){ const s=await apSave(true); if(!s) return; }
@@ -9344,7 +9353,7 @@ async function sfSave(mode){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{apTradeRef,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};

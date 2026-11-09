@@ -13,6 +13,7 @@ async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } ca
 const CORS = { 'access-control-allow-origin': '*' };
 const SECTIONS = [{ title: 'Business', fields: [{ key: 'biz.legal_name', label: 'Legal business name', required: true }, { key: 'biz.ein', label: 'Federal tax ID (EIN)', required: true }, { key: 'biz.entity', label: 'Entity type' }] },
   { title: 'Signer', fields: [{ key: 'signer.name', label: 'Authorised signer (full name)', required: true }, { key: 'signer.email', label: 'Signer email', required: true }] },
+  { title: 'Trade references', fields: [{ key: 'ref1.name', label: 'Reference 1 business' }, { key: 'ref1.phone', label: 'Phone' }, { key: 'ref1.account', label: 'Your account # with them' }] },
   { title: 'Request', fields: [{ key: 'req.notes', label: 'Notes for HCPS' }] }];
 
 function fake(page, S) {
@@ -27,7 +28,8 @@ function fake(page, S) {
       applications: app ? [{ id: app.id, manufacturer: app.manufacturer, name: 'Access4U', location_id: 'hq', status: app.status, version: app.version, updated_at: '2026-11-05T12:00:00Z' }] : [] });
     if (b.action === 'app_start') { S.app = { id: 'a1', manufacturer: b.manufacturer, status: 'draft', version: 1, answers: { 'biz.legal_name': 'TEST Medical', 'signer.email': 'owner@example.invalid' } }; return reply(route, { ok: true, application: { id: 'a1', version: 1 } }); }
     if (b.action === 'app_get') return reply(route, { ok: true, application: { id: app.id, manufacturer: app.manufacturer, name: 'Access4U', location_name: 'TEST HQ', status: app.status, version: app.version, answers: app.answers },
-      sections: SECTIONS, entities: { corporation: 'Corporation', llc: 'LLC' }, notice: '', can_edit: ['draft', 'signing_failed', 'queued'].includes(app.status), signing: true, guarantee: !!S.guarantee });
+      sections: SECTIONS, entities: { corporation: 'Corporation', llc: 'LLC' }, notice: '', can_edit: ['draft', 'signing_failed', 'queued'].includes(app.status), signing: true, guarantee: !!S.guarantee,
+      trade_refs: [{ slug: 'bemis', name: 'Bemis <b>', account_ref: 'SYN-723' }, { slug: 'dalton', name: 'Dalton', account_ref: 'SYN-JA' }] });
     if (b.action === 'app_save') { if (b.version !== app.version) return reply(route, { ok: false, error: 'changed' }, 409); app.version++; app.answers = b.answers;
       const miss = ['biz.ein', 'signer.name'].filter((k) => !b.answers[k]); return reply(route, { ok: true, application: { id: app.id, version: app.version, status: 'draft' }, missing: miss }); }
     if (b.action === 'app_preview' || b.action === 'app_offline') return reply(route, { ok: true, pdf_base64: Buffer.from('%PDF-1.4 test').toString('base64'), file: 'access4u-application.pdf' });
@@ -64,9 +66,14 @@ const layout = (page) => page.evaluate(() => {
       await page.waitForFunction(() => document.querySelector('#view-apply [data-k="biz.legal_name"]'), null, { timeout: 10000 });
       await t(label + ': Start opens the questionnaire prefilled from HCPS records', async () => ok(await page.inputValue('[data-k="biz.legal_name"]') === 'TEST Medical', 'prefill'));
       await page.fill('[data-k="biz.ein"]', '00-0000000'); await page.fill('[data-k="signer.name"]', 'Jordan Owner'); await page.selectOption('[data-k="biz.entity"]', 'llc');
+      await t(label + ': TRADE REFERENCES — a verified HCPS account fills the reference name + account number only when picked', async () => {
+        ok(await page.inputValue('[data-k="ref1.name"]') === '', 'nothing filled before a choice');
+        const opts = await page.$$eval('#apTr1 option', (o) => o.map((x) => x.textContent)); ok(opts.length === 3 && opts[1] === 'Bemis <b> · #SYN-723', JSON.stringify(opts));
+        await page.selectOption('#apTr1', 'bemis');
+        ok(await page.inputValue('[data-k="ref1.name"]') === 'Bemis <b>' && await page.inputValue('[data-k="ref1.account"]') === 'SYN-723' && await page.inputValue('[data-k="ref1.phone"]') === '', 'filled'); });
       await page.evaluate(() => apSave()); await page.waitForTimeout(400);
       await t(label + ': typing marks it changed and Save sends exactly the typed answers (inline handlers reach the page code)', () => {
-        const s = S.calls.filter((c) => c.action === 'app_save').pop(); ok(s && s.answers['biz.ein'] === '00-0000000' && s.answers['biz.entity'] === 'llc' && s.answers['signer.name'] === 'Jordan Owner' && s.version === 1, JSON.stringify(s)); });
+        const s = S.calls.filter((c) => c.action === 'app_save').pop(); ok(s && s.answers['biz.ein'] === '00-0000000' && s.answers['biz.entity'] === 'llc' && s.answers['signer.name'] === 'Jordan Owner' && s.answers['ref1.account'] === 'SYN-723' && !('apTr1' in s.answers) && s.version === 1, JSON.stringify(s)); });
       await page.evaluate(() => apPreview()); await page.waitForTimeout(400);
       await t(label + ': Review opens the completed PDF', async () => ok((await page.evaluate(() => window.__opened.map((w) => w.location.href))).some((u) => /^blob:/.test(u)), 'pdf not opened'));
       const L = await layout(page);
