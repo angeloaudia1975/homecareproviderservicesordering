@@ -234,7 +234,14 @@ const layout = (page, sel) => page.evaluate((sel) => {
       const THEMES = { blue: { name: 'Professional Blue', primary: '#0b2f5b', accent: '#c2410c' }, green: { name: 'Modern Green', primary: '#14532d', accent: '#15803d' }, burgundy: { name: 'Classic Burgundy', primary: '#5c1a28', accent: '#9b1c31' }, teal: { name: 'Healthcare Teal', primary: '#0f4c5c', accent: '#0e7490' }, purple: { name: 'Contemporary Purple', primary: '#3b1f63', accent: '#6d28d9' } };
       const HL = { local: 'Local service & support', showroom: 'Visit our showroom', guidance: 'Help choosing the right product', delivery: 'Delivery & setup', repair: 'Service & repair', rental: 'Rentals available' };
       const loc = (id, name, edit, sf, logo) => ({ id, name, city: 'Dayton', state: 'OH', can_edit: edit, lines: [{ slug: 'bemis', name: 'Bemis' }, { slug: 'strongback', name: 'Strongback' }], default_email: 'hq@acme.test', default_phone: '555', storefront: sf, suggested_slug: 'acme-medical', link: sf ? HOST + '/store/' + sf.slug : null, live: !!(sf && sf.enabled),
-        logo: logo || { url: null, source: null, reason: 'none' }, design_ready: true, themes: THEMES, highlights: HL });
+        logo: logo || { url: null, source: null, reason: 'none' }, design_ready: true, themes: THEMES, highlights: HL, is_self: id === 'br',
+        all_lines: [{ slug: 'golden-technologies', name: 'Golden Technologies', eligible: false, status: 'none', label: 'No Golden account on file', request: { kind: 'golden' } },
+          { slug: 'access4u', name: 'Access4U', eligible: false, status: 'pending', label: 'Set up for ordering — account number pending', request: { kind: 'apply' } },
+          { slug: 'bemis', name: 'Bemis', eligible: true, status: 'verified', label: 'Verified' }, { slug: 'dalton', name: 'Dalton <b>', eligible: false, status: 'pending', label: 'Submitted — HCPS verifying', request: { kind: 'waiting' } },
+          { slug: 'strongback', name: 'Strongback', eligible: true, status: 'verified', label: 'Verified' }] });
+      await page.route('**/functions/dealer-applications-api', async (route) => { const b = JSON.parse(route.request().postData() || '{}'); S.calls.push(Object.assign({ api: 'apps' }, b));
+        return route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify({ ok: true, self_id: 'hq', signing: true, applications: [], locations: [{ id: 'hq', name: 'Acme HQ', can_apply: true }, { id: 'br', name: 'Acme Branch', can_apply: true }],
+          forms: [{ slug: 'access4u', name: 'Access4U' }, { slug: 'bemis', name: 'Bemis' }, { slug: 'golden-technologies', name: 'Golden Technologies', external: { how: 'Golden\'s own form', url: 'https://goldentech.com/apply' } }] }) }); });
       await page.route('**/functions/dealer-storefront-api', async (route) => { const b = JSON.parse(route.request().postData() || '{}'); S.calls.push(b); const R = (o) => route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(o) });
         if (b.action === 'sf_get') return R({ ok: true, head_office: false, base: HOST + '/store/', locations: [loc('br', 'Acme Branch', true, null), loc('hq', 'Acme HQ', false, { slug: 'acme-hq', enabled: true, version: 3, lines: null, hidden_categories: [], price_mode: 'msrp' }), loc('off', 'Acme Off', true, { slug: 'acme-off', enabled: false, version: 1, lines: null, hidden_categories: [], price_mode: 'msrp' }), loc('live', 'Acme Live', true, { slug: 'acme-live', enabled: true, version: 4, lines: null, hidden_categories: [], price_mode: 'msrp', design: {}, draft: null, phone: '555' }, { url: HOST + '/assets/logo-test.png', source: 'head office', reason: null })] });
         if (b.action === 'sf_categories') return R({ ok: true, categories: [{ manufacturer: 'bemis', line: 'Bemis', category: 'Bath Safety', count: 5, shown: 5, image: null, display: false }, { manufacturer: 'bemis', line: 'Bemis', category: 'Parts', count: 2, shown: 2, image: null, display: false }, { manufacturer: 'bemis', line: 'Bemis', category: 'Displays & Merchandising', count: 3, shown: 0, image: null, display: true }, { manufacturer: 'strongback', line: 'Strongback', category: 'Wheelchairs', count: 4, shown: 4, image: null, display: false }, { manufacturer: 'strongback', line: 'Strongback', category: 'Parts', count: 1, shown: 1, image: null, display: false }] });
@@ -286,6 +293,25 @@ const layout = (page, sel) => page.evaluate((sel) => {
         st = await saved(); ok(st.hidden_categories.includes('@strongback/Wheelchairs') && st.hidden_categories.includes('Parts'), JSON.stringify(st.hidden_categories));
         await page.evaluate(() => sfTab('cat')); await page.evaluate(() => sfCatReset()); st = await saved();
         ok(JSON.stringify(st.hidden_categories) === '[]' && JSON.stringify(st.design.cat_order) === '[]', 'restored defaults: ' + JSON.stringify(st)); });
+      await t(label + ': MANUFACTURER LINES (Catalog 5 B/C) — every HCPS line listed; only verified lines can be ticked and ordered; locked lines show why + Request manufacturer account; order saved as design.line_order', async () => {
+        await page.evaluate(() => { showP360('storefront'); sfLoc('br'); }); await page.waitForSelector('.sfx-lns');
+        const el = await page.$$eval('.sfx-lns .sfx-ln', (r) => r.map((x) => x.dataset.line)); ok(JSON.stringify(el) === '["bemis","strongback"]', 'verified rows ' + JSON.stringify(el));
+        const lk = await page.$$eval('.sfx-lk', (r) => r.map((x) => [x.querySelector('b').textContent, !!x.querySelector('input'), [...x.querySelectorAll('button')].map((b) => b.textContent)]));
+        ok(lk.length === 3 && lk.every((x) => !x[1]), 'locked rows have no tick box: ' + JSON.stringify(lk));
+        ok(JSON.stringify(lk.find((x) => x[0] === 'Golden Technologies')[2]) === '["Request manufacturer account"]', 'Golden: request only (no number claim) ' + JSON.stringify(lk));
+        ok(JSON.stringify(lk.find((x) => x[0] === 'Access4U')[2]) === '["Request manufacturer account","I have an account"]', 'pending: request + claim');
+        ok(lk.find((x) => x[0] === 'Dalton <b>')[2].length === 0 && /verifying the number/.test(await page.textContent('.sfx-locked')), 'submitted number: waiting, escaped name');
+        ok(!(await page.$('.sf-line[value="access4u"]')) && !(await page.$('.sf-line[value="golden-technologies"]')), 'no checkbox for a locked line anywhere');
+        await page.click('.sfx-lns .sfx-ln[data-line="strongback"] .mv button[aria-label="Move Strongback up"]');
+        ok(JSON.stringify(await page.$$eval('.sfx-lns .sfx-ln', (r) => r.map((x) => x.dataset.line))) === '["strongback","bemis"]', 'moved');
+        await page.evaluate(() => sfSave('save')); await page.waitForTimeout(400); let d = lastSave().settings;
+        ok(JSON.stringify(d.design.line_order) === '["strongback","bemis"]' && !(d.lines || []).includes('access4u'), JSON.stringify(d));
+        await page.evaluate(() => sfLReset()); await page.evaluate(() => sfSave('save')); await page.waitForTimeout(400); ok(JSON.stringify(lastSave().settings.design.line_order) === '[]', 'restore default order');
+        await page.click('.sfx-lk button[data-m="access4u"]'); await page.waitForSelector('#view-apply .rl.ap-want', { timeout: 5000 });
+        const ap = S.calls.filter((c) => c.api === 'apps'); ok(ap.length && ap.every((c) => c.action === 'app_list'), 'only lists — nothing started or sent: ' + JSON.stringify(ap));
+        ok(await page.$eval('#view-apply .rl.ap-want', (r) => r.dataset.form) === 'access4u' && await page.$eval('#apLoc', (x) => x.value) === 'br', 'Access4U application highlighted for this location');
+        ok(!S.calls.some((c) => /access_request|account_claim/.test(c.action || '')), 'no ordering request made');
+        await page.evaluate(() => showP360('storefront')); await page.waitForSelector('.sfx-lns'); });
       await t(label + ': APPEARANCE & LAYOUT — Professional is the default for a new storefront; themes, custom HEX colors and layouts are saved as the design; nothing else changes', async () => {
         await page.evaluate(() => sfLoc('br')); await page.waitForSelector('.sfx-lay');
         ok(await page.isChecked('input[name="sfLay"][value="professional"]') && await page.isChecked('input[name="sfTheme"][value="blue"]'), 'defaults');

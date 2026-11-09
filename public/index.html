@@ -7420,7 +7420,11 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #view-storefront .sfx-cats{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto;border:1px solid var(--line,#e5e7eb);border-radius:10px}
   #view-storefront .sfx-cat{display:flex;align-items:center;gap:8px;padding:4px 8px;border-bottom:1px solid var(--line,#eef1f4);background:#fff}#view-storefront .sfx-cat.off label{color:var(--muted)}
   #view-storefront .sfx-cat .h{cursor:grab;color:var(--muted);user-select:none}#view-storefront .sfx-cat label{display:flex;align-items:center;gap:8px;flex:1;min-height:44px;font-size:14px;cursor:pointer}#view-storefront .sfx-cat input{width:18px;height:18px}
-  #view-storefront .sfx-cat .mv{display:flex;gap:4px}#view-storefront .sfx-cat .mv .btn{min-width:44px;min-height:44px;padding:0}#view-storefront .sfx-tag{background:#fff4e5;color:#92400e;border-radius:999px;padding:1px 8px}
+  #view-storefront .sfx-cat .mv{display:flex;gap:4px}#view-storefront .sfx-cat .mv .btn{min-width:44px;min-height:44px;padding:0}#view-storefront .sfx-tag{background:#fff4e5;color:#92400e;border-radius:999px;padding:1px 8px}#view-storefront .sfx-ok{background:#e8f6ee;color:#14633a;border-radius:999px;padding:1px 8px;font-weight:600}#view-storefront .sfx-lns{margin-bottom:12px}#view-storefront .sfx-locked{border:1px dashed var(--line,#d6dbe1);border-radius:10px;padding:8px 10px;background:#fafbfc}#view-storefront .sfx-lk{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--line,#eef1f4)}#view-storefront .sfx-lk:last-child{border-bottom:0}#view-storefront .sfx-lk small{display:block;color:var(--muted);font-size:12.5px}#view-storefront .sfx-lka{display:flex;gap:6px;flex-wrap:wrap}#view-storefront .sfx-wait{color:#92400e}#view-apply .rl.ap-want{outline:3px solid #1681c2;outline-offset:2px;border-radius:8px}
+  #view-storefront .sfx-cats{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto;border:1px solid var(--line,#e5e7eb);border-radius:10px}
+  #view-storefront .sfx-ln{display:flex;align-items:center;gap:8px;padding:4px 8px;border-bottom:1px solid var(--line,#eef1f4);background:#fff}#view-storefront .sfx-ln.off label{color:var(--muted)}
+  #view-storefront .sfx-ln .h{cursor:grab;color:var(--muted);user-select:none}#view-storefront .sfx-ln label{display:flex;align-items:center;gap:8px;flex:1;min-height:44px;font-size:14px;cursor:pointer}#view-storefront .sfx-ln input{width:18px;height:18px}
+  #view-storefront .sfx-ln .mv{display:flex;gap:4px}#view-storefront .sfx-ln .mv .btn{min-width:44px;min-height:44px;padding:0}#view-storefront .sfx-tag{background:#fff4e5;color:#92400e;border-radius:999px;padding:1px 8px}#view-storefront .sfx-ok{background:#e8f6ee;color:#14633a;border-radius:999px;padding:1px 8px;font-weight:600}#view-storefront .sfx-lns{margin-bottom:12px}#view-storefront .sfx-locked{border:1px dashed var(--line,#d6dbe1);border-radius:10px;padding:8px 10px;background:#fafbfc}#view-storefront .sfx-lk{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--line,#eef1f4)}#view-storefront .sfx-lk:last-child{border-bottom:0}#view-storefront .sfx-lk small{display:block;color:var(--muted);font-size:12.5px}#view-storefront .sfx-lka{display:flex;gap:6px;flex-wrap:wrap}#view-storefront .sfx-wait{color:#92400e}#view-apply .rl.ap-want{outline:3px solid #1681c2;outline-offset:2px;border-radius:8px}
   #view-storefront .sfx-mfr{border:1px solid var(--line,#e5e7eb);border-radius:10px;padding:8px 12px;margin:8px 0}
   #view-storefront .sf-pill.warn{background:#fff4e5;color:#92400e}
   #view-storefront .sfx-dev{display:flex;gap:6px}
@@ -8829,7 +8833,8 @@ async function loadApplyView(){
   const r=await appsCall({action:'app_list'});
   if(!(r&&r.ok)){ host.innerHTML=`<div class="ph"><div><h1>Manufacturer Account Setup</h1></div></div><div class="card" style="margin-top:0">${esc((r&&r.error)||'Applications could not be loaded just now.')} <a class="btn gh" onclick="loadApplyView()">Try again</a></div>`; return; }
   AP=r; AP.loc=AP.loc&&AP.locations.some(l=>l.id===AP.loc&&l.can_apply)?AP.loc:((AP.locations.find(l=>l.id===AP.self_id&&l.can_apply)||AP.locations.find(l=>l.can_apply)||{}).id||'');
-  if(APCUR) return; renderApplyList();
+  if(SFREQ&&SFREQ.loc&&AP.locations.some(l=>String(l.id)===String(SFREQ.loc)&&l.can_apply)) AP.loc=SFREQ.loc;
+  if(APCUR) return; renderApplyList(); apWanted();
 }
 function renderApplyList(){
   const host=$("#view-apply"); if(!host||!AP) return;
@@ -8841,8 +8846,8 @@ function renderApplyList(){
     <div class="card" style="margin-top:0">${locSel}
       <div class="lead-note" style="margin-bottom:10px">Nothing is sent to a manufacturer automatically. ${AP.signing?'':'Electronic signing opens shortly — meanwhile you can complete an application and print it to sign by hand.'}</div>
       <div class="rowlist">${AP.forms.map(f=>{ const a=byForm.get(f.slug);
-        if(f.external) return `<div class="rl"><div class="b"><div class="n">${esc(f.name)}</div><div class="m">${esc(f.external.how)}</div></div><a class="btn gh acsm" href="${esc(f.external.url)}" target="_blank" rel="noopener">Apply →</a></div>`;
-        return `<div class="rl"><div class="b"><div class="n">${esc(f.name)}</div><div class="m">${a?esc(AP_LABEL[a.status]||a.status)+' · updated '+esc(dateShort(a.updated_at)):'Not started'}${f.notice?' · '+esc(f.notice):''}</div></div>
+        if(f.external) return `<div class="rl" data-form="${esc(f.slug)}"><div class="b"><div class="n">${esc(f.name)}</div><div class="m">${esc(f.external.how)}</div></div><a class="btn gh acsm" href="${esc(f.external.url)}" target="_blank" rel="noopener">Apply →</a></div>`;
+        return `<div class="rl" data-form="${esc(f.slug)}"><div class="b"><div class="n">${esc(f.name)}</div><div class="m">${a?esc(AP_LABEL[a.status]||a.status)+' · updated '+esc(dateShort(a.updated_at)):'Not started'}${f.notice?' · '+esc(f.notice):''}</div></div>
           ${a?`<span class="pill ${AP_PILL[a.status]||'open'}">${esc(AP_LABEL[a.status]||a.status)}</span> <a class="btn ${['draft','signing','signing_failed','queued'].includes(a.status)?'pri':'gh'} acsm" data-id="${esc(a.id)}" onclick="apOpen(this.dataset.id)">${a.status==='signing'?'Sign':['draft','signing_failed','queued'].includes(a.status)?'Continue':'View'}</a>`
              :`<a class="btn gh acsm" data-m="${esc(f.slug)}" onclick="apStart(this.dataset.m)">Start</a>`}</div>`; }).join('')}</div></div>`;
 }
@@ -9001,7 +9006,7 @@ function sfInitEdit(L){
   const e=sfEff(L), hc=(e.hidden_categories||[]).map(String), d=(e.design&&typeof e.design==='object')?e.design:{};
   const livePub=!!(L.storefront&&L.storefront.enabled);   /* a storefront already published keeps its current look until the dealer publishes a new design */
   SFE={loc:L.id, layout:d.layout||(livePub?'standard':'professional'), theme:d.theme||'blue', primary:d.primary||'#0b2f5b', accent:d.accent||'#c2410c', cols:d.cat_cols||4,
-    order:(d.cat_order||[]).slice(), hl:(d.highlights||[]).slice(), hidden:hc.filter(x=>x[0]!=='+'), displays:hc.some(x=>x.trim().toLowerCase()==='+displays & merchandising'),
+    order:(d.cat_order||[]).slice(), lorder:(d.line_order||[]).slice(), hl:(d.highlights||[]).slice(), hidden:hc.filter(x=>x[0]!=='+'), displays:hc.some(x=>x.trim().toLowerCase()==='+displays & merchandising'),
     cats:null, catErr:'', tab:'cat', device:'desktop', dirty:false};
   return SFE;
 }
@@ -9027,7 +9032,7 @@ function sfStudio(L,s,ed,dis,status,lines){
   const lay=`<div class="sfx-lays">${SF_LAYOUTS.map(x=>`<label class="sfx-lay${E.layout===x.k?' on':''}"><input type="radio" name="sfLay" value="${x.k}"${E.layout===x.k?' checked':''}${dis} onchange="sfSet('layout','${x.k}')"><span class="sfx-mini m-${x.k}" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b>${x.n}${x.rec?' <small>(recommended)</small>':''}</b><small>${x.d}</small></label>`).join('')}
     ${E.layout==='standard'||(live&&!((eff.design||{}).layout))?`<label class="sfx-lay${E.layout==='standard'?' on':''}"><input type="radio" name="sfLay" value="standard"${E.layout==='standard'?' checked':''}${dis} onchange="sfSet('layout','standard')"><span class="sfx-mini m-standard" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b>Current look</b><small>The design your storefront has today</small></label>`:''}</div>
     <label class="fld2" style="max-width:260px"><span class="rp-l">Category cards per row (desktop)</span><select id="sfCols" onchange="sfSet('cols',+this.value)"${dis}>${[2,3,4].map(n=>`<option value="${n}"${E.cols===n?' selected':''}>${n} columns</option>`).join('')}</select></label>`;
-  const cats=`<div class="fld2"><span class="rp-l">Lines to show</span>${L.lines.length?`<label class="sf-check"><input type="checkbox" id="sfAll"${lines?'':' checked'}${dis} onchange="document.querySelectorAll('.sf-line').forEach(x=>x.disabled=this.checked||${ed?'false':'true'});sfDirty(1)"> All my lines</label><div class="sf-lines">${L.lines.map(l=>`<label class="sf-check"><input type="checkbox" class="sf-line" value="${esc(l.slug)}"${!lines||lines.includes(l.slug)?' checked':''}${!ed||!lines?' disabled':''} onchange="sfDirty(1)"> ${esc(l.name)}</label>`).join('')}</div>`:'<div class="msg">No manufacturer accounts are active on this location yet.</div>'}</div>
+  const cats=`${sfLinesHtml(L,ed,dis,lines)}
     <div class="sf-note">Showing or hiding a category only changes your public storefront (and Social Ads, which use it). It never changes what you can order in the Shop or any product record.</div>
     <div id="sfCatMgr">${sfCatMgr(L,ed)}</div>`;
   const contact=`<div class="sf-row"><label class="fld2"><span class="rp-l">Phone for customers (shown publicly)</span><input id="sfPhone" maxlength="40" value="${esc(eff.phone||'')}" placeholder="${esc(L.default_phone?'e.g. '+L.default_phone:'')}" oninput="sfDirty()"${dis}></label>
@@ -9059,6 +9064,50 @@ function sfStudio(L,s,ed,dis,status,lines){
      <div class="sfx-frame" id="sfPvBox"><iframe id="sfPvF" title="Live storefront preview" src="/store.html#preview" tabindex="-1"></iframe></div>
    </div></div>`;
 }
+/* Catalog 5 Part B/C (owner 2026-11-08): every HCPS line is listed. A line can be shown publicly only when Dealer 360 has a
+   VERIFIED manufacturer account for this location (the server decides — L.all_lines — and refuses anything else on save,
+   preview and the public pages). Verified lines: show / hide and order (drag or ↑ ↓, kept in design.line_order). Locked lines:
+   the reason + "Request manufacturer account" (the existing Account Setup Center application, reviewed by HCPS) or
+   "I have an account" (the existing Account Center claim HCPS verifies). Nothing here changes ordering access. */
+function sfLineRows(L){ const all=Array.isArray(L.all_lines)?L.all_lines:(L.lines||[]).map(l=>Object.assign({eligible:true,status:'verified'},l));
+  const ord=(SFE&&SFE.lorder||[]).map(x=>String(x).toLowerCase()), base=all.filter(x=>x.eligible);
+  const el=base.map((x,i)=>[x,i]).sort((a,b)=>{ let ia=ord.indexOf(a[0].slug), ib=ord.indexOf(b[0].slug); if(ia<0) ia=1e6+a[1]; if(ib<0) ib=1e6+b[1]; return ia-ib; }).map(x=>x[0]);
+  return {el, locked:all.filter(x=>!x.eligible)}; }
+function sfLinesHtml(L,ed,dis,lines){
+  const R=sfLineRows(L); if(SFE) SFE._lines=R.el.map(x=>x.slug);
+  const pv=!!(SFD&&SFD.preview);
+  const rows=R.el.map((l,i)=>{ const on=!lines||lines.includes(l.slug);
+    return `<li class="sfx-ln${on?'':' off'}" draggable="${ed}" data-line="${esc(l.slug)}" ondragstart="sfLDrag(event)" ondragover="event.preventDefault()" ondrop="sfLDrop(event)">
+      <span class="h" aria-hidden="true">⋮⋮</span><label><input type="checkbox" class="sf-line" value="${esc(l.slug)}"${on?' checked':''}${!ed||!lines?' disabled':''} onchange="this.closest('li').classList.toggle('off',!this.checked);sfDirty(1)"> <b>${esc(l.name)}</b> <small class="sfx-ok">✓ Verified account</small></label>
+      <span class="mv">${ed?`<button type="button" class="btn gh" aria-label="Move ${esc(l.name)} up" onclick="sfLMove(${i},-1)"${i===0?' disabled':''}>↑</button><button type="button" class="btn gh" aria-label="Move ${esc(l.name)} down" onclick="sfLMove(${i},1)"${i===R.el.length-1?' disabled':''}>↓</button>`:''}</span></li>`; }).join('');
+  const lk=R.locked.map(l=>{ const q=l.request||{}; let act='';
+    if(l.status==='inactive'||l.status==='unavailable') act='';
+    else if(q.kind==='waiting') act=`<small class="sfx-wait">HCPS is verifying the number you sent</small>`;
+    else if(!pv){ act=`<button type="button" class="btn gh acsm" data-m="${esc(l.slug)}" data-n="${esc(l.name)}" data-loc="${esc(L.id)}" onclick="sfReqAcct(this.dataset.m,this.dataset.n,this.dataset.loc)">Request manufacturer account</button>`;
+      if(L.is_self&&q.kind!=='golden') act+=` <button type="button" class="btn gh acsm" data-m="${esc(l.slug)}" data-n="${esc(l.name)}" onclick="acClaimOpen(this.dataset.m,this.dataset.n)">I have an account</button>`; }
+    return `<div class="sfx-lk"><div><span aria-hidden="true">🔒</span> <b>${esc(l.name)}</b><small>${esc(l.label||'No verified account on file')}</small></div><div class="sfx-lka">${act}</div></div>`; }).join('');
+  return `<div class="fld2"><span class="rp-l">Manufacturer lines</span>
+    <div class="sf-note">Your storefront can show a manufacturer only when Dealer 360 has a <b>verified account</b> with that manufacturer for this location. Showing or hiding a line here never changes what you can order — HCPS sets ordering access separately.</div>
+    ${R.el.length?`<label class="sf-check"><input type="checkbox" id="sfAll"${lines?'':' checked'}${dis} onchange="document.querySelectorAll('.sf-line').forEach(x=>x.disabled=this.checked||${ed?'false':'true'});sfDirty(1)"> Show every verified line (lines verified later appear automatically)</label>
+    <div class="sf-note">Tick to show a line; drag (or use ↑ ↓) to set the order manufacturers appear on your storefront.${ed&&SFE&&SFE.lorder&&SFE.lorder.length?' <a class="btn gh acsm" onclick="sfLReset()">Restore default order</a>':''}</div><ul class="sfx-cats sfx-lns">${rows}</ul>`
+      :'<div class="msg">No verified manufacturer account on this location yet — request one below. Your storefront shows nothing until one is verified.</div>'}
+    ${lk?`<div class="sfx-locked"><div class="rp-l">Locked — not shown publicly until HCPS verifies an account (${R.locked.length})</div>${lk}</div>`:''}</div>`;
+}
+function sfLMove(i,dir){ const A=(SFE._lines||[]).slice(); const j=i+dir; if(j<0||j>=A.length) return; [A[i],A[j]]=[A[j],A[i]]; sfCapture(); SFE.lorder=A; renderStorefront(); sfDirty(1);
+  const li=document.querySelectorAll('.sfx-lns .sfx-ln')[j]; const f=li&&li.querySelector(dir<0?'.mv button':'.mv button:last-child'); if(f&&!f.disabled) f.focus(); }
+function sfLDrag(e){ e.dataTransfer.setData('text/plain','line:'+e.currentTarget.dataset.line); e.dataTransfer.effectAllowed='move'; }
+function sfLDrop(e){ e.preventDefault(); const raw=e.dataTransfer.getData('text/plain'); if(!/^line:/.test(raw)) return; const from=raw.slice(5), to=e.currentTarget.dataset.line; if(!from||from===to) return;
+  const A=(SFE._lines||[]).filter(x=>x!==from); A.splice(A.indexOf(to),0,from); sfCapture(); SFE.lorder=A; renderStorefront(); sfDirty(1); }
+function sfLReset(){ sfCapture(); SFE.lorder=[]; renderStorefront(); sfDirty(1); }
+/* "Request manufacturer account": opens that manufacturer's own application in the Account Setup Center for this location
+   (the existing workflow — HCPS is notified and reviews it; nothing is sent to the manufacturer automatically) */
+let SFREQ=null;
+function sfReqAcct(m,n,loc){ SFREQ={m,n,loc}; showP360('apply'); }
+function apWanted(){ const q=SFREQ; if(!q||!AP) return; SFREQ=null;
+  const alias=q.m==='golden-technologies'?['golden-technologies','golden']:[q.m];
+  const row=[...document.querySelectorAll('#view-apply .rl[data-form]')].find(r=>alias.includes(r.dataset.form));
+  if(row){ row.classList.add('ap-want'); try{ row.scrollIntoView({block:'center'}); }catch(e){} const b=row.querySelector('.btn'); if(b) b.focus(); apToast(`Start or continue the ${q.n} application below — HCPS reviews it and verifies the account. Once verified, ${q.n} can be shown on your storefront.`); }
+  else apToast(`HCPS doesn't have a ${q.n} application here yet — call HCPS at 937-626-5141 and we'll set up the account with you.`); }
 /* the visual category manager: every category this location could show (from the server), show / hide with checkboxes,
    per manufacturer, reorder with drag or ↑ ↓, Displays & Merchandising as an explicit opt-in, Restore defaults */
 function sfCatMgr(L,ed){
@@ -9107,7 +9156,7 @@ function sfColor(k,v){ v=String(v||'').trim(); if(!/^#[0-9a-f]{6}$/i.test(v)){ c
 function sfDev(d){ SFE.device=d; document.querySelectorAll('.sfx-dev button').forEach(b=>{ const on=b.textContent.toLowerCase()===d; b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); }); sfPvFit(); }
 function sfPvFit(){ const box=document.getElementById('sfPvBox'), f=document.getElementById('sfPvF'); if(!box||!f||!SFE) return; const W={desktop:1280,tablet:768,mobile:390}[SFE.device]||1280, H=900;
   const sc=Math.min(1,(box.clientWidth||W)/W); f.style.width=W+'px'; f.style.height=H+'px'; f.style.transform='scale('+sc+')'; box.style.height=Math.round(H*sc)+'px'; }
-function sfDesign(){ const E=SFE; const d={layout:E.layout,theme:E.theme,cat_cols:E.cols,cat_order:E.order,highlights:E.hl}; if(E.theme==='custom'){ d.primary=E.primary; d.accent=E.accent; } return d; }
+function sfDesign(){ const E=SFE; const d={layout:E.layout,theme:E.theme,cat_cols:E.cols,cat_order:E.order,line_order:(E.lorder||[]).slice(0,60),highlights:E.hl}; if(E.theme==='custom'){ d.primary=E.primary; d.accent=E.accent; } return d; }
 /* the live preview: the same public answer the storefront would give for the settings on screen (never stored) */
 function sfDirty(now){ if(SFE) SFE.dirty=true; clearTimeout(SFPVT); SFPVT=setTimeout(sfPvLoad, now?250:900); }
 async function sfPvLoad(){
@@ -9295,7 +9344,7 @@ async function sfSave(mode){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{loadStorefrontView,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
