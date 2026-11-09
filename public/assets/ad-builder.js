@@ -383,15 +383,23 @@
         TX('dweb', G.mx + 0.05, B - (G.tall ? 0.06 : 0.09), 1 - 2 * G.mx - 0.1, 0.045, { size: 26, color: 'navy', weight: 600, lines: 1 }), ...f.els.filter((e) => e.type === 'shape')]; },
   };
   /* a fresh layout for a template and size (the photo / price / name layers follow the ad's products) */
-  function buildLayout(tpl, fmtKey, n) {
+  function lifestyleScene(ref) {
+    const p = ref ? productBy(ref) : null;
+    const t = String(p ? [p.category, p.name].filter(Boolean).join(' ') : '').toLowerCase();
+    return /bed|mattress|sleep/.test(t) ? 'lifestyle-bed' :
+      /wheelchair|scooter|mobility|walker|rollator|transport|power chair/.test(t) ? 'lifestyle-mobility' : 'lifestyle-chair';
+  }
+  function buildLayout(tpl, fmtKey, n, refs) {
     const fn = STUDIO_TPL[tpl] || STUDIO_TPL['st-spotlight']; const G = geo((S.ctx && S.ctx.formats[fmtKey]) || { w: 1080, h: 1080 });
-    return fn(G, Math.max(0, Math.min(4, n == null ? 1 : n))).filter((e) => e && !(e.w < 0.002 || e.h < 0.002) && !e.hidden).map((e) => Object.assign({}, e, { id: nid() }));
+    const out = fn(G, Math.max(0, Math.min(4, n == null ? 1 : n))).filter((e) => e && !(e.w < 0.002 || e.h < 0.002) && !e.hidden).map((e) => Object.assign({}, e, { id: nid() }));
+    if (tpl === 'st-ai-lifestyle') for (const e of out) if (e.type === 'scene') e.scene = lifestyleScene(refs && refs[0]);
+    return out;
   }
   /* the layers of the size on screen — made from the template the first time a size is opened */
   function layoutOf(cur, fmtKey, keep) {
     cur = cur || S.cur; fmtKey = fmtKey || cur.format;
     if (cur.layouts && Array.isArray(cur.layouts[fmtKey])) return cur.layouts[fmtKey];
-    const L = buildLayout(cur.template, fmtKey, cur.products.length);
+    const L = buildLayout(cur.template, fmtKey, cur.products.length, cur.products);
     if (keep !== false) { cur.layouts = Object.assign({}, cur.layouts || {}); cur.layouts[fmtKey] = L; }
     return L;
   }
@@ -988,7 +996,7 @@
   async function drawThumbs(host) { const run = ++ED.thumbs; const cvs = [...host.querySelectorAll('[data-tth]')];
     for (const cv of cvs) { if (run !== ED.thumbs || !host.contains(cv)) return; const k = cv.getAttribute('data-tth'), t = S.ctx.templates[k] || {};
       const prods = t.kind === 'general' ? [] : S.cur.products.length ? S.cur.products.slice(0, t.kind === 'single' ? 1 : t.max || 4) : [];
-      const pv = Object.assign(deep(S.cur), { template: k, layouts: null, products: prods }); pv.layouts = { [pv.format]: buildLayout(k, pv.format, prods.length) };
+      const pv = Object.assign(deep(S.cur), { template: k, layouts: null, products: prods }); pv.layouts = { [pv.format]: buildLayout(k, pv.format, prods.length, prods) };
       try { await drawStudio(cv, pv, 0.16); } catch (x) {} await new Promise((r) => setTimeout(r, 0)); } }
 
   function list() {
@@ -1031,18 +1039,22 @@
       ${S.campaign ? campHtml() : ''}</div>`;
   }
   /* AI Creative Director: one AI-written ad (the server's checked words) laid out three ways — different templates, colors and headlines */
-  const CD_SETS = { single: [['st-spotlight', 'st-split-left', 'st-premium'], ['st-card', 'st-band', 'st-warm'], ['st-circle', 'st-magazine', 'st-stacked'], ['st-features', 'st-frame', 'st-banner'], ['st-showroom', 'st-question', 'st-minimal'], ['st-price', 'st-split-right', 'st-logo-hero']],
+  const CD_SETS = { single: [['st-ai-premium', 'st-ai-lifestyle', 'st-ai-features'], ['st-spotlight', 'st-split-left', 'st-premium'], ['st-card', 'st-band', 'st-warm'], ['st-circle', 'st-magazine', 'st-stacked'], ['st-features', 'st-frame', 'st-banner'], ['st-showroom', 'st-question', 'st-minimal'], ['st-price', 'st-split-right', 'st-logo-hero']],
     multi: [['st-grid', 'st-lineup', 'st-mosaic'], ['st-mosaic', 'st-duo', 'st-grid']], general: [['st-message', 'st-contact', 'st-message']] };
   function creativeSet(ad, run) {
     const n = (ad.products || []).length, kind = n === 0 ? 'general' : n === 1 ? 'single' : 'multi', sets = CD_SETS[kind], set = sets[run % sets.length];
     const fit = (k) => { const t = S.ctx.templates[k] || {}; return t.kind === 'multi' ? n >= 2 && n <= (t.max || 4) : true; };
     const tpls = set.map((k) => (fit(k) ? k : kind === 'multi' ? 'st-grid' : k));
     const b = S.ctx.brand || { primary: '#0b1f33', accent: '#ef6325' };
-    const pals = [{ bg: b.primary, accent: b.accent, text: onColor(b.primary) }, { bg: '#ffffff', accent: b.accent, text: '#0b1f33' }, run % 2 ? { bg: '#fff7ef', accent: b.accent, text: '#2a1a10' } : { bg: '#1f2329', accent: b.accent, text: '#ffffff' }];
+    const ref = ad.products && ad.products[0], p = ref && productBy(ref);
+    const brand = String(p && [p.manufacturer, p.brand].filter(Boolean).join(' ') || '').toLowerCase();
+    const accent = /golden/.test(brand) ? '#d9ad49' : /strongback/.test(brand) ? '#189fe0' :
+      /corsicana|ergocare/.test(brand) ? '#19a1ae' : b.accent;
+    const pals = [{ bg: '#0b1f33', accent, text: '#ffffff' }, { bg: '#ffffff', accent, text: '#0b1f33' }, { bg: '#e9f0f5', accent, text: '#0b1f33' }];
     const heads = [ad.headline].concat((S.aiResult && S.aiResult.alt_headlines) || []);
     return tpls.map((t, i) => Object.assign(blank(), deep(ad), { template: t, layouts: null, colors: pals[i], headline: heads[i] || ad.headline }));
   }
-  async function drawCandidates() { if (!S.cd) return; for (let i = 0; i < S.cd.cands.length; i++) { const cv = A.host.querySelector(`[data-cdv="${i}"]`); if (!cv) continue; const x = S.cd.cands[i]; x.layouts = { [x.format]: buildLayout(x.template, x.format, x.products.length) }; try { await drawStudio(cv, x, 0.3); } catch (er) {} } }
+  async function drawCandidates() { if (!S.cd) return; for (let i = 0; i < S.cd.cands.length; i++) { const cv = A.host.querySelector(`[data-cdv="${i}"]`); if (!cv) continue; const x = S.cd.cands[i]; x.layouts = { [x.format]: buildLayout(x.template, x.format, x.products.length, x.products) }; try { await drawStudio(cv, x, 0.3); } catch (er) {} } }
   function campHtml() { const C = S.campaign; return `<div class="adb-why"><b>Campaign: ${e(C.campaign.name)}</b> — ${C.ads.length} sizes. ${C.saved ? 'Saved — each size is in your saved ads.' : 'Not saved yet.'}
     <div class="adb-camp">${C.ads.map((a, i) => `<div><canvas data-cv="${i}" aria-label="${e(a.format)} preview"></canvas><b>${e((S.ctx.formats[a.format] || {}).label ? S.ctx.formats[a.format].label.split('—')[0] : a.format)}</b><br>${e(a.headline)}
       <button type="button" class="btn gh" data-cedit="${i}">Edit this size</button><button type="button" class="btn gh" data-cdl="${i}">⬇ PNG</button></div>`).join('')}</div>
@@ -1081,7 +1093,7 @@
       S.aiResult = { why: r.why, alt_headlines: r.alt_headlines };
       if (campaign) { const ads = r.ads.map((a) => Object.assign({}, a, { template: LEGACY_MAP[a.template] || a.template, layouts: null }));
         S.campaign = { campaign: r.campaign, ads, saved: false }; S.cur = Object.assign(blank(), deep(ads[0])); S.cd = null; }
-      else { const keepFmt = S.cur.format; const ad = Object.assign(blank(), r.ad, { format: keepFmt }); S.cd = { cands: creativeSet(ad, ED.cdRun = (ED.cdRun || 0) + 1) }; S.cur = deep(S.cd.cands[0]); S.campaign = null; }
+      else { const keepFmt = S.cur.format; const ad = Object.assign(blank(), r.ad, { format: keepFmt }); S.cd = { cands: creativeSet(ad, ED.cdRun = (ED.cdRun == null ? 0 : ED.cdRun + 1)) }; S.cur = deep(S.cd.cands[0]); S.campaign = null; }
       S.row = null; ED.sel = null; ED.tab = 'ai'; form(); redraw();
       say((campaign ? 'Campaign ready — four sizes below. Edit any size, download, or save the campaign.' : 'Three designs are ready — the first is on the canvas. Pick the one you like, then change anything.') + (r.captions_source === 'rules' ? ' The AI captions didn\'t pass HCPS\'s checks this time, so HCPS\'s standard captions are filled in — regenerate for AI captions.' : ''), 'ok');
     } finally { S.busy = false; const b2 = $(campaign ? '#adbAiCamp' : '#adbAiGo'); if (b2) { b2.disabled = false; b2.textContent = campaign ? '✨ Generate Complete Campaign' : '✨ Create 3 designs'; } }
