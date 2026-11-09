@@ -222,6 +222,17 @@
       TX('daddr', tx, y + fh * 0.44, tw, fh * 0.24, { size: 24, weight: 500, color: fg, lines: 1, valign: 'middle' }),
       TX('dcontact', tx, y + fh * 0.68, tw, fh * 0.24, { size: 25, weight: 600, color: fg, lines: 1, valign: 'middle' })] };
   }
+  /* Dealer identity is composed independently from the hero, avoiding tiny footer overlap. */
+  function premiumFooter(G) {
+    const y = G.tall ? 0.91 : G.wide ? 0.80 : 0.865, h = 1-y;
+    return { top:y, els:[
+      SH('rect',0,y,1,h,{fill:'navy'}), SH('rect',0,y,1,G.hy(8),{fill:'accent'}),
+      LG(0.035,y+h*0.19,0.16,h*0.64,{pad:8,radius:12}),
+      TX('dname',0.22,y+h*0.13,0.48,h*0.39,{size:32,weight:800,color:'white',lines:2,valign:'middle'}),
+      TX('daddr',0.22,y+h*0.58,0.48,h*0.26,{size:26,color:'white',weight:500,lines:1}),
+      TX('dphone',0.72,y+h*0.34,0.25,h*0.35,{size:33,color:'white',weight:800,align:'right',valign:'middle',lines:1})
+    ]};
+  }
   const accentBar = (G) => SH('rect', 0, 0, 1, G.hy(14), { fill: 'accent' });
   /* landscape (1.91:1) version of a stacked design: photo left, words right — keeping the template's own look */
   function wideAlt(G, o) { o = o || {}; const f = footerEls(G, o.foot), B = f.top - G.my, tx = 0.52, tw = 0.43, out = [];
@@ -238,6 +249,37 @@
 
   /* 24 starting designs — each a function of the size and the number of products (the template's kind decides which apply) */
   const STUDIO_TPL = {
+    /* Premium scene layouts reuse the five original Gemini backgrounds (no new generation).
+       Official product photography, prices and manufacturer text are overlaid as separate layers. */
+    'st-ai-premium'(G) {
+      const f=premiumFooter(G), B=f.top, t=G.my;
+      return [SCN('premium',0,0,1,B),SH('rect',0,0,0.57,B,{fill:'navy',opacity:0.75}),
+        TX('pbrand0',G.mx,t,0.82,0.085,{color:'accent',size:55,weight:800,lines:2,upper:true}),
+        HEAD(G.mx,t+0.11,0.84,0.19,{size:66,font:'Georgia',lines:2,color:'white'}),
+        SUB(G.mx,t+0.31,0.43,0.11,{size:29,color:'white',lines:3}),
+        IM(0,0.39,t+0.28,0.56,B-t-0.32,{bg:'none',pad:0}),
+        ...FEATS(G.mx,t+0.46,0.36,0.21,3,{size:30,color:'white',lines:2}),
+        PRC(0,G.mx,B-0.1,0.31,0.075,{bg:'accent',color:'onaccent',size:36}),...f.els];
+    },
+    'st-ai-lifestyle'(G) {
+      const f=premiumFooter(G),B=f.top,t=G.my;
+      return [SCN('lifestyle-chair',0,0,1,B),SH('rect',0,0,0.56,B,{fill:'white',opacity:0.91}),
+        TX('pbrand0',G.mx,t,0.46,0.075,{size:43,color:'navy',upper:true,weight:800,lines:2}),
+        HEAD(G.mx,t+0.105,0.46,0.23,{size:65,color:'navy',lines:3}),
+        SUB(G.mx,t+0.35,0.45,0.12,{size:30,color:'navy',lines:3}),
+        ...FEATS(G.mx,t+0.5,0.42,0.19,3,{size:29,color:'navy',lines:2}),
+        IM(0,0.49,t+0.26,0.48,B-t-0.3,{bg:'none',pad:0}),
+        PRC(0,G.mx,B-0.10,0.31,0.075,{bg:'navy',color:'white',size:35}),...f.els];
+    },
+    'st-ai-features'(G) {
+      const f=premiumFooter(G),B=f.top,t=G.my;
+      return [SCN('features',0,0,1,B),SH('rect',0,0,0.44,B,{fill:'white',opacity:0.84}),
+        TX('pbrand0',G.mx,t,0.7,0.09,{size:53,color:'navy',upper:true,weight:800,lines:2}),
+        HEAD(G.mx,t+0.11,0.82,0.20,{size:64,weight:800,color:'navy',lines:2}),
+        IM(0,0.40,t+0.29,0.56,B-t-0.32,{bg:'none',pad:0}),
+        ...FEATS(G.mx,t+0.35,0.36,0.32,4,{size:30,color:'navy',lines:2}),
+        PRC(0,G.mx,B-0.10,0.32,0.077,{bg:'navy',color:'white',size:35}),...f.els];
+    },
     'st-spotlight'(G) { const f = footerEls(G), B = f.top - G.my; if (G.wide) return [accentBar(G), IM(0, G.mx, G.my, 0.42, B - G.my), HEAD(0.52, G.my, 0.43, 0.24, { size: 62 }), SUB(0.52, G.my + 0.25, 0.43, 0.09, { size: 28, lines: 1 }), NAME(0, 0.52, G.my + 0.35, 0.43, 0.1, { size: 28, weight: 600 }), PRC(0, 0.52, B - 0.13, 0.2, 0.12), CTA(0.74, B - 0.13, 0.21, 0.12), ...f.els];
       const hh = G.tall ? 0.12 : 0.15, py = G.my + hh + 0.07, ph = B - py - 0.2;
       return [accentBar(G), HEAD(G.mx, G.my, 1 - 2 * G.mx, hh, { align: 'center', lines: 2 }), SUB(G.mx, G.my + hh + 0.005, 1 - 2 * G.mx, 0.06, { align: 'center', lines: 1 }), IM(0, G.mx, py, 1 - 2 * G.mx, ph), NAME(0, G.mx, py + ph + 0.015, 1 - 2 * G.mx, 0.07, { align: 'center' }), PRC(0, 0.2, B - 0.08, 0.28, 0.075), CTA(0.52, B - 0.08, 0.3, 0.075), ...f.els]; },
