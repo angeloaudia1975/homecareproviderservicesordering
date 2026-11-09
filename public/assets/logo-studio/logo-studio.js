@@ -83,7 +83,11 @@
       <button type="button" class="ls-btn pri" data-ls="publish" ${S.terms && S.svg && !S.busy ? '' : 'disabled'}>Make this my logo</button>
       <div class="ls-note">Publishing shows this logo on your Account Center, storefront, Social Marketing Studio ads and quotes. Your current logo stays in your history and can be restored.</div></div>` : '';
     const hist = (st.history || []).length ? `<div class="ls-sec"><h3>Your logos</h3><div class="ls-hist">${st.history.map((h) => `<div class="ls-h${h.current ? ' on' : ''}"><img alt="" src="${esc(h.logo_url)}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ls-ph',textContent:'Image unavailable'}))"><span>${h.current ? '<b>In use</b>' : esc(h.kind === 'baseline' ? 'Original logo' : h.kind === 'studio' ? 'Studio design' : h.kind === 'upload' ? 'Uploaded' : h.kind === 'link' ? 'Linked' : 'Restored')}${h.at ? ' · ' + esc(new Date(h.at).toLocaleDateString()) : ''}</span>${!h.current && h.id ? `<button type="button" class="ls-btn sm" data-ls="restore" data-v="${h.id}">Restore</button>` : ''}${h.vector && h.id ? `<button type="button" class="ls-btn sm" data-ls="hsvg" data-v="${h.id}">SVG</button>` : ''}</div>`).join('')}</div></div>` : '';
-    shell(step1 + step2 + step3 + step4 + hist + zoomView());
+    /* Catalog 5 Part A: another location of this company already published a Studio logo — start from the same design
+       (re-checked for this location's own name and city by the server); nothing changes until this location publishes it */
+    const fam = (st.family_designs || []).length ? `<div class="ls-sec ls-fam"><h3>Use your company's logo</h3><div class="ls-note">Your ${esc(st.family_designs.map((f) => f.from).join(' / '))} location already has a Studio logo. Start from the same design for this location — check it below, then make it your logo. Each location keeps its own logo and history.</div>
+      <div class="ls-row">${st.family_designs.map((f, i) => `<div class="ls-famc"><img alt="${esc(f.from)} logo" src="${esc(f.logo_url)}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ls-ph',textContent:'Logo'}))"><button type="button" class="ls-btn" data-ls="fam" data-v="${i}">Use the ${esc(f.from)} design</button></div>`).join('')}</div></div>` : '';
+    shell(fam + step1 + step2 + step3 + step4 + hist + zoomView());
   }
   /* B16: the chosen design as a wide logo, a square logo and a symbol-only icon — downloads only; publishing keeps the design itself */
   function formats() {
@@ -130,6 +134,7 @@
       await Promise.all(S.concepts.map(async (c) => { try { c._svg = (await draw(c)).svg; c._rev = (await draw(reversed(c))).svg; } catch (e) { c._svg = ''; } }));
       render(); return;
     }
+    if (k === 'fam') { const f = (S.st.family_designs || [])[Number(v)]; if (!f) return; S.cur = JSON.parse(JSON.stringify(f.spec)); S.cur._i = -1; S.svg = ''; S.vars = null; S.msg = `Design from ${f.from} loaded — check it, then make it your logo.`; render(); refreshCur(); return; }
     if (k === 'pick') { const c = S.concepts[Number(v)]; S.cur = JSON.parse(JSON.stringify(c)); S.cur._i = Number(v); delete S.cur._svg; S.svg = c._svg || ''; S.vars = null; render(); refreshCur(); return; }
     if (k === 'dl-svg') { download(fileBase() + '-logo.svg', svgUrl(S.svg)); return; }
     if (k === 'dl-png' || k === 'dl-hi') { try { download(fileBase() + (k === 'dl-hi' ? '-logo-3000px.png' : '-logo.png'), await toPng(S.svg, k === 'dl-hi' ? 3000 : 1200)); } catch (e) { S.err = 'The PNG could not be made in this browser — download the SVG instead.'; render(); } return; }
@@ -204,7 +209,7 @@
 #lsRoot .ls-sm{display:flex;flex-direction:column;gap:16px;align-items:center}#lsRoot .ls-sm img{height:100%;width:auto}
 #lsRoot .ls-hist{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}#lsRoot .ls-h{border:1px solid #e3e9ef;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}#lsRoot .ls-h.on{border-color:#2f9e5b}#lsRoot .ls-h img{height:56px;width:100%;object-fit:contain;background:#f7f9fb;border-radius:8px}#lsRoot .ls-h span{font-size:12px;color:#56687a}#lsRoot .ls-ph{display:flex;align-items:center;justify-content:center;height:56px;background:#f2f4f7;border-radius:8px}
 #lsRoot .ls-hrow{display:flex;justify-content:space-between;align-items:center;gap:8px}#lsRoot .ls-hrow h3{margin:0}
-#lsRoot .ls-cardw{position:relative}#lsRoot .ls-cardw .ls-card{width:100%}#lsRoot .ls-zoombtn{position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:10px;border:1px solid #c9d4df;background:#fff;font-size:20px;cursor:pointer}
+#lsRoot .ls-famc{display:flex;flex-direction:column;gap:8px;align-items:flex-start;border:1px solid #e3e8ef;border-radius:10px;padding:10px;background:#fff}#lsRoot .ls-famc img{max-width:260px;max-height:90px;object-fit:contain}#lsRoot .ls-cardw{position:relative}#lsRoot .ls-cardw .ls-card{width:100%}#lsRoot .ls-zoombtn{position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:10px;border:1px solid #c9d4df;background:#fff;font-size:20px;cursor:pointer}
 #lsRoot .ls-rec{position:absolute;top:10px;left:10px;font-style:normal;font-size:11.5px;font-weight:800;background:#e9f7ee;color:#17603a;border-radius:999px;padding:3px 9px}#lsRoot .ls-card{position:relative;padding-top:34px}#lsRoot .ls-card img{height:150px}
 #lsRoot .ls-stage img{max-height:300px}#lsRoot .ls-stage.check,#lsRoot .ls-zgrid.bg-check{background:repeating-conic-gradient(#eef1f4 0 25%,#fff 0 50%) 0 0/18px 18px}
 #lsRoot .ls-fmts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:6px 0 10px}#lsRoot .ls-fmt{border:1px solid #e3e9ef;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:4px}#lsRoot .ls-fmt span{font-size:12px;color:#56687a}
