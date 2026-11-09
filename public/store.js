@@ -14,7 +14,7 @@
   var slug=(location.pathname.match(/\/store\/([a-z0-9-]{3,50})\/?$/i)||[])[1]||new URLSearchParams(location.search).get('s')||'';
   slug=String(slug).toLowerCase();
   var D=null, FAM=[], BYKEY=Object.create(null), VIEWQ=[], SEEN={}, LOADED=Date.now();
-  var F={q:'',cats:{},mfrs:{},min:'',max:'',cap:{},seat:{},feat:{},sort:'name',view:'grid',shown:48};
+  var F={q:'',cats:{},mfrs:{},min:'',max:'',cap:{},seat:{},feat:{},sort:'rec',view:'grid',shown:48};
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function $(id){return document.getElementById(id);}
   function money(n){return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -110,9 +110,10 @@
     return true;
   }
   function results(){ var L=FAM.filter(function(f){return pass(f);});
-    var by={name:function(a,b){return a.name.localeCompare(b.name);},plh:function(a,b){return (a.min==null?1e12:a.min)-(b.min==null?1e12:b.min)||a.name.localeCompare(b.name);},
+    var ci={}; catList().forEach(function(c,i){ ci[c.name]=i; });
+    var by={rec:function(a,b){return (ci[a.cat]-ci[b.cat])||a.name.localeCompare(b.name);},name:function(a,b){return a.name.localeCompare(b.name);},plh:function(a,b){return (a.min==null?1e12:a.min)-(b.min==null?1e12:b.min)||a.name.localeCompare(b.name);},
       phl:function(a,b){return (b.max==null?-1:b.max)-(a.max==null?-1:a.max)||a.name.localeCompare(b.name);}};
-    return L.sort(by[F.sort]||by.name); }
+    return L.sort(by[F.sort]||by.rec); }
 
   /* ---------- header ---------- */
   var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -213,7 +214,7 @@
       '<div class="layout" id="results"><aside class="filters" id="filters" aria-label="Filters">'+filtersHtml()+'</aside><section aria-live="polite">'+
       '<div class="res-head"><h2>'+(one?esc(one):'All products')+'</h2><span class="count">'+L.length+' product'+(L.length===1?'':'s')+'</span>'+
       '<button class="btn fbtn" type="button" data-fopen="1">Filters'+(nf?' ('+nf+')':'')+'</button>'+
-      '<label class="sr" for="sort" style="position:absolute;left:-9999px">Sort by</label><select id="sort"><option value="name"'+(F.sort==='name'?' selected':'')+'>Name A–Z</option><option value="plh"'+(F.sort==='plh'?' selected':'')+'>Price: low to high</option><option value="phl"'+(F.sort==='phl'?' selected':'')+'>Price: high to low</option></select>'+
+      '<label class="sr" for="sort" style="position:absolute;left:-9999px">Sort by</label><select id="sort"><option value="rec"'+(F.sort==='rec'?' selected':'')+'>Recommended</option><option value="name"'+(F.sort==='name'?' selected':'')+'>Name A–Z</option><option value="plh"'+(F.sort==='plh'?' selected':'')+'>Price: low to high</option><option value="phl"'+(F.sort==='phl'?' selected':'')+'>Price: high to low</option></select>'+
       '<div class="vt" role="group" aria-label="View"><button type="button" data-view="grid" aria-pressed="'+(F.view==='grid')+'" aria-label="Grid view">▦</button><button type="button" data-view="list" aria-pressed="'+(F.view==='list')+'" aria-label="List view">☰</button></div></div>'+
       activeChips()+
       (L.length?'<div class="grid'+(F.view==='list'?' list':'')+'">'+L.slice(0,F.shown).map(card).join('')+'</div>'+(L.length>F.shown?'<div class="more"><button class="btn" type="button" data-more="1">Show more ('+(L.length-F.shown)+')</button></div>':'')
