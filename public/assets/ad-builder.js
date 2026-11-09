@@ -35,7 +35,7 @@
     for (const re of CLAIMS) { const m = s.match(re); if (m) return m[0]; } return null; };
 
   let A = null;   // { api(body), esc, host }
-  const S = { ctx: null, loc: null, ads: [], cur: null, row: null, images: new Map(), logo: null, busy: false, msg: '', err: '', q: '', suggestions: null, problems: [],
+  const S = { ctx: null, loc: null, ads: [], cur: null, row: null, images: new Map(), scenes: new Map(), logo: null, busy: false, msg: '', err: '', q: '', suggestions: null, problems: [],
     ai: { goal: 'awareness', audience: 'caregivers', tone: 'warm', platform: 'all' }, aiResult: null, history: [], campaign: null };
   const blank = () => ({ template: 'st-spotlight', layouts: null, format: 'square', font: 'Inter', colors: Object.assign({}, PRESETS[0]), title: '', headline: '', subheadline: '', body: '', features: [], captions: {}, cta: 'Visit us today', caption: '', hashtags: [],
     products: [], show: { logo: true, name: true, address: true, phone: true, website: true, price: true } });
@@ -55,6 +55,16 @@
     const k = keyOf(p); if (S.images.has(k)) return S.images.get(k);
     const pr = (async () => { if (!p.image) return null; const r = await A.api({ action: 'ad_image', location_id: S.loc, manufacturer: p.manufacturer, code: p.code }); return r && r.ok ? loadImg(r.data_url) : null; })();
     S.images.set(k, pr); return pr;
+  }
+  /* Cached Gemini pilot scenes, delivered from a server-controlled allowlist. No paid call. */
+  const SCENE_IDS = ['premium','features','lifestyle-chair','lifestyle-mobility','lifestyle-bed'];
+  function sceneImage(id) {
+    if (!SCENE_IDS.includes(id)) return Promise.resolve(null);
+    if (!S.scenes.has(id)) S.scenes.set(id, (async () => {
+      const r = await A.api({ action: 'ad_scene', location_id: S.loc, scene: id });
+      return r && r.ok && r.data_url ? loadImg(r.data_url) : null;
+    })().catch(() => null));
+    return S.scenes.get(id);
   }
   async function logoImage() {
     if (S.logo && S.logo.loc === S.loc) return S.logo.p;
@@ -192,6 +202,7 @@
   let EID = 0; const nid = () => 'e' + (Date.now() % 46656).toString(36) + (EID++).toString(36);
   const TX = (bind, x, y, w, h, o) => Object.assign({ id: nid(), type: 'text', bind, x, y, w, h, size: 40, weight: 700, color: 'text', align: 'left', valign: 'top', lh: 1.18, lines: 3, bg: 'none', radius: 0, pad: 0 }, o || {});
   const IM = (i, x, y, w, h, o) => Object.assign({ id: nid(), type: 'image', product: i, x, y, w, h, fit: 'contain', zoom: 1, ox: 0, oy: 0, bg: 'white', radius: 24, pad: 22 }, o || {});
+  const SCN = (scene, x, y, w, h) => ({ id: nid(), type: 'scene', scene, x, y, w, h, locked: true });
   const SH = (shape, x, y, w, h, o) => Object.assign({ id: nid(), type: 'shape', shape, x, y, w, h, fill: 'accent', stroke: 'none', sw: 0, radius: 0 }, o || {});
   const LG = (x, y, w, h, o) => Object.assign({ id: nid(), type: 'logo', x, y, w, h, bg: 'white', radius: 14, pad: 12 }, o || {});
   const PRC = (i, x, y, w, h, o) => Object.assign({ id: nid(), type: 'price', product: i, x, y, w, h, size: 34, weight: 800, color: 'navy', align: 'center', valign: 'middle', lh: 1.1, lines: 1, bg: 'white', radius: 999, pad: 18, pill: true }, o || {});
@@ -355,6 +366,7 @@
     else if (b === 'headline' || b === 'subheadline' || b === 'body' || b === 'cta') t = cur[b] || '';
     else if (/^feature\d$/.test(b)) { const f = (cur.features || [])[Number(b.slice(7))]; t = f ? (el.check !== false ? '✓ ' : '') + f : ''; }
     else if (/^pname\d$/.test(b)) { const p = prodAt(Number(b.slice(5))); t = p ? p.name : ''; }
+    else if (/^pbrand\d$/.test(b)) { const p = prodAt(Number(b.slice(6))); t = p ? (p.brand || p.manufacturer || '') : ''; }
     else if (b === 'dname') t = sh.name !== false ? d.name || '' : '';
     else if (b === 'dphone') t = sh.phone !== false ? d.phone || '' : '';
     else if (b === 'daddr') t = sh.address !== false ? [d.address, [d.city, d.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ') : '';
@@ -407,10 +419,17 @@
       if ((lines.length <= el.lines && lines.length * size * (el.lh || 1.18) <= h - (el.pill ? 0 : 2 * pad) + 0.5) || size <= min) break; size = Math.max(min, size * 0.93); }
     lines = wrap(ctx, text, Math.max(10, w - 2 * pad), el.lines || 1); return { size, lines, pad, lh: size * (el.lh || 1.18), w, h };
   }
-  function drawEl(ctx, el, W, H, u, cur, imgs, logo) {
+  function drawEl(ctx, el, W, H, u, cur, imgs, logo, scenes) {
     const x = el.x * W, y = el.y * H, w = el.w * W, h = el.h * H;
     ctx.save(); ctx.globalAlpha = el.opacity == null ? 1 : el.opacity;
-    if (el.type === 'shape') {
+    if (el.type === 'scene') {
+      const im = scenes && scenes[el.scene];
+      if (im) {
+        const scale = Math.max(w / im.width, h / im.height), iw = im.width * scale, ih = im.height * scale;
+        ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+        ctx.drawImage(im, x + (w - iw) / 2, y + (h - ih) / 2, iw, ih); ctx.restore();
+      } // Keep the already-filled brand background if the scene cannot be loaded.
+    } else if (el.type === 'shape') {
       const fill = tok(el.fill, cur), stroke = tok(el.stroke, cur);
       if (el.shape === 'circle') { ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, Math.abs(w / 2), Math.abs(h / 2), 0, 0, Math.PI * 2); }
       else rrect(ctx, x, y, w, h, Math.min((el.radius || 0) * u, Math.abs(w) / 2, Math.abs(h) / 2));
@@ -458,8 +477,11 @@
     const usesLogo = els.some((e) => e.type === 'logo' && !e.hidden) && cur.show && cur.show.logo !== false;
     const prods = cur.products.map((r) => productBy(r));
     const [logo, ...imgs] = await Promise.all([usesLogo ? logoImage() : null, ...prods.map((p) => (p ? productImage(p) : null))]);
+    const sceneKeys = [...new Set(els.filter((e) => e.type === 'scene' && !e.hidden).map((e) => e.scene))];
+    const sceneValues = await Promise.all(sceneKeys.map(sceneImage));
+    const sceneImgs = Object.fromEntries(sceneKeys.map((key, i) => [key, sceneValues[i]]));
     ctx.fillStyle = tok('bg', cur); ctx.fillRect(0, 0, W, H);
-    for (const el of els) if (!el.hidden) drawEl(ctx, el, W, H, u, cur, imgs, logo);
+    for (const el of els) if (!el.hidden) drawEl(ctx, el, W, H, u, cur, imgs, logo, sceneImgs);
   }
   /* every draw goes through here: studio designs by their layers, older ads exactly as they were made */
   async function draw(canvas, cur, k) { if (isStudio(cur || S.cur)) return drawStudio(canvas, cur, k);
