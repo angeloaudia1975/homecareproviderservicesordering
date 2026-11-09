@@ -35,7 +35,7 @@
     for (const re of CLAIMS) { const m = s.match(re); if (m) return m[0]; } return null; };
 
   let A = null;   // { api(body), esc, host }
-  const S = { ctx: null, loc: null, ads: [], cur: null, row: null, images: new Map(), logo: null, busy: false, msg: '', err: '', q: '', suggestions: null, problems: [],
+  const S = { ctx: null, loc: null, ads: [], cur: null, row: null, images: new Map(), scenes: new Map(), brandLogos: new Map(), logo: null, busy: false, msg: '', err: '', q: '', suggestions: null, problems: [],
     ai: { goal: 'awareness', audience: 'caregivers', tone: 'warm', platform: 'all' }, aiResult: null, history: [], campaign: null };
   const blank = () => ({ template: 'st-spotlight', layouts: null, format: 'square', font: 'Inter', colors: Object.assign({}, PRESETS[0]), title: '', headline: '', subheadline: '', body: '', features: [], captions: {}, cta: 'Visit us today', caption: '', hashtags: [],
     products: [], show: { logo: true, name: true, address: true, phone: true, website: true, price: true } });
@@ -55,6 +55,24 @@
     const k = keyOf(p); if (S.images.has(k)) return S.images.get(k);
     const pr = (async () => { if (!p.image) return null; const r = await A.api({ action: 'ad_image', location_id: S.loc, manufacturer: p.manufacturer, code: p.code }); return r && r.ok ? loadImg(r.data_url) : null; })();
     S.images.set(k, pr); return pr;
+  }
+  /* Cached Gemini pilot scenes, delivered from a server-controlled allowlist. No paid call. */
+  const SCENE_IDS = ['premium','features','lifestyle-chair','lifestyle-mobility','lifestyle-bed'];
+  function sceneImage(id) {
+    if (!SCENE_IDS.includes(id)) return Promise.resolve(null);
+    if (!S.scenes.has(id)) S.scenes.set(id, (async () => {
+      const r = await A.api({ action: 'ad_scene', location_id: S.loc, scene: id });
+      return r && r.ok && r.data_url ? loadImg(r.data_url) : null;
+    })().catch(() => null));
+    return S.scenes.get(id);
+  }
+  function brandLogoImage(p) {
+    const k = keyOf(p);
+    if (!S.brandLogos.has(k)) S.brandLogos.set(k, (async () => {
+      const r = await A.api({ action: 'ad_brand_logo', location_id: S.loc, manufacturer: p.manufacturer, code: p.code });
+      return r && r.ok && r.data_url ? loadImg(r.data_url) : null;
+    })().catch(() => null));
+    return S.brandLogos.get(k);
   }
   async function logoImage() {
     if (S.logo && S.logo.loc === S.loc) return S.logo.p;
@@ -192,6 +210,8 @@
   let EID = 0; const nid = () => 'e' + (Date.now() % 46656).toString(36) + (EID++).toString(36);
   const TX = (bind, x, y, w, h, o) => Object.assign({ id: nid(), type: 'text', bind, x, y, w, h, size: 40, weight: 700, color: 'text', align: 'left', valign: 'top', lh: 1.18, lines: 3, bg: 'none', radius: 0, pad: 0 }, o || {});
   const IM = (i, x, y, w, h, o) => Object.assign({ id: nid(), type: 'image', product: i, x, y, w, h, fit: 'contain', zoom: 1, ox: 0, oy: 0, bg: 'white', radius: 24, pad: 22 }, o || {});
+  const BRAND = (product, x, y, w, h) => ({id:nid(),type:'brandlogo',product,x,y,w,h,locked:true});
+  const SCN = (scene, x, y, w, h) => ({ id: nid(), type: 'scene', scene, x, y, w, h, locked: true });
   const SH = (shape, x, y, w, h, o) => Object.assign({ id: nid(), type: 'shape', shape, x, y, w, h, fill: 'accent', stroke: 'none', sw: 0, radius: 0 }, o || {});
   const LG = (x, y, w, h, o) => Object.assign({ id: nid(), type: 'logo', x, y, w, h, bg: 'white', radius: 14, pad: 12 }, o || {});
   const PRC = (i, x, y, w, h, o) => Object.assign({ id: nid(), type: 'price', product: i, x, y, w, h, size: 34, weight: 800, color: 'navy', align: 'center', valign: 'middle', lh: 1.1, lines: 1, bg: 'white', radius: 999, pad: 18, pill: true }, o || {});
@@ -211,6 +231,17 @@
       TX('daddr', tx, y + fh * 0.44, tw, fh * 0.24, { size: 24, weight: 500, color: fg, lines: 1, valign: 'middle' }),
       TX('dcontact', tx, y + fh * 0.68, tw, fh * 0.24, { size: 25, weight: 600, color: fg, lines: 1, valign: 'middle' })] };
   }
+  /* Dealer identity is composed independently from the hero, avoiding tiny footer overlap. */
+  function premiumFooter(G) {
+    const y = G.tall ? 0.91 : G.wide ? 0.80 : 0.865, h = 1-y;
+    return { top:y, els:[
+      SH('rect',0,y,1,h,{fill:'navy'}), SH('rect',0,y,1,G.hy(8),{fill:'accent'}),
+      LG(0.035,y+h*0.19,0.16,h*0.64,{pad:8,radius:12}),
+      TX('dname',0.22,y+h*0.13,0.48,h*0.39,{size:32,weight:800,color:'white',lines:2,valign:'middle'}),
+      TX('daddr',0.22,y+h*0.58,0.48,h*0.26,{size:26,color:'white',weight:500,lines:1}),
+      TX('dphone',0.72,y+h*0.34,0.25,h*0.35,{size:33,color:'white',weight:800,align:'right',valign:'middle',lines:1})
+    ]};
+  }
   const accentBar = (G) => SH('rect', 0, 0, 1, G.hy(14), { fill: 'accent' });
   /* landscape (1.91:1) version of a stacked design: photo left, words right — keeping the template's own look */
   function wideAlt(G, o) { o = o || {}; const f = footerEls(G, o.foot), B = f.top - G.my, tx = 0.52, tw = 0.43, out = [];
@@ -227,6 +258,37 @@
 
   /* 24 starting designs — each a function of the size and the number of products (the template's kind decides which apply) */
   const STUDIO_TPL = {
+    /* Premium scene layouts reuse the five original Gemini backgrounds (no new generation).
+       Official product photography, prices and manufacturer text are overlaid as separate layers. */
+    'st-ai-premium'(G) {
+      const f=premiumFooter(G), B=f.top, t=G.my;
+      return [SCN('premium',0,0,1,B),SH('rect',0,0,0.57,B,{fill:'navy',opacity:0.75}),
+        BRAND(0,G.mx,t,0.38,0.10),
+        HEAD(G.mx,t+0.11,0.84,0.19,{size:66,font:'Georgia',lines:2,color:'white'}),
+        SUB(G.mx,t+0.31,0.43,0.11,{size:29,color:'white',lines:3}),
+        IM(0,0.39,t+0.28,0.56,B-t-0.32,{bg:'none',pad:0}),
+        ...FEATS(G.mx,t+0.46,0.36,0.21,3,{size:30,color:'white',lines:2}),
+        PRC(0,G.mx,B-0.1,0.31,0.075,{bg:'accent',color:'onaccent',size:36}),...f.els];
+    },
+    'st-ai-lifestyle'(G) {
+      const f=premiumFooter(G),B=f.top,t=G.my;
+      return [SCN('lifestyle-chair',0,0,1,B),SH('rect',0,0,0.56,B,{fill:'white',opacity:0.91}),
+        BRAND(0,G.mx,t,0.34,0.10),
+        HEAD(G.mx,t+0.105,0.46,0.23,{size:65,color:'navy',lines:3}),
+        SUB(G.mx,t+0.35,0.45,0.12,{size:30,color:'navy',lines:3}),
+        ...FEATS(G.mx,t+0.5,0.42,0.19,3,{size:29,color:'navy',lines:2}),
+        IM(0,0.49,t+0.26,0.48,B-t-0.3,{bg:'none',pad:0}),
+        PRC(0,G.mx,B-0.10,0.31,0.075,{bg:'navy',color:'white',size:35}),...f.els];
+    },
+    'st-ai-features'(G) {
+      const f=premiumFooter(G),B=f.top,t=G.my;
+      return [SCN('features',0,0,1,B),SH('rect',0,0,0.44,B,{fill:'white',opacity:0.84}),
+        BRAND(0,G.mx,t,0.38,0.10),
+        HEAD(G.mx,t+0.11,0.82,0.20,{size:64,weight:800,color:'navy',lines:2}),
+        IM(0,0.40,t+0.29,0.56,B-t-0.32,{bg:'none',pad:0}),
+        ...FEATS(G.mx,t+0.35,0.36,0.32,4,{size:30,color:'navy',lines:2}),
+        PRC(0,G.mx,B-0.10,0.32,0.077,{bg:'navy',color:'white',size:35}),...f.els];
+    },
     'st-spotlight'(G) { const f = footerEls(G), B = f.top - G.my; if (G.wide) return [accentBar(G), IM(0, G.mx, G.my, 0.42, B - G.my), HEAD(0.52, G.my, 0.43, 0.24, { size: 62 }), SUB(0.52, G.my + 0.25, 0.43, 0.09, { size: 28, lines: 1 }), NAME(0, 0.52, G.my + 0.35, 0.43, 0.1, { size: 28, weight: 600 }), PRC(0, 0.52, B - 0.13, 0.2, 0.12), CTA(0.74, B - 0.13, 0.21, 0.12), ...f.els];
       const hh = G.tall ? 0.12 : 0.15, py = G.my + hh + 0.07, ph = B - py - 0.2;
       return [accentBar(G), HEAD(G.mx, G.my, 1 - 2 * G.mx, hh, { align: 'center', lines: 2 }), SUB(G.mx, G.my + hh + 0.005, 1 - 2 * G.mx, 0.06, { align: 'center', lines: 1 }), IM(0, G.mx, py, 1 - 2 * G.mx, ph), NAME(0, G.mx, py + ph + 0.015, 1 - 2 * G.mx, 0.07, { align: 'center' }), PRC(0, 0.2, B - 0.08, 0.28, 0.075), CTA(0.52, B - 0.08, 0.3, 0.075), ...f.els]; },
@@ -330,15 +392,23 @@
         TX('dweb', G.mx + 0.05, B - (G.tall ? 0.06 : 0.09), 1 - 2 * G.mx - 0.1, 0.045, { size: 26, color: 'navy', weight: 600, lines: 1 }), ...f.els.filter((e) => e.type === 'shape')]; },
   };
   /* a fresh layout for a template and size (the photo / price / name layers follow the ad's products) */
-  function buildLayout(tpl, fmtKey, n) {
+  function lifestyleScene(ref) {
+    const p = ref ? productBy(ref) : null;
+    const t = String(p ? [p.category, p.name].filter(Boolean).join(' ') : '').toLowerCase();
+    return /bed|mattress|sleep/.test(t) ? 'lifestyle-bed' :
+      /wheelchair|scooter|mobility|walker|rollator|transport|power chair/.test(t) ? 'lifestyle-mobility' : 'lifestyle-chair';
+  }
+  function buildLayout(tpl, fmtKey, n, refs) {
     const fn = STUDIO_TPL[tpl] || STUDIO_TPL['st-spotlight']; const G = geo((S.ctx && S.ctx.formats[fmtKey]) || { w: 1080, h: 1080 });
-    return fn(G, Math.max(0, Math.min(4, n == null ? 1 : n))).filter((e) => e && !(e.w < 0.002 || e.h < 0.002) && !e.hidden).map((e) => Object.assign({}, e, { id: nid() }));
+    const out = fn(G, Math.max(0, Math.min(4, n == null ? 1 : n))).filter((e) => e && !(e.w < 0.002 || e.h < 0.002) && !e.hidden).map((e) => Object.assign({}, e, { id: nid() }));
+    if (tpl === 'st-ai-lifestyle') for (const e of out) if (e.type === 'scene') e.scene = lifestyleScene(refs && refs[0]);
+    return out;
   }
   /* the layers of the size on screen — made from the template the first time a size is opened */
   function layoutOf(cur, fmtKey, keep) {
     cur = cur || S.cur; fmtKey = fmtKey || cur.format;
     if (cur.layouts && Array.isArray(cur.layouts[fmtKey])) return cur.layouts[fmtKey];
-    const L = buildLayout(cur.template, fmtKey, cur.products.length);
+    const L = buildLayout(cur.template, fmtKey, cur.products.length, cur.products);
     if (keep !== false) { cur.layouts = Object.assign({}, cur.layouts || {}); cur.layouts[fmtKey] = L; }
     return L;
   }
@@ -355,6 +425,7 @@
     else if (b === 'headline' || b === 'subheadline' || b === 'body' || b === 'cta') t = cur[b] || '';
     else if (/^feature\d$/.test(b)) { const f = (cur.features || [])[Number(b.slice(7))]; t = f ? (el.check !== false ? '✓ ' : '') + f : ''; }
     else if (/^pname\d$/.test(b)) { const p = prodAt(Number(b.slice(5))); t = p ? p.name : ''; }
+    else if (/^pbrand\d$/.test(b)) { const p = prodAt(Number(b.slice(6))); t = p ? (p.brand || p.manufacturer || '') : ''; }
     else if (b === 'dname') t = sh.name !== false ? d.name || '' : '';
     else if (b === 'dphone') t = sh.phone !== false ? d.phone || '' : '';
     else if (b === 'daddr') t = sh.address !== false ? [d.address, [d.city, d.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ') : '';
@@ -407,10 +478,29 @@
       if ((lines.length <= el.lines && lines.length * size * (el.lh || 1.18) <= h - (el.pill ? 0 : 2 * pad) + 0.5) || size <= min) break; size = Math.max(min, size * 0.93); }
     lines = wrap(ctx, text, Math.max(10, w - 2 * pad), el.lines || 1); return { size, lines, pad, lh: size * (el.lh || 1.18), w, h };
   }
-  function drawEl(ctx, el, W, H, u, cur, imgs, logo) {
+  function drawEl(ctx, el, W, H, u, cur, imgs, logo, scenes, brands) {
     const x = el.x * W, y = el.y * H, w = el.w * W, h = el.h * H;
     ctx.save(); ctx.globalAlpha = el.opacity == null ? 1 : el.opacity;
-    if (el.type === 'shape') {
+    if (el.type === 'brandlogo') {
+      const im = brands && brands[el.product];
+      ctx.fillStyle = 'rgba(255,255,255,0.95)'; rrect(ctx,x,y,w,h,12*u); ctx.fill();
+      if (im) {
+        const k = Math.min((w-16*u)/im.width,(h-12*u)/im.height);
+        ctx.drawImage(im,x+(w-im.width*k)/2,y+(h-im.height*k)/2,im.width*k,im.height*k);
+      } else {
+        const ref = cur.products[el.product], p=ref && productBy(ref);
+        const brand = p && (p.brand || p.manufacturer) || '';
+        ctx.font = `800 ${Math.round(30*u)}px ${FONT_STACK.Inter}`; ctx.textAlign='center';
+        ctx.textBaseline='middle';ctx.fillStyle='#0b1f33';ctx.fillText(brand,x+w/2,y+h/2,w-16*u);
+      }
+    } else if (el.type === 'scene') {
+      const im = scenes && scenes[el.scene];
+      if (im) {
+        const scale = Math.max(w / im.width, h / im.height), iw = im.width * scale, ih = im.height * scale;
+        ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+        ctx.drawImage(im, x + (w - iw) / 2, y + (h - ih) / 2, iw, ih); ctx.restore();
+      } // Keep the already-filled brand background if the scene cannot be loaded.
+    } else if (el.type === 'shape') {
       const fill = tok(el.fill, cur), stroke = tok(el.stroke, cur);
       if (el.shape === 'circle') { ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, Math.abs(w / 2), Math.abs(h / 2), 0, 0, Math.PI * 2); }
       else rrect(ctx, x, y, w, h, Math.min((el.radius || 0) * u, Math.abs(w) / 2, Math.abs(h) / 2));
@@ -458,8 +548,13 @@
     const usesLogo = els.some((e) => e.type === 'logo' && !e.hidden) && cur.show && cur.show.logo !== false;
     const prods = cur.products.map((r) => productBy(r));
     const [logo, ...imgs] = await Promise.all([usesLogo ? logoImage() : null, ...prods.map((p) => (p ? productImage(p) : null))]);
+    const sceneKeys = [...new Set(els.filter((e) => e.type === 'scene' && !e.hidden).map((e) => e.scene))];
+    const sceneValues = await Promise.all(sceneKeys.map(sceneImage));
+    const sceneImgs = Object.fromEntries(sceneKeys.map((key, i) => [key, sceneValues[i]]));
+    const usesBrand = els.some((e) => e.type === 'brandlogo' && !e.hidden);
+    const brands = usesBrand ? await Promise.all(prods.map((p) => p ? brandLogoImage(p) : null)) : [];
     ctx.fillStyle = tok('bg', cur); ctx.fillRect(0, 0, W, H);
-    for (const el of els) if (!el.hidden) drawEl(ctx, el, W, H, u, cur, imgs, logo);
+    for (const el of els) if (!el.hidden) drawEl(ctx, el, W, H, u, cur, imgs, logo, sceneImgs, brands);
   }
   /* every draw goes through here: studio designs by their layers, older ads exactly as they were made */
   async function draw(canvas, cur, k) { if (isStudio(cur || S.cur)) return drawStudio(canvas, cur, k);
@@ -924,7 +1019,7 @@
   async function drawThumbs(host) { const run = ++ED.thumbs; const cvs = [...host.querySelectorAll('[data-tth]')];
     for (const cv of cvs) { if (run !== ED.thumbs || !host.contains(cv)) return; const k = cv.getAttribute('data-tth'), t = S.ctx.templates[k] || {};
       const prods = t.kind === 'general' ? [] : S.cur.products.length ? S.cur.products.slice(0, t.kind === 'single' ? 1 : t.max || 4) : [];
-      const pv = Object.assign(deep(S.cur), { template: k, layouts: null, products: prods }); pv.layouts = { [pv.format]: buildLayout(k, pv.format, prods.length) };
+      const pv = Object.assign(deep(S.cur), { template: k, layouts: null, products: prods }); pv.layouts = { [pv.format]: buildLayout(k, pv.format, prods.length, prods) };
       try { await drawStudio(cv, pv, 0.16); } catch (x) {} await new Promise((r) => setTimeout(r, 0)); } }
 
   function list() {
@@ -967,18 +1062,22 @@
       ${S.campaign ? campHtml() : ''}</div>`;
   }
   /* AI Creative Director: one AI-written ad (the server's checked words) laid out three ways — different templates, colors and headlines */
-  const CD_SETS = { single: [['st-spotlight', 'st-split-left', 'st-premium'], ['st-card', 'st-band', 'st-warm'], ['st-circle', 'st-magazine', 'st-stacked'], ['st-features', 'st-frame', 'st-banner'], ['st-showroom', 'st-question', 'st-minimal'], ['st-price', 'st-split-right', 'st-logo-hero']],
+  const CD_SETS = { single: [['st-ai-premium', 'st-ai-lifestyle', 'st-ai-features'], ['st-spotlight', 'st-split-left', 'st-premium'], ['st-card', 'st-band', 'st-warm'], ['st-circle', 'st-magazine', 'st-stacked'], ['st-features', 'st-frame', 'st-banner'], ['st-showroom', 'st-question', 'st-minimal'], ['st-price', 'st-split-right', 'st-logo-hero']],
     multi: [['st-grid', 'st-lineup', 'st-mosaic'], ['st-mosaic', 'st-duo', 'st-grid']], general: [['st-message', 'st-contact', 'st-message']] };
   function creativeSet(ad, run) {
     const n = (ad.products || []).length, kind = n === 0 ? 'general' : n === 1 ? 'single' : 'multi', sets = CD_SETS[kind], set = sets[run % sets.length];
     const fit = (k) => { const t = S.ctx.templates[k] || {}; return t.kind === 'multi' ? n >= 2 && n <= (t.max || 4) : true; };
     const tpls = set.map((k) => (fit(k) ? k : kind === 'multi' ? 'st-grid' : k));
     const b = S.ctx.brand || { primary: '#0b1f33', accent: '#ef6325' };
-    const pals = [{ bg: b.primary, accent: b.accent, text: onColor(b.primary) }, { bg: '#ffffff', accent: b.accent, text: '#0b1f33' }, run % 2 ? { bg: '#fff7ef', accent: b.accent, text: '#2a1a10' } : { bg: '#1f2329', accent: b.accent, text: '#ffffff' }];
+    const ref = ad.products && ad.products[0], p = ref && productBy(ref);
+    const brand = String(p && [p.manufacturer, p.brand].filter(Boolean).join(' ') || '').toLowerCase();
+    const accent = /golden/.test(brand) ? '#d9ad49' : /strongback/.test(brand) ? '#189fe0' :
+      /corsicana|ergocare/.test(brand) ? '#19a1ae' : b.accent;
+    const pals = [{ bg: '#0b1f33', accent, text: '#ffffff' }, { bg: '#ffffff', accent, text: '#0b1f33' }, { bg: '#e9f0f5', accent, text: '#0b1f33' }];
     const heads = [ad.headline].concat((S.aiResult && S.aiResult.alt_headlines) || []);
     return tpls.map((t, i) => Object.assign(blank(), deep(ad), { template: t, layouts: null, colors: pals[i], headline: heads[i] || ad.headline }));
   }
-  async function drawCandidates() { if (!S.cd) return; for (let i = 0; i < S.cd.cands.length; i++) { const cv = A.host.querySelector(`[data-cdv="${i}"]`); if (!cv) continue; const x = S.cd.cands[i]; x.layouts = { [x.format]: buildLayout(x.template, x.format, x.products.length) }; try { await drawStudio(cv, x, 0.3); } catch (er) {} } }
+  async function drawCandidates() { if (!S.cd) return; for (let i = 0; i < S.cd.cands.length; i++) { const cv = A.host.querySelector(`[data-cdv="${i}"]`); if (!cv) continue; const x = S.cd.cands[i]; x.layouts = { [x.format]: buildLayout(x.template, x.format, x.products.length, x.products) }; try { await drawStudio(cv, x, 0.3); } catch (er) {} } }
   function campHtml() { const C = S.campaign; return `<div class="adb-why"><b>Campaign: ${e(C.campaign.name)}</b> — ${C.ads.length} sizes. ${C.saved ? 'Saved — each size is in your saved ads.' : 'Not saved yet.'}
     <div class="adb-camp">${C.ads.map((a, i) => `<div><canvas data-cv="${i}" aria-label="${e(a.format)} preview"></canvas><b>${e((S.ctx.formats[a.format] || {}).label ? S.ctx.formats[a.format].label.split('—')[0] : a.format)}</b><br>${e(a.headline)}
       <button type="button" class="btn gh" data-cedit="${i}">Edit this size</button><button type="button" class="btn gh" data-cdl="${i}">⬇ PNG</button></div>`).join('')}</div>
@@ -1017,7 +1116,7 @@
       S.aiResult = { why: r.why, alt_headlines: r.alt_headlines };
       if (campaign) { const ads = r.ads.map((a) => Object.assign({}, a, { template: LEGACY_MAP[a.template] || a.template, layouts: null }));
         S.campaign = { campaign: r.campaign, ads, saved: false }; S.cur = Object.assign(blank(), deep(ads[0])); S.cd = null; }
-      else { const keepFmt = S.cur.format; const ad = Object.assign(blank(), r.ad, { format: keepFmt }); S.cd = { cands: creativeSet(ad, ED.cdRun = (ED.cdRun || 0) + 1) }; S.cur = deep(S.cd.cands[0]); S.campaign = null; }
+      else { const keepFmt = S.cur.format; const ad = Object.assign(blank(), r.ad, { format: keepFmt }); S.cd = { cands: creativeSet(ad, ED.cdRun = (ED.cdRun == null ? 0 : ED.cdRun + 1)) }; S.cur = deep(S.cd.cands[0]); S.campaign = null; }
       S.row = null; ED.sel = null; ED.tab = 'ai'; form(); redraw();
       say((campaign ? 'Campaign ready — four sizes below. Edit any size, download, or save the campaign.' : 'Three designs are ready — the first is on the canvas. Pick the one you like, then change anything.') + (r.captions_source === 'rules' ? ' The AI captions didn\'t pass HCPS\'s checks this time, so HCPS\'s standard captions are filled in — regenerate for AI captions.' : ''), 'ok');
     } finally { S.busy = false; const b2 = $(campaign ? '#adbAiCamp' : '#adbAiGo'); if (b2) { b2.disabled = false; b2.textContent = campaign ? '✨ Generate Complete Campaign' : '✨ Create 3 designs'; } }
