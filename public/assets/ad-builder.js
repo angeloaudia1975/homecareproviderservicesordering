@@ -35,7 +35,7 @@
     for (const re of CLAIMS) { const m = s.match(re); if (m) return m[0]; } return null; };
 
   let A = null;   // { api(body), esc, host }
-  const S = { ctx: null, loc: null, ads: [], cur: null, row: null, images: new Map(), scenes: new Map(), logo: null, busy: false, msg: '', err: '', q: '', suggestions: null, problems: [],
+  const S = { ctx: null, loc: null, ads: [], cur: null, row: null, images: new Map(), scenes: new Map(), brandLogos: new Map(), logo: null, busy: false, msg: '', err: '', q: '', suggestions: null, problems: [],
     ai: { goal: 'awareness', audience: 'caregivers', tone: 'warm', platform: 'all' }, aiResult: null, history: [], campaign: null };
   const blank = () => ({ template: 'st-spotlight', layouts: null, format: 'square', font: 'Inter', colors: Object.assign({}, PRESETS[0]), title: '', headline: '', subheadline: '', body: '', features: [], captions: {}, cta: 'Visit us today', caption: '', hashtags: [],
     products: [], show: { logo: true, name: true, address: true, phone: true, website: true, price: true } });
@@ -65,6 +65,14 @@
       return r && r.ok && r.data_url ? loadImg(r.data_url) : null;
     })().catch(() => null));
     return S.scenes.get(id);
+  }
+  function brandLogoImage(p) {
+    const k = keyOf(p);
+    if (!S.brandLogos.has(k)) S.brandLogos.set(k, (async () => {
+      const r = await A.api({ action: 'ad_brand_logo', location_id: S.loc, manufacturer: p.manufacturer, code: p.code });
+      return r && r.ok && r.data_url ? loadImg(r.data_url) : null;
+    })().catch(() => null));
+    return S.brandLogos.get(k);
   }
   async function logoImage() {
     if (S.logo && S.logo.loc === S.loc) return S.logo.p;
@@ -202,6 +210,7 @@
   let EID = 0; const nid = () => 'e' + (Date.now() % 46656).toString(36) + (EID++).toString(36);
   const TX = (bind, x, y, w, h, o) => Object.assign({ id: nid(), type: 'text', bind, x, y, w, h, size: 40, weight: 700, color: 'text', align: 'left', valign: 'top', lh: 1.18, lines: 3, bg: 'none', radius: 0, pad: 0 }, o || {});
   const IM = (i, x, y, w, h, o) => Object.assign({ id: nid(), type: 'image', product: i, x, y, w, h, fit: 'contain', zoom: 1, ox: 0, oy: 0, bg: 'white', radius: 24, pad: 22 }, o || {});
+  const BRAND = (product, x, y, w, h) => ({id:nid(),type:'brandlogo',product,x,y,w,h,locked:true});
   const SCN = (scene, x, y, w, h) => ({ id: nid(), type: 'scene', scene, x, y, w, h, locked: true });
   const SH = (shape, x, y, w, h, o) => Object.assign({ id: nid(), type: 'shape', shape, x, y, w, h, fill: 'accent', stroke: 'none', sw: 0, radius: 0 }, o || {});
   const LG = (x, y, w, h, o) => Object.assign({ id: nid(), type: 'logo', x, y, w, h, bg: 'white', radius: 14, pad: 12 }, o || {});
@@ -254,7 +263,7 @@
     'st-ai-premium'(G) {
       const f=premiumFooter(G), B=f.top, t=G.my;
       return [SCN('premium',0,0,1,B),SH('rect',0,0,0.57,B,{fill:'navy',opacity:0.75}),
-        TX('pbrand0',G.mx,t,0.82,0.085,{color:'accent',size:55,weight:800,lines:2,upper:true}),
+        BRAND(0,G.mx,t,0.38,0.10),
         HEAD(G.mx,t+0.11,0.84,0.19,{size:66,font:'Georgia',lines:2,color:'white'}),
         SUB(G.mx,t+0.31,0.43,0.11,{size:29,color:'white',lines:3}),
         IM(0,0.39,t+0.28,0.56,B-t-0.32,{bg:'none',pad:0}),
@@ -264,7 +273,7 @@
     'st-ai-lifestyle'(G) {
       const f=premiumFooter(G),B=f.top,t=G.my;
       return [SCN('lifestyle-chair',0,0,1,B),SH('rect',0,0,0.56,B,{fill:'white',opacity:0.91}),
-        TX('pbrand0',G.mx,t,0.46,0.075,{size:43,color:'navy',upper:true,weight:800,lines:2}),
+        BRAND(0,G.mx,t,0.34,0.10),
         HEAD(G.mx,t+0.105,0.46,0.23,{size:65,color:'navy',lines:3}),
         SUB(G.mx,t+0.35,0.45,0.12,{size:30,color:'navy',lines:3}),
         ...FEATS(G.mx,t+0.5,0.42,0.19,3,{size:29,color:'navy',lines:2}),
@@ -274,7 +283,7 @@
     'st-ai-features'(G) {
       const f=premiumFooter(G),B=f.top,t=G.my;
       return [SCN('features',0,0,1,B),SH('rect',0,0,0.44,B,{fill:'white',opacity:0.84}),
-        TX('pbrand0',G.mx,t,0.7,0.09,{size:53,color:'navy',upper:true,weight:800,lines:2}),
+        BRAND(0,G.mx,t,0.38,0.10),
         HEAD(G.mx,t+0.11,0.82,0.20,{size:64,weight:800,color:'navy',lines:2}),
         IM(0,0.40,t+0.29,0.56,B-t-0.32,{bg:'none',pad:0}),
         ...FEATS(G.mx,t+0.35,0.36,0.32,4,{size:30,color:'navy',lines:2}),
@@ -469,10 +478,22 @@
       if ((lines.length <= el.lines && lines.length * size * (el.lh || 1.18) <= h - (el.pill ? 0 : 2 * pad) + 0.5) || size <= min) break; size = Math.max(min, size * 0.93); }
     lines = wrap(ctx, text, Math.max(10, w - 2 * pad), el.lines || 1); return { size, lines, pad, lh: size * (el.lh || 1.18), w, h };
   }
-  function drawEl(ctx, el, W, H, u, cur, imgs, logo, scenes) {
+  function drawEl(ctx, el, W, H, u, cur, imgs, logo, scenes, brands) {
     const x = el.x * W, y = el.y * H, w = el.w * W, h = el.h * H;
     ctx.save(); ctx.globalAlpha = el.opacity == null ? 1 : el.opacity;
-    if (el.type === 'scene') {
+    if (el.type === 'brandlogo') {
+      const im = brands && brands[el.product];
+      ctx.fillStyle = 'rgba(255,255,255,0.95)'; rrect(ctx,x,y,w,h,12*u); ctx.fill();
+      if (im) {
+        const k = Math.min((w-16*u)/im.width,(h-12*u)/im.height);
+        ctx.drawImage(im,x+(w-im.width*k)/2,y+(h-im.height*k)/2,im.width*k,im.height*k);
+      } else {
+        const ref = cur.products[el.product], p=ref && productBy(ref);
+        const brand = p && (p.brand || p.manufacturer) || '';
+        ctx.font = `800 ${Math.round(30*u)}px ${FONT_STACK.Inter}`; ctx.textAlign='center';
+        ctx.textBaseline='middle';ctx.fillStyle='#0b1f33';ctx.fillText(brand,x+w/2,y+h/2,w-16*u);
+      }
+    } else if (el.type === 'scene') {
       const im = scenes && scenes[el.scene];
       if (im) {
         const scale = Math.max(w / im.width, h / im.height), iw = im.width * scale, ih = im.height * scale;
@@ -530,8 +551,10 @@
     const sceneKeys = [...new Set(els.filter((e) => e.type === 'scene' && !e.hidden).map((e) => e.scene))];
     const sceneValues = await Promise.all(sceneKeys.map(sceneImage));
     const sceneImgs = Object.fromEntries(sceneKeys.map((key, i) => [key, sceneValues[i]]));
+    const usesBrand = els.some((e) => e.type === 'brandlogo' && !e.hidden);
+    const brands = usesBrand ? await Promise.all(prods.map((p) => p ? brandLogoImage(p) : null)) : [];
     ctx.fillStyle = tok('bg', cur); ctx.fillRect(0, 0, W, H);
-    for (const el of els) if (!el.hidden) drawEl(ctx, el, W, H, u, cur, imgs, logo, sceneImgs);
+    for (const el of els) if (!el.hidden) drawEl(ctx, el, W, H, u, cur, imgs, logo, sceneImgs, brands);
   }
   /* every draw goes through here: studio designs by their layers, older ads exactly as they were made */
   async function draw(canvas, cur, k) { if (isStudio(cur || S.cur)) return drawStudio(canvas, cur, k);
