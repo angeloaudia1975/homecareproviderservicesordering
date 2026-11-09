@@ -363,9 +363,46 @@
     return el.upper ? t.toUpperCase() : t;
   }
   function priceOf(el, cur) { cur = cur || S.cur; const r = cur.products[el.product]; const p = r && productBy(r); if (!p || (cur.show && cur.show.price === false)) return ''; return priceText(p, r.show_price !== false) || ''; }
+  /* ---- Part E: grounded products, matched light, readable type (pure helpers are exported on window.__ADB_PURE for the tests) ---- */
+  const READ_FLOOR = 26;
+  const lumOf = (c) => (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
+  /* where a product stands, from its visible bounds (bb, 0..1 of the photo) and the photo's drawn rectangle (box): a tight dark
+     contact shadow under the base plus a wider soft one, both pulled slightly right (key light from the upper left) and tinted
+     from the background under the product, so a cut-out sits ON the floor instead of floating over it */
+  function groundPlan(box, bb, rgb) {
+    const bg = Array.isArray(rgb) && rgb.length === 3 ? rgb : [11, 31, 51], L = lumOf(bg);
+    const footW = Math.max(8, (bb.x1 - bb.x0) * box.w), baseY = box.y + bb.y1 * box.h, cx = box.x + ((bb.x0 + bb.x1) / 2) * box.w + footW * 0.03;
+    const rh = Math.max(3, footW * 0.045), shade = bg.map((v) => Math.round(v * 0.2)), k = 0.55 + 0.45 * L;   // a bright floor shows a stronger shadow
+    const rgba = (a) => `rgba(${shade[0]},${shade[1]},${shade[2]},${Math.min(0.9, a * k).toFixed(3)})`;
+    return { cx, cy: baseY - rh * 0.3, rw: footW * 0.48, rh, color: rgba(0.62), softRw: footW * 0.6, softRh: rh * 2.6, softColor: rgba(0.26), baseY, footW };
+  }
+  /* a faint cast of the scene's color and a small brightness nudge so the photo and the backdrop share one light */
+  function tintPlan(rgb) {
+    const bg = Array.isArray(rgb) && rgb.length === 3 ? rgb : null; if (!bg) return null; const L = lumOf(bg), nudge = Math.max(-0.12, Math.min(0.08, (L - 0.55) * 0.25));
+    return { cast: `rgba(${bg[0]},${bg[1]},${bg[2]},0.10)`, nudge: nudge < 0 ? `rgba(0,0,0,${(-nudge).toFixed(3)})` : nudge > 0.004 ? `rgba(255,255,255,${nudge.toFixed(3)})` : null, luminance: L };
+  }
+  /* the layers whose configured text is below the floor — what the readability test and the editor warn about */
+  const readabilityAudit = (layers) => (layers || []).filter((e) => e && !e.hidden && ['text', 'price', 'heading', 'badge', 'cta', 'feature'].includes(e.type) && Number(e.size) < READ_FLOOR);
+  const alphaCache = new WeakMap();
+  /* a cut-out (transparent photo): its visible bounds; null for an opaque photo (a card / studio shot — nothing to ground) */
+  function cutoutOf(img) {
+    if (!img || !img.width) return null; if (alphaCache.has(img)) return alphaCache.get(img); let r = null;
+    try { const N = 64, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, N, N); const d = x.getImageData(0, 0, N, N).data;
+      let x0 = N, y0 = N, x1 = -1, y1 = -1, clear = 0;
+      for (let y = 0; y < N; y++) for (let xx = 0; xx < N; xx++) { const a = d[(y * N + xx) * 4 + 3]; if (a < 250) clear++; if (a > 24) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+      if (x1 >= 0 && clear > N * N * 0.04) r = { x0: x0 / N, y0: y0 / N, x1: (x1 + 1) / N, y1: (y1 + 1) / N }; } catch (e) { r = null; }
+    alphaCache.set(img, r); return r; }
+  /* the average color of the canvas behind a rectangle (device pixels via the current transform); null when unreadable */
+  function sampleBg(ctx, x, y, w, h) {
+    try { const m = ctx.getTransform(), cw = ctx.canvas.width, ch = ctx.canvas.height; const sx = Math.max(0, Math.floor(x * m.a)), sy = Math.max(0, Math.floor(y * m.d)), sw = Math.min(cw - sx, Math.ceil(w * m.a)), sh = Math.min(ch - sy, Math.ceil(h * m.d));
+      if (sw < 2 || sh < 2) return null; const t = document.createElement('canvas'); t.width = t.height = 4; const tc = t.getContext('2d', { willReadFrequently: true }); tc.drawImage(ctx.canvas, sx, sy, sw, sh, 0, 0, 4, 4);
+      const d = tc.getImageData(0, 0, 4, 4).data; let r = 0, g = 0, b = 0; for (let i = 0; i < 16; i++) { r += d[i * 4]; g += d[i * 4 + 1]; b += d[i * 4 + 2]; } return [Math.round(r / 16), Math.round(g / 16), Math.round(b / 16)]; } catch (e) { return null; } }
+  try { window.__ADB_PURE = { READ_FLOOR, groundPlan, tintPlan, readabilityAudit, lumOf }; } catch (e) { /* no window in a bare runtime */ }
   function fitText(ctx, text, el, W, H, u, cur) {
     const w = el.w * W, h = el.h * H, pad = (el.pad || 0) * u; const fam = FONT_STACK[el.font || (cur || S.cur).font] || FONT_STACK.Inter;
-    let size = el.size * u, lines; const min = Math.max(8, Math.min(size, 14 * u));
+    /* Part E: nothing on an ad is drawn smaller than READ_FLOOR on the 1080 grid (≈9 px on a phone feed) — a small design size is
+       raised to it and text is never shrunk below it to fit; what still doesn't fit is cut with an ellipsis, not made unreadable */
+    let size = Math.max(el.size * u, READ_FLOOR * u), lines; const min = READ_FLOOR * u;
     for (;;) { ctx.font = `${el.italic ? 'italic ' : ''}${el.weight || 700} ${size}px ${fam}`; lines = wrap(ctx, text, Math.max(10, w - 2 * pad), 99);
       if ((lines.length <= el.lines && lines.length * size * (el.lh || 1.18) <= h - (el.pill ? 0 : 2 * pad) + 0.5) || size <= min) break; size = Math.max(min, size * 0.93); }
     lines = wrap(ctx, text, Math.max(10, w - 2 * pad), el.lines || 1); return { size, lines, pad, lh: size * (el.lh || 1.18), w, h };
@@ -384,10 +421,19 @@
       if (el.shadow || (bg && el.type === 'image')) { ctx.save(); ctx.shadowColor = 'rgba(11,31,51,0.18)'; ctx.shadowBlur = 24 * u; ctx.shadowOffsetY = 8 * u; }
       rrect(ctx, x, y, w, h, rad); if (bg) { ctx.fillStyle = bg; ctx.fill(); }
       if (el.shadow || (bg && el.type === 'image')) ctx.restore();
-      ctx.save(); rrect(ctx, x, y, w, h, rad); ctx.clip();
+      let place = null;
       if (img) { const aw = w - 2 * pad, ah = h - 2 * pad; let k = el.fit === 'cover' ? Math.max(aw / img.width, ah / img.height) : Math.min(aw / img.width, ah / img.height); k *= el.zoom || 1;
         const iw = img.width * k, ih = img.height * k, sx = Math.max(0, (iw - aw) / 2), sy = Math.max(0, (ih - ah) / 2);
-        ctx.drawImage(img, x + pad + (aw - iw) / 2 - (el.ox || 0) * sx, y + pad + (ah - ih) / 2 - (el.oy || 0) * sy, iw, ih); }
+        place = { x: x + pad + (aw - iw) / 2 - (el.ox || 0) * sx, y: y + pad + (ah - ih) / 2 - (el.oy || 0) * sy, w: iw, h: ih }; }
+      /* Part E: a transparent-background product (not a card) is grounded — shadow under its base from the scene's own color,
+         the photo's light nudged toward the scene — instead of floating on the background */
+      const cut = place && el.type === 'image' && !bg ? cutoutOf(img) : null; let tinted = null;
+      if (cut) { const gp0 = groundPlan(place, cut, null), rgb = sampleBg(ctx, gp0.cx - gp0.footW / 2, gp0.baseY - gp0.footW * 0.06, gp0.footW, gp0.footW * 0.16), gp = groundPlan(place, cut, rgb), tp = tintPlan(rgb);
+        for (const [rw, rh, col] of [[gp.softRw, gp.softRh, gp.softColor], [gp.rw, gp.rh, gp.color]]) { ctx.save(); ctx.translate(gp.cx, gp.cy); ctx.scale(1, rh / rw); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rw); g.addColorStop(0, col); g.addColorStop(1, col.replace(/[\d.]+\)$/, '0)')); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rw, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+        if (tp) { try { const m = ctx.getTransform(), oc = document.createElement('canvas'); oc.width = Math.max(2, Math.min(2000, Math.round(place.w * m.a))); oc.height = Math.max(2, Math.min(2000, Math.round(place.h * m.d))); const o = oc.getContext('2d'); o.drawImage(img, 0, 0, oc.width, oc.height);
+          o.globalCompositeOperation = 'source-atop'; o.fillStyle = tp.cast; o.fillRect(0, 0, oc.width, oc.height); if (tp.nudge) { o.fillStyle = tp.nudge; o.fillRect(0, 0, oc.width, oc.height); } tinted = oc; } catch (e) { tinted = null; } } }
+      ctx.save(); rrect(ctx, x, y, w, h, rad); ctx.clip();
+      if (img) ctx.drawImage(tinted || img, place.x, place.y, place.w, place.h);
       else if (el.type === 'image') { ctx.fillStyle = '#e8edf2'; ctx.fillRect(x, y, w, h); ctx.fillStyle = '#7a8794'; ctx.font = `600 ${Math.round(24 * u)}px ${FONT_STACK.Inter}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('Photo coming soon', x + w / 2, y + h / 2); }
       ctx.restore();
     } else {
