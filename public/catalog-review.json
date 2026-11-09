@@ -1,8 +1,15 @@
 {
   "review_id": "4163e754f388",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-09T19:19:46Z",
+  "built_at": "2026-11-09T20:02:08Z",
   "main": "d0925826cdae3274701b4addf9ce4ffc8bb480cc",
   "included": [],
-  "skipped": []
+  "skipped": [
+    {
+      "pr": 81,
+      "title": "Social Studio: restore premium AI Director designs using original Gemini scenes",
+      "branch": "feature/social-studio-premium-scenes-20261109",
+      "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
+    }
+  ]
 }
