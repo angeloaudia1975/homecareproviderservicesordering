@@ -35,7 +35,7 @@
     for (const re of CLAIMS) { const m = s.match(re); if (m) return m[0]; } return null; };
 
   let A = null;   // { api(body), esc, host }
-  const S = { ctx: null, loc: null, ads: [], cur: null, row: null, images: new Map(), scenes: new Map(), brandLogos: new Map(), logo: null, busy: false, msg: '', err: '', q: '', suggestions: null, problems: [],
+  const S = { ctx: null, loc: null, ads: [], cur: null, row: null, images: new Map(), cuts: new Map(), cutInfo: new Map(), scenes: new Map(), brandLogos: new Map(), logo: null, busy: false, msg: '', err: '', q: '', suggestions: null, problems: [],
     ai: { goal: 'awareness', audience: 'caregivers', tone: 'warm', platform: 'all' }, aiResult: null, history: [], campaign: null };
   const blank = () => ({ template: 'st-spotlight', layouts: null, format: 'square', font: 'Inter', colors: Object.assign({}, PRESETS[0]), title: '', headline: '', subheadline: '', body: '', features: [], captions: {}, cta: 'Visit us today', caption: '', hashtags: [],
     products: [], show: { logo: true, name: true, address: true, phone: true, website: true, price: true } });
@@ -46,7 +46,8 @@
   const productBy = (r) => (S.ctx && S.ctx.products || []).find((p) => keyOf(p) === keyOf(r));
   const T = () => (S.ctx && S.ctx.templates[S.cur.template]) || { kind: 'single' };
   const fmt = () => (S.ctx && S.ctx.formats[S.cur.format]) || { w: 1080, h: 1080 };
-  const money = (n) => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  /* whole-dollar prices read as $3,525 (an MSRP on an ad); prices with cents keep them ($49.99) */
+  const money = (n) => { const v = Number(n), whole = Math.abs(v - Math.round(v)) < 0.005; return '$' + v.toLocaleString('en-US', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2 }); };
   const priceText = (p, show) => { if (!show || !S.cur.show.price) return null; if (p.price != null) return (p.price_label ? p.price_label + ' ' : '') + money(p.price) + (p.price_unit ? ' ' + p.price_unit : ''); return 'Call for Price'; };
 
   /* ---------------- images (data URLs from the server; never a third-party request from the page) ---------------- */
@@ -70,10 +71,25 @@
     const k = keyOf(p);
     if (!S.brandLogos.has(k)) S.brandLogos.set(k, (async () => {
       const r = await A.api({ action: 'ad_brand_logo', location_id: S.loc, manufacturer: p.manufacturer, code: p.code });
-      return r && r.ok && r.data_url ? loadImg(r.data_url) : null;
+      if (!(r && r.ok && r.data_url)) return null;
+      const [img, clear] = await Promise.all([loadImg(r.data_url), r.clear_url ? loadImg(r.clear_url) : null]);
+      return img ? { img, clear, darkOk: !!r.dark_ok } : null;
     })().catch(() => null));
     return S.brandLogos.get(k);
   }
+  /* the product photo with its studio background removed — done once on the server (cached by the photo's own bytes) and
+     reused by every dealer. status: removed | native (already transparent) | review (not cut: the original is used, on a card) */
+  function productCutout(p) {
+    const k = keyOf(p); if (S.cuts.has(k)) return S.cuts.get(k);
+    const pr = (async () => { if (!p.image) return null;
+      const r = await A.api({ action: 'ad_cutout', location_id: S.loc, manufacturer: p.manufacturer, code: p.code });
+      if (!r || !r.ok) return { status: 'error', reason: (r && r.error) || 'The background could not be removed just now — the original photo is used.', img: null };
+      return { status: r.status, reason: r.reason || '', img: r.data_url ? await loadImg(r.data_url) : null, cached: !!r.cached }; })()
+      .catch(() => ({ status: 'error', reason: 'The background could not be removed just now — the original photo is used.', img: null }))
+      .then((v) => { S.cutInfo.set(k, v); return v; });
+    S.cuts.set(k, pr); return pr;
+  }
+  const wantsCut = (el, cur) => el.type === 'image' && !el.hidden && el.cut !== false && !tok(el.bg, cur);
   async function logoImage() {
     if (S.logo && S.logo.loc === S.loc) return S.logo.p;
     const p = (async () => { if (!S.ctx.dealer.has_logo) return null; const r = await A.api({ action: 'ad_image', location_id: S.loc, logo: true }); return r && r.ok ? loadImg(r.data_url) : null; })();
@@ -210,7 +226,7 @@
   let EID = 0; const nid = () => 'e' + (Date.now() % 46656).toString(36) + (EID++).toString(36);
   const TX = (bind, x, y, w, h, o) => Object.assign({ id: nid(), type: 'text', bind, x, y, w, h, size: 40, weight: 700, color: 'text', align: 'left', valign: 'top', lh: 1.18, lines: 3, bg: 'none', radius: 0, pad: 0 }, o || {});
   const IM = (i, x, y, w, h, o) => Object.assign({ id: nid(), type: 'image', product: i, x, y, w, h, fit: 'contain', zoom: 1, ox: 0, oy: 0, bg: 'white', radius: 24, pad: 22 }, o || {});
-  const BRAND = (product, x, y, w, h) => ({id:nid(),type:'brandlogo',product,x,y,w,h,locked:true});
+  const BRAND = (product, x, y, w, h, o) => Object.assign({ id: nid(), type: 'brandlogo', product, x, y, w, h, locked: true, style: 'chip' }, o || {});
   const SCN = (scene, x, y, w, h) => ({ id: nid(), type: 'scene', scene, x, y, w, h, locked: true });
   const SH = (shape, x, y, w, h, o) => Object.assign({ id: nid(), type: 'shape', shape, x, y, w, h, fill: 'accent', stroke: 'none', sw: 0, radius: 0 }, o || {});
   const LG = (x, y, w, h, o) => Object.assign({ id: nid(), type: 'logo', x, y, w, h, bg: 'white', radius: 14, pad: 12 }, o || {});
@@ -231,16 +247,17 @@
       TX('daddr', tx, y + fh * 0.44, tw, fh * 0.24, { size: 24, weight: 500, color: fg, lines: 1, valign: 'middle' }),
       TX('dcontact', tx, y + fh * 0.68, tw, fh * 0.24, { size: 25, weight: 600, color: fg, lines: 1, valign: 'middle' })] };
   }
-  /* Dealer identity is composed independently from the hero, avoiding tiny footer overlap. */
-  function premiumFooter(G) {
-    const y = G.tall ? 0.91 : G.wide ? 0.80 : 0.865, h = 1-y;
-    return { top:y, els:[
-      SH('rect',0,y,1,h,{fill:'navy'}), SH('rect',0,y,1,G.hy(8),{fill:'accent'}),
-      LG(0.035,y+h*0.19,0.16,h*0.64,{pad:8,radius:12}),
-      TX('dname',0.22,y+h*0.13,0.48,h*0.39,{size:32,weight:800,color:'white',lines:2,valign:'middle'}),
-      TX('daddr',0.22,y+h*0.58,0.48,h*0.26,{size:26,color:'white',weight:500,lines:1}),
-      TX('dphone',0.72,y+h*0.34,0.25,h*0.35,{size:33,color:'white',weight:800,align:'right',valign:'middle',lines:1})
-    ]};
+  /* Dealer identity band of the premium designs: the dealer's own logo on a white card, name + address, and the phone on a gold
+     pill — sized for a phone feed (nothing under the readability floor). light = a white band (lifestyle). */
+  function premiumFooter(G, o) { o = o || {};
+    const h = G.hy(165), y = 1 - h, fg = o.light ? 'navy' : 'white', tx = G.wide ? 0.215 : 0.315, tw = G.wide ? 0.5 : 0.395;
+    return { top: y, els: [
+      SH('rect', 0, y, 1, h, { fill: o.light ? 'white' : 'navy' }), SH('rect', 0, y, 1, G.hy(6), { fill: 'accent' }),
+      LG(0.035, y + h * 0.16, G.wide ? 0.16 : 0.255, h * 0.68, { pad: 10, radius: 14, bg: 'white', shadow: !!o.light }),
+      TX('dname', tx, y + h * 0.1, tw, h * 0.44, { size: 30, weight: 800, color: fg, lines: 2, lh: 1.06, valign: 'bottom' }),
+      TX('daddr', tx, y + h * 0.56, tw, h * 0.38, { size: 26, weight: 500, color: fg, lines: 2, lh: 1.1, valign: 'top', opacity: 0.92 }),
+      TX('dphone', G.wide ? 0.76 : 0.73, y + h * 0.22, G.wide ? 0.21 : 0.245, h * 0.56, { size: 35, weight: 800, color: 'navy', align: 'center', valign: 'middle', lines: 1, bg: 'accent', pill: true, grad: true, radius: 999, pad: 16 })
+    ] };
   }
   const accentBar = (G) => SH('rect', 0, 0, 1, G.hy(14), { fill: 'accent' });
   /* landscape (1.91:1) version of a stacked design: photo left, words right — keeping the template's own look */
@@ -260,34 +277,52 @@
   const STUDIO_TPL = {
     /* Premium scene layouts reuse the five original Gemini backgrounds (no new generation).
        Official product photography, prices and manufacturer text are overlaid as separate layers. */
+    /* Premium AI Director designs: one of the five cached Gemini scenes (no new generation) behind the official product photo,
+       its studio background removed automatically (ad_cutout) and the product standing large on the scene's floor. The official
+       manufacturer logo, the catalog's own product name / features / price and the dealer's details are separate layers. */
+    /* Vertical positions are on the 1080 design grid (G.hy), so every size keeps the same rhythm: a portrait or story gets a
+       bigger product below the words, a landscape keeps the words left and the product right. */
     'st-ai-premium'(G) {
-      const f=premiumFooter(G), B=f.top, t=G.my;
-      return [SCN('premium',0,0,1,B),SH('rect',0,0,0.57,B,{fill:'navy',opacity:0.75}),
-        BRAND(0,G.mx,t,0.38,0.10),
-        HEAD(G.mx,t+0.11,0.84,0.19,{size:66,font:'Georgia',lines:2,color:'white'}),
-        SUB(G.mx,t+0.31,0.43,0.11,{size:29,color:'white',lines:3}),
-        IM(0,0.39,t+0.28,0.56,B-t-0.32,{bg:'none',pad:0}),
-        ...FEATS(G.mx,t+0.46,0.36,0.21,3,{size:30,color:'white',lines:2}),
-        PRC(0,G.mx,B-0.1,0.31,0.075,{bg:'accent',color:'onaccent',size:36}),...f.els];
+      const f = premiumFooter(G), B = f.top, Y = G.hy, wide = G.wide, tall = G.r > 1.5, cw = wide ? 0.42 : tall ? 0.86 : 0.56, tw = wide ? 0.38 : tall ? 0.8 : 0.47;
+      return [SCN('premium', 0, 0, 1, B), tall ? SH('rect', 0, 0, 1, Y(1000), { fill: 'navy', fade: 'down' }) : SH('rect', 0, 0, wide ? 0.6 : 0.74, B, { fill: 'navy', fade: 'right' }),
+        tall ? IM(0, 0.06, Y(930), 0.88, B - Y(930) - Y(18), { bg: 'none', pad: 0, radius: 0, anchor: 'bottom' })
+          : IM(0, wide ? 0.5 : 0.44, Y(70), wide ? 0.47 : 0.55, B - Y(70) - Y(14), { bg: 'none', pad: 0, radius: 0, anchor: 'bottom' }),
+        BRAND(0, G.mx, Y(60), wide ? 0.22 : 0.33, Y(80), { style: 'clear' }),
+        HEAD(G.mx, Y(160), cw, Y(185), { size: 72, font: 'Georgia', lines: 2, lh: 1.04, color: 'white' }),
+        NAME(0, G.mx, Y(355), cw, Y(58), { size: 36, weight: 700, italic: true, color: 'accent', lines: 1 }),
+        SUB(G.mx, Y(418), tw, Y(86), { size: 26, weight: 500, color: 'white', lines: 2 }),
+        ...FEATS(G.mx, Y(515), wide ? 0.38 : 0.42, Y(216), 3, { size: 29, weight: 600, color: 'white', lines: 1, ring: true, check: false }),
+        PRC(0, G.mx, Y(748), wide ? 0.22 : 0.3, Y(72), { bg: 'accent', color: 'navy', size: 38, grad: true, align: 'left' }),
+        CTA(G.mx, Y(838), wide ? 0.34 : 0.42, Y(64), { bg: 'white', color: 'navy', size: 27, align: 'left' }),
+...f.els];
     },
     'st-ai-lifestyle'(G) {
-      const f=premiumFooter(G),B=f.top,t=G.my;
-      return [SCN('lifestyle-chair',0,0,1,B),SH('rect',0,0,0.56,B,{fill:'white',opacity:0.91}),
-        BRAND(0,G.mx,t,0.34,0.10),
-        HEAD(G.mx,t+0.105,0.46,0.23,{size:65,color:'navy',lines:3}),
-        SUB(G.mx,t+0.35,0.45,0.12,{size:30,color:'navy',lines:3}),
-        ...FEATS(G.mx,t+0.5,0.42,0.19,3,{size:29,color:'navy',lines:2}),
-        IM(0,0.49,t+0.26,0.48,B-t-0.3,{bg:'none',pad:0}),
-        PRC(0,G.mx,B-0.10,0.31,0.075,{bg:'navy',color:'white',size:35}),...f.els];
+      const f = premiumFooter(G, { light: true }), B = f.top, Y = G.hy, wide = G.wide, tall = G.r > 1.5, cw = wide ? 0.4 : tall ? 0.52 : 0.54, card = wide ? 0.36 : tall ? 0.6 : 0.45;
+      return [SCN('lifestyle-chair', 0, 0, 1, B), tall ? SH('rect', 0, 0, 1, Y(820), { fill: 'white', fade: 'down', opacity: 0.94 }) : SH('rect', 0, 0, wide ? 0.58 : 0.7, B, { fill: 'white', fade: 'right', opacity: 0.94 }),
+        tall ? IM(0, 0.06, Y(760), 0.88, B - Y(760) - Y(18), { bg: 'none', pad: 0, radius: 0, anchor: 'bottom' })
+          : IM(0, wide ? 0.5 : 0.47, Y(160), wide ? 0.47 : 0.51, B - Y(160) - Y(14), { bg: 'none', pad: 0, radius: 0, anchor: 'bottom' }),
+        BRAND(0, wide ? 0.72 : 0.62, Y(60), wide ? 0.24 : 0.33, Y(86), { style: 'pill' }),
+        HEAD(G.mx, Y(60), cw, Y(170), { size: 72, font: 'Georgia', lines: 2, lh: 1.04, color: 'navy' }),
+        SUB(G.mx, Y(240), wide ? 0.38 : 0.5, Y(86), { size: 26, weight: 500, color: 'navy', lines: 2 }),
+        SH('rect', G.mx - 0.012, Y(345), card, Y(390), { fill: 'white', opacity: 0.92, radius: 28 }),
+        ...FEATS(G.mx + 0.018, Y(372), card - 0.05, Y(230), 3, { size: 28, weight: 700, color: 'navy', lines: 1, ring: true, check: false }),
+        PRC(0, G.mx + 0.018, Y(622), 0.3, Y(76), { bg: 'navy', color: 'white', size: 36, align: 'left' }),
+...f.els];
     },
     'st-ai-features'(G) {
-      const f=premiumFooter(G),B=f.top,t=G.my;
-      return [SCN('features',0,0,1,B),SH('rect',0,0,0.44,B,{fill:'white',opacity:0.84}),
-        BRAND(0,G.mx,t,0.38,0.10),
-        HEAD(G.mx,t+0.11,0.82,0.20,{size:64,weight:800,color:'navy',lines:2}),
-        IM(0,0.40,t+0.29,0.56,B-t-0.32,{bg:'none',pad:0}),
-        ...FEATS(G.mx,t+0.35,0.36,0.32,4,{size:30,color:'navy',lines:2}),
-        PRC(0,G.mx,B-0.10,0.32,0.077,{bg:'navy',color:'white',size:35}),...f.els];
+      const f = premiumFooter(G), B = f.top, Y = G.hy, wide = G.wide, tall = G.r > 1.5, band = Y(215), BB = B - band, cw = wide ? 0.42 : tall ? 0.86 : 0.46;
+      const cols = [0, 1, 2, 3].map((k) => TX('feature' + k, 0.03 + k * 0.2375, BB + band * 0.12, 0.2175, band * 0.8, { size: 26, weight: 700, color: 'white', align: 'center', valign: 'top', lines: 2, lh: 1.12, ring: true, check: false }));
+      return [SCN('features', 0, 0, 1, BB), tall ? SH('rect', 0, 0, 1, Y(700), { fill: 'navy', fade: 'down' }) : SH('rect', 0, 0, wide ? 0.58 : 0.68, BB, { fill: 'navy', fade: 'right' }),
+        tall ? IM(0, 0.08, Y(620), 0.84, BB - Y(620) - Y(10), { bg: 'none', pad: 0, radius: 0, anchor: 'bottom' })
+          : IM(0, wide ? 0.5 : 0.46, Y(40), wide ? 0.48 : 0.52, BB - Y(40) - Y(10), { bg: 'none', pad: 0, radius: 0, anchor: 'bottom' }),
+        BRAND(0, G.mx, Y(60), wide ? 0.22 : 0.33, Y(80), { style: 'clear' }),
+        NAME(0, G.mx, Y(160), cw, Y(150), { size: 60, weight: 700, font: 'Georgia', color: 'white', lines: 2, lh: 1.04 }),
+        HEAD(G.mx, Y(318), cw, Y(100), { size: 36, weight: 700, color: 'accent', lines: 2, lh: 1.1 }),
+        SUB(G.mx, Y(425), wide ? 0.38 : tall ? 0.8 : 0.42, Y(80), { size: 26, weight: 500, color: 'white', lines: 2 }),
+        PRC(0, G.mx, Y(525), wide ? 0.22 : 0.29, Y(70), { bg: 'accent', color: 'navy', size: 36, grad: true, align: 'left' }),
+        SH('rect', 0, BB, 1, band, { fill: 'navy' }), SH('rect', 0, BB, 1, Y(4), { fill: 'accent' }),
+        ...[1, 2, 3].map((k) => SH('rect', 0.03 + k * 0.2375 - 0.012, BB + band * 0.16, G.hx(2), band * 0.68, { fill: 'accent', opacity: 0.5 })),
+        ...cols, ...f.els];
     },
     'st-spotlight'(G) { const f = footerEls(G), B = f.top - G.my; if (G.wide) return [accentBar(G), IM(0, G.mx, G.my, 0.42, B - G.my), HEAD(0.52, G.my, 0.43, 0.24, { size: 62 }), SUB(0.52, G.my + 0.25, 0.43, 0.09, { size: 28, lines: 1 }), NAME(0, 0.52, G.my + 0.35, 0.43, 0.1, { size: 28, weight: 600 }), PRC(0, 0.52, B - 0.13, 0.2, 0.12), CTA(0.74, B - 0.13, 0.21, 0.12), ...f.els];
       const hh = G.tall ? 0.12 : 0.15, py = G.my + hh + 0.07, ph = B - py - 0.2;
@@ -414,6 +449,8 @@
   }
 
   /* ---------- rendering ---------- */
+  function rgba(hex, a) { const n = parseInt(String(hex).slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+  function shade(hex, f) { const n = parseInt(String(hex).slice(1), 16); const m = (v) => Math.round(f >= 0 ? v + (255 - v) * f : v * (1 + f)); return `rgb(${m(n >> 16)},${m((n >> 8) & 255)},${m(n & 255)})`; }
   function onColor(hex) { const n = parseInt(String(hex || '#000000').slice(1), 16); const r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (r * 299 + g * 587 + b * 114) / 1000 > 150 ? '#0b1f33' : '#ffffff'; }
   function tok(v, cur) { const c = (cur || S.cur).colors || {}; switch (v) {
     case 'bg': return c.bg || '#0b1f33'; case 'accent': return c.accent || '#ef6325'; case 'text': return c.text || onColor(c.bg || '#0b1f33'); case 'onaccent': return onColor(c.accent || '#ef6325');
@@ -478,11 +515,18 @@
       if ((lines.length <= el.lines && lines.length * size * (el.lh || 1.18) <= h - (el.pill ? 0 : 2 * pad) + 0.5) || size <= min) break; size = Math.max(min, size * 0.93); }
     lines = wrap(ctx, text, Math.max(10, w - 2 * pad), el.lines || 1); return { size, lines, pad, lh: size * (el.lh || 1.18), w, h };
   }
-  function drawEl(ctx, el, W, H, u, cur, imgs, logo, scenes, brands) {
+  function drawEl(ctx, el, W, H, u, cur, imgs, logo, scenes, brands, cuts) {
     const x = el.x * W, y = el.y * H, w = el.w * W, h = el.h * H;
     ctx.save(); ctx.globalAlpha = el.opacity == null ? 1 : el.opacity;
     if (el.type === 'brandlogo') {
-      const im = brands && brands[el.product];
+      const B = brands && brands[el.product], im = B && B.img, style = el.style || 'chip';
+      /* clear: the official logo straight on the design (only for a logo that reads on dark); pill: on a navy pill; chip: white card */
+      if (B && B.clear && (style === 'clear' || style === 'pill') && B.darkOk) {
+        const c = B.clear, padX = style === 'pill' ? 26 * u : 0, padY = style === 'pill' ? 14 * u : 0;
+        if (style === 'pill') { ctx.save(); ctx.shadowColor = 'rgba(11,31,51,0.25)'; ctx.shadowBlur = 18 * u; ctx.shadowOffsetY = 6 * u; ctx.fillStyle = '#0b1f33'; rrect(ctx, x, y, w, h, h / 2); ctx.fill(); ctx.restore(); }
+        const k = Math.min((w - 2 * padX) / c.width, (h - 2 * padY) / c.height), dw = c.width * k, dh = c.height * k;
+        ctx.drawImage(c, style === 'pill' ? x + (w - dw) / 2 : x, y + (h - dh) / 2, dw, dh); ctx.restore(); return;
+      }
       ctx.fillStyle = 'rgba(255,255,255,0.95)'; rrect(ctx,x,y,w,h,12*u); ctx.fill();
       if (im) {
         const k = Math.min((w-16*u)/im.width,(h-12*u)/im.height);
@@ -504,20 +548,32 @@
       const fill = tok(el.fill, cur), stroke = tok(el.stroke, cur);
       if (el.shape === 'circle') { ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, Math.abs(w / 2), Math.abs(h / 2), 0, 0, Math.PI * 2); }
       else rrect(ctx, x, y, w, h, Math.min((el.radius || 0) * u, Math.abs(w) / 2, Math.abs(h) / 2));
-      if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke && el.sw) { ctx.lineWidth = el.sw * u; ctx.strokeStyle = stroke; ctx.stroke(); }
+      if (fill && el.fade && /^#[0-9a-f]{6}$/i.test(fill)) {   /* a scrim that eases out toward one side, so text reads and the scene still shows */
+        const g = el.fade === 'right' ? ctx.createLinearGradient(x, 0, x + w, 0) : el.fade === 'left' ? ctx.createLinearGradient(x + w, 0, x, 0) : el.fade === 'down' ? ctx.createLinearGradient(0, y, 0, y + h) : ctx.createLinearGradient(0, y + h, 0, y);
+        g.addColorStop(0, rgba(fill, 1)); g.addColorStop(0.5, rgba(fill, 0.82)); g.addColorStop(1, rgba(fill, 0)); ctx.fillStyle = g; ctx.fill(); }
+      else if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke && el.sw) { ctx.lineWidth = el.sw * u; ctx.strokeStyle = stroke; ctx.stroke(); }
     } else if (el.type === 'image' || el.type === 'logo') {
-      const img = el.type === 'logo' ? logo : imgs[el.product]; const bg = tok(el.bg, cur), rad = Math.min((el.radius || 0) * u, w / 2, h / 2), pad = (el.pad || 0) * u;
+      let img = el.type === 'logo' ? logo : imgs[el.product]; const bg = tok(el.bg, cur), rad = Math.min((el.radius || 0) * u, w / 2, h / 2), pad = (el.pad || 0) * u;
       if (el.type === 'logo' && !img) { ctx.restore(); return; }
+      /* a product placed without a frame uses its background-removed cutout; a photo that could not be cut (or the dealer chose
+         the original) is shown on a clean card that hugs the photo — never as a bare white rectangle */
+      let card = false;
+      if (el.type === 'image' && !bg && img) { const ci = cuts && cuts[el.product];
+        if (el.cut !== false && ci && ci.img) img = ci.img; else if (!cutoutOf(img)) card = true; }
       if (el.shadow || (bg && el.type === 'image')) { ctx.save(); ctx.shadowColor = 'rgba(11,31,51,0.18)'; ctx.shadowBlur = 24 * u; ctx.shadowOffsetY = 8 * u; }
       rrect(ctx, x, y, w, h, rad); if (bg) { ctx.fillStyle = bg; ctx.fill(); }
       if (el.shadow || (bg && el.type === 'image')) ctx.restore();
       let place = null;
       if (img) { const aw = w - 2 * pad, ah = h - 2 * pad; let k = el.fit === 'cover' ? Math.max(aw / img.width, ah / img.height) : Math.min(aw / img.width, ah / img.height); k *= el.zoom || 1;
         const iw = img.width * k, ih = img.height * k, sx = Math.max(0, (iw - aw) / 2), sy = Math.max(0, (ih - ah) / 2);
-        place = { x: x + pad + (aw - iw) / 2 - (el.ox || 0) * sx, y: y + pad + (ah - ih) / 2 - (el.oy || 0) * sy, w: iw, h: ih }; }
+        place = { x: x + pad + (aw - iw) / 2 - (el.ox || 0) * sx, y: (el.anchor === 'bottom' && el.fit !== 'cover' ? y + h - pad - ih : y + pad + (ah - ih) / 2) - (el.oy || 0) * sy, w: iw, h: ih };
+        if (card) { const cp = 22 * u, k2 = Math.min((place.w - 2 * cp) / img.width, (place.h - 2 * cp) / img.height), cw = img.width * k2 + 2 * cp, chh = img.height * k2 + 2 * cp;
+          const cx = place.x + (place.w - cw) / 2, cy = el.anchor === 'bottom' ? place.y + place.h - chh : place.y + (place.h - chh) / 2;
+          ctx.save(); ctx.shadowColor = 'rgba(11,31,51,0.28)'; ctx.shadowBlur = 30 * u; ctx.shadowOffsetY = 10 * u; ctx.fillStyle = '#ffffff'; rrect(ctx, cx, cy, cw, chh, 26 * u); ctx.fill(); ctx.restore();
+          place = { x: cx + cp, y: cy + cp, w: cw - 2 * cp, h: chh - 2 * cp }; } }
       /* Part E: a transparent-background product (not a card) is grounded — shadow under its base from the scene's own color,
          the photo's light nudged toward the scene — instead of floating on the background */
-      const cut = place && el.type === 'image' && !bg ? cutoutOf(img) : null; let tinted = null;
+      const cut = place && el.type === 'image' && !bg && !card ? cutoutOf(img) : null; let tinted = null;
       if (cut) { const gp0 = groundPlan(place, cut, null), rgb = sampleBg(ctx, gp0.cx - gp0.footW / 2, gp0.baseY - gp0.footW * 0.06, gp0.footW, gp0.footW * 0.16), gp = groundPlan(place, cut, rgb), tp = tintPlan(rgb);
         for (const [rw, rh, col] of [[gp.softRw, gp.softRh, gp.softColor], [gp.rw, gp.rh, gp.color]]) { ctx.save(); ctx.translate(gp.cx, gp.cy); ctx.scale(1, rh / rw); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rw); g.addColorStop(0, col); g.addColorStop(1, col.replace(/[\d.]+\)$/, '0)')); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rw, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
         if (tp) { try { const m = ctx.getTransform(), oc = document.createElement('canvas'); oc.width = Math.max(2, Math.min(2000, Math.round(place.w * m.a))); oc.height = Math.max(2, Math.min(2000, Math.round(place.h * m.d))); const o = oc.getContext('2d'); o.drawImage(img, 0, 0, oc.width, oc.height);
@@ -528,16 +584,30 @@
       ctx.restore();
     } else {
       const text = el.type === 'price' ? priceOf(el, cur) : textOf(el, cur); if (!text) { ctx.restore(); return; }
-      const m = fitText(ctx, text, el, W, H, u, cur); const bg = tok(el.bg, cur), th = m.lines.length * m.lh;
+      /* ring: a gold-ringed check icon beside the words (or above them, for a centered column) — premium feature lists */
+      if (el.ring) { const acc = tok('accent', cur) || '#d9ad49', col = el.align === 'center';
+        const d = col ? Math.min(h * 0.46, 92 * u) : Math.min(h * 0.86, 64 * u), cx = col ? x + w / 2 : x + d / 2, cy = col ? y + d / 2 + 2 * u : y + h / 2;
+        ctx.save(); ctx.lineWidth = 2.6 * u; ctx.strokeStyle = acc; ctx.beginPath(); ctx.arc(cx, cy, d / 2 - 1.5 * u, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 3.4 * u; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(cx - d * 0.2, cy + d * 0.01); ctx.lineTo(cx - d * 0.05, cy + d * 0.15); ctx.lineTo(cx + d * 0.22, cy - d * 0.14); ctx.stroke(); ctx.restore();
+        el = col ? Object.assign({}, el, { y: el.y + (d + 12 * u) / H, h: el.h - (d + 12 * u) / H, ring: false }) : Object.assign({}, el, { x: el.x + (d + 18 * u) / W, w: el.w - (d + 18 * u) / W, ring: false });
+      }
+      drawTextEl(ctx, el, W, H, u, cur, text);
+    }
+    ctx.restore();
+  }
+  function drawTextEl(ctx, el, W, H, u, cur, text) {
+    const x = el.x * W, y = el.y * H, w = el.w * W, h = el.h * H;
+    { const m = fitText(ctx, text, el, W, H, u, cur); const bg = tok(el.bg, cur), th = m.lines.length * m.lh;
       let ty = el.valign === 'middle' ? y + (h - th) / 2 : el.valign === 'bottom' ? y + h - th - m.pad : y + (el.pill ? (h - th) / 2 : m.pad);
       if (bg) { if (el.pill) { const tw = Math.max(...m.lines.map((l) => ctx.measureText(l).width)) + 2 * Math.max(m.pad, 14 * u); const ph = Math.max(h, th + 10 * u);
-          const px = el.align === 'center' ? x + (w - tw) / 2 : el.align === 'right' ? x + w - tw : x; rrect(ctx, px, y + (h - ph) / 2, tw, ph, Math.min((el.radius || 999) * u, ph / 2)); ctx.fillStyle = bg; ctx.fill(); }
+          const px = el.align === 'center' ? x + (w - tw) / 2 : el.align === 'right' ? x + w - tw : x, py = y + (h - ph) / 2; rrect(ctx, px, py, tw, ph, Math.min((el.radius || 999) * u, ph / 2));
+          if (el.grad && /^#[0-9a-f]{6}$/i.test(bg)) { const g = ctx.createLinearGradient(0, py, 0, py + ph); g.addColorStop(0, shade(bg, 0.42)); g.addColorStop(0.5, bg); g.addColorStop(1, shade(bg, -0.22)); ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.25)'; ctx.shadowBlur = 14 * u; ctx.shadowOffsetY = 4 * u; ctx.fillStyle = g; ctx.fill(); ctx.restore(); }
+          else { ctx.fillStyle = bg; ctx.fill(); } }
         else { rrect(ctx, x, y, w, h, Math.min((el.radius || 0) * u, w / 2, h / 2)); ctx.fillStyle = bg; ctx.fill(); } }
       ctx.fillStyle = tok(el.color, cur) || '#000000'; ctx.textBaseline = 'top'; ctx.textAlign = el.align || 'left';
       const ix = el.align === 'center' ? x + w / 2 : el.align === 'right' ? x + w - (el.pill ? Math.max(m.pad, 14 * u) : m.pad) : x + (el.pill ? Math.max(m.pad, 14 * u) : m.pad);
       m.lines.forEach((l, i) => ctx.fillText(l, ix, ty + i * m.lh + (m.lh - m.size) / 2));
     }
-    ctx.restore();
   }
   /* draws the design; k = scale (thumbnails); cur = which ad (Creative Director previews, campaign) */
   async function drawStudio(canvas, cur, k) {
@@ -553,8 +623,9 @@
     const sceneImgs = Object.fromEntries(sceneKeys.map((key, i) => [key, sceneValues[i]]));
     const usesBrand = els.some((e) => e.type === 'brandlogo' && !e.hidden);
     const brands = usesBrand ? await Promise.all(prods.map((p) => p ? brandLogoImage(p) : null)) : [];
+    const cuts = await Promise.all(prods.map((p, i) => (p && els.some((e) => e.product === i && wantsCut(e, cur)) ? productCutout(p) : null)));
     ctx.fillStyle = tok('bg', cur); ctx.fillRect(0, 0, W, H);
-    for (const el of els) if (!el.hidden) drawEl(ctx, el, W, H, u, cur, imgs, logo, sceneImgs, brands);
+    for (const el of els) if (!el.hidden) drawEl(ctx, el, W, H, u, cur, imgs, logo, sceneImgs, brands, cuts);
   }
   /* every draw goes through here: studio designs by their layers, older ads exactly as they were made */
   async function draw(canvas, cur, k) { if (isStudio(cur || S.cur)) return drawStudio(canvas, cur, k);
@@ -881,7 +952,7 @@
     if (x.type === 'image') h += `<div class="sms-row"><label>Fit</label><button type="button" class="sms-ib" data-fit="contain" aria-pressed="${x.fit !== 'cover'}">Whole photo</button><button type="button" class="sms-ib" data-fit="cover" aria-pressed="${x.fit === 'cover'}">Fill frame</button></div>
       <div class="sms-row"><label for="smsZoom">Crop zoom</label><input type="range" id="smsZoom" min="1" max="4" step="0.05" value="${x.zoom || 1}"></div>
       <div class="sms-row"><label for="smsOx">Pan ↔</label><input type="range" id="smsOx" min="-1" max="1" step="0.02" value="${x.ox || 0}"></div><div class="sms-row"><label for="smsOy">Pan ↕</label><input type="range" id="smsOy" min="-1" max="1" step="0.02" value="${x.oy || 0}"></div>
-      <div class="sms-row"><label>Frame</label>${swatches('ib', x.bg, true)}</div><div class="sms-row"><label for="smsRad">Corners</label><input type="range" id="smsRad" min="0" max="300" value="${x.radius || 0}"></div>`;
+      <div class="sms-row"><label>Frame</label>${swatches('ib', x.bg, true)}</div><div class="sms-row"><label for="smsRad">Corners</label><input type="range" id="smsRad" min="0" max="300" value="${x.radius || 0}"></div>${cutHtml(x)}`;
     if (x.type === 'logo') h += `<div class="sms-row"><label>Backing</label>${swatches('ib', x.bg, true)}</div><div class="sms-row"><label for="smsRad">Corners</label><input type="range" id="smsRad" min="0" max="200" value="${x.radius || 0}"></div>${c.dealer.has_logo ? '' : '<div class="warn">Add your logo in Account to show it.</div>'}`;
     if (x.type === 'shape') h += `<div class="sms-row"><label>Fill</label>${swatches('sf', x.fill, true)}</div><div class="sms-row"><label>Outline</label>${swatches('ss', x.stroke, true)}<input type="number" id="smsSw" min="0" max="40" value="${x.sw || 0}" aria-label="Outline width"></div>
       ${x.shape === 'rect' ? `<div class="sms-row"><label for="smsRad">Corners</label><input type="range" id="smsRad" min="0" max="600" value="${x.radius || 0}"></div>` : ''}`;
@@ -889,6 +960,15 @@
       <div class="sms-row"><label>Position</label>${['x', 'y', 'w', 'h'].map((k) => `<input type="number" data-geo="${k}" step="1" value="${Math.round(x[k] * 100)}" aria-label="${{ x: 'Left', y: 'Top', w: 'Width', h: 'Height' }[k]} %" title="${{ x: 'Left', y: 'Top', w: 'Width', h: 'Height' }[k]} (%)">`).join('')}</div>
       <div class="sms-row"><button type="button" class="sms-ib" data-tog="locked" aria-pressed="${!!x.locked}">${x.locked ? '🔒 Locked' : 'Lock'}</button><button type="button" class="sms-ib" data-tog="hidden" aria-pressed="${!!x.hidden}">${x.hidden ? 'Hidden' : 'Hide'}</button></div></div>`;
     return h;
+  }
+  /* product background: removed automatically (the checked cutout) or the original photo; the photo's own check result is shown */
+  function cutHtml(x) {
+    if (tok(x.bg)) return '<div class="sms-row" style="font-size:12.5px;color:#5b6b7a">This photo sits in a frame — choose None (the striped swatch) under Frame to stand the product on the design with its background removed.</div>';
+    const r = S.cur.products[x.product], p = r && productBy(r), ci = p ? S.cutInfo.get(keyOf(p)) : null;
+    const note = !ci ? 'Checking the photo…' : ci.status === 'removed' ? (x.cut === false ? 'The original photo is shown on a card.' : 'Background removed automatically and checked (edges, product colors, nothing cut off). Look it over before posting.')
+      : ci.status === 'native' ? 'This photo already has a transparent background.' : (ci.reason || 'This photo could not be cut out automatically.') + ' The original photo is shown on a card.';
+    return `<div class="sms-row"><label>Background</label><button type="button" class="sms-ib" data-cut="auto" aria-pressed="${x.cut !== false}">Removed automatically</button><button type="button" class="sms-ib" data-cut="orig" aria-pressed="${x.cut === false}">Original photo</button></div>
+      <div class="sms-row" id="smsCutNote" role="status" style="font-size:12.5px;color:#5b6b7a">${e(note)}</div>`;
   }
   function bindInsp(host) {
     const x = selEl(); if (!x) return; const c = S.ctx;
@@ -912,6 +992,7 @@
     const ln = host.querySelector('#smsLines'); if (ln) ln.onchange = ch(() => { x.lines = Math.max(1, Math.min(12, Number(ln.value) || 1)); });
     const pr = host.querySelector('#smsProd'); if (pr) pr.onchange = ch(() => { x.product = Number(pr.value); });
     host.querySelectorAll('[data-fit]').forEach((b) => { b.onclick = () => { snap(); x.fit = b.getAttribute('data-fit'); form(); redraw(); }; });
+    host.querySelectorAll('[data-cut]').forEach((b) => { b.onclick = () => { snap(); if (b.getAttribute('data-cut') === 'orig') x.cut = false; else delete x.cut; form(); redraw(); }; });
     for (const [id, k] of [['#smsZoom', 'zoom'], ['#smsOx', 'ox'], ['#smsOy', 'oy'], ['#smsRad', 'radius'], ['#smsOp', 'opacity'], ['#smsSw', 'sw']]) { const el = host.querySelector(id); if (el) el.oninput = ch(() => { x[k] = Number(el.value); }); }
     host.querySelectorAll('[data-geo]').forEach((i) => { i.onchange = ch(() => { const k = i.getAttribute('data-geo'), v = Number(i.value) / 100; if (Number.isFinite(v)) x[k] = k === 'w' || k === 'h' ? Math.max(0.02, Math.min(2, v)) : Math.max(-0.5, Math.min(1.5, v)); overlay(); }); });
   }
