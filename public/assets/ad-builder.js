@@ -289,7 +289,7 @@
           : IM(0, wide ? 0.5 : 0.44, Y(70), wide ? 0.47 : 0.55, B - Y(70) - Y(14), { bg: 'none', pad: 0, radius: 0, anchor: 'bottom' }),
         BRAND(0, G.mx, Y(60), wide ? 0.22 : 0.33, Y(80), { style: 'clear' }),
         HEAD(G.mx, Y(160), cw, Y(185), { size: 72, font: 'Georgia', lines: 2, lh: 1.04, color: 'white' }),
-        NAME(0, G.mx, Y(355), cw, Y(58), { size: 36, weight: 700, italic: true, color: 'accent', lines: 1 }),
+        NAME(0, G.mx, Y(355), tw, Y(58), { size: 36, weight: 700, italic: true, color: 'accent', lines: 1 }),
         SUB(G.mx, Y(418), tw, Y(86), { size: 26, weight: 500, color: 'white', lines: 2 }),
         ...FEATS(G.mx, Y(515), wide ? 0.38 : 0.42, Y(216), 3, { size: 29, weight: 600, color: 'white', lines: 1, ring: true, check: false }),
         PRC(0, G.mx, Y(748), wide ? 0.22 : 0.3, Y(72), { bg: 'accent', color: 'navy', size: 38, grad: true, align: 'left' }),
@@ -595,6 +595,20 @@
     }
     ctx.restore();
   }
+  /* the dealer's accent colour as plain text must stay readable on whatever is behind it (a scene, a fade, a photo):
+     measured on the canvas itself; below 4.5:1 it is lightened (on dark) or darkened (on light) until it reads, else white / navy */
+  const relLum = (r, g, b) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+  const ratio = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  const rgbOf = (c) => { const m = /^#([0-9a-f]{6})$/i.exec(c); if (m) { const n = parseInt(m[1], 16); return [n >> 16, (n >> 8) & 255, n & 255]; } const r = /^rgb\((\d+),(\d+),(\d+)\)$/.exec(c); return r ? [+r[1], +r[2], +r[3]] : null; };
+  function readableAccent(ctx, accent, x, y, w, h) {
+    let back; try { const t = ctx.getTransform(), X = Math.max(0, Math.round(x * t.a)), Y = Math.max(0, Math.round(y * t.d)), Wd = Math.max(1, Math.min(Math.round(w * t.a), ctx.canvas.width - X)), Hd = Math.max(1, Math.min(Math.round(h * t.d), ctx.canvas.height - Y));
+      const d = ctx.getImageData(X, Y, Wd, Hd).data; let L = 0, n = 0; for (let i = 0; i < d.length; i += 4 * 7) { L += relLum(d[i], d[i + 1], d[i + 2]); n++; } back = n ? L / n : null; } catch (e) { back = null; }
+    const a = rgbOf(accent); if (back == null || !a) return accent;
+    if (ratio(relLum(...a), back) >= 4.5) return accent;
+    const dark = back < 0.25;
+    for (let k = 1; k <= 8; k++) { const c = shade(accent, dark ? k * 0.1 : -k * 0.1), v = rgbOf(c); if (v && ratio(relLum(...v), back) >= 4.5) return c; }
+    return dark ? '#ffffff' : '#0b1f33';
+  }
   function drawTextEl(ctx, el, W, H, u, cur, text) {
     const x = el.x * W, y = el.y * H, w = el.w * W, h = el.h * H;
     { const m = fitText(ctx, text, el, W, H, u, cur); const bg = tok(el.bg, cur), th = m.lines.length * m.lh;
@@ -604,7 +618,7 @@
           if (el.grad && /^#[0-9a-f]{6}$/i.test(bg)) { const g = ctx.createLinearGradient(0, py, 0, py + ph); g.addColorStop(0, shade(bg, 0.42)); g.addColorStop(0.5, bg); g.addColorStop(1, shade(bg, -0.22)); ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.25)'; ctx.shadowBlur = 14 * u; ctx.shadowOffsetY = 4 * u; ctx.fillStyle = g; ctx.fill(); ctx.restore(); }
           else { ctx.fillStyle = bg; ctx.fill(); } }
         else { rrect(ctx, x, y, w, h, Math.min((el.radius || 0) * u, w / 2, h / 2)); ctx.fillStyle = bg; ctx.fill(); } }
-      ctx.fillStyle = tok(el.color, cur) || '#000000'; ctx.textBaseline = 'top'; ctx.textAlign = el.align || 'left';
+      ctx.fillStyle = bg || el.color !== 'accent' ? (tok(el.color, cur) || '#000000') : readableAccent(ctx, tok('accent', cur), x, y, w, h); ctx.textBaseline = 'top'; ctx.textAlign = el.align || 'left';
       const ix = el.align === 'center' ? x + w / 2 : el.align === 'right' ? x + w - (el.pill ? Math.max(m.pad, 14 * u) : m.pad) : x + (el.pill ? Math.max(m.pad, 14 * u) : m.pad);
       m.lines.forEach((l, i) => ctx.fillText(l, ix, ty + i * m.lh + (m.lh - m.size) / 2));
     }
