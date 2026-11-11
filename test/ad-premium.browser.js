@@ -112,5 +112,18 @@ async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } ca
     await setup(); const a = await draws(); ok(a.includes('600x120') && !a.includes('705x255'), 'clear logo: ' + a.join(','));
     await setup({ darkOk: false }); const b = await draws(); ok(b.includes('705x255') && !b.includes('600x120'), 'chip logo: ' + b.join(','));
   });
+  await t('a dark dealer accent used as plain text on the dark design is lightened until it reads (4.5:1); a light accent is kept', async () => {
+    await setup();
+    const col = (accent) => page.evaluate(async (accent) => {
+      const S = window.HCPSAdBuilder._state; const x = JSON.parse(JSON.stringify(S.cd.cands.find((c) => c.template === 'st-ai-premium'))); x.format = 'square'; x.headline = '';
+      x.colors = Object.assign({}, x.colors, { accent }); x.layouts = { square: window.HCPSAdBuilder._build('st-ai-premium', 'square', 1, x.products) };
+      const seen = []; const orig = CanvasRenderingContext2D.prototype.fillText;
+      CanvasRenderingContext2D.prototype.fillText = function (t) { if (/Cloud Supreme/.test(t)) seen.push(String(this.fillStyle)); return orig.apply(this, arguments); };
+      try { await window.HCPSAdBuilder._draw(document.createElement('canvas'), x, 1); } finally { CanvasRenderingContext2D.prototype.fillText = orig; }
+      return seen[0]; }, accent);
+    const lum = (c) => { const m = /^#([0-9a-f]{6})$/i.exec(c); const n = parseInt(m[1], 16); const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(n >> 16) + 0.7152 * f((n >> 8) & 255) + 0.0722 * f(n & 255); };
+    const teal = await col('#1f5f6b'); ok(teal && teal.toLowerCase() !== '#1f5f6b', 'dark accent changed: ' + teal); ok(lum(teal) > 0.2, 'lightened: ' + teal);
+    const gold = await col('#fcb21e'); ok(gold.toLowerCase() === '#fcb21e', 'readable accent kept: ' + gold);
+  });
   await browser.close(); console.log(`\nad premium: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
 })();
