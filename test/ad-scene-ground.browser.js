@@ -18,7 +18,7 @@ const FORMATS = { square: { w: 1080, h: 1080, label: 'Square' } };
     ok(r.floor >= 26, 'floor'); ok(Math.abs(r.cy - r.baseY) < 12 && r.cy <= r.baseY, 'shadow sits at the base'); ok(r.cx > r.boxCx, 'light from upper left → shadow pulled right'); ok(r.rw < r.footW, 'contact shadow narrower than the foot');
     const a = (c) => Number(c.match(/([\d.]+)\)$/)[1]); ok(a(r.bright) > a(r.dark), 'brighter floor → stronger shadow'); ok(r.tintNone === null, 'no sample → no cast');
     ok(r.tintBright.nudge && r.tintBright.nudge.startsWith('rgba(255') && r.tintDark.nudge.startsWith('rgba(0,0,0'), 'bright scene lifts, dark scene dims'); ok(r.audit === 1, 'audit counts only visible text below the floor'); });
-  await t('a transparent product gets a contact shadow and the scene\'s light; an opaque card photo is left alone', async () => {
+  await t('a transparent product gets a contact shadow and the scene\'s light; an opaque photo goes on a card', async () => {
     const r = await page.evaluate(async () => {
       const mk = (w, h, f) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); f(x); return c.toDataURL('image/png'); };
       const cutout = mk(400, 300, (x) => { x.fillStyle = '#808080'; x.fillRect(100, 40, 200, 200); });      // grey block with transparent surround
@@ -33,11 +33,12 @@ const FORMATS = { square: { w: 1080, h: 1080, label: 'Square' } };
           layouts: { square: [{ id: 'bgsh', type: 'shape', shape: 'rect', x: 0, y: 0, w: 1, h: 1, fill: bg }, { id: 'p', type: 'image', product: 0, x: 0.25, y: 0.2, w: 0.5, h: 0.5, fit: 'contain' }] } };
         const cv = document.createElement('canvas'); await window.HCPSAdBuilder._draw(cv, cur, 1); const x = cv.getContext('2d'); const px = (X, Y) => Array.from(x.getImageData(X, Y, 1, 1).data);
         // product image drawn at x 270..810 (540 wide), y 216..756 → contain: scale 1.35 → 540x405, top at 216+67=283; the grey block spans x 405..675, y 337..607
-        out[name] = { base: px(540, name === 'opaque' ? 694 : 612), far: px(540, 800), above: px(540, 200), block: px(540, 470), side: px(150, 612) }; }
+        out[name] = { base: px(540, name === 'opaque' ? 694 : 612), far: px(540, 800), above: px(540, 200), block: px(540, 470), side: px(150, 612), cardEdge: px(281, 420) }; }
       return out; });
     const lum = (p) => 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2];
     ok(lum(r['cutout-bright'].base) < lum(r['cutout-bright'].far) - 20, 'a shadow darkens the floor just under the base (bright scene): ' + JSON.stringify(r['cutout-bright']));
-    ok(Math.abs(lum(r.opaque.base) - lum(r.opaque.far)) < 10, 'an opaque photo gets no shadow: ' + JSON.stringify(r.opaque));
+    /* 2026-11-11: an opaque photo placed without a frame is shown on a white card that hugs it (never a bare rectangle on the scene) */
+    ok(lum(r.opaque.cardEdge) > 250 && lum(r.opaque.block) < 140, 'an opaque photo sits on a card: ' + JSON.stringify(r.opaque));
     ok(lum(r['cutout-bright'].above) > 230, 'nothing is drawn above the product'); ok(lum(r['cutout-dark'].base) <= lum(r['cutout-dark'].far) + 1, 'dark scene: shadow never lightens the floor');
     const g = (p) => p[0]; ok(g(r['cutout-bright'].block) !== g(r['cutout-dark'].block), 'the product\'s light follows the scene (bright vs dark): ' + g(r['cutout-bright'].block) + ' vs ' + g(r['cutout-dark'].block)); });
   await t('readability: no text is drawn below the floor, even when the design asks for less (measured from the canvas)', async () => {
