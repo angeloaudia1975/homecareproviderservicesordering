@@ -104,7 +104,7 @@ const ghText = page => page.evaluate(() => (document.getElementById('goldenHist'
           if (b.action === 'confirmations' || b.action === 'confirmation_file') {   // Golden SO confirmation PDFs (HCPS-kept; the proxy's dealer isolation is tested in the HCPS repo)
             const hdr = await req.allHeaders(); W.conf.push({ action: b.action, preview: !!hdr['x-hcps-preview'], auth: !!hdr.authorization, body: b });
             const ans = b.action === 'confirmations'
-              ? { ok: true, enabled: true, available: true, confirmations: [{ id: 41, so_number: 'SO261001001', dealer_po: 'PO-77', confirmation_date: '2026-10-02', file_name: 'SO261001001 - po PO-77.pdf', order_ref: 'P501', latest: true, revised: true, estimated_date: '2026-10-09' },
+              ? { ok: true, enabled: true, available: true, confirmations: [{ id: 41, so_number: 'SO261001001', dealer_po: 'PO-77', confirmation_date: '2026-10-02', file_name: 'SO261001001 - po PO-77.pdf', order_ref: 'P501', latest: true, revised: true, estimated_date: '2026-10-09', changes: { since: '2026-10-01', items: [{ kind: 'added', item_no: 'PR535-MED', qty: 1 }, { kind: 'quantity', item_no: 'PR401-MED-SKD', from: 1, to: 2 }], total_from: 950, total_to: 2850 } },
                   { id: 40, so_number: 'SO261001001', dealer_po: 'PO-77', confirmation_date: '2026-10-01', file_name: 'SO261001001.pdf', order_ref: 'P501', latest: false, revised: false, estimated_date: null }] }
               : { ok: true, enabled: true, url: HOST + '/__conf/' + b.id + '.pdf?token=x', file_name: 'SO261001001.pdf', expires_in: 120 };
             return route.fulfill({ status: 200, contentType: 'application/json', headers: H, body: JSON.stringify(ans) });
@@ -263,7 +263,7 @@ const ghText = page => page.evaluate(() => (document.getElementById('goldenHist'
       await t(`${label}: no confirmation is asked for in a staff view-as; a signed-in dealer sees the SO's confirmations with the earlier version marked, ≥ 44px buttons; Download and Open/print fetch the 2-minute link`, () => {
         ok(prevConf === 0, 'preview asked for confirmations ' + prevConf);
         ok(W.conf.length >= 1 && W.conf.every(c => !c.preview && c.auth) && JSON.stringify(W.conf[0].body.so_numbers) === '["SO261001001"]', JSON.stringify(W.conf));
-        ok(/SO261001001.*revised/.test(cTxt), cTxt); ok(/earlier version/.test(cTxt), cTxt);
+        ok(/SO261001001.*revised/.test(cTxt), cTxt); ok(/earlier version/.test(cTxt), cTxt); ok(/Changes since the Oct 1, 2026 confirmation: added 1 × PR535-MED; PR401-MED-SKD qty 1 → 2; total \$950\.00 → \$2,850\.00/.test(cTxt), 'revision changes: ' + cTxt.slice(0, 600));
         ok(cBtn.length === 4 && cBtn.every(hh => hh >= 44), 'buttons ' + cBtn);
         ok(/SO261001001\.pdf/.test(dl.suggestedFilename()), dl.suggestedFilename()); ok(W.confFiles.some(f => /^\/__conf\/41\.pdf\?token=x&download=/.test(f)), W.confFiles.join(' '));
         ok(/\/__conf\/41\.pdf\?token=x$/.test(popUrl) && opener, popUrl + ' opener=' + opener); ok(overC <= 1, 'overflow ' + overC); });
