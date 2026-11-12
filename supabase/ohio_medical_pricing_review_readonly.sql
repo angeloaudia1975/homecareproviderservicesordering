@@ -14,5 +14,5 @@ select
             'verified_and_matching', count(*) filter (where active is not false and verified_at is not null and verified_ref = account_ref))
      from public.dealer_manufacturers where manufacturer in ('ohio-medical', 'gce')) as accounts,
   (select jsonb_agg(jsonb_build_object('mfr', manufacturer, 'status', status, 'orders', n, 'first', f, 'last', l))
-     from (select manufacturer, status, count(*) n, min(created_at)::date f, max(created_at)::date l
+     from (select manufacturer, status, count(*) n, min(updated_at)::date f, max(updated_at)::date l
              from public.orders where manufacturer in ('ohio-medical', 'gce') group by 1, 2) s) as orders;
