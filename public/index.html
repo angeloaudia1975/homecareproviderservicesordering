@@ -8866,7 +8866,12 @@ function apClose(){ if(APDIRTY&&!confirm('Leave this application? Unsaved change
 function apToast(msg,bad){ const el=$("#apMsg"); if(el){ el.textContent=msg; el.style.color=bad?'#b42323':''; } else if(typeof acToast==='function') acToast(msg); }
 function apField(f,v,edit){
   const id='ap_'+f.key.replace(/\./g,'_');
-  if(f.key==='biz.entity') return `<div class="fld2"><label for="${id}">${esc(f.label)}</label><select id="${id}" data-k="${esc(f.key)}" ${edit?'':'disabled'} onchange="apDirty()">${['',...Object.keys(APCUR.entities)].map(k=>`<option value="${esc(k)}" ${v===k?'selected':''}>${esc(k?APCUR.entities[k]:'—')}</option>`).join('')}</select></div>`;
+  if(f.key==='biz.entity') return `<div class="fld2"><label for="${id}">${esc(f.label)}${f.required?' <span style="color:#b42323">*</span>':''}</label><select id="${id}" data-k="${esc(f.key)}" ${edit?'':'disabled'} onchange="apDirty()">${['',...Object.keys(APCUR.entities)].map(k=>`<option value="${esc(k)}" ${v===k?'selected':''}>${esc(k?APCUR.entities[k]:'—')}</option>`).join('')}</select></div>`;
+  /* a manufacturer's own boxes (e.g. Yuwell): one answer → a list; several → tick boxes (stored as their keys, joined by ",") */
+  const req=f.required?' <span style="color:#b42323">*</span>':'';
+  if(f.choices&&!f.multi) return `<div class="fld2"><label for="${id}">${esc(f.label)}${req}</label><select id="${id}" data-k="${esc(f.key)}" ${edit?'':'disabled'} onchange="apDirty()" ${f.required?'aria-required="true"':''}>${['',...Object.keys(f.choices)].map(k=>`<option value="${esc(k)}" ${v===k?'selected':''}>${esc(k?f.choices[k]:'—')}</option>`).join('')}</select></div>`;
+  if(f.choices&&f.multi){ const on=new Set(String(v||'').split(','));
+    return `<fieldset class="fld2 apmulti" data-km="${esc(f.key)}" style="border:0;padding:0;margin:0"><legend style="font-size:13px;font-weight:600;margin-bottom:4px">${esc(f.label)}${req}</legend>${Object.keys(f.choices).map(k=>`<label style="display:flex;align-items:center;gap:8px;min-height:44px;font-weight:400"><input type="checkbox" value="${esc(k)}" ${on.has(k)?'checked':''} ${edit?'':'disabled'} onchange="apDirty()" style="width:20px;height:20px">${esc(f.choices[k])}</label>`).join('')}</fieldset>`; }
   const type=/email/.test(f.key)?'email':/phone|fax/.test(f.key)?'tel':'text';
   const tag=f.key==='req.notes'?`<textarea id="${id}" data-k="${esc(f.key)}" rows="3" ${edit?'':'disabled'} oninput="apDirty()">${esc(v||'')}</textarea>`
     :`<input id="${id}" type="${type}" data-k="${esc(f.key)}" value="${esc(v||'')}" ${edit?'':'disabled'} maxlength="200" oninput="apDirty()" ${f.required?'aria-required="true"':''}>`;
@@ -8874,7 +8879,7 @@ function apField(f,v,edit){
 }
 function renderApply(){
   const host=$("#view-apply"); const a=APCUR.application, ans=a.answers||{}, edit=!!APCUR.can_edit;
-  const sec=APCUR.sections.map(s=>`<details class="apsec" ${['Business','Signer','Contacts'].includes(s.title)||!edit||(s.title==='Trade references'&&(APCUR.trade_refs||[]).length)?'open':''}><summary>${esc(s.title)}</summary>${s.title==='Trade references'?apTradeRefs(edit):''}<div class="apgrid">${s.fields.map(f=>apField(f,ans[f.key],edit)).join('')}</div></details>`).join('');
+  const sec=APCUR.sections.map(s=>`<details class="apsec" ${['Business','Signer','Contacts'].includes(s.title)||s.fields.some(f=>f.required&&!ans[f.key])||!edit||(s.title==='Trade references'&&(APCUR.trade_refs||[]).length)?'open':''}><summary>${esc(s.title)}</summary>${s.title==='Trade references'?apTradeRefs(edit):''}<div class="apgrid">${s.fields.map(f=>apField(f,ans[f.key],edit)).join('')}</div></details>`).join('');
   const acts=[];
   if(edit){ acts.push('<a class="btn gh" onclick="apSave()">Save</a>','<a class="btn gh" onclick="apPreview()">Review completed form</a>');
     acts.push(`<a class="btn pri" onclick="apSign()">${APCUR.signing?'Sign electronically':'Electronic signing opens shortly'}</a>`); acts.push('<a class="btn gh" onclick="apOffline()">Print to sign by hand</a>'); }
@@ -8913,7 +8918,8 @@ async function apUpload(kind){
   apToast('Uploading…'); const a=APCUR.application;
   const r=await appsCall({action:'app_upload_paper',id:a.id,version:a.version,kind,pdf_base64:b64}); if(!(r&&r.ok)){ apToast((r&&r.error)||'Could not upload.',true); return; }
   await apOpen(a.id); apToast(kind==='signed'?'Sent to HCPS for review.':'Guarantee page uploaded.'); }
-function apCollect(){ const o={}; document.querySelectorAll('#view-apply [data-k]').forEach(el=>{ if(el.value) o[el.dataset.k]=el.value; }); return o; }
+function apCollect(){ const o={}; document.querySelectorAll('#view-apply [data-k]').forEach(el=>{ if(el.value) o[el.dataset.k]=el.value; });
+  document.querySelectorAll('#view-apply [data-km]').forEach(fs=>{ const v=[...fs.querySelectorAll('input[type=checkbox]:checked')].map(c=>c.value).join(','); if(v) o[fs.dataset.km]=v; }); return o; }
 async function apSave(quiet){
   if(APBUSY) return false; APBUSY=true; if(!quiet) apToast('Saving…');
   const a=APCUR.application; const r=await appsCall({action:'app_save',id:a.id,version:a.version,answers:apCollect()}); APBUSY=false;
