@@ -22,10 +22,10 @@ const D_HQ = '11111111-2222-4333-8444-555555555555', PREVIEW_TOKEN = 'cd34'.repe
 const GBASE = 'https://deploy-preview-283--goldenonlineordering.netlify.app';
 const ORDER = o => Object.assign({ order_ref: 'P501', source: 'linked', status: 'shipped', placed_on: '2026-10-01', po_number: 'PO-77', so_numbers: ['SO1001'],
   ship_to: { city: 'Cincinnati', state: 'OH', address: 'LEAK street' }, expected_date: '2026-10-09', contact: 'LEAK contact', email: 'LEAK@x.invalid',
-  items: [{ sku: 'PR511-LAR', description: 'Cloud Plus <img src=x onerror="window.__xss=1">', qty: 2, cost: 'LEAK' }],
+  items: [{ sku: 'PR511-LAR', description: 'Cloud Plus <img src=x onerror="window.__xss=1">', qty: 2, cost: 'LEAK', unit_price: 1300, ext_price: 2600, price_source: 'golden_so', so_number: 'SO1001' }],
   tracking: [{ so_number: 'SO1001', carrier: 'UPS', tracking_number: '1Z999', ship_date: '2026-10-08', url: 'javascript:LEAK' }],
   lifecycle: [{ type: 'submitted', at: '2026-10-01', label: 'Submitted' }, { type: 'shipped', at: '2026-10-08', so_number: 'SO1001', label: 'Shipped' }],
-  totals: { subtotal: 2600, freight: 0, sh: 78, total: 2678 } }, o || {});
+  totals: { subtotal: 2600, freight: 0, sh: 78, total: 2678, basis: 'golden_so_submitted_freight' } }, o || {});
 const W = { mode: 'ready', pv: true, calls: [], hcpsWrites: 0, emails: 0, failNext: 0 };
 function goldenAnswer(u) {
   const url = new URL(u); W.calls.push(url.pathname + url.search);
@@ -177,6 +177,8 @@ const ghText = page => page.evaluate(() => (document.getElementById('goldenHist'
         ok(W.calls.some(c => c === '/v1/orders/P501'), W.calls.join(' | '));
         ok(/2 × PR511-LAR/.test(det) && /UPS · Tracking 1Z999/.test(det) && /1Z1000/.test(det) && /Booked by Golden|Submitted/.test(det), det);
         ok(/S&H \$78\.00/.test(det) && /Total \$2,678\.00/.test(det), det);
+        ok(/\$1,300\.00 each · \$2,600\.00 · Golden sales order SO1001/.test(det), 'B5.1 line price from Golden\'s SO: ' + det);
+        ok(/freight and S&H as quoted when you ordered/.test(det), 'totals basis: ' + det);
         ok(!xss, 'hostile text from Golden must stay text'); ok(/<img src=x/.test(det), 'shown as text'); });
       const noLink = await page.evaluate(() => !document.querySelector('#goldenHist a[href]'));
       await t(`${label}: tracking numbers are not turned into links`, () => ok(noLink));

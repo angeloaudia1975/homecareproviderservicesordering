@@ -7850,14 +7850,23 @@ function ghRender(){
   ghWire(); ghRestoreFocus();
 }
 function ghDetail(o){
-  const items=(o.items||[]).map(i=>'<li>'+(Number.isInteger(i.qty)?ghQty(i.qty)+' × ':'')+'<b>'+esc(i.sku)+'</b> '+esc(i.description)+'</li>').join("")||'<li>—</li>';
+  /* B5.1: each line's ACTUAL price from Golden — its booked sales-order price, or the price submitted with the order before
+     Golden booked it — only when Golden shows this account its prices; never a catalog price */
+  const lp=i=>{ if(!GH.pv||!i.price_source) return ""; const u=i.unit_price!=null?esc(cents(i.unit_price))+' each':"";
+    const x=i.ext_price!=null?' · '+esc(cents(i.ext_price)):"";
+    return '<br><small class="gh-lp">'+u+x+(i.price_source==="golden_so"?' · Golden sales order'+(i.so_number?' '+esc(i.so_number):''):' · as submitted (not yet booked by Golden)')+'</small>'; };
+  const items=(o.items||[]).map(i=>'<li>'+(Number.isInteger(i.qty)?ghQty(i.qty)+' × ':'')+'<b>'+esc(i.sku)+'</b> '+esc(i.description)+lp(i)+'</li>').join("")||'<li>—</li>';
   const trk=(o.tracking||[]).map(t=>'<li>'+(t.ship_date?ghDay(t.ship_date)+' · ':'')+esc(t.carrier||"Carrier not given")+(t.tracking_number?' · Tracking <span class="tnum">'+esc(t.tracking_number)+'</span>':' · no tracking number yet')+(t.so_number?' (SO '+esc(t.so_number)+')':'')+'</li>').join("")||'<li>Not shipped yet.</li>';
   const life=(o.lifecycle||[]).map(e=>'<li>'+(e.at?ghDay(e.at)+' · ':'')+esc(e.label||GH_EVENT[e.type]||e.type)+(e.so_number?' (SO '+esc(e.so_number)+')':'')+'</li>').join("")||'<li>—</li>';
   const m=v=>v!=null?esc(cents(v)):"—";
   // B8: an order whose freight Golden quotes by hand says so until Golden ships / invoices it with the final charge.
   const fq=o.freight_status==="to_be_quoted", fc=o.freight_status==="charged_by_golden";
-  const frt=fq?'Freight <b>to be quoted by Golden</b>'+(Number(o.totals&&o.totals.freight)>0?' (plus '+m(o.totals.freight)+' already priced)':''):fc?'Freight charged by Golden on its invoice':'Freight '+m(o.totals&&o.totals.freight);
-  const tot=(GH.pv&&o.totals)?'<div class="gh-col"><h4>Totals</h4><ul><li>Merchandise '+m(o.totals.subtotal)+'</li><li>'+frt+'</li><li>S&amp;H '+m(o.totals.sh)+'</li><li><b>Total '+m(o.totals.total)+(fq?' + freight to be quoted':'')+'</b></li></ul></div>'
+  const B=o.totals&&o.totals.basis, nr='not in Golden\u2019s booked-order record';
+  const frt=fq?'Freight <b>to be quoted by Golden</b>'+(Number(o.totals&&o.totals.freight)>0?' (plus '+m(o.totals.freight)+' already priced)':''):fc?'Freight charged by Golden on its invoice'
+    :(o.totals&&o.totals.freight==null&&B==="golden_so")?'Freight — '+nr:'Freight '+m(o.totals&&o.totals.freight)+(B==="golden_so_submitted_freight"?' <small>(as quoted when you ordered)</small>':'');
+  const sh=(o.totals&&o.totals.sh==null&&B==="golden_so")?'S&amp;H — '+nr:'S&amp;H '+m(o.totals&&o.totals.sh);
+  const basis=B==="golden_so"?'Amounts from Golden\u2019s sales order.':B==="golden_so_submitted_freight"?'Merchandise from Golden\u2019s sales order; freight and S&amp;H as quoted when you ordered.':B==="submitted"?'Amounts as submitted — Golden has not booked this order yet.':'';
+  const tot=(GH.pv&&o.totals)?'<div class="gh-col"><h4>Totals</h4><ul><li>Merchandise '+m(o.totals.subtotal)+'</li><li>'+frt+'</li><li>'+sh+'</li><li><b>Total '+m(o.totals.total)+(fq?' + freight to be quoted':'')+'</b></li>'+(basis?'<li><small>'+basis+'</small></li>':'')+'</ul></div>'
     :(fq?'<div class="gh-col"><h4>Freight</h4><ul><li>To be quoted by Golden — Golden confirms it with you before shipping.</li></ul></div>':'');
   return '<div class="gh-detail-in"><div class="gh-col"><h4>Items</h4><ul>'+items+'</ul></div><div class="gh-col"><h4>Tracking</h4><ul>'+trk+'</ul></div><div class="gh-col"><h4>History</h4><ul>'+life+'</ul></div>'+tot+'</div>';
 }
