@@ -7264,6 +7264,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .btn.nv{background:var(--navy2);color:#fff}#p360wrap .btn.nv:hover{background:var(--navy)}
   #p360wrap .btn.gh{background:#fff;color:var(--ink-2);border:1px solid var(--line)}
   #goldenHist [data-ghconf]{min-height:44px;margin:4px 6px 0 0}
+  #goldenHist a.gh-trk{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;font-weight:700}
   #p360wrap .mainnav{background:var(--navy)}
   #p360wrap .mn-in{max-width:1240px;margin:0 auto;display:flex;gap:1px;padding:0 14px;overflow-x:auto}
   #p360wrap .mn-in a{color:#aebdd0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:12px 14px;border-bottom:3px solid transparent;white-space:nowrap}
@@ -7857,7 +7858,11 @@ function ghDetail(o){
     const x=i.ext_price!=null?' · '+esc(cents(i.ext_price)):"";
     return '<br><small class="gh-lp">'+u+x+(i.price_source==="golden_so"?' · Golden sales order'+(i.so_number?' '+esc(i.so_number):''):' · as submitted (not yet booked by Golden)')+'</small>'; };
   const items=(o.items||[]).map(i=>'<li>'+(Number.isInteger(i.qty)?ghQty(i.qty)+' × ':'')+'<b>'+esc(i.sku)+'</b> '+esc(i.description)+lp(i)+'</li>').join("")||'<li>—</li>';
-  const trk=(o.tracking||[]).map(t=>'<li>'+(t.ship_date?ghDay(t.ship_date)+' · ':'')+esc(t.carrier||"Carrier not given")+(t.tracking_number?' · Tracking <span class="tnum">'+esc(t.tracking_number)+'</span>':' · no tracking number yet')+(t.so_number?' (SO '+esc(t.so_number)+')':'')+'</li>').join("")||'<li>Not shipped yet.</li>';
+  /* Carrier tracking opens the CARRIER's own page, built here from fixed https templates for known carriers and a
+     tracking number of letters/digits only — never a link Golden (or anyone) supplies. Golden's record has no delivery
+     date, so a shipped order says "Delivery not confirmed" rather than a guessed date. */
+  const trk=(o.tracking||[]).map(t=>'<li>'+(t.ship_date?ghDay(t.ship_date)+' · ':'')+esc(t.carrier||"Carrier not given")+(t.tracking_number?' · Tracking <span class="tnum">'+esc(t.tracking_number)+'</span>'+ghTrackLink(t):' · no tracking number yet')+(t.so_number?' (SO '+esc(t.so_number)+')':'')+'</li>').join("")||'<li>Not shipped yet.</li>';
+  const dlv=(o.tracking||[]).length?'<li><small>Delivery not confirmed — Golden\u2019s record has no delivery date.</small></li>':'';
   const life=(o.lifecycle||[]).map(e=>'<li>'+(e.at?ghDay(e.at)+' · ':'')+esc(e.label||GH_EVENT[e.type]||e.type)+(e.so_number?' (SO '+esc(e.so_number)+')':'')+'</li>').join("")||'<li>—</li>';
   const m=v=>v!=null?esc(cents(v)):"—";
   // B8: an order whose freight Golden quotes by hand says so until Golden ships / invoices it with the final charge.
@@ -7876,8 +7881,13 @@ function ghDetail(o){
   else if(C&&C.state==="ready") conf='<div class="gh-col"><h4>Golden confirmation</h4><ul>'+(C.list.length?C.list.map(x=>'<li><b>'+esc(x.so_number)+'</b>'+(x.confirmation_date?' · '+ghDay(x.confirmation_date):'')+(x.revised?' · revised':'')+(x.latest?'':' · earlier version')
       +'<br><button type="button" class="btn gh" data-ghconf="'+x.id+'" data-ghdl="0">Open / print PDF</button> <button type="button" class="btn gh" data-ghconf="'+x.id+'" data-ghdl="1">Download</button></li>').join(""):'<li>No Golden confirmation on file for this order yet.</li>')+'</ul></div>';
   else if(C&&C.state==="error") conf='<div class="gh-col"><h4>Golden confirmation</h4><ul><li>Confirmations could not be loaded just now.</li></ul></div>';
-  return '<div class="gh-detail-in"><div class="gh-col"><h4>Items</h4><ul>'+items+'</ul></div><div class="gh-col"><h4>Tracking</h4><ul>'+trk+'</ul></div><div class="gh-col"><h4>History</h4><ul>'+life+'</ul></div>'+tot+conf+'</div>';
+  return '<div class="gh-detail-in"><div class="gh-col"><h4>Items</h4><ul>'+items+'</ul></div><div class="gh-col"><h4>Tracking</h4><ul>'+trk+dlv+'</ul></div><div class="gh-col"><h4>History</h4><ul>'+life+'</ul></div>'+tot+conf+'</div>';
 }
+const GH_CARRIER=[[/\bups\b/i,"https://www.ups.com/track?tracknum="],[/fed\s*ex/i,"https://www.fedex.com/fedextrack/?trknbr="],[/\busps\b|postal/i,"https://tools.usps.com/go/TrackConfirmAction?tLabels="],
+  [/estes/i,"https://www.estes-express.com/myestes/shipment-tracking/?type=PRO&query="],[/old\s*dominion|\bodfl\b/i,"https://www.odfl.com/us/en/tools/trace-track-ltl-freight/trace.html?proNumbers="],[/\bsaia\b/i,"https://www.saia.com/track/details;pro="],[/\br\s*\+?\s*l\b|r&l/i,"https://www.rlcarriers.com/freight/shipping/shipment-tracing?pro="]];
+function ghTrackLink(t){ const n=String(t.tracking_number||"").replace(/\s+/g,""); if(!/^[A-Za-z0-9]{6,40}$/.test(n)) return "";
+  const c=GH_CARRIER.find(x=>x[0].test(String(t.carrier||""))); if(!c) return "";
+  return ' <a class="gh-trk" href="'+esc(c[1]+encodeURIComponent(n))+'" target="_blank" rel="noopener noreferrer">Track with '+esc(String(t.carrier).slice(0,30))+'</a>'; }
 async function ghConfLoad(o){
   const sos=(o.so_numbers||[]).filter(x=>/^SO\d{8,12}$/.test(x)).slice(0,20); if(!sos.length) return;
   if(window.__PREVIEW__&&window.__PREVIEW__.token) return;   // staff "view as dealer": the dealer's own documents are not shown
