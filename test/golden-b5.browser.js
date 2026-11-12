@@ -141,6 +141,21 @@ const ghText = page => page.evaluate(() => (document.getElementById('goldenHist'
         ok(W.calls.some(c => /\/v1\/history\?.*before=GSO1002/.test(c)), W.calls.join(' | ')); ok(/SO1001/.test(older) && /SO0900/.test(older) && /Completed/.test(older), older);
         ok(!/Load older/.test(older), 'no more pages'); });
 
+      // 3a — filters + print (search / status / date / location), over the orders already loaded; nothing sent
+      const callsBefore = W.calls.length;
+      await page.fill('#ghQ', 'PO-77'); await page.waitForTimeout(600);
+      const fPo = await ghText(page); const fFocus = await page.evaluate(() => document.activeElement && document.activeElement.id);
+      await page.fill('#ghQ', ''); await page.waitForTimeout(600);
+      await page.selectOption('#ghS', 'completed'); await page.waitForTimeout(200); const fSt = await ghText(page);
+      await page.click('[data-ghclear]'); await page.waitForTimeout(200);
+      await page.fill('#ghFrom', '2099-01-01'); await page.dispatchEvent('#ghFrom', 'change'); await page.waitForTimeout(200); const fDate = await ghText(page);
+      await page.click('[data-ghclear]'); await page.waitForTimeout(200); const fAll = await ghText(page);
+      const printed = await page.evaluate(() => { let cls = null; const p = window.print; window.print = () => { cls = document.body.classList.contains('print-gh'); }; document.querySelector('[data-ghprint]').click(); window.print = p; return cls; });
+      await t(`${label}: filters narrow the Golden orders (PO search keeps focus, status, date), Clear restores them, Print prints only the Golden section; no Golden call`, () => {
+        ok(/PO-77/.test(fPo) && !/PO-78/.test(fPo) && /Showing 1 of 3/.test(fPo) && fFocus === 'ghQ', fPo.slice(0, 400) + ' focus=' + fFocus);
+        ok(/Completed/.test(fSt) && !/PO-78/.test(fSt), fSt.slice(0, 300)); ok(/No Golden orders match these filters/.test(fDate), fDate.slice(0, 300));
+        ok(/PO-77/.test(fAll) && /PO-78/.test(fAll) && !/Showing/.test(fAll), fAll.slice(0, 300)); ok(printed === true, 'print class'); ok(W.calls.length === callsBefore, 'filters call Golden'); });
+
       // 3b — a failed older page keeps the orders already shown
       await page.evaluate(() => showView('dash')); await page.waitForTimeout(200); await page.evaluate(() => showView('orders'));
       await page.waitForFunction(() => /PO-78/.test((document.getElementById('goldenHist') || {}).innerText || ''), null, { timeout: 15000 });

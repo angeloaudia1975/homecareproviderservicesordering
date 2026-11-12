@@ -7348,7 +7348,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .pill.portal{background:#e6f0f8;color:#1466a3;border:1px solid #bcd8ef}
   #p360wrap .pill.imported{background:var(--surface-2);color:#6b7d90;border:1px solid var(--line)}
   #p360wrap .gh-row{cursor:pointer}#p360wrap .gh-row:hover td{background:var(--surface-2)}#p360wrap .gh-row:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}
-  #p360wrap .gh-detail td{background:var(--surface-2)}#p360wrap .gh-detail-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;padding:4px 0}
+  #p360wrap .gh-filters{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;padding:12px 16px 4px}#p360wrap .gh-filters label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:700;color:var(--ink-2,#475569);min-width:0}#p360wrap .gh-filters input,#p360wrap .gh-filters select{min-height:40px;padding:6px 8px;border:1px solid var(--line,#cbd5e1);border-radius:8px;font:inherit;font-size:14px;max-width:100%}#p360wrap .gh-filters input[type=search]{width:240px}#p360wrap .gh-fbtn{display:flex;gap:8px}#p360wrap .gh-fbtn .btn{min-height:44px;display:inline-flex;align-items:center}#p360wrap .gh-fnote{padding:2px 16px 8px;font-size:13px;color:var(--ink-2,#475569)}@media (max-width:760px){#p360wrap .gh-filters label{flex:1 1 140px}#p360wrap .gh-filters input[type=search]{width:100%}#p360wrap .gh-filters input,#p360wrap .gh-filters select{font-size:16px;min-height:44px}#p360wrap .gh-fbtn .btn{min-height:44px}}@media print{body.print-gh #view-orders>*:not(#goldenHist){display:none!important}body.print-gh .gh-filters,body.print-gh [data-ghmore],body.print-gh #goldenHistLive{display:none!important}}#p360wrap .gh-detail td{background:var(--surface-2)}#p360wrap .gh-detail-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;padding:4px 0}
   #p360wrap .gh-col h4{margin:0 0 6px;font-size:13px;color:var(--navy)}#p360wrap .gh-col ul{margin:0;padding-left:18px;font-size:13px}
   #p360wrap [data-ghmore],#p360wrap [data-ghretry]{min-height:44px}#p360wrap [data-ghmore][aria-disabled="true"]{opacity:.6;cursor:wait}
   #p360wrap .gh-open{background:none;border:0;padding:6px 0;min-height:44px;font:inherit;font-weight:800;color:var(--navy);cursor:pointer;text-align:inherit}
@@ -7761,6 +7761,30 @@ async function loadOrders(){
    verified link with history enabled); otherwise the section stays empty. Amounts only when Golden says prices are
    visible. Every value is escaped; tracking numbers are shown as text, never turned into a link. */
 const GH={ seq:0, openSeq:0, orders:[], next:null, pv:false, open:null, state:"idle", moreErr:false, focus:null };
+/* Filters + print (owner 2026-11-11): over the Golden orders already loaded — order # / PO / SKU / tracking search, status,
+   placed-date range and ship-to location; nothing is sent anywhere. "Load older" brings more orders into the search. */
+const GHF={ q:"", status:"", from:"", to:"", loc:"" };
+const ghLoc=o=>[o.ship_to&&o.ship_to.city,o.ship_to&&o.ship_to.state].filter(Boolean).join(", ");
+function ghMatch(o){
+  const q=GHF.q.trim().toLowerCase();
+  if(q){ const hay=[o.order_ref,o.po_number].concat(o.so_numbers||[],(o.items||[]).map(i=>i.sku+" "+i.description),(o.tracking||[]).map(t=>t.tracking_number||"")).join(" ").toLowerCase(); if(hay.indexOf(q)<0) return false; }
+  if(GHF.status&&o.status!==GHF.status) return false;
+  const d=o.placed_on||""; if(GHF.from&&(!d||d<GHF.from)) return false; if(GHF.to&&(!d||d>GHF.to)) return false;
+  if(GHF.loc&&ghLoc(o)!==GHF.loc) return false;
+  return true;
+}
+function ghFilterBar(){
+  if(!GH.orders.length) return "";
+  const sts=[...new Set(GH.orders.map(o=>o.status))].filter(x=>GH_STATUS[x]), locs=[...new Set(GH.orders.map(ghLoc).filter(Boolean))].sort();
+  const opt=(v,l,cur)=>'<option value="'+esc(v)+'"'+(v===cur?' selected':'')+'>'+esc(l)+'</option>';
+  return '<div class="gh-filters" role="search" aria-label="Filter Golden orders">'
+    +'<label>Search<input id="ghQ" type="search" placeholder="Order #, PO, SKU or tracking" value="'+esc(GHF.q)+'" autocomplete="off"></label>'
+    +'<label>Status<select id="ghS">'+opt("","All",GHF.status)+sts.map(x=>opt(x,GH_STATUS[x],GHF.status)).join("")+'</select></label>'
+    +'<label>Placed from<input id="ghFrom" type="date" value="'+esc(GHF.from)+'"></label><label>to<input id="ghTo" type="date" value="'+esc(GHF.to)+'"></label>'
+    +(locs.length>1?'<label>Ship to<select id="ghLocSel">'+opt("","All locations",GHF.loc)+locs.map(x=>opt(x,x,GHF.loc)).join("")+'</select></label>':'')
+    +'<div class="gh-fbtn"><button type="button" class="btn gh" data-ghclear>Clear</button><button type="button" class="btn gh" data-ghprint>🖨 Print</button></div></div>';
+}
+function ghPrint(){ document.body.classList.add("print-gh"); try{ window.print(); }finally{ setTimeout(()=>document.body.classList.remove("print-gh"),600); } }
 const GH_STATUS={ submitted:"Submitted", pending_review:"Pending review at Golden", acknowledged:"Acknowledged by Golden", processing:"In production",
   revised:"Revised by Golden", partially_shipped:"Partially shipped", shipped:"Shipped", invoiced:"Invoiced", completed:"Completed", cancelled:"Cancelled" };
 const GH_EVENT={ submitted:"Submitted", booked:"Booked by Golden", revised:"Revised", invoiced:"Invoiced", shipped:"Shipped", replacement:"Replacement", resubmitted:"Resubmitted" };
@@ -7807,7 +7831,8 @@ function ghRender(){
   if(GH.state==="branch"){ box.innerHTML='<div class="card">'+head+'<div class="msg" role="status">Golden order history is shown on your head-office account.</div></div>'; return; }
   if(GH.state==="retry"){ box.innerHTML='<div class="card">'+head+'<div class="msg" role="status">Golden could not be reached just now. <button type="button" class="btn gh" data-ghretry>Try again</button></div></div>'; ghWire(); ghRestoreFocus(); return; }
   const cols=GH.pv?8:7;
-  const rows=GH.orders.map(o=>{
+  const shown=GH.orders.filter(ghMatch), filtered=shown.length!==GH.orders.length;
+  const rows=shown.map(o=>{
     const ref=(o.so_numbers&&o.so_numbers.length)?o.so_numbers.join(", "):o.order_ref, isOpen=GH.open===o.order_ref, did='gh-d-'+esc(o.order_ref);
     return '<tr class="gh-row" data-ghref="'+esc(o.order_ref)+'"><td data-l="Placed">'+ghDay(o.placed_on)+'</td>'
       +'<td data-l="Golden order #"><button type="button" class="gh-open" data-ghbtn="'+esc(o.order_ref)+'" aria-expanded="'+isOpen+'"'+(isOpen?' aria-controls="'+did+'"':'')+'>'+esc(ref)+'<span class="gh-sr"> — '+(isOpen?'hide':'show')+' items and tracking</span></button></td>'
@@ -7817,8 +7842,9 @@ function ghRender(){
       +(isOpen?'<tr class="gh-detail" id="'+did+'"><td colspan="'+cols+'">'+ghDetail(o)+'</td></tr>':'');
   }).join("");
   box.innerHTML='<div class="card" style="padding:0;overflow:hidden">'+head.replace('class="chead"','class="chead" style="padding:14px 16px 0"')+live
+    +ghFilterBar()+(filtered?'<div class="gh-fnote" role="status">Showing '+shown.length+' of '+GH.orders.length+' Golden orders loaded'+(GH.next?' — load older orders to search further back':'')+'.</div>':'')
     +'<div class="table-scroll"><table class="tbl"><thead><tr><th>Placed</th><th>Golden order #</th><th>PO</th><th>Ship to</th><th class="n">Units</th>'+(GH.pv?'<th class="n">Total</th>':'')+'<th>Status</th><th>Expected</th></tr></thead><tbody>'
-    +(rows||'<tr><td colspan="'+cols+'" class="empty">No Golden orders on record yet.</td></tr>')+'</tbody></table></div>'
+    +(rows||'<tr><td colspan="'+cols+'" class="empty">'+(filtered?'No Golden orders match these filters.':'No Golden orders on record yet.')+'</td></tr>')+'</tbody></table></div>'
     +((GH.next||GH.moreErr)?'<div style="padding:10px 16px">'+(GH.moreErr?'<span class="gh-err">Couldn’t load older orders. </span>':'')+'<button type="button" class="btn gh" data-ghmore'+(GH.state==="loading"?' aria-disabled="true"':'')+'>'+(GH.state==="loading"?"Loading…":GH.moreErr?"Try again":"Load older Golden orders")+'</button></div>':'')
     +'<div class="lead-note" style="padding:0 16px 12px">Status, shipping and tracking come from Golden Technologies. Select an order for its items and tracking.</div></div>';
   ghWire(); ghRestoreFocus();
@@ -7850,6 +7876,8 @@ function ghRestoreFocus(){
   let el=null;
   if(f==="more") el=box.querySelector("[data-ghmore]")||box.querySelector("[data-ghretry]");
   else if(f==="retry") el=box.querySelector("[data-ghretry]");
+  else if(f==="q"){ el=box.querySelector("#ghQ"); if(el){ el.focus(); const n=el.value.length; try{ el.setSelectionRange(n,n); }catch(e){} return; } }
+  else if(f.charAt(0)==="#") el=box.querySelector(f);
   else if(f.indexOf("ref:")===0){ const ref=f.slice(4); el=[...box.querySelectorAll("[data-ghbtn]")].find(b=>b.getAttribute("data-ghbtn")===ref)||null; }
   if(el) el.focus();
 }
@@ -7858,6 +7886,10 @@ function ghWire(){
   box.querySelectorAll("[data-ghref]").forEach(tr=>{ tr.onclick=e=>{ if(e.target.closest("[data-ghbtn]")) return; ghToggle(tr.getAttribute("data-ghref")); }; });
   box.querySelectorAll("[data-ghbtn]").forEach(b=>{ b.onclick=()=>ghToggle(b.getAttribute("data-ghbtn")); });
   const m=box.querySelector("[data-ghmore]"); if(m) m.onclick=()=>{ if(GH.state!=="loading"){ GH.focus="more"; goldenHistoryLoad(true); } };
+  const fq=box.querySelector("#ghQ"); if(fq){ let tm=null; fq.oninput=()=>{ clearTimeout(tm); tm=setTimeout(()=>{ GHF.q=fq.value; GH.focus="q"; ghRender(); },250); }; }
+  [["#ghS","status"],["#ghFrom","from"],["#ghTo","to"],["#ghLocSel","loc"]].forEach(([id,k])=>{ const el=box.querySelector(id); if(el) el.onchange=()=>{ GHF[k]=el.value; GH.focus=id; ghRender(); }; });
+  const cl=box.querySelector("[data-ghclear]"); if(cl) cl.onclick=()=>{ GHF.q=GHF.status=GHF.from=GHF.to=GHF.loc=""; GH.focus="#ghQ"; ghRender(); };
+  const pr=box.querySelector("[data-ghprint]"); if(pr) pr.onclick=ghPrint;
   const t=box.querySelector("[data-ghretry]"); if(t) t.onclick=()=>{ GH.focus="retry"; goldenHistoryLoad(false).then(()=>{ if(!GH.focus){ const b=$("#goldenHist [data-ghbtn]"); if(b) b.focus(); } }); };
 }
 async function reqTracking(id,mfr,summary){ try{ await api(TOOLS_ENDPOINT,{action:"tracking_request",order_ref:id,manufacturer:mfr,summary}); }catch(e){} alert("Tracking request sent to HCPS — we'll get the tracking from the manufacturer and send it to you."); }
@@ -8040,7 +8072,7 @@ function renderReports(){
   const ai=RPT_AI?(RPT_AI.error?`<div class="msg">${esc(RPT_AI.error)}</div>`:RPT_AI.list.map(r=>`<div class="rpt-ai"><b>${esc(r.title)}</b><div>${esc(r.detail)}</div></div>`).join('')):`<div class="rpt-sub">Suggestions written by AI from the figures on this page only — check them against your own knowledge of your market.</div>`;
   const head=`<div class="ph"><div><h1>Reports</h1><div class="sub">${esc(RPT.scope_name)} · ${esc(R.period.label)}</div></div>
       <div class="rpt-ctl">${scopeSel}${yearSel}<a class="btn gh" id="rptXl" onclick="rptExcel()">⬇ Excel</a><a class="btn gh" id="rptPdf" onclick="rptPdf()">⬇ PDF report</a></div></div>
-    <div class="rpt-tabs" role="tablist"><button role="tab" class="rpt-tab${RPT_TAB==='overview'?' on':''}" aria-selected="${RPT_TAB==='overview'}" onclick="rptTab('overview')">Overview</button><button role="tab" class="rpt-tab${RPT_TAB==='total'?' on':''}" aria-selected="${RPT_TAB==='total'}" onclick="rptTab('total')">Total Sales</button></div>`;
+    <div class="rpt-tabs" role="tablist"><button role="tab" class="rpt-tab${RPT_TAB==='overview'?' on':''}" aria-selected="${RPT_TAB==='overview'}" onclick="rptTab('overview')">Overview</button><button role="tab" class="rpt-tab${RPT_TAB==='total'?' on':''}" aria-selected="${RPT_TAB==='total'}" onclick="rptTab('total')">Total Sales</button><button type="button" class="rpt-tab" onclick="rptOrders()">Orders &amp; Tracking</button></div>`;
   if(RPT_TAB==='total'){ $("#view-reports").innerHTML=head+renderTotalSales(R,tbl); return; }
   $("#view-reports").innerHTML=head+`
     <div class="kpis">
@@ -8152,6 +8184,8 @@ async function exportPricingCSV(){await loadPricing();const rows=[['SKU','Manufa
   (PRICELIST||[]).forEach(p=>rows.push([p.code,p.mfrName,p.name,p.cost!=null?p.cost:'',p.map!=null?p.map:'',p.msrp!=null?p.msrp:'',p.category]));
   dl('hcps-pricing.csv',toCSV(rows));}
 function printPDF(){window.print();}
+function rptOrders(){ showView('orders'); setTimeout(()=>{ const g=$('#goldenHist'); if(g&&g.scrollIntoView) g.scrollIntoView({block:'start'}); },400); }
+window.rptOrders=rptOrders;
 window.exportHistoryCSV=exportHistoryCSV;window.exportReportCSV=exportReportCSV;window.exportPricingCSV=exportPricingCSV;window.printPDF=printPDF;window.renderReports=renderReports;
 
 /* ================= PHASE 3: favorites, branding, quotes, pricing requests ================= */
