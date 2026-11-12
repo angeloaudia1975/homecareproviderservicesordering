@@ -7890,7 +7890,7 @@ function ghDetail(o){
      (Priority 3). Shown only when HCPS has one for this account; opened by a 2-minute private link. */
   const C=GH.conf[o.order_ref]; let conf="";
   if(C&&C.state==="loading") conf='<div class="gh-col"><h4>Golden confirmation</h4><ul><li>Looking for Golden\u2019s confirmation…</li></ul></div>';
-  else if(C&&C.state==="ready") conf='<div class="gh-col"><h4>Golden confirmation</h4><ul>'+(C.list.length?C.list.map(x=>'<li><b>'+esc(x.so_number)+'</b>'+(x.confirmation_date?' · '+ghDay(x.confirmation_date):'')+(x.revised?' · revised':'')+(x.latest?'':' · earlier version')
+  else if(C&&C.state==="ready") conf='<div class="gh-col"><h4>Golden confirmation</h4><ul>'+(C.list.length?C.list.map(x=>'<li><b>'+esc(x.so_number)+'</b>'+(x.confirmation_date?' · '+ghDay(x.confirmation_date):'')+(x.revised?' · revised':'')+(x.latest?'':' · earlier version')+ghConfChanges(x)
       +'<br><button type="button" class="btn gh" data-ghconf="'+x.id+'" data-ghdl="0">Open / print PDF</button> <button type="button" class="btn gh" data-ghconf="'+x.id+'" data-ghdl="1">Download</button></li>').join(""):'<li>No Golden confirmation on file for this order yet.</li>')+'</ul></div>';
   else if(C&&C.state==="error") conf='<div class="gh-col"><h4>Golden confirmation</h4><ul><li>Confirmations could not be loaded just now.</li></ul></div>';
   return '<div class="gh-detail-in"><div class="gh-col"><h4>Items</h4><ul>'+items+'</ul></div><div class="gh-col"><h4>Tracking</h4><ul>'+trk+dlv+'</ul></div><div class="gh-col"><h4>History</h4><ul>'+life+'</ul></div>'+tot+conf+'</div>';
@@ -7905,6 +7905,12 @@ function ghTrackLink(t){ const n=String(t.tracking_number||"").replace(/\s+/g,""
 function ghRetryText(){ return GH.why==="history_unavailable"
   ? "Your Golden order history isn\u2019t available here just now \u2014 Golden holds it back while some of your orders are still being matched to their Golden sales orders (or Golden is briefly unavailable). Please try again later."
   : "Golden could not be reached just now."; }
+/* what changed on a revised confirmation, against the earlier version of the same Golden SO (both kept as originals) */
+function ghConfChanges(x){ const c=x&&x.changes; if(!c||!Array.isArray(c.items)) return "";
+  const money=v=>"$"+Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const t=c.items.map(i=>i.kind==="added"?"added "+i.qty+" × "+i.item_no:i.kind==="removed"?"removed "+i.qty+" × "+i.item_no:i.kind==="quantity"?i.item_no+" qty "+i.from+" → "+i.to:i.item_no+" "+money(i.from)+" → "+money(i.to));
+  if(c.total_from!=null&&c.total_to!=null&&Math.abs(c.total_from-c.total_to)>0.005) t.push("total "+money(c.total_from)+" → "+money(c.total_to));
+  return '<br><small>Changes since the '+(c.since?ghDay(c.since)+' ':'')+'confirmation: '+esc(t.length?t.join("; "):"none to the lines")+'</small>'; }
 async function ghConfLoad(o){
   const sos=(o.so_numbers||[]).filter(x=>/^SO\d{8,12}$/.test(x)).slice(0,20); if(!sos.length) return;
   if(window.__PREVIEW__&&window.__PREVIEW__.token) return;   // staff "view as dealer": the dealer's own documents are not shown
