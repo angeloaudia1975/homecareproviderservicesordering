@@ -190,8 +190,11 @@ const ghText = page => page.evaluate(() => (document.getElementById('goldenHist'
         ok(/\$1,300\.00 each · \$2,600\.00 · Golden sales order SO261001001/.test(det), 'B5.1 line price from Golden\'s SO: ' + det);
         ok(/freight and S&H as quoted when you ordered/.test(det), 'totals basis: ' + det);
         ok(!xss, 'hostile text from Golden must stay text'); ok(/<img src=x/.test(det), 'shown as text'); });
-      const noLink = await page.evaluate(() => !document.querySelector('#goldenHist a[href]'));
-      await t(`${label}: tracking numbers are not turned into links`, () => ok(noLink));
+      const links = await page.evaluate(() => [...document.querySelectorAll('#goldenHist a[href]')].map(a => [a.getAttribute('href'), a.target, a.rel, Math.round(a.getBoundingClientRect().height)]));
+      const dlvTxt = await ghText(page);
+      await t(`${label}: tracking opens only the carrier's own page (fixed https template, never Golden's url / javascript:); "Delivery not confirmed" instead of a date`, () => {
+        ok(links.length >= 1 && links.every(([h, tg, rel, hh]) => /^https:\/\/www\.ups\.com\/track\?tracknum=1Z[0-9]+$/.test(h) && tg === '_blank' && /noopener/.test(rel) && hh >= 44), JSON.stringify(links));
+        ok(!/LEAK|javascript/i.test(JSON.stringify(links)), 'Golden-supplied url never used'); ok(/Delivery not confirmed/.test(dlvTxt), dlvTxt.slice(0, 300)); });
 
       // 5 — keyboard: the order-number button toggles with Enter; aria-expanded follows; focus stays on the button
       await page.focus('[data-ghbtn="GSO261001002"]'); await page.keyboard.press('Enter');
