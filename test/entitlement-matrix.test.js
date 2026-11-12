@@ -35,7 +35,7 @@ const L=require(path.join(ROOT,'netlify','functions','catalog-layers.js'));
 const F=require(path.join(ROOT,'netlify','functions','catalog-feed.js'));
 const ev=(slug,tok)=>({httpMethod:'GET',headers:tok?{authorization:'Bearer '+tok}:{},queryStringParameters:{manufacturer:slug,identity:ID}});
 (async()=>{
-  await t('the storefront lists the lines under test',()=>{ for(const s of ['access4u','abm-respiratory-care','dalton','bemis']) if(!MF.includes(s)) throw new Error('missing '+s); for(const s of ['gce','ohio-medical']) if(MF.includes(s)) throw new Error('retired line listed: '+s); });
+  await t('the storefront lists the lines under test',()=>{ for(const s of ['access4u','abm-respiratory-care','dalton','bemis']) if(!MF.includes(s)) throw new Error('missing '+s); if(!MF.includes('ohio-medical')||MF.includes('gce')) throw new Error('Ohio Medical (restored) not listed once under its canonical identifier'); });
   for(const [d,tok] of [['dealer-A','tok-A'],['dealer-B','tok-B']]){
     await t(`${d}: catalog-layers answers exactly its own lines, 403 for every other manufacturer`,async()=>{
       const bad=[]; for(const s of MF){ const r=await L.handler(ev(s,tok)); const want=DEALERS[d].lines.includes(s)?200:403; if(r.statusCode!==want) bad.push(s+':'+r.statusCode); } if(bad.length) throw new Error(bad.join(' ')); });
@@ -46,13 +46,14 @@ const ev=(slug,tok)=>({httpMethod:'GET',headers:tok?{authorization:'Bearer '+tok
     const bad=[]; for(const s of MF) for(const tok of ['tok-P',null,'forged.jwt.value']) for(const [n,h] of [['layers',L],['feed',F]]){ const r=await h.handler(ev(s,tok)); if(r.statusCode!==401) bad.push(n+' '+s+' '+tok+':'+r.statusCode); } if(bad.length) throw new Error(bad.slice(0,6).join(' ')); });
   await t('a staff rep is refused commercial layers on every line (review goes through a dealer preview)',async()=>{
     const bad=[]; for(const s of MF){ const r=await L.handler(ev(s,'tok-rep')); if(r.statusCode!==403) bad.push(s+':'+r.statusCode); } if(bad.length) throw new Error(bad.join(' ')); });
-  await t('Ohio Medical / GCE is retired: 410 from both functions under either identifier, even for a dealer whose rows carry both, and for HCPS staff',async()=>{
-    DEALERS['dealer-A'].lines.push('ohio-medical','gce');
-    try{ for(const slug of ['gce','ohio-medical','complete-medical-supplies']) for(const tok of ['tok-A','tok-B']) for(const [n,h] of [['layers',L],['feed',F]]){
-      const r=await h.handler(ev(slug,tok)); if(r.statusCode!==410) throw new Error(n+' '+slug+' '+tok+':'+r.statusCode); } }
-    finally { DEALERS['dealer-A'].lines.splice(-2,2); }
-    if(F.authorize({kind:'staff',role:'president'},'ohio-medical').status!==410) throw new Error('staff reached a retired line (feed)');
-    if(L.authorizeLayers({kind:'staff',role:'president'},'gce').status!==410) throw new Error('staff reached a retired line (layers)');
+  await t('a retired line (Complete Medical) answers 410 from both functions even for a dealer whose rows carry it, and for HCPS staff; Ohio Medical / GCE (restored) does not',async()=>{
+    DEALERS['dealer-A'].lines.push('complete-medical-supplies');
+    try{ for(const tok of ['tok-A','tok-B']) for(const [n,h] of [['layers',L],['feed',F]]){
+      const r=await h.handler(ev('complete-medical-supplies',tok)); if(r.statusCode!==410) throw new Error(n+' '+tok+':'+r.statusCode); } }
+    finally { DEALERS['dealer-A'].lines.splice(-1,1); }
+    if(F.authorize({kind:'staff',role:'president'},'complete-medical-supplies').status!==410) throw new Error('staff reached a retired line (feed)');
+    if(F.authorize({kind:'staff',role:'president'},'ohio-medical').ok!==true || F.authorize({kind:'dealer',lines:['ohio-medical']},'ohio-medical').ok!==true) throw new Error('restored line refused');
+    if(F.authorize({kind:'dealer',lines:['pedifix']},'ohio-medical').status!==403) throw new Error('Ohio Medical opened to a dealer without its own account row');
   });
   /* storefront: the shop shows a dealer exactly the lines its access answer allows (never "all" by default) */
   const H=fs.readFileSync(path.join(ROOT,'public','index.html'),'utf8');

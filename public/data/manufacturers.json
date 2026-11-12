@@ -196,6 +196,16 @@
     }
   },
   {
+    "slug": "ohio-medical",
+    "name": "Ohio Medical / GCE",
+    "accent": "#0e7ac0",
+    "dark": "#0c2b44",
+    "logo": "/assets/logos/ohio-medical.jpg",
+    "hasData": true,
+    "sort": 11,
+    "quotable": false
+  },
+  {
     "slug": "dalton",
     "name": "Dalton Medical",
     "accent": "#1681c2",
