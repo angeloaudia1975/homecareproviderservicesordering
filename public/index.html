@@ -1979,6 +1979,7 @@ function upgradeSelectHtml(p){
   return `<div class="upgr"><label class="pnote" style="font-weight:700">Railing</label> <select class="upsel" aria-label="Railing upgrade"><option value="">Standard (2 rail)</option>${opts}</select></div>`;
 }
 function priceHtml(p){
+  if (p && (p._held || (typeof isHeldSlug==="function"&&isHeldSlug(p.manufacturer)))) return `<span class="price locked">${(typeof HELD_NOTE!=="undefined"?HELD_NOTE:"Pricing being verified")}</span>`;
   if (!state.dealer && p.base_price==null) return `<span class="price locked">Log in for pricing</span>`;
   if (p.base_price==null) return `<span class="price locked">Call for pricing</span>`;
   const cp=contractPrice(p);
@@ -2061,7 +2062,12 @@ function dealerPriceNote(note, p){
    Never true on the live site. */
 const STAGING=/^(deploy-preview-\d{1,5}|[a-z0-9-]{1,40})--hcpsonlineordering\.netlify\.app$/.test(location.hostname)&&!/^main--/.test(location.hostname);
 const RAW={files:{},content:{},manufacturers:null};
-const RETIRED_LINE_SLUGS=["complete-medical-supplies","ohio-medical","gce"];
+const RETIRED_LINE_SLUGS=["complete-medical-supplies"];   /* Ohio Medical / GCE restored by the owner 2026-11-12 (held below) */
+/* HELD lines (netlify/functions/_retired_lines.js ORDERING_HOLDS + its "gce" alias): listed and browsable, but no price is
+   shown and nothing goes in a cart until HCPS verifies the current price list; the order server refuses them too. */
+const HELD_LINE_SLUGS=["ohio-medical","gce"];
+function isHeldSlug(slug){ return HELD_LINE_SLUGS.includes(String(slug==null?"":slug).trim().toLowerCase()); }
+const HELD_NOTE="Pricing being verified — ordering opens once HCPS confirms the current price list";
 /* Historical orders and imported sales of a retired line still show its name (never the bare slug "gce"). */
 const RETIRED_LINE_NAMES={"complete-medical-supplies":"Complete Medical Supplies","ohio-medical":"Ohio Medical / GCE","gce":"Ohio Medical / GCE"};
 /* One test everywhere: trimmed and case-insensitive, like the servers' isRetiredLine. */
@@ -2721,7 +2727,10 @@ async function loadProducts(slug){
   catch(e){ return set([]); }
   if(typeof STAGING!=="undefined"&&STAGING){ try{ RAW.files[slug]=JSON.parse(JSON.stringify(prods)); }catch(e){} }
   if(seq!==_loadSeq) return false;
-  return set(await mergeCatalogEdits(slug, prods||[]));
+  const merged = await mergeCatalogEdits(slug, prods||[]);
+  /* a held line shows its catalog without any price (never a stale or unverified one) */
+  if((typeof isHeldSlug==="function"&&isHeldSlug(slug))) (merged||[]).forEach(p=>{ if(p){ p.base_price=null; p.dealer_price=null; p.tiers=[]; p._held=true; } });
+  return set(merged);
 }
 /* ONE CATALOG ON SCREEN — THE LAST ONE ASKED FOR (2026-10-26, ABM regression).
    Loading a line is slow (catalog file + the authenticated catalog layers). Clicking Strongback and then
@@ -4791,7 +4800,9 @@ function cardHtml(p){
   const _tiers = tierSummaryAcross(_tierSrc);
   const tierHtml = _tiers ? `<div class="tierhint"><b>Volume${_tiers.varies?' from':''}</b> ${esc(_tiers.text)}</div>` : "";
   const _allDisc = multi ? (Array.isArray(p._variants)&&p._variants.length&&p._variants.every(v=>v._discontinued)) : !!p._discontinued;
-  const buy = _allDisc
+  const buy = (p._held||(typeof isHeldSlug==="function"&&isHeldSlug(p.manufacturer)))
+    ? `<div class="buy"><span class="discbadge">Not orderable yet</span><button class="cv2-ghost" type="button" data-open="${esc(openCode)}">View details</button></div>`
+    : _allDisc
     ? `<div class="buy"><span class="discbadge">Discontinued — reference only</span><button class="cv2-ghost" type="button" data-open="${esc(openCode)}">View details</button></div>`
     : multi
     ? `<div class="buy"><button class="chooseBtn" type="button" data-open="${esc(openCode)}">Choose options <span aria-hidden="true">→</span></button></div>`
@@ -5155,6 +5166,7 @@ function renderProducts(){
 const cartKey=p=>`${p.manufacturer}::${p.code}`+(p.family!=null&&p.family!==""?`::${p.family}`:"")+(p._upgrade?`::u=${p._upgrade}`:"");
 const MFR={};                          // slug -> {po, notes}  (per-manufacturer order fields)
 function addToCart(p,qty){
+  if(p && (p._held || (typeof isHeldSlug==="function"&&isHeldSlug(p.manufacturer)))){ toast((typeof HELD_NOTE!=="undefined"?HELD_NOTE:"Pricing being verified")+'.'); return; }
   if(p && p._golden){ toast("Golden ordering in the 360 Dealer Portal is not open yet."); return; }
   if(p && p._discontinued){ toast(`${p.code} is discontinued — it is shown for reference and cannot be ordered`); return; }
   const k=cartKey(p); const cur=CART.get(k);
@@ -8276,7 +8288,7 @@ async function loadQuotesView(){ await Promise.all([ensureCatalogFav(), (typeof 
    price in its place. New quotes offer no product of an inactive line (manufacturers.json "quotable": false —
    Ohio Medical / GCE); an item already on a quote stays on it. */
 function quoteMsrp(p){ const v=p&&p.msrp!=null?Number(p.msrp):NaN; return (isFinite(v)&&v>0)?v:null; }
-function quotableLine(slug){ if(typeof isRetiredSlug==="function"&&isRetiredSlug(slug)) return false; const m=(MFRLIST||[]).find(x=>x.slug===slug); return !(m&&m.quotable===false); }
+function quotableLine(slug){ if(typeof isRetiredSlug==="function"&&isRetiredSlug(slug)) return false; if(typeof isHeldSlug==="function"&&isHeldSlug(slug)) return false;   /* a held line has no verified price or MSRP to quote */ const m=(MFRLIST||[]).find(x=>x.slug===slug); return !(m&&m.quotable===false); }
 function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">MSRP not provided</span>'; }
 function quoteItemHtml(r){ return `${esc(r.name)}<div style="font-size:10.5px;color:var(--muted)">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)}</div>`; }
 function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const sn=(typeof QSNAP!=="undefined"&&QSNAP[k])||{};const p=(PRICE&&PRICE[k])||((typeof GQUOTE!=="undefined"&&GQUOTE[k])||sn);
@@ -9604,7 +9616,7 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
               ${msrp?`<div class="pd-msrp">MSRP ${money(msrp)}</div>`:""}
               ${mapPrice?`<div class="pd-map" title="Minimum advertised price — do not advertise below this">${p._golden?"eMAP":"MAP"} ${money(mapPrice)}</div>`:""}
               ${margin?`<div class="pd-margin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Est. retail margin ${money(margin)}${marginPct?" · "+marginPct+"%":""}</div>`:""}`
-              :`<div class="pd-plabel">Pricing</div><div class="pd-price" style="font-size:20px">${p._golden?(GOLDEN.cat&&GOLDEN.cat.prices?"Price on request":"Dealer price shows once your Golden account is linked"):(state.dealer?"Call for pricing":"Log in for pricing")}</div>
+              :`<div class="pd-plabel">Pricing</div><div class="pd-price" style="font-size:20px">${p._golden?(GOLDEN.cat&&GOLDEN.cat.prices?"Price on request":"Dealer price shows once your Golden account is linked"):((typeof isHeldSlug==="function"&&isHeldSlug(p.manufacturer))?(typeof HELD_NOTE!=="undefined"?HELD_NOTE:"Pricing being verified"):(state.dealer?"Call for pricing":"Log in for pricing"))}</div>
               ${p._golden&&msrp?`<div class="pd-msrp">MSRP ${money(msrp)}</div>`:""}${p._golden&&mapPrice?`<div class="pd-map">eMAP ${money(mapPrice)}</div>`:""}`}
             ${variantSel}
             ${p._golden?goldenStockHtml([p]):""}
@@ -9616,6 +9628,8 @@ window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p36
               ? `<div class="gbrowse"><b>Browse only.</b> ${p._goldenAction==="configure"?"This Golden model can't be configured and ordered in the 360 Dealer Portal yet.":"Golden "+esc(String(p.category||"products").toLowerCase())+" can't be ordered in the 360 Dealer Portal yet."} Ask your HCPS rep to order it with Golden.</div>
                  <button type="button" class="pd-broch" data-gb-broch="${esc(p.code)}">${BROCH_ICON}Print Brochure</button>
                  <div class="pd-sub"><a role="button" tabindex="0" data-gb-quote="${esc(p.code)}">${QUOTE_ICON}Add to a quote</a></div>`
+              : (p._held||(typeof isHeldSlug==="function"&&isHeldSlug(p.manufacturer)))
+              ? `<div class="pd-disc"><b>Not orderable yet</b> — ${(typeof HELD_NOTE!=="undefined"?HELD_NOTE:"Pricing being verified")}.</div>`
               : p._discontinued
               ? `<div class="pd-disc"><b>Discontinued</b> — this item is shown for reference and can no longer be ordered.${(variants||[]).some(v=>!v._discontinued)?' Choose a current option above, or see related products below.':' See related products below, or ask your HCPS rep for the current replacement.'}</div>`
               : `${upgradeSelectHtml(p)}<div class="pd-buy buy">

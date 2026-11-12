@@ -64,7 +64,7 @@ async function dealerCaller(dealer_id) {
   const dm = await sb(
     `dealer_manufacturers?dealer_id=eq.${encodeURIComponent(dealer_id)}&active=eq.true&select=manufacturer`
   ).catch(() => []);
-  return { kind: "dealer", dealer_id, lines: (dm || []).map(x => String(x.manufacturer)) };
+  return { kind: "dealer", dealer_id, lines: (dm || []).map(x => RETIRED.lineSlug(x.manufacturer)) };
 }
 
 async function caller(event) {

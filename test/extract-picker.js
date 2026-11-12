@@ -27,7 +27,7 @@ function extract(src){ return NAMES.map(a=>grabDecl(src,a)).join('\n'); }
    verbatim, for tests that run storefront functions which call them. Empty when the storefront has none. */
 function retiredDecls(html){
   const out=[];
-  for(const re of [/const RETIRED_LINE_SLUGS=\[[^\]]*\];/, /const RETIRED_LINE_NAMES=\{[^}]*\};/, /function isRetiredSlug\(slug\)\{[^\n]*\}/, /function retiredLineName\(slug\)\{[^\n]*\}/]){ const m=re.exec(html); if(m) out.push(m[0]); }
+  for(const re of [/const RETIRED_LINE_SLUGS=\[[^\]]*\];/, /const RETIRED_LINE_NAMES=\{[^}]*\};/, /function isRetiredSlug\(slug\)\{[^\n]*\}/, /function retiredLineName\(slug\)\{[^\n]*\}/, /const HELD_LINE_SLUGS=\[[^\]]*\];/, /function isHeldSlug\(slug\)\{[^\n]*\}/, /const HELD_NOTE="[^"]*";/]){ const m=re.exec(html); if(m) out.push(m[0]); }
   return out.join('\n');
 }
 module.exports={extract,NAMES,grabDecl,retiredDecls};

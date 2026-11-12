@@ -18,10 +18,11 @@ ctx.MFRLIST=MF.map(m=>({slug:m.slug,name:m.name,quotable:m.quotable}));
 ctx.PRICE={'access4u|A1':{name:'With MSRP',mfrName:'Access4U',msrp:120,cost:60},'access4u|A2':{name:'No MSRP',mfrName:'Access4U',msrp:null,cost:77.77},
   'access4u|A3':{name:'Zero MSRP',mfrName:'Access4U',msrp:0,cost:40},'gce|G1':{name:'Ohio item',mfrName:'Ohio Medical / GCE',msrp:300,cost:150}};
 ctx.QUOTELIST=Object.entries(ctx.PRICE).map(([k,p])=>({mfr:k.split('|')[0],code:k.split('|')[1],name:p.name,mfrName:p.mfrName,cost:p.cost,msrp:p.msrp}));
-t('Ohio Medical / GCE is retired: not listed in manufacturers.json, refused by quotableLine under either identifier; no live line is quotable:false',()=>{
-  if(MF.some(m=>['gce','ohio-medical'].includes(m.slug))) throw new Error('Ohio Medical still listed');
-  if(ctx.quotableLine('gce')||ctx.quotableLine('ohio-medical')||ctx.quotableLine('OHIO-MEDICAL')) throw new Error('retired line quotable');
-  const off=MF.filter(m=>m.quotable===false); if(off.length) throw new Error('also off: '+off.map(m=>m.slug));
+t('Ohio Medical / GCE is restored but HELD (owner 2026-11-12): listed with quotable:false, refused by quotableLine under either identifier; no other line is quotable:false',()=>{
+  if(!MF.some(m=>m.slug==='ohio-medical'&&m.quotable===false)) throw new Error('Ohio Medical not listed as not quotable');
+  if(MF.some(m=>m.slug==='gce')) throw new Error('legacy gce listed');
+  if(ctx.quotableLine('gce')||ctx.quotableLine('ohio-medical')||ctx.quotableLine('OHIO-MEDICAL')) throw new Error('held line quotable');
+  const off=MF.filter(m=>m.quotable===false&&m.slug!=='ohio-medical'); if(off.length) throw new Error('also off: '+off.map(m=>m.slug));
   if(!ctx.quotableLine('access4u')) throw new Error('a live line refused');
 });
 t('no 2x estimate: a product without a manufacturer MSRP reads "MSRP not provided" and is not in the total',()=>{
