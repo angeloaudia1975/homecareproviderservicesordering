@@ -7826,7 +7826,7 @@ async function goldenHistoryLoad(more){
   }
   if(!r||r.enabled!==true){ GH.state="off"; box.innerHTML=""; ghLive(""); return; }
   if(r.available!==true){
-    GH.state=(r.reason==="branch_history_not_permitted")?"branch":(r.reason==="history_unavailable"||r.reason==="golden_unavailable"||r.retry)?"retry":"off";
+    GH.state=(r.reason==="branch_history_not_permitted")?"branch":(r.reason==="history_unavailable"||r.reason==="golden_unavailable"||r.retry)?"retry":"off"; GH.why=r.reason||"";
     if(GH.state==="off"){ box.innerHTML=""; ghLive(""); return; }
     ghRender(); return;
   }
@@ -7838,12 +7838,12 @@ async function goldenHistoryLoad(more){
 function ghRender(){
   const box=$("#goldenHist"); if(!box) return;
   const head='<div class="chead"><h3>Golden orders — live from Golden Technologies</h3></div>';
-  const msg=GH.state==="loading"?"Loading Golden orders…":GH.moreErr?"Older Golden orders could not be loaded.":GH.state==="retry"?"Golden could not be reached just now.":"";
+  const msg=GH.state==="loading"?"Loading Golden orders…":GH.moreErr?"Older Golden orders could not be loaded.":GH.state==="retry"?ghRetryText():"";
   ghLive(msg);   // one region that stays in the page, so changes are announced
   const live="";
   if(GH.state==="loading"&&!GH.orders.length){ box.innerHTML='<div class="card">'+head+live+'<div class="msg">Loading your Golden orders…</div></div>'; return; }
   if(GH.state==="branch"){ box.innerHTML='<div class="card">'+head+'<div class="msg" role="status">Golden order history is shown on your head-office account.</div></div>'; return; }
-  if(GH.state==="retry"){ box.innerHTML='<div class="card">'+head+'<div class="msg" role="status">Golden could not be reached just now. <button type="button" class="btn gh" data-ghretry>Try again</button></div></div>'; ghWire(); ghRestoreFocus(); return; }
+  if(GH.state==="retry"){ box.innerHTML='<div class="card">'+head+'<div class="msg" role="status">'+esc(ghRetryText())+' <button type="button" class="btn gh" data-ghretry>Try again</button></div></div>'; ghWire(); ghRestoreFocus(); return; }
   const cols=GH.pv?8:7;
   const shown=GH.orders.filter(ghMatch), filtered=shown.length!==GH.orders.length;
   const rows=shown.map(o=>{
@@ -7900,6 +7900,11 @@ const GH_CARRIER=[[/\bups\b/i,"https://www.ups.com/track?tracknum="],[/fed\s*ex/
 function ghTrackLink(t){ const n=String(t.tracking_number||"").replace(/\s+/g,""); if(!/^[A-Za-z0-9]{6,40}$/.test(n)) return "";
   const c=GH_CARRIER.find(x=>x[0].test(String(t.carrier||""))); if(!c) return "";
   return ' <a class="gh-trk" href="'+esc(c[1]+encodeURIComponent(n))+'" target="_blank" rel="noopener noreferrer">Track with '+esc(String(t.carrier).slice(0,30))+'</a>'; }
+/* Golden answers history_unavailable both when it is briefly down AND while some of the dealer's portal orders are still
+   being matched to their Golden sales orders (Golden then withholds the history rather than show an order twice). */
+function ghRetryText(){ return GH.why==="history_unavailable"
+  ? "Your Golden order history isn\u2019t available here just now \u2014 Golden holds it back while some of your orders are still being matched to their Golden sales orders (or Golden is briefly unavailable). Please try again later."
+  : "Golden could not be reached just now."; }
 async function ghConfLoad(o){
   const sos=(o.so_numbers||[]).filter(x=>/^SO\d{8,12}$/.test(x)).slice(0,20); if(!sos.length) return;
   if(window.__PREVIEW__&&window.__PREVIEW__.token) return;   // staff "view as dealer": the dealer's own documents are not shown
