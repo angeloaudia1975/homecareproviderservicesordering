@@ -7263,6 +7263,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .btn.pri{background:var(--orange);color:#fff}#p360wrap .btn.pri:hover{background:var(--orange-d)}
   #p360wrap .btn.nv{background:var(--navy2);color:#fff}#p360wrap .btn.nv:hover{background:var(--navy)}
   #p360wrap .btn.gh{background:#fff;color:var(--ink-2);border:1px solid var(--line)}
+  #goldenHist [data-ghconf]{min-height:44px;margin:4px 6px 0 0}
   #p360wrap .mainnav{background:var(--navy)}
   #p360wrap .mn-in{max-width:1240px;margin:0 auto;display:flex;gap:1px;padding:0 14px;overflow-x:auto}
   #p360wrap .mn-in a{color:#aebdd0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:12px 14px;border-bottom:3px solid transparent;white-space:nowrap}
@@ -7760,7 +7761,7 @@ async function loadOrders(){
    here. Shown only when Golden says this dealer is entitled AND history is on (switch golden_p360_history + Golden's
    verified link with history enabled); otherwise the section stays empty. Amounts only when Golden says prices are
    visible. Every value is escaped; tracking numbers are shown as text, never turned into a link. */
-const GH={ seq:0, openSeq:0, orders:[], next:null, pv:false, open:null, state:"idle", moreErr:false, focus:null };
+const GH={ seq:0, openSeq:0, orders:[], next:null, pv:false, open:null, state:"idle", moreErr:false, focus:null, conf:{} };
 /* Filters + print (owner 2026-11-11): over the Golden orders already loaded — order # / PO / SKU / tracking search, status,
    placed-date range and ship-to location; nothing is sent anywhere. "Load older" brings more orders into the search. */
 const GHF={ q:"", status:"", from:"", to:"", loc:"" };
@@ -7793,7 +7794,7 @@ const ghQty=n=>Number.isInteger(n)?String(n):"";
 function ghPill(s){ const l=GH_STATUS[s]||"—"; const c=(s==="completed"||s==="shipped"||s==="invoiced")?"done":(s==="cancelled")?"imported":(s==="submitted"||s==="pending_review")?"open":"portal"; return '<span class="pill '+c+'">'+esc(l)+'</span>'; }
 function ghWhere(o){ const c=[o.ship_to&&o.ship_to.city,o.ship_to&&o.ship_to.state].filter(Boolean).join(", "); return c?esc(c):"—"; }
 function ghLive(t){ const lv=$("#goldenHistLive"); if(lv&&lv.textContent!==t) lv.textContent=t; }
-function ghReset(){ GH.seq++; GH.openSeq++; GH.orders=[]; GH.next=null; GH.pv=false; GH.open=null; GH.state="idle"; GH.moreErr=false; GH.focus=null; }
+function ghReset(){ GH.seq++; GH.openSeq++; GH.orders=[]; GH.next=null; GH.pv=false; GH.open=null; GH.state="idle"; GH.moreErr=false; GH.focus=null; GH.conf={}; }
 async function goldenHistoryLoad(more){
   const box=$("#goldenHist"); if(!box) return;
   if(typeof goldenCall!=="function") return;
@@ -7868,13 +7869,39 @@ function ghDetail(o){
   const basis=B==="golden_so"?'Amounts from Golden\u2019s sales order.':B==="golden_so_submitted_freight"?'Merchandise from Golden\u2019s sales order; freight and S&amp;H as quoted when you ordered.':B==="submitted"?'Amounts as submitted — Golden has not booked this order yet.':'';
   const tot=(GH.pv&&o.totals)?'<div class="gh-col"><h4>Totals</h4><ul><li>Merchandise '+m(o.totals.subtotal)+'</li><li>'+frt+'</li><li>'+sh+'</li><li><b>Total '+m(o.totals.total)+(fq?' + freight to be quoted':'')+'</b></li>'+(basis?'<li><small>'+basis+'</small></li>':'')+'</ul></div>'
     :(fq?'<div class="gh-col"><h4>Freight</h4><ul><li>To be quoted by Golden — Golden confirms it with you before shipping.</li></ul></div>':'');
-  return '<div class="gh-detail-in"><div class="gh-col"><h4>Items</h4><ul>'+items+'</ul></div><div class="gh-col"><h4>Tracking</h4><ul>'+trk+'</ul></div><div class="gh-col"><h4>History</h4><ul>'+life+'</ul></div>'+tot+'</div>';
+  /* Golden's own confirmation PDF(s) for this order's sales order(s) — kept privately by HCPS, matched to Golden's record
+     (Priority 3). Shown only when HCPS has one for this account; opened by a 2-minute private link. */
+  const C=GH.conf[o.order_ref]; let conf="";
+  if(C&&C.state==="loading") conf='<div class="gh-col"><h4>Golden confirmation</h4><ul><li>Looking for Golden\u2019s confirmation…</li></ul></div>';
+  else if(C&&C.state==="ready") conf='<div class="gh-col"><h4>Golden confirmation</h4><ul>'+(C.list.length?C.list.map(x=>'<li><b>'+esc(x.so_number)+'</b>'+(x.confirmation_date?' · '+ghDay(x.confirmation_date):'')+(x.revised?' · revised':'')+(x.latest?'':' · earlier version')
+      +'<br><button type="button" class="btn gh" data-ghconf="'+x.id+'" data-ghdl="0">Open / print PDF</button> <button type="button" class="btn gh" data-ghconf="'+x.id+'" data-ghdl="1">Download</button></li>').join(""):'<li>No Golden confirmation on file for this order yet.</li>')+'</ul></div>';
+  else if(C&&C.state==="error") conf='<div class="gh-col"><h4>Golden confirmation</h4><ul><li>Confirmations could not be loaded just now.</li></ul></div>';
+  return '<div class="gh-detail-in"><div class="gh-col"><h4>Items</h4><ul>'+items+'</ul></div><div class="gh-col"><h4>Tracking</h4><ul>'+trk+'</ul></div><div class="gh-col"><h4>History</h4><ul>'+life+'</ul></div>'+tot+conf+'</div>';
+}
+async function ghConfLoad(o){
+  const sos=(o.so_numbers||[]).filter(x=>/^SO\d{8,12}$/.test(x)).slice(0,20); if(!sos.length) return;
+  if(window.__PREVIEW__&&window.__PREVIEW__.token) return;   // staff "view as dealer": the dealer's own documents are not shown
+  const ref=o.order_ref; GH.conf[ref]={state:"loading",list:[]}; const my=GH.seq;
+  const j=await goldenCall("confirmations",{so_numbers:sos});
+  if(my!==GH.seq) return;
+  if(j&&j.ok===true&&j.enabled===false){ delete GH.conf[ref]; }
+  else if(j&&j.ok===true&&Array.isArray(j.confirmations)) GH.conf[ref]={state:"ready",list:j.confirmations};
+  else GH.conf[ref]={state:"error",list:[]};
+  if(GH.open===ref){ GH.focus=GH.focus||("ref:"+ref); ghRender(); }
+}
+async function ghConfOpen(id, download){
+  const w=download?null:window.open("","_blank");
+  const r=await goldenCall("confirmation_file",{id});
+  if(!r||!r.url){ if(w) w.close(); const m="The confirmation could not be opened just now."; const l=$("#goldenHistLive"); if(l) l.textContent=m; if(typeof window.showToast==="function") window.showToast(m); return; }
+  const url=download?r.url+(r.url.indexOf("?")>=0?"&":"?")+"download="+encodeURIComponent(r.file_name||"confirmation.pdf"):r.url;
+  if(w){ try{ w.opener=null; }catch(e){} w.location=url; } else { const a=document.createElement("a"); a.href=url; a.rel="noopener"; document.body.appendChild(a); a.click(); a.remove(); }
 }
 async function ghToggle(ref){
   const tok=++GH.openSeq;   // only the newest open/close may apply a refresh
   GH.focus="ref:"+ref;
   if(GH.open===ref){ GH.open=null; ghRender(); return; }
   GH.open=ref; ghRender();
+  { const o0=GH.orders.find(o=>o.order_ref===ref); if(o0&&!GH.conf[ref]) ghConfLoad(o0); }
   const my=GH.seq; const r=await goldenCall("order",{order_ref:ref});   // refresh this one order from Golden (tracking may be newer)
   if(my!==GH.seq||tok!==GH.openSeq||GH.open!==ref||!r||r.available!==true||!r.order||r.order.order_ref!==ref) return;
   GH.orders=GH.orders.map(o=>o.order_ref===ref?r.order:o); if(r.prices_visible!==true) GH.pv=false; GH.focus="ref:"+ref; ghRender();
@@ -7893,6 +7920,7 @@ function ghRestoreFocus(){
 function ghWire(){
   const box=$("#goldenHist"); if(!box) return;
   box.querySelectorAll("[data-ghref]").forEach(tr=>{ tr.onclick=e=>{ if(e.target.closest("[data-ghbtn]")) return; ghToggle(tr.getAttribute("data-ghref")); }; });
+  box.querySelectorAll("[data-ghconf]").forEach(b=>{ b.onclick=e=>{ e.stopPropagation(); ghConfOpen(+b.getAttribute("data-ghconf"), b.getAttribute("data-ghdl")==="1"); }; });
   box.querySelectorAll("[data-ghbtn]").forEach(b=>{ b.onclick=()=>ghToggle(b.getAttribute("data-ghbtn")); });
   const m=box.querySelector("[data-ghmore]"); if(m) m.onclick=()=>{ if(GH.state!=="loading"){ GH.focus="more"; goldenHistoryLoad(true); } };
   const fq=box.querySelector("#ghQ"); if(fq){ let tm=null; fq.oninput=()=>{ clearTimeout(tm); tm=setTimeout(()=>{ GHF.q=fq.value; GH.focus="q"; ghRender(); },250); }; }
