@@ -1,5 +1,8 @@
 [build]
   publish = "public"
+  # P0 gate (2026-11-13): a listed line's public catalog file must have its private commercial record before it deploys
+  # (PediFix went unpriced 2026-11-07 → 11-13 because a category edit changed the file and no record was seeded).
+  command = "node scripts/catalog-identity-gate.js"
   functions = "netlify/functions"
   # Skip the deploy (exit 0) unless the push changes what the live site serves (public/) or runs
   # (netlify/, netlify.toml): every production deploy spends 15 team credits. SQL (supabase/), tests,
