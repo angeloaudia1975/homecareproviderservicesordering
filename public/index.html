@@ -3007,7 +3007,7 @@ function goldenQuoteAdd(sku, cur){
   if(window.P360Quote&&window.P360Quote.add) window.P360Quote.add(key);
   /* C3-07 P4: no Golden MSRP → HCPS calculated retail (2× Golden's standard price, at or above eMAP), read on the server */
   if(rec.msrp==null&&!/\|u=/.test(key)) goldenCall("retail",{code:key.slice(7)}).then(j=>{ if(j&&Number(j.price)>0&&GQUOTE[key]===rec){ rec.msrp=Number(j.price); rec.msrpCalc=j.source==="calculated"; if(typeof renderQuotes==="function"){ try{ renderQuotes(); }catch(e){} } } }).catch(()=>{});
-  toast("Added to your customer quote"+(rec.msrp==null?" — Golden publishes no retail price for this configuration, so it shows “MSRP not provided”":""));
+  toast("Added to your customer quote"+(rec.msrp==null?" — Golden publishes no retail price for this configuration, so it shows “Price on Request”":""));
   if(typeof showP360==="function") showP360("quotes");
 }
 const BROCH_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>';
@@ -8002,20 +8002,42 @@ function quoteEntry(p, line, upgrade){
 }
 let QUOTE_UNAVAILABLE=[];   /* lines whose catalog could not be loaded — said on screen, never silently missing */
 async function hubStoreCatalog(){
-  const lines=((typeof entitledManufacturers==='function')?entitledManufacturers():[])
-    .filter(m=>m&&m.hasData!==false&&!(typeof isGoldenSlug==='function'&&isGoldenSlug(m.slug))&&quotableLine(m.slug));
+  /* CUSTOMER QUOTES FOR EVERY REPRESENTED LINE (owner 2026-11-12). Browsing and quoting never depend on a manufacturer
+     account: the dealer's own lines come from the shop's own merge (and fall back to the price-free path if their prices cannot load); every
+     other listed line comes from its public catalog file — names, options, photos, no price — and the server then supplies
+     the manufacturer's OFFICIAL MSRP only (never HCPS calculated retail, which is 2 × a cost the dealer may not see) and
+     says which products the shop does not list. Without an MSRP a product reads "Price on Request". Ordering is unchanged. */
+  const ent=((typeof entitledManufacturers==='function')?entitledManufacturers():[]).filter(Boolean);
+  const listed=(typeof state!=='undefined'&&state&&Array.isArray(state.manufacturers))?state.manufacturers:[];
+  const seen=new Set(ent.map(m=>m.slug));
+  const all=ent.concat((ent.length||(typeof AUTH!=='undefined'&&AUTH&&AUTH.status==='approved'))?listed.filter(m=>m&&!seen.has(m.slug)):[]);
+  const lines=all.filter(m=>m&&m.hasData!==false&&!(typeof isGoldenSlug==='function'&&isGoldenSlug(m.slug))&&quotableLine(m.slug));
+  const own=new Set(ent.map(m=>String(m.slug)));
   const out=[]; QUOTE_UNAVAILABLE=[];
+  /* public catalog rows with every price removed; the server confirms each product and supplies only its official MSRP */
+  const publicRows=async line=>{
+    const r=await fetch('./data/'+line.slug+'.json',{cache:'no-store'}); if(!r.ok) throw new Error('catalog '+r.status);
+    const d=await r.json(); const file=Array.isArray(d)?d:((d&&d.products)||[]);
+    const rows=[];
+    for(const p0 of file){ if(!p0||!p0.code||p0.active===false||p0.discontinued===true) continue;
+      const p=Object.assign({},p0,{base_price:null,dealer_price:null,tiers:[],msrp:null,map:null});
+      const e=quoteEntry(p,line); if(e){ e.cost=null; e.account=false; rows.push(e); } }
+    return rows;
+  };
   await Promise.all(lines.map(async line=>{
-    try{
-      const r=await fetch('./data/'+line.slug+'.json',{cache:'no-store'}); if(!r.ok) throw new Error('catalog '+r.status);
-      const prods=await mergeCatalogEdits(line.slug, (await r.json())||[]);
-      const sellable=(prods||[]).filter(p=>p&&p.code&&!p._discontinued&&!p._hidden);
-      if(sellable.length && !sellable.some(p=>Number(p.base_price)>0)) throw new Error('pricing unavailable');
-      const rows=[];
-      for(const p of sellable){ const e=quoteEntry(p,line); if(e) rows.push(e);
-        for(const u of (Array.isArray(p.upgrades)?p.upgrades:[])){ if(u&&u.label){ const ue=quoteEntry(p,line,u.label); if(ue) rows.push(ue); } } }
-      out.push({line,rows});
-    }catch(e){ QUOTE_UNAVAILABLE.push(line.name||line.slug); }
+    if(own.has(String(line.slug))){
+      try{
+        const r=await fetch('./data/'+line.slug+'.json',{cache:'no-store'}); if(!r.ok) throw new Error('catalog '+r.status);
+        const prods=await mergeCatalogEdits(line.slug, (await r.json())||[]);
+        const sellable=(prods||[]).filter(p=>p&&p.code&&!p._discontinued&&!p._hidden);
+        if(sellable.length && !sellable.some(p=>Number(p.base_price)>0)) throw new Error('pricing unavailable');
+        const rows=[];
+        for(const p of sellable){ const e=quoteEntry(p,line); if(e) rows.push(e);
+          for(const u of (Array.isArray(p.upgrades)?p.upgrades:[])){ if(u&&u.label){ const ue=quoteEntry(p,line,u.label); if(ue) rows.push(ue); } } }
+        out.push({line,rows}); return;
+      }catch(e){ /* the dealer's prices for this line could not load (no account yet, or an outage): still quotable at MSRP */ }
+    }
+    try{ out.push({line,rows:await publicRows(line)}); }catch(e){ QUOTE_UNAVAILABLE.push(line.name||line.slug); }
   }));
   return out;
 }
@@ -8075,13 +8097,27 @@ async function buildQuoteCatalog(sig){
   try{
     for(const {line,rows} of await hubStoreCatalog()){
       for(const e of rows){
-        const opt={code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category};
+        const opt={code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category,account:e.account!==false};
         quote.push(opt);
-        if(!e.upgrade) list.push({code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category});
+        if(!e.upgrade) list.push({code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category,account:e.account!==false});
         PRICE[e.key]={msrp:e.msrp,map:e.map,cost:e.cost,category:e.category,name:e.family,option:e.option,sku:e.code,mfrName:e.mfrName,msrpEach:e.msrpEach,quotable:true,image:e.image};
       }
     }
   }catch(e){}
+  /* GOLDEN IN THE QUOTE LIST (owner 2026-11-12): every Golden product the dealer may browse (Golden's own eligibility
+     answer — account or browse-only; Golden's pricing controls are untouched) is offered here with Golden's official
+     retail only. A configurable lift chair (PR###-XXX) is quoted from its Shop page, where the exact size, fabric,
+     colour and upgrades are chosen, so Shop, configurator and quote always describe the same chair. */
+  if(typeof goldenEntitled==='function'&&goldenEntitled()&&quotableLine(CONFIG.GOLDEN_SLUG)){
+    try{
+      const gp=await goldenCatalogProducts();
+      for(const p of gp||[]){ if(!p||!p.code) continue;
+        const cfg=p._goldenAction==='configure'&&/^PR\d{3}-[A-Z]{3}$/.test(p.code);
+        const {rec}=goldenQuoteRecord(p,null); if(!cfg) GQUOTE['golden|'+p.code]=rec;
+        quote.push({code:p.code,mfr:'golden',mfrName:'Golden Technologies',name:rec.name+(rec.option?' — '+rec.option:'')+(cfg?' (choose fabric & colour)':''),cost:null,map:null,msrp:rec.msrp,category:p.category,account:true,golden:true,configure:cfg});
+      }
+    }catch(e){ QUOTE_UNAVAILABLE.push('Golden Technologies'); }
+  }
   QUOTELIST=quote; PRICELIST=list; _quoteSig=sig;
   await applyDefaultRetail(list).catch(()=>null);
 }
@@ -8090,17 +8126,29 @@ async function buildQuoteCatalog(sig){
    labelled "HCPS calculated". The page never computes it, so what the dealer sees is what quotes, brochures and the
    storefront use. */
 async function applyDefaultRetail(list){
-  if(typeof PREVIEW!=='undefined'&&PREVIEW) return;
-  const need=(list||[]).filter(e=>e&&e.msrp==null&&!/\|u=/.test(e.code)&&e.mfr!=='golden-technologies');
+  const noAcct=(list||[]).filter(e=>e&&e.account===false);
+  const dropNoAcct=(keys)=>{ const gone=new Set(keys); if(!gone.size) return;
+    QUOTELIST=(QUOTELIST||[]).filter(x=>!gone.has(x.mfr+'|'+x.code)); PRICELIST=(PRICELIST||[]).filter(x=>!gone.has(x.mfr+'|'+x.code));
+    if(PRICE) gone.forEach(k=>{ delete PRICE[k]; }); };
+  if(typeof PREVIEW!=='undefined'&&PREVIEW){ dropNoAcct(noAcct.map(e=>e.mfr+'|'+e.code)); return; }   /* a staff preview shows the dealer's own lines */
+  const need=(list||[]).filter(e=>e&&(e.msrp==null||e.account===false)&&!/\|u=/.test(e.code)&&e.mfr!=='golden-technologies');
+  const checked=new Set(), hidden=[];
   for(let i=0;i<need.length;i+=500){
     const r=await quotesCall({action:'default_retail',items:need.slice(i,i+500).map(e=>({manufacturer:e.mfr,code:e.code}))});
-    if(!(r&&r.ok&&Array.isArray(r.items))) return;
+    if(!(r&&r.ok&&Array.isArray(r.items))) break;
+    for(const x of r.items){ if(!x) continue; const k=x.manufacturer+'|'+x.code; checked.add(k); if(x.active===false) hidden.push(k); }
     const by=new Map(r.items.filter(x=>x&&Number(x.price)>0).map(x=>[x.manufacturer+'|'+x.code,x]));
     for(const e of need){ const d=by.get(e.mfr+'|'+e.code); if(!d) continue; const k=e.mfr+'|'+e.code;
       e.msrp=Number(d.price); e.msrpCalc=d.source==='calculated';
       if(PRICE&&PRICE[k]){ PRICE[k].msrp=e.msrp; PRICE[k].msrpCalc=e.msrpCalc; }
       const qo=(QUOTELIST||[]).find(x=>x.mfr===e.mfr&&x.code===e.code); if(qo){ qo.msrp=e.msrp; qo.msrpCalc=e.msrpCalc; } }
   }
+  /* a line without an account is offered only as far as the server confirmed it: a product the shop does not list is
+     removed, and if the server could not be asked, the line is reported unavailable rather than shown unchecked */
+  const hid=new Set(hidden);
+  const unchecked=noAcct.filter(e=>!checked.has(e.mfr+'|'+e.code)&&!/\|u=/.test(e.code));
+  dropNoAcct(noAcct.filter(e=>hid.has(e.mfr+'|'+e.code)||!checked.has(e.mfr+'|'+e.code.split('|u=')[0])).map(e=>e.mfr+'|'+e.code));
+  if(unchecked.length){ const names=[...new Set(unchecked.map(e=>e.mfrName||e.mfr))]; QUOTE_UNAVAILABLE=[...new Set((QUOTE_UNAVAILABLE||[]).concat(names))]; }
 }
 function retailUnit(mfr,code,unitCost){
   const r=PRICE&&PRICE[mfr+'|'+code];
@@ -8300,7 +8348,7 @@ async function loadQuotesView(){ await Promise.all([ensureCatalogFav(), (typeof 
    Ohio Medical / GCE); an item already on a quote stays on it. */
 function quoteMsrp(p){ const v=p&&p.msrp!=null?Number(p.msrp):NaN; return (isFinite(v)&&v>0)?v:null; }
 function quotableLine(slug){ if(typeof isRetiredSlug==="function"&&isRetiredSlug(slug)) return false; if(typeof isHeldSlug==="function"&&isHeldSlug(slug)) return false;   /* a held line has no verified price or MSRP to quote */ const m=(MFRLIST||[]).find(x=>x.slug===slug); return !(m&&m.quotable===false); }
-function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">MSRP not provided</span>'; }
+function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">Price on Request</span>'; }
 function quoteItemHtml(r){ return `${esc(r.name)}<div style="font-size:10.5px;color:var(--muted)">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)}</div>`; }
 function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const sn=(typeof QSNAP!=="undefined"&&QSNAP[k])||{};const p=(PRICE&&PRICE[k])||((typeof GQUOTE!=="undefined"&&GQUOTE[k])||sn);
   return {key:k,mfr,code,sku:p.sku||sn.sku||code.split("|u=")[0],name:p.name||sn.name||code,option:p.option||sn.option||"",mfrName:p.mfrName||sn.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach,msrpCalc:!!p.msrpCalc,image:p.image||sn.image||""};}); }
@@ -8341,7 +8389,7 @@ function quotePaperHtml(picked,total){
     <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>${QSAVED?esc(QSAVED.quote_no):"Draft"}</b><div class="qc">Valid ${esc(QCUST.valid||"30 days")}</div></div></div>
     ${QCUST.name||QCUST.title?`<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">${QCUST.name?`Prepared for <b>${esc(QCUST.name)}</b>`:""}${QCUST.title?`<div>${esc(QCUST.title)}</div>`:""}</div>`:""}
     <table class="qtbl"><thead><tr><th>Product</th><th style="text-align:right">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Amount</th></tr></thead><tbody>${picked.map(r=>{ const u=qUnit(r), q=qMeta(r).qty;
-      return `<tr><td>${quoteItemHtml(r)}</td><td style="text-align:right">${q}</td><td style="text-align:right">${u!=null?qMoney(u)+(qMeta(r).basis==='msrp'&&r.msrpEach?' each':'')+(qMeta(r).basis==='msrp'?'<div style="font-size:9.5px;color:var(--muted)">'+(r.msrpCalc?'Retail price (HCPS calculated)':'MSRP')+'</div>':''):(qMsrpOk(r)?'<span class="est">Price on request</span>':'<span class="est">MSRP not provided</span>')}</td><td style="text-align:right">${u!=null?qMoney(u*q):'—'}</td></tr>`; }).join("")||'<tr><td colspan="4" style="color:var(--muted)">Add products to build the quote.</td></tr>'}</tbody></table>
+      return `<tr><td>${quoteItemHtml(r)}</td><td style="text-align:right">${q}</td><td style="text-align:right">${u!=null?qMoney(u)+(qMeta(r).basis==='msrp'&&r.msrpEach?' each':'')+(qMeta(r).basis==='msrp'?'<div style="font-size:9.5px;color:var(--muted)">'+(r.msrpCalc?'Retail price (HCPS calculated)':'MSRP')+'</div>':''):(qMsrpOk(r)?'<span class="est">Price on request</span>':'<span class="est">Price on Request</span>')}</td><td style="text-align:right">${u!=null?qMoney(u*q):'—'}</td></tr>`; }).join("")||'<tr><td colspan="4" style="color:var(--muted)">Add products to build the quote.</td></tr>'}</tbody></table>
     <div class="qtot">Total: ${qMoney(total)}</div>
     ${QCUST.notes?`<div style="font-size:11px;margin-top:8px;white-space:pre-wrap">${esc(QCUST.notes)}</div>`:""}
     <div style="font-size:10px;color:var(--muted);margin-top:10px">Prices quoted by ${esc(biz)}.${picked.some(r=>qUnit(r)==null)?" Items without a price are not in the total.":""} The printed / emailed quote is checked against HCPS's records.</div>`;
@@ -8467,7 +8515,11 @@ function rpUi(kind,v){ if(!RP) return;
   else if(kind==='discard'){ RP.edits={}; RP.msg=''; renderRetailView(); }
   else if(kind==='more'){ RP.limit+=300; rpRefreshTable(); } }
 function qPreview(){ const picked=quotePicked(); const total=quoteTotal(picked); const el=$("#qpaper"); if(el)el.innerHTML=quotePaperHtml(picked,total); }
-function qAdd(){ const v=$("#qsel").value; if(v&&!QUOTE.includes(v)){ QUOTE.push(v); QDIRTY=true; } renderQuotes(); }
+function qAdd(){ const v=$("#qsel").value; if(!v) return;
+  const o=(QUOTELIST||[]).find(x=>x.mfr+"|"+x.code===v);
+  /* a configurable Golden lift chair opens its Shop page: the quote keeps the exact chair the dealer configures there */
+  if(o&&o.golden&&o.configure){ (typeof toast==='function'?toast:qToast)('Choose the fabric and colour, then press “Add to a quote”.'); if(typeof showShop==="function"){ showShop(CONFIG.GOLDEN_SLUG); setTimeout(()=>{ if(typeof openProductDetail==="function") openProductDetail(o.code); },350); } return; }
+  if(!QUOTE.includes(v)){ QUOTE.push(v); QDIRTY=true; } renderQuotes(); }
 function qDel(mfr,code){ QUOTE=QUOTE.filter(x=>x!==mfr+"|"+code); QDIRTY=true; renderQuotes(); }
 /* ---------- C3-07 Stage 4: MY RETAIL PRICES (owner 2026-11-05; D2 / D3) ----------
    The dealer's own selling prices, used on quotes and brochures. A head office sets the COMPANY price and, where a location
