@@ -6478,6 +6478,7 @@ function brochurePayload(code){
        2× dealer cost (_msrp_suggested). */
     msrp: (p.msrp && !p._msrp_suggested && !p._upgrade) ? p.msrp : null,
     _upgrade: !!p._upgrade,   // an upgraded configuration has no published MSRP of its own
+    _map: (!p._upgrade && !p._golden && Number(p.map) > 0) ? Number(p.map) : null,   // shown on the choice only; the server reads its own MAP
     // Dealer cost is deliberately NOT sent. A field that never leaves the page
     // cannot leak onto a document a dealer hands to a patient.
     quote_price: null,
@@ -6511,9 +6512,12 @@ function brPriceSet(pl){
   /* Returns the product payload with the chosen customer price, or {error}. */
   const mode=brPriceChoice(); const out=Object.assign({},pl,{quote_price:null}); let include_msrp=false;
   if(mode==='msrp'){ if(!pl.msrp) return {error:'This product has no verified manufacturer MSRP.'}; include_msrp=true; }
+  else if(mode==='map'){ if(!pl._map) return {error:'No manufacturer advertised price is on file for this product.'}; }
   else if(mode==='retail'){ const k=(pl._mfrSlug||'')+'|'+pl.code; const r=RETAIL&&RETAIL.byKey[k]; if(!r) return {error:'No saved retail price for this product yet.'}; out.quote_price=r.price; }
   else if(mode==='once'){ const v=Number(String(((document.getElementById('brOnce')||{}).value)||'').replace(/[$,\s]/g,'')); if(!(v>0&&v<=1000000)) return {error:'Enter the price for this brochure.'}; out.quote_price=Math.round(v*100)/100; }
-  return {payload:out,include_msrp};
+  const cmp=document.getElementById('brCompare'), exp=document.getElementById('brExpires');
+  const until=exp&&/^\d{4}-\d{2}-\d{2}$/.test(exp.value)?exp.value:'';
+  return {payload:out,include_msrp,price_basis:mode,compare:!cmp||cmp.checked,offer_expires:until};
 }
 async function brSaveRetail(){
   const pl=brochurePayload(_brCode); if(!pl) return;
@@ -6525,14 +6529,23 @@ async function brSaveRetail(){
 function brRenderPriceRow(){
   const pl=brochurePayload(_brCode); const host=document.getElementById('brPriceBox'); if(!pl||!host) return;
   const k=(pl._mfrSlug||'')+'|'+pl.code; const saved=RETAIL&&RETAIL.byKey[k]; const cur=brPriceChoice();
+  const keepCmp=document.getElementById('brCompare'), keepExp=document.getElementById('brExpires'), keepOnce=document.getElementById('brOnce');
+  const kept={cmp:keepCmp?keepCmp.checked:true, exp:keepExp?keepExp.value:'', once:keepOnce?keepOnce.value:''};
   const fm=v=>'$'+Number(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
   host.innerHTML=`<div class="br-sub" style="font-weight:700;margin-bottom:4px">Price for your customer</div>
     <label class="br-row"><input type="radio" name="brPrice" value="none" ${cur==='none'?'checked':''}> No price</label>
     <label class="br-row" ${pl.msrp?'':'style="opacity:.55"'}><input type="radio" name="brPrice" value="msrp" ${pl.msrp?'':'disabled'} ${cur==='msrp'?'checked':''}> Manufacturer's MSRP ${pl.msrp?fm(pl.msrp):'— not published'}</label>
+    ${pl._map?`<label class="br-row"><input type="radio" name="brPrice" value="map" ${cur==='map'?'checked':''}> Manufacturer's advertised price (MAP) ${fm(pl._map)}</label>`:''}
     <label class="br-row" ${saved?'':'style="opacity:.55"'}><input type="radio" name="brPrice" value="retail" ${saved?'':'disabled'} ${cur==='retail'?'checked':''}> My saved retail price ${saved?fm(saved.price):(RETAIL?'— none saved yet':'')}</label>
     <label class="br-row"><input type="radio" name="brPrice" value="once" ${cur==='once'?'checked':''}> A price for this brochure only</label>
-    <div class="br-row" id="brOnceRow" style="display:${cur==='once'?'flex':'none'};gap:8px;align-items:center;flex-wrap:wrap"><input id="brOnce" inputmode="decimal" placeholder="$0.00" style="max-width:140px"><button type="button" class="ghost" onclick="brSaveRetail()">Save as my retail price</button></div>`;
-  host.querySelectorAll('input[name="brPrice"]').forEach(r=>r.onchange=()=>{ const row=document.getElementById('brOnceRow'); if(row) row.style.display=brPriceChoice()==='once'?'flex':'none'; });
+    <div class="br-row" id="brOnceRow" style="display:${cur==='once'?'flex':'none'};gap:8px;align-items:center;flex-wrap:wrap"><input id="brOnce" inputmode="decimal" placeholder="$0.00" style="max-width:140px"><button type="button" class="ghost" onclick="brSaveRetail()">Save as my retail price</button></div>
+    <div id="brOfferOpts" style="display:${['retail','once','map'].includes(cur)?'block':'none'}">
+      <label class="br-row"><input type="checkbox" id="brCompare" checked> Show the manufacturer's MSRP and your customer's savings (when a verified MSRP exists)</label>
+      <label class="br-row" style="gap:8px;align-items:center;flex-wrap:wrap">Offer valid through (optional) <input type="date" id="brExpires" style="max-width:170px"></label>
+      <div class="br-sub" style="font-size:12px">A price below the manufacturer's minimum advertised price (MAP) can't be printed or emailed.</div></div>`;
+  host.querySelectorAll('input[name="brPrice"]').forEach(r=>r.onchange=()=>{ const row=document.getElementById('brOnceRow'); if(row) row.style.display=brPriceChoice()==='once'?'flex':'none';
+    const oo=document.getElementById('brOfferOpts'); if(oo) oo.style.display=['retail','once','map'].includes(brPriceChoice())?'block':'none'; });
+  { const c=document.getElementById('brCompare'), e=document.getElementById('brExpires'), o=document.getElementById('brOnce'); if(c) c.checked=kept.cmp; if(e) e.value=kept.exp; if(o) o.value=kept.once; }
 }
 /* C3-07 Stage 4: "Add to a quote" on a product page puts THIS product on the dealer's current customer quote and opens the
    quote builder (it used to open the builder empty). Golden chairs use their own configured flow (B6.1). */
@@ -6584,7 +6597,7 @@ function brochurePrint(){
   const pl = brochurePayload(_brCode); if(!pl) return;
   const ch = brPriceSet(pl); if(ch.error){ _brMsg(ch.error,true); return; }
   _brMsg('Building brochure…');
-  _brPost({action:'html',product:ch.payload,include_msrp:ch.include_msrp}).then(d=>{
+  _brPost({action:'html',product:ch.payload,include_msrp:ch.include_msrp,price_basis:ch.price_basis,compare:ch.compare,offer_expires:ch.offer_expires}).then(d=>{
     if(!d||!d.ok){ _brMsg((d&&d.error)||'Could not build the brochure.',true); return; }
     const old=document.getElementById('brFrame'); if(old) old.remove();
     const f=document.createElement('iframe');
@@ -6618,7 +6631,7 @@ function brochureSend(){
   const ch = brPriceSet(pl); if(ch.error){ _brMsg(ch.error,true); return; }
   const note=((document.getElementById('brNote')||{}).value||'').trim();
   _brMsg('Sending…');
-  _brPost({action:'email',product:ch.payload,to:to,message:note,include_msrp:ch.include_msrp,
+  _brPost({action:'email',product:ch.payload,to:to,message:note,include_msrp:ch.include_msrp,price_basis:ch.price_basis,compare:ch.compare,offer_expires:ch.offer_expires,
            reply_to:(state.dealer&&state.dealer.email)||''}).then(d=>{
     if(!d||!d.ok){ _brMsg((d&&d.error)||'Could not send the brochure.',true); return; }
     _brMsg('Sent to '+d.sent_to+'.');
@@ -8136,7 +8149,8 @@ async function applyDefaultRetail(list){
   for(let i=0;i<need.length;i+=500){
     const r=await quotesCall({action:'default_retail',items:need.slice(i,i+500).map(e=>({manufacturer:e.mfr,code:e.code}))});
     if(!(r&&r.ok&&Array.isArray(r.items))) break;
-    for(const x of r.items){ if(!x) continue; const k=x.manufacturer+'|'+x.code; checked.add(k); if(x.active===false) hidden.push(k); }
+    for(const x of r.items){ if(!x) continue; const k=x.manufacturer+'|'+x.code; checked.add(k); if(x.active===false) hidden.push(k);
+      if(PRICE&&PRICE[k]&&Number(x.map)>0&&!(Number(PRICE[k].map)>0)) PRICE[k].map=Number(x.map); }
     const by=new Map(r.items.filter(x=>x&&Number(x.price)>0).map(x=>[x.manufacturer+'|'+x.code,x]));
     for(const e of need){ const d=by.get(e.mfr+'|'+e.code); if(!d) continue; const k=e.mfr+'|'+e.code;
       e.msrp=Number(d.price); e.msrpCalc=d.source==='calculated';
@@ -8351,7 +8365,7 @@ function quotableLine(slug){ if(typeof isRetiredSlug==="function"&&isRetiredSlug
 function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">Price on Request</span>'; }
 function quoteItemHtml(r){ return `${esc(r.name)}<div style="font-size:10.5px;color:var(--muted)">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)}</div>`; }
 function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const sn=(typeof QSNAP!=="undefined"&&QSNAP[k])||{};const p=(PRICE&&PRICE[k])||((typeof GQUOTE!=="undefined"&&GQUOTE[k])||sn);
-  return {key:k,mfr,code,sku:p.sku||sn.sku||code.split("|u=")[0],name:p.name||sn.name||code,option:p.option||sn.option||"",mfrName:p.mfrName||sn.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach,msrpCalc:!!p.msrpCalc,image:p.image||sn.image||""};}); }
+  return {key:k,mfr,code,sku:p.sku||sn.sku||code.split("|u=")[0],name:p.name||sn.name||code,option:p.option||sn.option||"",mfrName:p.mfrName||sn.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach,msrpCalc:!!p.msrpCalc,image:p.image||sn.image||"",map:(!/^golden/.test(mfr)&&!/\|u=/.test(code)&&Number(p.map)>0)?Number(p.map):null};}); }
 /* ---------- C3-07 Stage 4: CUSTOMER QUOTES (owner 2026-11-05; pricing choices D3) ----------
    Each line has a quantity and ONE customer price basis — the three approved choices:
      MSRP     the manufacturer's verified suggested retail (never a 2x estimate; an upgraded configuration has none)
@@ -8378,7 +8392,12 @@ function qMeta(r){
   if(m.basis==='msrp'&&!qMsrpOk(r)) m.basis=qSaved(r)!=null?'retail':'once';
   return m;
 }
-function qUnit(r){ const m=qMeta(r); return m.basis==='msrp'?r.msrp:m.basis==='retail'?qSaved(r):(m.unit>0?m.unit:null); }
+function qUnit(r){ const m=qMeta(r); return m.basis==='msrp'?r.msrp:m.basis==='retail'?qSaved(r):m.basis==='map'?(r.map||null):m.basis==='none'?null:(m.unit>0?m.unit:null); }
+/* owner 2026-11-12: the preview's reference price and saving — the same rule the server prints with (RP.savings: verified MSRP
+   only, offer below it, percent rounded down); the printed / emailed quote is decided on the server. */
+function qRef(r){ const m=qMeta(r); return (m.compare!==false&&['retail','once','map'].includes(m.basis)&&r.msrp!=null&&!r.msrpCalc&&!r.msrpEach&&!qIsUpgrade(r.key))?Number(r.msrp):null; }
+function qSaving(r){ const R=qRef(r), O=qUnit(r); if(!(R>0&&O>0&&O<R)) return null; const d=Math.round((R-O)*100)/100; if(!(d>=0.01)) return null; return {dollars:d,percent:Math.floor(d/R*100+1e-9)}; }
+function qBelowMap(r){ const m=qMeta(r), u=qUnit(r); return ['retail','once'].includes(m.basis)&&r.map>0&&u>0&&u<r.map-0.004; }
 function quoteTotal(picked){ return picked.reduce((s,r)=>{ const u=qUnit(r); return s+(u!=null?u*qMeta(r).qty:0); },0); }
 function qMoney(v){ return '$'+Number(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
 function quotePaperHtml(picked,total){
@@ -8389,8 +8408,10 @@ function quotePaperHtml(picked,total){
     <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>${QSAVED?esc(QSAVED.quote_no):"Draft"}</b><div class="qc">Valid ${esc(QCUST.valid||"30 days")}</div></div></div>
     ${QCUST.name||QCUST.title?`<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">${QCUST.name?`Prepared for <b>${esc(QCUST.name)}</b>`:""}${QCUST.title?`<div>${esc(QCUST.title)}</div>`:""}</div>`:""}
     <table class="qtbl"><thead><tr><th>Product</th><th style="text-align:right">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Amount</th></tr></thead><tbody>${picked.map(r=>{ const u=qUnit(r), q=qMeta(r).qty;
-      return `<tr><td>${quoteItemHtml(r)}</td><td style="text-align:right">${q}</td><td style="text-align:right">${u!=null?qMoney(u)+(qMeta(r).basis==='msrp'&&r.msrpEach?' each':'')+(qMeta(r).basis==='msrp'?'<div style="font-size:9.5px;color:var(--muted)">'+(r.msrpCalc?'Retail price (HCPS calculated)':'MSRP')+'</div>':''):(qMsrpOk(r)?'<span class="est">Price on request</span>':'<span class="est">Price on Request</span>')}</td><td style="text-align:right">${u!=null?qMoney(u*q):'—'}</td></tr>`; }).join("")||'<tr><td colspan="4" style="color:var(--muted)">Add products to build the quote.</td></tr>'}</tbody></table>
+      return `<tr><td>${quoteItemHtml(r)}</td><td style="text-align:right">${q}</td><td style="text-align:right">${u!=null?qMoney(u)+(qMeta(r).basis==='msrp'&&r.msrpEach?' each':'')+(qMeta(r).basis==='msrp'?'<div style="font-size:9.5px;color:var(--muted)">'+(r.msrpCalc?'Retail price (HCPS calculated)':'MSRP')+'</div>':'')+(qRef(r)!=null?'<div style="font-size:9.5px;color:var(--muted)">MSRP '+qMoney(qRef(r))+'</div>':'')+(qSaving(r)?'<div style="font-size:10px;color:#1d6b3a;font-weight:700">You save '+qMoney(qSaving(r).dollars)+' ('+(qSaving(r).percent>=1?qSaving(r).percent+'%':'under 1%')+')'+(q>1?' each':'')+'</div>':''):(qMsrpOk(r)?'<span class="est">Price on request</span>':'<span class="est">Price on Request</span>')}</td><td style="text-align:right">${u!=null?qMoney(u*q):'—'}</td></tr>`; }).join("")||'<tr><td colspan="4" style="color:var(--muted)">Add products to build the quote.</td></tr>'}</tbody></table>
     <div class="qtot">Total: ${qMoney(total)}</div>
+    ${(()=>{ let sv=0, ref=0; picked.forEach(r=>{ const x=qSaving(r); if(x){ const q=qMeta(r).qty; sv+=x.dollars*q; ref+=qRef(r)*q; } }); sv=Math.round(sv*100)/100;
+      return sv>0?`<div class="qtot" style="color:#1d6b3a;font-size:13px">Your total savings: ${qMoney(sv)} (${Math.floor(sv/ref*100+1e-9)>=1?Math.floor(sv/ref*100+1e-9)+'%':'under 1%'})</div>`:''; })()}
     ${QCUST.notes?`<div style="font-size:11px;margin-top:8px;white-space:pre-wrap">${esc(QCUST.notes)}</div>`:""}
     <div style="font-size:10px;color:var(--muted);margin-top:10px">Prices quoted by ${esc(biz)}.${picked.some(r=>qUnit(r)==null)?" Items without a price are not in the total.":""} The printed / emailed quote is checked against HCPS's records.</div>`;
 }
@@ -8411,21 +8432,24 @@ function qLineHtml(r,i){
   const opt=(v,label,on)=>`<option value="${v}" ${m.basis===v?'selected':''} ${on?'':'disabled'}>${label}</option>`;
   return `<div class="rl qline"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)} · ${esc(r.mfrName)}</div>
     <div class="qctl"><label>Qty <input type="number" min="1" max="9999" step="1" value="${m.qty}" aria-label="Quantity for ${esc(r.name)}" onchange="qSetQty(${i},this.value)"></label>
-      <select aria-label="Customer price for ${esc(r.name)}" onchange="qSetBasis(${i},this.value)">${opt('msrp',(r.msrpCalc?'Retail price (HCPS calculated) ':'MSRP ')+(qMsrpOk(r)?qMoney(r.msrp)+(r.msrpEach?' each':''):'— not published'),qMsrpOk(r))}${opt('retail','My retail '+(saved!=null?qMoney(saved):'— none saved'),saved!=null)}${opt('once','One-time price',true)}</select>
+      <select aria-label="Customer price for ${esc(r.name)}" onchange="qSetBasis(${i},this.value)">${opt('msrp',(r.msrpCalc?'Retail price (HCPS calculated) ':'MSRP ')+(qMsrpOk(r)?qMoney(r.msrp)+(r.msrpEach?' each':''):'— not published'),qMsrpOk(r))}${opt('retail','My retail '+(saved!=null?qMoney(saved):'— none saved'),saved!=null)}${opt('map','Manufacturer advertised price (MAP) '+(r.map?qMoney(r.map):'— none on file'),r.map>0)}${opt('once','One-time price',true)}${opt('none','No price (Price on Request)',true)}</select>
       ${m.basis==='once'?`<input class="qonce" inputmode="decimal" placeholder="$0.00" value="${m.unit>0?m.unit:''}" aria-label="One-time price for ${esc(r.name)}" onchange="qSetUnit(${i},this.value)">
         <button type="button" class="btn gh acsm" onclick="qSaveRetail(${i})" ${m.unit>0&&!QLOCRETAIL?'':'disabled'} ${QLOCRETAIL?'title="Set this location\'s prices in My Retail Prices"':''}>Save as my retail price</button>`:''}
-      <span class="qamt">${u!=null?qMoney(u*m.qty):'<span class="est">Price on request</span>'}</span></div></div>
+      ${qRef(r)!=null||(['retail','once','map'].includes(m.basis)&&r.msrp!=null&&!r.msrpCalc)?`<label class="qcmp" style="font-size:12px;display:inline-flex;gap:5px;align-items:center;min-height:44px"><input type="checkbox" ${m.compare!==false?'checked':''} onchange="qSetCompare(${i},this.checked)"> Show MSRP &amp; savings</label>`:''}
+      <span class="qamt">${u!=null?qMoney(u*m.qty):'<span class="est">Price on Request</span>'}</span></div>
+      ${qBelowMap(r)?`<div style="font-size:12px;color:#b42323;margin-top:4px">Below the manufacturer's minimum advertised price (${qMoney(r.map)}) — this price can't be printed or emailed.</div>`:''}</div>
     <a class="btn gh" title="Remove" aria-label="Remove ${esc(r.name)}" onclick="qDelAt(${i})">✕</a></div>`;
 }
 function qSetQty(i,v){ const r=quotePicked()[i]; if(!r) return; const n=Math.max(1,Math.min(9999,Math.round(Number(v)||1))); qMeta(r).qty=n; QDIRTY=true; renderQuotes(); }
 function qSetBasis(i,v){ const r=quotePicked()[i]; if(!r) return; qMeta(r).basis=v; QDIRTY=true; renderQuotes(); }
+function qSetCompare(i,v){ const r=quotePicked()[i]; if(!r) return; qMeta(r).compare=!!v; QDIRTY=true; qPreview(); }
 function qSetUnit(i,v){ const r=quotePicked()[i]; if(!r) return; const n=Number(String(v).replace(/[$,\s]/g,'')); qMeta(r).unit=(n>0&&n<=1000000)?Math.round(n*100)/100:null; QDIRTY=true; renderQuotes(); }
 async function qSaveRetail(i){ const r=quotePicked()[i]; if(!r) return; const m=qMeta(r); if(!(m.unit>0)) return;
   const res=await retailCall({action:'retail_set',rows:[{manufacturer:r.mfr,code:r.code,price:m.unit}]});
   if(res&&res.ok){ await loadRetail(true); m.basis='retail'; QDIRTY=true; qToast('Saved as your retail price for #'+r.sku+'.'); renderQuotes(); } else qToast((res&&res.error)||'Could not save just now.',true); }
 function qToast(msg,bad){ const el=$("#qmsg"); if(el){ el.textContent=msg; el.style.color=bad?'#b42323':''; } }
 function qLinesPayload(){ return quotePicked().map(r=>{ const m=qMeta(r); const golden=/^golden(-technologies)?$/.test(r.mfr);
-  return {mfr:r.mfr,code:r.code,sku:r.sku,name:r.name,option:r.option||'',mfrName:r.mfrName,qty:m.qty,basis:m.basis,unit:m.basis==='once'?m.unit:(m.basis==='msrp'&&golden?r.msrp:null),image:r.image||''}; }); }
+  return {mfr:r.mfr,code:r.code,sku:r.sku,name:r.name,option:r.option||'',mfrName:r.mfrName,qty:m.qty,basis:m.basis,unit:m.basis==='once'?m.unit:(m.basis==='msrp'&&golden?r.msrp:null),image:r.image||'',compare:m.compare!==false}; }); }
 function qHeaderPayload(){ return {title:QCUST.title||'',customer_name:QCUST.name||'',customer_email:QCUST.email||'',customer_phone:QCUST.phone||'',valid_for:QCUST.valid||'30 days',notes:QCUST.notes||''}; }
 function qCheckLines(){ const p=quotePicked(); if(!p.length) return 'Add at least one product.'; const bad=p.find(r=>qMeta(r).basis==='once'&&!(qMeta(r).unit>0)); return bad?('Enter the one-time price for '+bad.name+'.'):''; }
 async function qSave(){
@@ -9515,7 +9539,7 @@ async function sfSave(mode){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{apTradeRef,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{apTradeRef,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};

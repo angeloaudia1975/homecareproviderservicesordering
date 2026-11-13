@@ -111,6 +111,12 @@ function renderBrochure(p, opts) {
      asked for. Dealer cost is never a field this renderer reads. */
   const msrp = showMsrp ? money(p.msrp) : '';
   const quote = money(p.quote_price);
+  /* owner 2026-11-12: the verified manufacturer reference beside the dealer's offer, and the saving — decided on the server
+     (opts.reference / opts.saving), never by the page. Offer expiry is a plain date. */
+  const ref = opts.reference ? money(opts.reference) : '';
+  const sv = opts.saving && opts.saving.dollars > 0 ? opts.saving : null;
+  const until = /^\d{4}-\d{2}-\d{2}$/.test(String(opts.offer_expires || '')) ? new Date(opts.offer_expires + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
+  const quoteLabel = esc(str(opts.offer_label || 'Your price', 40));
 
   const secHtml = (title, body) => body ? `<section class="sec"><h2>${title}</h2>${body}</section>` : '';
 
@@ -157,6 +163,10 @@ function renderBrochure(p, opts) {
   .price .l{font-size:9pt;text-transform:uppercase;letter-spacing:.07em;color:#6b7580;font-weight:700}
   .price .v{font-size:19pt;font-weight:800;color:#10263f}
   .note{font-size:9pt;color:#6b7580;margin-top:3px}
+  .pgrid{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}
+  .price .ref{font-size:14pt;font-weight:700;color:#3c4855}
+  .price .save{background:#e8f5ec;border:1px solid #b7dfc3;border-radius:8px;padding:6px 12px}
+  .price .save .l{color:#1d6b3a}.price .sv{font-size:19pt;font-weight:800;color:#1d6b3a}.price .sp{font-size:9.5pt;font-weight:700;color:#1d6b3a}
   /* HCPS attribution at the foot of every page when printed. */
   .foot{border-top:2px solid #10263f;margin-top:20px;padding-top:11px;display:flex;align-items:center;gap:13px;break-inside:avoid}
   .foot img{max-height:40px;max-width:190px;object-fit:contain}
@@ -199,11 +209,14 @@ function renderBrochure(p, opts) {
     </div>
   </div>
 
-  ${(msrp || quote) ? `<div class="price">
-      ${quote ? `<div class="l">Your price</div><div class="v">${quote}</div>`
+  ${(msrp || quote || ref) ? `<div class="price">
+      ${quote ? `<div class="pgrid">${ref ? `<div><div class="l">Manufacturer's suggested retail</div><div class="ref">${ref}</div></div>` : ''}
+          <div><div class="l">${quoteLabel}</div><div class="v">${quote}</div></div>
+          ${sv ? `<div class="save"><div class="l">You save</div><div class="sv">${money(sv.dollars)}</div><div class="sp">${sv.percent >= 1 ? sv.percent + '% off MSRP' : 'under 1% off MSRP'}</div></div>` : ''}</div>`
+              : ref && !msrp ? `<div class="l">Manufacturer's suggested retail</div><div class="v">${ref}</div>`
               : `<div class="l">${p.msrp_calculated === true ? 'Retail price' : 'Manufacturer\'s suggested retail'}</div><div class="v">${msrp}</div>`}
-      ${quote && msrp ? `<div class="note">${p.msrp_calculated === true ? 'Retail price' : 'MSRP'} ${msrp}</div>` : ''}
-      <div class="note">Pricing shown is for reference and may vary. Contact us for a written quote.</div>
+      ${until && quote ? `<div class="note"><b>Offer valid through ${esc(until)}.</b></div>` : ''}
+      <div class="note">${sv ? 'Savings are measured against the manufacturer\'s suggested retail price (MSRP). ' : ''}Pricing shown is for reference and may vary. Contact us for a written quote.</div>
     </div>` : ''}
 
   ${secHtml('Key features', features.length ? `<ul class="feat">${features.map(f => `<li>${f}</li>`).join('')}</ul>` : '')}
@@ -240,30 +253,33 @@ function renderBrochure(p, opts) {
    2× Golden's standard dealer price at or above eMAP, labelled as calculated) — never the figure the page sent. Signed
    out, or Golden unreadable → no price printed. → { price, calculated } | null */
 const GOLDEN_FN = (process.env.HCPS_FUNCTIONS_BASE || 'https://homecareproviderservices.netlify.app/.netlify/functions').replace(/\/+$/, '');
-async function goldenRetail(p, event) {
+async function goldenRetail(p, event, offer) {
   const h = (event && event.headers) || {};
   const auth = String(h.authorization || h.Authorization || ''), prev = String(h['x-hcps-preview'] || h['X-HCPS-Preview'] || '');
   if (!/^Bearer\s+\S+/i.test(auth) && !/^[0-9a-f]{48}$/.test(prev)) return null;
   const code = String(p._goldenKey || p.code || '').trim().slice(0, 120); if (!code) return null;
   try {
     const hd = { 'content-type': 'application/json' }; if (/^Bearer\s+\S+/i.test(auth)) hd.authorization = auth; else hd['x-hcps-preview'] = prev;
-    const r = await fetch(`${GOLDEN_FN}/golden-proxy`, { method: 'POST', signal: AbortSignal.timeout(6000), headers: hd, body: JSON.stringify({ action: 'retail', code }) });
-    if (!r.ok) return null; const j = await r.json();
-    const v = Number(j && j.price); if (!(j && j.ok && isFinite(v) && v > 0)) return null;
-    return { price: Math.round(v * 100) / 100, calculated: j.source === 'calculated' };
+    const r = await fetch(`${GOLDEN_FN}/golden-proxy`, { method: 'POST', signal: AbortSignal.timeout(6000), headers: hd, body: JSON.stringify(Object.assign({ action: 'retail', code }, offer ? { offer } : {})) });
+    if (!r.ok) return null; const j = await r.json(); if (!(j && j.ok)) return null;
+    const v = Number(j.price), m = Number(j.msrp);
+    return { price: isFinite(v) && v > 0 ? Math.round(v * 100) / 100 : null, calculated: j.source === 'calculated', reference: isFinite(m) && m > 0 ? m : null,
+      offer_check: j.offer_check || null, saving: j.saving || null };
   } catch (e) { console.error('golden retail lookup failed', e && e.message); return null; }
 }
 /* C3-07 owner 2026-11-06 15:23: any other line's default customer price, read on the server for the signed-in dealer —
    admin dealer-quotes-api default_retail: official MSRP, else HCPS calculated retail (2 × standard dealer cost) under the
    manufacturer's advertising rules. → { price, calculated } | undefined (not signed in / unreadable → official MSRP only) */
-async function defaultRetail(p, event) {
+async function defaultRetail(p, event, offer) {
   const h = (event && event.headers) || {}; const auth = String(h.authorization || h.Authorization || '');
   const slug = String(p._mfrSlug || '').trim().toLowerCase(), code = String(p.code || '').trim();
   if (!/^Bearer\s+\S+/i.test(auth) || !/^[a-z0-9-]{2,60}$/.test(slug) || !code || code.length > 60 || p._upgrade) return undefined;
   try {
-    const r = await fetch(`${GOLDEN_FN}/dealer-quotes-api`, { method: 'POST', signal: AbortSignal.timeout(4000), headers: { 'content-type': 'application/json', authorization: auth }, body: JSON.stringify({ action: 'default_retail', manufacturer: slug, code }) });   // slow → official MSRP only
+    const r = await fetch(`${GOLDEN_FN}/dealer-quotes-api`, { method: 'POST', signal: AbortSignal.timeout(4000), headers: { 'content-type': 'application/json', authorization: auth }, body: JSON.stringify(Object.assign({ action: 'default_retail', manufacturer: slug, code }, offer ? { offer } : {})) });   // slow → official MSRP only
     if (!r.ok) return undefined; const j = await r.json(); if (!(j && j.ok)) return undefined;
-    const v = Number(j.price); return isFinite(v) && v > 0 ? { price: Math.round(v * 100) / 100, calculated: j.source === 'calculated' } : null;
+    const v = Number(j.price), m = Number(j.reference), mp = Number(j.map);
+    return { price: isFinite(v) && v > 0 ? Math.round(v * 100) / 100 : null, calculated: j.source === 'calculated', reference: isFinite(m) && m > 0 ? m : null,
+      map: isFinite(mp) && mp > 0 ? mp : null, offer_check: j.offer_check || null, saving: j.saving || null };
   } catch (e) { console.error('default retail lookup failed', e && e.message); return undefined; }
 }
 async function verifiedMsrp(p) {
@@ -334,18 +350,50 @@ exports.handler = async (event) => {
      HCPS's own catalog records — never taken from the request — and is dropped when there is none (or for an upgraded
      configuration). Golden's price is read from Golden on the server by goldenRetail() (C3-07 P4) — never the page's. */
   const isGolden = /^golden(-technologies)?$/.test(String(product._mfrSlug || '').trim().toLowerCase());
-  product.msrp_calculated = false;
-  if (b.include_msrp && isGolden) { const g = await goldenRetail(product, event); product.msrp = g ? g.price : null; product.msrp_calculated = !!(g && g.calculated); }
-  else if (b.include_msrp) {
-    const d = await defaultRetail(product, event);
-    if (d === undefined) product.msrp = await verifiedMsrp(product);
-    else { product.msrp = d ? d.price : null; product.msrp_calculated = !!(d && d.calculated); }
+  /* PRICE CHOICE (owner 2026-11-12): none | msrp | map | retail | once. Older pages send include_msrp / quote_price only. */
+  const basis = ['none', 'msrp', 'map', 'retail', 'once'].includes(String(b.price_basis)) ? String(b.price_basis)
+    : (Number(product.quote_price) > 0 ? 'once' : (b.include_msrp ? 'msrp' : 'none'));
+  const compare = b.compare !== false;
+  const offerIn = Math.round(Number(product.quote_price) * 100) / 100;
+  let offer = (basis === 'retail' || basis === 'once') && offerIn > 0 && offerIn <= 1000000 ? offerIn : null;
+  if ((basis === 'retail' || basis === 'once') && !offer) return json(400, { ok: false, error: 'Enter the price for this brochure.' });
+  if (basis === 'map' && (isGolden || product._upgrade)) return json(400, { ok: false, error: 'This product has no manufacturer advertised price to show.' });
+  product.quote_price = null; product.msrp_calculated = false; product.msrp = null;
+  /* the manufacturer facts, read on the server for the signed-in dealer — never the page's figures */
+  const facts = isGolden ? await goldenRetail(product, event, offer) : await defaultRetail(product, event, offer);
+  if (basis === 'map') {
+    if (!(facts && facts.map)) return json(400, { ok: false, error: 'No manufacturer advertised price (MAP) is on file for this product.' });
+    offer = facts.map;
   }
+  if (offer && basis !== 'map') {
+    /* an offer is printed or emailed only when the manufacturer's advertising rules allow it (never below MAP / eMAP) */
+    if (!facts || !facts.offer_check) return json(401, { ok: false, error: 'Please sign in again — your price could not be checked against the manufacturer\'s advertising rules.' });
+    if (!facts.offer_check.ok) {
+      const why = facts.offer_check.flag === 'below_map' ? `is below the manufacturer's minimum advertised price${facts.offer_check.map ? ` ($${Number(facts.offer_check.map).toFixed(2)})` : ''}`
+        : facts.offer_check.flag === 'msrp_only' ? 'is not allowed — this manufacturer allows only its MSRP to be advertised' : 'is not allowed by the manufacturer\'s advertising rules';
+      return json(422, { ok: false, error: `That price ${why}. Choose another price.`, flag: facts.offer_check.flag });
+    }
+  }
+  if (offer) product.quote_price = offer;
+  let reference = facts && facts.reference ? facts.reference : null;
+  if (reference == null && !isGolden && facts === undefined) reference = await verifiedMsrp(product);   // not signed in: the verified record only
+  if (product._upgrade) reference = null;
+  if (basis === 'msrp') {
+    if (facts && facts.price) { product.msrp = facts.price; product.msrp_calculated = !!facts.calculated; }
+    else if (reference) product.msrp = reference;
+  }
+  let saving = null;   // computed by the admin site's one savings rule (RP.savings), never here
+  if (offer && compare && reference) {
+    if (basis === 'map') { const f2 = await defaultRetail(product, event, offer); saving = (f2 && f2.saving) || null; }
+    else saving = (facts && facts.saving) || null;
+  }
+  const renderOpts = { reference: offer && compare ? reference : null, saving, offer_expires: b.offer_expires, offer_label: basis === 'map' ? 'Price' : 'Your price' };
+  b.include_msrp = basis === 'msrp';
   const action = String(b.action || 'html');
   /* Branded only for a signed-in, approved dealer; a request cannot name or style the dealer. */
   const who = await approvedDealer(event);
   const brand = who ? await dealerBrand(who.dealer_id) : null;
-  const html = renderBrochure(product, { include_msrp: !!b.include_msrp, dealer: brand });
+  const html = renderBrochure(product, Object.assign({ include_msrp: !!b.include_msrp, dealer: brand }, renderOpts));
 
   if (action === 'html') return json(200, { ok: true, html });
 
