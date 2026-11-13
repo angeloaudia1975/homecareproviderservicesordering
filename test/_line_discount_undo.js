@@ -33,6 +33,15 @@ const SNIPPETS = [
   [/\n  const gHtml=goldenCartGroupHtml\(\);\n  if\(!groups\.size&&!gHtml\)\{/, '\n  if(!groups.size){'],
   [/\n  host\.innerHTML=html\+gHtml;\n  goldenCartGroupWire\(host\);\n  host\.querySelectorAll\("\.mgroup:not\(\.gmgroup\) \.citem"\)/, '\n  host.innerHTML=html;\n  host.querySelectorAll(".citem")'],
   [/\n  host\.querySelectorAll\("\.mgroup:not\(\.gmgroup\)"\)\.forEach\(g=>\{/, '\n  host.querySelectorAll(".mgroup").forEach(g=>{'],
+  /* Ohio Medical / GCE ordering hold (owner 2026-11-12): a HELD line shows "Pricing being verified" and is not added to
+     the cart. Lines not on ORDERING_HOLDS are untouched. Taken back out exactly. */
+  [/\n  if \(p && \(p\._held \|\| \(typeof isHeldSlug==="function"&&isHeldSlug\(p\.manufacturer\)\)\)\) return `<span class="price locked">[^\n]*/, ''],
+  [/\n  if\(p && \(p\._held \|\| \(typeof isHeldSlug==="function"&&isHeldSlug\(p\.manufacturer\)\)\)\)\{ toast\([^\n]*/, ''],
+  /* Pending Manufacturer Account Setup notice in the cart (owner Catalog 4 directive, 2026-11-06). */
+  [/\n        \$\{acctSetupNoticeHtml\(slug,info\.name\)\}/, ''],
+  /* Dealer-portal tabs added by C3-07 (Showroom Designer label, My Storefront, Social Ads — owner 2026-11-05/06). */
+  [/\['showroom','Showroom Designer',\(\)=>showShowroomStudio\(\), a==='p360:showroom'\],\n    \['storefront','My Storefront',\(\)=>showP360\('storefront'\), a==='p360:storefront'\],\n    \['ads','Social Ads',\(\)=>showP360\('ads'\), a==='p360:ads'\],/,
+   "['showroom','Showroom',()=>showShowroomStudio(), a==='p360:showroom'],"],
 ];
 function undoLineDiscount(html) {
   let s = String(html);
