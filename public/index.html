@@ -7588,6 +7588,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
     <a class="logo" href="/dashboard.html"><span class="lm">H</span><span><b>HCPS</b><span>Dealer Business Hub</span></span></a>
     <div class="tb-actions">
       <span class="dl" id="dealerChip" style="display:none"><span id="brandLogo"></span><b id="dealerName">—</b></span>
+      <a class="btn gh" onclick="showView('help')" title="Help & Training Center · What's New">Help</a>
       <a class="btn gh" href="/">← Back to shop</a>
       <a id="signout" style="display:none;color:var(--muted)">Sign out</a>
     </div>
@@ -7611,6 +7612,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   <div class="view" id="view-orders"><div class="msg">Loading…</div></div>
   <div class="view" id="view-reports"><div class="msg">Loading…</div></div>
   <div class="view" id="view-goldsvc"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-help"><div class="msg">Loading…</div></div>
   <div class="view" id="view-quotes"><div class="msg">Loading…</div></div>
   <div class="view" id="view-retail"><div class="msg">Loading…</div></div>
   <div class="view" id="view-apply"><div class="msg">Loading…</div></div>
@@ -8846,6 +8848,33 @@ function renderResources(){
    Shown only when HCPS's switch golden_service_v2 is on AND Golden answers for this dealer. Parts prices only when Golden
    says this dealer may see them. Requests (parts, service / RMA, labor claims) still go straight to Golden through
    Golden's support site — nothing is sent from this page in Stage 2. ===== */
+/* ===== Help & Training Center + What's New (owner 2026-11-13 §5/§6). Content: /data/help.json (articles, each checked
+   against this page by test/help-center.test.js) and /data/releases.json (the version = the newest release; each dealer-
+   facing item names its article). Read-only; nothing is sent from here. ===== */
+let HELPD=null, HELPQ="", HELPA="", HELPTAB="help";
+async function helpData(){ if(HELPD) return HELPD; try{ const [h,r]=await Promise.all([fetch("/data/help.json",{cache:"no-cache"}).then(x=>x.ok?x.json():null),fetch("/data/releases.json",{cache:"no-cache"}).then(x=>x.ok?x.json():null)]); if(h&&r) HELPD={h,r}; }catch(e){} return HELPD; }
+async function loadHelp(){ const host=$("#view-help"); host.innerHTML='<div class="msg">Loading help…</div>'; const d=await helpData(); if(!d){ host.innerHTML='<div class="card"><div class="msg">Help could not be loaded just now — please try again.</div><a class="btn pri" onclick="loadHelp()">Try again</a></div>'; return; } renderHelp(); }
+function helpTab(t){ HELPTAB=t; renderHelp(); }
+function helpArea(a){ HELPA=a; renderHelp(); }
+function helpSearch(q){ HELPQ=q; const el=$("#helpList"); if(el) el.innerHTML=helpListHtml(); }
+function helpOpen(v){ if(v==="shop"){ location.href="/"; return; } showView(v); }
+function helpListHtml(){
+  const q=HELPQ.trim().toLowerCase(), A=HELPD.h.articles.filter(a=>(!HELPA||a.area===HELPA)&&(!q||(a.title+" "+a.summary+" "+a.steps.join(" ")+" "+(a.notes||[]).join(" ")).toLowerCase().includes(q)));
+  if(!A.length) return '<div class="empty">No help articles match.</div>';
+  return A.map(a=>`<div class="card" id="help-${esc(a.id)}"><h3>${esc(a.title)}</h3><div style="color:var(--muted);font-size:13px;margin-bottom:8px">${esc(a.summary)}</div><ol style="margin:0 0 8px 18px;padding:0;font-size:13.5px;line-height:1.5">${a.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>${(a.notes||[]).map(x=>`<div style="font-size:12.5px;color:var(--muted)">• ${esc(x)}</div>`).join("")}<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><small style="color:var(--muted)">Updated ${esc(a.updated)}</small>${a.open?`<a class="btn gh" style="min-height:44px;display:inline-flex;align-items:center" onclick="helpOpen('${esc(a.open)}')">Open this page</a>`:""}</div></div>`).join("");
+}
+function helpArticle(id){ HELPTAB="help"; HELPA=""; HELPQ=""; renderHelp(); const e=document.getElementById("help-"+id); if(e) e.scrollIntoView({block:"start"}); }
+function helpVersion(){ const r=HELPD&&HELPD.r&&HELPD.r.releases&&HELPD.r.releases[0]; return r?r.version:""; }
+function renderHelp(){
+  const host=$("#view-help"), d=HELPD, tb=(k,n)=>`<a class="btn ${HELPTAB===k?"nv":"gh"}" style="min-height:44px;display:inline-flex;align-items:center" onclick="helpTab('${k}')">${n}</a>`;
+  let body;
+  if(HELPTAB==="new"){
+    body=d.r.releases.map(r=>`<div class="card"><h3>${esc(r.title)}</h3><div style="color:var(--muted);font-size:12.5px;margin-bottom:6px">Version ${esc(r.version)} · ${esc(r.date)}</div><ul style="margin:0 0 0 18px;padding:0;font-size:13.5px;line-height:1.5">${r.items.filter(i=>i.dealer_facing).map(i=>`<li>${esc(i.text)}${i.help?` <a style="cursor:pointer;text-decoration:underline" onclick="helpArticle('${esc(i.help)}')">How it works</a>`:""}</li>`).join("")}</ul></div>`).join("");
+  } else {
+    body=`<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px"><div class="fld2" style="flex:2;min-width:200px"><label>Search help</label><input type="search" value="${esc(HELPQ)}" placeholder="e.g. tracking, quote, account" oninput="helpSearch(this.value)"></div><div class="fld2" style="flex:1;min-width:180px"><label>Topic</label><select onchange="helpArea(this.value)"><option value="">All topics</option>${d.h.areas.filter(a=>d.h.articles.some(x=>x.area===a.key)).map(a=>`<option value="${esc(a.key)}"${a.key===HELPA?" selected":""}>${esc(a.title)}</option>`).join("")}</select></div></div><div id="helpList">${helpListHtml()}</div>`;
+  }
+  host.innerHTML=`<div class="ph"><div><h1>Help &amp; Training Center</h1><div class="sub">How Dealer 360 works · Dealer 360 version ${esc(helpVersion())}</div></div><div><a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px">${tb("help","Help articles")}${tb("new","What's New")}</div>${body}`;
+}
 let GSVC=null, GSVCP=null, GSVT="overview", GSVLINE="lift_chair", GSVSUB="", GSVQ="";
 function gsvcLoad(){ if(!GSVCP) GSVCP=goldenCall("service_catalog").then(j=>{ GSVC=(j&&j.enabled===true&&j.available===true)?j:{off:true,reason:(j&&j.reason)||"unavailable"}; return GSVC; }); return GSVCP; }
 async function gsvcProbe(){ const g=await gsvcLoad(); const row=$("#gsvcRow"); if(!row||!g||g.off) return;
@@ -9288,6 +9317,7 @@ function showView(v){
   if(v==="account")loadAccountView();
   if(v==="ads")loadAdsView();
   if(v==="goldsvc")loadGoldSvc();
+  if(v==="help")loadHelp();
 }
 window.showView=showView;
 /* Catalog 4 §8 — Social Ads: the builder lives in /assets/ad-builder.js (loaded the first time the view opens);
@@ -9667,7 +9697,7 @@ async function sfSave(mode){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{apTradeRef,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{apTradeRef,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
