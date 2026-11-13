@@ -23,7 +23,7 @@ const RETIRED_LINES = Object.freeze({
 });
 
 const ORDERING_HOLDS = Object.freeze({
-  "ohio-medical": "Ohio Medical / GCE is restored (owner, 2026-11-12); ordering opens once HCPS verifies its current price list and ordering terms.",
+  /* (empty) Ohio Medical / GCE was held 2026-11-12 and opened the same day on the owner's 2026 rev price list. */
 });
 
 const ALIASES = Object.freeze({ gce: "ohio-medical" });   // legacy identifier → canonical
