@@ -46,7 +46,7 @@
   const productBy = (r) => (S.ctx && S.ctx.products || []).find((p) => keyOf(p) === keyOf(r));
   const T = () => (S.ctx && S.ctx.templates[S.cur.template]) || { kind: 'single' };
   const fmt = () => (S.ctx && S.ctx.formats[S.cur.format]) || { w: 1080, h: 1080 };
-  /* whole-dollar prices read as $3,525 (an MSRP on an ad); prices with cents keep them ($49.99) */
+  /* whole-dollar prices drop the cents (an MSRP on an ad); prices with cents keep them */
   const money = (n) => { const v = Number(n), whole = Math.abs(v - Math.round(v)) < 0.005; return '$' + v.toLocaleString('en-US', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2 }); };
   const priceText = (p, show) => { if (!show || !S.cur.show.price) return null; if (p.price != null) return (p.price_label ? p.price_label + ' ' : '') + money(p.price) + (p.price_unit ? ' ' + p.price_unit : ''); return 'Call for Price'; };
 

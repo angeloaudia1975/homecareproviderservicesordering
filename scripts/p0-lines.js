@@ -18,7 +18,7 @@ const UPDATED = {
   corsicana: { identity: 'eb940470e93a9643d9a5e744fef02b4bda0bb4841952906f390a120fc6a7244e', note: 'Corsicana Healthcare 2026 rev workbook (owner 2026-10-27): MSRP as listed, SB10MATPRON1-TL case of 10, LBHR/LBCW official photos' },
   'abm-respiratory-care': { identity: 'de0548731a75f324941bdf00ef468710961a5418dcf61be96c3fe4b26511adb4', note: 'ABM Respiratory Care 2026 — new line, first version (BiWaze Clear + Cough schedules, owner 2026-10-27)', new_line: true },
   'airavant-bongorx': { identity: 'c0f492e4e3845f9f18e1e667f4fe6c67ab834f28aee48e378479152df159fa81', note: 'Bongo Rx Price List 2026 (18023 Rev F): MAP, section mix-and-match pools (owner 2026-10-27)' },
-  pedifix: { identity: '158233406b5bbef820baf0fc05f9080f63e837ef6b33255a4b86b514bd1ecbe4', note: 'PediFix 2025 Retail Order Form REV1025 (OTC, eff. 7/1/25; row 543 REV0725) = the whole active line (owner 2026-10-27)' },
+  pedifix: { identity: '03074e782a068f5294035e532c78a1e2665d076edab35e53d941f1a6246dec5a', note: 'PediFix REV1025 record (owner 2026-10-27) with P3020 moved to Skin & Nail Care (2026-11-07); record carried from 158233 by the owner 2026-11-13' },
   dalton: { identity: '04d3bd510304a5717a29b074d6b6b14ef66fc5023f54d24e6a8e401ba5dde201', note: 'Dalton Dealer Price List Nov 2026 REVa (owner, tracker #42)' },
   yuwell: { identity: '6f20b076a3524a085a6e95cfa996e1a1258e700c235654cd7e2c06d86e777dad', note: 'Yuwell Price List 2026 — new line, first version (owner 2026-11-04 C3-04: dealer price as listed, MSRP 2x, SP-3 4+ at the special through Dec 31 2026)', new_line: true },
 };
