@@ -39,9 +39,9 @@ function world(entitled){
     brandLogoHtml:()=>'', quotesCall:async()=>({ok:false}), PROFILE:{name:'Dealer X'}, QCUST:{name:'',valid:'30 days'}, FAVS:new Set(), BRANDING:{}, encodeURIComponent, location:{origin:'https://p360.test'} };
   const els={}; ctx.$=sel=>els[sel]||(els[sel]={innerHTML:'',value:''}); ctx.els=els;
   vm.createContext(ctx);
-  vm.runInContext('var QMETA={},QSNAP={},QSAVED=null,QLIST=[],QDIRTY=false,RETAIL=null,AC=null,QLOCRETAIL=null; const qIsUpgrade=k=>/\\|u=/.test(k); function qLoadList(){}\nvar PRICE=null,PRICELIST=null,QUOTELIST=null,MFRLIST=null,QUOTE=[],QSEARCH="",QUOTE_UNAVAILABLE=[],_quoteSig=null,_quoteBuild=null;'+
-    retiredDecls(H)+'\n'+extract(H)+'\n'+grabDecl(H,'function axesOf')+'\n'+['quotableLine','quoteOptionText','quoteEntry','hubStoreCatalog','ensureQuoteCatalog','buildQuoteCatalog','applyDefaultRetail','loadPricing','quoteMsrp','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qDelAt','qFilter','quoteImg','qSaved','qMsrpOk','qMeta','qUnit','qMoney','qLineHtml','qListHtml'].map(grab).join('\n')+
-    ';this.S=()=>({PRICE,PRICELIST,QUOTELIST,QUOTE_UNAVAILABLE,QUOTE}); this.setQ=q=>{QUOTE=q;};',ctx);
+  vm.runInContext('var QMETA={},QSNAP={},QSAVED=null,QLIST=[],QDIRTY=false,RETAIL=null,AC=null,QLOCRETAIL=null; const qIsUpgrade=k=>/\\|u=/.test(k); function qLoadList(){}\nvar GQUOTE={},PRICE=null,PRICELIST=null,QUOTELIST=null,MFRLIST=null,QUOTE=[],QSEARCH="",QUOTE_UNAVAILABLE=[],_quoteSig=null,_quoteBuild=null;'+
+    retiredDecls(H)+'\n'+extract(H)+'\n'+grabDecl(H,'function axesOf')+'\n'+['quotableLine','quoteOptionText','quoteEntry','hubStoreCatalog','ensureQuoteCatalog','buildQuoteCatalog','applyDefaultRetail','loadPricing','quoteMsrp','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qDelAt','qFilter','quoteImg','qSaved','qMsrpOk','qMeta','qUnit','qMoney','qLineHtml','qListHtml','qAdd','goldenQuoteRecord'].map(grab).join('\n')+
+    ';this.S=()=>({PRICE,PRICELIST,QUOTELIST,QUOTE_UNAVAILABLE,QUOTE,GQUOTE}); this.setQ=q=>{QUOTE=q;};',ctx);
   ctx.ent=entitled; return ctx;
 }
 (async()=>{
@@ -58,15 +58,15 @@ await t('each SKU carries its family, exact options and part number; the upgrade
 await t('manufacturer MSRP only: a storefront-derived 2x MSRP and a missing MSRP are "not provided"; a per-piece MSRP says "each"',async()=>{
   const w=world(['line-a']); await w.loadPricing(); const P=w.S().PRICE;
   eq([P['line-a|A1'].msrp,P['line-a|A2'].msrp,P['line-a|A3'].msrp,P['line-a|BC1'].msrp,P['line-a|BC1'].msrpEach],[120,null,null,30,true]); });
-await t('the customer quote shows name, options, part #, MSRP or "MSRP not provided" — never the dealer cost — and totals manufacturer MSRP only',async()=>{
+await t('the customer quote shows name, options, part #, MSRP or "Price on Request" — never the dealer cost — and totals manufacturer MSRP only',async()=>{
   const w=world(['line-a']); await w.loadPricing(); w.setQ(['line-a|A1','line-a|A2','line-a|A3',"line-a|A5|u=Handrail 'Pro'",'line-a|BC1']);
   w.renderQuotes(); const paper=w.els['#view-quotes'].innerHTML;
-  for(const s of ['Walker','Small','#A1','Large','#A2','Upgrade: Handrail &#39;Pro&#39;','$30.00 each','MSRP not provided']) if(!paper.includes(s)) throw new Error('missing '+s);
+  for(const s of ['Walker','Small','#A1','Large','#A2','Upgrade: Handrail &#39;Pro&#39;','$30.00 each','Price on Request']) if(!paper.includes(s)) throw new Error('missing '+s);
   for(const s of ['$50.00','$55.00','$40.00','$80.00','$400.00','$450.00','$100.00']) if(paper.includes(s)) throw new Error('dealer cost or derived MSRP shown: '+s);
   const picked=w.quotePicked(); /* C3-07 Stage 4 review: an upgraded configuration has no verified manufacturer MSRP (the storefront's scaled figure is
-     not the manufacturer's), so it is "MSRP not provided" and out of the total — as the server-rendered quote prints it. */
+     not the manufacturer's), so it is "Price on Request" and out of the total — as the server-rendered quote prints it. */
   eq(w.quoteTotal(picked),120+30,'A1 + BC1 each (upgrade: no verified MSRP)');
-  if(!/Handrail[\s\S]{0,600}MSRP not provided/.test(paper)) throw new Error('upgrade line not "MSRP not provided"'); });
+  if(!/Handrail[\s\S]{0,600}Price on Request/.test(paper)) throw new Error('upgrade line not "Price on Request"'); });
 await t('search narrows by name, option or part number; Remove takes out exactly that line (upgrades included)',async()=>{
   const w=world(['line-a','line-b']); await w.loadPricing(); w.renderQuotes();
   w.qFilter('walker large'); eq((w.els['#qsel'].innerHTML.match(/<option /g)||[]).length,1); if(!/value="line-a\|A2"/.test(w.els['#qsel'].innerHTML)) throw new Error('A2 not found');
@@ -81,6 +81,37 @@ await t('the hub can start before the dealer\'s lines are known: an empty list n
   w.ent=['line-b']; await w.ensureQuoteCatalog(); eq(w.S().QUOTELIST.map(p=>p.code),['B1']);
   w.ent=['line-b','line-a']; await w.ensureQuoteCatalog(); eq(w.S().QUOTELIST.length,7,'a newly granted line arrives too');
   const a=w.ensureQuoteCatalog(), b=w.ensureQuoteCatalog(); await Promise.all([a,b]); eq(w.S().QUOTELIST.length,7); });
+await t('EVERY REPRESENTED LINE (owner 2026-11-12): a listed line the dealer has no account for is offered without any price; the server\'s official MSRP is applied, a product the shop does not list is removed; an unanswered check reports the line',async()=>{
+  const w=world(['line-a']); w.state={manufacturers:w.MFR.filter(m=>m.slug!=='golden')}; w.AUTH={status:'approved'};
+  const asked=[];
+  w.quotesCall=async b=>{ if(b.action!=='default_retail') return {ok:false}; asked.push(...b.items);
+    return {ok:true,items:b.items.map(x=>x.manufacturer==='line-c'?{manufacturer:'line-c',code:x.code,price:x.code==='C1'?99:null,label:'MSRP',source:'msrp',active:true,account:false}:{manufacturer:x.manufacturer,code:x.code,price:null,source:'none',active:true,account:true})}; };
+  await w.loadPricing(); const S=w.S();
+  const c=S.QUOTELIST.find(p=>p.mfr==='line-c'); if(!c) throw new Error('line without an account not offered');
+  eq([c.code,c.account,c.cost,c.msrp],['C1',false,null,99]);
+  if(!asked.some(x=>x.manufacturer==='line-c')) throw new Error('server never asked about the no-account line');
+  if(S.QUOTELIST.some(p=>p.mfr==='line-off')) throw new Error('a line marked not quotable was offered');
+  /* no price from the public file ever reaches the page: the file had none; a synthetic one would be stripped */
+  const w2=world([]); w2.state={manufacturers:[{slug:'line-c',name:'Line C',hasData:true}]}; w2.AUTH={status:'approved'};
+  w2.fetch=async u=>({ok:true,json:async()=>[{code:'C1',name:'Priced file',base_price:500,dealer_price:400,msrp:999,tiers:[{minQty:1,price:400}]},{code:'C2',name:'Hidden'}]});
+  w2.quotesCall=async b=>({ok:true,items:b.items.map(x=>({manufacturer:x.manufacturer,code:x.code,price:null,source:x.code==='C2'?'call':'request',active:x.code!=='C2',account:false}))});
+  await w2.loadPricing(); const S2=w2.S();
+  eq(S2.QUOTELIST.map(p=>[p.code,p.cost,p.msrp]),[['C1',null,null]],'file prices stripped; hidden product removed');
+  if(JSON.stringify(S2.PRICE).match(/500|400|999/)) throw new Error('a file price reached PRICE');
+  const w3=world([]); w3.state={manufacturers:[{slug:'line-c',name:'Line C',hasData:true}]}; w3.AUTH={status:'approved'}; w3.quotesCall=async()=>({ok:false});
+  await w3.loadPricing(); eq([w3.S().QUOTELIST.length,w3.S().QUOTE_UNAVAILABLE],[0,['Line C']],'unchecked → reported, not shown'); });
+await t('GOLDEN in Customer Quotes: every Golden product Golden lets the dealer browse is offered at Golden\'s retail; a configurable lift chair opens its Shop page instead of a bare add',async()=>{
+  const w=world(['line-b']); w.CONFIG={GOLDEN_SLUG:'golden-technologies'}; w.goldenEntitled=()=>true;
+  w.goldenCatalogProducts=async()=>[{code:'PR501-SMA',name:'Cloud',_encPage:'Cloud',_axes:{Size:'Small'},msrp:2499,_goldenAction:'configure',_golden:true,category:'Lift Chairs'},{code:'GB121',name:'Buzzaround',msrp:null,_goldenAction:'order',_golden:true,category:'Scooters'}];
+  let opened=null, shop=null; w.showShop=s=>{shop=s;}; w.openProductDetail=c=>{opened=c;}; w.toast=()=>{}; w.qToast=()=>{}; w.setTimeout=f=>f();
+  await w.loadPricing(); const S=w.S();
+  const g=S.QUOTELIST.filter(p=>p.mfr==='golden'); eq(g.map(p=>[p.code,p.msrp,p.configure]),[['PR501-SMA',2499,true],['GB121',null,false]]);
+  if(S.PRICELIST.some(p=>p.mfr==='golden')) throw new Error('Golden in the HCPS price list');
+  w.renderQuotes(); if(!/optgroup label="Golden Technologies"/.test(w.els['#view-quotes'].innerHTML)) throw new Error('Golden group missing');
+  w.$('#qsel').value='golden|GB121'; w.qAdd(); eq(w.S().QUOTE,['golden|GB121']); eq(w.S().GQUOTE['golden|GB121'].name,'Buzzaround');
+  w.$('#qsel').value='golden|PR501-SMA'; w.qAdd(); eq([w.S().QUOTE,shop,opened],[['golden|GB121'],'golden-technologies','PR501-SMA'],'configure in the Shop');
+  const w2=world(['line-b']); w2.CONFIG={GOLDEN_SLUG:'golden-technologies'}; w2.goldenEntitled=()=>false; w2.goldenCatalogProducts=async()=>{ throw new Error('Golden asked without eligibility'); };
+  await w2.loadPricing(); if(w2.S().QUOTELIST.some(p=>p.mfr==='golden')) throw new Error('Golden offered without Golden eligibility'); });
 await t('a customer quote prints as the quote page alone',()=>{
   if(!/@media print\{#p360wrap #view-quotes\.on \.ph,#p360wrap #view-quotes\.on \.qbuild>\.card,#p360wrap #view-quotes\.on \.qprevlbl\{display:none!important\}/.test(H)) throw new Error('print rule'); });
 console.log(`quote catalog: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);

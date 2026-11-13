@@ -1,5 +1,5 @@
 /* Customer MSRP Quotes rules (owner, 2026-10-31): only a manufacturer MSRP is shown — no 2x-dealer-cost estimate and
-   never the dealer's price; a product without one reads "MSRP not provided" and stays out of the total; new quotes
+   never the dealer's price; a product without one reads "Price on Request" and stays out of the total; new quotes
    offer nothing from an inactive line (manufacturers.json quotable:false) or a retired line (Ohio Medical / GCE); an item already on a
    quote stays on it. Synthetic prices only. */
 const fs=require('fs'),path=require('path'),vm=require('vm');
@@ -25,12 +25,12 @@ t('Ohio Medical / GCE opened 2026-11-12 (owner: 2026 rev price list, published M
   const off=MF.filter(m=>m.quotable===false); if(off.length) throw new Error('also off: '+off.map(m=>m.slug));
   if(!ctx.quotableLine('access4u')) throw new Error('a live line refused');
 });
-t('no 2x estimate: a product without a manufacturer MSRP reads "MSRP not provided" and is not in the total',()=>{
+t('no 2x estimate: a product without a manufacturer MSRP reads "Price on Request" and is not in the total',()=>{
   ctx.QUOTE=['access4u|A1','access4u|A2','access4u|A3']; const p=ctx.quotePicked();
   if(p[0].msrp!==120||p[1].msrp!==null||p[2].msrp!==null) throw new Error(JSON.stringify(p));
   if(ctx.quoteTotal(p)!==120) throw new Error('total '+ctx.quoteTotal(p));
   const html=ctx.quotePaperHtml(p,ctx.quoteTotal(p));
-  if((html.match(/MSRP not provided/g)||[]).length<2) throw new Error('label missing');
+  if((html.match(/Price on Request/g)||[]).length<2) throw new Error('label missing');
   if(/155\.54|\$80\.00|77\.77|40\.00/.test(html)) throw new Error('a dealer cost or 2x estimate leaked: '+html);
   if(/\best\b<|Estimated MSRP/.test(html)) throw new Error('estimate wording left');
 });

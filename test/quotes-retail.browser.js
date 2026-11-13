@@ -115,7 +115,7 @@ const layout = page => page.evaluate(() => {
       await t(label + ': a head office opening a BRANCH quote previews that branch\'s retail ($30), never its own company price; Save-as-retail is off there', async () => {
         const r = await page.evaluate(() => __T(`[document.querySelector('#qpaper').innerText.includes('$30.00'), document.querySelector('#qpaper').innerText.includes('$22.00')]`)); ok(r[0] && !r[1], JSON.stringify(r)); });
       S.atBranch = false; await page.evaluate(() => __T(`QDIRTY=false; qOpen('q1')`)); await page.waitForTimeout(600);
-      await t(label + ': an inactive / retired line is never added to a new quote', async () => ok(await page.evaluate(() => __T(`P360Quote.add('ohio-medical|X1',{name:'X'}); QUOTE.includes('ohio-medical|X1')`)) === false, 'added'));
+      await t(label + ': an inactive / retired line is never added to a new quote', async () => ok(await page.evaluate(() => __T(`P360Quote.add('complete-medical-supplies|X1',{name:'X'}); QUOTE.includes('complete-medical-supplies|X1')`)) === false, 'added'));
       const L1 = await layout(page); await page.screenshot({ path: path.join(SHOTS, label + '-quotes.png'), fullPage: false });
       await t(label + ': quotes — no horizontal scroll, no broken image' + (w < 768 ? ', 44 px touch targets' : ''), () => { ok(L1.overflow <= 1, 'overflow ' + L1.overflow); ok(!L1.broken, 'broken'); if (w < 768) ok(!L1.small.length, 'small: ' + L1.small.join(' | ')); });
       /* ---------- Add to a quote from a product page ---------- */
