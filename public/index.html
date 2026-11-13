@@ -6503,10 +6503,12 @@ let _brCode=null, _brMsrp=false;
 const RETAIL_API="https://homecareproviderservices.netlify.app/.netlify/functions/dealer-retail-api";
 let RETAIL=null;   // {byKey:{"mfr|code":{price,location_id}}, at}
 async function retailCall(body){
-  if(typeof PREVIEW!=='undefined'&&PREVIEW) return {ok:false,error:'Read-only preview — saved prices are not available here.'};
-  if(!(typeof AUTH!=='undefined'&&AUTH&&AUTH.session&&AUTH.session.access_token)) return {ok:false,error:'Please sign in again.'};
-  try{ await ensureFreshSession(); }catch(e){}
-  try{ const r=await fetch(RETAIL_API,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+AUTH.session.access_token},body:JSON.stringify(body)});
+  const mg=(typeof mgBearer==='function')?mgBearer():'';   // Manage Dealer: HCPS staff session (server-checked and recorded)
+  if(!mg&&typeof PREVIEW!=='undefined'&&PREVIEW) return {ok:false,error:'Read-only preview — saved prices are not available here.'};
+  if(!mg&&!(typeof AUTH!=='undefined'&&AUTH&&AUTH.session&&AUTH.session.access_token)) return {ok:false,error:'Please sign in again.'};
+  if(!mg){ try{ await ensureFreshSession(); }catch(e){} }
+  try{ const r=await fetch(RETAIL_API,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+(mg||AUTH.session.access_token)},body:JSON.stringify(body)});
+    if(mg&&r.status===401&&typeof manageEnded==='function'){ const e=await r.clone().json().catch(()=>({})); manageEnded((e&&e.error)||'Your Manage Dealer session has ended.'); }
     return await r.json().catch(()=>({ok:false,error:'Please try again.'})); }catch(e){ return {ok:false,error:'Please try again.'}; }
 }
 async function loadRetail(force){
@@ -6595,6 +6597,14 @@ function openBrochure(code, officialDocs){
 function closeBrochure(){ const el=document.getElementById('brModal'); if(el) el.remove(); }
 function _brMsg(t,bad){ const el=document.getElementById('brMsg'); if(el) el.innerHTML='<span style="color:'+(bad?'#b22b2b':'#2d7d46')+'">'+esc(t)+'</span>'; }
 async function _brPost(body){
+  const mg=(typeof mgBearer==='function')?mgBearer():'';
+  if(mg){   // Manage Dealer: branded for the managed location; an email needs its own confirmation and is recorded
+    if(body&&body.action==='email'){ const loc=(MANAGE&&MANAGE.location&&MANAGE.location.name)||'the dealer';
+      if(!confirm('Email this brochure to '+(body.to||'the customer')+' on behalf of '+loc+'?\n\nIt is sent from HCPS in the dealer\'s name, replies go to the dealer, and it is recorded under your name.')) return {ok:false,error:'Nothing was sent.'};
+      body=Object.assign({},body,{manage_confirm:'email'}); }
+    const hd={'Content-Type':'application/json',authorization:'Bearer '+mg}; if(window.__PREVIEW__&&window.__PREVIEW__.token) hd['x-hcps-preview']=window.__PREVIEW__.token;
+    return fetch('/.netlify/functions/brochure',{method:'POST',headers:hd,body:JSON.stringify(body)}).then(r=>r.json());
+  }
   if(body&&body.action==='email'&&typeof PREVIEW!=='undefined'&&PREVIEW) return {ok:false,error:'Read-only preview — emailing is disabled for this dealer view.'};
   if(body&&body.action==='email'&&typeof ensureFreshSession==='function'){ try{ await ensureFreshSession(); }catch(e){} }
   const hdr={'Content-Type':'application/json'};
@@ -6765,6 +6775,9 @@ let MANAGE=null;
 const MANAGE_TOOLS=new Set(["account_change_request","default_ship_set","logo_upload","branding_set","logo_studio_restore","showroom_save"]);
 function manageCan(a){ return !!(MANAGE&&MANAGE.actions&&MANAGE.actions.some(x=>x.key===a)); }
 window.__MANAGE_TOKEN__=()=>MANAGE&&MANAGE.token||'';
+/* the bearer for the dealer tool APIs in a Manage Dealer session (the server decides what the session may do there) */
+function mgBearer(){ const t=window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__(); return t?'manage:'+t:''; }
+window.mgBearer=mgBearer;
 window.__MANAGE_TOOLS__={has:a=>MANAGE_TOOLS.has(a)&&manageCan(({account_change_request:'account_change',default_ship_set:'default_ship',logo_upload:'logo_edit',branding_set:'logo_edit',logo_studio_restore:'logo_edit',showroom_save:'showroom_edit'})[a])};
 async function manageCall(action,why){
   try{ const r=await fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,token:MANAGE?MANAGE.token:'',why})}); return await r.json().catch(()=>({})); }
@@ -7740,7 +7753,13 @@ function token(){ if(window.__PREVIEW__&&window.__PREVIEW__.token) return "previ
 async function api(endpoint,body){
   await refreshIfNeeded();
   /* Manage Dealer: the writes a staff session may make go with the manage token; every read stays on the preview token */
-  const mg=window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__()&&endpoint===TOOLS_ENDPOINT&&body&&window.__MANAGE_TOOLS__&&window.__MANAGE_TOOLS__.has(String(body.action));
+  const mgAll=window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__()&&/\/dealer-(storefront|ads)-api$/.test(String(endpoint));   // whole tool runs in the session; the server lists what it may do
+  if(mgAll&&body&&body.action==='sf_save'&&(body.mode==='publish'||body.mode==='unpublish')){
+    const loc=(window.__MANAGE__&&window.__MANAGE__.location&&window.__MANAGE__.location.name)||'this dealer';
+    if(!confirm((body.mode==='publish'?'PUBLISH':'UNPUBLISH')+' the public storefront for '+loc+'?\n\n'+(body.mode==='publish'?'Customers will be able to see it at its public address.':'Customers will no longer see it.')+' This is recorded under your name.')) return {ok:false,error:'Nothing was '+body.mode+'ed.'};
+    body=Object.assign({},body,{manage_confirm:body.mode});
+  }
+  const mg=mgAll||(window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__()&&endpoint===TOOLS_ENDPOINT&&body&&window.__MANAGE_TOOLS__&&window.__MANAGE_TOOLS__.has(String(body.action)));
   const r=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+(mg?"manage:"+window.__MANAGE_TOKEN__():(token()||""))},body:JSON.stringify(body||{})});
   if(mg&&r.status===401&&typeof window.manageEnded==="function"){ const e=await r.clone().json().catch(()=>({})); window.manageEnded((e&&e.error)||"Your Manage Dealer session has ended."); }
   return r.json().catch(()=>({}));
@@ -8488,10 +8507,12 @@ function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.
 const QUOTES_API="https://homecareproviderservices.netlify.app/.netlify/functions/dealer-quotes-api";
 let QMETA={}, QSNAP={}, QSAVED=null, QLIST=null, QDIRTY=false, QBUSY=false, QLOCRETAIL=null;   // QLOCRETAIL: saved retail at an opened quote's OTHER location
 async function quotesCall(body){
-  if(typeof PREVIEW!=='undefined'&&PREVIEW) return {ok:false,error:'Read-only preview — saved quotes are not available here.'};
-  if(!(typeof AUTH!=='undefined'&&AUTH&&AUTH.session&&AUTH.session.access_token)) return {ok:false,error:'Please sign in again.'};
-  try{ await ensureFreshSession(); }catch(e){}
-  try{ const r=await fetch(QUOTES_API,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+AUTH.session.access_token},body:JSON.stringify(body)});
+  const mg=(typeof mgBearer==='function')?mgBearer():'';   // Manage Dealer: HCPS staff session (server-checked and recorded)
+  if(!mg&&typeof PREVIEW!=='undefined'&&PREVIEW) return {ok:false,error:'Read-only preview — saved quotes are not available here.'};
+  if(!mg&&!(typeof AUTH!=='undefined'&&AUTH&&AUTH.session&&AUTH.session.access_token)) return {ok:false,error:'Please sign in again.'};
+  if(!mg){ try{ await ensureFreshSession(); }catch(e){} }
+  try{ const r=await fetch(QUOTES_API,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+(mg||AUTH.session.access_token)},body:JSON.stringify(body)});
+    if(mg&&r.status===401&&typeof manageEnded==='function'){ const e=await r.clone().json().catch(()=>({})); manageEnded((e&&e.error)||'Your Manage Dealer session has ended.'); }
     return await r.json().catch(()=>({ok:false,error:'Please try again.'})); }catch(e){ return {ok:false,error:'Please try again.'}; }
 }
 const qIsUpgrade=k=>/\|u=/.test(k);
@@ -8665,7 +8686,7 @@ function qDel(mfr,code){ QUOTE=QUOTE.filter(x=>x!==mfr+"|"+code); QDIRTY=true; r
 let RP=null;   // {head_office, self_id, locations, prices:[…], target:"company"|<location id>, edits:{key:price|null}, q, mfr, limit}
 async function loadRetailView(){
   const host=$("#view-retail"); if(host) host.innerHTML=`<div class="ph"><div><h1>My Retail Prices</h1><div class="sub">Loading your prices…</div></div></div>`;
-  if(window.__PREVIEW__){ host.innerHTML=`<div class="ph"><div><h1>My Retail Prices</h1></div></div><div class="card" style="margin-top:0">Read-only preview — retail prices are shown only when the dealer is signed in.</div>`; return; }
+  if(window.__PREVIEW__&&!mgBearer()){ host.innerHTML=`<div class="ph"><div><h1>My Retail Prices</h1></div></div><div class="card" style="margin-top:0">Read-only preview — retail prices are shown only when the dealer is signed in.</div>`; return; }
   const [r]=await Promise.all([retailCall({action:'retail_list'}), ensureCatalogFav().catch(()=>null)]);
   if(!(r&&r.ok)){ host.innerHTML=`<div class="ph"><div><h1>My Retail Prices</h1></div></div><div class="card" style="margin-top:0">${esc((r&&r.error)||'Your prices could not be loaded just now.')} <a class="btn gh" onclick="loadRetailView()">Try again</a></div>`; return; }
   const keep=RP||{};
@@ -9279,10 +9300,12 @@ async function submitCreditApp(){ acToast("Manufacturer credit applications are 
 const APPS_API="https://homecareproviderservices.netlify.app/.netlify/functions/dealer-applications-api";
 let AP=null, APCUR=null, APDIRTY=false, APBUSY=false;
 async function appsCall(body){
-  if(typeof PREVIEW!=='undefined'&&PREVIEW) return {ok:false,error:'Read-only preview — applications are not available here.'};
-  if(!(typeof AUTH!=='undefined'&&AUTH&&AUTH.session&&AUTH.session.access_token)) return {ok:false,error:'Please sign in again.'};
-  try{ await ensureFreshSession(); }catch(e){}
-  try{ const r=await fetch(APPS_API,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+AUTH.session.access_token},body:JSON.stringify(body)});
+  const mg=(typeof mgBearer==='function')?mgBearer():'';   // Manage Dealer: HCPS staff session (server-checked and recorded)
+  if(!mg&&typeof PREVIEW!=='undefined'&&PREVIEW) return {ok:false,error:'Read-only preview — applications are not available here.'};
+  if(!mg&&!(typeof AUTH!=='undefined'&&AUTH&&AUTH.session&&AUTH.session.access_token)) return {ok:false,error:'Please sign in again.'};
+  if(!mg){ try{ await ensureFreshSession(); }catch(e){} }
+  try{ const r=await fetch(APPS_API,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+(mg||AUTH.session.access_token)},body:JSON.stringify(body)});
+    if(mg&&r.status===401&&typeof manageEnded==='function'){ const e=await r.clone().json().catch(()=>({})); manageEnded((e&&e.error)||'Your Manage Dealer session has ended.'); }
     return await r.json().catch(()=>({ok:false,error:'Please try again.'})); }catch(e){ return {ok:false,error:'Please try again.'}; }
 }
 const AP_LABEL={draft:'In progress',queued:'Waiting to be signed — HCPS notified',signing:'Ready to sign',signing_failed:'Signing stopped — edit and sign again',signed:'Signed — with HCPS',offline_signed:'Signed — with HCPS',
@@ -9290,7 +9313,7 @@ const AP_LABEL={draft:'In progress',queued:'Waiting to be signed — HCPS notifi
 const AP_PILL={draft:'open',queued:'open',signing:'open',signing_failed:'open',signed:'done',offline_signed:'done',under_review:'done',sent_to_manufacturer:'done',approved:'done',declined:'open'};
 async function loadApplyView(){
   const host=$("#view-apply"); if(!host) return;
-  if(window.__PREVIEW__){ host.innerHTML=`<div class="ph"><div><h1>Manufacturer Account Setup</h1></div></div><div class="card" style="margin-top:0">Read-only preview — applications are shown only when the dealer is signed in.</div>`; return; }
+  if(window.__PREVIEW__&&!mgBearer()){ host.innerHTML=`<div class="ph"><div><h1>Manufacturer Account Setup</h1></div></div><div class="card" style="margin-top:0">Read-only preview — applications are shown only when the dealer is signed in.</div>`; return; }
   if(!APCUR) host.innerHTML=`<div class="ph"><div><h1>Manufacturer Account Setup</h1><div class="sub">Loading…</div></div></div>`;
   const r=await appsCall({action:'app_list'});
   if(!(r&&r.ok)){ host.innerHTML=`<div class="ph"><div><h1>Manufacturer Account Setup</h1></div></div><div class="card" style="margin-top:0">${esc((r&&r.error)||'Applications could not be loaded just now.')} <a class="btn gh" onclick="loadApplyView()">Try again</a></div>`; return; }

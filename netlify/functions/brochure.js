@@ -257,7 +257,8 @@ function renderBrochure(p, opts) {
 const GOLDEN_FN = (process.env.HCPS_FUNCTIONS_BASE || 'https://homecareproviderservices.netlify.app/.netlify/functions').replace(/\/+$/, '');
 async function goldenRetail(p, event, offer) {
   const h = (event && event.headers) || {};
-  const auth = String(h.authorization || h.Authorization || ''), prev = String(h['x-hcps-preview'] || h['X-HCPS-Preview'] || '');
+  let auth = String(h.authorization || h.Authorization || ''); const prev = String(h['x-hcps-preview'] || h['X-HCPS-Preview'] || '');
+  if (/^Bearer\s+manage:/i.test(auth)) auth = '';   // Manage Dealer: Golden is read through the session's own view-as token (golden-proxy knows only dealer sign-ins and previews)
   if (!/^Bearer\s+\S+/i.test(auth) && !/^[0-9a-f]{48}$/.test(prev)) return null;
   const code = String(p._goldenKey || p.code || '').trim().slice(0, 120); if (!code) return null;
   try {
@@ -273,7 +274,9 @@ async function goldenRetail(p, event, offer) {
    admin dealer-quotes-api default_retail: official MSRP, else HCPS calculated retail (2 × standard dealer cost) under the
    manufacturer's advertising rules. → { price, calculated } | undefined (not signed in / unreadable → official MSRP only) */
 async function defaultRetail(p, event, offer) {
-  const h = (event && event.headers) || {}; const auth = String(h.authorization || h.Authorization || '');
+  const h = (event && event.headers) || {}; let auth = String(h.authorization || h.Authorization || '');
+  /* staff View as Dealer: the preview token reads manufacturer facts for that dealer (dealer-quotes-api default_retail only) */
+  const pv = String(h['x-hcps-preview'] || h['X-HCPS-Preview'] || ''); if (!/^Bearer\s+\S+/i.test(auth) && /^[0-9a-f]{48}$/.test(pv)) auth = 'Bearer preview:' + pv;
   const slug = String(p._mfrSlug || '').trim().toLowerCase(), code = String(p.code || '').trim();
   if (!/^Bearer\s+\S+/i.test(auth) || !/^[a-z0-9-]{2,60}$/.test(slug) || !code || code.length > 60 || p._upgrade) return undefined;
   try {
@@ -323,6 +326,20 @@ async function verifiedMsrp(p) {
   return row ? num(row.msrp) : null;
 }
 
+/* MANAGE DEALER (owner 2026-11-13): an HCPS staff session ("Bearer manage:<token>") is checked by the admin site
+   (dealer-auth manage_info re-checks switch, session, role and location). The brochure is branded for the managed
+   location, and an email is recorded in the session's audit (begin before sending; no record → no email). */
+async function manageCall(body) {
+  try { const r = await fetch(`${GOLDEN_FN}/dealer-auth`, { method: 'POST', signal: AbortSignal.timeout(6000), headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    return r.ok ? await r.json() : null; } catch (e) { return null; }
+}
+async function manageDealer(event) {
+  const a = String((event.headers && (event.headers.authorization || event.headers.Authorization)) || '');
+  const m = a.match(/^Bearer\s+manage:([0-9a-f]{64})$/i); if (!m) return null;
+  const j = await manageCall({ action: 'manage_info', token: m[1] });
+  if (!j || !j.ok || !j.location || !j.location.id) return { refused: (j && j.message) || 'Your Manage Dealer session has ended.' };
+  return { dealer_id: j.location.id, email: '', manage: { token: m[1], staff: j.staff || {}, can: (k) => (j.actions || []).some((x) => x && x.key === k) } };
+}
 async function approvedDealer(event) {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE;
   const auth = (event.headers && (event.headers.authorization || event.headers.Authorization)) || '';
@@ -398,7 +415,7 @@ exports.handler = async (event) => {
   }
   if (offer) product.quote_price = offer;
   let reference = facts && facts.reference ? facts.reference : null;
-  if (reference == null && !isGolden && facts === undefined) {   // not signed in / staff preview: the verified record only
+  if (reference == null && !isGolden && (facts === undefined || (basis === 'msrp' && !(facts && facts.source === 'msrp' && facts.price)))) {   // not signed in, or the server's answer had no MSRP: HCPS's verified record (the same layers)
     try { reference = await verifiedMsrp(product); }
     catch (e) {
       console.error('msrp lookup failed', e && e.message);
@@ -425,8 +442,11 @@ exports.handler = async (event) => {
   b.include_msrp = basis === 'msrp';
   const action = String(b.action || 'html');
   /* Branded only for a signed-in, approved dealer; a request cannot name or style the dealer. */
-  const who = await approvedDealer(event);
+  const mgr = await manageDealer(event);
+  if (mgr && mgr.refused) return json(401, { ok: false, error: mgr.refused });
+  const who = mgr || await approvedDealer(event);
   const brand = who ? await dealerBrand(who.dealer_id) : null;
+  if (mgr && brand && EMAIL_RE.test(String(brand.email || ''))) who.email = String(brand.email).trim();   // customer replies reach the dealer, never HCPS staff
   const html = renderBrochure(product, Object.assign({ include_msrp: !!b.include_msrp, dealer: brand }, renderOpts));
 
   if (action === 'html') return json(200, { ok: true, html });
@@ -435,6 +455,12 @@ exports.handler = async (event) => {
     if (!who) return json(401, { ok: false, error: 'Please sign in again to email a brochure.' });
     const to = String(b.to || '').trim();
     if (!EMAIL_RE.test(to)) return json(400, { ok: false, error: 'Enter a valid email address.' });
+    if (mgr) {
+      if (!mgr.manage.can('brochure_email')) return json(403, { ok: false, error: 'Your Manage Dealer session cannot email brochures.' });
+      if (b.manage_confirm !== 'email') return json(428, { ok: false, status: 'confirm_required', error: `Confirm that you are emailing this brochure to ${to} on behalf of ${(brand && brand.business_name) || 'the dealer'}.` });
+      const begin = await manageCall({ action: 'manage_audit', token: mgr.manage.token, audit: { action: 'brochure_email', phase: 'begin', target: `brochure:${str(product.code, 60)}`, before: { to_domain: to.split('@')[1] || '', product: str(product.code, 60), price_basis: basis } } });
+      if (!begin || !begin.ok) return json(503, { ok: false, error: 'The email could not be recorded as sent by HCPS, so it was not sent. Please try again.' });
+    }
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) return json(500, { ok: false, error: 'Email is not configured on this site yet (RESEND_API_KEY).' });
     /* C3-07 Stage 4: per-dealer and per-recipient limits, recorded before sending (see _send_limit.js). */
@@ -459,6 +485,7 @@ exports.handler = async (event) => {
         html: body.replace('<body>', () => '<body>' + intro),   // a function replacer: "$&" in a message is text, not a pattern
       }),
     });
+    if (mgr) await manageCall({ action: 'manage_audit', token: mgr.manage.token, audit: { action: 'brochure_email', phase: res.ok ? 'done' : 'failed', target: `brochure:${str(product.code, 60)}`, after: { sent: !!res.ok, to_domain: to.split('@')[1] || '' } } });
     if (!res.ok) {
       const t = await res.text().catch(() => '');
       console.error('brochure email refused by the provider', res.status, t.slice(0, 200));
