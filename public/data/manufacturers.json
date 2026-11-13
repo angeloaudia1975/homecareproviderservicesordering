@@ -203,7 +203,7 @@
     "logo": "/assets/logos/ohio-medical.jpg",
     "hasData": true,
     "sort": 11,
-    "quotable": false
+    "freight": {"summary": "Freight: To be determined by manufacturer. Ohio Medical charges its actual shipping cost; it is added from the manufacturer's order confirmation.", "actualNote": "Freight: To be determined by manufacturer.", "otherLabel": "Freight", "groups": [], "elseActual": true}
   },
   {
     "slug": "dalton",

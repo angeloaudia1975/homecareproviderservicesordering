@@ -10,17 +10,17 @@ const H = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8');
 const MF = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'data', 'manufacturers.json'), 'utf8'));
 let pass = 0, fail = 0; let chain = Promise.resolve(); const t = (n, f) => { chain = chain.then(async () => { try { await f(); pass++; console.log('ok   ' + n); } catch (e) { fail++; console.log('FAIL ' + n + '\n     ' + e.message); } }); };
 const WANT = ['complete-medical-supplies'];   // Ohio Medical / GCE restored by the owner 2026-11-12 — HELD until its pricing is verified
-const HELD = ['gce', 'ohio-medical'];
+const HELD = [];   // Ohio Medical / GCE held 2026-11-12, opened the same day on the owner's 2026 rev price list
 
-t('the server lists: Complete Medical retired; Ohio Medical / GCE restored and HELD under both spellings', () => {
+t('the server lists: Complete Medical retired; Ohio Medical / GCE live (not retired, not held) under both spellings', () => {
   const got = Object.keys(R.RETIRED_LINES).sort(); if (JSON.stringify(got) !== JSON.stringify(WANT)) throw new Error(got.join());
   for (const s of ['complete-medical-supplies', ' COMPLETE-MEDICAL-SUPPLIES ']) if (!R.isRetiredLine(s)) throw new Error(s);
   for (const s of ['access4u', 'pedifix', 'yuwell', 'gce', 'ohio-medical', '', null]) if (R.isRetiredLine(s)) throw new Error('live line retired: ' + s);
-  for (const s of ['gce', 'ohio-medical', 'OHIO-MEDICAL', ' gce ']) if (!R.isHeldLine(s)) throw new Error('not held: ' + s);
+  for (const s of ['gce', 'ohio-medical', 'OHIO-MEDICAL', ' gce ']) if (R.isHeldLine(s)) throw new Error('still held: ' + s);
   if (R.lineSlug('gce') !== 'ohio-medical') throw new Error('gce alias');
   if (!Object.isFrozen(R.RETIRED_LINES) || !Object.isFrozen(R.ORDERING_HOLDS)) throw new Error('list not frozen');
 });
-t('the storefront: a held line is listed and browsable, but shows no price and adds nothing to a cart', () => {
+t('the storefront: the hold mechanism stays in place (empty list); Ohio Medical is listed, quotable, with its catalog file and photos', () => {
   const m = /const HELD_LINE_SLUGS=(\[[^\]]*\]);/.exec(H); if (!m || JSON.stringify(JSON.parse(m[1]).sort()) !== JSON.stringify(HELD)) throw new Error('storefront held list');
   const HL = '(typeof isHeldSlug==="function"&&isHeldSlug(';
   for (const [what, needle] of [['catalog prices withheld', 'if(' + HL + 'slug))) (merged||[]).forEach(p=>{ if(p){ p.base_price=null; p.dealer_price=null; p.tiers=[]; p._held=true; } });'],
@@ -28,7 +28,7 @@ t('the storefront: a held line is listed and browsable, but shows no price and a
     ['addToCart refuses', 'function addToCart(p,qty){\n  if(p && (p._held || ' + HL + 'p.manufacturer)))){ toast('],
     ['card has no Add to cart', 'const buy = (p._held||' + HL + 'p.manufacturer)))'],
     ['detail page has no Add to cart', ': (p._held||' + HL + 'p.manufacturer)))\n              ? `<div class="pd-disc"><b>Not orderable yet</b>']]) if (!H.includes(needle)) throw new Error(what);
-  if (!MF.some(m => m.slug === 'ohio-medical' && m.quotable === false)) throw new Error('Ohio Medical not listed (or offered on new quotes)');
+  if (!MF.some(m => m.slug === 'ohio-medical' && m.quotable !== false && m.freight && /To be determined by manufacturer/.test(m.freight.actualNote))) throw new Error('Ohio Medical not listed, not quotable, or freight not "To be determined by manufacturer"');
   if (!fs.existsSync(path.join(ROOT, 'public', 'data', 'ohio-medical.json'))) throw new Error('catalog file missing');
   const cat = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'data', 'ohio-medical.json'), 'utf8'));
   if (new Set(cat.map(p => p.code)).size !== cat.length) throw new Error('duplicate part numbers');
@@ -61,7 +61,7 @@ t('no retired line is listed, and no public catalog file or product photo folder
 });
 t('historical orders of a retired line keep its name — never the bare slug', () => {
   const m = /const RETIRED_LINE_NAMES=(\{[^}]*\});/.exec(H); if (!m) throw new Error('RETIRED_LINE_NAMES missing');
-  const names = JSON.parse(m[1]); for (const s of WANT.concat(HELD)) if (!names[s]) throw new Error('no name for ' + s);
+  const names = JSON.parse(m[1]); for (const s of WANT.concat(['gce', 'ohio-medical'])) if (!names[s]) throw new Error('no name for ' + s);
   if (names.gce !== names['ohio-medical']) throw new Error('the two Ohio Medical spellings show different names');
   for (const re of [/\|\| retiredLineName\(o\.manufacturer\) \|\| o\.manufacturer/, /name:retiredLineName\(slug\)\|\|slug\}/, /return m\?m\.name:\(retiredLineName\(slug\)\|\|slug\)/])
     if (!re.test(H)) throw new Error('history view does not use the retired name: ' + re);

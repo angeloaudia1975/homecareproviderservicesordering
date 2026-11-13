@@ -2065,7 +2065,7 @@ const RAW={files:{},content:{},manufacturers:null};
 const RETIRED_LINE_SLUGS=["complete-medical-supplies"];   /* Ohio Medical / GCE restored by the owner 2026-11-12 (held below) */
 /* HELD lines (netlify/functions/_retired_lines.js ORDERING_HOLDS + its "gce" alias): listed and browsable, but no price is
    shown and nothing goes in a cart until HCPS verifies the current price list; the order server refuses them too. */
-const HELD_LINE_SLUGS=["ohio-medical","gce"];
+const HELD_LINE_SLUGS=[];   /* Ohio Medical / GCE opened 2026-11-12 (owner: 2026 rev price list effective immediately) */
 function isHeldSlug(slug){ return HELD_LINE_SLUGS.includes(String(slug==null?"":slug).trim().toLowerCase()); }
 const HELD_NOTE="Pricing being verified — ordering opens once HCPS confirms the current price list";
 /* Historical orders and imported sales of a retired line still show its name (never the bare slug "gce"). */

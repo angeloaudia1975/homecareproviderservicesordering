@@ -18,11 +18,11 @@ ctx.MFRLIST=MF.map(m=>({slug:m.slug,name:m.name,quotable:m.quotable}));
 ctx.PRICE={'access4u|A1':{name:'With MSRP',mfrName:'Access4U',msrp:120,cost:60},'access4u|A2':{name:'No MSRP',mfrName:'Access4U',msrp:null,cost:77.77},
   'access4u|A3':{name:'Zero MSRP',mfrName:'Access4U',msrp:0,cost:40},'gce|G1':{name:'Ohio item',mfrName:'Ohio Medical / GCE',msrp:300,cost:150}};
 ctx.QUOTELIST=Object.entries(ctx.PRICE).map(([k,p])=>({mfr:k.split('|')[0],code:k.split('|')[1],name:p.name,mfrName:p.mfrName,cost:p.cost,msrp:p.msrp}));
-t('Ohio Medical / GCE is restored but HELD (owner 2026-11-12): listed with quotable:false, refused by quotableLine under either identifier; no other line is quotable:false',()=>{
-  if(!MF.some(m=>m.slug==='ohio-medical'&&m.quotable===false)) throw new Error('Ohio Medical not listed as not quotable');
+t('Ohio Medical / GCE opened 2026-11-12 (owner: 2026 rev price list, published MSRP): quotable under either identifier; no line is quotable:false',()=>{
+  if(!MF.some(m=>m.slug==='ohio-medical'&&m.quotable!==false)) throw new Error('Ohio Medical not listed as quotable');
   if(MF.some(m=>m.slug==='gce')) throw new Error('legacy gce listed');
-  if(ctx.quotableLine('gce')||ctx.quotableLine('ohio-medical')||ctx.quotableLine('OHIO-MEDICAL')) throw new Error('held line quotable');
-  const off=MF.filter(m=>m.quotable===false&&m.slug!=='ohio-medical'); if(off.length) throw new Error('also off: '+off.map(m=>m.slug));
+  if(!ctx.quotableLine('gce')||!ctx.quotableLine('ohio-medical')) throw new Error('Ohio Medical refused');
+  const off=MF.filter(m=>m.quotable===false); if(off.length) throw new Error('also off: '+off.map(m=>m.slug));
   if(!ctx.quotableLine('access4u')) throw new Error('a live line refused');
 });
 t('no 2x estimate: a product without a manufacturer MSRP reads "MSRP not provided" and is not in the total',()=>{
@@ -34,9 +34,9 @@ t('no 2x estimate: a product without a manufacturer MSRP reads "MSRP not provide
   if(/155\.54|\$80\.00|77\.77|40\.00/.test(html)) throw new Error('a dealer cost or 2x estimate leaked: '+html);
   if(/\best\b<|Estimated MSRP/.test(html)) throw new Error('estimate wording left');
 });
-t('the builder: Ohio Medical not offered for a new quote; an item already on the quote stays on it',()=>{
+t('the builder: an item already on the quote stays on it; live lines offered',()=>{
   ctx.QUOTE=['gce|G1']; ctx.renderQuotes(); const h=els['#view-quotes'].innerHTML;
-  if(/<option value="gce\|/.test(h)) throw new Error('gce offered'); if(!/<option value="access4u\|A2"/.test(h)) throw new Error('access4u missing');
+  if(!/<option value="access4u\|A2"/.test(h)) throw new Error('access4u missing');
   if(!/Ohio item/.test(h)) throw new Error('existing gce item dropped from the quote');
   if(/2× dealer-cost|est<\/span>|" est"/.test(h)) throw new Error('estimate wording in the builder');
   if(/77\.77|155\.54/.test(h)) throw new Error('dealer cost shown');

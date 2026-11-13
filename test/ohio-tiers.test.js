@@ -13,7 +13,7 @@ const eq = (a, b, m) => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new
 
 const FILE = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'public', 'data', 'ohio-medical.json'), 'utf8'));
 // A product exactly as the storefront builds it: the public row + a commercial overlay (synthetic prices).
-const prod = (code, each, five) => Object.assign({}, FILE.find(r => r.code === code), { manufacturer: 'ohio-medical', base_price: each, tiers: [{ min_qty: 1, price: each }, { min_qty: 5, price: five }] });
+const prod = (code, each, five) => Object.assign({}, FILE.find(r => r.code === code), { manufacturer: 'ohio-medical', base_price: each, tiers: [{ minQty: 1, price: each }, { minQty: 5, price: five }] });
 function engine(cartLines, auth) {
   const CART = new Map(cartLines.map(([p, qty]) => [p.code, { p, qty }]));
   return new Function('CART', 'AUTH', 'money', SRC + ';return {unitPrice,tierLadder,tierSummary};')(CART, auth || null, v => '$' + Number(v).toFixed(2));
