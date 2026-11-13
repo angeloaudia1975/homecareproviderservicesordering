@@ -28,6 +28,9 @@ global.fetch=async(url,o)=>{ const u=String(url);
     if(global.EVIL_LOGO) D.hq.logo_url=global.EVIL_LOGO; else D.hq.logo_url='https://cdn.acme.test/logo.png';
     const id=(u.match(/id=eq\.([^&]+)/)||[])[1]; const row=D[id]; if(!row) return {ok:true,json:async()=>[]};
     const cols=((u.match(/select=([^&]+)/)||[])[1]||'').split(','); const o2={}; for(const c of cols) o2[c]=row[c]; return {ok:true,json:async()=>[o2]}; }
+  if(u.startsWith('https://sb.test/rest/v1/manufacturer_meta')){ if(global.META_DOWN) return {ok:false,status:500,json:async()=>({})}; return {ok:true,json:async()=>(/slug=eq\.bemis/.test(u)?[{record_authoritative:true}]:[{record_authoritative:false}])}; }
+  if(u.startsWith('https://sb.test/rest/v1/catalog_file_commercial')){ const sl=(u.match(/manufacturer=eq\.([^&]+)/)||[])[1]; return {ok:true,json:async()=>(FILES[sl]?[{manufacturer:sl,identity_sha256:FILES[sl].identity,rows:FILES[sl].overlay}]:[])}; }
+  if(u.startsWith('https://hcpsonlineordering.netlify.app/data/')){ const sl=decodeURIComponent(u.split('/data/')[1].replace(/\.json$/,'')); if(global.FILE_DOWN) return {ok:false,status:500,json:async()=>({})}; return FILES[sl]?{ok:true,status:200,json:async()=>FILES[sl].public}:{ok:false,status:404,json:async()=>({})}; }
   if(u.startsWith('https://sb.test/rest/v1/product_skus')) return {ok:true,json:async()=>(/code=eq\.REC1/.test(u)?[{msrp:199.99}]:/code=eq\.RECNONE/.test(u)?[{msrp:null}]:[])};
   if(u.startsWith('https://sb.test/rest/v1/product_overrides')) return {ok:true,json:async()=>(/code=eq\.OV1/.test(u)?[{patch:{msrp:88}}]:[])};
   if(u.startsWith('https://sb.test/rest/v1/custom_products')) return {ok:true,json:async()=>[]};
@@ -43,6 +46,10 @@ global.fetch=async(url,o)=>{ const u=String(url);
     const b=JSON.parse(o.body); const ans=b.code==='PR501-SMA'?{ok:true,price:2499,label:'MSRP',source:'msrp'}:b.code==='GB121'?{ok:true,price:1400,label:'Price',source:'calculated'}:{ok:true,price:null,label:null,source:'none'};
     return {ok:true,json:async()=>ans}; }
   throw new Error('unexpected '+u); };
+const CC=require(path.join(__dirname,'..','netlify','functions','_catalog_commercial.js'));
+/* catalog files split exactly as the P0 price move did: public half on the site, commercial half in catalog_file_commercial */
+const mkFile=rows=>{ const sp=CC.splitCatalogFile(rows); return {public:sp.public,overlay:sp.overlay,identity:CC.catalogSha256(sp.overlay.map(o=>o.h).join('\n'))}; };
+global.FILES={ 'ohio-medical':mkFile([{code:'RS-00501',name:'Concentrator',base_price:150,msrp:297.08},{code:'RS-00599',name:'No MSRP part',base_price:20},{code:'RS-00777',name:'MAP only',base_price:60,map:129.95}]) };
 const B=require(path.join(__dirname,'..','netlify','functions','brochure.js'));
 const ev=(body,tok)=>({httpMethod:'POST',headers:tok?{authorization:'Bearer '+tok}:{},body:JSON.stringify(body)});
 const P={name:'Walker',code:'W1'};
@@ -58,9 +65,9 @@ await t('printing (html) still needs no sign-in and sends nothing',async()=>{ co
 const H=async(body,tok)=>{ const r=await B.handler(ev(body,tok)); return {code:r.statusCode,j:JSON.parse(r.body)}; };
 const SBP={name:'ErgoSteel Comfort 18"',code:'ES0001',_mfrSlug:'strongback-mobility',manufacturer:'Strongback Mobility'};
 const SVP={name:'Saver',code:'SAV1',_mfrSlug:'ovation-medical'};
-await t('ES0001: the manufacturer advertised price (MAP $399.95) can be the brochure price — labelled Price, never MSRP, no savings',async()=>{
+await t('ES0001: the manufacturer advertised price (MAP $399.95) can be the brochure price — labelled MAP (owner 2026-11-13), never MSRP, no savings',async()=>{
   const r=await H({action:'html',product:SBP,price_basis:'map'},'good'); ok(r.code===200,JSON.stringify(r.j));
-  ok(r.j.html.includes('$399.95')&&!/suggested retail/.test(r.j.html)&&!/You save/.test(r.j.html),'map basis'); });
+  ok(r.j.html.includes('$399.95')&&/advertised price \(MAP\)/.test(r.j.html)&&!/suggested retail/.test(r.j.html)&&!/You save/.test(r.j.html),'map basis'); });
 await t('ES0001: an offer below MAP is refused (print and email); at or above MAP it prints with no savings claim',async()=>{
   let r=await H({action:'html',product:Object.assign({},SBP,{quote_price:350}),price_basis:'once'},'good'); ok(r.code===422&&/\$399\.95/.test(r.j.error),JSON.stringify(r.j));
   const n=sent.length; r=await H({action:'email',to:'c1@x.com',product:Object.assign({},SBP,{quote_price:350}),price_basis:'once'},'good'); ok(r.code===422&&sent.length===n,'email refused too');
@@ -86,10 +93,29 @@ await t('an unreadable limit store refuses the send (fail closed); with the SQL 
   global.SENDS_MISSING=true; const r2=await B.handler(ev({action:'email',product:P,to:'g@x.com'},'good')); global.SENDS_MISSING=false; ok(r2.statusCode===503&&sent.length===n,r2.statusCode); });
 /* ---- verified MSRP is decided by the server ---- */
 const html=async pr=>JSON.parse((await B.handler(ev({action:'html',product:pr,include_msrp:true}))).body).html;
-await t('MSRP comes from the master record, never the request (a posted dealer cost is not printed)',async()=>{ const h=await html({name:'W',code:'REC1',_mfrSlug:'bemis',msrp:12.34}); ok(h.includes('$199.99')&&!h.includes('12.34'),'msrp'); });
-await t('a record with no MSRP prints none, whatever was posted',async()=>{ const h=await html({name:'W',code:'RECNONE',_mfrSlug:'bemis',msrp:500}); ok(!h.includes('500.00')&&!/suggested retail/i.test(h)); });
-await t('a saved override MSRP counts when the line has no record for the SKU',async()=>{ const h=await html({name:'W',code:'OV1',_mfrSlug:'yuwell',msrp:5}); ok(h.includes('$88.00')&&!h.includes('$5.00')); });
-await t('no manufacturer named, or an upgraded configuration → no MSRP printed',async()=>{ ok(!(await html({name:'W',code:'REC1',msrp:70})).includes('70.00')); ok(!(await html({name:'W',code:'REC1',_mfrSlug:'bemis',_upgrade:true,msrp:70})).includes('199.99')); });
+const res=async(pr,body,tok,hd)=>{ const r=await B.handler({httpMethod:'POST',headers:Object.assign(tok?{authorization:'Bearer '+tok}:{},hd||{}),body:JSON.stringify(Object.assign({action:'html',product:pr},body||{include_msrp:true}))}); return {code:r.statusCode,j:JSON.parse(r.body)}; };
+const PV={'x-hcps-preview':'b'.repeat(48)};
+await t('MSRP comes from the master record of a record-authoritative line, never the request (a posted dealer cost is not printed)',async()=>{ const h=await html({name:'W',code:'REC1',_mfrSlug:'bemis',msrp:12.34}); ok(h.includes('$199.99')&&!h.includes('12.34'),'msrp'); });
+await t('owner 2026-11-13: Show MSRP with no verified MSRP → a clear message (422 no_msrp), never a silently missing price',async()=>{
+  const r=await res({name:'W',code:'RECNONE',_mfrSlug:'bemis',msrp:500}); ok(r.code===422&&r.j.code==='no_msrp'&&/No verified manufacturer MSRP/.test(r.j.error)&&!r.j.html,JSON.stringify(r)); });
+await t('a saved override MSRP counts on a line that is not record-authoritative',async()=>{ const h=await html({name:'W',code:'OV1',_mfrSlug:'yuwell',msrp:5}); ok(h.includes('$88.00')&&!h.includes('$5.00')); });
+await t('no manufacturer named, or an upgraded configuration → no MSRP (clear message)',async()=>{ ok((await res({name:'W',code:'REC1',msrp:70})).code===422); ok((await res({name:'W',code:'REC1',_mfrSlug:'bemis',_upgrade:true,msrp:70})).code===422); });
+/* ---- owner 2026-11-13: the Ohio Medical brochure printed no MSRP (root cause: the catalog file's commercial half was never read here) ---- */
+await t('Ohio Medical, staff view-as: the verified MSRP held in the catalog file\'s commercial record prints as MSRP',async()=>{
+  const r=await res({name:'Concentrator',code:'RS-00501',_mfrSlug:'ohio-medical',msrp:1},{action:'html',price_basis:'msrp',include_msrp:true},null,PV);
+  ok(r.code===200&&r.j.html.includes('$297.08')&&/suggested retail/i.test(r.j.html)&&!r.j.html.includes('$1.00'),JSON.stringify(r).slice(0,300)); });
+await t('legacy slug "gce" reads the same Ohio Medical record',async()=>{ const r=await res({name:'C',code:'RS-00501',_mfrSlug:'gce'},{action:'html',price_basis:'msrp'},null,PV); ok(r.code===200&&r.j.html.includes('$297.08'),r.code); });
+await t('Ohio Medical part with no MSRP in the record → clear message, nothing derived from dealer cost',async()=>{ const r=await res({name:'X',code:'RS-00599',_mfrSlug:'ohio-medical',msrp:40},{action:'html',price_basis:'msrp'},null,PV); ok(r.code===422&&r.j.code==='no_msrp'&&!JSON.stringify(r.j).includes('40.00'),JSON.stringify(r)); });
+await t('MAP-only product: never shown as MSRP (Show MSRP → clear message)',async()=>{ const r=await res({name:'M',code:'RS-00777',_mfrSlug:'ohio-medical'},{action:'html',price_basis:'msrp'},null,PV); ok(r.code===422&&!/129\.95/.test(JSON.stringify(r.j)),JSON.stringify(r)); });
+await t('No price chosen → no price block, even when an MSRP exists',async()=>{ const r=await res({name:'C',code:'RS-00501',_mfrSlug:'ohio-medical'},{action:'html',price_basis:'none'},null,PV); ok(r.code===200&&!r.j.html.includes('297.08')&&!/class="price"/.test(r.j.html)); });
+await t('a pricing layer that cannot be read → 503 for Show MSRP (fail closed, no guess); other choices still print',async()=>{
+  global.FILE_DOWN=true; let r=await res({name:'C',code:'RS-00501',_mfrSlug:'ohio-medical'},{action:'html',price_basis:'msrp'},null,PV); global.FILE_DOWN=false; ok(r.code===503,r.code);
+  global.META_DOWN=true; r=await res({name:'C',code:'RS-00501',_mfrSlug:'ohio-medical'},{action:'html',price_basis:'none'},null,PV); global.META_DOWN=false; ok(r.code===200,r.code); });
+await t('a catalog file whose commercial record does not match is not priced (503, never a stale figure)',async()=>{
+  const keep=FILES['ohio-medical']; FILES['ohio-medical']=Object.assign({},keep,{identity:'0'.repeat(64)}); const r=await res({name:'C',code:'RS-00501',_mfrSlug:'ohio-medical'},{action:'html',price_basis:'msrp'},null,PV); FILES['ohio-medical']=keep; ok(r.code===503,r.code); });
+await t('the printed brochure keeps its layout: name, item number and the MSRP sit in the price block of one HTML page',async()=>{
+  const r=await res({name:'Concentrator',code:'RS-00501',_mfrSlug:'ohio-medical'},{action:'html',price_basis:'msrp'},null,PV); const h=r.j.html;
+  ok(/^<!doctype html>/i.test(h)&&h.includes('Concentrator')&&/<div class="price">[\s\S]*\$297\.08/.test(h)&&/@media print|@page/.test(h),'print document'); });
 /* ---- dealer-branded brochures (Stage 4) ---- */
 await t('signed in: branded from HCPS\'s dealer record (escaped; branch uses its head office logo); the request cannot brand it',async()=>{
   const r=await B.handler(ev({action:'html',product:Object.assign({},P,{dealer:{business_name:'Evil'}}),dealer:{business_name:'Evil'}},'good')); const h=JSON.parse(r.body).html;
@@ -120,13 +146,14 @@ await t('Golden: no MSRP → HCPS calculated retail, printed as "Retail price", 
   ok(h.includes('$1,400.00')&&/Retail price/.test(h)&&!/suggested retail/i.test(h),'calculated'); });
 await t('Golden: a configured chair is priced by its configuration key; signed out → no price; a posted "calculated" flag is ignored',async()=>{ global.GPROXY=[];
   await ghtml({name:'Cloud',code:'PR501-SMA',_goldenKey:'PR501-SMA|xover|ABC|irheat|1',_mfrSlug:'golden-technologies'},'good'); ok(GPROXY[0].b.code==='PR501-SMA|xover|ABC|irheat|1','key');
-  const n=GPROXY.length; const h=await ghtml({name:'Cloud',code:'PR501-SMA',_mfrSlug:'golden-technologies',msrp:2499}); ok(GPROXY.length===n&&!h.includes('2,499'),'signed out');
+  const n=GPROXY.length; const so=await res({name:'Cloud',code:'PR501-SMA',_mfrSlug:'golden-technologies',msrp:2499}); ok(GPROXY.length===n&&so.code===422&&!JSON.stringify(so.j).includes('2,499'),'signed out → clear message');
   const h2=await ghtml({name:'W',code:'REC1',_mfrSlug:'bemis',msrp_calculated:true}); ok(/suggested retail/i.test(h2)&&!/Retail price/.test(h2),'flag from request');
   const h3=await ghtml({name:'Cloud',code:'PR501-SMA',_mfrSlug:'golden-technologies'},null,{'x-hcps-preview':'a'.repeat(48)}); ok(h3.includes('$2,499.00')&&GPROXY[GPROXY.length-1].h['x-hcps-preview']==='a'.repeat(48),'staff view-as'); });
-await t('signed in: any line\'s default price from the server — official MSRP, else HCPS calculated retail labelled "Retail price"; the page\'s figure ignored',async()=>{ global.DQ=[];
-  const h=await ghtml({name:'W',code:'CALC1',_mfrSlug:'ovation-medical',msrp:1.11},'good'); ok(h.includes('$80.00')&&/Retail price/.test(h)&&!/suggested retail/i.test(h)&&!h.includes('1.11'),'calculated');
+await t('signed in: Show MSRP prints the official MSRP read on the server; never calculated retail; the page\'s figure ignored',async()=>{ global.DQ=[];
+  /* owner 2026-11-13: "Show MSRP" never prints a figure derived from dealer cost on a non-Golden line — clear message instead */
+  const c=await res({name:'W',code:'CALC1',_mfrSlug:'ovation-medical',msrp:1.11},null,'good'); ok(c.code===422&&c.j.code==='no_msrp'&&!JSON.stringify(c.j).includes('80.00'),'calculated is not an MSRP');
   ok(DQ[0].b.action==='default_retail'&&DQ[0].b.manufacturer==='ovation-medical'&&DQ[0].h.authorization==='Bearer good','server call with the dealer sign-in');
   const h2=await ghtml({name:'W',code:'REC1',_mfrSlug:'bemis'},'good'); ok(h2.includes('$199.99')&&/suggested retail/i.test(h2),'official MSRP');
-  const h3=await ghtml({name:'W',code:'NONE1',_mfrSlug:'bemis',msrp:50},'good'); ok(!h3.includes('50.00'),'nothing printed when there is no price'); });
+  const n3=await res({name:'W',code:'NONE1',_mfrSlug:'bemis',msrp:50},null,'good'); ok(n3.code===422&&!JSON.stringify(n3.j).includes('50.00'),'clear message when there is no price'); });
 console.log(`brochure auth: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
 })();

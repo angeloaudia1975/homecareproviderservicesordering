@@ -30,6 +30,8 @@ const CORS = {
   'Content-Type': 'application/json',
 };
 const SEND = require('./_send_limit.js');
+const CC = require('./_catalog_commercial.js');
+const RL = require('./_retired_lines.js');
 const json = (code, obj) => ({ statusCode: code, headers: CORS, body: JSON.stringify(obj) });
 
 const SITE = (process.env.SITE_URL || 'https://homecareproviderservices.us').replace(/\/+$/, '');
@@ -278,27 +280,47 @@ async function defaultRetail(p, event, offer) {
     const r = await fetch(`${GOLDEN_FN}/dealer-quotes-api`, { method: 'POST', signal: AbortSignal.timeout(4000), headers: { 'content-type': 'application/json', authorization: auth }, body: JSON.stringify(Object.assign({ action: 'default_retail', manufacturer: slug, code }, offer ? { offer } : {})) });   // slow → official MSRP only
     if (!r.ok) return undefined; const j = await r.json(); if (!(j && j.ok)) return undefined;
     const v = Number(j.price), m = Number(j.reference), mp = Number(j.map);
-    return { price: isFinite(v) && v > 0 ? Math.round(v * 100) / 100 : null, calculated: j.source === 'calculated', reference: isFinite(m) && m > 0 ? m : null,
+    return { price: isFinite(v) && v > 0 ? Math.round(v * 100) / 100 : null, calculated: j.source === 'calculated', source: String(j.source || ''), reference: isFinite(m) && m > 0 ? m : null,
       map: isFinite(mp) && mp > 0 ? mp : null, offer_check: j.offer_check || null, saving: j.saving || null };
   } catch (e) { console.error('default retail lookup failed', e && e.message); return undefined; }
 }
+/* VERIFIED MSRP from HCPS's own records, read the way the storefront reads them (owner 2026-11-13 fix — Ohio Medical
+   brochure printed no MSRP): a record-authoritative line answers from product_skus; any other line from the saved edit
+   (product_overrides) → an added product (custom_products) → the catalog file's commercial record
+   (catalog_file_commercial, the private half of public/data/<line>.json since the P0 price move). That last layer was
+   never read here, so every line whose MSRP lives in the catalog file printed none for a staff preview. Never derived
+   from dealer cost, never taken from the request. → number | null (none on file) ; throws when a layer can't be read. */
+const SHOP_BASE = String(process.env.URL || 'https://hcpsonlineordering.netlify.app').replace(/\/+$/, '');
 async function verifiedMsrp(p) {
-  const slug = String(p._mfrSlug || '').trim().toLowerCase(), code = String(p.code || '').trim();
+  const slug = RL.lineSlug(String(p._mfrSlug || '').trim().toLowerCase()), code = String(p.code || '').trim();
   if (slug === 'golden-technologies' || slug === 'golden') return null;   // Golden: goldenRetail(), on the server
   if (p._upgrade || !/^[a-z0-9-]{2,60}$/.test(slug) || !code || code.length > 60) return null;
-  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE; if (!url || !key) return null;
+  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE; if (!url || !key) throw new Error('server not configured');
   const H = { apikey: key, Authorization: `Bearer ${key}` };
   const get = async path => { const r = await fetch(`${url}/rest/v1/${path}`, { headers: H }); if (!r.ok) throw new Error('read ' + r.status); return r.json(); };
   const num = v => { const n = Number(v); return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null; };
-  const q = `manufacturer=eq.${encodeURIComponent(slug)}&code=eq.${encodeURIComponent(code)}`;
-  try {
+  const e = encodeURIComponent, q = `manufacturer=eq.${e(slug)}&code=eq.${e(code)}`;
+  const meta = await get(`manufacturer_meta?slug=eq.${e(slug)}&select=record_authoritative`);
+  if (meta && meta[0] && meta[0].record_authoritative === true) {
     const rec = await get(`product_skus?${q}&select=msrp&limit=1`);
-    if (rec && rec.length) return num(rec[0].msrp);                    // the commercial master answers when it has the SKU
-    const ov = await get(`product_overrides?${q}&select=patch&limit=1`);
-    const om = ov && ov[0] && ov[0].patch && num(ov[0].patch.msrp); if (om) return om;
-    const cp = await get(`custom_products?${q}&select=msrp&limit=1`);
-    return (cp && cp[0] && num(cp[0].msrp)) || null;
-  } catch (e) { console.error('msrp lookup failed', e && e.message); return null; }   // no verified figure → none printed
+    return rec && rec[0] ? num(rec[0].msrp) : null;                     // the commercial master is the only answer
+  }
+  const ov = await get(`product_overrides?${q}&select=patch&limit=1`);
+  const patch = ov && ov[0] && ov[0].patch;
+  if (patch && num(patch.msrp)) return num(patch.msrp);
+  if (patch && patch.msrp_auto === false && patch.msrp == null) return null;   // a saved edit says "no MSRP"
+  const cp = await get(`custom_products?${q}&select=msrp&limit=1`);
+  if (cp && cp[0]) return num(cp[0].msrp);
+  const fr = await fetch(`${SHOP_BASE}/data/${e(slug)}.json`, { signal: AbortSignal.timeout(5000) });
+  if (fr.status === 404) return null;
+  if (!fr.ok) throw new Error('catalog file ' + fr.status);
+  const rows = await fr.json(); if (!Array.isArray(rows)) throw new Error('catalog file is not a list');
+  const recs = await get(`catalog_file_commercial?manufacturer=eq.${e(slug)}&select=manufacturer,identity_sha256,rows`);
+  const pick = CC.recordForFile(rows, recs);
+  if (!pick.record) throw new Error('no commercial record for this catalog file');
+  const full = CC.restoreCatalogFile(rows, pick.record.rows);
+  const row = full.find(r => r && String(r.code) === code);
+  return row ? num(row.msrp) : null;
 }
 
 async function approvedDealer(event) {
@@ -376,18 +398,30 @@ exports.handler = async (event) => {
   }
   if (offer) product.quote_price = offer;
   let reference = facts && facts.reference ? facts.reference : null;
-  if (reference == null && !isGolden && facts === undefined) reference = await verifiedMsrp(product);   // not signed in: the verified record only
+  if (reference == null && !isGolden && facts === undefined) {   // not signed in / staff preview: the verified record only
+    try { reference = await verifiedMsrp(product); }
+    catch (e) {
+      console.error('msrp lookup failed', e && e.message);
+      if (basis === 'msrp') return json(503, { ok: false, error: 'The manufacturer\'s MSRP could not be checked just now. Please try again.' });
+      reference = null;
+    }
+  }
   if (product._upgrade) reference = null;
   if (basis === 'msrp') {
-    if (facts && facts.price) { product.msrp = facts.price; product.msrp_calculated = !!facts.calculated; }
+    /* owner 2026-11-13: "Show MSRP" prints a VERIFIED manufacturer MSRP or says plainly that there is none — never a
+       silently missing price, never a figure derived from dealer cost. Golden keeps its approved rule (Golden's MSRP,
+       else HCPS calculated retail labelled "Retail price", C3-07 P4). */
+    if (isGolden) { if (facts && facts.price) { product.msrp = facts.price; product.msrp_calculated = !!facts.calculated; } }
+    else if (facts && facts.source === 'msrp' && facts.price) product.msrp = facts.price;
     else if (reference) product.msrp = reference;
+    if (!product.msrp) return json(422, { ok: false, code: 'no_msrp', error: 'No verified manufacturer MSRP is on file for this product, so none can be printed. Choose another price option or "No price".' });
   }
   let saving = null;   // computed by the admin site's one savings rule (RP.savings), never here
   if (offer && compare && reference) {
     if (basis === 'map') { const f2 = await defaultRetail(product, event, offer); saving = (f2 && f2.saving) || null; }
     else saving = (facts && facts.saving) || null;
   }
-  const renderOpts = { reference: offer && compare ? reference : null, saving, offer_expires: b.offer_expires, offer_label: basis === 'map' ? 'Price' : 'Your price' };
+  const renderOpts = { reference: offer && compare ? reference : null, saving, offer_expires: b.offer_expires, offer_label: basis === 'map' ? 'Manufacturer\'s advertised price (MAP)' : 'Your price' };
   b.include_msrp = basis === 'msrp';
   const action = String(b.action || 'html');
   /* Branded only for a signed-in, approved dealer; a request cannot name or style the dealer. */
