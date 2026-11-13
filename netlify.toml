@@ -1,9 +1,11 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
-  # Skip the deploy (exit 0) when a push changes ONLY project notes (docs/, *.md at the root):
-  # every production deploy spends team credits, and notes never reach the site.
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':(exclude)docs' ':(exclude)CLAUDE.md' ':(exclude)README.md'"
+  # Skip the deploy (exit 0) unless the push changes what the live site serves (public/) or runs
+  # (netlify/, netlify.toml): every production deploy spends 15 team credits. SQL (supabase/), tests,
+  # scripts, content sources/overrides and notes never reach the site (Nov 5–12 2026: 4 of 28 deploys).
+  # A NEW top-level folder the site needs must be added to this list.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- public netlify netlify.toml"
 
 [build.environment]
   # The Supabase project URL is public by design (it ships in the browser for the
