@@ -157,7 +157,8 @@
       "steps": [
         "Open Reports. The tabs Overview, Total Sales and Orders & Tracking stay at the top while you move between them.",
         "Head offices can switch between the whole company and each location.",
-        "Download the report as a PDF or the totals as Excel."
+        "Download the report as a PDF or the totals as Excel.",
+        "AI growth suggestions: press Get suggestions. They are built only from your report and your Dealer 360 setup (lines you can order, storefront, Social Ads, training) and never promise results."
       ],
       "notes": [
         "Purchases come from manufacturer reports; your portal orders and quotes are shown separately and never added to purchases."
@@ -167,7 +168,8 @@
         "Total Sales",
         "Orders &amp; Tracking",
         "Vital Signs",
-        "⬇ Excel"
+        "⬇ Excel",
+        "AI growth suggestions"
       ]
     },
     {
