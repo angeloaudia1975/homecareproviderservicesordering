@@ -75,6 +75,30 @@ async function stageOrder(page) {
       if (label === 'iphone' || label === 'desktop') await page.screenshot({ path: path.join(process.env.SHOTS || '/tmp', `manage-${label}.png`) });
       await ctx.close();
     }
+    // the dealer's own tools inside the session (desktop)
+    { const st = { info: JSON.parse(JSON.stringify(INFO)) };
+      const probe = (h) => h.replace('Object.assign(window,{apTradeRef,', 'Object.assign(window,{__t:{quotesCall,appsCall,api,API_BASE},apTradeRef,');   // test-only handle on the Hub's own functions
+      const { ctx, page, seen } = await open(browser, 1280, 900, { host: 'https://hcpsonlineordering.netlify.app', hash: '#manage=' + TOK, manageAuth: manageAuth(st), tools: tools(), html: probe });
+      await page.waitForFunction(() => document.getElementById('previewbar') && window.__t);
+      const dialogs = []; page.on('dialog', (d) => { dialogs.push(d.message()); d.accept(); });
+      await page.evaluate(async () => {
+        const { quotesCall, appsCall, api, API_BASE } = window.__t;
+        await quotesCall({ action: 'quote_save', title: 'Q' }); await retailCall({ action: 'retail_set', rows: [] }); await appsCall({ action: 'app_save', id: 'x' });
+        await api(API_BASE + '/dealer-storefront-api', { action: 'sf_save', mode: 'draft' }); await api(API_BASE + '/dealer-storefront-api', { action: 'sf_save', mode: 'publish' });
+        await api(API_BASE + '/dealer-ads-api', { action: 'ads_save', ad: {} });
+        await _brPost({ action: 'html', product: { name: 'W', code: 'A1' } }); await _brPost({ action: 'email', to: 'cust@example.test', product: { name: 'W', code: 'A1' } });
+      });
+      const by = (fn, a) => (seen.fn || []).filter((x) => x.fn === fn && (!a || (x.body && x.body.action === a)));
+      await t('session tools: quotes, retail prices, applications, storefront and Social Ads go with the manage bearer (the server decides each action)', () => {
+        for (const [fn, a] of [['dealer-quotes-api', 'quote_save'], ['dealer-retail-api', 'retail_set'], ['dealer-applications-api', 'app_save'], ['dealer-storefront-api', 'sf_save'], ['dealer-ads-api', 'ads_save']]) {
+          const x = by(fn, a)[0]; ok(x && x.auth === 'Bearer manage:' + TOK, fn + ' ' + (x && x.auth)); } });
+      await t('session tools: publishing the storefront asks first and sends its own confirmation; a draft does not', () => {
+        const sf = by('dealer-storefront-api', 'sf_save'); ok(sf.length === 2, sf.length); ok(!sf[0].body.manage_confirm, 'draft'); ok(sf[1].body.manage_confirm === 'publish', JSON.stringify(sf[1].body));
+        ok(dialogs.some((m) => /PUBLISH the public storefront for Acme Medical Xenia/.test(m)), dialogs.join(' | ')); });
+      await t('session tools: brochures are branded for the location (manage bearer + view-as token); an email asks first and carries its confirmation', () => {
+        const b = by('brochure'); ok(b.length === 2 && b.every((x) => x.auth === 'Bearer manage:' + TOK && /^p{48}$/.test(x.preview)), JSON.stringify(b.map((x) => [x.auth.slice(0, 20), x.preview.slice(0, 4)])));
+        ok(b[1].body.manage_confirm === 'email' && !b[0].body.manage_confirm, 'email confirmation'); ok(dialogs.some((m) => /Email this brochure to cust@example\.test on behalf of Acme Medical Xenia/.test(m)), dialogs.join(' | ')); });
+      await ctx.close(); }
     // no session at all
     { const { ctx, page, seen } = await open(browser, 1280, 900, { host: 'https://hcpsonlineordering.netlify.app', tools: tools(), submit: () => ({ status: 200, body: { ok: true } }) });
       await page.waitForFunction(() => document.getElementById('previewbar'));

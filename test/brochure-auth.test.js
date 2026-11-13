@@ -42,6 +42,10 @@ global.fetch=async(url,o)=>{ const u=String(url);
       return {ok:true,json:async()=>({ok:true,price:399.99,label:'MSRP',source:'msrp',reference:399.99,map:null,policy:'open',active:true,offer_check:of>0?{ok:true}:null,saving:sv})}; }
     const ans=b.code==='CALC1'?{ok:true,price:80,label:'Price',source:'calculated'}:b.code==='REC1'?{ok:true,price:199.99,label:'MSRP',source:'msrp'}:{ok:true,price:null,label:null,source:'none'};
     return {ok:true,json:async()=>ans}; }
+  if(u==='https://homecareproviderservices.netlify.app/.netlify/functions/dealer-auth'){ const b=JSON.parse(o.body); (global.MAUTH=global.MAUTH||[]).push(b);
+    const live=b.token==='e'.repeat(64);
+    if(b.action==='manage_info') return {ok:true,json:async()=>(live?{ok:true,staff:{email:'angelo@homecareproviderservices.us'},location:{id:'d1',name:'Acme <Branch>'},actions:[{key:'brochure_email'}].concat(global.NO_EMAIL_PERM?[]:[])}:{ok:false,message:'This Manage Dealer session has ended.'})};
+    if(b.action==='manage_audit'){ if(global.AUDIT_DOWN) return {ok:true,json:async()=>({ok:false,code:'not_recorded'})}; return {ok:true,json:async()=>({ok:live})}; } }
   if(u==='https://homecareproviderservices.netlify.app/.netlify/functions/golden-proxy'){ global.GPROXY=(global.GPROXY||[]).concat([{h:o.headers,b:JSON.parse(o.body)}]);
     const b=JSON.parse(o.body); const ans=b.code==='PR501-SMA'?{ok:true,price:2499,label:'MSRP',source:'msrp'}:b.code==='GB121'?{ok:true,price:1400,label:'Price',source:'calculated'}:{ok:true,price:null,label:null,source:'none'};
     return {ok:true,json:async()=>ans}; }
@@ -155,5 +159,21 @@ await t('signed in: Show MSRP prints the official MSRP read on the server; never
   ok(DQ[0].b.action==='default_retail'&&DQ[0].b.manufacturer==='ovation-medical'&&DQ[0].h.authorization==='Bearer good','server call with the dealer sign-in');
   const h2=await ghtml({name:'W',code:'REC1',_mfrSlug:'bemis'},'good'); ok(h2.includes('$199.99')&&/suggested retail/i.test(h2),'official MSRP');
   const n3=await res({name:'W',code:'NONE1',_mfrSlug:'bemis',msrp:50},null,'good'); ok(n3.code===422&&!JSON.stringify(n3.j).includes('50.00'),'clear message when there is no price'); });
+/* ---- Manage Dealer (owner 2026-11-13): branded for the managed location, MAP via the session, email confirmed + recorded ---- */
+const MG='Bearer manage:'+'e'.repeat(64);
+const mres=async(body,auth)=>{ const r=await B.handler({httpMethod:'POST',headers:{authorization:auth||MG},body:JSON.stringify(body)}); return {code:r.statusCode,j:JSON.parse(r.body)}; };
+await t('manage: the brochure is branded for the managed location; MAP / MSRP come through the session (server reads, never the page)',async()=>{ global.DQ=[];
+  const r=await mres({action:'html',product:SBP,price_basis:'map'}); ok(r.code===200&&r.j.html.includes('$399.95')&&r.j.html.includes('Acme &lt;Branch&gt;'),JSON.stringify(r.j).slice(0,200));
+  ok(DQ[0]&&DQ[0].h.authorization===MG,'default_retail asked with the session'); });
+await t('manage: an ended session is refused (401), nothing rendered for it',async()=>{ const r=await mres({action:'html',product:P},'Bearer manage:'+'f'.repeat(64)); ok(r.code===401,r.code); });
+await t('manage: email needs its own confirmation (428); then begin recorded → sent → done; replies go to the DEALER, never staff',async()=>{ SENDS.length=0; global.MAUTH=[]; const n=sent.length;
+  let r=await mres({action:'email',product:P,to:'cust@x.com'}); ok(r.code===428&&sent.length===n,'unconfirmed');
+  r=await mres({action:'email',product:P,to:'cust@x.com',manage_confirm:'email'}); ok(r.code===200&&sent.length===n+1,JSON.stringify(r));
+  const m=sent[sent.length-1]; ok(m.reply_to==='br@acme.test'&&!/angelo/.test(JSON.stringify(m)),'reply-to the dealer: '+m.reply_to);
+  ok(MAUTH.filter(x=>x.action==='manage_audit').map(x=>x.audit.phase).join(',')==='begin,done',MAUTH.map(x=>x.action+':'+(x.audit&&x.audit.phase)).join(',')); });
+await t('manage: no begin record → no email (503)',async()=>{ SENDS.length=0; const n=sent.length; global.AUDIT_DOWN=true; const r=await mres({action:'email',product:P,to:'cust2@x.com',manage_confirm:'email'}); global.AUDIT_DOWN=false; ok(r.code===503&&sent.length===n,r.code); });
+await t('staff View as Dealer: the MAP choice works — read through the preview token (default_retail only), labelled MAP',async()=>{ global.DQ=[];
+  const r=await res(SBP,{action:'html',price_basis:'map'},null,{'x-hcps-preview':'c'.repeat(48)}); ok(r.code===200&&r.j.html.includes('$399.95')&&/advertised price \(MAP\)/.test(r.j.html),JSON.stringify(r.j).slice(0,160));
+  ok(DQ[0]&&DQ[0].h.authorization==='Bearer preview:'+'c'.repeat(48),'asked with the preview token'); });
 console.log(`brochure auth: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
 })();

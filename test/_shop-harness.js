@@ -17,6 +17,7 @@ async function open(browser, w, h, opts) {
   const seen = { prices: 0, tools: [] };
   await page.route('**/*', async route => {
     const req = route.request(), u = new URL(req.url());
+    if (/\/functions\//.test(u.pathname) && req.method() === 'POST') { let pb = null; try { pb = JSON.parse(req.postData() || 'null'); } catch (e) {} (seen.fn = seen.fn || []).push({ fn: u.pathname.split('/').pop(), auth: req.headers()['authorization'] || '', preview: req.headers()['x-hcps-preview'] || '', body: pb }); }
     if (u.host === 'www.homecareproviderservices.org') {
       if (u.pathname === '/data/partners.json' && opts.rosterFails) return route.fulfill({ status: 503, body: '' });
       const f = path.join(SITE, decodeURIComponent(u.pathname));
