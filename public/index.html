@@ -1116,9 +1116,14 @@ body.locked #toast{z-index:120;}
 #previewbar .pv-l b{font-weight:800;}
 #previewbar .pv-x{background:var(--orange,#ef6325);color:#fff;border:none;border-radius:7px;padding:6px 14px;font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit;white-space:nowrap;}
 #previewbar .pv-x:hover{filter:brightness(1.06);}
-body.previewing{padding-top:44px;}
-body.previewing header{top:44px;}      /* keep the sticky nav below the preview bar */
-@media(max-width:640px){#previewbar{font-size:12px;padding:7px 12px;}body.previewing{padding-top:62px;}body.previewing header{top:62px;}}
+#previewbar.managing{background:linear-gradient(90deg,#5a2a08,#a2460f);}
+#previewbar .pv-tag{font-size:11px;font-weight:800;background:rgba(255,255,255,.18);border-radius:999px;padding:1px 8px;margin-left:4px;}
+#previewbar .pv-acts{display:flex;gap:8px;flex-wrap:wrap;}
+#previewbar .pv-v{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.7);border-radius:7px;padding:6px 12px;font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit;white-space:nowrap;}
+@media(max-width:640px){#previewbar .pv-x,#previewbar .pv-v{min-height:44px;}}
+body.previewing{padding-top:var(--pvh,44px);}
+body.previewing header{top:var(--pvh,44px);}      /* keep the sticky nav below the preview bar (its real height, set by ensurePreviewBar) */
+@media(max-width:640px){#previewbar{font-size:12px;padding:7px 12px;}body.previewing{padding-top:var(--pvh,62px);}body.previewing header{top:var(--pvh,62px);}}
 .p360login{position:fixed;inset:0;z-index:80;display:grid;grid-template-columns:1.05fr .95fr;background:#f6f7f5;overflow:auto;}
 .p360login-hero{position:relative;background:linear-gradient(160deg,#0b1f38 0%,#12253c 46%,#17456e 128%);color:#fff;padding:40px 46px;display:flex;flex-direction:column;overflow:hidden;}
 .p360login-hero::after{content:"";position:absolute;right:-120px;bottom:-140px;width:420px;height:420px;background:radial-gradient(circle,rgba(239,99,37,.28),transparent 62%);pointer-events:none;}
@@ -5631,7 +5636,8 @@ function checkoutKey(order,dealer){
 }
 function clearCheckoutKeys(slugs){ const m=Object.assign({},readCheckoutKeys()); (slugs||[]).forEach(s=>{ delete m[s]; }); saveCheckoutKeys(m); }
 async function submitOrder(){
-  if(PREVIEW && !(typeof STAGING!=="undefined"&&STAGING)){ toast("Read-only preview — ordering is disabled for this dealer view."); return; }
+  const onBehalf=!!(PREVIEW&&MANAGE&&manageCan('order_create')&&!(typeof STAGING!=="undefined"&&STAGING));
+  if(PREVIEW && !onBehalf && !(typeof STAGING!=="undefined"&&STAGING)){ toast("View as Dealer is read-only — ordering is disabled. Use Manage Dealer from Dealer 360 to place an order for this dealer."); return; }
   if(!CART.size){ if(typeof gckCount==="function"&&gckCount()){ goldenCartShow(); return; } toast("Cart is empty");return;}
   const dealer={
     business:$("#f_biz").value.trim(), account:$("#f_acct").value.trim()||(state.dealer?state.dealer.account:""),
@@ -5686,16 +5692,18 @@ async function submitOrder(){
   hcpsOrders.forEach(o=>{ o.submission_key=checkoutKey(o,dealer); });
   const payload={dealer, orders:hcpsOrders, submitted_at:new Date().toISOString()};
   if(typeof STAGING!=="undefined"&&STAGING){ return stagingSubmit(payload,btn); }
+  if(onBehalf){ if(!(await confirmOnBehalf(hcpsOrders))){ toast("Nothing was submitted."); return; } payload.on_behalf={confirm:true,location_id:MANAGE.location&&MANAGE.location.id}; }
   btn.disabled=true; btn.textContent="Submitting…";
   let emailWarn=false, keep=new Set(), dupNote=false, heldNames=[];
   try{
     // 1) HCPS lines -> submit-order, which records the order at the SERVER's prices (orders-api)
     //    and only then emails HCPS. If a price moved in the meantime, nothing is recorded or sent.
     if(hcpsOrders.length){
-      await ensureFreshSession();
+      if(!onBehalf) await ensureFreshSession();
       const res=await fetch(CONFIG.ORDER_ENDPOINT,{method:"POST",
-        headers:{"Content-Type":"application/json",authorization:"Bearer "+((AUTH.session&&AUTH.session.access_token)||"")},
+        headers:{"Content-Type":"application/json",authorization:"Bearer "+(onBehalf?"manage:"+MANAGE.token:((AUTH.session&&AUTH.session.access_token)||""))},
         body:JSON.stringify(payload)});
+      if(onBehalf&&res.status===401){ const e=await res.clone().json().catch(()=>({})); manageEnded((e&&e.error)||"Your Manage Dealer session has ended — nothing was submitted."); return; }
       const j=await res.json().catch(()=>({}));
       if(res.status===409 && j.status==="prices_changed"){
         applyServerPrices(j); updateCart();
@@ -6749,13 +6757,64 @@ async function previewMe(token){
 }
 // Leave preview: close the tab (it was opened from the admin) or fall back to the portal root.
 function exitPreview(){ try{ window.close(); }catch(e){} setTimeout(()=>{ try{ location.href='/'; }catch(e){} },120); }
+/* MANAGE DEALER (owner 2026-11-13). Opened from Dealer 360 by the President: the read-only preview above PLUS a staff
+   session whose token arrives in the URL fragment (never sent to a server log; removed from the address bar at once).
+   The server decides everything (switch, role, this location, each action) and records every change under the staff
+   member's name. Two modes: Manage Dealer (allowed actions on) and View as Dealer (read-only — the session is ended). */
+let MANAGE=null;
+const MANAGE_TOOLS=new Set(["account_change_request","default_ship_set","logo_upload","branding_set","logo_studio_restore","showroom_save"]);
+function manageCan(a){ return !!(MANAGE&&MANAGE.actions&&MANAGE.actions.some(x=>x.key===a)); }
+window.__MANAGE_TOKEN__=()=>MANAGE&&MANAGE.token||'';
+window.__MANAGE_TOOLS__={has:a=>MANAGE_TOOLS.has(a)&&manageCan(({account_change_request:'account_change',default_ship_set:'default_ship',logo_upload:'logo_edit',branding_set:'logo_edit',logo_studio_restore:'logo_edit',showroom_save:'showroom_edit'})[a])};
+async function manageCall(action,why){
+  try{ const r=await fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,token:MANAGE?MANAGE.token:'',why})}); return await r.json().catch(()=>({})); }
+  catch(e){ return {ok:false}; }
+}
+async function startManage(){
+  let tok=''; const m=String(location.hash||'').match(/(?:^#|&)manage=([0-9a-f]{64})(?:&|$)/);
+  if(m){ tok=m[1]; try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} try{ sessionStorage.setItem('hcps_manage',tok); }catch(e){} }
+  else{ try{ tok=sessionStorage.getItem('hcps_manage')||''; }catch(e){} }
+  if(!/^[0-9a-f]{64}$/.test(tok)) return;
+  MANAGE={token:tok};
+  const j=await manageCall('manage_info');
+  if(!j||!j.ok){ MANAGE=null; try{ sessionStorage.removeItem('hcps_manage'); }catch(e){} toast((j&&j.message)||'The Manage Dealer session is not available — showing View as Dealer.'); return; }
+  MANAGE=Object.assign({token:tok},j); window.__MANAGE__={location:j.location,staff:j.staff};
+}
+function manageEnded(msg){   /* a top-level function: also window.manageEnded for the folded-in Hub script */ MANAGE=null; window.__MANAGE__=null; try{ sessionStorage.removeItem('hcps_manage'); }catch(e){} const b=document.getElementById('previewbar'); if(b) b.remove(); ensurePreviewBar(); if(msg) toast(msg); }
+async function manageToView(){ if(!MANAGE) return; if(!confirm('Switch to View as Dealer? Your Manage Dealer session ends; open it again from Dealer 360 to make changes.')) return; await manageCall('manage_end','view'); manageEnded('View as Dealer — read-only.'); }
+async function manageExit(){ if(MANAGE) await manageCall('manage_end','exit'); try{ sessionStorage.removeItem('hcps_manage'); }catch(e){} exitPreview(); }
 function ensurePreviewBar(){
   if(document.getElementById('previewbar')) return;
   const dn=(PREVIEW&&PREVIEW.dealer&&PREVIEW.dealer.name)||'this dealer';
   const bar=document.createElement('div'); bar.id='previewbar';
-  bar.innerHTML=`<span class="pv-l"><span class="pv-dot">🔎</span> Previewing as <b>${esc(dn)}</b> · ${(typeof STAGING!=="undefined"&&STAGING)?'staff catalog preview — checkout shows the order emails, nothing is recorded':'read-only staff preview — ordering &amp; account changes are disabled'}</span><button class="pv-x" onclick="exitPreview()">Exit preview →</button>`;
+  if(MANAGE){
+    const loc=MANAGE.location||{}, who=(MANAGE.staff&&(MANAGE.staff.name||MANAGE.staff.email))||'HCPS';
+    bar.classList.add('managing');
+    bar.innerHTML=`<span class="pv-l"><span class="pv-dot">🛠</span> <span>Manage Dealer · <b>${esc(loc.name||dn)}</b> <span class="pv-tag">${loc.is_head_office?'Head office':'Location'}</span> · signed in as ${esc(who)} — every change is recorded under your name</span></span><span class="pv-acts"><button class="pv-v" onclick="manageToView()">View as Dealer</button><button class="pv-x" onclick="manageExit()">Exit Dealer Account →</button></span>`;
+  } else {
+    bar.innerHTML=`<span class="pv-l"><span class="pv-dot">🔎</span> <span>${(typeof STAGING!=="undefined"&&STAGING)?'Previewing as <b>'+esc(dn)+'</b> · staff catalog preview — checkout shows the order emails, nothing is recorded':'View as Dealer · <b>'+esc(dn)+'</b> · read-only — ordering &amp; account changes are disabled'}</span></span><button class="pv-x" onclick="manageExit()">Exit Dealer Account →</button>`;
+  }
   document.body.insertBefore(bar,document.body.firstChild);
   document.body.classList.add('previewing');
+  const fit=()=>{ try{ document.documentElement.style.setProperty('--pvh',(bar.offsetHeight||44)+'px'); }catch(e){} };
+  fit(); if(!window.__pvFit){ window.__pvFit=1; window.addEventListener('resize',()=>{ const b=document.getElementById('previewbar'); if(b) document.documentElement.style.setProperty('--pvh',(b.offsetHeight||44)+'px'); }); }
+}
+/* the explicit final confirmation before a REAL order is placed on a dealer's behalf */
+function confirmOnBehalf(orders){
+  return new Promise(res=>{
+    const loc=(MANAGE&&MANAGE.location)||{}; const fm=v=>'$'+Number(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    const host=document.createElement('div'); host.id='obModal'; host.className='br-modal';
+    host.innerHTML=`<div class="br-box" role="dialog" aria-modal="true" aria-labelledby="obT"><h3 id="obT">Place a real order for ${esc(loc.name||'this dealer')}?</h3>
+      <div class="sub" style="margin:0 0 10px">This is a <b>real order</b>. It is recorded for this location at its own pricing, HCPS and the dealer are emailed, and it is marked <b>“Placed by HCPS on behalf of ${esc(loc.name||'')}”</b> under your name.</div>
+      <div style="max-height:40vh;overflow:auto;border:1px solid #e3e7ec;border-radius:8px;padding:8px 10px;margin-bottom:10px">${orders.map(o=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:4px 0"><span><b>${esc(o.manufacturer_name||o.manufacturer_slug)}</b> · PO ${esc(o.po)} · ${o.items_count} item${o.items_count===1?'':'s'}</span><span>${fm(o.estimated_total)}</span></div>`).join('')}</div>
+      <label class="br-row" style="display:flex;gap:8px;align-items:flex-start;min-height:44px"><input type="checkbox" id="obOk" style="width:22px;height:22px;flex:none"> <span>I confirm I am placing this order on behalf of ${esc(loc.name||'this dealer')} with their authorization.</span></label>
+      <div class="br-acts"><button id="obGo" disabled>Place order for ${esc(loc.name||'dealer')}</button><button class="ghost" id="obNo">Cancel</button></div></div>`;
+    document.body.appendChild(host);
+    const done=v=>{ host.remove(); res(v); };
+    host.querySelector('#obOk').onchange=e=>{ host.querySelector('#obGo').disabled=!e.target.checked; };
+    host.querySelector('#obGo').onclick=()=>done(true); host.querySelector('#obNo').onclick=()=>done(false);
+    host.onclick=e=>{ if(e.target===host) done(false); };
+  });
 }
 function showPreviewError(message){
   const _bc=document.getElementById('bootcover'); if(_bc)_bc.remove();
@@ -7249,7 +7308,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
     const _pv=new URLSearchParams(location.search).get('preview');
     if(_pv){
       const res=await previewMe(_pv);
-      if(res.ok){ try{ await goldenInit(); }catch(e){} applyAuth(); updateCart(); }
+      if(res.ok){ await startManage(); try{ await goldenInit(); }catch(e){} applyAuth(); updateCart(); }
       else{ showPreviewError(res.message); }
       return;
     }
@@ -7680,7 +7739,10 @@ async function refreshIfNeeded(){
 function token(){ if(window.__PREVIEW__&&window.__PREVIEW__.token) return "preview:"+window.__PREVIEW__.token; return SESSION&&SESSION.access_token; }
 async function api(endpoint,body){
   await refreshIfNeeded();
-  const r=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+(token()||"")},body:JSON.stringify(body||{})});
+  /* Manage Dealer: the writes a staff session may make go with the manage token; every read stays on the preview token */
+  const mg=window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__()&&endpoint===TOOLS_ENDPOINT&&body&&window.__MANAGE_TOOLS__&&window.__MANAGE_TOOLS__.has(String(body.action));
+  const r=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+(mg?"manage:"+window.__MANAGE_TOKEN__():(token()||""))},body:JSON.stringify(body||{})});
+  if(mg&&r.status===401&&typeof window.manageEnded==="function"){ const e=await r.clone().json().catch(()=>({})); window.manageEnded((e&&e.error)||"Your Manage Dealer session has ended."); }
   return r.json().catch(()=>({}));
 }
 

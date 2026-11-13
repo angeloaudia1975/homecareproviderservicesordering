@@ -23,11 +23,20 @@ async function open(browser, w, h, opts) {
       if (!fs.existsSync(f)) return route.fulfill({ status: 404, body: '' });
       return route.fulfill({ status: 200, contentType: TYPES[path.extname(f)] || 'application/octet-stream', headers: { 'access-control-allow-origin': '*' }, body: fs.readFileSync(f) });
     }
-    if (u.origin === HOST && !u.pathname.startsWith('/.netlify/')) {
+    if (u.origin === (opts.host || HOST) && !u.pathname.startsWith('/.netlify/')) {
       let f = path.join(PUB, decodeURIComponent(u.pathname)); if (u.pathname === '/' || !path.extname(f)) f = path.join(PUB, 'index.html');
       if (!fs.existsSync(f)) return route.fulfill({ status: 404, body: '' });
       if (opts.html && f.endsWith('index.html')) return route.fulfill({ status: 200, contentType: 'text/html', body: opts.html(fs.readFileSync(f, 'utf8')) });   // a test may add a probe
       return route.fulfill({ status: 200, contentType: TYPES[path.extname(f)] || 'application/octet-stream', body: fs.readFileSync(f) });
+    }
+    if (/\/functions\/dealer-auth/.test(u.pathname) && req.method() === 'POST' && opts.manageAuth) {   // Manage Dealer session answers
+      let b = {}; try { b = JSON.parse(req.postData() || '{}'); } catch (e) {}
+      if (/^manage_/.test(String(b.action))) { (seen.manage = seen.manage || []).push(b); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(opts.manageAuth(b)) }); }
+    }
+    if (/\/functions\/submit-order/.test(u.pathname) && opts.submit && req.method() === 'POST') {
+      let b = {}; try { b = JSON.parse(req.postData() || '{}'); } catch (e) {}
+      (seen.submits = seen.submits || []).push({ body: b, auth: req.headers()['authorization'] || '' });
+      const ans = opts.submit(b); return route.fulfill({ status: ans.status || 200, contentType: 'application/json', body: JSON.stringify(ans.body || ans) });
     }
     if (/\/functions\/dealer-auth/.test(u.pathname) && req.method() === 'POST')
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, status: 'approved', dealer: { id: 'd-test', name: 'TEST — Landing Sandbox', email: 't@example.invalid' }, lines: [], access: opts.access || ACCESS, prices: {} }) });
@@ -41,14 +50,14 @@ async function open(browser, w, h, opts) {
     if (/\/functions\/dealer-tools-api/.test(u.pathname) && /access_request/.test(req.postData() || '')) { seen.tools.push(req.postData()); }
     if (/\/functions\/dealer-tools-api/.test(u.pathname) && opts.tools && req.method() === 'POST') {
       let b = {}; try { b = JSON.parse(req.postData() || '{}'); } catch (e) {}
-      (seen.toolCalls = seen.toolCalls || []).push(b);
+      (seen.toolCalls = seen.toolCalls || []).push(b); (seen.toolAuth = seen.toolAuth || []).push(req.headers()['authorization'] || '');
       const ans = await opts.tools(b);
       if (ans) return route.fulfill({ status: ans.status || 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(ans.body || ans) });
     }
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.host)) return route.fulfill({ status: 200, body: '' });
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '[]' });
   });
-  await page.goto(HOST + '/?preview=' + 'p'.repeat(48), { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto((opts.host || HOST) + '/?preview=' + 'p'.repeat(48) + (opts.hash || ''), { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForFunction(() => typeof AUTH !== 'undefined' && AUTH.status === 'approved' && (state.manufacturers || []).length > 5, null, { timeout: 30000 });
   await page.waitForTimeout(800);
   // Pricing is not under test here: catalogs open with their public rows only (no prices), so navigation can be checked.
