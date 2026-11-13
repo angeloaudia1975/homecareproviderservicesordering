@@ -7467,7 +7467,9 @@ $("#brandFilter").addEventListener("change",renderProducts);
   /* C3-07 Stage 6 reports */
   #view-reports .rpt-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   #view-reports .rpt-ctl select{max-width:100%}
-  #view-reports .rpt-tabs{display:flex;gap:4px;margin:12px 0 2px;border-bottom:1px solid var(--line,#e5e7eb)}
+  #view-reports .rpt-tabs,#view-orders .rpt-tabs{display:flex;gap:4px;margin:12px 0 2px;border-bottom:1px solid var(--line,#e5e7eb);overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #view-orders .rpt-tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;min-height:44px;font:600 14px inherit;color:var(--ink-2);cursor:pointer;white-space:nowrap}
+  #view-orders .rpt-tab.on{color:var(--ink,#0b1f33);border-bottom-color:#ef6325}
   #view-reports .rpt-tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;min-height:44px;font:600 14px inherit;color:var(--ink-2);cursor:pointer}
   #view-reports .rpt-tab.on{color:var(--ink,#0b1f33);border-bottom-color:#ef6325}
   #view-reports .rpt-pair{display:flex;align-items:flex-end;justify-content:center;gap:2px;width:100%;height:100%}
@@ -7758,12 +7760,23 @@ function statPill(s){s=String(s||"").toLowerCase();const l=ORDER_STATUS_LABEL[s]
 
 /* ---- my orders (full consolidated history) ---- */
 let HISTORY=null;
+/* CLICKABLE TRACKING (owner 2026-11-13): every tracking number HCPS recorded is shown — an order may have several (comma /
+   semicolon / space separated). A number opens the carrier's own page only when the carrier is CERTAIN from the number
+   itself (UPS "1Z…" — the one self-identifying format); HCPS's record has no carrier field, so other numbers show as text
+   with "carrier not confirmed" — never a guessed carrier. Golden orders use Golden's own carrier + tracking (ghTrackLink). */
+function orderTrackHtml(raw){
+  const nums=[...new Set(String(raw||"").split(/[\s,;]+/).map(x=>x.trim()).filter(x=>/^[A-Za-z0-9-]{6,40}$/.test(x)))].slice(0,10);
+  if(!nums.length) return 'Tracking not yet available.';
+  return (nums.length>1?'Tracking ('+nums.length+' shipments): ':'Tracking ')+nums.map(n=>/^1Z[0-9A-Z]{16}$/i.test(n)
+    ?`<a class="tnum" href="https://www.ups.com/track?tracknum=${encodeURIComponent(n)}" target="_blank" rel="noopener noreferrer">${esc(n)}</a> <small>(UPS)</small>`
+    :`<span class="tnum">${esc(n)}</span> <small style="color:var(--muted)">(carrier not confirmed)</small>`).join(', ');
+}
 async function loadOrders(){
   if(!HISTORY){ const d=await api(HISTORY_ENDPOINT,{action:"history",limit:300}); if(!d||d.ok===false){ $("#view-orders").innerHTML=`<div class="msg">Couldn't load your orders right now.</div>`; return; } HISTORY=d.orders||[]; }
   const rows=HISTORY.map(o=>{
     const canTrack=(o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="delivered"&&!o.tracking;
     /* PO, the tracking number HCPS recorded, and a new-account notice (C3-06) — all shown as text. */
-    const extra=(o.po?`<div class="m">PO ${esc(o.po)}</div>`:"")+(o.tracking?`<div class="m">Tracking <span class="tnum">${esc(o.tracking)}</span></div>`:"")
+    const extra=(o.po?`<div class="m">PO ${esc(o.po)}</div>`:"")+(o.tracking?`<div class="m">${orderTrackHtml(o.tracking)}</div>`:((o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="cancelled"?`<div class="m" style="color:var(--muted)">Tracking not yet available.</div>`:""))
       +(o.account_hold?`<div class="m" style="color:#9b1c1c;font-weight:700">Waiting for your ${esc(o.manufacturerName)} account — <a onclick="showP360('apply')" style="cursor:pointer;text-decoration:underline">complete the application</a>; HCPS places the order once the account is open</div>`
         :o.account_notice?`<div class="m" style="color:#9b1c1c;font-weight:700">${esc(o.account_notice)} — HCPS will help you open it; your order is not held</div>`:"");
     const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
@@ -7771,8 +7784,9 @@ async function loadOrders(){
   }).join("");
   const total=HISTORY.reduce((s,o)=>s+orderTotal(o),0);
   $("#view-orders").innerHTML=`
-    <div class="ph"><div><h1>My Orders</h1><div class="sub">Consolidated history — imported sales, portal &amp; Golden · ${HISTORY.length} records</div></div>
-      <div><a class="btn gh" onclick="exportHistoryCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a> <a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div>
+    <div class="ph"><div><h1>Orders &amp; Tracking</h1><div class="sub">Consolidated history — imported sales, portal &amp; Golden · ${HISTORY.length} records</div></div>
+      <div><a class="btn gh" onclick="exportHistoryCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a></div></div>
+    ${typeof rptNavHtml==='function'?rptNavHtml('orders'):''}
     <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Date</th><th>Source</th><th>Manufacturer</th><th>Items</th><th class="n">Units</th><th class="n">Amount</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows||`<tr><td colspan="8" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
       ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total (incl. freight)</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${cents(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
@@ -8175,6 +8189,8 @@ function retailUnit(mfr,code,unitCost){
 const REPORTS_ENDPOINT=API_BASE+"/dealer-reports-api";
 let REPORT_YEAR=null, RPT=null, RPT_SCOPE=null, RPT_AI=null, RPT_AIBUSY=false, RPT_PDFBUSY=false, RPT_TAB='overview', RPT_XLBUSY=false;
 async function loadReports(){
+  if(RPT_KEEP&&RPT){ RPT_KEEP=false; renderReports(); return; }   /* back from Orders & Tracking: the same report, not a reload */
+  RPT_KEEP=false;
   $("#view-reports").innerHTML='<div class="msg">Loading your report…</div>';
   RPT_AI=null;
   const d=await api(REPORTS_ENDPOINT,{action:'report',scope:RPT_SCOPE||undefined,year:REPORT_YEAR||undefined});
@@ -8204,7 +8220,7 @@ function renderReports(){
   const ai=RPT_AI?(RPT_AI.error?`<div class="msg">${esc(RPT_AI.error)}</div>`:(RPT_AI.note?`<div class="rpt-sub">${esc(RPT_AI.note)}</div>`:'')+RPT_AI.list.map(r=>`<div class="rpt-ai"><b>${esc(r.title)}</b><div>${esc(r.detail)}</div></div>`).join('')):`<div class="rpt-sub">Suggestions written by AI from the figures on this page only — check them against your own knowledge of your market.</div>`;
   const head=`<div class="ph"><div><h1>Reports</h1><div class="sub">${esc(RPT.scope_name)} · ${esc(R.period.label)}</div></div>
       <div class="rpt-ctl">${scopeSel}${yearSel}<a class="btn gh" id="rptXl" onclick="rptExcel()">⬇ Excel</a><a class="btn gh" id="rptPdf" onclick="rptPdf()">⬇ PDF report</a></div></div>
-    <div class="rpt-tabs" role="tablist"><button role="tab" class="rpt-tab${RPT_TAB==='overview'?' on':''}" aria-selected="${RPT_TAB==='overview'}" onclick="rptTab('overview')">Overview</button><button role="tab" class="rpt-tab${RPT_TAB==='total'?' on':''}" aria-selected="${RPT_TAB==='total'}" onclick="rptTab('total')">Total Sales</button><button type="button" class="rpt-tab" onclick="rptOrders()">Orders &amp; Tracking</button></div>`;
+    ${rptNavHtml(RPT_TAB)}`;
   if(RPT_TAB==='total'){ $("#view-reports").innerHTML=head+renderTotalSales(R,tbl); return; }
   $("#view-reports").innerHTML=head+`
     <div class="kpis">
@@ -8236,6 +8252,15 @@ function renderReports(){
       <a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">⬇ Export pricing file (Excel/CSV)</a></div>`;
 }
 function rptTab(t){ RPT_TAB=t==='total'?'total':'overview'; renderReports(); }
+/* REPORTS NAVIGATION (owner 2026-11-13, James Medical): the same three tabs on every Reports screen — Overview, Total Sales
+   and Orders & Tracking (the My Orders view) — the active one marked. Switching back keeps the loaded report (year,
+   location and AI suggestions) instead of reloading it. */
+function rptNavHtml(active){ const b=(k,label,fn)=>`<button role="tab" type="button" class="rpt-tab${active===k?' on':''}" aria-selected="${active===k}" onclick="${fn}">${label}</button>`;
+  return `<div class="rpt-tabs" role="tablist" aria-label="Reports">${b('overview','Overview',"rptGo('overview')")}${b('total','Total Sales',"rptGo('total')")}${b('orders','Orders &amp; Tracking',"rptOrders()")}</div>`; }
+let RPT_KEEP=false;
+function rptGo(t){ const inReports=($("#view-reports")||{}).classList&&$("#view-reports").classList.contains('on');
+  if(inReports){ rptTab(t); return; } RPT_TAB=t==='total'?'total':'overview'; RPT_KEEP=!!RPT; showView('reports'); }
+window.rptGo=rptGo;
 /* TOTAL SALES (owner directive 2026-11-06, Priority 7). Every figure comes from the server's report (report.valuation) — the
    same object the PDF and the Excel workbook are built from. Potential retail = the units purchased × today's Shop retail
    reference (manufacturer MSRP, else HCPS calculated retail at 2× standard dealer cost); your own retail prices are shown
