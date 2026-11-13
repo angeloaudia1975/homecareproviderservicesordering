@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "rule": "Every new or significantly changed dealer-facing feature has a help article here, checked against the working page (test/help-center.test.js) before the feature is called complete. Each release item marked dealer_facing names its article.",
+  "areas": [
+    { "key": "ordering", "title": "Ordering" },
+    { "key": "accounts", "title": "Manufacturer accounts" },
+    { "key": "quotes", "title": "Quotes & brochures" },
+    { "key": "reports", "title": "Reports" },
+    { "key": "tracking", "title": "Orders & shipment tracking" },
+    { "key": "golden-service", "title": "Golden Service & Support" },
+    { "key": "victoria", "title": "Victoria (coming later)" }
+  ],
+  "articles": [
+    {
+      "id": "ordering-basics", "area": "ordering", "title": "Placing an order", "updated": "2026-11-13", "open": "shop",
+      "summary": "Shop any line you are approved for, add products to your cart and place the order through HCPS.",
+      "steps": [
+        "Choose Shop and pick a manufacturer you are approved for.",
+        "Open a product, choose the size or option and use Add to cart.",
+        "Open your cart and choose Checkout. Your prices are checked again on the server before the order is recorded.",
+        "Place order. HCPS receives it and places it with the manufacturer; you get a confirmation email."
+      ],
+      "notes": [
+        "If a price changed since you added the item, you are shown the new price before anything is recorded.",
+        "Golden Technologies products are ordered through Golden's own platform."
+      ],
+      "ui_checks": ["Add to cart", "Checkout", "Place order"]
+    },
+    {
+      "id": "pending-account-setup", "area": "ordering", "title": "Orders held for a new manufacturer account", "updated": "2026-11-13", "open": "apply",
+      "summary": "You can order from a line you are approved for even before your account with that manufacturer is open. The order is saved and held, not sent.",
+      "steps": [
+        "Place the order as usual. It is recorded as Pending Manufacturer Account Setup.",
+        "Complete the manufacturer's application in Manufacturer Account Setup.",
+        "HCPS opens the account with the manufacturer and then releases your saved order — you do not enter it again."
+      ],
+      "notes": ["A held order is never sent to the manufacturer until HCPS releases it."],
+      "ui_checks": ["Pending Manufacturer Account Setup", "Manufacturer Account Setup", "complete the application"]
+    },
+    {
+      "id": "manufacturer-accounts", "area": "accounts", "title": "Your manufacturer accounts", "updated": "2026-11-13", "open": "account",
+      "summary": "Account Center shows, for each line, whether HCPS has your account number on file and whether you can order it.",
+      "steps": [
+        "Open Account & Pricing (Account Center).",
+        "Each manufacturer shows its account status. Lines you can order are listed under Your accounts; lines you may open are under Available to you.",
+        "To give HCPS an account number, enter it on the line — HCPS checks it before it is used.",
+        "To carry a line you are not set up for, use Request access."
+      ],
+      "notes": [
+        "Having an account number on file does not by itself let you order a line — ordering is set up by HCPS for each location.",
+        "A branch uses its head office's manufacturer account number when it has none of its own."
+      ],
+      "ui_checks": ["Account Center", "Your accounts", "Available to you", "Request access"]
+    },
+    {
+      "id": "customer-quotes", "area": "quotes", "title": "Customer quotes", "updated": "2026-11-13", "open": "quotes",
+      "summary": "Build a branded quote for your customer from any product you carry, with the retail price you choose.",
+      "steps": [
+        "Open Quotes and start a New quote.",
+        "Use + Add to add products. Configurable products (for example Golden lift chairs) open their configurator first.",
+        "Set each line's retail price. Where a manufacturer has a minimum advertised price, a price below it is refused.",
+        "Save quote, then print it or use Email quote."
+      ],
+      "notes": ["Products without a published retail reference show Price on Request until you set a price."],
+      "ui_checks": ["Customer Quotes", "New quote", "+ Add", "Save quote", "Email quote", "Price on Request"]
+    },
+    {
+      "id": "brochures", "area": "quotes", "title": "Printing a product brochure", "updated": "2026-11-13", "open": "shop",
+      "summary": "Print a customer-ready brochure for a product with your own retail price.",
+      "steps": [
+        "Open the product and choose Print Brochure.",
+        "Choose how the price shows (for example your retail price or the manufacturer's reference price).",
+        "Print or save it as a PDF from your browser."
+      ],
+      "notes": ["A price below a manufacturer's minimum advertised price is not allowed on a brochure."],
+      "ui_checks": ["Print Brochure", "Retail price"]
+    },
+    {
+      "id": "reports-overview", "area": "reports", "title": "Your reports", "updated": "2026-11-13", "open": "reports",
+      "summary": "See what you bought from each manufacturer, this year against last year, by location.",
+      "steps": [
+        "Open Reports. The tabs Overview, Total Sales and Orders & Tracking stay at the top while you move between them.",
+        "Head offices can switch between the whole company and each location.",
+        "Download the report as a PDF or the totals as Excel."
+      ],
+      "notes": ["Purchases come from manufacturer reports; your portal orders and quotes are shown separately and never added to purchases."],
+      "ui_checks": ["Overview", "Total Sales", "Orders &amp; Tracking", "Vital Signs", "⬇ Excel"]
+    },
+    {
+      "id": "shipment-tracking", "area": "tracking", "title": "Tracking your shipments", "updated": "2026-11-13", "open": "orders",
+      "summary": "Orders & Tracking lists every order. When HCPS has shipment details from the manufacturer or carrier, they appear under the order.",
+      "steps": [
+        "Open Orders & Tracking (also a tab in Reports).",
+        "Each shipment shows its tracking number. When the carrier is known (UPS, FedEx, USPS, DHL) the number is a link to the carrier's tracking page.",
+        "Shipped dates, estimated ship dates (from the manufacturer) and estimated delivery dates (from the carrier) show only when they were confirmed.",
+        "No tracking yet? Use Request tracking and HCPS will ask the manufacturer."
+      ],
+      "notes": ["An order can arrive in several shipments; each is listed on its own line."],
+      "ui_checks": ["Orders &amp; Tracking", "Request tracking", "carrier not confirmed", "Estimated delivery"]
+    },
+    {
+      "id": "golden-service", "area": "golden-service", "title": "Golden Service & Support", "updated": "2026-11-13", "open": "goldsvc",
+      "summary": "For Golden Technologies dealers: parts lookup, technical publications, training videos and service requests, in one place.",
+      "steps": [
+        "Open Resources and choose Golden Service & Support (shown when it is available for your account).",
+        "Parts lookup: choose the product line, then a category or model, or search by part number.",
+        "Documents and Training videos open Golden's own publications and videos.",
+        "Service requests (parts orders, service / RMA, warranty labor claims) open Golden's support site and go straight to Golden."
+      ],
+      "notes": ["Golden shows parts prices only to authorized Golden dealers with a verified account."],
+      "ui_checks": ["Golden Service &amp; Support", "Parts lookup", "Training videos", "Service requests"]
+    }
+  ]
+}
