@@ -226,7 +226,7 @@ async function boot(){
   if(!token()){ return gate(); }
   const me=await api(AUTH_ENDPOINT,{action:"me"}).catch(()=>({}));
   if(!me||me.status!=="approved"||!me.dealer){ return gate(me&&me.status); }
-  PROFILE=me.dealer; LINES=(me.lines||[]);
+  PROFILE=me.dealer; LINES=(me.lines||[]); ACCESS=me.access||null;
   ME_PRICES=(me.prices&&typeof me.prices==='object')?me.prices:{}; ME_RATES=(me.rates&&typeof me.rates==='object')?me.rates:{};
   $("#dealerChip").style.display="";$("#dealerName").textContent=PROFILE.name||"Dealer";
   $("#signout").style.display="";$("#signout").onclick=()=>{try{localStorage.removeItem("hcps_session");}catch(e){}location.href="/";};
@@ -655,7 +655,7 @@ async function submitPriceReq(){
 }
 
 /* ================= PHASE 4: showroom, literature, tracking UI ================= */
-let SHOWROOM={zones:[]}, ZONE_N=12, MFRLIST=[], LINES=[], SW_PICK_IDX=null;
+let SHOWROOM={zones:[]}, ZONE_N=12, MFRLIST=[], LINES=[], ACCESS=null, SW_PICK_IDX=null;
 function ensureZones(){ if(!Array.isArray(SHOWROOM.zones))SHOWROOM.zones=[]; while(SHOWROOM.zones.length<ZONE_N)SHOWROOM.zones.push(null); SHOWROOM.zones=SHOWROOM.zones.slice(0,ZONE_N); }
 function mfrNameOf(slug){ const m=(MFRLIST||[]).find(x=>x.slug===slug); return m?m.name:slug; }
 function prodRec(key){ const i=key.indexOf("|"); const mfr=key.slice(0,i),code=key.slice(i+1); const p=(PRICE&&PRICE[key])||{}; const cost=p.cost!=null?p.cost:null; const msrp=(p.msrp!=null?p.msrp:(cost!=null?cost*2:0)); return {key,mfr,code,name:p.name||code,mfrName:p.mfrName||mfrNameOf(mfr),cost,msrp,est:p.msrp==null}; }
@@ -740,20 +740,26 @@ function decliningCats(){ const Y=String(new Date().getFullYear()),PY=String(new
   for(const o of (HISTORY||[])){ const y=String(o.ym||"").slice(0,4); for(const l of (o.lines||[])){ const p=PRICE&&PRICE[o.manufacturer+"|"+l.code]; const cat=(p&&p.category)||"Other"; const amt=Number(l.line!=null?l.line:l.cost)||0; if(y===Y)cur[cat]=(cur[cat]||0)+amt; else if(y===PY)prev[cat]=(prev[cat]||0)+amt; } }
   const out=[]; for(const c in prev){ if(prev[c]>=400 && (cur[c]||0)<prev[c]*0.6) out.push({cat:c,prev:prev[c],cur:cur[c]||0,drop:Math.round((1-(cur[c]||0)/prev[c])*100)}); }
   return out.sort((a,b)=>b.prev-a.prev).slice(0,3); }
-function whitespaceLines(){ const carried=new Set((LINES||[]).map(l=>l.slug)); return (MFRLIST||[]).filter(m=>!carried.has(m.slug)).slice(0,8); }
+/* owner 2026-11-12 (James Medical): only lines the access engine says are AVAILABLE to this dealer (no account number yet) —
+   never every line in HCPS's catalog; same rule as the 360 Dealer Portal dashboard. No access answer → nothing guessed. */
+function whitespaceLines(){
+  if(!ACCESS||!Array.isArray(ACCESS.available)) return null;
+  const mine=new Set((ACCESS.your_accounts||[]).map(String)), names=new Map((MFRLIST||[]).map(m=>[m.slug,m.name]));
+  return ACCESS.available.map(String).filter(s=>!mine.has(s)&&names.has(s)&&!/^golden/.test(s)).map(s=>({slug:s,name:names.get(s)}));
+}
 async function loadDashExtras(){ renderDashFav(); if(!HISTORY){ try{ const h=await api(HISTORY_ENDPOINT,{action:"history",limit:500}); HISTORY=(h&&h.orders)||[]; }catch(e){} } renderOpportunities(); }
 function renderOpportunities(){
   const host=$("#dashOpps"); if(!host)return;
   const due=reorderDueList(), decl=decliningCats(), ws=whitespaceLines();
   const dueHtml=due.length?due.map(p=>`<div class="rl"><div class="b"><div class="n">${esc(p.name)}</div><div class="m">${esc(p.mfrName)} · last ${daysSince(p.last)}d ago · ${p.count} orders</div></div><a class="btn gh" href="/">Reorder</a></div>`).join(""):`<div class="empty">Nothing due to reorder right now.</div>`;
   const declHtml=decl.length?decl.map(d=>`<div class="rl"><div class="b"><div class="n">${esc(d.cat)}</div><div class="m">Down ${d.drop}% vs last year · ${money(d.cur)} vs ${money(d.prev)}</div></div><a class="btn gh" href="/">Re-stock</a></div>`).join(""):`<div class="empty">No categories are slipping — nice.</div>`;
-  const wsHtml=ws.length?ws.map(m=>`<span class="pill open" style="cursor:pointer" title="Open an account" onclick="showView('account')">${esc(m.name)}</span>`).join(" "):`<div class="empty">You carry every HCPS line.</div>`;
+  const wsHtml=ws==null?`<div class="empty">Your manufacturer options could not be checked just now.</div>`:ws.length?ws.map(m=>`<span class="pill open" style="cursor:pointer" title="Open an account" onclick="showView('account')">${esc(m.name)}</span>`).join(" "):`<div class="empty">You already carry every manufacturer line available to your business.</div>`;
   host.innerHTML=`<div class="card"><div class="chead"><h3>Grow your business</h3><span style="font-size:12px;color:var(--muted)">Recommendations from your own purchase data</span></div>
      <div class="grid2" style="grid-template-columns:1fr 1fr;gap:18px">
        <div><div class="csub2">Due for reorder</div><div class="rowlist">${dueHtml}</div></div>
        <div>
          <div class="csub2">Declining categories</div><div class="rowlist">${declHtml}</div>
-         <div class="csub2" style="margin-top:14px">Lines you don't carry yet (whitespace)</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:6px">${wsHtml}</div>
+         <div class="csub2" style="margin-top:14px">Explore More Manufacturers</div><div style="font-size:12px;color:var(--muted)">Discover additional product lines available to your business.</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:6px">${wsHtml}</div>
          <div class="rl" style="border-top:1px solid var(--line-2);margin-top:12px"><div class="b"><div class="n">Showroom revenue opportunity</div><div class="m">Fill open floor zones to add estimated retail</div></div><a class="btn gh" onclick="showView('showroom')">Open builder</a></div>
        </div>
      </div></div>`;

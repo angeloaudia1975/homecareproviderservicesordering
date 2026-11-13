@@ -8201,7 +8201,7 @@ function renderReports(){
   const br=R.branches.length>1?`<div class="card rpt-card"><h3>Locations</h3><div class="rpt-sub">Each location’s own manufacturer-reported purchases.</div>${tbl([['Location'],['Purchases',1],['Last year',1],['Change',1],['Last purchase',1]],R.branches.map(b=>`<tr><td><a class="rpt-link" onclick="rptScope('${esc(b.id)}')"><b>${esc(b.name)}</b></a><div class="rpt-s">${esc([b.city,b.state].filter(Boolean).join(', '))}${b.top_line?' · top line '+esc(b.top_line):''}</div></td><td class="n tnum">${m2(b.purchases)}</td><td class="n tnum">${m2(b.prior)}</td><td class="n">${pctB(b.change_pct)}</td><td class="n">${esc(b.last_purchase_month||'—')}</td></tr>`))}</div>`:'';
   const down=R.declining_categories.length?`<div class="rpt-alert"><b>Categories down versus last year:</b> ${R.declining_categories.map(c=>`${esc(c.category)} ${pctB(c.change_pct)}`).join(' · ')}</div>`:'';
   const opp=tbl([['Product'],['Category'],['Dealers ordering',1]],R.opportunities.map(o=>`<tr><td><b>${esc(o.name)}</b><div class="rpt-s">${esc(o.manufacturer_name)} · #${esc(o.code)}</div></td><td>${esc(o.category)}</td><td class="n tnum">${o.dealers}</td></tr>`),'No suggestions from the network data right now.');
-  const ai=RPT_AI?(RPT_AI.error?`<div class="msg">${esc(RPT_AI.error)}</div>`:RPT_AI.list.map(r=>`<div class="rpt-ai"><b>${esc(r.title)}</b><div>${esc(r.detail)}</div></div>`).join('')):`<div class="rpt-sub">Suggestions written by AI from the figures on this page only — check them against your own knowledge of your market.</div>`;
+  const ai=RPT_AI?(RPT_AI.error?`<div class="msg">${esc(RPT_AI.error)}</div>`:(RPT_AI.note?`<div class="rpt-sub">${esc(RPT_AI.note)}</div>`:'')+RPT_AI.list.map(r=>`<div class="rpt-ai"><b>${esc(r.title)}</b><div>${esc(r.detail)}</div></div>`).join('')):`<div class="rpt-sub">Suggestions written by AI from the figures on this page only — check them against your own knowledge of your market.</div>`;
   const head=`<div class="ph"><div><h1>Reports</h1><div class="sub">${esc(RPT.scope_name)} · ${esc(R.period.label)}</div></div>
       <div class="rpt-ctl">${scopeSel}${yearSel}<a class="btn gh" id="rptXl" onclick="rptExcel()">⬇ Excel</a><a class="btn gh" id="rptPdf" onclick="rptPdf()">⬇ PDF report</a></div></div>
     <div class="rpt-tabs" role="tablist"><button role="tab" class="rpt-tab${RPT_TAB==='overview'?' on':''}" aria-selected="${RPT_TAB==='overview'}" onclick="rptTab('overview')">Overview</button><button role="tab" class="rpt-tab${RPT_TAB==='total'?' on':''}" aria-selected="${RPT_TAB==='total'}" onclick="rptTab('total')">Total Sales</button><button type="button" class="rpt-tab" onclick="rptOrders()">Orders &amp; Tracking</button></div>`;
@@ -8284,7 +8284,7 @@ window.rptTab=rptTab; window.rptExcel=rptExcel;
 async function rptAi(){
   if(RPT_AIBUSY) return; RPT_AIBUSY=true; const b=$("#rptAi"); if(b){b.textContent='Writing suggestions…';b.style.pointerEvents='none';}
   const d=await api(REPORTS_ENDPOINT,{action:'report_ai',scope:RPT_SCOPE,year:RPT&&RPT.report.period.year});
-  RPT_AIBUSY=false; RPT_AI=d&&d.ok?{list:d.recommendations||[]}:{error:(d&&d.error)||'Suggestions are not available just now.'}; renderReports();
+  RPT_AIBUSY=false; RPT_AI=d&&d.ok?{list:d.recommendations||[],note:d.note||''}:{error:(d&&d.error)||'Suggestions are not available just now.'}; renderReports();
 }
 async function rptPdf(){
   if(RPT_PDFBUSY) return; RPT_PDFBUSY=true; const b=$("#rptPdf"); if(b){b.textContent='Preparing PDF…';b.style.pointerEvents='none';}
@@ -8812,20 +8812,40 @@ function decliningCats(){ const Y=String(new Date().getFullYear()),PY=String(new
   for(const o of (HISTORY||[])){ const y=String(o.ym||"").slice(0,4); for(const l of (o.lines||[])){ const p=PRICE&&PRICE[o.manufacturer+"|"+l.code]; const cat=(p&&p.category)||"Other"; const amt=Number(l.line!=null?l.line:l.cost)||0; if(y===Y)cur[cat]=(cur[cat]||0)+amt; else if(y===PY)prev[cat]=(prev[cat]||0)+amt; } }
   const out=[]; for(const c in prev){ if(prev[c]>=400 && (cur[c]||0)<prev[c]*0.6) out.push({cat:c,prev:prev[c],cur:cur[c]||0,drop:Math.round((1-(cur[c]||0)/prev[c])*100)}); }
   return out.sort((a,b)=>b.prev-a.prev).slice(0,3); }
-function whitespaceLines(){ const carried=new Set((LINES||[]).map(l=>l.slug)); return (MFRLIST||[]).filter(m=>!carried.has(m.slug)).slice(0,8); }
+/* EXPLORE MORE MANUFACTURERS (owner 2026-11-12, James Medical): only lines HCPS's access engine says are AVAILABLE to this
+   dealer (eligible, no account yet — AUTH.access.available, decided by dealer-auth from Dealer Manager / the territory
+   rules), never every line in HCPS's catalog. Lines already carried, retired, held or not on the shop are left out; Golden
+   has its own card. No access answer → null (nothing is guessed). */
+function whitespaceLines(){
+  const acc=(typeof AUTH!=='undefined'&&AUTH&&AUTH.access)?AUTH.access:null; if(!acc||!Array.isArray(acc.available)) return null;
+  /* an account number on file (your_accounts) = an established relationship; an approved line with no account yet is still an
+     account-development opportunity (account_setup_needed) */
+  const mine=new Set((acc.your_accounts||[]).map(String)), setup=new Set((acc.account_setup_needed||[]).map(String));
+  const shop=new Map(((typeof state!=='undefined'&&state&&state.manufacturers)||[]).map(m=>[m.slug,m])); (MFRLIST||[]).forEach(m=>{ if(!shop.has(m.slug)) shop.set(m.slug,m); });
+  return acc.available.map(String).filter(s=>!mine.has(s)&&shop.has(s)&&!(typeof isRetiredSlug==='function'&&isRetiredSlug(s))&&!(typeof isHeldSlug==='function'&&isHeldSlug(s))&&!(typeof isGoldenSlug==='function'&&isGoldenSlug(s)))
+    .map(s=>({slug:s,name:shop.get(s).name||s,approved:setup.has(s)}));
+}
+let _wsApps=null;
+function wsAppStatus(slug){ const list=(typeof AP!=='undefined'&&AP&&AP.applications)||_wsApps||[]; const a=list.find(x=>x&&x.manufacturer===slug&&x.status!=='withdrawn'); return a?((typeof AP_LABEL!=='undefined'&&AP_LABEL[a.status])||a.status):''; }
 async function loadDashExtras(){ renderDashFav(); if(!HISTORY){ try{ const h=await api(HISTORY_ENDPOINT,{action:"history",limit:500}); if(h&&h.ok!==false&&Array.isArray(h.orders)) HISTORY=h.orders; }catch(e){} } renderOpportunities(); }
 function renderOpportunities(){
   const host=$("#dashOpps"); if(!host)return;
   const due=reorderDueList(), decl=decliningCats(), ws=whitespaceLines();
   const dueHtml=due.length?due.map(p=>`<div class="rl"><div class="b"><div class="n">${esc(p.name)}</div><div class="m">${esc(p.mfrName)} · last ${daysSince(p.last)}d ago · ${p.count} orders</div></div><a class="btn gh" href="/">Reorder</a></div>`).join(""):`<div class="empty">Nothing due to reorder right now.</div>`;
   const declHtml=decl.length?decl.map(d=>`<div class="rl"><div class="b"><div class="n">${esc(d.cat)}</div><div class="m">Down ${d.drop}% vs last year · ${money(d.cur)} vs ${money(d.prev)}</div></div><a class="btn gh" href="/">Re-stock</a></div>`).join(""):`<div class="empty">No categories are slipping — nice.</div>`;
-  const wsHtml=ws.length?ws.map(m=>`<span class="pill open" style="cursor:pointer" title="Open an account" onclick="showView('account')">${esc(m.name)}</span>`).join(" "):`<div class="empty">You carry every HCPS line.</div>`;
+  if(ws&&ws.length&&!_wsApps&&!(typeof AP!=='undefined'&&AP)&&typeof appsCall==='function'&&!window.__PREVIEW__){ _wsApps=[]; appsCall({action:'app_list'}).then(r=>{ if(r&&r.ok){ _wsApps=r.applications||[]; renderOpportunities(); } }).catch(()=>{}); }
+  const wsHtml=ws==null?`<div class="empty">Your manufacturer options could not be checked just now.</div>`
+    :ws.length?ws.map(m=>{ const st=wsAppStatus(m.slug);
+      return `<div class="rl"><div class="b"><div class="n">${esc(m.name)}</div><div class="m">${st?'Account application: '+esc(st):m.approved?'Approved to order — manufacturer account setup needed':'Available to your business — no account yet'}</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn gh acsm" data-slug="${esc(m.slug)}" onclick="showShop(this.dataset.slug)">View products</a>
+        <a class="btn ${st?'gh':'pri'} acsm" data-slug="${esc(m.slug)}" data-name="${esc(m.name)}" onclick="sfReqAcct(this.dataset.slug,this.dataset.name,null)">${st?'View application':'Open an account'}</a></div></div>`; }).join("")
+    :`<div class="empty">You already carry every manufacturer line available to your business.</div>`;
   host.innerHTML=`<div class="card"><div class="chead"><h3>Grow your business</h3><span style="font-size:12px;color:var(--muted)">Recommendations from your own purchase data</span></div>
      <div class="grid2" style="grid-template-columns:1fr 1fr;gap:18px">
        <div><div class="csub2">Due for reorder</div><div class="rowlist">${dueHtml}</div></div>
        <div>
          <div class="csub2">Declining categories</div><div class="rowlist">${declHtml}</div>
-         <div class="csub2" style="margin-top:14px">Lines you don't carry yet (whitespace)</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:6px">${wsHtml}</div>
+         <div class="csub2" style="margin-top:14px">Explore More Manufacturers</div><div style="font-size:12px;color:var(--muted);margin:2px 0 6px">Discover additional product lines available to your business.</div><div class="rowlist">${wsHtml}</div>
          <div class="rl" style="border-top:1px solid var(--line-2);margin-top:12px"><div class="b"><div class="n">Showroom revenue opportunity</div><div class="m">Fill open floor zones to add estimated retail</div></div><a class="btn gh" onclick="showView('showroom')">Open builder</a></div>
        </div>
      </div></div>`;
