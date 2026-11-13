@@ -334,10 +334,14 @@ exports.handler = async (event) => {
   try {
     /* The checkout's submission key (C3-06): a retry of the same checkout is never recorded twice. */
     const key = typeof raw.submission_key === "string" && /^[A-Za-z0-9-]{16,64}$/.test(raw.submission_key) ? raw.submission_key : undefined;
-    const res = await callApi(Object.assign({ action: "create", orders, dealer }, key ? { submission_key: key } : {}));
+    /* Manage Dealer (owner 2026-11-13): an HCPS staff session sends its explicit final confirmation; orders-api checks it */
+    const onBehalf = /^Bearer\s+manage:/i.test(auth) && raw.on_behalf && typeof raw.on_behalf === "object"
+      ? { confirm: raw.on_behalf.confirm === true, location_id: String(raw.on_behalf.location_id || "").slice(0, 40) } : undefined;
+    const res = await callApi(Object.assign({ action: "create", orders, dealer }, key ? { submission_key: key } : {}, onBehalf ? { on_behalf: onBehalf } : {}));
     rec = await res.json().catch(() => null);
     if (res.status === 409 && rec && rec.status === "prices_changed")
       return json(409, { ok: false, recorded: false, status: "prices_changed", orders: rec.orders || [] });
+    if (res.status === 428 && rec && rec.status === "confirm_required") return json(428, { ok: false, recorded: false, status: "confirm_required", error: rec.error });
     if (rec && rec.status === "unauthorized") return json(401, { ok: false, recorded: false, status: "unauthorized", error: "Please sign in again to submit this order." });
     /* Every order of this checkout was already recorded (a retry after a timeout, a second tab): nothing is recorded
        or emailed again. orders-api has noted the resubmission on the order so staff check the HCPS email arrived. */
@@ -366,6 +370,9 @@ exports.handler = async (event) => {
     try { await callApi({ action: "notification_failed", order_ids: rec.orders.map((r) => r.order_id) }); } catch (e) {}
     return json(502, { ok: false, recorded: true, status: "email_failed", not_recorded: notRecorded, orders: rec.orders, error: String(err.message || err) });
   }
+
+  /* Placed by HCPS on a dealer's behalf: the HCPS order email says so first (the sentence comes from orders-api) */
+  if (rec.placed_by_hcps) orders = orders.map((o) => Object.assign({}, o, { notes: String(rec.placed_by_hcps).slice(0, 300) + (o.notes ? "\n" + o.notes : "") }));
 
   /* Staff routing (owner 2026-11-13, switch opening_orders_v2 on the order server): Lori and the dealer's own rep are added
      to the HCPS order email. Only HCPS addresses are ever accepted from that answer. */
