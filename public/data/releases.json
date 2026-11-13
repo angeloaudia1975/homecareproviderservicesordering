@@ -32,6 +32,12 @@
           "text": "Account Center shows three separate facts per manufacturer: account number on file, verified by HCPS, and authorized to order — with applications and holds shown apart.",
           "dealer_facing": true,
           "help": "manufacturer-accounts"
+        },
+        {
+          "area": "reports",
+          "text": "AI growth suggestions in Reports now also point to Dealer 360 tools you are not using yet — lines you can already order, your storefront, Social Ads and training.",
+          "dealer_facing": true,
+          "help": "reports-overview"
         }
       ]
     },
