@@ -22,7 +22,8 @@ const CENTER = { ok: true,
   locations: [
     { id: 'hq', name: 'TEST — Landing Sandbox', city: 'Dayton', state: 'OH', is_self: true, accounts: [
       { slug: 'golden-technologies', name: 'Golden Technologies', status: 'verified', label: 'Golden account on file', account_ref: null },
-      { slug: 'yuwell', name: 'Yuwell', status: 'verified', label: 'Verified by HCPS', account_ref: 'Y-100', ordering: true },
+      { slug: 'yuwell', name: 'Yuwell', status: 'verified', label: 'Verified by HCPS', account_ref: 'Y-100', ordering: true, facts: { on_file: { source: 'location' }, verified: null, authorized: true, application: null, restriction: null } },
+      { slug: 'bemis', name: 'Bemis', status: 'pending', label: 'x', account_ref: null, ordering: true, facts: { on_file: { source: 'head_office' }, verified: { at: '2026-11-01' }, authorized: false, application: { status: 'under_review' }, restriction: 'not_authorized' } },
       { slug: 'access4u', name: 'Access4U', status: 'pending', label: 'On file — HCPS verification pending', account_ref: 'A-9', ordering: true },
       { slug: 'dalton', name: 'Dalton', status: 'none', label: 'No account on file', account_ref: null, ordering: false }] },
     { id: 'br', name: 'Acme Branch', city: 'Xenia', state: 'OH', is_self: false, accounts: [
@@ -68,6 +69,11 @@ async function openCenter(page) {
           credit: !!v.querySelector('#caEin,#caBank'),
           /* owner 2026-11-06: the three account-management cards sit in the LEFT column directly under Addresses */
           order: (() => { const cols = v.querySelectorAll('.grid2 > div'); const left = cols[0] ? [...cols[0].querySelectorAll(':scope > .card h3')].map(h => h.textContent.trim()) : []; return left; })() };
+      });
+      await t(`${label}: three separate account facts (owner 2026-11-13) — on file / verified / authorized, application apart`, () => {
+        ok(/✓ Account # on file/.test(r.text) && /– Not yet verified/.test(r.text) && /✓ Authorized to order/.test(r.text), 'Yuwell facts');
+        ok(/Account # on file \(head office\)/.test(r.text) && /✓ Verified by HCPS 2026-11-01/.test(r.text) && /– Not set up to order/.test(r.text), 'Bemis facts');
+        ok(/Application: under review/.test(r.text), 'application shown apart');
       });
       await t(`${label}: every section renders (company, contacts, addresses, logo, manufacturer accounts, terms, applications)`, () => {
         ['Company', 'Contacts', 'Addresses', 'Your logo', 'Your manufacturer accounts', 'Manufacturer account applications', 'Pricing export', 'Resale / tax-exemption certificate', 'Acme Branch'].forEach(s => ok(r.text.toLowerCase().includes(s.toLowerCase()), 'missing ' + s));

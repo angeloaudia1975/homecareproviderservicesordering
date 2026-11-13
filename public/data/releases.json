@@ -4,19 +4,60 @@
   "rule": "The version is the newest release below. A release email to dealers is only ever sent after the President approves that release's email in Connect 360 — a deploy never sends one.",
   "releases": [
     {
-      "version": "2026.11.13", "date": "2026-11-13", "title": "Golden Service & Support, shipment details and a Help Center",
+      "version": "2026.11.13",
+      "date": "2026-11-13",
+      "title": "Golden Service & Support, shipment details and a Help Center",
       "items": [
-        { "area": "golden-service", "text": "Golden Service & Support: parts lookup, Golden publications, training videos and service requests in one place (where available for your account).", "dealer_facing": true, "help": "golden-service", "switch": "golden_service_v2" },
-        { "area": "tracking", "text": "Orders & Tracking can list several shipments per order, with carrier tracking links and confirmed dates.", "dealer_facing": true, "help": "shipment-tracking" },
-        { "area": "help", "text": "New Help & Training Center and What's New.", "dealer_facing": true, "help": "ordering-basics" }
+        {
+          "area": "golden-service",
+          "text": "Golden Service & Support: parts lookup, Golden publications, training videos and service requests in one place (where available for your account).",
+          "dealer_facing": true,
+          "help": "golden-service",
+          "switch": "golden_service_v2"
+        },
+        {
+          "area": "tracking",
+          "text": "Orders & Tracking can list several shipments per order, with carrier tracking links and confirmed dates.",
+          "dealer_facing": true,
+          "help": "shipment-tracking"
+        },
+        {
+          "area": "help",
+          "text": "New Help & Training Center and What's New.",
+          "dealer_facing": true,
+          "help": "ordering-basics"
+        },
+        {
+          "area": "accounts",
+          "text": "Account Center shows three separate facts per manufacturer: account number on file, verified by HCPS, and authorized to order — with applications and holds shown apart.",
+          "dealer_facing": true,
+          "help": "manufacturer-accounts"
+        }
       ]
     },
     {
-      "version": "2026.11.12", "date": "2026-11-12", "title": "Reports navigation and clickable tracking",
+      "version": "2026.11.12",
+      "date": "2026-11-12",
+      "title": "Reports navigation and clickable tracking",
       "items": [
-        { "area": "reports", "text": "Reports keeps its tabs (Overview, Total Sales, Orders & Tracking) while you move between them.", "dealer_facing": true, "help": "reports-overview" },
-        { "area": "tracking", "text": "UPS tracking numbers open the carrier's tracking page.", "dealer_facing": true, "help": "shipment-tracking" },
-        { "area": "quotes", "text": "Quotes and brochures show the manufacturer's reference price and never allow a price below a minimum advertised price.", "dealer_facing": true, "help": "customer-quotes" }
+        {
+          "area": "reports",
+          "text": "Reports keeps its tabs (Overview, Total Sales, Orders & Tracking) while you move between them.",
+          "dealer_facing": true,
+          "help": "reports-overview"
+        },
+        {
+          "area": "tracking",
+          "text": "UPS tracking numbers open the carrier's tracking page.",
+          "dealer_facing": true,
+          "help": "shipment-tracking"
+        },
+        {
+          "area": "quotes",
+          "text": "Quotes and brochures show the manufacturer's reference price and never allow a price below a minimum advertised price.",
+          "dealer_facing": true,
+          "help": "customer-quotes"
+        }
       ]
     }
   ]
