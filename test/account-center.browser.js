@@ -23,6 +23,7 @@ const CENTER = { ok: true,
     { id: 'hq', name: 'TEST — Landing Sandbox', city: 'Dayton', state: 'OH', is_self: true, accounts: [
       { slug: 'golden-technologies', name: 'Golden Technologies', status: 'verified', label: 'Golden account on file', account_ref: null },
       { slug: 'yuwell', name: 'Yuwell', status: 'verified', label: 'Verified by HCPS', account_ref: 'Y-100', ordering: true, facts: { on_file: { source: 'location' }, verified: null, authorized: true, application: null, restriction: null } },
+      { slug: 'dalton', name: 'Dalton Medical', status: 'pending', label: 'Ordering set up — account number not on file', account_ref: null, ordering: true, facts: { on_file: null, verified: null, authorized: true, application: null, restriction: 'held_until_account' } },
       { slug: 'bemis', name: 'Bemis', status: 'pending', label: 'x', account_ref: null, ordering: true, facts: { on_file: { source: 'head_office' }, verified: { at: '2026-11-01' }, authorized: false, application: { status: 'under_review' }, restriction: 'not_authorized' } },
       { slug: 'access4u', name: 'Access4U', status: 'pending', label: 'On file — HCPS verification pending', account_ref: 'A-9', ordering: true },
       { slug: 'dalton', name: 'Dalton', status: 'none', label: 'No account on file', account_ref: null, ordering: false }] },
@@ -74,6 +75,9 @@ async function openCenter(page) {
         ok(/✓ Account # on file/.test(r.text) && /– Not yet verified/.test(r.text) && /✓ Authorized to order/.test(r.text), 'Yuwell facts');
         ok(/Account # on file \(head office\)/.test(r.text) && /✓ Verified by HCPS 2026-11-01/.test(r.text) && /– Not set up to order/.test(r.text), 'Bemis facts');
         ok(/Application: under review/.test(r.text), 'application shown apart');
+        /* owner 2026-11-13 (Germantown): no number → no "Not yet verified"; approved-with-no-number reads as an opening order, never "Authorized to order" */
+        const dal = r.text.slice(r.text.indexOf('Dalton Medical'), r.text.indexOf('Bemis'));
+        ok(/– No account # on file/.test(dal) && !/Not yet verified/.test(dal) && !/Authorized to order/.test(dal) && /Opening order only — held until the account is open/.test(dal) && /You can place an opening order now/.test(dal), 'Dalton: ' + dal.slice(0, 300));
       });
       await t(`${label}: every section renders (company, contacts, addresses, logo, manufacturer accounts, terms, applications)`, () => {
         ['Company', 'Contacts', 'Addresses', 'Your logo', 'Your manufacturer accounts', 'Manufacturer account applications', 'Pricing export', 'Resale / tax-exemption certificate', 'Acme Branch'].forEach(s => ok(r.text.toLowerCase().includes(s.toLowerCase()), 'missing ' + s));
