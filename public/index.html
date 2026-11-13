@@ -1789,7 +1789,9 @@ function contractPrice(p){
 function lineRatePrice(p){
   if(!(AUTH && AUTH.rates)) return null;
   const r=AUTH.rates[p.manufacturer||""]; if(r==null || r==="") return null;
-  const rate=Number(r); if(!isFinite(rate) || rate<=0 || rate>=100) return null;
+  /* "list" (owner 2026-11-13, Access4U prospects): no account on file and no approved rate → the standard dealer list price,
+     never the default-program discount, which is for approved accounts only */
+  const rate=r==="list"?0:Number(r); if(!isFinite(rate) || rate<0 || rate>=100 || (rate===0&&r!=="list")) return null;
   const list=Number(p.dealer_price); if(!isFinite(list) || list<=0) return null;
   const live=t=>!(t&&t.until!=null&&t.until!=='')||((u,d)=>/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?(Z|[+-]([01]\d|2[0-3]):[0-5]\d)$/.test(u)&&isFinite(d=Date.parse(u.slice(0,10)+'T00:00:00Z'))&&new Date(d).toISOString().slice(0,10)===u.slice(0,10)&&Date.now()<Date.parse(u))(String(t.until));
   if((Array.isArray(p.tiers)?p.tiers:[]).filter(live).length) return null;
@@ -1821,6 +1823,7 @@ function withUpgrade(p, label){
 }
 function upgradeAddPurchase(p){
   const add=Number(p&&p._upgradeAdd); if(!(add>0)) return 0;
+  if(AUTH&&AUTH.rates&&AUTH.rates[p.manufacturer||""]==="list") return Math.round(add*100)/100;   // prospect: list, no discount
   const r=(AUTH&&AUTH.rates)?Number(AUTH.rates[p.manufacturer||""]):NaN;
   if(isFinite(r)&&r>0&&r<100) return Math.round(Number((add*(100-r)).toFixed(6)))/100;
   return Math.round(Number((add*(100-Number(p._defaultPct||0))).toFixed(6)))/100;
@@ -5521,7 +5524,7 @@ function applyServerPrices(res){
       ["base_price","dealer_price","msrp","map","tiers","group","price_note"].forEach(f=>{ if(f in c) p[f]=c[f]; });
       if(AUTH.prices){ if(it.contract!=null) AUTH.prices[ck]=Number(it.contract); else delete AUTH.prices[ck]; }
       /* The dealer's line discount travels back the same way (owner policy 2026-10-27). */
-      if("rate" in it){ if(!AUTH.rates||typeof AUTH.rates!=="object") AUTH.rates={}; if(it.rate!=null) AUTH.rates[o.manufacturer_slug]=Number(it.rate); else delete AUTH.rates[o.manufacturer_slug]; }
+      if("rate" in it){ if(!AUTH.rates||typeof AUTH.rates!=="object") AUTH.rates={}; if(it.rate!=null) AUTH.rates[o.manufacturer_slug]=it.rate==="list"?"list":Number(it.rate); else delete AUTH.rates[o.manufacturer_slug]; }
       if(it.changed && it.client_unit!=null && Math.abs(Number(it.client_unit)-Number(it.unit))>=0.005){
         const prev=PRICE_NOTES.get(k);
         PRICE_NOTES.set(k,{old:(prev&&prev.old!=null)?prev.old:Number(it.client_unit), now:Number(it.unit)}); n++;
@@ -5830,6 +5833,7 @@ function renderA4U(){
       <span class="ab sm">${A4U.open?'Hide ▲':'Open ▼'}</span>
     </div>
     <div class="abody">
+      ${(typeof AUTH!=='undefined'&&AUTH&&AUTH.rates&&AUTH.rates.access4u==='list')?`<div class="lead-note" role="note" style="margin:0 0 10px;padding:9px 11px;background:#eef6ff;border:1px solid #c9ddf5;border-radius:8px">This estimate uses Access4U's standard dealer list prices. Opening an Access4U account may qualify your business for additional dealer discounts. Submit an application through HCPS to review available pricing programs. <a style="cursor:pointer;text-decoration:underline" onclick="sfReqAcct('access4u','Access4U',null)">Apply for an Access4U account</a></div>`:''}
       <div class="arow">
         <div class="fld"><label>Total ramp length (feet) — builds starter + run sections</label>
           <div class="in"><select id="a4uW" aria-label="Ramp width" onchange="a4uSetWidth(this.value)"><option value="36" ${W4===36?'selected':''}>36″ wide</option><option value="48" ${W4===48?'selected':''}>48″ wide</option></select><input id="a4uLen" type="number" min="4" step="1" placeholder="e.g. 10" value="10"><button class="ab" onclick="a4uAddRamp()">Add Ramp</button></div></div>
@@ -7765,8 +7769,8 @@ let HISTORY=null;
    itself (UPS "1Z…" — the one self-identifying format); HCPS's record has no carrier field, so other numbers show as text
    with "carrier not confirmed" — never a guessed carrier. Golden orders use Golden's own carrier + tracking (ghTrackLink). */
 function orderTrackHtml(raw){
-  const nums=[...new Set(String(raw||"").split(/[\s,;]+/).map(x=>x.trim()).filter(x=>/^[A-Za-z0-9-]{6,40}$/.test(x)))].slice(0,10);
-  if(!nums.length) return 'Tracking not yet available.';
+  const nums=[...new Set(String(raw||"").split(/[\s,;]+/).map(x=>x.trim()).filter(x=>/^[A-Za-z0-9-]{3,40}$/.test(x)))].slice(0,10);
+  if(!nums.length) return String(raw||"").trim()?'Tracking <span class="tnum">'+esc(String(raw).trim().slice(0,80))+'</span>':'Tracking not yet available.';   /* a recorded value is never hidden */
   return (nums.length>1?'Tracking ('+nums.length+' shipments): ':'Tracking ')+nums.map(n=>/^1Z[0-9A-Z]{16}$/i.test(n)
     ?`<a class="tnum" href="https://www.ups.com/track?tracknum=${encodeURIComponent(n)}" target="_blank" rel="noopener noreferrer">${esc(n)}</a> <small>(UPS)</small>`
     :`<span class="tnum">${esc(n)}</span> <small style="color:var(--muted)">(carrier not confirmed)</small>`).join(', ');
