@@ -85,8 +85,9 @@
       "summary": "Account Center shows three separate facts for each manufacturer line: whether HCPS has your account number on file, whether HCPS has verified that number, and whether this location is authorized to order the line.",
       "steps": [
         "Open Account & Pricing (Account Center).",
-        "Each line shows: Account # on file (a branch may show its head office's number), Verified by HCPS (with the date), and Authorized to order.",
-        "An open manufacturer application and any hold (for example orders saved until the account opens) are shown under the line.",
+        "Each line shows: Account # on file (a branch may show its head office's number), Verified by HCPS (with the date — shown once a number is on file), and Authorized to order.",
+        "A line HCPS approved before your account number is on file shows Opening order only — held until the account is open: you can place an opening order now, and HCPS sends it to the manufacturer once the account is open and its number is on file.",
+        "An open manufacturer application and any other restriction are shown under the line.",
         "To give HCPS an account number, use I have an account — HCPS checks it before it is used. To carry a line you are not set up for, use Request access."
       ],
       "notes": [
@@ -99,7 +100,8 @@
         "Verified by HCPS",
         "Authorized to order",
         "Request access",
-        "I have an account"
+        "I have an account",
+        "Opening order only"
       ]
     },
     {
@@ -136,15 +138,18 @@
       "summary": "Print a customer-ready brochure for a product with your own retail price.",
       "steps": [
         "Open the product and choose Print Brochure.",
-        "Choose how the price shows (for example your retail price or the manufacturer's reference price).",
-        "Print or save it as a PDF from your browser."
+        "Choose the price for your customer: No price, the manufacturer's MSRP, the manufacturer's advertised price (MAP), your saved retail price, or a price for this brochure only.",
+        "If a product has no verified manufacturer MSRP, the brochure tells you so instead of printing one — choose another price option.",
+        "Print or save it as a PDF from your browser, or email it to your customer."
       ],
       "notes": [
-        "A price below a manufacturer's minimum advertised price is not allowed on a brochure."
+        "A price below a manufacturer's minimum advertised price is not allowed on a brochure.",
+        "An MSRP is printed only when the manufacturer publishes one — HCPS never works one out from your cost; MAP is always labelled MAP."
       ],
       "ui_checks": [
         "Print Brochure",
-        "Retail price"
+        "Retail price",
+        "Manufacturer's advertised price (MAP)"
       ]
     },
     {

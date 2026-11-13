@@ -38,6 +38,18 @@
           "text": "AI growth suggestions in Reports now also point to Dealer 360 tools you are not using yet — lines you can already order, your storefront, Social Ads and training.",
           "dealer_facing": true,
           "help": "reports-overview"
+        },
+        {
+          "area": "brochures",
+          "text": "Brochures print the manufacturer's verified MSRP for every line that publishes one, say plainly when there is none, and label the advertised price as MAP.",
+          "dealer_facing": true,
+          "help": "brochures"
+        },
+        {
+          "area": "accounts",
+          "text": "A line approved before your account number is on file now reads “Opening order only — held until the account is open”.",
+          "dealer_facing": true,
+          "help": "manufacturer-accounts"
         }
       ]
     },
