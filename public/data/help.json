@@ -204,16 +204,21 @@
         "Open Resources and choose Golden Service & Support (shown when it is available for your account).",
         "Parts lookup: choose the product line, then a category or model, or search by part number.",
         "Documents and Training videos open Golden's own publications and videos.",
-        "Service requests (parts orders, service / RMA, warranty labor claims) open Golden's support site and go straight to Golden."
+        "Service requests: where your dealership's Golden link is verified, press Add on parts and use Send to Golden, or start a Service / RMA request or a Warranty labor claim here. Otherwise the buttons open Golden's support site.",
+        "Every request sent from here gets a case number (GS-…) and appears in Case history with whether the email reached Golden."
       ],
       "notes": [
-        "Golden shows parts prices only to authorized Golden dealers with a verified account."
+        "Requests go straight to the right Golden department; HCPS keeps a copy. Golden replies by email to the contact you enter.",
+        "Pressing Send again after a problem never sends the same request twice.",
+        "Golden shows parts prices only to authorized Golden dealers with a verified account; Golden confirms prices on every parts order."
       ],
       "ui_checks": [
         "Golden Service &amp; Support",
         "Parts lookup",
         "Training videos",
-        "Service requests"
+        "Service requests",
+        "Send to Golden",
+        "Case history"
       ]
     }
   ]
