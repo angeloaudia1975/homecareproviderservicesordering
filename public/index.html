@@ -7610,6 +7610,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   <div class="view on" id="view-dash"><div class="msg">Loading your business hub…</div></div>
   <div class="view" id="view-orders"><div class="msg">Loading…</div></div>
   <div class="view" id="view-reports"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-goldsvc"><div class="msg">Loading…</div></div>
   <div class="view" id="view-quotes"><div class="msg">Loading…</div></div>
   <div class="view" id="view-retail"><div class="msg">Loading…</div></div>
   <div class="view" id="view-apply"><div class="msg">Loading…</div></div>
@@ -8819,8 +8820,69 @@ function renderResources(){
        <div class="rl"><div class="b"><div class="n">Resource library</div><div class="m">Catalogs, guides &amp; pricing</div></div><a class="btn gh" href="/">Open</a></div>
        <div class="rl"><div class="b"><div class="n">Request in-service / training</div><div class="m">Schedule with your rep</div></div><a class="btn gh" onclick="alert('Opens the in-service scheduler')">Book</a></div>
        <div class="rl"><div class="b"><div class="n">Technical support</div><div class="m">Product &amp; warranty help</div></div><a class="btn gh" onclick="alert('Opens technical support')">Contact</a></div>
+       <div id="gsvcRow"></div>
      </div></div></div>
    </div>`;
+  gsvcProbe();
+}
+/* ===== Golden Service & Support 360 — Stage 2 (owner 2026-11-13). Native, signed-in view of Golden's service resources:
+   golden-proxy "service_catalog" → Golden /v1/service/catalog (signed delegation; the dealer is decided on the server).
+   Shown only when HCPS's switch golden_service_v2 is on AND Golden answers for this dealer. Parts prices only when Golden
+   says this dealer may see them. Requests (parts, service / RMA, labor claims) still go straight to Golden through
+   Golden's support site — nothing is sent from this page in Stage 2. ===== */
+let GSVC=null, GSVCP=null, GSVT="overview", GSVLINE="lift_chair", GSVSUB="", GSVQ="";
+function gsvcLoad(){ if(!GSVCP) GSVCP=goldenCall("service_catalog").then(j=>{ GSVC=(j&&j.enabled===true&&j.available===true)?j:{off:true,reason:(j&&j.reason)||"unavailable"}; return GSVC; }); return GSVCP; }
+async function gsvcProbe(){ const g=await gsvcLoad(); const row=$("#gsvcRow"); if(!row||!g||g.off) return;
+  row.innerHTML='<div class="rl"><div class="b"><div class="n">Golden Service &amp; Support</div><div class="m">Parts lookup, technical publications, training videos &amp; service requests</div></div><a class="btn pri" onclick="showView(\'goldsvc\')">Open</a></div>'; }
+const GSV_LINES={lift_chair:"Lift chairs & recliners",scooter:"Scooters",power_chair:"Power chairs"};
+function gsvLink(u,label,cls){ return u?`<a class="btn ${cls||"gh"}" href="${esc(u)}" target="_blank" rel="noopener">${esc(label)}</a>`:""; }
+async function loadGoldSvc(){
+  const host=$("#view-goldsvc"); host.innerHTML='<div class="msg">Loading Golden Service &amp; Support…</div>';
+  const g=await gsvcLoad();
+  if(!g||g.off){ host.innerHTML='<div class="ph"><div><h1>Golden Service &amp; Support</h1></div><div><a class="btn gh" onclick="showView(\'resources\')">← Resources</a></div></div><div class="card"><div class="msg">Golden Service &amp; Support is not available for your account just now.</div></div>'; return; }
+  renderGoldSvc();
+}
+function gsvTab(t){ GSVT=t; renderGoldSvc(); }
+function gsvLine(v){ GSVLINE=v; GSVSUB=""; renderGoldSvc(); }
+function gsvSub(v){ GSVSUB=v; renderGoldSvc(); }
+function gsvSearch(v){ GSVQ=v; const el=$("#gsvParts"); if(el) el.innerHTML=gsvPartsRows(); }
+function gsvGroups(){ const P=(GSVC&&GSVC.parts)||{}; return GSVLINE==="lift_chair"?(P.lift_chair||[]).map(c=>({k:c.category,parts:c.parts})):(P[GSVLINE]||[]).map(m=>({k:m.model,parts:m.parts})); }
+function gsvPartsRows(){
+  const pv=GSVC.prices_visible===true, q=GSVQ.trim().toLowerCase();
+  let rows=[]; gsvGroups().forEach(gr=>{ if(GSVSUB&&gr.k!==GSVSUB) return; gr.parts.forEach(p=>rows.push(Object.assign({grp:gr.k},p))); });
+  if(q) rows=rows.filter(p=>(p.part+" "+p.description+" "+p.grp).toLowerCase().includes(q));
+  const total=rows.length; rows=rows.slice(0,300);
+  if(!total) return '<div class="empty">No parts match.</div>';
+  return `<div class="m-table-wrap" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="text-align:left;padding:6px">Part #</th><th style="text-align:left;padding:6px">Description</th><th style="text-align:left;padding:6px">${GSVLINE==="lift_chair"?"Category":"Model"}</th>${pv?'<th style="text-align:right;padding:6px">Dealer price</th>':""}</tr></thead><tbody>${rows.map(p=>`<tr style="border-top:1px solid var(--line-2)"><td style="padding:6px;font-weight:700">${esc(p.part)}</td><td style="padding:6px">${esc(p.description)}</td><td style="padding:6px">${esc(p.grp)}</td>${pv?`<td style="padding:6px;text-align:right">${typeof p.dealer_price==="number"?"$"+p.dealer_price.toFixed(2):"—"}</td>`:""}</tr>`).join("")}</tbody></table></div>${total>300?`<div class="msg">Showing 300 of ${total} — narrow the search.</div>`:""}`;
+}
+function renderGoldSvc(){
+  const g=GSVC, host=$("#view-goldsvc"), site=g.support_site||"";
+  const area=k=>(g.areas||[]).find(a=>a.key===k)||{};
+  const tabs=[["overview","Overview"],["parts","Parts lookup"],["docs","Documents"],["videos","Training videos"],["requests","Service requests"]];
+  let body="";
+  if(GSVT==="overview"){
+    body=`<div class="card"><h3>Six support areas</h3><div class="rowlist">${(g.areas||[]).map(a=>{ const native={parts:"parts",docs:"docs",videos:"videos",request:"requests",labor:"requests"}[a.key];
+      return `<div class="rl"><div class="b"><div class="n">${esc(a.title)}</div><div class="m">${esc(a.summary)}</div></div>${native?`<a class="btn gh" onclick="gsvTab('${native}')">Open</a>`:gsvLink(a.href,"Open on Golden's site")}</div>`; }).join("")}</div></div>`;
+  } else if(GSVT==="parts"){
+    const groups=gsvGroups();
+    body=`<div class="card"><h3>Parts lookup</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <div class="fld2" style="min-width:200px;flex:1"><label>Product line</label><select onchange="gsvLine(this.value)">${Object.keys(GSV_LINES).map(k=>`<option value="${k}"${k===GSVLINE?" selected":""}>${esc(GSV_LINES[k])}</option>`).join("")}</select></div>
+      <div class="fld2" style="min-width:200px;flex:1"><label>${GSVLINE==="lift_chair"?"Category":"Model"}</label><select onchange="gsvSub(this.value)"><option value="">All</option>${groups.map(x=>`<option value="${esc(x.k)}"${x.k===GSVSUB?" selected":""}>${esc(x.k)}</option>`).join("")}</select></div>
+      <div class="fld2" style="min-width:200px;flex:2"><label>Search</label><input type="search" value="${esc(GSVQ)}" placeholder="Part # or description" oninput="gsvSearch(this.value)"></div></div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${g.prices_visible?"Your Golden dealer prices, as Golden shows them for your account.":"Golden shows parts prices only to authorized Golden dealers with a verified account."} To order parts, use “Request parts” — orders go straight to Golden.</div>
+      <div id="gsvParts">${gsvPartsRows()}</div><div style="margin-top:10px">${gsvLink(area("parts").href,"Request parts from Golden →","pri")}</div></div>`;
+  } else if(GSVT==="docs"){
+    body=`<div class="card"><h3>Documents &amp; technical publications</h3><div class="rowlist">${(g.documents||[]).map(d=>`<div class="rl"><div class="b"><div class="n">${esc(d.title)}</div></div>${gsvLink(d.url,"Open")}</div>`).join("")}</div></div>`;
+  } else if(GSVT==="videos"){
+    const vids=(g.videos||[]).filter(v=>v.url!==g.playlist);
+    body=`<div class="card"><h3>Golden training videos</h3>${g.playlist?`<div style="margin-bottom:8px">${gsvLink(g.playlist,"Full playlist on YouTube")}</div>`:""}<div class="rowlist">${vids.map(v=>`<div class="rl"><div class="b"><div class="n">${esc(v.title)}</div><div class="m">${esc(v.description||"")}</div></div>${gsvLink(v.url,"Watch")}</div>`).join("")}</div></div>`;
+  } else {
+    body=`<div class="card"><h3>Service requests</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Requests go straight to Golden Technologies — HCPS receives a copy for its records. Golden replies to you directly.</div><div class="rowlist">
+      ${["parts","request","labor"].map(k=>{ const a=area(k); return a.key?`<div class="rl"><div class="b"><div class="n">${esc(a.title)}</div><div class="m">${esc(a.summary)}</div></div>${gsvLink(a.href,"Start on Golden's support site","pri")}</div>`:""; }).join("")}</div>
+      ${(g.routing||[]).length?`<div style="font-size:12px;color:var(--muted);margin-top:10px">Where requests go: ${g.routing.map(r=>`${esc(r.what)} → ${esc(r.to)}`).join(" · ")}</div>`:""}</div>`;
+  }
+  host.innerHTML=`<style>#view-goldsvc .btn{min-height:44px;display:inline-flex;align-items:center}</style><div class="ph"><div><h1>Golden Service &amp; Support</h1><div class="sub">Golden Technologies parts, publications, training and service — for your account</div></div><div><a class="btn gh" onclick="showView('resources')">← Resources</a></div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px">${tabs.map(([k,n])=>`<a class="btn ${k===GSVT?"nv":"gh"}" style="min-height:44px;display:inline-flex;align-items:center" onclick="gsvTab('${k}')">${n}</a>`).join("")}</div>${body}`;
 }
 async function submitLit(){
   const mfrSlug=$("#litMfr").value; const items=[];
@@ -9209,6 +9271,7 @@ function showView(v){
   if(v==="resources")loadResourcesView();
   if(v==="account")loadAccountView();
   if(v==="ads")loadAdsView();
+  if(v==="goldsvc")loadGoldSvc();
 }
 window.showView=showView;
 /* Catalog 4 §8 — Social Ads: the builder lives in /assets/ad-builder.js (loaded the first time the view opens);
@@ -9588,7 +9651,7 @@ async function sfSave(mode){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{apTradeRef,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{apTradeRef,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
