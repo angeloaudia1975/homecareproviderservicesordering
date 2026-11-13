@@ -7776,12 +7776,28 @@ function orderTrackHtml(raw){
     ?`<a class="tnum" href="https://www.ups.com/track?tracknum=${encodeURIComponent(n)}" target="_blank" rel="noopener noreferrer">${esc(n)}</a> <small>(UPS)</small>`
     :`<span class="tnum">${esc(n)}</span> <small style="color:var(--muted)">(carrier not confirmed)</small>`).join(', ');
 }
+/* Shipments (owner 2026-11-13 §4): verified facts only, as HCPS recorded them — one line per shipment. A link only for a
+   known carrier; "Shipped" only with an actual ship date; estimates labelled with who gave them; nothing invented. */
+function shipDate(d){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d||"")); return m?new Date(Date.UTC(+m[1],+m[2]-1,+m[3])).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",timeZone:"UTC"}):""; }
+function orderShipHtml(list){
+  const L=(list||[]).filter(Boolean); if(!L.length) return "";
+  return (L.length>1?`<div class="m" style="font-weight:700">${L.length} shipments</div>`:"")+L.map(x=>{
+    const num=x.tracking_number?(x.url?`<a class="tnum" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.tracking_number)}</a>`:`<span class="tnum">${esc(x.tracking_number)}</span>`):"";
+    const car=x.carrier?` <small>(${esc(x.carrier)})</small>`:(x.tracking_number?' <small style="color:var(--muted)">(carrier not confirmed)</small>':"");
+    const bits=[];
+    if(x.ship_date) bits.push("Shipped "+shipDate(x.ship_date));
+    else if(x.est_ship_date) bits.push("Estimated ship "+shipDate(x.est_ship_date)+" (manufacturer)");
+    if(x.est_delivery_date) bits.push("Estimated delivery "+shipDate(x.est_delivery_date)+" (carrier)");
+    return `<div class="m">${num?"Tracking "+num+car:""}${num&&bits.length?" · ":""}${esc(bits.join(" · "))}${x.note?` <small style="color:var(--muted)">— ${esc(x.note)}</small>`:""}</div>`;
+  }).join("");
+}
 async function loadOrders(){
   if(!HISTORY){ const d=await api(HISTORY_ENDPOINT,{action:"history",limit:300}); if(!d||d.ok===false){ $("#view-orders").innerHTML=`<div class="msg">Couldn't load your orders right now.</div>`; return; } HISTORY=d.orders||[]; }
   const rows=HISTORY.map(o=>{
-    const canTrack=(o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="delivered"&&!o.tracking;
+    const ships=Array.isArray(o.shipments)?o.shipments:[];
+    const canTrack=(o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="delivered"&&!o.tracking&&!ships.some(x=>x.tracking_number);
     /* PO, the tracking number HCPS recorded, and a new-account notice (C3-06) — all shown as text. */
-    const extra=(o.po?`<div class="m">PO ${esc(o.po)}</div>`:"")+(o.tracking?`<div class="m">${orderTrackHtml(o.tracking)}</div>`:((o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="cancelled"?`<div class="m" style="color:var(--muted)">Tracking not yet available.</div>`:""))
+    const extra=(o.po?`<div class="m">PO ${esc(o.po)}</div>`:"")+(ships.length?orderShipHtml(ships)+(o.tracking&&!ships.some(x=>x.tracking_number&&String(o.tracking).toUpperCase().includes(String(x.tracking_number).toUpperCase()))?`<div class="m">${orderTrackHtml(o.tracking)}</div>`:""):o.tracking?`<div class="m">${orderTrackHtml(o.tracking)}</div>`:((o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="cancelled"?`<div class="m" style="color:var(--muted)">Tracking not yet available.</div>`:""))
       +(o.account_hold?`<div class="m" style="color:#9b1c1c;font-weight:700">Waiting for your ${esc(o.manufacturerName)} account — <a onclick="showP360('apply')" style="cursor:pointer;text-decoration:underline">complete the application</a>; HCPS places the order once the account is open</div>`
         :o.account_notice?`<div class="m" style="color:#9b1c1c;font-weight:700">${esc(o.account_notice)} — HCPS will help you open it; your order is not held</div>`:"");
     const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
