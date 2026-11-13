@@ -367,7 +367,10 @@ exports.handler = async (event) => {
     return json(502, { ok: false, recorded: true, status: "email_failed", not_recorded: notRecorded, orders: rec.orders, error: String(err.message || err) });
   }
 
-  const to = recipients(process.env.ORDER_TO);
+  /* Staff routing (owner 2026-11-13, switch opening_orders_v2 on the order server): Lori and the dealer's own rep are added
+     to the HCPS order email. Only HCPS addresses are ever accepted from that answer. */
+  const extra = Array.isArray(rec.notify_to) ? rec.notify_to.map((a) => String(a || "").trim()).filter((a) => /^[A-Za-z0-9._%+-]+@homecareproviderservices\.us$/i.test(a)).slice(0, 5) : [];
+  const to = recipients([process.env.ORDER_TO || DEFAULT_TO].concat(extra).join(","));
   const from = process.env.ORDER_FROM || DEFAULT_FROM;
 
   /* A failed email never undoes a recorded order: it is retried once, then the order is flagged
