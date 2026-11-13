@@ -15,6 +15,6 @@ assert.strictEqual(r.missing.length, 1, 'pedifix synthetic id is not the known o
 r = G.plan(root, [{ manufacturer: 'aline', identity_sha256: id(a) }]);
 assert.ok(r.missing.some(x => x.startsWith('bline ')), 'an unseeded file fails');
 assert.ok(!r.missing.some(x => /golden/.test(x)));
-assert.strictEqual(G.KNOWN_BROKEN.pedifix, '03074e782a068f52');
+assert.deepStrictEqual(G.KNOWN_BROKEN, {}, 'no line is known broken');
 // the real tree: today every listed line except the known PediFix version has its record (registered identities)
 console.log('catalog-identity-gate: ok');

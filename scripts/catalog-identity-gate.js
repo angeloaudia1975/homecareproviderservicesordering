@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const CC = require('../netlify/functions/_catalog_commercial.js');
 
-const KNOWN_BROKEN = { pedifix: '03074e782a068f52' };   // 2026-11-13: repair SQL supabase/pedifix_reseed_by_code.sql, owner runs it
+const KNOWN_BROKEN = {};   // 2026-11-13: PediFix repaired (supabase/pedifix_p3020_record.sql run by the owner); keep empty
 
 function plan(root, stored) {
   const list = JSON.parse(fs.readFileSync(path.join(root, 'public/data/manufacturers.json'), 'utf8'));
