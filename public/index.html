@@ -7333,7 +7333,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .acchip{display:inline-block;font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
   #p360wrap .acchip.ok{background:#e3f5ea;color:#17663a}#p360wrap .acchip.warn{background:#fff4dc;color:#8a5a00}#p360wrap .acchip.none{background:#fde8e8;color:#9b1c1c}
   #p360wrap .acaccts .acrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line-2);flex-wrap:wrap}
-#p360wrap .acfacts{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}#p360wrap .acf{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px;border:1px solid var(--line-2,#e3e7ec)}#p360wrap .acf.y{background:#eaf6ee;color:#1f7a44;border-color:#cfe9d8}#p360wrap .acf.n{background:#f4f5f7;color:#5b6570}#p360wrap .acx{font-size:12px;color:var(--muted);margin-top:3px}
+#p360wrap .acfacts{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}#p360wrap .acf{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px;border:1px solid var(--line-2,#e3e7ec)}#p360wrap .acf.y{background:#eaf6ee;color:#1f7a44;border-color:#cfe9d8}#p360wrap .acf.n{background:#f4f5f7;color:#5b6570}#p360wrap .acf.w{background:#fff7e6;color:#8a5a00;border-color:#f1d9a6}#p360wrap .acx{font-size:12px;color:var(--muted);margin-top:3px}
   #p360wrap .acaccts .acrow:first-child{border-top:0}
   #p360wrap .acrow .acn{flex:1 1 180px;min-width:0;display:flex;flex-direction:column}
   #p360wrap .acrow .acn span{font-size:12px;color:var(--muted)}
@@ -9095,7 +9095,12 @@ function acAccountsHtml(loc){
        application and restriction shown apart. They describe only; nothing here grants or withdraws ordering. */
     const f=x.facts;
     const fact=(ok,yes,no)=>`<span class="acf ${ok?"y":"n"}">${ok?"✓":"–"} ${esc(ok?yes:no)}</span>`;
-    const facts=f?`<div class="acfacts">${fact(!!f.on_file,"Account # on file"+(f.on_file&&f.on_file.source==="head_office"?" (head office)":""),"No account # on file")}${fact(!!f.verified,"Verified by HCPS"+(f.verified&&f.verified.at?" "+f.verified.at:""),"Not yet verified")}${fact(f.authorized,"Authorized to order","Not set up to order")}</div>${f.application?`<div class="acx">Application: ${esc(String(f.application.status).replace(/_/g," "))}</div>`:""}${f.authorized&&f.restriction==="held_until_account"?`<div class="acx">Orders are saved and held until the manufacturer account is open.</div>`:""}`:"";
+    /* owner 2026-11-13 (Integrity Home Medical Germantown): "No account # on file · Not yet verified · Authorized to order"
+       read as a contradiction. With no number there is nothing to verify yet, and an approved line with no number is an
+       OPENING ORDER — the order server saves it and holds it until the manufacturer account is open (orders-api account
+       hold). Labels only: the rules are unchanged. */
+    const held=f&&f.authorized&&f.restriction==="held_until_account";
+    const facts=f?`<div class="acfacts">${fact(!!f.on_file,"Account # on file"+(f.on_file&&f.on_file.source==="head_office"?" (head office)":""),"No account # on file")}${f.on_file?fact(!!f.verified,"Verified by HCPS"+(f.verified&&f.verified.at?" "+f.verified.at:""),"Not yet verified"):""}${held?`<span class="acf w">◷ Opening order only — held until the account is open</span>`:fact(f.authorized,"Authorized to order","Not set up to order")}</div>${f.application?`<div class="acx">Application: ${esc(String(f.application.status).replace(/_/g," "))}</div>`:""}${held?`<div class="acx">You can place an opening order now. HCPS saves it and sends it to the manufacturer once your account is open and its number is on file.</div>`:""}`:"";
     return `<div class="acrow st-${esc(x.status)}"><div class="acn"><b>${esc(x.name)}</b><span>${f?"":esc(x.label)}${x.account_ref?(f?"# ":" · # ")+esc(x.account_ref):""}${x.pending_claim?` · you sent #${esc(x.pending_claim)} — HCPS is reviewing`:""}</span>${facts}</div><div class="acr">${f?"":acChip(x.status)}${act}</div></div>`; }).join("")}</div>`;
 }
 function renderAccount(){ renderAccount0(); lsEntry(); }
