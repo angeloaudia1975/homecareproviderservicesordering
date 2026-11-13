@@ -32,7 +32,12 @@ global.fetch=async(url,o)=>{ const u=String(url);
   if(u.startsWith('https://sb.test/rest/v1/product_overrides')) return {ok:true,json:async()=>(/code=eq\.OV1/.test(u)?[{patch:{msrp:88}}]:[])};
   if(u.startsWith('https://sb.test/rest/v1/custom_products')) return {ok:true,json:async()=>[]};
   if(u==='https://homecareproviderservices.netlify.app/.netlify/functions/dealer-quotes-api'){ global.DQ=(global.DQ||[]).concat([{h:o.headers,b:JSON.parse(o.body)}]);
-    const b=JSON.parse(o.body); const ans=b.code==='CALC1'?{ok:true,price:80,label:'Price',source:'calculated'}:b.code==='REC1'?{ok:true,price:199.99,label:'MSRP',source:'msrp'}:{ok:true,price:null,label:null,source:'none'};
+    const b=JSON.parse(o.body);
+    /* owner 2026-11-12 fixtures — the admin site's answer shape (RP.offerRule / RP.savings run there) */
+    if(b.code==='ES0001'){ const of=Number(b.offer); return {ok:true,json:async()=>({ok:true,price:null,source:'request',reference:null,map:399.95,policy:'map',active:true,offer_check:of>0?(of<399.95?{ok:false,flag:'below_map',map:399.95}:{ok:true,flag:null,map:null}):null,saving:null})}; }
+    if(b.code==='SAV1'){ const of=Number(b.offer); const sv=of>0&&of<399.99?{reference:399.99,offer:of,dollars:Math.round((399.99-of)*100)/100,percent:Math.floor((399.99-of)/399.99*100)}:null;
+      return {ok:true,json:async()=>({ok:true,price:399.99,label:'MSRP',source:'msrp',reference:399.99,map:null,policy:'open',active:true,offer_check:of>0?{ok:true}:null,saving:sv})}; }
+    const ans=b.code==='CALC1'?{ok:true,price:80,label:'Price',source:'calculated'}:b.code==='REC1'?{ok:true,price:199.99,label:'MSRP',source:'msrp'}:{ok:true,price:null,label:null,source:'none'};
     return {ok:true,json:async()=>ans}; }
   if(u==='https://homecareproviderservices.netlify.app/.netlify/functions/golden-proxy'){ global.GPROXY=(global.GPROXY||[]).concat([{h:o.headers,b:JSON.parse(o.body)}]);
     const b=JSON.parse(o.body); const ans=b.code==='PR501-SMA'?{ok:true,price:2499,label:'MSRP',source:'msrp'}:b.code==='GB121'?{ok:true,price:1400,label:'Price',source:'calculated'}:{ok:true,price:null,label:null,source:'none'};
@@ -49,6 +54,25 @@ await t('an approved dealer sends ONE message; reply-to is the dealer, never a c
   const r=await B.handler(ev({action:'email',product:P,to:'customer@x.com',reply_to:'attacker@evil.com'},'good'));
   ok(r.statusCode===200,r.body); ok(sent.length===1); ok(sent[0].to.length===1&&sent[0].to[0]==='customer@x.com'); ok(sent[0].reply_to==='dealer@shop.com',sent[0].reply_to); });
 await t('printing (html) still needs no sign-in and sends nothing',async()=>{ const n=sent.length; const r=await B.handler(ev({action:'html',product:P})); ok(r.statusCode===200&&JSON.parse(r.body).html.includes('Walker')); ok(sent.length===n); });
+/* ---- owner 2026-11-12: reference price, dealer offer, savings, MAP enforcement ---- */
+const H=async(body,tok)=>{ const r=await B.handler(ev(body,tok)); return {code:r.statusCode,j:JSON.parse(r.body)}; };
+const SBP={name:'ErgoSteel Comfort 18"',code:'ES0001',_mfrSlug:'strongback-mobility',manufacturer:'Strongback Mobility'};
+const SVP={name:'Saver',code:'SAV1',_mfrSlug:'ovation-medical'};
+await t('ES0001: the manufacturer advertised price (MAP $399.95) can be the brochure price — labelled Price, never MSRP, no savings',async()=>{
+  const r=await H({action:'html',product:SBP,price_basis:'map'},'good'); ok(r.code===200,JSON.stringify(r.j));
+  ok(r.j.html.includes('$399.95')&&!/suggested retail/.test(r.j.html)&&!/You save/.test(r.j.html),'map basis'); });
+await t('ES0001: an offer below MAP is refused (print and email); at or above MAP it prints with no savings claim',async()=>{
+  let r=await H({action:'html',product:Object.assign({},SBP,{quote_price:350}),price_basis:'once'},'good'); ok(r.code===422&&/\$399\.95/.test(r.j.error),JSON.stringify(r.j));
+  const n=sent.length; r=await H({action:'email',to:'c1@x.com',product:Object.assign({},SBP,{quote_price:350}),price_basis:'once'},'good'); ok(r.code===422&&sent.length===n,'email refused too');
+  r=await H({action:'html',product:Object.assign({},SBP,{quote_price:450}),price_basis:'once'},'good'); ok(r.code===200&&r.j.html.includes('$450.00')&&!/You save/.test(r.j.html)); });
+await t('verified MSRP + lower offer: reference, offer, $ and % savings, expiry; compare off hides them; the page cannot fake MSRP',async()=>{
+  let r=await H({action:'html',product:Object.assign({},SVP,{quote_price:349.99,msrp:9999}),price_basis:'once',offer_expires:'2026-12-31'},'good'); const h=r.j.html;
+  ok(h.includes('$399.99')&&h.includes('$349.99')&&h.includes('$50.00')&&h.includes('12% off MSRP')&&h.includes('Offer valid through December 31, 2026')&&!h.includes('9,999'),h.slice(h.indexOf('class="price"'),h.indexOf('class="price"')+900));
+  r=await H({action:'html',product:Object.assign({},SVP,{quote_price:349.99}),price_basis:'once',compare:false},'good'); ok(!/You save/.test(r.j.html)&&!r.j.html.includes('$399.99'),'compare off');
+  r=await H({action:'html',product:Object.assign({},SVP,{quote_price:399.99}),price_basis:'once'},'good'); ok(!/You save/.test(r.j.html),'equal → no discount');
+  r=await H({action:'html',product:Object.assign({},SVP,{quote_price:450}),price_basis:'once'},'good'); ok(!/You save/.test(r.j.html),'higher → no discount');
+  r=await H({action:'html',product:SVP,price_basis:'msrp'},'good'); ok(r.j.html.includes('$399.99')&&!/You save/.test(r.j.html),'MSRP only'); });
+await t('an offer that cannot be checked (not signed in) is never printed',async()=>{ const r=await H({action:'html',product:Object.assign({},SVP,{quote_price:300}),price_basis:'once'}); ok(r.code===401,r.code); });
 await t('CORS no longer allows every origin',async()=>{ const r=await B.handler({httpMethod:'OPTIONS',headers:{}}); ok(r.headers['Access-Control-Allow-Origin']!=='*',r.headers['Access-Control-Allow-Origin']); });
 await t('the storefront sends the dealer sign-in with brochure calls',async()=>{ const s=require('fs').readFileSync(path.join(__dirname,'..','public','index.html'),'utf8'); ok(/hdr\.authorization='Bearer '\+AUTH\.session\.access_token;   \/\/ email needs the dealer's sign-in/.test(s)); });
 /* ---- C3-07 Stage 4: send limits ---- */

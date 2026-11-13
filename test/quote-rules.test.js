@@ -8,7 +8,7 @@ const MF=JSON.parse(fs.readFileSync(path.join(__dirname,'..','public','data','ma
 let pass=0,fail=0; const t=(n,f)=>{ try{f();pass++;console.log('ok   '+n);}catch(e){fail++;console.log('FAIL '+n+'\n     '+e.message);} };
 function grab(name){ const i=H.indexOf('function '+name+'('); if(i<0) throw new Error('missing '+name);
   let d=0,j=H.indexOf('{',i); for(;j<H.length;j++){ if(H[j]==='{')d++; else if(H[j]==='}'){ d--; if(!d) break; } } return H.slice(i,j+1); }
-const names=['quoteMsrp','quotableLine','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qSaved','qMsrpOk','qMeta','qUnit','qMoney','qLineHtml','qListHtml'];
+const names=['quoteMsrp','quotableLine','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qSaved','qMsrpOk','qMeta','qUnit','qMoney','qLineHtml','qListHtml','qRef','qSaving','qBelowMap'];
 const els={};
 const ctx={ money:v=>'$'+Number(v).toFixed(2), esc:s=>String(s), brandLogoHtml:()=>'', PROFILE:{name:'Dealer X'}, QCUST:{name:'',valid:'30 days'},
   FAVS:new Set(), BRANDING:{logo_url:''}, $:sel=>els[sel]||(els[sel]={innerHTML:''}), Number, isFinite, String, Math };

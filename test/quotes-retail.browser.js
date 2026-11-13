@@ -84,7 +84,7 @@ const layout = page => page.evaluate(() => {
       await t(label + ': default price per line — saved retail, else verified MSRP, else one-time', () => ok(JSON.stringify(lines) === JSON.stringify([['bemis|BE-1', 'msrp'], ['bemis|BE-2', 'once'], ['pedifix|PF-1', 'retail']]), JSON.stringify(lines)));
       await t(label + ': a product with no MSRP cannot choose MSRP; none saved cannot choose My retail', async () => {
         const d = await page.evaluate(() => __T(`[...document.querySelectorAll('.qline select')].map(s => [...s.options].map(o => o.disabled ? 0 : 1).join(''))`));
-        ok(JSON.stringify(d) === JSON.stringify(['101', '001', '111']), JSON.stringify(d)); });
+        ok(JSON.stringify(d) === JSON.stringify(['10011', '00011', '11011']), JSON.stringify(d)); });
       await page.fill('.qline:nth-of-type(2) .qonce', '$80'); await page.dispatchEvent('.qline:nth-of-type(2) .qonce', 'change');
       await page.fill('.qline:nth-of-type(1) input[type=number]', '2'); await page.dispatchEvent('.qline:nth-of-type(1) input[type=number]', 'change');
       await page.fill('#qcn', 'Pat Lee'); await page.fill('#qce', 'pat@cust.example');

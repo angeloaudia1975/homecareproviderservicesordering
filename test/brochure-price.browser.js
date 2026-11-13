@@ -41,7 +41,10 @@ async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } ca
     await t('verified MSRP: MSRP only', () => ok(b.include_msrp === true && b.product.quote_price == null && b.product.msrp === 159.99));
     await pick('once'); await page.fill('#brOnce', '$149.50'); b = await print();
     await t('one-time price: on THIS brochure only, nothing saved', () => { ok(b.product.quote_price === 149.5 && !b.include_msrp); ok(!retailCalls.some(x => x.action === 'retail_set'), 'saved'); });
-    const html = (await B.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify({ action: 'html', product: b.product }) })).body;
+    /* owner 2026-11-12: the server prints a dealer offer only after checking it against the manufacturer's MAP (signed in) —
+       the renderer itself is checked here; the MAP check is covered by test/brochure-auth.test.js */
+    const html = B.renderBrochure(b.product, {});
+    await t('the page sends the price choice (once) and the comparison / expiry options', () => ok(b.price_basis === 'once' && b.compare === true && b.offer_expires === '', JSON.stringify({ p: b.price_basis, c: b.compare, e: b.offer_expires })));
     await t('the brochure shows $149.50 and never the dealer cost ($54.99)', () => { ok(html.includes('$149.50'), 'price'); ok(!html.includes('54.99'), 'cost leaked'); });
     await t('dealer cost is not even sent to the renderer', () => ok(!JSON.stringify(b.product).includes('54.99'), 'cost in payload'));
     await page.evaluate(() => brSaveRetail()); await page.waitForTimeout(800);
