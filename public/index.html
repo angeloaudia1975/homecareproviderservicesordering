@@ -5488,11 +5488,12 @@ async function serverPriceCheck(){
   const orders=hcpsCartOrders();
   if(!orders.length) return {ok:true,changed:false,orders:[]};
   if(typeof STAGING!=="undefined"&&STAGING) return stagingCall("preview_price_check",{orders});
-  if(!AUTH.session||!AUTH.session.access_token) return null;
+  const mg=(typeof mgBearer==='function')?mgBearer():'';   // Manage Dealer: the dealer's own prices, checked on the server for the managed location
+  if(!mg&&(!AUTH.session||!AUTH.session.access_token)) return null;
   try{
-    await ensureFreshSession();
+    if(!mg) await ensureFreshSession();
     const r=await fetch(CONFIG.ORDERS_ENDPOINT,{method:"POST",
-      headers:{"Content-Type":"application/json",authorization:"Bearer "+AUTH.session.access_token},
+      headers:{"Content-Type":"application/json",authorization:"Bearer "+(mg||AUTH.session.access_token)},
       body:JSON.stringify({action:"price_check",orders})});
     const j=await r.json().catch(()=>null);
     return (r.ok&&j&&j.ok)?j:null;
