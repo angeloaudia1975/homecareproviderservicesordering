@@ -4,6 +4,31 @@
   "rule": "The version is the newest release below. A release email to dealers is only ever sent after the President approves that release's email in Connect 360 — a deploy never sends one.",
   "releases": [
     {
+      "version": "2026.11.14",
+      "date": "2026-11-14",
+      "title": "Golden Service & Support portal, dealer-branded brochures",
+      "items": [
+        {
+          "area": "golden-service",
+          "text": "Golden Service & Support now shows the full Golden Dealer Service & Support Portal inside Dealer 360 — troubleshooting guides, the training video library, parts lookup with cart, parts & service requests, service documents and labor rate claims — with your Golden account filled in.",
+          "dealer_facing": true,
+          "help": "golden-service",
+          "switch": "golden_service_v2"
+        },
+        {
+          "area": "brochures",
+          "text": "Product brochures always show your dealership as the seller — your logo, name, address and phone (a branch uses its head office's logo, phone, email or website when it has none of its own).",
+          "dealer_facing": true,
+          "help": "brochures"
+        },
+        {
+          "area": "staff",
+          "text": "HCPS Manage Dealer works in every dealer tool, including Brand & Logo Studio, favorites, reports and requests to HCPS.",
+          "dealer_facing": false
+        }
+      ]
+    },
+    {
       "version": "2026.11.13",
       "date": "2026-11-13",
       "title": "Golden Service & Support, shipment details and a Help Center",
