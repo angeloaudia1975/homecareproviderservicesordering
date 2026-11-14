@@ -23,9 +23,10 @@ global.fetch=async(url,o)=>{ const u=String(url);
   if(u.startsWith('https://sb.test/rest/v1/dealer_document_sends')){ const m=(o&&o.method)||'GET';
     if(m==='PATCH'){ const id=Number((u.match(/id=eq\.(\d+)/)||[])[1]); const r=SENDS.find(x=>x.id===id); if(r) Object.assign(r,JSON.parse(o.body)); return {ok:true,text:async()=>''}; } }
   if(u==='https://api.resend.com/emails'){ if(global.RESEND_DOWN) return {ok:false,status:500,text:async()=>'down'}; sent.push(JSON.parse(o.body)); return {ok:true,text:async()=>''}; }
+  if(u.startsWith('https://sb.test/rest/v1/dealer_preview_tokens')){ const tk=(u.match(/token=eq\.([0-9a-f]+)/)||[])[1]||''; const rows={['c'.repeat(48)]:{dealer_id:'d1',expires_at:new Date(Date.now()+36e5).toISOString()},['e'.repeat(48)]:{dealer_id:'d1',expires_at:new Date(Date.now()-1e3).toISOString()}}; return {ok:true,json:async()=>rows[tk]?[rows[tk]]:[]}; }
   if(u.startsWith('https://sb.test/rest/v1/dealers')){ if(global.DEALERS_DOWN) return {ok:false,status:500,json:async()=>({})};
     const D={d1:{id:'d1',parent_id:'hq',business_name:'Acme <Branch>',address:'2 Side St',city:'Xenia',state:'OH',zip:'45385',phone:'555-0200',email:'br@acme.test',website:null,logo_url:null},hq:{id:'hq',logo_url:'https://cdn.acme.test/logo.png'}};
-    if(global.EVIL_LOGO) D.hq.logo_url=global.EVIL_LOGO; else D.hq.logo_url='https://cdn.acme.test/logo.png';
+    if(global.EVIL_LOGO) D.hq.logo_url=global.EVIL_LOGO; else D.hq.logo_url='https://cdn.acme.test/logo.png'; D.hq.phone='555-0100'; D.hq.email='hq@acme.test'; D.hq.website='acme.test'; if(global.D_PATCH) for(const k in global.D_PATCH) Object.assign(D[k],global.D_PATCH[k]);
     const id=(u.match(/id=eq\.([^&]+)/)||[])[1]; const row=D[id]; if(!row) return {ok:true,json:async()=>[]};
     const cols=((u.match(/select=([^&]+)/)||[])[1]||'').split(','); const o2={}; for(const c of cols) o2[c]=row[c]; return {ok:true,json:async()=>[o2]}; }
   if(u.startsWith('https://sb.test/rest/v1/manufacturer_meta')){ if(global.META_DOWN) return {ok:false,status:500,json:async()=>({})}; return {ok:true,json:async()=>(/slug=eq\.bemis/.test(u)?[{record_authoritative:true}]:[{record_authoritative:false}])}; }
@@ -175,5 +176,23 @@ await t('manage: no begin record → no email (503)',async()=>{ SENDS.length=0; 
 await t('staff View as Dealer: the MAP choice works — read through the preview token (default_retail only), labelled MAP',async()=>{ global.DQ=[];
   const r=await res(SBP,{action:'html',price_basis:'map'},null,{'x-hcps-preview':'c'.repeat(48)}); ok(r.code===200&&r.j.html.includes('$399.95')&&/advertised price \(MAP\)/.test(r.j.html),JSON.stringify(r.j).slice(0,160));
   ok(DQ[0]&&DQ[0].h.authorization==='Bearer preview:'+'c'.repeat(48),'asked with the preview token'); });
+/* ---- owner 2026-11-14: the dealer is the seller on every dealer brochure ---- */
+await t('View as Dealer: the brochure is branded for the previewed location (logo, name, address, phone) — never HCPS as seller',async()=>{
+  const r=await B.handler(Object.assign(ev({action:'html',product:P},null),{headers:{'x-hcps-preview':'c'.repeat(48)}})); const h=JSON.parse(r.body).html;
+  ok(h.includes('Presented by <b>Acme &lt;Branch&gt;</b>')&&h.includes('https://cdn.acme.test/logo.png')&&h.includes('2 Side St')&&h.includes('Xenia, OH 45385')&&h.includes('555-0200'),'brand: '+h.slice(-900));
+  ok(!h.includes('Provided by HomeCare Provider Services'),'HCPS not the seller'); });
+await t('View as Dealer: an expired or unknown preview token is not a dealer (HCPS handout), and a preview can never email',async()=>{
+  for(const pv of ['e'.repeat(48),'f'.repeat(48)]){ const h=JSON.parse((await B.handler(Object.assign(ev({action:'html',product:P},null),{headers:{'x-hcps-preview':pv}}))).body).html; ok(!h.includes('Presented by'),pv[0]); }
+  const n=sent.length; const r=await B.handler(Object.assign(ev({action:'email',product:P,to:'c@x.com'},null),{headers:{'x-hcps-preview':'c'.repeat(48)}})); ok(r.statusCode===401&&sent.length===n,'no email '+r.statusCode); });
+await t('a branch that has not filled in its phone / email / website / logo uses its head office\'s — its own name and address stay',async()=>{
+  global.D_PATCH={d1:{phone:null,email:null}}; const h=JSON.parse((await B.handler(ev({action:'html',product:P},'good'))).body).html; global.D_PATCH=null;
+  ok(h.includes('555-0100')&&h.includes('hq@acme.test')&&h.includes('acme.test')&&h.includes('2 Side St')&&h.includes('Acme &lt;Branch&gt;'),'fallback'); });
+await t('a dealer with no logo anywhere: a clear text identity, no HCPS logo as the seller',async()=>{
+  global.D_PATCH={hq:{logo_url:null}}; const h=JSON.parse((await B.handler(ev({action:'html',product:Object.assign({},P,{hcps_logo:'https://hcps.test/logo.png'})},'good'))).body).html; global.D_PATCH=null;
+  ok(h.includes('Presented by <b>Acme &lt;Branch&gt;</b>')&&!h.includes('class="dlogo"')&&!h.includes('https://hcps.test/logo.png'),'text identity'); });
+await t('the user\'s own offer wording, price, savings and expiry are printed as entered (branding changes nothing else)',async()=>{
+  const plain=JSON.parse((await B.handler(ev({action:'html',product:P},null))).body).html, br=JSON.parse((await B.handler(ev({action:'html',product:P},'good'))).body).html;
+  const body=x=>x.replace(/<title>[^<]*<\/title>/,'').replace(/<div class="mhead">[\s\S]*?<\/div>\s*<\/div>/,'').replace(/<div class="foot[\s\S]*$/,'').replace(/<div class="spacer">[\s\S]*?<\/div>/,'');
+  ok(body(plain)===body(br),'only the header / footer differ'); });
 console.log(`brochure auth: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
 })();

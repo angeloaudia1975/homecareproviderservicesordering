@@ -125,7 +125,7 @@ function renderBrochure(p, opts) {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${name} — HomeCare Provider Services</title>
+<title>${name} — ${dName || 'HomeCare Provider Services'}</title>
 <style>
   @page { size: Letter; margin: 0.5in; }
   *{box-sizing:border-box}
@@ -340,6 +340,22 @@ async function manageDealer(event) {
   if (!j || !j.ok || !j.location || !j.location.id) return { refused: (j && j.message) || 'Your Manage Dealer session has ended.' };
   return { dealer_id: j.location.id, email: '', manage: { token: m[1], staff: j.staff || {}, can: (k) => (j.actions || []).some((x) => x && x.key === k) } };
 }
+/* View as Dealer (owner 2026-11-14): HCPS staff's read-only preview of a dealer location brands the brochure for that
+   location too (the token is checked here against dealer_preview_tokens: unexpired, names one dealer). It can never
+   email — sending stays a signed-in dealer or a Manage Dealer session. */
+async function previewDealer(event) {
+  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE; if (!url || !key) return null;
+  const h = event.headers || {};
+  const a = String(h.authorization || h.Authorization || '').match(/^Bearer\s+preview:([0-9a-f]{48})$/i);
+  const pv = a ? a[1] : String(h['x-hcps-preview'] || h['X-HCPS-Preview'] || '').trim();
+  if (!/^[0-9a-f]{48}$/i.test(pv)) return null;
+  try {
+    const r = await fetch(`${url}/rest/v1/dealer_preview_tokens?token=eq.${encodeURIComponent(pv)}&select=dealer_id,expires_at`, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+    if (!r.ok) return null; const t = (await r.json())[0];
+    if (!t || !t.dealer_id || !t.expires_at || !(new Date(t.expires_at).getTime() > Date.now())) return null;
+    return { dealer_id: t.dealer_id, email: '', preview: true };
+  } catch (e) { return null; }
+}
 async function approvedDealer(event) {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE;
   const auth = (event.headers && (event.headers.authorization || event.headers.Authorization)) || '';
@@ -372,7 +388,14 @@ async function dealerBrand(dealerId) {
     const d = await get(`dealers?id=eq.${id}&select=id,parent_id,business_name,address,city,state,zip,phone,email`);
     const self = d && d[0]; if (!self || !self.business_name) return null;
     for (const col of ['website', 'logo_url']) { const r = await get(`dealers?id=eq.${id}&select=${col}`); self[col] = (r && r[0] && r[0][col]) || null; }
-    if (!self.logo_url && self.parent_id) { const r = await get(`dealers?id=eq.${encodeURIComponent(self.parent_id)}&select=logo_url`); self.logo_url = (r && r[0] && r[0].logo_url) || null; }
+    /* a branch keeps ITS OWN name and address; what it has not filled in (logo, phone, email, website) comes from its head
+       office — never from HCPS (owner 2026-11-14: the dealer is always the seller on a dealer brochure) */
+    if (self.parent_id && ['logo_url', 'phone', 'email', 'website'].some((k) => !self[k])) {
+      const pid = encodeURIComponent(self.parent_id);
+      const r = await get(`dealers?id=eq.${pid}&select=phone,email`); const hq = (r && r[0]) || {};
+      for (const col of ['website', 'logo_url']) { const x = await get(`dealers?id=eq.${pid}&select=${col}`); hq[col] = (x && x[0] && x[0][col]) || null; }
+      for (const k of ['logo_url', 'phone', 'email', 'website']) if (!self[k] && hq[k]) self[k] = hq[k];
+    }
     return self;
   } catch (e) { console.error('brochure brand lookup failed', e && e.message); return null; }
 }
@@ -445,7 +468,8 @@ exports.handler = async (event) => {
   const mgr = await manageDealer(event);
   if (mgr && mgr.refused) return json(401, { ok: false, error: mgr.refused });
   const who = mgr || await approvedDealer(event);
-  const brand = who ? await dealerBrand(who.dealer_id) : null;
+  const viewer = who ? null : await previewDealer(event);   // View as Dealer: branded, never sends
+  const brand = (who || viewer) ? await dealerBrand((who || viewer).dealer_id) : null;
   if (mgr && brand && EMAIL_RE.test(String(brand.email || ''))) who.email = String(brand.email).trim();   // customer replies reach the dealer, never HCPS staff
   const html = renderBrochure(product, Object.assign({ include_msrp: !!b.include_msrp, dealer: brand }, renderOpts));
 
