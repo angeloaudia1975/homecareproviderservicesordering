@@ -2,8 +2,7 @@
    nothing reaches HCPS, Golden or Supabase). golden-proxy "service_catalog" is answered with Golden's REAL extracted support
    data (golden-dealer-portal lib/service-catalog.js + service-catalog-data.json) passed through the admin repo's REAL proxy
    cleaner. At 390 / 768 / 1280: the Resources row appears only when the proxy answers enabled; the six areas; parts lookup
-   by line / model / search with prices only when visible; documents incl. Golden's Dropbox; videos; service requests link to
-   Golden's site (#parts / #request / #labor) — nothing is sent from the page; no horizontal scroll, 44 px tabs; no images.
+   is the original portal (test/golden-support-parity.browser.js compares it area by area); no horizontal scroll, 44 px buttons.
    GOLDEN_REPO=… ADMIN_REPO=… PLAYWRIGHT_MODULE=… node test/golden-service.browser.js */
 const path = require('path');
 const { chromium, open } = require('./_shop-harness.js');
@@ -53,64 +52,17 @@ const txt = (page) => page.evaluate(() => document.querySelector('#view-goldsvc'
       const st = { calls: [], pv: true }; const { ctx, page } = await open(browser, w, h, {}); await fake(page, st);
       await page.evaluate(() => showP360('resources'));
       await page.waitForSelector('#gsvcRow .rl', { timeout: 15000 });
-      await t(label + ': Resources shows Golden Service & Support; opens the native view with six areas', async () => {
-        await page.click('#gsvcRow .btn'); await page.waitForFunction(() => /Six support areas/.test(document.querySelector('#view-goldsvc').innerText));
-        const x = await txt(page);
-        for (const a of ['Troubleshooting', 'Training videos', 'Parts lookup & order', 'Service / RMA request', 'Documents', 'Warranty labor claim']) ok(x.includes(a), a);
+      await t(label + ': Resources shows Golden Service & Support; it opens the original portal (six areas + My Requests) inside Dealer 360 — no iframe, no redirect', async () => {
+        await page.click('#gsvcRow .btn');
+        await page.waitForFunction(() => { const x = document.querySelector('#gsvHost'); return x && x.shadowRoot && x.shadowRoot.querySelectorAll('.tab-btn').length === 7; }, null, { timeout: 15000 });
+        const tabs = await page.evaluate(() => [...document.querySelector('#gsvHost').shadowRoot.querySelectorAll('.tab-btn')].map(b => b.textContent.trim()));
+        for (const a of ['Troubleshoot', 'Training Videos', 'Parts Lookup & Order', 'Parts & Service Request', 'Service Documents', 'Labor Rate Request', 'My Requests']) ok(tabs.some(x => x.includes(a)), a);
+        ok(!(await page.$('#view-goldsvc iframe')), 'iframe'); ok(/goldsvc|hcpsonlineordering|deploy-preview/.test(page.url()) && !/goldentechsupport/.test(page.url()), 'stayed in Dealer 360');
         ok(st.calls.filter(c => c === 'service_catalog').length === 1, 'one call, cached');
-        const L = await layout(page); ok(L.overflow <= 1, 'overflow ' + L.overflow); ok(!L.small.length, 'small ' + L.small); ok(L.imgs === 0, 'no images');
-      });
-      await t(label + ': parts lookup — lift chair by category, scooter by model, search, dealer prices shown', async () => {
-        await page.evaluate(() => gsvTab('parts'));
-        let x = await txt(page); ok(/Showing 300 of 228|Dealer price/.test(x) || /Dealer price/.test(x), 'price column'); ok(/Your Golden dealer prices/.test(x), 'price note');
-        const rows = await page.$$eval('#gsvParts tbody tr', r => r.length); ok(rows === 228, 'all 228 lift-chair parts: ' + rows);
-        await page.selectOption('#view-goldsvc select', 'scooter'); await page.waitForTimeout(100);
-        const models = await page.$$eval('#view-goldsvc select', s => s[1].options.length - 1); ok(models >= 16, 'scooter models ' + models);
-        x = await txt(page); ok(/Showing 300 of \d{4}/.test(x), 'capped list with count');
-        const first = await page.$eval('#gsvParts tbody tr td', td => td.textContent);
-        await page.fill('#view-goldsvc input[type=search]', first); await page.waitForTimeout(100);
-        const hit = await page.$$eval('#gsvParts tbody tr td:first-child', tds => tds.map(t => t.textContent));
-        ok(hit.length >= 1 && hit.every(h => h.toLowerCase().includes(first.toLowerCase()) || true), 'search');
-        const L = await layout(page); ok(L.overflow <= 1, 'overflow ' + L.overflow); if (w < 1024) ok(!L.tiny, 'inputs < 16px on phones / tablets');
-      });
-      await t(label + ': documents (6 PDFs + ordering guide + Golden Dropbox), videos, requests go to Golden', async () => {
-        await page.evaluate(() => gsvTab('docs'));
-        const docs = await page.$$eval('#view-goldsvc a[target=_blank]', a => a.map(x => x.href)); ok(docs.length === 8, 'docs ' + docs.length);
-        ok(docs.some(u => /dropbox\.com\/scl\/fo\//.test(u)) && docs.every(u => u.startsWith('https://')), 'links');
-        await page.evaluate(() => gsvTab('videos')); const v = await page.$$eval('#view-goldsvc a[target=_blank]', a => a.map(x => x.href));
-        ok(v.length >= 48 && v.every(u => /^https:\/\/www\.youtube\.com\//.test(u)), 'videos ' + v.length);
-        await page.evaluate(() => gsvTab('requests')); const r = await page.$$eval('#view-goldsvc a[target=_blank]', a => a.map(x => x.href));
-        ok(['#parts', '#request', '#labor'].every(k => r.includes('https://goldentechsupport.netlify.app/' + k)), 'request deep links ' + r);
-        const x = await txt(page); ok(/liftchairparts@goldentech\.com/.test(x) && /credit@goldentech\.com/.test(x), 'routing shown');
-        ok(!st.calls.some(c => c !== 'service_catalog' && /submit|send/.test(c)), 'nothing sent');
+        const L = await layout(page); ok(L.overflow <= 1, 'overflow ' + L.overflow); ok(!L.small.length, 'small ' + L.small);
       });
       await ctx.close();
     }
-    { const st = { calls: [], pv: true, submit: true, failFirst: true }; const { ctx, page } = await open(browser, 390, 844, {}); await fake(page, st);
-      await page.evaluate(() => showP360('goldsvc')); await page.waitForFunction(() => /Six support areas/.test(document.querySelector('#view-goldsvc').textContent));
-      await t('Stage 3 (phone): add a part, send to Golden — no prices or identity from the browser, retry reuses the same key, case history shows it', async () => {
-        await page.evaluate(() => gsvTab('parts')); await page.click('#gsvParts tbody tr:first-child a.btn'); 
-        ok(/added to your parts request/.test(await txt(page)), 'added');
-        await page.evaluate(() => gsvTab('requests')); ok(/Order parts \(1 in your request\)/.test(await txt(page)), 'count');
-        await page.evaluate(() => gsvForm('parts'));
-        for (const [id, v] of [['gsvName', 'Pat'], ['gsvEmail', 'pat@d.com'], ['gsvAddr', '1 Main St'], ['gsvCity', 'Gallatin'], ['gsvState', 'TN'], ['gsvZip', '37066']]) await page.fill('#' + id, v);
-        await page.setInputFiles('#gsvFiles', { name: 'photo.jpg', mimeType: 'image/jpeg', buffer: Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(100, 1)]) });
-        await page.click('#view-goldsvc a:has-text("Send to Golden")'); await page.waitForTimeout(300);
-        ok(/will not be sent twice/.test(await txt(page)), 'honest failure message');
-        await page.click('#view-goldsvc a:has-text("Send to Golden")'); await page.waitForFunction(() => /Case history/.test(document.querySelector('#view-goldsvc').textContent) && /GS-0A1B2C3D/.test(document.querySelector('#view-goldsvc').textContent));
-        ok(st.submits.length === 2 && st.submits[0].idempotency_key === st.submits[1].idempotency_key && /^[0-9a-f-]{36}$/.test(st.submits[0].idempotency_key), 'same key on retry');
-        const r = st.submits[1].request; ok(r.kind === 'parts' && r.items.length === 1 && !('price' in r.items[0]) && !('dealer_name' in r) && r.attachments.length === 1, 'clean request');
-        const x = await txt(page); ok(/Sent to Golden — case GS-0A1B2C3D/.test(x) && /liftchairparts@goldentech\.com/.test(x), 'history');
-        const L = await layout(page); ok(L.overflow <= 1, 'overflow ' + L.overflow); ok(!L.tiny, 'inputs 16px on phones');
-      });
-      await ctx.close(); }
-    { const st = { calls: [], pv: false }; const { ctx, page } = await open(browser, 1280, 900, {}); await fake(page, st);
-      await page.evaluate(() => showP360('goldsvc')); await page.waitForFunction(() => /Six support areas/.test(document.querySelector('#view-goldsvc').innerText));
-      await t('prices hidden by Golden: no price column, explanation shown', async () => {
-        await page.evaluate(() => gsvTab('parts')); const x = await txt(page);
-        ok(!/Dealer price/.test(x) && !/\$\d/.test(x), 'no price'); ok(/only to authorized Golden dealers/.test(x), 'note: ' + x.slice(0, 600));
-      });
-      await ctx.close(); }
   } finally { await browser.close(); }
   console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
 })();

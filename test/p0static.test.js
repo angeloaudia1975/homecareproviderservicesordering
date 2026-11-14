@@ -16,7 +16,7 @@ const walk = d => fs.readdirSync(d, { withFileTypes: true }).flatMap(e => e.isDi
 const MONEY = /\$\s?\d[\d,]*(?:\.\d{2})?/;
 /* Dollar figures that are not wholesale prices: the empty cart total, freight thresholds that the
    storefront states to every dealer (manufacturers.json / Corsicana LTL), and "$0" wording. */
-const ALLOWED = new Set(['$0.00', '$0', '$1', '$2,500', '$15']);   // $1 = a regex back-reference in the page's code
+const ALLOWED = new Set(['$0.00', '$0', '$1', '$2,500', '$15', '$25', '$45']);   // $1 = a regex back-reference in the page's code; $25–$45 = Golden's published shipping estimate on its support portal
 /* Freight TERMS (manufacturers.json `freight`, shown to every dealer at checkout) are terms, not
    wholesale prices; whether they should also leave the public file is an owner decision (see
    docs/security/P0_PRICE_EXPOSURE.md). Every other path is scanned. */

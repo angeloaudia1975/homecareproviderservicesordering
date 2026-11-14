@@ -9,7 +9,7 @@ const path = require('path'), fs = require('fs');
 const PUB = path.join(__dirname, '..', 'public');
 const H = JSON.parse(fs.readFileSync(path.join(PUB, 'data', 'help.json'), 'utf8'));
 const R = JSON.parse(fs.readFileSync(path.join(PUB, 'data', 'releases.json'), 'utf8'));
-const PAGE = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
+const PAGE = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8') + ['gsv.html', 'gsv.js'].map((f) => fs.readFileSync(path.join(PUB, 'golden-support', f), 'utf8')).join('');   // the Golden portal the page loads
 let pass = 0, fail = 0;
 const ok = (c, m) => { if (!c) throw new Error(m); };
 async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } catch (e) { fail++; console.log('FAIL ' + n + '\n     ' + String(e && e.message).slice(0, 400)); } }

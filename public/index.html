@@ -9004,12 +9004,86 @@ async function gsvcProbe(){ const g=await gsvcLoad(); const row=$("#gsvcRow"); i
   row.innerHTML='<div class="rl"><div class="b"><div class="n">Golden Service &amp; Support</div><div class="m">Parts lookup, technical publications, training videos &amp; service requests</div></div><a class="btn pri" onclick="showView(\'goldsvc\')">Open</a></div>'; }
 const GSV_LINES={lift_chair:"Lift chairs & recliners",scooter:"Scooters",power_chair:"Power chairs"};
 function gsvLink(u,label,cls){ return u?`<a class="btn ${cls||"gh"}" href="${esc(u)}" target="_blank" rel="noopener">${esc(label)}</a>`:""; }
+/* ===== ORIGINAL PORTAL PARITY (owner 2026-11-14). Dealer 360 shows the owner's approved Golden Dealer Service & Support
+   Portal itself — its markup, CSS and JavaScript (built from golden-dealer-portal portals/support/index.html by
+   scripts/build-golden-support.js into /golden-support/) — inside a shadow root, so neither page's styles reach the other.
+   Dealer 360 supplies only: the signed-in parts data (Golden's /v1/service/catalog — dealer prices only when Golden's
+   verified link allows), the dealer's details, the secure case submission (service_submit: signed delegation, one
+   idempotency key per attempt, Golden's own department routing) and a "My Requests" tab (case history). ===== */
+let GSVMOD=null;
+function gsvLoadScript(src){ return new Promise((res,rej)=>{ if(window.GSV_MOUNT) return res(); const s=document.createElement("script"); s.src=src; s.onload=()=>res(); s.onerror=()=>rej(new Error("script")); document.head.appendChild(s); }); }
+async function gsvAssets(){
+  if(GSVMOD) return GSVMOD;
+  const get=u=>fetch(u,{cache:"no-cache"}).then(r=>{ if(!r.ok) throw new Error(u); return r.text(); });
+  const [css,html]=await Promise.all([get("/golden-support/gsv.css"),get("/golden-support/gsv.html"),gsvLoadScript("/golden-support/gsv.js")]);
+  GSVMOD={css,html}; return GSVMOD;
+}
+/* Golden's catalog answer → the original portal's PARTS_DATA shape. No price from Golden = 0 ("Call"). */
+function gsvPartsData(g){
+  const P=(g&&g.parts)||{}, pr=x=>(typeof x.dealer_price==="number"?Number(x.dealer_price):0);
+  const lift=[]; (P.lift_chair||[]).forEach(c=>(c.parts||[]).forEach(x=>lift.push({cat:c.category,item:x.part,desc:x.description,price:pr(x),n:x.n})));
+  if(lift.every(x=>Number.isInteger(x.n))) lift.sort((a,b)=>a.n-b.n);   // the original portal's own order (Golden sends each part's position)
+  const byModel=l=>{ const o={}; (l||[]).forEach(m=>{ o[m.model]=(m.parts||[]).map(x=>({part:x.part,desc:x.description,price:pr(x)})); }); return o; };
+  return {lift_chair:lift,scooter:byModel(P.scooter),power_chair:byModel(P.power_chair)};
+}
+const GSV_LINE_OF={"Power Lift Recliner":"lift_chair","Mobility Scooter":"scooter","Power Wheelchair":"power_chair"};
+const GSV_DONE={parts:"orderSuccessMsg",service:"successMsg",labor:"laborSuccessMsg"};
+let GSVKEYS={}, GSVROOT=null;
+/* the original form's fields → Golden's case request. Dealer name and Golden account come from Golden's own record. */
+function gsvRequest(d){
+  const urg=/^urgent/i.test(d.urgency||"")?"Urgent":/^emergency/i.test(d.urgency||"")?"Emergency":"Standard";
+  const notes=[d.purchase_order_number?"PO: "+d.purchase_order_number:"",d.fax?"Fax: "+d.fax:"",/^urgent/i.test(d.urgency||"")?"Urgency: "+d.urgency:"",d.additional_notes||""].filter(Boolean).join("\n");
+  const r={kind:d.type,contact:{name:d.contact_name||"",email:(d.type==="labor"?d.contact_email:d.email)||"",phone:d.phone||"",preference:d.contact_pref||""},urgency:urg,notes};
+  if(d.type!=="labor") r.ship_to={attn:d.ship_attn||"",address:d.ship_address||"",city:d.ship_city||"",state:String(d.ship_state||"").toUpperCase(),zip:d.ship_zip||""};
+  if(d.type==="parts"){ r.line=GSV_LINE_OF[d.order_product_category]||""; r.items=(d.items||[]).map(c=>({part:c.partNum,model:r.line==="lift_chair"?"":c.model,qty:c.qty})); r.model=d.model_number||""; r.serial=d.serial_number||""; }
+  if(d.type==="service") Object.assign(r,{request_type:d.request_type||"",product_category:d.product_category||"",model:d.model_number||"",serial:d.serial_number||"",purchase_date:d.purchase_date||"",issue:d.issue_description||"",parts:(d.parts||[]).map(x=>({num:x.num,desc:x.desc,qty:Number(x.qty)||1}))});
+  if(d.type==="labor") Object.assign(r,{golden_auth_number:d.golden_auth_number||"",preauth_amount:Number(d.preauth_amount),purchase_date:d.purchase_date||"",end_user_name:d.end_user_name||"",serial:d.serial_number||"",payment_pref:d.payment_pref||"",repair_description:d.repair_description||"",claim_date:d.claim_date||""});
+  r.attachments=(d.attachments||[]).map(a=>({filename:a.filename,content:a.content}));
+  return r;
+}
+async function gsvSendCase(d){
+  if(GSVS!==true) return {ok:false,error:(window.__PREVIEW__&&window.__PREVIEW__.token)?"View as Dealer cannot send requests to Golden.":"Sending requests to Golden from Dealer 360 is not switched on yet. Use Golden's support site (goldentechsupport.netlify.app) or call Golden Tech Support at 1-800-624-6374"};
+  const req=gsvRequest(d), k=d.type;
+  if(!GSVKEYS[k]) GSVKEYS[k]=gsvUuid();   // one key per attempt, kept until Golden answers: a retry is the same case, never a second email
+  const j=await goldenCall("service_submit",{idempotency_key:GSVKEYS[k],request:req});
+  if(!j) return {ok:false,error:"It could not be confirmed just now. Press the button again — it will not be sent twice"};
+  if(j.accepted!==true){ if(j.reason==="idempotency_conflict") GSVKEYS[k]=null;
+    return {ok:false,error:j.reason==="invalid"?("please check the form — "+(j.detail||"something is missing")):j.reason==="not_linked"?"Golden has not verified your dealership's link yet. Use Golden's support site for now":j.reason==="idempotency_conflict"?"This request changed after it was sent. Press the button again to send the changed request":"Golden Service & Support is not available just now"}; }
+  if(!(j.email&&j.email.status==="sent")) return {ok:false,error:"Saved as case "+j.case_no+", but the email to Golden did not go through. Press the button again to retry this same case — it will not be sent twice"};
+  GSVKEYS[k]=null;
+  const box=GSVROOT&&GSVROOT.getElementById(GSV_DONE[k]); if(box){ const x=document.createElement("div"); x.className="gsv-case"; x.style.cssText="margin-top:6px;font-weight:700"; x.textContent="Golden case "+j.case_no+(j.duplicate?" (already sent earlier — not sent twice)":"")+" · sent to "+(j.routed_to||"Golden"); box.appendChild(x); }
+  gsvSubmitProbe().then(()=>gsvHistory());
+  return {ok:true,routedTo:j.routed_to||null};
+}
+function gsvHistory(){
+  const el=GSVROOT&&GSVROOT.getElementById("gsvHistory"); if(!el) return;
+  if(GSVS!==true){ el.innerHTML='<p style="color:var(--slate);font-size:14px">Requests sent from Dealer 360 appear here once sending to Golden is switched on for your account.</p>'; return; }
+  if(!GSVCASES.length){ el.innerHTML='<p style="color:var(--slate);font-size:14px">No requests sent from Dealer 360 yet.</p>'; return; }
+  el.innerHTML='<table class="case-table"><thead><tr><th>Case</th><th>Request</th><th>Sent</th><th>Status</th><th>To</th></tr></thead><tbody>'+GSVCASES.map(c=>`<tr><td data-l="Case"><b>${esc(c.case_no)}</b></td><td data-l="Request">${esc(c.what||c.kind||"")}${c.serial?" · S/N "+esc(c.serial):""}${c.attachments?" · "+c.attachments+" attachment"+(c.attachments===1?"":"s"):""}</td><td data-l="Sent">${esc(String(c.created_at||"").slice(0,10))}</td><td data-l="Status"><span class="case-status ${esc(c.status||"")}">${esc(GSV_STATUS[c.status]||c.status||"")}</span></td><td data-l="To">${esc(c.routed_to||"")}</td></tr>`).join("")+'</tbody></table>';
+}
+/* the dealer's own details fill the original forms; dealer name and Golden account # are Golden's record (read-only) */
+function gsvPrefill(root){
+  const d=AUTH.dealer||(window.__PREVIEW__&&window.__PREVIEW__.dealer)||{};
+  const set=(name,v,ro)=>root.querySelectorAll(`[name="${name}"]`).forEach(el=>{ if(v&&!el.value) el.value=v; if(ro){ el.readOnly=true; el.classList.add("gsv-ro"); el.title="From your verified Golden account"; } });
+  set("dealer_name",d.name||d.business_name||"",true);
+  set("account_number","Verified by Golden on your account",true);
+  set("contact_name",d.contact_name||""); set("email",d.email||""); set("contact_email",d.email||""); set("phone",d.phone||"");
+  set("ship_address",d.address||""); set("ship_city",d.city||""); set("ship_zip",d.zip||"");
+  root.querySelectorAll('[name="ship_state"]').forEach(el=>{ if(d.state&&!el.value) el.value=String(d.state).toUpperCase(); });
+}
 async function loadGoldSvc(){
   const host=$("#view-goldsvc"); host.innerHTML='<div class="msg">Loading Golden Service &amp; Support…</div>';
   const g=await gsvcLoad();
   if(!g||g.off){ host.innerHTML='<div class="ph"><div><h1>Golden Service &amp; Support</h1></div><div><a class="btn gh" onclick="showView(\'resources\')">← Resources</a></div></div><div class="card"><div class="msg">Golden Service &amp; Support is not available for your account just now.</div></div>'; return; }
   if(GSVS===null) await gsvSubmitProbe();
-  renderGoldSvc();
+  let A=null; try{ A=await gsvAssets(); }catch(e){ A=null; }
+  if(!A||!window.GSV_MOUNT){ host.innerHTML='<div class="ph"><div><h1>Golden Service &amp; Support</h1></div><div><a class="btn gh" onclick="showView(\'resources\')">← Resources</a></div></div><div class="card"><div class="msg">Golden Service &amp; Support could not be loaded just now — please try again, or use <a href="https://goldentechsupport.netlify.app/" target="_blank" rel="noopener">Golden\'s support site</a>.</div><a class="btn pri" onclick="loadGoldSvc()">Try again</a></div>'; return; }
+  const pv=g.prices_visible===true, send=GSVS===true;
+  host.innerHTML=`<div class="ph"><div><h1>Golden Service &amp; Support</h1><div class="sub">${pv?"Your Golden dealer prices, as Golden shows them for your account.":"Golden shows parts prices only to authorized Golden dealers with a verified account."} ${send?"Requests go straight to Golden under your verified Golden account — you get a case number.":"Requests: use Golden's support site or call Golden Tech Support until sending from Dealer 360 is switched on."}</div></div><div><a class="btn gh" style="min-height:44px;display:inline-flex;align-items:center" onclick="showView('resources')">← Resources</a></div></div><div id="gsvHost"></div>`;
+  const root=$("#gsvHost").attachShadow({mode:"open"}); GSVROOT=root;
+  root.innerHTML=`<style>${A.css}</style>${A.html}`;
+  try{ window.GSV_MOUNT(root,{parts:gsvPartsData(g)},{send:gsvSendCase}); }catch(e){ console.error("[gsv mount]",e); }
+  gsvPrefill(root); gsvHistory();
 }
 function gsvTab(t){ GSVT=t; if(t!=="history") GSVMSG=""; renderGoldSvc(); }
 function gsvLine(v){ GSVLINE=v; GSVSUB=""; renderGoldSvc(); }

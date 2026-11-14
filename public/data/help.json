@@ -133,7 +133,7 @@
       "id": "brochures",
       "area": "quotes",
       "title": "Printing a product brochure",
-      "updated": "2026-11-13",
+      "updated": "2026-11-14",
       "open": "shop",
       "summary": "Print a customer-ready brochure for a product with your own retail price.",
       "steps": [
@@ -144,7 +144,8 @@
       ],
       "notes": [
         "A price below a manufacturer's minimum advertised price is not allowed on a brochure.",
-        "An MSRP is printed only when the manufacturer publishes one — HCPS never works one out from your cost; MAP is always labelled MAP."
+        "An MSRP is printed only when the manufacturer publishes one — HCPS never works one out from your cost; MAP is always labelled MAP.",
+        "Your dealership is always the seller on a brochure: it shows your logo, business name, address and phone. A branch without its own logo, phone, email or website uses its head office's. If no logo is on file, your business name is printed in its place."
       ],
       "ui_checks": [
         "Print Brochure",
@@ -204,28 +205,28 @@
       "id": "golden-service",
       "area": "golden-service",
       "title": "Golden Service & Support",
-      "updated": "2026-11-13",
+      "updated": "2026-11-14",
       "open": "goldsvc",
-      "summary": "For Golden Technologies dealers: parts lookup, technical publications, training videos and service requests, in one place.",
+      "summary": "For Golden Technologies dealers: the Golden Dealer Service & Support Portal — troubleshooting, training videos, parts lookup and ordering, parts & service requests, service documents and labor rate claims — inside Dealer 360.",
       "steps": [
-        "Open Resources and choose Golden Service & Support (shown when it is available for your account).",
-        "Parts lookup: choose the product line, then a category or model, or search by part number.",
-        "Documents and Training videos open Golden's own publications and videos.",
-        "Service requests: where your dealership's Golden link is verified, press Add on parts and use Send to Golden, or start a Service / RMA request or a Warranty labor claim here. Otherwise the buttons open Golden's support site.",
-        "Every request sent from here gets a case number (GS-…) and appears in Case history with whether the email reached Golden."
+        "Open Resources and choose Golden Service & Support (shown when it is available for your account). It is the same portal as Golden's support site, with your account filled in.",
+        "Troubleshoot: SmartTek LED diagnostics, lockout and calibration steps, scooter beep codes and power wheelchair checks.",
+        "Training Videos: filter by Lift Chair, Scooter, Power Chair or General, or search; each video opens on Golden's YouTube channel.",
+        "Parts Lookup & Order: choose the product line, then a category or model, or search; set a quantity and press + Add. Open the cart and press Proceed to order to send the order.",
+        "Parts & Service Request: describe the product and the problem, search parts to fill the parts rows, add photos, and submit. Labor Rate Request: pick the repair to fill in Golden's rate, enter the Golden authorization # and serial #, and submit.",
+        "My Requests lists every request sent from Dealer 360 with Golden's case number (GS-…) and whether it reached Golden."
       ],
       "notes": [
-        "Requests go straight to the right Golden department; HCPS keeps a copy. Golden replies by email to the contact you enter.",
-        "Pressing Send again after a problem never sends the same request twice.",
-        "Golden shows parts prices only to authorized Golden dealers with a verified account; Golden confirms prices on every parts order."
+        "Your dealership name and Golden account come from your verified Golden account and cannot be changed on the form.",
+        "Requests go straight to the right Golden department; HCPS keeps a copy. Golden replies by email to the contact you enter. Pressing the button again after a problem never sends the same request twice.",
+        "Dealer prices show only for authorized Golden dealers with a verified account. \"Calc. retail\" is twice the dealer price — Golden does not publish an MSRP for parts."
       ],
       "ui_checks": [
         "Golden Service &amp; Support",
-        "Parts lookup",
-        "Training videos",
-        "Service requests",
-        "Send to Golden",
-        "Case history"
+        "My Requests",
+        "Calc. retail",
+        "Parts Lookup &amp; Order",
+        "Labor Rate Request"
       ]
     }
   ]
