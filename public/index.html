@@ -4067,7 +4067,7 @@ function slJump(slug){
 }
 function dpLockHtml(){ const t=document.getElementById('dpLockTpl'); return t?t.innerHTML:'360 Dealer Portal'; }
 /* Social Ads deep link (the platforms' sign-in returns to /?social=…#ads): open the Social Ads view once the dealer is in */
-(function(){ try{ if(!/^#ads\b/.test(location.hash)) return; let n=0; const t=setInterval(function(){ n++;
+(function(){ try{ if(!/^#(ads\b|creative=)/.test(location.hash)) return;   /* #creative=<id>: HCPS's Creative Studio preview of one library creative */ let n=0; const t=setInterval(function(){ n++;
   if(typeof AUTH!=='undefined'&&AUTH.status==='approved'){ clearInterval(t); showP360('ads'); } else if(n>40) clearInterval(t); },500); }catch(e){} })();
 function showP360(v){
   state.active='p360:'+v;

@@ -808,6 +808,7 @@
         <div><button type="button" class="btn pri" id="adbNew">+ New design</button></div></div>
       ${c.preview ? '<div class="card"><div class="msg">HCPS read-only preview — designs can be made and downloaded but not saved.</div></div>' : ''}
       ${c.blocked ? '<div class="card"><div class="msg">HCPS has paused public marketing for this location — please contact HCPS.</div></div>' : ''}
+      <div id="adbLib"></div>
       <div id="adbList"></div>
       <div class="sms-wrap">
         <nav class="sms-rail" aria-label="Studio tools">${TABS.map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${ED.tab === k}">${svg(k)}${e(l)}</button>`).join('')}</nav>
@@ -819,7 +820,7 @@
             <button type="button" class="btn gh" id="adbPng">⬇ PNG</button><button type="button" class="btn gh" id="adbJpg">⬇ JPEG</button><button type="button" class="btn gh" id="adbCopy">Copy caption</button>
             <div class="adb-msg" id="adbMsg" role="status" style="flex-basis:100%"></div></div></div></div></div>`;
     A.host.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => { ED.tab = b.getAttribute('data-tab'); A.host.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); form(); }; });
-    $('#adbNew').onclick = () => { S.cur = blank(); applyBrand(S.cur); S.row = null; S.problems = []; S.suggestions = null; S.aiResult = null; S.history = []; S.campaign = null; ED.sel = null; ED.hist = []; ED.fut = []; form(); redraw(); say(''); };
+    $('#adbNew').onclick = () => { S.libLocked = false; S.cur = blank(); applyBrand(S.cur); S.row = null; S.problems = []; S.suggestions = null; S.aiResult = null; S.history = []; S.campaign = null; ED.sel = null; ED.hist = []; ED.fut = []; form(); redraw(); say(''); };
     $('#adbSave').onclick = () => save(false); $('#adbDup').onclick = () => save(true);
     $('#adbPng').onclick = () => download('png'); $('#adbJpg').onclick = () => download('jpeg');
     $('#adbCopy').onclick = async () => { if (!(await freshCheck())) return; const t = captionText(); try { await navigator.clipboard.writeText(t); say('Caption copied.', 'ok'); } catch (x) { say('Copy did not work in this browser — select the caption text instead.', 'err'); } };
@@ -854,7 +855,7 @@
       if (k === 'l') el.x = 0.05; if (k === 'c') el.x = (1 - el.w) / 2; if (k === 'r') el.x = 0.95 - el.w; if (k === 't') el.y = 0.04; if (k === 'm') el.y = (1 - el.h) / 2; if (k === 'b') el.y = 0.96 - el.h; redraw(); }; });
     host.querySelectorAll('[data-z]').forEach((b) => { b.onclick = () => zMove(Number(b.getAttribute('data-z'))); });
     const d = host.querySelector('#smsDupEl'); if (d) d.onclick = dupEl; const dl = host.querySelector('#smsDel'); if (dl) dl.onclick = delEl;
-    const a4 = host.querySelector('#smsAll4'); if (a4) a4.onclick = () => { snap(); for (const k of Object.keys(c.formats)) layoutOf(S.cur, k); say('All four sizes are ready — switch sizes above to check and adjust each one.', 'ok'); };
+    const a4 = host.querySelector('#smsAll4'); if (a4) a4.onclick = () => { snap(); for (const k of Object.keys(c.formats).filter((k) => c.formats[k].social !== false)) layoutOf(S.cur, k); say('All four sizes are ready — switch sizes above to check and adjust each one.', 'ok'); };
     const rs = host.querySelector('#smsReset'); if (rs) rs.onclick = () => { snap(); S.cur.layouts = Object.assign({}, S.cur.layouts); delete S.cur.layouts[S.cur.format]; ED.sel = null; form(); redraw(); };
   }
   function zMove(d) { const L = els(), i = L.findIndex((x) => x.id === ED.sel); if (i < 0) return; const j = Math.max(0, Math.min(L.length - 1, i + d)); if (j === i) return; snap(); const [x] = L.splice(i, 1); L.splice(j, 0, x); form(); redraw(); }
@@ -1086,6 +1087,7 @@
     const qq = host.querySelector('#adbQ'); if (qq) qq.oninput = () => { S.q = qq.value; const pos = qq.selectionStart; form(); const n = $('#adbQ'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (x) {} } };
     let typed = false; const once = () => { if (!typed) { snap(); typed = true; } };
     const bind = (id, k, warnId) => { const el = host.querySelector(id); if (!el) return; el.oninput = () => { once(); cur[k] = el.value; if (warnId) { const w = warnWords(el.value, allow); host.querySelector(warnId).textContent = w ? `"${w}" can't be used in an ad (prices, discounts, offers or claims).` : ''; } redraw(); }; if (warnId) { const w = warnWords(el.value, allow); const wt = host.querySelector(warnId); if (wt) wt.textContent = w ? `"${w}" can't be used in an ad (prices, discounts, offers or claims).` : ''; } };
+    if (cur.source || S.libLocked) for (const id of ['#adbHead', '#adbSub', '#adbBody']) { const x = $(id); if (x) { x.readOnly = true; x.title = 'Locked — HCPS-approved product wording'; } }
     bind('#adbTitle', 'title'); bind('#adbHead', 'headline', '#wHead'); bind('#adbSub', 'subheadline', '#wSub'); bind('#adbBody', 'body', '#wBody'); bind('#adbCap', 'caption', '#wCap');
     const fe = host.querySelector('#adbFeat'); if (fe) fe.oninput = () => { once(); cur.features = fe.value.split('\n').map((x) => x.trim()).filter(Boolean).slice(0, 4); const w = cur.features.map((x) => warnWords(x, allow)).find(Boolean); host.querySelector('#wFeat').textContent = w ? `"${w}" can't be used in an ad (prices, discounts, offers or claims).` : ''; redraw(); };
     const cta = host.querySelector('#adbCta'); if (cta) cta.onchange = (ev) => { snap(); cur.cta = ev.target.value; redraw(); };
@@ -1128,14 +1130,57 @@
     host.querySelectorAll('[data-dup]').forEach((b) => { b.onclick = async () => { const r = await A.api({ action: 'ads_duplicate', id: b.getAttribute('data-dup') }); if (r && r.ok) { await refreshList(); open(r.row.id); say(r.dropped ? `Copied. ${r.dropped} product(s) no longer authorized were left out.` : 'Copied.', 'ok'); } else say((r && r.error) || 'Could not copy.', 'err'); }; });
     host.querySelectorAll('[data-arch]').forEach((b) => { b.onclick = async () => { if (!window.confirm('Archive this ad? It leaves your list.')) return; const r = await A.api({ action: 'ads_archive', id: b.getAttribute('data-arch') }); if (r && r.ok) { if (S.row && S.row.id === b.getAttribute('data-arch')) { S.row = null; } await refreshList(); } else say((r && r.error) || 'Could not archive.', 'err'); }; });
   }
+  /* ---------------- Dealer Creative Library (Rev 34): HCPS-approved creatives for this location's verified lines ---------------- */
+  const LIB = { rows: [], q: '', preview: null, hidden: 0, note: '' };
+  const libHash = () => { const m = String(location.hash || '').match(/creative=([0-9a-f-]{36})/i); return m ? m[1].toLowerCase() : null; };
+  const libCur = (c) => { const cur = Object.assign(blank(), deep(c.ad)); cur.features = c.ad.features || []; cur.captions = c.ad.captions || {}; cur.colors = Object.assign(blank().colors, (S.cur && S.cur.colors) || {}, Object.fromEntries(Object.entries(c.ad.colors || {}).filter(([, v]) => v)));
+    if (!cur.colors.bg || !cur.colors.accent) applyBrand(cur); cur.show = Object.assign(blank().show, c.ad.show || {}); if (!c.preview_status) cur.source = { creative_id: c.id, version: c.version }; return cur; };
+  async function library() {
+    const host = $('#adbLib'); if (!host) return;
+    const r = await A.api({ action: 'library_list', location_id: S.loc, creative_id: libHash() || undefined });
+    if (!r || !r.ok) { host.innerHTML = ''; return; }
+    if (r.installed === false) { host.innerHTML = ''; return; }
+    LIB.rows = r.creatives || []; LIB.preview = r.preview || null; LIB.hidden = r.hidden || 0; LIB.note = r.note || '';
+    libRender();
+    if (LIB.preview && !LIB.preview.not_eligible) libOpen(LIB.preview, true);
+  }
+  function libRender() {
+    const host = $('#adbLib'); if (!host) return; const q = LIB.q.trim().toLowerCase();
+    const mf = (m) => ((S.ctx.lines || []).find((l) => l.slug === m) || {}).name || m;
+    const rows = LIB.rows.filter((c) => !q || `${c.title} ${mf(c.manufacturer)} ${(c.products || []).map((p) => p.code + ' ' + p.name).join(' ')}`.toLowerCase().includes(q));
+    const pv = LIB.preview;
+    host.innerHTML = `<div class="adb-sec" id="adbLibSec"><h3 style="margin:0 0 4px">Creative Library <span style="font-size:12px;font-weight:600;color:#2f6b4f">HCPS-approved</span></h3>
+      <p style="font-size:12.5px;color:#5b6773;margin:0 0 8px">${e(LIB.note)}</p>
+      ${pv ? `<div class="msg" style="margin:0 0 8px"><b>HCPS preview</b> — ${e(pv.title)} (${e(String(pv.preview_status).replace('_', ' '))}). ${pv.not_eligible ? e(pv.message) : 'Shown below exactly as this location would see it; dealers see it only after the President approves it for dealer distribution.'}</div>` : ''}
+      ${LIB.rows.length ? `<label class="l" for="adbLibQ">Search by manufacturer or product</label><input type="search" id="adbLibQ" value="${e(LIB.q)}" placeholder="e.g. Golden, PR527, lift chair" style="max-width:360px">` : ''}
+      <div class="adb-list" style="margin-top:8px">${(pv && !pv.not_eligible ? [pv] : []).concat(rows).map((c) => `<div class="adb-card" data-libc="${e(c.id)}"><canvas data-lth="${e(c.id)}" width="10" height="10" style="width:100%;border-radius:8px;background:#f4f6f8"></canvas>
+        <b>${e(c.title)}</b><span>${e(mf(c.manufacturer))} · ${e((c.products || []).map((p) => p.code).join(', '))}</span>${c.preview_status ? '<span><b>Not yet approved for dealers</b></span>' : `<span>Approved ${e(new Date(c.approved_at).toLocaleDateString())}</span>`}
+        <div class="r"><button type="button" class="btn gh acsm" data-lprev="${e(c.id)}">Preview</button>${!c.preview_status && S.ctx.can_edit && !S.ctx.preview ? `<button type="button" class="btn pri acsm" data-lpers="${e(c.id)}">Personalize</button>` : ''}</div></div>`).join('')
+        || `<div class="msg">No HCPS creatives are available for this location yet${LIB.hidden ? ` (${LIB.hidden} for manufacturers this location has no verified account with)` : ''}.</div>`}</div></div>`;
+    const qi = $('#adbLibQ'); if (qi) qi.oninput = () => { LIB.q = qi.value; const pos = qi.selectionStart; libRender(); const n = $('#adbLibQ'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (x) {} } };
+    const all = (pv && !pv.not_eligible ? [pv] : []).concat(LIB.rows); const byId = (id) => all.find((c) => c.id === id);
+    host.querySelectorAll('[data-lprev]').forEach((b) => { b.onclick = () => libOpen(byId(b.getAttribute('data-lprev'))); });
+    host.querySelectorAll('[data-lpers]').forEach((b) => { b.onclick = () => libPersonalize(byId(b.getAttribute('data-lpers'))); });
+    libThumbs(host, all);
+  }
+  async function libThumbs(host, all) { const run = ++LIB.run || (LIB.run = 1);
+    for (const cv of [...host.querySelectorAll('[data-lth]')]) { if (run !== LIB.run || !host.contains(cv)) return; const c = all.find((x) => x.id === cv.getAttribute('data-lth')); if (!c) continue;
+      try { await draw(cv, libCur(c), 0.24); } catch (x) {} await new Promise((r) => setTimeout(r, 0)); } }
+  /* preview a library creative in the editor (not saved); its product words are locked */
+  function libOpen(c, quiet) { if (!c) return; S.cur = libCur(c); S.row = null; S.problems = []; S.aiResult = null; S.campaign = null; S.cd = null; S.libLocked = true; ED.sel = null; ED.hist = []; ED.fut = [];
+    form(); redraw(); if (!quiet) window.scrollTo({ top: 0 }); say(`Preview of “${c.title}”. Choose Personalize to make your own copy with your logo and contact details — the product words stay as HCPS approved them.`, 'ok'); }
+  async function libPersonalize(c) { if (!c || S.busy) return; S.busy = true; say('Making your copy…');
+    try { const r = await A.api({ action: 'library_personalize', location_id: S.loc, creative_id: c.id, format: S.cur && S.cur.format });
+      if (r && r.ok) { await refreshList(); await open(r.row.id); say('Your copy is saved. Change the size, colours, call to action or caption; download it when ready. The product words stay locked.', 'ok'); }
+      else say((r && r.error) || 'That creative could not be personalized just now.', 'err'); } finally { S.busy = false; } }
   async function refreshList() { const r = await A.api({ action: 'ads_list' }); S.ads = r && r.ok ? r.ads : []; list(); if (r && !r.ok && r.error) say(r.error, 'err'); }
   async function open(id) {
     const r = await A.api({ action: 'ads_get', id }); if (!r || !r.ok) { say((r && r.error) || 'That ad could not be opened.', 'err'); return; }
     if (r.row.dealer_id !== S.loc) await openLocation(r.row.dealer_id, true);
-    S.row = r.row; S.cur = Object.assign(blank(), r.ad); S.cur.features = r.ad.features || []; S.cur.captions = r.ad.captions || {}; S.aiResult = r.ad.ai ? { why: r.ad.ai.why, alt_headlines: r.ad.ai.alt_headlines } : null; S.campaign = null; S.cur.colors = Object.assign(blank().colors, r.ad.colors || {}); S.cur.show = Object.assign(blank().show, r.ad.show || {});
+    S.libLocked = !!r.ad.source; S.row = r.row; S.cur = Object.assign(blank(), r.ad); S.cur.features = r.ad.features || []; S.cur.captions = r.ad.captions || {}; S.aiResult = r.ad.ai ? { why: r.ad.ai.why, alt_headlines: r.ad.ai.alt_headlines } : null; S.campaign = null; S.cur.colors = Object.assign(blank().colors, r.ad.colors || {}); S.cur.show = Object.assign(blank().show, r.ad.show || {});
     S.problems = r.problems || []; S.cur.products = S.cur.products.filter((p) => productBy(p)); S.cur.layouts = r.ad.layouts || null; S.cd = null;
     ED.sel = null; ED.hist = []; ED.fut = [];
-    form(); redraw(); say(S.problems.length ? S.problems.map((p) => `${p.code}: ${p.problem}`).join(' ') : 'Opened.', S.problems.length ? 'err' : 'ok');
+    form(); redraw(); say(S.problems.length ? S.problems.map((p) => `${p.code ? p.code + ': ' : ''}${p.problem}`).join(' ') : 'Opened.', S.problems.length ? 'err' : 'ok');
     window.scrollTo({ top: 0 });
   }
 
@@ -1348,7 +1393,7 @@
     S.ctx = r; S.loc = r.location_id; S.images = new Map(); S.logo = null;
     if (!keep || !S.cur) { S.cur = blank(); applyBrand(S.cur); S.row = null; ED.sel = null; ED.hist = []; ED.fut = []; S.cd = null; }
     S.cur.products = (S.cur.products || []).filter((p) => productBy(p));
-    S.social = null; shell(); list(); form(); redraw(); loadSocial(); return true;
+    S.social = null; shell(); list(); form(); redraw(); loadSocial(); library(); return true;
   }
   window.HCPSAdBuilder = {
     async mount(host, deps) {
