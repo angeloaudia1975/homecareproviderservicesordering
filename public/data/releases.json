@@ -25,6 +25,11 @@
           "area": "staff",
           "text": "HCPS Manage Dealer works in every dealer tool, including Brand & Logo Studio, favorites, reports and requests to HCPS.",
           "dealer_facing": false
+        },
+        {
+          "area": "catalog",
+          "text": "Ohio Medical: photos for the Zen-O and Zen-O Lite car chargers and the external battery charger; HCPCS codes on the Zen-O Lite (E1392) and M50 (E1390). Yuwell: full product descriptions.",
+          "dealer_facing": false
         }
       ]
     },
