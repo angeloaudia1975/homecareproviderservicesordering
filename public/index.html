@@ -7754,7 +7754,9 @@ function token(){ if(window.__PREVIEW__&&window.__PREVIEW__.token) return "previ
 async function api(endpoint,body){
   await refreshIfNeeded();
   /* Manage Dealer: the writes a staff session may make go with the manage token; every read stays on the preview token */
-  const mgAll=window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__()&&/\/dealer-(storefront|ads)-api$/.test(String(endpoint));   // whole tool runs in the session; the server lists what it may do
+  /* Manage Dealer (owner 2026-11-14): EVERY dealer tool runs in the staff session — the server decides each action (reads as
+     in View as Dealer, writes only those the role allows, recorded); no client-side preview flag blocks a valid action */
+  const mgAll=window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__()&&(endpoint===TOOLS_ENDPOINT||/\/dealer-(storefront|ads|tools|reports)-api$/.test(String(endpoint)));
   if(mgAll&&body&&body.action==='sf_save'&&(body.mode==='publish'||body.mode==='unpublish')){
     const loc=(window.__MANAGE__&&window.__MANAGE__.location&&window.__MANAGE__.location.name)||'this dealer';
     if(!confirm((body.mode==='publish'?'PUBLISH':'UNPUBLISH')+' the public storefront for '+loc+'?\n\n'+(body.mode==='publish'?'Customers will be able to see it at its public address.':'Customers will no longer see it.')+' This is recorded under your name.')) return {ok:false,error:'Nothing was '+body.mode+'ed.'};
@@ -8352,7 +8354,7 @@ function renderReports(){
     <div class="card rpt-card"><h3>By product category</h3><div class="rpt-sub">Categories as listed in the current HCPS catalog.</div>${cats}</div>
     <div class="card rpt-card"><h3>Top products</h3>${prods}</div>
     <div class="card rpt-card"><h3>Assortment opportunities</h3><div class="rpt-sub">Products other HCPS dealers order (at least 3 of them) on lines you already buy, that you haven’t ordered in 12 months. A suggestion, not a forecast — no other dealer’s name or figures are shown.</div>${opp}</div>
-    <div class="card rpt-card"><div class="rpt-aih"><h3>AI growth suggestions</h3>${typeof PREVIEW!=='undefined'&&PREVIEW?'':`<a class="btn pri" id="rptAi" onclick="rptAi()">${RPT_AI&&!RPT_AI.error?'Refresh suggestions':'Get suggestions'}</a>`}</div>${ai}</div>
+    <div class="card rpt-card"><div class="rpt-aih"><h3>AI growth suggestions</h3>${typeof PREVIEW!=='undefined'&&PREVIEW&&!mgBearer()?'':`<a class="btn pri" id="rptAi" onclick="rptAi()">${RPT_AI&&!RPT_AI.error?'Refresh suggestions':'Get suggestions'}</a>`}</div>${ai}</div>
     ${R.notes.length?`<div class="card rpt-card"><h3>About these figures</h3><ul class="rpt-notes">${R.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></div>`:''}
     <div class="card"><div class="chead"><h3>Pricing export</h3></div><div style="font-size:13px;color:var(--ink-2)">Export your full HCPS product &amp; dealer-pricing file — SKU, manufacturer, description, dealer cost, MAP, MSRP, category — for billing, ERP, inventory or POS.</div>
       <a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">⬇ Export pricing file (Excel/CSV)</a></div>`;
@@ -8486,7 +8488,7 @@ function applyBranding(){ const el=$("#brandLogo"); if(el)el.innerHTML=brandLogo
 
 /* quotes */
 function hashStr(s){let h=0;for(let i=0;i<String(s).length;i++){h=(h*31+String(s).charCodeAt(i))|0;}return h;}
-async function loadQuotesView(){ await Promise.all([ensureCatalogFav(), (typeof loadRetail==='function'?loadRetail().catch(()=>null):null), (!AC&&!window.__PREVIEW__?api(TOOLS_ENDPOINT,{action:'account_center'}).then(a=>{ if(a&&a.ok) AC=a; }).catch(()=>null):null)]); renderQuotes(); }
+async function loadQuotesView(){ await Promise.all([ensureCatalogFav(), (typeof loadRetail==='function'?loadRetail().catch(()=>null):null), (!AC&&(!window.__PREVIEW__||mgBearer())?api(TOOLS_ENDPOINT,{action:'account_center'}).then(a=>{ if(a&&a.ok) AC=a; }).catch(()=>null):null)]); renderQuotes(); }
 /* QUOTE RULES (owner, 2026-10-31). A quote shows only a manufacturer-provided MSRP. A product without one reads
    "MSRP not provided" and is left out of the total — never a 2x-dealer-cost estimate, and never the dealer's own
    price in its place. New quotes offer no product of an inactive line (manufacturers.json "quotable": false —
@@ -9107,7 +9109,7 @@ function renderOpportunities(){
   const due=reorderDueList(), decl=decliningCats(), ws=whitespaceLines();
   const dueHtml=due.length?due.map(p=>`<div class="rl"><div class="b"><div class="n">${esc(p.name)}</div><div class="m">${esc(p.mfrName)} · last ${daysSince(p.last)}d ago · ${p.count} orders</div></div><a class="btn gh" href="/">Reorder</a></div>`).join(""):`<div class="empty">Nothing due to reorder right now.</div>`;
   const declHtml=decl.length?decl.map(d=>`<div class="rl"><div class="b"><div class="n">${esc(d.cat)}</div><div class="m">Down ${d.drop}% vs last year · ${money(d.cur)} vs ${money(d.prev)}</div></div><a class="btn gh" href="/">Re-stock</a></div>`).join(""):`<div class="empty">No categories are slipping — nice.</div>`;
-  if(ws&&ws.length&&!_wsApps&&!(typeof AP!=='undefined'&&AP)&&typeof appsCall==='function'&&!window.__PREVIEW__){ _wsApps=[]; appsCall({action:'app_list'}).then(r=>{ if(r&&r.ok){ _wsApps=r.applications||[]; renderOpportunities(); } }).catch(()=>{}); }
+  if(ws&&ws.length&&!_wsApps&&!(typeof AP!=='undefined'&&AP)&&typeof appsCall==='function'&&(!window.__PREVIEW__||mgBearer())){ _wsApps=[]; appsCall({action:'app_list'}).then(r=>{ if(r&&r.ok){ _wsApps=r.applications||[]; renderOpportunities(); } }).catch(()=>{}); }
   const wsHtml=ws==null?`<div class="empty">Your manufacturer options could not be checked just now.</div>`
     :ws.length?ws.map(m=>{ const st=wsAppStatus(m.slug);
       return `<div class="rl"><div class="b"><div class="n">${esc(m.name)}</div><div class="m">${st?'Account application: '+esc(st):m.approved?'Approved to order — manufacturer account setup needed':'Available to your business — no account yet'}</div></div>

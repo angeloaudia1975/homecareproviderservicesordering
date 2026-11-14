@@ -45,10 +45,10 @@ async function stageOrder(page) {
       await page.waitForFunction(() => { const v = document.querySelector('#view-account'); return v && /Account Center/.test(v.innerText) && !/Loading your account/.test(v.innerText); }, null, { timeout: 30000 });
       await page.evaluate(() => acCompanyOpen()); await page.fill('#acPh', '555-999-0000'); await page.click('#acSave');
       await page.waitForFunction(() => !document.querySelector('#modal.on'), null, { timeout: 10000 });
-      await t(`${label}: reads use the preview token; an allowed write (company change) carries the manage token`, () => {
+      await t(`${label}: every dealer-tool call (read and write) runs in the Manage Dealer session — no preview flag blocks a valid action`, () => {
         const calls = (seen.toolCalls || []).map((b, i) => [b.action, seen.toolAuth[i]]);
         const by = a => (calls.find(c => c[0] === a) || [])[1] || '';
-        ok(/^Bearer preview:p{48}$/.test(by('account_center')), by('account_center')); ok(by('account_change_request') === 'Bearer manage:' + TOK, JSON.stringify(calls)); });
+        ok(by('account_center') === 'Bearer manage:' + TOK, by('account_center')); ok(by('account_change_request') === 'Bearer manage:' + TOK, JSON.stringify(calls)); });
       // order: cancel, then confirm
       await stageOrder(page);
       await page.evaluate(() => { submitOrder(); });
