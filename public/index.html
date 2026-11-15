@@ -5713,6 +5713,7 @@ async function submitOrder(){
       }
       if(!j.recorded){ toast(j.error||"Could not submit — nothing was placed. Please try again."); return; }
       clearCheckoutKeys(hcpsOrders.map(o=>o.manufacturer_slug).filter(sl=>!(j.not_recorded||[]).includes(sl)));   // recorded: their next checkout is a new one
+      try{ if(window.P360&&window.P360.invalidateHistory) window.P360.invalidateHistory(); }catch(e){}   // My Orders reloads instead of showing the list from before this order
       if(j.status==="already_recorded") dupNote=true;   // an earlier try had already recorded it — never twice
       /* Recorded orders leave the cart. A manufacturer whose order could not be recorded stays
          in the cart, untouched, to be placed again. */
@@ -10025,7 +10026,7 @@ async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be un
 Object.assign(window,{apTradeRef,gsvAdd,gsvQty,gsvForm,gsvSend,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
-window.P360={boot:boot,show:showView,get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
+window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
 })();
 </script>
 
