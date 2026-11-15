@@ -7721,6 +7721,9 @@ const cents=n=>"$"+(Number(n)||0).toLocaleString(undefined,{minimumFractionDigit
 const monthName=ym=>{ const m=/^(\d{4})-(\d{2})$/.exec(String(ym||"")); return m?new Date(Date.UTC(+m[1],+m[2]-1,1)).toLocaleDateString("en-US",{month:"long",year:"numeric",timeZone:"UTC"}):String(ym||""); };
 const orderTotal=o=>Number(o&&o.total!=null?o.total:(o&&o.cost))||0;
 const freightNote=o=>(o&&Number(o.freight)>0)?`<div class="m" style="font-weight:400;font-size:11px;color:var(--muted,#667085)">incl. ${cents(o.freight)} freight</div>`:"";
+/* owner 2026-11-15: an "Invoice recorded" entry (open manufacturer invoice, payment status not established) is never a purchase —
+   kept out of every purchase total, product/category analytics and suggestions; listed apart in the table and CSV */
+const purchasesOnly=(h)=>(h||[]).filter(o=>!o.invoice_only&&o.status!=="invoice_recorded");
 const num=n=>Math.round(Number(n)||0).toLocaleString();
 const MONS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const monthLbl=ym=>{const[y,m]=String(ym||"").split("-");return m?MONS[(+m)-1]+" "+y:ym;};
@@ -7817,7 +7820,7 @@ async function loadDash(){
   const recent=(d.recent||[]);
   const recentHtml=recent.length?recent.map(o=>`<div class="rl">
       <div class="b"><div class="n">${esc(o.manufacturerName)} ${srcPill(o.source)}</div><div class="m">${dateShort(o.date)} · ${o.itemsCount} item${o.itemsCount!==1?"s":""} · ${o.units} units${o.preview&&o.preview.length?" · "+esc(o.preview.join(", ")):""}</div></div>
-      <div class="amt tnum">${cents(orderTotal(o))}${freightNote(o)}</div></div>`).join(""):`<div class="empty">No orders on file yet.</div>`;
+      <div class="amt tnum">${cents(orderTotal(o))}${freightNote(o)}${o.status==="invoice_recorded"?`<div style="font-size:11px;font-weight:400;color:var(--muted,#64748b)">Invoice recorded · not a purchase</div>`:""}</div></div>`).join(""):`<div class="empty">No orders on file yet.</div>`;
   $("#view-dash").innerHTML=`
     <div class="ph"><div><h1>Welcome back${PROFILE&&PROFILE.name?", "+esc(PROFILE.name):""}</h1><div class="sub">Your HCPS purchases across every line</div></div>
       <div><a class="btn nv" href="/">Start an order</a> <a class="btn pri" onclick="showView('orders')">View all orders →</a></div></div>
@@ -7902,14 +7905,14 @@ async function loadOrders(){
     const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
     return `<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b>${extra}</td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${cents(orderTotal(o))}${freightNote(o)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
   }).join("");
-  const total=HISTORY.reduce((s,o)=>s+orderTotal(o),0);
+  const total=purchasesOnly(HISTORY).reduce((s,o)=>s+orderTotal(o),0); const nInv=HISTORY.length-purchasesOnly(HISTORY).length;
   $("#view-orders").innerHTML=`
     <div class="ph"><div><h1>Orders &amp; Tracking</h1><div class="sub">Consolidated history — imported sales, portal &amp; Golden · ${HISTORY.length} records</div></div>
       <div><a class="btn gh" onclick="exportHistoryCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a></div></div>
     ${typeof rptNavHtml==='function'?rptNavHtml('orders'):''}
     <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Date</th><th>Source</th><th>Manufacturer</th><th>Items</th><th class="n">Units</th><th class="n">Amount</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows||`<tr><td colspan="8" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
-      ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total (incl. freight)</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${cents(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
+      ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total (incl. freight)${nInv?`<div style="font-weight:400;font-size:12px;color:var(--muted,#64748b)">Excludes ${nInv} recorded invoice${nInv>1?"s":""} — payment status not established</div>`:""}</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${cents(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
     </table></div>
     <div id="goldenHistLive" class="gh-live" role="status" aria-live="polite"></div>
     <div id="goldenHist" style="margin-top:16px"></div>
@@ -8445,7 +8448,7 @@ function dl(filename,text,mime){const blob=new Blob(["﻿"+text],{type:mime||'te
 function csvCell(v){v=String(v==null?'':v);if(/^[=+\-@\t\r]/.test(v)&&!/^-?\d+(\.\d+)?$/.test(v))v="'"+v;return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}   /* a cell starting = + - @ is never run as a spreadsheet formula */
 function toCSV(rows){return rows.map(r=>r.map(csvCell).join(',')).join('\r\n');}
 function exportHistoryCSV(){const rows=[['Date','Source','Manufacturer','Item #','Product','Qty','Unit','Line total','Status']];
-  for(const o of (HISTORY||[])){for(const l of (o.lines||[])){const qty=Number(l.qty)||0;const line=Number(l.line!=null?l.line:l.cost)||0;rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,l.code,l.name,qty,qty?(line/qty).toFixed(2):line.toFixed(2),line.toFixed(2),o.status]);}
+  for(const o of (HISTORY||[])){for(const l of (o.lines||[])){const qty=Number(l.qty)||0;const line=Number(l.line!=null?l.line:l.cost)||0;rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,l.code,l.name,qty,qty?(line/qty).toFixed(2):line.toFixed(2),line.toFixed(2),o.invoice_only||o.status==="invoice_recorded"?"Invoice recorded — billed, payment status not established; not a purchase":o.status]);}
     if(Number(o.freight)>0) rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,'','Freight / shipping & handling',1,Number(o.freight).toFixed(2),Number(o.freight).toFixed(2),o.status]);}
   dl('hcps-order-history.csv',toCSV(rows));}
 function exportReportCSV(){ if(!RPT) return; const R=RPT.report;
@@ -8881,7 +8884,7 @@ let SHOWROOM={zones:[]}, ZONE_N=12, MFRLIST=[], LINES=[], SW_PICK_IDX=null;
 function ensureZones(){ if(!Array.isArray(SHOWROOM.zones))SHOWROOM.zones=[]; while(SHOWROOM.zones.length<ZONE_N)SHOWROOM.zones.push(null); SHOWROOM.zones=SHOWROOM.zones.slice(0,ZONE_N); }
 function mfrNameOf(slug){ const m=(MFRLIST||[]).find(x=>x.slug===slug); return m?m.name:(retiredLineName(slug)||slug); }
 function prodRec(key){ const i=key.indexOf("|"); const mfr=key.slice(0,i),code=key.slice(i+1); const p=(PRICE&&PRICE[key])||{}; const cost=p.cost!=null?p.cost:null; const msrp=(p.msrp!=null?p.msrp:(cost!=null?cost*2:0)); return {key,mfr,code,name:p.name||code,mfrName:p.mfrName||mfrNameOf(mfr),cost,msrp,est:p.msrp==null}; }
-function purchasedKeys(){ const m={}; for(const o of (HISTORY||[])){ for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; m[k]=(m[k]||0)+(Number(l.line!=null?l.line:l.cost)||0); } } return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k])=>k); }
+function purchasedKeys(){ const m={}; for(const o of purchasesOnly(HISTORY)){ for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; m[k]=(m[k]||0)+(Number(l.line!=null?l.line:l.cost)||0); } } return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k])=>k); }
 async function loadShowroom(){
   await ensureCatalogFav();
   /* a failed read is never cached as "no orders" (C3-06): My Orders asks again and says so */
@@ -9172,10 +9175,10 @@ let ACCOUNT={resale:null,applications:[],terms:[]};
 /* --- intelligence (dashboard) --- */
 function daysSince(d){ const t=Date.parse(d); if(!t)return 9999; return Math.floor((Date.now()-t)/86400000); }
 function reorderDueList(){ const m={};
-  for(const o of (HISTORY||[])){ const dt=o.date||((o.ym||"")+"-01"); for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; const x=m[k]||(m[k]={mfr:o.manufacturer,mfrName:o.manufacturerName,name:l.name,code:l.code,count:0,last:"",spend:0}); x.count++; x.spend+=Number(l.line!=null?l.line:l.cost)||0; if(String(dt)>String(x.last))x.last=String(dt); } }
+  for(const o of purchasesOnly(HISTORY)){ const dt=o.date||((o.ym||"")+"-01"); for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; const x=m[k]||(m[k]={mfr:o.manufacturer,mfrName:o.manufacturerName,name:l.name,code:l.code,count:0,last:"",spend:0}); x.count++; x.spend+=Number(l.line!=null?l.line:l.cost)||0; if(String(dt)>String(x.last))x.last=String(dt); } }
   return Object.values(m).filter(x=>x.count>=2 && daysSince(x.last)>45).sort((a,b)=>b.spend-a.spend).slice(0,4); }
 function decliningCats(){ const Y=String(new Date().getFullYear()),PY=String(new Date().getFullYear()-1); const cur={},prev={};
-  for(const o of (HISTORY||[])){ const y=String(o.ym||"").slice(0,4); for(const l of (o.lines||[])){ const p=PRICE&&PRICE[o.manufacturer+"|"+l.code]; const cat=(p&&p.category)||"Other"; const amt=Number(l.line!=null?l.line:l.cost)||0; if(y===Y)cur[cat]=(cur[cat]||0)+amt; else if(y===PY)prev[cat]=(prev[cat]||0)+amt; } }
+  for(const o of purchasesOnly(HISTORY)){ const y=String(o.ym||"").slice(0,4); for(const l of (o.lines||[])){ const p=PRICE&&PRICE[o.manufacturer+"|"+l.code]; const cat=(p&&p.category)||"Other"; const amt=Number(l.line!=null?l.line:l.cost)||0; if(y===Y)cur[cat]=(cur[cat]||0)+amt; else if(y===PY)prev[cat]=(prev[cat]||0)+amt; } }
   const out=[]; for(const c in prev){ if(prev[c]>=400 && (cur[c]||0)<prev[c]*0.6) out.push({cat:c,prev:prev[c],cur:cur[c]||0,drop:Math.round((1-(cur[c]||0)/prev[c])*100)}); }
   return out.sort((a,b)=>b.prev-a.prev).slice(0,3); }
 /* EXPLORE MORE MANUFACTURERS (owner 2026-11-12, James Medical): only lines HCPS's access engine says are AVAILABLE to this
