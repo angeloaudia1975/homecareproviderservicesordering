@@ -7788,7 +7788,7 @@ async function boot(){
   SESSION=loadSession();
   if(!token()){ return gate(); }
   const me=await api(AUTH_ENDPOINT,{action:"me"}).catch(()=>({}));
-  if(!me||me.status!=="approved"||!me.dealer){ return gate(me&&me.status); }
+  if(!me||me.status!=="approved"||!me.dealer){ if(!window.__PREVIEW__&&await memberMode()) return; return gate(me&&me.status); }
   PROFILE=me.dealer; LINES=(me.lines||[]);
   $("#dealerChip").style.display="";$("#dealerName").textContent=PROFILE.name||"Dealer";
   $("#signout").style.display="";$("#signout").onclick=()=>{try{localStorage.removeItem("hcps_session");}catch(e){}location.href="/";};
@@ -9061,6 +9061,7 @@ function gsvRequest(d){
   return r;
 }
 async function gsvSendCase(d){
+  if(MEMBER&&(MEMBER.role!=="technician_service"||d.type==="labor")) return {ok:false,error:MEMBER.role!=="technician_service"?"Your login can read service information only — ask your dealer for Technician + Service access to send requests":"Labor claims are sent by your dealer's own login"};
   if(GSVS!==true) return {ok:false,error:(window.__PREVIEW__&&window.__PREVIEW__.token)?"View as Dealer cannot send requests to Golden.":"Sending requests to Golden from Dealer 360 is not switched on yet. Use Golden's support site (goldentechsupport.netlify.app) or call Golden Tech Support at 1-800-624-6374"};
   const req=gsvRequest(d), k=d.type;
   if(!GSVKEYS[k]) GSVKEYS[k]=gsvUuid();   // one key per attempt, kept until Golden answers: a retry is the same case, never a second email
@@ -9082,7 +9083,7 @@ function gsvHistory(){
 }
 /* the dealer's own details fill the original forms; dealer name and Golden account # are Golden's record (read-only) */
 function gsvPrefill(root){
-  const d=AUTH.dealer||(window.__PREVIEW__&&window.__PREVIEW__.dealer)||{};
+  const d=MEMBER?{name:MEMBER.dealer_name,email:MEMBER.email||""}:(AUTH.dealer||(window.__PREVIEW__&&window.__PREVIEW__.dealer)||{});
   const set=(name,v,ro)=>root.querySelectorAll(`[name="${name}"]`).forEach(el=>{ if(v&&!el.value) el.value=v; if(ro){ el.readOnly=true; el.classList.add("gsv-ro"); el.title="From your verified Golden account"; } });
   set("dealer_name",d.name||d.business_name||"",true);
   set("account_number","Verified by Golden on your account",true);
@@ -9102,6 +9103,8 @@ async function loadGoldSvc(){
   const root=$("#gsvHost").attachShadow({mode:"open"}); GSVROOT=root;
   root.innerHTML=`<style>${A.css}</style>${A.html}`;
   try{ window.GSV_MOUNT(root,{parts:gsvPartsData(g)},{send:gsvSendCase}); }catch(e){ console.error("[gsv mount]",e); }
+  if(MEMBER){ const st=document.createElement("style"); st.textContent='.tab-btn[onclick*="\'labor\'"],#tab-labor{display:none!important}'+(MEMBER.role==="technician_service"?"":'.tab-btn[onclick*="\'request\'"],#tab-request{display:none!important}'); root.appendChild(st);
+    host.querySelectorAll('a.btn.gh').forEach(a=>{ if(/Resources/.test(a.textContent)) a.remove(); }); }
   gsvPrefill(root); gsvHistory();
 }
 function gsvTab(t){ GSVT=t; if(t!=="history") GSVMSG=""; renderGoldSvc(); }
@@ -9287,6 +9290,19 @@ function renderAccount(){ renderAccount0(); lsEntry(); techCard(); }
    Technician + Service. Members get NO prices or financial records (no dealer login is ever created for them). The one-time
    link is shown once to the dealer, who gives it to the person — nothing is emailed. Hidden while the server switch is off. */
 const MEMBERS_ENDPOINT=API_BASE+"/dealer-members-api";
+/* TECHNICIAN LOGIN (owner 2026-11-15): a login with an active technician role (no dealer login) gets ONE view — Golden
+   Service & Support for its dealer, without prices; Viewer reads, Technician + Service also sends parts / service requests,
+   never a labor claim. golden-proxy decides all of it on the server; this only shapes the page. */
+let MEMBER=null;
+async function memberMode(){
+  const d=await api(MEMBERS_ENDPOINT,{action:"me"}).catch(()=>null);
+  if(!d||d.ok===false||!d.member) return false;
+  MEMBER=d.member; document.body.classList.add("memberon");
+  const nav=$("#nav"); if(nav) nav.innerHTML='<a class="on" onclick="showView(\'goldsvc\')">Golden Service &amp; Support</a>';
+  const chip=$("#dealerChip"); if(chip) chip.style.display=""; const dn=$("#dealerName"); if(dn) dn.textContent=(MEMBER.dealer_name||"")+" · "+(TECH_ROLE[MEMBER.role]||MEMBER.role).split(" — ")[0];
+  const so=$("#signout"); if(so){ so.style.display=""; so.onclick=()=>{ try{ localStorage.removeItem("hcps_session"); }catch(e){} location.href="/"; }; }
+  showView("goldsvc"); return true;
+}
 const TECH_ROLE={viewer:"Viewer — service information only",technician_service:"Technician + Service — service information and service requests"};
 let TECH=null, TECH_LINK=null;
 async function techCard(){
@@ -9340,9 +9356,10 @@ async function memberBanner(){
   const r=await fetch(MEMBERS_ENDPOINT,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+AUTH.session.access_token},body:JSON.stringify({action:"me"})}).catch(()=>null);
   const d=r?await r.json().catch(()=>null):null; if(!d||!d.ok||!d.member) return;
   let el=document.getElementById("memberBanner"); if(!el){ el=document.createElement("div"); el.id="memberBanner"; el.setAttribute("role","status"); el.style.cssText="background:#eef5fb;color:#0b1f33;border-bottom:1px solid #c9dcec;padding:10px 16px;font-size:14px;text-align:center"; document.body.insertBefore(el,document.body.firstChild); }
-  el.textContent="Technician access for "+d.member.dealer_name+" — "+(TECH_ROLE[d.member.role]||d.member.role)+". Golden Service & Support opens here once it is switched on.";
+  el.textContent="Technician access for "+d.member.dealer_name+" — "+(TECH_ROLE[d.member.role]||d.member.role)+". ";
+  const b=document.createElement("a"); b.className="btn pri"; b.style.cssText="margin-left:8px;min-height:44px;display:inline-flex;align-items:center"; b.textContent="Open Golden Service & Support"; b.onclick=()=>showP360("goldsvc"); el.appendChild(b);
 }
-Object.assign(window,{techCard,techInvite,techCopy,techRevokeInvite,techRevokeMember,memberAccept,memberInviteCheck});
+Object.assign(window,{techCard,techInvite,techCopy,techRevokeInvite,techRevokeMember,memberAccept,memberInviteCheck,memberMode});
 (function(){ let n=0; const tm=setInterval(()=>{ n++;   // wait for a restored session (or ~4 s of none) before asking
   if(typeof AUTH!=="undefined"&&((AUTH.session&&AUTH.status!=="anon")||n>=8)){ clearInterval(tm); memberInviteCheck(); } },500); })();
 function renderAccount0(){
@@ -9607,6 +9624,7 @@ async function apWithdraw(){ if(!confirm('Withdraw this application?')) return; 
   if(r&&r.ok){ APCUR=null; APDIRTY=false; loadApplyView(); } else apToast((r&&r.error)||'Could not withdraw it.',true); }
 
 function showView(v){
+  if(MEMBER&&v!=="goldsvc") v="goldsvc";   /* a technician login reaches Golden Service & Support only (the server refuses the rest too) */
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
   $("#view-"+v).classList.add("on");
   document.querySelectorAll("#nav a").forEach(a=>a.classList.remove("on"));
