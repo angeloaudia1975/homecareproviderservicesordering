@@ -28,7 +28,7 @@
     },
     {
       "key": "victoria",
-      "title": "Victoria (coming later)"
+      "title": "Ask Victoria"
     }
   ],
   "articles": [
@@ -256,6 +256,30 @@
         "Calc. retail",
         "Parts Lookup &amp; Order",
         "Labor Rate Request"
+      ]
+    },
+    {
+      "id": "ask-victoria",
+      "area": "victoria",
+      "title": "Ask Victoria",
+      "updated": "2026-11-15",
+      "open": "victoria",
+      "summary": "Victoria answers questions from your own HCPS records — your manufacturer accounts, orders and tracking, your prices, freight policies, Golden service cases and help. She is read-only.",
+      "steps": [
+        "Choose Ask Victoria in the menu (it appears once Victoria is switched on for your dealership).",
+        "Pick a question, such as My open orders or Tracking, or type your own question and choose Ask.",
+        "To check a price, choose Price a product, pick the manufacturer and enter the item number and quantity, then choose Check price.",
+        "Every answer names where it came from. Victoria never places orders, sends emails or changes your account."
+      ],
+      "notes": [
+        "Inventory and lead times are not available yet — Victoria says so rather than guessing.",
+        "Prices come from the same check as checkout and only for lines you are authorized to order."
+      ],
+      "ui_checks": [
+        "Ask Victoria",
+        "Price a product",
+        "Check price",
+        "Inventory & lead times"
       ]
     }
   ]
