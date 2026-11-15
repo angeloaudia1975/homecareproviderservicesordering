@@ -4,6 +4,30 @@
   "rule": "The version is the newest release below. A release email to dealers is only ever sent after the President approves that release's email in Connect 360 — a deploy never sends one.",
   "releases": [
     {
+      "version": "2026.11.15",
+      "date": "2026-11-15",
+      "title": "Shipment details, emailed brochure photos",
+      "items": [
+        {
+          "area": "tracking",
+          "text": "Orders & Tracking shows what each shipment contained: \"Partially shipped\" with the units sent so far, \"Shipped in full\", and any backordered items with the date HCPS recorded them.",
+          "dealer_facing": true,
+          "help": "shipment-tracking"
+        },
+        {
+          "area": "brochures",
+          "text": "Emailed brochures now include the product photos, the same as the printed brochure.",
+          "dealer_facing": true,
+          "help": "brochures"
+        },
+        {
+          "area": "staff",
+          "text": "HCPS Manage Dealer can email a saved customer quote for the dealer after a separate confirmation; replies go to the dealer and every send is recorded.",
+          "dealer_facing": false
+        }
+      ]
+    },
+    {
       "version": "2026.11.14",
       "date": "2026-11-14",
       "title": "Golden Service & Support portal, dealer-branded brochures",

@@ -133,7 +133,7 @@
       "id": "brochures",
       "area": "quotes",
       "title": "Printing a product brochure",
-      "updated": "2026-11-14",
+      "updated": "2026-11-15",
       "open": "shop",
       "summary": "Print a customer-ready brochure for a product with your own retail price.",
       "steps": [
@@ -145,7 +145,8 @@
       "notes": [
         "A price below a manufacturer's minimum advertised price is not allowed on a brochure.",
         "An MSRP is printed only when the manufacturer publishes one — HCPS never works one out from your cost; MAP is always labelled MAP.",
-        "Your dealership is always the seller on a brochure: it shows your logo, business name, address and phone. A branch without its own logo, phone, email or website uses its head office's. If no logo is on file, your business name is printed in its place."
+        "Your dealership is always the seller on a brochure: it shows your logo, business name, address and phone. A branch without its own logo, phone, email or website uses its head office's. If no logo is on file, your business name is printed in its place.",
+        "An emailed brochure includes the product photos, the same as the printed one."
       ],
       "ui_checks": [
         "Print Brochure",
@@ -182,23 +183,28 @@
       "id": "shipment-tracking",
       "area": "tracking",
       "title": "Tracking your shipments",
-      "updated": "2026-11-13",
+      "updated": "2026-11-15",
       "open": "orders",
       "summary": "Orders & Tracking lists every order. When HCPS has shipment details from the manufacturer or carrier, they appear under the order.",
       "steps": [
         "Open Orders & Tracking (also a tab in Reports).",
         "Each shipment shows its tracking number. When the carrier is known (UPS, FedEx, USPS, DHL) the number is a link to the carrier's tracking page.",
+        "When HCPS records what a shipment contained, you see it under the order: \"Partially shipped\" with how many units have shipped, or \"Shipped in full\" once every unit has gone.",
+        "Items the manufacturer has backordered are listed as Backordered, with the date HCPS recorded it.",
         "Shipped dates, estimated ship dates (from the manufacturer) and estimated delivery dates (from the carrier) show only when they were confirmed.",
         "No tracking yet? Use Request tracking and HCPS will ask the manufacturer."
       ],
       "notes": [
-        "An order can arrive in several shipments; each is listed on its own line."
+        "An order can arrive in several shipments; each is listed on its own line with the date it was last updated.",
+        "An estimated ship date is never shown as shipped. If HCPS has a tracking number but not the box contents, the order says the contents are not listed."
       ],
       "ui_checks": [
         "Orders &amp; Tracking",
         "Request tracking",
         "carrier not confirmed",
-        "Estimated delivery"
+        "Estimated delivery",
+        "Partially shipped",
+        "Backordered"
       ]
     },
     {
