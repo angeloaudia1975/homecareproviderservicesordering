@@ -7846,7 +7846,7 @@ async function loadDash(){
   ensureCatalogFav().then(loadDashExtras);
 }
 function srcPill(s){return s==="golden"?'<span class="pill gold">Golden</span>':s==="portal"?'<span class="pill portal">Portal</span>':'<span class="pill imported">Imported</span>';}
-const ORDER_STATUS_LABEL={pending_account_setup:"Pending Manufacturer Account Setup",submitted:"Received by HCPS",open:"Received by HCPS",placed:"Placed with manufacturer by HCPS",confirmed:"Confirmed by manufacturer",shipped:"Shipped",completed:"Completed",delivered:"Delivered",cancelled:"Cancelled"};
+const ORDER_STATUS_LABEL={pending_account_setup:"Pending Manufacturer Account Setup",submitted:"Received by HCPS",open:"Received by HCPS",placed:"Placed with manufacturer by HCPS",confirmed:"Confirmed by manufacturer",shipped:"Shipped",completed:"Completed",delivered:"Delivered",cancelled:"Cancelled",invoiced_unpaid:"Invoiced — not yet paid"};
 /* Order statuses say what actually happened (owner, 2026-10-27): HCPS receives the order and places it with the manufacturer itself. */
 function statPill(s){s=String(s||"").toLowerCase();const l=ORDER_STATUS_LABEL[s]||s||"—";return s==="delivered"||s==="completed"?'<span class="pill done">'+esc(l)+'</span>':(s==="submitted"||s==="open")?'<span class="pill open">'+esc(l)+'</span>':'<span class="pill portal">'+esc(l)+'</span>';}
 
@@ -7896,7 +7896,8 @@ async function loadOrders(){
     /* PO, the tracking number HCPS recorded, and a new-account notice (C3-06) — all shown as text. */
     const extra=(o.po?`<div class="m">PO ${esc(o.po)}</div>`:"")+(ships.length?orderShipHtml(ships,o.ship_progress)+(o.tracking&&!ships.some(x=>x.tracking_number&&String(o.tracking).toUpperCase().includes(String(x.tracking_number).toUpperCase()))?`<div class="m">${orderTrackHtml(o.tracking)}</div>`:""):o.tracking?`<div class="m">${orderTrackHtml(o.tracking)}</div>`:((o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="cancelled"?`<div class="m" style="color:var(--muted)">Tracking not yet available.</div>`:""))
       +(o.account_hold?`<div class="m" style="color:#9b1c1c;font-weight:700">Waiting for your ${esc(o.manufacturerName)} account — <a onclick="showP360('apply')" style="cursor:pointer;text-decoration:underline">complete the application</a>; HCPS places the order once the account is open</div>`
-        :o.account_notice?`<div class="m" style="color:#9b1c1c;font-weight:700">${esc(o.account_notice)} — HCPS will help you open it; your order is not held</div>`:"");
+        :o.account_notice?`<div class="m" style="color:#9b1c1c;font-weight:700">${esc(o.account_notice)} — HCPS will help you open it; your order is not held</div>`:"")
+      +(o.unpaid?`<div class="m">Invoice ${esc(o.invoice_no||"")} · ${esc(cents(o.billed||0))} billed${o.date_basis==="first_statement"?" · dated by the first statement that listed it":""} — not counted in your purchases until the manufacturer reports it paid</div>`:"");
     const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
     return `<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b>${extra}</td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${cents(orderTotal(o))}${freightNote(o)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
   }).join("");
