@@ -7679,6 +7679,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
     <a class="soon" title="Coming in a later phase">My Manufacturers</a>
     <a onclick="showView('resources')">Resources</a>
     <a onclick="showView('account')">Account &amp; Pricing</a>
+    <a id="vicNav" style="display:none" onclick="showView('victoria')">Ask Victoria</a>
   </div></div>
 </div>
 <div class="page">
@@ -7688,6 +7689,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   <div class="view" id="view-reports"><div class="msg">Loading…</div></div>
   <div class="view" id="view-goldsvc"><div class="msg">Loading…</div></div>
   <div class="view" id="view-help"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-victoria"><div class="msg">Loading…</div></div>
   <div class="view" id="view-quotes"><div class="msg">Loading…</div></div>
   <div class="view" id="view-retail"><div class="msg">Loading…</div></div>
   <div class="view" id="view-apply"><div class="msg">Loading…</div></div>
@@ -7793,7 +7795,7 @@ async function boot(){
   PROFILE=me.dealer; LINES=(me.lines||[]);
   $("#dealerChip").style.display="";$("#dealerName").textContent=PROFILE.name||"Dealer";
   $("#signout").style.display="";$("#signout").onclick=()=>{try{localStorage.removeItem("hcps_session");}catch(e){}location.href="/";};
-  await loadBranding(); applyBranding(); await loadDash();
+  await loadBranding(); applyBranding(); await loadDash(); vicProbe();
 }
 function gate(status){
   $("#gate").innerHTML=`<div class="gate"><div class="lm">H</div><h2>Sign in to your Business Hub</h2>
@@ -9549,7 +9551,7 @@ function showView(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
   $("#view-"+v).classList.add("on");
   document.querySelectorAll("#nav a").forEach(a=>a.classList.remove("on"));
-  const idx={dash:0,orders:2,showroom:3,reports:4,quotes:5,ads:6,resources:8,account:9}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
+  const idx={dash:0,orders:2,showroom:3,reports:4,quotes:5,ads:6,resources:8,account:9,victoria:10}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
   window.scrollTo({top:0});
   if(v==="orders")loadOrders();
   if(v==="reports")loadReports();
@@ -9564,6 +9566,7 @@ function showView(v){
   if(v==="ads")loadAdsView();
   if(v==="goldsvc")loadGoldSvc();
   if(v==="help")loadHelp();
+  if(v==="victoria")loadVictoria();
 }
 window.showView=showView;
 /* Catalog 4 §8 — Social Ads: the builder lives in /assets/ad-builder.js (loaded the first time the view opens);
@@ -9575,6 +9578,80 @@ async function loadAdsView(){
   try{ await ADS_JS; }catch(e){ host.innerHTML='<div class="ph"><div><h1>Social Ads</h1></div></div><div class="card"><div class="msg">The ad builder could not be loaded — please try again.</div></div>'; return; }
   window.HCPSAdBuilder.mount(host,{ api:(b)=>api(ADS_API,b), esc });
 }
+/* ===== ASK VICTORIA — basic dealer interface (owner 2026-11-15, G6 scope addition). Read-only answers from the dealer's own
+   verified HCPS facts (victoria-dealer-api: facts / price — the server decides the dealer, the pilot and every line's
+   authorization; a staff preview is refused). No AI and no paid provider: a question is routed to one of the supported
+   topics by its words, or chosen from the buttons; every answer names its source; anything not supported says so. It never
+   orders, emails or changes anything. Shown only when the server answers enabled (pilot: listed TEST dealers). ===== */
+const VIC_ENDPOINT=API_BASE+"/victoria-dealer-api";
+let VIC=null, VICLOG=[], VICBUSY=false;
+async function vicProbe(){
+  if(window.__PREVIEW__||MEMBER) return;
+  const j=await api(VIC_ENDPOINT,{action:"facts"}).catch(()=>null);
+  if(j&&j.ok&&j.enabled===true&&j.facts){ VIC=j; const n=$("#vicNav"); if(n) n.style.display=""; }
+}
+const VIC_TOPICS=[["orders","My open orders"],["tracking","Tracking"],["accounts","My manufacturer accounts"],["price","Price a product"],["freight","Freight policies"],["service","Golden service cases"],["help","Help articles"],["stock","Inventory & lead times"]];
+function vicRoute(q){
+  const t=String(q||"").toLowerCase();
+  if(/track|ship|deliver|carrier|where is/.test(t)) return "tracking";
+  if(/price|cost|how much|msrp|map\b/.test(t)) return "price";
+  if(/freight|shipping cost|free ship/.test(t)) return "freight";
+  if(/account|application|set ?up|authori[sz]ed|number on file/.test(t)) return "accounts";
+  if(/stock|inventory|in stock|lead ?time|available when|back ?order/.test(t)) return "stock";
+  if(/service|repair|case|rma|warranty claim|golden support/.test(t)) return "service";
+  if(/order|po\b|purchase/.test(t)) return "orders";
+  if(/help|how do i|how to|where do i/.test(t)) return "help";
+  return null;
+}
+const vicDate=d=>d?String(d).slice(0,10):"";
+function vicAnswer(topic){
+  const F=VIC&&VIC.facts||{}, src=x=>`<div class="m" style="margin-top:8px;font-size:12px;color:var(--muted)">Source: ${esc(x)} · as of ${esc(new Date(VIC.as_of).toLocaleString())}</div>`;
+  if(topic==="orders"||topic==="tracking"){
+    const list=(topic==="orders"?(F.orders&&F.orders.open):(F.orders&&F.orders.recent))||[];
+    const rows=topic==="tracking"?list.filter(o=>(o.shipments||[]).length||o.tracking_text):list;
+    if(!rows.length) return `<p>${topic==="orders"?"You have no open orders on record.":"No shipment or tracking has been recorded for your recent orders yet."}${F.shipments_unavailable?" Shipment records could not be read just now.":""}</p>`+src(F.orders?F.orders.source:"HCPS order records");
+    return `<ul style="margin:0;padding-left:18px">${rows.slice(0,15).map(o=>`<li><b>${esc(o.manufacturer)}</b> · ${esc(vicDate(o.date))}${o.po?" · PO "+esc(o.po):""} · ${esc(o.invoice_only?"Invoice recorded (payment status not established)":(o.status||"").replace(/_/g," "))}${o.held_for_account?" — waiting for your manufacturer account":""}${(o.shipments||[]).map(sh=>`<br><span style="font-size:13px">${esc(sh.carrier||"Carrier not confirmed")}${sh.tracking_number?" · "+esc(sh.tracking_number):""}${sh.ship_date?" · shipped "+esc(vicDate(sh.ship_date)):""}${sh.est_delivery_date?" · est. delivery "+esc(vicDate(sh.est_delivery_date)):""}</span>`).join("")}${o.tracking_text&&!(o.shipments||[]).length?"<br><span style='font-size:13px'>"+esc(o.tracking_text)+"</span>":""}</li>`).join("")}</ul>`+src(F.orders.source);
+  }
+  if(topic==="accounts"){ const a=F.accounts||[]; if(!a.length) return "<p>No manufacturer accounts are on record.</p>"+src("HCPS account records");
+    return `<ul style="margin:0;padding-left:18px">${a.map(x=>`<li><b>${esc(x.manufacturer)}</b> — ${esc(x.status||"")}${x.application?" · application "+esc(x.application):""}</li>`).join("")}</ul>`+src("HCPS account records (number on file, HCPS verification, authorization, applications)"); }
+  if(topic==="freight"){ const f=F.freight; if(!Array.isArray(f)) return "<p>Freight policies could not be read just now.</p>";
+    return `<ul style="margin:0;padding-left:18px">${f.map(x=>`<li><b>${esc(x.manufacturer)}</b> — ${esc(x.policy||"No freight policy published.")}</li>`).join("")}</ul>`+src("Published manufacturer freight policies (lines you may order)"); }
+  if(topic==="service"){ const g=F.golden_service||{}; if(!g.available) return "<p>Golden service cases are not available for your account here.</p>";
+    const c=g.cases||[]; return (c.length?`<ul style="margin:0;padding-left:18px">${c.map(x=>`<li><b>${esc(x.case_no)}</b> · ${esc(x.what||x.kind||"")} · ${esc((x.status||"").replace(/_/g," "))} · ${esc(vicDate(x.created_at))}</li>`).join("")}</ul>`:"<p>No Golden service cases have been sent from Dealer 360.</p>")+src(g.source||"Golden Technologies (via HCPS)"); }
+  if(topic==="help"){ const h=F.help; if(!Array.isArray(h)) return "<p>Help articles could not be read just now.</p>";
+    return `<ul style="margin:0;padding-left:18px">${h.map(x=>`<li><a onclick="showView('help')" style="cursor:pointer;text-decoration:underline">${esc(x.title)}</a></li>`).join("")}</ul>`+src("Help & Training Center"); }
+  if(topic==="stock") return "<p>Inventory and lead times are not available yet — HCPS has no verified source for them, so Victoria won't guess. Ask your HCPS rep or check with HCPS when you order.</p>";
+  if(topic==="price"){ const opts=(F.accounts||[]).filter(a=>a.authorized_to_order).map(a=>`<option value="${esc(a.slug)}">${esc(a.manufacturer)}</option>`).join("");
+    if(!opts) return "<p>You are not authorized to order any line here yet, so there are no prices to show.</p>";
+    return `<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end"><label style="display:flex;flex-direction:column;font-size:13px">Manufacturer<select id="vicMfr" style="min-height:44px;font-size:16px">${opts}</select></label><label style="display:flex;flex-direction:column;font-size:13px">Item #<input id="vicCode" maxlength="60" style="min-height:44px;font-size:16px" placeholder="e.g. YHT101"></label><label style="display:flex;flex-direction:column;font-size:13px">Qty<input id="vicQty" type="number" min="1" max="999" value="1" style="min-height:44px;font-size:16px;width:90px"></label><a class="btn pri" style="min-height:44px;display:inline-flex;align-items:center" onclick="vicPrice()">Check price</a></div><div id="vicPriceOut" aria-live="polite"></div><div class="m" style="margin-top:6px;font-size:12px;color:var(--muted)">Your price comes from the same check as checkout. Nothing is ordered.</div>`; }
+  return "";
+}
+async function vicPrice(){
+  const out=$("#vicPriceOut"), code=String(($("#vicCode")||{}).value||"").trim(), mfr=($("#vicMfr")||{}).value, qty=Math.floor(Number(($("#vicQty")||{}).value)||1);
+  if(!code){ out.innerHTML='<p>Enter an item number.</p>'; return; }
+  out.innerHTML='<p>Checking…</p>';
+  const j=await api(VIC_ENDPOINT,{action:"price",lines:[{manufacturer:mfr,code,qty}]}).catch(()=>null);
+  if(!j||j.ok===false){ out.innerHTML='<p>The price could not be checked just now.</p>'; return; }
+  if(!j.priced){ out.innerHTML=`<p>${j.reason==="not_authorized_for_line"?"You are not authorized to order that line, so no price is shown.":"The price could not be checked just now."}</p>`; return; }
+  const l=(j.orders&&j.orders[0]&&j.orders[0].lines||[])[0], o=j.orders&&j.orders[0];
+  if(!l||l.available===false){ out.innerHTML='<p>That item number was not found on this line.</p>'; return; }
+  out.innerHTML=`<p><b>${esc(l.name||l.code)}</b> (${esc(l.code)}) × ${esc(l.qty)}: your price <b>${cents(l.your_price)}</b> each, line ${cents(l.line_total)}${l.contract_price?" (your contract price)":""}${l.msrp!=null?" · MSRP "+cents(l.msrp):""}${l.map!=null?" · MAP "+cents(l.map):""}${o&&o.freight_at_this_quantity!=null?" · freight at this quantity "+cents(o.freight_at_this_quantity):""}.</p><div class="m" style="font-size:12px;color:var(--muted)">Source: ${esc(j.source||"HCPS pricing engine")}</div>`;
+}
+function vicAsk(topicOrText,isTopic){
+  const topic=isTopic?topicOrText:vicRoute(topicOrText); const label=isTopic?(VIC_TOPICS.find(x=>x[0]===topic)||[,topicOrText])[1]:String(topicOrText).slice(0,200);
+  VICLOG.unshift({q:label,a:topic?vicAnswer(topic):`<p>I can only answer from your HCPS records about: ${VIC_TOPICS.map(x=>esc(x[1])).join(", ")}. I can't place orders or change anything — use the buttons above.</p>`});
+  VICLOG=VICLOG.slice(0,8); renderVictoria();
+}
+async function loadVictoria(){ if(!VIC) await vicProbe(); renderVictoria(); }
+function renderVictoria(){
+  const host=$("#view-victoria"); if(!host) return;
+  if(!VIC){ host.innerHTML='<div class="ph"><div><h1>Ask Victoria</h1></div></div><div class="card"><div class="msg">Victoria is not available for your account yet.</div></div>'; return; }
+  host.innerHTML=`<div class="ph"><div><h1>Ask Victoria</h1><div class="sub">Answers from your own HCPS records — accounts, orders &amp; tracking, prices, freight, Golden service and help. Victoria is read-only: she never orders, emails or changes anything.</div></div></div>
+  <div class="card"><div style="display:flex;flex-wrap:wrap;gap:8px" role="group" aria-label="Questions Victoria can answer">${VIC_TOPICS.map(([k,n])=>`<a class="btn gh" style="min-height:44px;display:inline-flex;align-items:center" onclick="vicAsk('${k}',true)">${esc(n)}</a>`).join("")}</div>
+  <form onsubmit="event.preventDefault();const i=document.getElementById('vicQ');if(i.value.trim()){vicAsk(i.value,false);}" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><label for="vicQ" style="position:absolute;left:-9999px">Your question</label><input id="vicQ" maxlength="200" placeholder="e.g. Where is my last order?" style="flex:1;min-width:200px;min-height:44px;font-size:16px"><button class="btn pri" style="min-height:44px" type="submit">Ask</button></form></div>
+  <div id="vicLog" aria-live="polite">${VICLOG.map(x=>`<div class="card"><div style="font-weight:700;margin-bottom:6px">${esc(x.q)}</div>${x.a}</div>`).join("")}</div>`;
+}
+Object.assign(window,{vicAsk,vicPrice,loadVictoria}); window.__vicTest={probe:vicProbe};
 /* THE HUB'S BUTTONS NEED THEIR FUNCTIONS ON window (2026-10-31). Everything above lives inside this IIFE, but the views
    are HTML strings with inline onclick="qAdd()" etc., which look the name up on window — so "+ Add" on Customer MSRP
    Quotes, the showroom wall buttons, the price-request / literature / credit / resale forms and the favourite star did
