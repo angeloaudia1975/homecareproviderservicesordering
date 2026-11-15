@@ -7721,6 +7721,9 @@ const cents=n=>"$"+(Number(n)||0).toLocaleString(undefined,{minimumFractionDigit
 const monthName=ym=>{ const m=/^(\d{4})-(\d{2})$/.exec(String(ym||"")); return m?new Date(Date.UTC(+m[1],+m[2]-1,1)).toLocaleDateString("en-US",{month:"long",year:"numeric",timeZone:"UTC"}):String(ym||""); };
 const orderTotal=o=>Number(o&&o.total!=null?o.total:(o&&o.cost))||0;
 const freightNote=o=>(o&&Number(o.freight)>0)?`<div class="m" style="font-weight:400;font-size:11px;color:var(--muted,#667085)">incl. ${cents(o.freight)} freight</div>`:"";
+/* owner 2026-11-15: an "Invoice recorded" entry (open manufacturer invoice, payment status not established) is never a purchase —
+   kept out of every purchase total, product/category analytics and suggestions; listed apart in the table and CSV */
+const purchasesOnly=(h)=>(h||[]).filter(o=>!o.invoice_only&&o.status!=="invoice_recorded");
 const num=n=>Math.round(Number(n)||0).toLocaleString();
 const MONS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const monthLbl=ym=>{const[y,m]=String(ym||"").split("-");return m?MONS[(+m)-1]+" "+y:ym;};
@@ -7817,7 +7820,7 @@ async function loadDash(){
   const recent=(d.recent||[]);
   const recentHtml=recent.length?recent.map(o=>`<div class="rl">
       <div class="b"><div class="n">${esc(o.manufacturerName)} ${srcPill(o.source)}</div><div class="m">${dateShort(o.date)} · ${o.itemsCount} item${o.itemsCount!==1?"s":""} · ${o.units} units${o.preview&&o.preview.length?" · "+esc(o.preview.join(", ")):""}</div></div>
-      <div class="amt tnum">${cents(orderTotal(o))}${freightNote(o)}</div></div>`).join(""):`<div class="empty">No orders on file yet.</div>`;
+      <div class="amt tnum">${cents(orderTotal(o))}${freightNote(o)}${o.status==="invoice_recorded"?`<div style="font-size:11px;font-weight:400;color:var(--muted,#64748b)">Invoice recorded · not a purchase</div>`:""}</div></div>`).join(""):`<div class="empty">No orders on file yet.</div>`;
   $("#view-dash").innerHTML=`
     <div class="ph"><div><h1>Welcome back${PROFILE&&PROFILE.name?", "+esc(PROFILE.name):""}</h1><div class="sub">Your HCPS purchases across every line</div></div>
       <div><a class="btn nv" href="/">Start an order</a> <a class="btn pri" onclick="showView('orders')">View all orders →</a></div></div>
@@ -7902,14 +7905,14 @@ async function loadOrders(){
     const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
     return `<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b>${extra}</td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${cents(orderTotal(o))}${freightNote(o)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
   }).join("");
-  const total=HISTORY.reduce((s,o)=>s+orderTotal(o),0);
+  const total=purchasesOnly(HISTORY).reduce((s,o)=>s+orderTotal(o),0); const nInv=HISTORY.length-purchasesOnly(HISTORY).length;
   $("#view-orders").innerHTML=`
     <div class="ph"><div><h1>Orders &amp; Tracking</h1><div class="sub">Consolidated history — imported sales, portal &amp; Golden · ${HISTORY.length} records</div></div>
       <div><a class="btn gh" onclick="exportHistoryCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a></div></div>
     ${typeof rptNavHtml==='function'?rptNavHtml('orders'):''}
     <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Date</th><th>Source</th><th>Manufacturer</th><th>Items</th><th class="n">Units</th><th class="n">Amount</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows||`<tr><td colspan="8" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
-      ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total (incl. freight)</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${cents(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
+      ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total (incl. freight)${nInv?`<div style="font-weight:400;font-size:12px;color:var(--muted,#64748b)">Excludes ${nInv} recorded invoice${nInv>1?"s":""} — payment status not established</div>`:""}</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${cents(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
     </table></div>
     <div id="goldenHistLive" class="gh-live" role="status" aria-live="polite"></div>
     <div id="goldenHist" style="margin-top:16px"></div>
@@ -8445,7 +8448,7 @@ function dl(filename,text,mime){const blob=new Blob(["﻿"+text],{type:mime||'te
 function csvCell(v){v=String(v==null?'':v);if(/^[=+\-@\t\r]/.test(v)&&!/^-?\d+(\.\d+)?$/.test(v))v="'"+v;return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}   /* a cell starting = + - @ is never run as a spreadsheet formula */
 function toCSV(rows){return rows.map(r=>r.map(csvCell).join(',')).join('\r\n');}
 function exportHistoryCSV(){const rows=[['Date','Source','Manufacturer','Item #','Product','Qty','Unit','Line total','Status']];
-  for(const o of (HISTORY||[])){for(const l of (o.lines||[])){const qty=Number(l.qty)||0;const line=Number(l.line!=null?l.line:l.cost)||0;rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,l.code,l.name,qty,qty?(line/qty).toFixed(2):line.toFixed(2),line.toFixed(2),o.status]);}
+  for(const o of (HISTORY||[])){for(const l of (o.lines||[])){const qty=Number(l.qty)||0;const line=Number(l.line!=null?l.line:l.cost)||0;rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,l.code,l.name,qty,qty?(line/qty).toFixed(2):line.toFixed(2),line.toFixed(2),o.invoice_only||o.status==="invoice_recorded"?"Invoice recorded — billed, payment status not established; not a purchase":o.status]);}
     if(Number(o.freight)>0) rows.push([(o.date||'').slice(0,10),o.source,o.manufacturerName,'','Freight / shipping & handling',1,Number(o.freight).toFixed(2),Number(o.freight).toFixed(2),o.status]);}
   dl('hcps-order-history.csv',toCSV(rows));}
 function exportReportCSV(){ if(!RPT) return; const R=RPT.report;
@@ -8881,7 +8884,7 @@ let SHOWROOM={zones:[]}, ZONE_N=12, MFRLIST=[], LINES=[], SW_PICK_IDX=null;
 function ensureZones(){ if(!Array.isArray(SHOWROOM.zones))SHOWROOM.zones=[]; while(SHOWROOM.zones.length<ZONE_N)SHOWROOM.zones.push(null); SHOWROOM.zones=SHOWROOM.zones.slice(0,ZONE_N); }
 function mfrNameOf(slug){ const m=(MFRLIST||[]).find(x=>x.slug===slug); return m?m.name:(retiredLineName(slug)||slug); }
 function prodRec(key){ const i=key.indexOf("|"); const mfr=key.slice(0,i),code=key.slice(i+1); const p=(PRICE&&PRICE[key])||{}; const cost=p.cost!=null?p.cost:null; const msrp=(p.msrp!=null?p.msrp:(cost!=null?cost*2:0)); return {key,mfr,code,name:p.name||code,mfrName:p.mfrName||mfrNameOf(mfr),cost,msrp,est:p.msrp==null}; }
-function purchasedKeys(){ const m={}; for(const o of (HISTORY||[])){ for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; m[k]=(m[k]||0)+(Number(l.line!=null?l.line:l.cost)||0); } } return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k])=>k); }
+function purchasedKeys(){ const m={}; for(const o of purchasesOnly(HISTORY)){ for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; m[k]=(m[k]||0)+(Number(l.line!=null?l.line:l.cost)||0); } } return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k])=>k); }
 async function loadShowroom(){
   await ensureCatalogFav();
   /* a failed read is never cached as "no orders" (C3-06): My Orders asks again and says so */
@@ -9172,10 +9175,10 @@ let ACCOUNT={resale:null,applications:[],terms:[]};
 /* --- intelligence (dashboard) --- */
 function daysSince(d){ const t=Date.parse(d); if(!t)return 9999; return Math.floor((Date.now()-t)/86400000); }
 function reorderDueList(){ const m={};
-  for(const o of (HISTORY||[])){ const dt=o.date||((o.ym||"")+"-01"); for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; const x=m[k]||(m[k]={mfr:o.manufacturer,mfrName:o.manufacturerName,name:l.name,code:l.code,count:0,last:"",spend:0}); x.count++; x.spend+=Number(l.line!=null?l.line:l.cost)||0; if(String(dt)>String(x.last))x.last=String(dt); } }
+  for(const o of purchasesOnly(HISTORY)){ const dt=o.date||((o.ym||"")+"-01"); for(const l of (o.lines||[])){ const k=o.manufacturer+"|"+l.code; const x=m[k]||(m[k]={mfr:o.manufacturer,mfrName:o.manufacturerName,name:l.name,code:l.code,count:0,last:"",spend:0}); x.count++; x.spend+=Number(l.line!=null?l.line:l.cost)||0; if(String(dt)>String(x.last))x.last=String(dt); } }
   return Object.values(m).filter(x=>x.count>=2 && daysSince(x.last)>45).sort((a,b)=>b.spend-a.spend).slice(0,4); }
 function decliningCats(){ const Y=String(new Date().getFullYear()),PY=String(new Date().getFullYear()-1); const cur={},prev={};
-  for(const o of (HISTORY||[])){ const y=String(o.ym||"").slice(0,4); for(const l of (o.lines||[])){ const p=PRICE&&PRICE[o.manufacturer+"|"+l.code]; const cat=(p&&p.category)||"Other"; const amt=Number(l.line!=null?l.line:l.cost)||0; if(y===Y)cur[cat]=(cur[cat]||0)+amt; else if(y===PY)prev[cat]=(prev[cat]||0)+amt; } }
+  for(const o of purchasesOnly(HISTORY)){ const y=String(o.ym||"").slice(0,4); for(const l of (o.lines||[])){ const p=PRICE&&PRICE[o.manufacturer+"|"+l.code]; const cat=(p&&p.category)||"Other"; const amt=Number(l.line!=null?l.line:l.cost)||0; if(y===Y)cur[cat]=(cur[cat]||0)+amt; else if(y===PY)prev[cat]=(prev[cat]||0)+amt; } }
   const out=[]; for(const c in prev){ if(prev[c]>=400 && (cur[c]||0)<prev[c]*0.6) out.push({cat:c,prev:prev[c],cur:cur[c]||0,drop:Math.round((1-(cur[c]||0)/prev[c])*100)}); }
   return out.sort((a,b)=>b.prev-a.prev).slice(0,3); }
 /* EXPLORE MORE MANUFACTURERS (owner 2026-11-12, James Medical): only lines HCPS's access engine says are AVAILABLE to this
@@ -9279,69 +9282,7 @@ function acAccountsHtml(loc){
     const facts=f?`<div class="acfacts">${fact(!!f.on_file,"Account # on file"+(f.on_file&&f.on_file.source==="head_office"?" (head office)":""),"No account # on file")}${f.on_file?fact(!!f.verified,"Verified by HCPS"+(f.verified&&f.verified.at?" "+f.verified.at:""),"Not yet verified"):""}${held?`<span class="acf w">◷ Opening order only — held until the account is open</span>`:fact(f.authorized,"Authorized to order","Not set up to order")}</div>${f.application?`<div class="acx">Application: ${esc(String(f.application.status).replace(/_/g," "))}</div>`:""}${held?`<div class="acx">You can place an opening order now. HCPS saves it and sends it to the manufacturer once your account is open and its number is on file.</div>`:""}`:"";
     return `<div class="acrow st-${esc(x.status)}"><div class="acn"><b>${esc(x.name)}</b><span>${f?"":esc(x.label)}${x.account_ref?(f?"# ":" · # ")+esc(x.account_ref):""}${x.pending_claim?` · you sent #${esc(x.pending_claim)} — HCPS is reviewing`:""}</span>${facts}</div><div class="acr">${f?"":acChip(x.status)}${act}</div></div>`; }).join("")}</div>`;
 }
-function renderAccount(){ renderAccount0(); lsEntry(); techCard(); }
-/* ===== Service technicians (Golden Service 360 Stage 5, owner 2026-11-15) — per-person invitations, roles Viewer and
-   Technician + Service. Members get NO prices or financial records (no dealer login is ever created for them). The one-time
-   link is shown once to the dealer, who gives it to the person — nothing is emailed. Hidden while the server switch is off. */
-const MEMBERS_ENDPOINT=API_BASE+"/dealer-members-api";
-const TECH_ROLE={viewer:"Viewer — service information only",technician_service:"Technician + Service — service information and service requests"};
-let TECH=null, TECH_LINK=null;
-async function techCard(){
-  const host=$("#view-account"); if(!host||(window.__PREVIEW__&&window.__PREVIEW__.token)||(window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__())) return;
-  let box=document.getElementById("techCard"); if(!box){ box=document.createElement("div"); box.id="techCard"; host.appendChild(box); }
-  const d=await api(MEMBERS_ENDPOINT,{action:"list"});
-  if(!d||d.ok===false){ TECH=null; box.innerHTML=""; return; }   // switched off, not installed or not a dealer login: no card
-  TECH=d; techRender();
-}
-function techRender(){
-  const box=document.getElementById("techCard"); if(!box||!TECH) return;
-  const st={pending:"Invitation open",accepted:"Accepted",revoked:"Revoked",expired:"Expired"};
-  const mem=(TECH.members||[]).filter(m=>m.active), inv=(TECH.invites||[]).filter(i=>i.status==="pending");
-  box.innerHTML=`<div class="card"><div class="chead"><h3>Service technicians</h3></div>
-    <div class="m" style="margin-bottom:8px">Give your service people their own login for Golden Service & Support. They never see prices, orders, purchases or reports, and you can remove them at any time.</div>
-    ${mem.length?mem.map(m=>`<div class="rl"><div class="b"><div class="n">${esc(m.email)}</div><div class="m">${esc(TECH_ROLE[m.role]||m.role)}</div></div><a class="btn gh acsm" onclick="techRevokeMember('${esc(m.uid)}')">Remove</a></div>`).join(""):'<div class="m">No technicians yet.</div>'}
-    ${inv.length?`<h4 style="margin:12px 0 4px">Open invitations</h4>`+inv.map(i=>`<div class="rl"><div class="b"><div class="n">${esc(i.email)}</div><div class="m">${esc(TECH_ROLE[i.role]||i.role)} · ${esc(st[i.status]||i.status)} until ${esc(String(i.expires_at||"").slice(0,10))}</div></div><a class="btn gh acsm" onclick="techRevokeInvite('${esc(i.id)}')">Cancel</a></div>`).join(""):""}
-    <div class="acgrid" style="margin-top:12px"><label><span>Email</span><input id="techEmail" type="email" autocomplete="off" style="font-size:16px"></label>
-      <label><span>Access</span><select id="techRole" style="font-size:16px"><option value="viewer">${TECH_ROLE.viewer}</option><option value="technician_service">${TECH_ROLE.technician_service}</option></select></label></div>
-    <div style="margin-top:10px"><a class="btn" onclick="techInvite()">Create invitation link</a></div>
-    ${TECH_LINK?`<div class="card" style="margin-top:10px;background:#f6f8fb"><b>Invitation link for ${esc(TECH_LINK.email)}</b> — shown only now. Give it to that person yourself (HCPS does not email it); it works only for that email address and expires ${esc(String(TECH_LINK.expires_at).slice(0,10))}.<div style="margin-top:6px;word-break:break-all"><code id="techLinkText">${esc(TECH_LINK.link)}</code></div><a class="btn gh acsm" style="margin-top:6px" onclick="techCopy()">Copy link</a></div>`:""}</div>`;
-}
-async function techInvite(){
-  const email=(($("#techEmail")||{}).value||"").trim(), role=($("#techRole")||{}).value||"viewer";
-  const d=await api(MEMBERS_ENDPOINT,{action:"invite",email,role});
-  if(!d||d.ok===false){ toast((d&&(d.message||d.error))||"Could not create the invitation."); return; }
-  TECH_LINK={email:d.invite.email,link:d.link,expires_at:d.invite.expires_at}; await techCard();
-}
-function techCopy(){ try{ navigator.clipboard.writeText(TECH_LINK.link); toast("Link copied"); }catch(e){} }
-async function techRevokeInvite(id){ const d=await api(MEMBERS_ENDPOINT,{action:"revoke_invite",id}); if(!d||d.ok===false) toast((d&&d.error)||"Could not cancel."); else { TECH_LINK=null; await techCard(); } }
-async function techRevokeMember(uid){ if(!confirm("Remove this technician's access now?")) return; const d=await api(MEMBERS_ENDPOINT,{action:"revoke_member",uid}); if(!d||d.ok===false) toast((d&&d.error)||"Could not remove."); else await techCard(); }
-/* accepting: the link's token is kept for this tab only, the address bar is cleaned, and the person accepts once signed in
-   with the invited address (a dealer login can't accept — technicians get their own login) */
-(function(){ try{ const u=new URL(location.href), t=u.searchParams.get("member_invite"); if(t){ sessionStorage.setItem("hcps_member_invite",t); u.searchParams.delete("member_invite"); history.replaceState(null,"",u.pathname+(u.search||"")+u.hash); } }catch(e){} })();
-async function memberInviteCheck(){
-  let t=null; try{ t=sessionStorage.getItem("hcps_member_invite"); }catch(e){}
-  const signed=typeof AUTH!=="undefined"&&AUTH.session&&AUTH.session.access_token;
-  if(t&&!signed){ $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Technician invitation</h3><a class="mx" onclick="closeModal()">✕</a></div><p>Sign in — or create a login — with the email address the invitation was sent for, then accept it here.</p><div style="margin-top:10px"><a class="btn" onclick="closeModal();openLogin&&openLogin()">Sign in</a></div></div>`; $("#modal").classList.add("on"); return; }
-  if(t&&signed){ $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Technician invitation</h3><a class="mx" onclick="closeModal()">✕</a></div><p>Accept technician access with the login you are signed in with? You will see service information for that dealer — never its prices, orders or reports.</p><div style="margin-top:10px"><a class="btn" onclick="memberAccept()">Accept</a></div><div class="m" id="memberMsg"></div></div>`; $("#modal").classList.add("on"); return; }
-  if(signed&&AUTH.status!=="approved") memberBanner();
-}
-async function memberAccept(){
-  let t=null; try{ t=sessionStorage.getItem("hcps_member_invite"); }catch(e){}
-  const r=await fetch(MEMBERS_ENDPOINT,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+AUTH.session.access_token},body:JSON.stringify({action:"accept",token:t})});
-  const d=await r.json().catch(()=>({}));
-  if(d&&d.ok){ try{ sessionStorage.removeItem("hcps_member_invite"); }catch(e){} closeModal(); memberBanner(); }
-  else { const m=document.getElementById("memberMsg"); if(m) m.textContent=(d&&(d.message||d.error))||"Could not accept the invitation."; }
-}
-async function memberBanner(){
-  if(!(AUTH.session&&AUTH.session.access_token)) return;
-  const r=await fetch(MEMBERS_ENDPOINT,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+AUTH.session.access_token},body:JSON.stringify({action:"me"})}).catch(()=>null);
-  const d=r?await r.json().catch(()=>null):null; if(!d||!d.ok||!d.member) return;
-  let el=document.getElementById("memberBanner"); if(!el){ el=document.createElement("div"); el.id="memberBanner"; el.setAttribute("role","status"); el.style.cssText="background:#eef5fb;color:#0b1f33;border-bottom:1px solid #c9dcec;padding:10px 16px;font-size:14px;text-align:center"; document.body.insertBefore(el,document.body.firstChild); }
-  el.textContent="Technician access for "+d.member.dealer_name+" — "+(TECH_ROLE[d.member.role]||d.member.role)+". Golden Service & Support opens here once it is switched on.";
-}
-Object.assign(window,{techCard,techInvite,techCopy,techRevokeInvite,techRevokeMember,memberAccept,memberInviteCheck});
-(function(){ let n=0; const tm=setInterval(()=>{ n++;   // wait for a restored session (or ~4 s of none) before asking
-  if(typeof AUTH!=="undefined"&&((AUTH.session&&AUTH.status!=="anon")||n>=8)){ clearInterval(tm); memberInviteCheck(); } },500); })();
+function renderAccount(){ renderAccount0(); lsEntry(); }
 function renderAccount0(){
   const host=$("#view-account"); if(!host) return;
   const resaleOn=ACCOUNT.resale&&ACCOUNT.resale.status==="on_file";
