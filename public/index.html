@@ -8524,6 +8524,10 @@ async function quotesCall(body){
   if(!mg&&typeof PREVIEW!=='undefined'&&PREVIEW) return {ok:false,error:'Read-only preview — saved quotes are not available here.'};
   if(!mg&&!(typeof AUTH!=='undefined'&&AUTH&&AUTH.session&&AUTH.session.access_token)) return {ok:false,error:'Please sign in again.'};
   if(!mg){ try{ await ensureFreshSession(); }catch(e){} }
+  if(mg&&body&&body.action==='quote_email'){   // Manage Dealer: emailing the dealer's customer is confirmed separately and recorded (owner 2026-11-15)
+    const loc=(typeof MANAGE!=='undefined'&&MANAGE&&MANAGE.location&&MANAGE.location.name)||'the dealer';
+    if(!confirm('Email this quote to '+(body.to||'the customer')+' on behalf of '+loc+'?\n\nIt is sent from HCPS in the dealer\'s name, replies go to the dealer, and it is recorded under your name.')) return {ok:false,error:'Nothing was sent.'};
+    body=Object.assign({},body,{manage_confirm:'email'}); }
   try{ const r=await fetch(QUOTES_API,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+(mg||AUTH.session.access_token)},body:JSON.stringify(body)});
     if(mg&&r.status===401&&typeof manageEnded==='function'){ const e=await r.clone().json().catch(()=>({})); manageEnded((e&&e.error)||'Your Manage Dealer session has ended.'); }
     return await r.json().catch(()=>({ok:false,error:'Please try again.'})); }catch(e){ return {ok:false,error:'Please try again.'}; }
