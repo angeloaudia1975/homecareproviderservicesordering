@@ -49,6 +49,7 @@ const esc = s => String(s == null ? '' : s)
    blank. SVG is deliberately NOT allowed as a data URL: an SVG is a document and
    can carry script, unlike a PNG or JPEG. javascript:, data:text/html and anything
    else return empty and the tag is simply not emitted. */
+const absolutizeImages = (h, base) => String(h || '').replace(/(<img\b[^>]*?\bsrc=")\/(?!\/)/gi, '$1' + String(base || '').replace(/\/+$/, '') + '/');
 const safeUrl = u => {
   const s = String(u || '').trim();
   if (/^https?:\/\//i.test(s)) return s;
@@ -497,6 +498,9 @@ exports.handler = async (event) => {
       : '';
     // The brochure body, with the print toolbar stripped — it is meaningless in mail.
     const body = html.replace(/<div class="toolbar">[\s\S]*?<\/div>\s*(?=<div class="sheet">)/, '');
+    /* A mailed brochure has no page origin: a site-relative photo ("/assets/products/…") would arrive broken. Make every
+       root-relative image absolute on the dealer portal's own host (owner 2026-11-15 branding check). */
+    const mailBody = absolutizeImages(body, SHOP_BASE);
     const subject = `${str(product.name, 120)}${product.code ? ` (Item ${str(product.code, 40)})` : ''}`.replace(/[\r\n\t]+/g, ' ');
 
     const res = await fetch('https://api.resend.com/emails', {
@@ -506,7 +510,7 @@ exports.handler = async (event) => {
         from: brand ? `"${String(brand.business_name).replace(/["\\<>\r\n]/g, '').slice(0, 70)} via HCPS" <${(FROM.match(/<([^>]+)>/) || [, FROM])[1]}>` : FROM, to: [to],   // display name quoted ("Smith Medical, LLC")
         reply_to: EMAIL_RE.test(who.email) ? who.email : undefined,
         subject,
-        html: body.replace('<body>', () => '<body>' + intro),   // a function replacer: "$&" in a message is text, not a pattern
+        html: mailBody.replace('<body>', () => '<body>' + intro),   // a function replacer: "$&" in a message is text, not a pattern
       }),
     });
     if (mgr) await manageCall({ action: 'manage_audit', token: mgr.manage.token, audit: { action: 'brochure_email', phase: res.ok ? 'done' : 'failed', target: `brochure:${str(product.code, 60)}`, after: { sent: !!res.ok, to_domain: to.split('@')[1] || '' } } });
@@ -524,3 +528,4 @@ exports.handler = async (event) => {
 };
 
 module.exports.renderBrochure = renderBrochure;
+module.exports.absolutizeImages = absolutizeImages;
