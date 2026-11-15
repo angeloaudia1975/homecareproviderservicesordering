@@ -9683,6 +9683,10 @@ async function vicProbe(){
 const VIC_TOPICS=[["orders","My open orders"],["tracking","Tracking"],["accounts","My manufacturer accounts"],["price","Price a product"],["freight","Freight policies"],["service","Golden service cases"],["help","Help articles"],["stock","Inventory & lead times"]];
 function vicRoute(q){
   const t=String(q||"").toLowerCase();
+  /* a request to DO something (order, email, cancel, change) is answered with what Victoria can't do — never routed to a
+     look-up that could read as if it were done (live acceptance 2026-11-15) */
+  if(/\b(place|put in|submit|send|email|e-mail|text|call|cancel|change|update|delete|remove|reorder|buy)\b/.test(t)&&!/\b(how do i|how to|where do i|status|when)\b/.test(t)) return "action";
+  if(/\b(how do i|how to|where do i)\b/.test(t)) return "help";
   if(/track|ship|deliver|carrier|where is/.test(t)) return "tracking";
   if(/price|cost|how much|msrp|map\b/.test(t)) return "price";
   if(/freight|shipping cost|free ship/.test(t)) return "freight";
@@ -9729,7 +9733,7 @@ async function vicPrice(){
 }
 function vicAsk(topicOrText,isTopic){
   const topic=isTopic?topicOrText:vicRoute(topicOrText); const label=isTopic?(VIC_TOPICS.find(x=>x[0]===topic)||[,topicOrText])[1]:String(topicOrText).slice(0,200);
-  VICLOG.unshift({q:label,a:topic?vicAnswer(topic):`<p>I can only answer from your HCPS records about: ${VIC_TOPICS.map(x=>esc(x[1])).join(", ")}. I can't place orders or change anything — use the buttons above.</p>`});
+  VICLOG.unshift({q:label,a:topic==="action"?`<p>Victoria is read-only: she can't place, change or cancel orders, send emails or contact anyone for you. To order, use the Shop; to reach HCPS, use your rep or the Help Center. I can look up: ${VIC_TOPICS.map(x=>esc(x[1])).join(", ")}.</p>`:topic?vicAnswer(topic):`<p>I can only answer from your HCPS records about: ${VIC_TOPICS.map(x=>esc(x[1])).join(", ")}. I can't place orders or change anything — use the buttons above.</p>`});
   VICLOG=VICLOG.slice(0,8); renderVictoria();
 }
 async function loadVictoria(){ if(!VIC) await vicProbe(); renderVictoria(); }
