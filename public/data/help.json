@@ -56,6 +56,29 @@
       ]
     },
     {
+      "id": "product-details",
+      "area": "ordering",
+      "title": "Reading a product page",
+      "updated": "2026-11-15",
+      "open": "shop",
+      "summary": "What each section of a product page shows and where it comes from.",
+      "steps": [
+        "Open any product in the shop to see its page.",
+        "Key features and Specifications come from the manufacturer's own product page or documents; a source link under the page names it.",
+        "Documents & resources holds the manufacturer's instructions and statements (for example assembly instructions or an air-travel statement) — they open from the manufacturer's site.",
+        "Your price, minimums and ordering options are always the ones on the page — product details never change a price."
+      ],
+      "notes": [
+        "Where a manufacturer prints an HCPCS code for a product, the page shows it as the code referenced by that manufacturer. Coverage and billing are decided by the payer; the code is not a statement of reimbursement eligibility.",
+        "Details a manufacturer has not confirmed are left out rather than guessed."
+      ],
+      "ui_checks": [
+        "Key features",
+        "Specifications",
+        "Documents &amp; resources"
+      ]
+    },
+    {
       "id": "pending-account-setup",
       "area": "ordering",
       "title": "Orders held for a new manufacturer account",

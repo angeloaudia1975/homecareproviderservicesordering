@@ -23,7 +23,8 @@
         {
           "area": "catalog",
           "text": "More manufacturer product details: feature bullets on PediFix products, Access4U ramp features and assembly instructions, Ohio Medical / GCE Zen-O Lite and M50 specifications, and Dalton's referenced HCPCS codes with a payer-coverage note.",
-          "dealer_facing": true
+          "dealer_facing": true,
+          "help": "product-details"
         }
       ]
     },
