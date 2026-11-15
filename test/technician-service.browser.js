@@ -39,7 +39,7 @@ const CORS = { 'access-control-allow-origin': '*' };
     });
     await t(`${tag}: tabs by role, no labor, no dealer price`, async () => {
       const vis = await page.evaluate(() => { const r = document.querySelector('#gsvHost').shadowRoot; return [...r.querySelectorAll('.tab-btn')].filter((x) => x.getBoundingClientRect().width > 0).map((x) => (x.getAttribute('onclick') || '').match(/'(\w+)'/)[1]); });
-      ok(!vis.includes('labor'), 'labor tab: ' + vis); ok(vis.includes('request') === (role === 'technician_service'), 'request tab: ' + vis); ok(vis.includes('docs') && vis.includes('videos') && vis.includes('parts'), 'read tabs: ' + vis);
+      ok(!vis.includes('labor'), 'labor tab: ' + vis); ok(vis.includes('request') === (role === 'technician_service'), 'request tab: ' + vis); ok(vis.includes('history') === (role === 'technician_service'), 'history tab: ' + vis); ok(vis.includes('docs') && vis.includes('videos') && vis.includes('parts'), 'read tabs: ' + vis);
       const all = await page.evaluate(() => document.querySelector('#gsvHost').shadowRoot.textContent + document.getElementById('view-goldsvc').textContent);
       ok(!/Dealer \$\d/.test(all), 'a dealer price is shown');
       const ov = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth); ok(ov <= 1, 'horizontal overflow ' + ov);

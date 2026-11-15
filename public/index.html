@@ -9097,7 +9097,7 @@ function gsvPrefill(root){
 async function loadGoldSvc(){
   const host=$("#view-goldsvc"); host.innerHTML='<div class="msg">Loading Golden Service &amp; Support…</div>';
   const g=await gsvcLoad();
-  if(!g||g.off){ host.innerHTML='<div class="ph"><div><h1>Golden Service &amp; Support</h1></div><div><a class="btn gh" onclick="showView(\'resources\')">← Resources</a></div></div><div class="card"><div class="msg">Golden Service &amp; Support is not available for your account just now.</div></div>'; return; }
+  if(!g||g.off){ host.innerHTML='<div class="ph"><div><h1>Golden Service &amp; Support</h1></div>'+(MEMBER?'':'<div><a class="btn gh" onclick="showView(\'resources\')">← Resources</a></div>')+'</div><div class="card"><div class="msg">Golden Service &amp; Support is not available for your account just now.</div></div>'; return; }
   if(GSVS===null) await gsvSubmitProbe();
   let A=null; try{ A=await gsvAssets(); }catch(e){ A=null; }
   if(!A||!window.GSV_MOUNT){ host.innerHTML='<div class="ph"><div><h1>Golden Service &amp; Support</h1></div><div><a class="btn gh" onclick="showView(\'resources\')">← Resources</a></div></div><div class="card"><div class="msg">Golden Service &amp; Support could not be loaded just now — please try again, or use <a href="https://goldentechsupport.netlify.app/" target="_blank" rel="noopener">Golden\'s support site</a>.</div><a class="btn pri" onclick="loadGoldSvc()">Try again</a></div>'; return; }
@@ -9106,7 +9106,7 @@ async function loadGoldSvc(){
   const root=$("#gsvHost").attachShadow({mode:"open"}); GSVROOT=root;
   root.innerHTML=`<style>${A.css}</style>${A.html}`;
   try{ window.GSV_MOUNT(root,{parts:gsvPartsData(g)},{send:gsvSendCase}); }catch(e){ console.error("[gsv mount]",e); }
-  if(MEMBER){ const st=document.createElement("style"); st.textContent='.tab-btn[onclick*="\'labor\'"],#tab-labor{display:none!important}'+(MEMBER.role==="technician_service"?"":'.tab-btn[onclick*="\'request\'"],#tab-request{display:none!important}'); root.appendChild(st);
+  if(MEMBER){ const st=document.createElement("style"); st.textContent='.tab-btn[onclick*="\'labor\'"],#tab-labor{display:none!important}'+(MEMBER.role==="technician_service"?"":'.tab-btn[onclick*="\'request\'"],#tab-request,.tab-btn[onclick*="\'history\'"],#tab-history{display:none!important}'); root.appendChild(st);
     host.querySelectorAll('a.btn.gh').forEach(a=>{ if(/Resources/.test(a.textContent)) a.remove(); }); }
   gsvPrefill(root); gsvHistory();
 }
@@ -9339,13 +9339,23 @@ async function techRevokeInvite(id){ const d=await api(MEMBERS_ENDPOINT,{action:
 async function techRevokeMember(uid){ if(!confirm("Remove this technician's access now?")) return; const d=await api(MEMBERS_ENDPOINT,{action:"revoke_member",uid}); if(!d||d.ok===false) toast((d&&d.error)||"Could not remove."); else await techCard(); }
 /* accepting: the link's token is kept for this tab only, the address bar is cleaned, and the person accepts once signed in
    with the invited address (a dealer login can't accept — technicians get their own login) */
-(function(){ try{ const u=new URL(location.href), t=u.searchParams.get("member_invite"); if(t){ sessionStorage.setItem("hcps_member_invite",t); u.searchParams.delete("member_invite"); history.replaceState(null,"",u.pathname+(u.search||"")+u.hash); } }catch(e){} })();
+(function(){ try{ const u=new URL(location.href), h=new URLSearchParams(u.hash.slice(1)), t=h.get("member_invite")||u.searchParams.get("member_invite");   /* the link carries it in the #fragment (never sent to a server) */
+  if(t){ sessionStorage.setItem("hcps_member_invite",t); u.searchParams.delete("member_invite"); history.replaceState(null,"",u.pathname+(u.search||"")); } }catch(e){} })();
 async function memberInviteCheck(){
   let t=null; try{ t=sessionStorage.getItem("hcps_member_invite"); }catch(e){}
   const signed=typeof AUTH!=="undefined"&&AUTH.session&&AUTH.session.access_token;
-  if(t&&!signed){ $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Technician invitation</h3><a class="mx" onclick="closeModal()">✕</a></div><p>Sign in — or create a login — with the email address the invitation was sent for, then accept it here.</p><div style="margin-top:10px"><a class="btn" onclick="closeModal();openLogin&&openLogin()">Sign in</a></div></div>`; $("#modal").classList.add("on"); return; }
+  if(t&&!signed){ $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Technician invitation</h3><a class="mx" onclick="closeModal()">✕</a></div><p><b>New to the portal?</b> Choose a password to create your technician login for the email address the invitation was sent to.</p><label for="memberPw" style="display:block;font-size:13px;margin-top:8px">Password (at least 10 characters)</label><input id="memberPw" type="password" autocomplete="new-password" minlength="10" maxlength="72" style="width:100%;min-height:44px;font-size:16px"><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><a class="btn pri" style="min-height:44px;display:inline-flex;align-items:center" onclick="memberCreate()">Create login &amp; accept</a><a class="btn" style="min-height:44px;display:inline-flex;align-items:center" onclick="closeModal();openLogin&&openLogin()">I already have a login — sign in</a></div><div class="m" id="memberMsg" role="status"></div></div>`; $("#modal").classList.add("on"); return; }
   if(t&&signed){ $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Technician invitation</h3><a class="mx" onclick="closeModal()">✕</a></div><p>Accept technician access with the login you are signed in with? You will see service information for that dealer — never its prices, orders or reports.</p><div style="margin-top:10px"><a class="btn" onclick="memberAccept()">Accept</a></div><div class="m" id="memberMsg"></div></div>`; $("#modal").classList.add("on"); return; }
   if(signed&&AUTH.status!=="approved") memberBanner();
+}
+async function memberCreate(){
+  let t=null; try{ t=sessionStorage.getItem("hcps_member_invite"); }catch(e){}
+  const pw=String(($("#memberPw")||{}).value||""), m=document.getElementById("memberMsg");
+  if(pw.length<10){ if(m) m.textContent="Use at least 10 characters."; return; }
+  const r=await fetch(MEMBERS_ENDPOINT,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"accept_new",token:t,password:pw})}).catch(()=>null);
+  const d=r?await r.json().catch(()=>({})):{};
+  if(d&&d.ok){ try{ sessionStorage.removeItem("hcps_member_invite"); }catch(e){} if(m) m.textContent="Your technician login is ready ("+d.email+"). Sign in with it to open Golden Service & Support."; return; }
+  if(m) m.textContent=(d&&(d.message||d.error))||"The login could not be created just now.";
 }
 async function memberAccept(){
   let t=null; try{ t=sessionStorage.getItem("hcps_member_invite"); }catch(e){}
@@ -9362,7 +9372,7 @@ async function memberBanner(){
   el.textContent="Technician access for "+d.member.dealer_name+" — "+(TECH_ROLE[d.member.role]||d.member.role)+". ";
   const b=document.createElement("a"); b.className="btn pri"; b.style.cssText="margin-left:8px;min-height:44px;display:inline-flex;align-items:center"; b.textContent="Open Golden Service & Support"; b.onclick=()=>showP360("goldsvc"); el.appendChild(b);
 }
-Object.assign(window,{techCard,techInvite,techCopy,techRevokeInvite,techRevokeMember,memberAccept,memberInviteCheck,memberMode});
+Object.assign(window,{techCard,techInvite,techCopy,techRevokeInvite,techRevokeMember,memberAccept,memberCreate,memberInviteCheck,memberMode});
 (function(){ let n=0; const tm=setInterval(()=>{ n++;   // wait for a restored session (or ~4 s of none) before asking
   if(typeof AUTH!=="undefined"&&((AUTH.session&&AUTH.status!=="anon")||n>=8)){ clearInterval(tm); memberInviteCheck(); } },500); })();
 function renderAccount0(){
