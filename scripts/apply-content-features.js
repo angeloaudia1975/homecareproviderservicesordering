@@ -43,7 +43,7 @@ function plan({ content, research, review, retired, today }){
     bump(why || 'eligible');
     rows.push({ page_key: key, source_url: pg.source_url, active_skus: active, eligible: !why, reason: why, claims: why === 'health_claim_wording' ? draft.draft.features.filter((f) => CLAIM.test(f)) : undefined, held: why === 'held_in_review' ? (pg.skus || []).filter((s) => held.has(up(s.sku))).map((s) => [s.sku, held.get(up(s.sku))]) : undefined,
       before: { features: pg.features || [], features_provenance: (pg.field_provenance || {}).features || null },
-      after: why ? null : { features: draft.draft.features, features_provenance: 'pedifix.com product page ' + pg.source_url + ' (read ' + today + ') — the manufacturer\'s own bullets, verbatim; owner-approved feature batch ' + today } });
+      after: why ? null : { features: draft.draft.features.map((f) => f.replace(/ &; /g, ' & ')), features_provenance: 'pedifix.com product page ' + pg.source_url + ' (read ' + today + ') — the manufacturer\'s own bullets, verbatim; owner-approved feature batch ' + today } });
   }
   return { rows, counts, skus: rows.filter((r) => r.eligible).reduce((a, r) => a + r.active_skus.length, 0) };
 }
