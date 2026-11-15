@@ -1,0 +1,319 @@
+{
+ "meta": {
+  "line": "ohio-medical",
+  "engine": "HCPS milestone M-2026-11-15 (exact-matched GCE pages)",
+  "generated": "2026-11-15",
+  "sources": 2,
+  "note": "Created for the owner-approved milestone; the catalog file ohio-medical.json and prices are untouched."
+ },
+ "pages": {
+  "gce-rs-00608-x-s": {
+   "manufacturer": "ohio-medical",
+   "page_key": "gce-rs-00608-x-s",
+   "name": "Zen-O Lite Portable Concentrator - 1 Battery System",
+   "status": "published",
+   "description": "",
+   "features": [],
+   "specs": [
+    {
+     "label": "Size (W×D×H)",
+     "value": "249 mm × 97 mm × 235 mm (9.8“ × 3.8“ ×9.25“)"
+    },
+    {
+     "label": "Weight",
+     "value": "2.5 kg (5.5 lbs) without carry bag"
+    },
+    {
+     "label": "Power requirements",
+     "value": "AC adaptor: 100-240V AC (+/- 10%) 50-60 Hz in, 24V DC, 5.0A out; DC adaptor: 11.5 - 16V DC in, 24V, 5.0A out"
+    },
+    {
+     "label": "Purity",
+     "value": "87% - 96% at all settings"
+    },
+    {
+     "label": "Maximum oxygen discharge pressure (PSI)",
+     "value": "22"
+    },
+    {
+     "label": "Inspiratory trigger sensitivity",
+     "value": "-0.12cm/H2O"
+    },
+    {
+     "label": "Humidity range",
+     "value": "5% to 93% ± 2% non-condensing"
+    },
+    {
+     "label": "Operating altitude",
+     "value": "0’ to 13,000’ (0m to 4,000m)"
+    },
+    {
+     "label": "Operation temperature",
+     "value": "5°C (41°F) and 40°C (104°F)"
+    },
+    {
+     "label": "Storage temperature",
+     "value": "-20°C (-4°F) and 60°C (140°F)"
+    },
+    {
+     "label": "Setting",
+     "value": "Adjustable in 0.5 increments from 1.0 to 5.0"
+    },
+    {
+     "label": "Noise level",
+     "value": "37 dB(A) (at setting 2)"
+    },
+    {
+     "label": "Battery duration",
+     "value": "Approx. 4 1/2 hours (at setting 2)"
+    },
+    {
+     "label": "Oxygen delivery (LPM)",
+     "value": "Up to 1.05 LPM (1050ml)"
+    }
+   ],
+   "warranty": null,
+   "category": "Zen-O Lite",
+   "subcategory": "Concentrators",
+   "options": {},
+   "skus": [
+    {
+     "sku": "RS-00608-X-S",
+     "name": "Zen-O Lite Portable Concentrator - 1 Battery System",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "https://www.gce-medical.com/en-us/products/zen-o-lite-portable-oxygen-concentrator",
+   "documents": [
+    {
+     "title": "Air Travel Statement",
+     "url": "https://assets.esab.com/assetbank-esab/assetfile/140145.pdf"
+    }
+   ],
+   "videos": [],
+   "images_gallery": [],
+   "image": "",
+   "field_provenance": {
+    "specs": "GCE's Zen-O Lite page https://www.gce-medical.com/en-us/products/zen-o-lite-portable-oxygen-concentrator — item table prints RS-00608-X-S, RS-00608-X-D (read 2026-11-15); specs as printed; owner-approved milestone M-2026-11-15",
+    "documents": "GCE's Zen-O Lite page https://www.gce-medical.com/en-us/products/zen-o-lite-portable-oxygen-concentrator — item table prints RS-00608-X-S, RS-00608-X-D (read 2026-11-15); specs as printed; owner-approved milestone M-2026-11-15"
+   }
+  },
+  "gce-rs-00608-x-d": {
+   "manufacturer": "ohio-medical",
+   "page_key": "gce-rs-00608-x-d",
+   "name": "Zen-O Lite Portable Concentrator - 2 Battery System",
+   "status": "published",
+   "description": "",
+   "features": [],
+   "specs": [
+    {
+     "label": "Size (W×D×H)",
+     "value": "249 mm × 97 mm × 235 mm (9.8“ × 3.8“ ×9.25“)"
+    },
+    {
+     "label": "Weight",
+     "value": "2.5 kg (5.5 lbs) without carry bag"
+    },
+    {
+     "label": "Power requirements",
+     "value": "AC adaptor: 100-240V AC (+/- 10%) 50-60 Hz in, 24V DC, 5.0A out; DC adaptor: 11.5 - 16V DC in, 24V, 5.0A out"
+    },
+    {
+     "label": "Purity",
+     "value": "87% - 96% at all settings"
+    },
+    {
+     "label": "Maximum oxygen discharge pressure (PSI)",
+     "value": "22"
+    },
+    {
+     "label": "Inspiratory trigger sensitivity",
+     "value": "-0.12cm/H2O"
+    },
+    {
+     "label": "Humidity range",
+     "value": "5% to 93% ± 2% non-condensing"
+    },
+    {
+     "label": "Operating altitude",
+     "value": "0’ to 13,000’ (0m to 4,000m)"
+    },
+    {
+     "label": "Operation temperature",
+     "value": "5°C (41°F) and 40°C (104°F)"
+    },
+    {
+     "label": "Storage temperature",
+     "value": "-20°C (-4°F) and 60°C (140°F)"
+    },
+    {
+     "label": "Setting",
+     "value": "Adjustable in 0.5 increments from 1.0 to 5.0"
+    },
+    {
+     "label": "Noise level",
+     "value": "37 dB(A) (at setting 2)"
+    },
+    {
+     "label": "Battery duration",
+     "value": "Approx. 4 1/2 hours (at setting 2)"
+    },
+    {
+     "label": "Oxygen delivery (LPM)",
+     "value": "Up to 1.05 LPM (1050ml)"
+    }
+   ],
+   "warranty": null,
+   "category": "Zen-O Lite",
+   "subcategory": "Concentrators",
+   "options": {},
+   "skus": [
+    {
+     "sku": "RS-00608-X-D",
+     "name": "Zen-O Lite Portable Concentrator - 2 Battery System",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "https://www.gce-medical.com/en-us/products/zen-o-lite-portable-oxygen-concentrator",
+   "documents": [
+    {
+     "title": "Air Travel Statement",
+     "url": "https://assets.esab.com/assetbank-esab/assetfile/140145.pdf"
+    }
+   ],
+   "videos": [],
+   "images_gallery": [],
+   "image": "",
+   "field_provenance": {
+    "specs": "GCE's Zen-O Lite page https://www.gce-medical.com/en-us/products/zen-o-lite-portable-oxygen-concentrator — item table prints RS-00608-X-S, RS-00608-X-D (read 2026-11-15); specs as printed; owner-approved milestone M-2026-11-15",
+    "documents": "GCE's Zen-O Lite page https://www.gce-medical.com/en-us/products/zen-o-lite-portable-oxygen-concentrator — item table prints RS-00608-X-S, RS-00608-X-D (read 2026-11-15); specs as printed; owner-approved milestone M-2026-11-15"
+   }
+  },
+  "gce-304051011": {
+   "manufacturer": "ohio-medical",
+   "page_key": "gce-304051011",
+   "name": "M50 Stationary 5L Concentrator",
+   "status": "published",
+   "description": "",
+   "features": [],
+   "specs": [
+    {
+     "label": "Oxygen delivery (LPM)",
+     "value": "Up to 5"
+    },
+    {
+     "label": "Flow mode",
+     "value": "Continuous"
+    },
+    {
+     "label": "Oxygen concentration",
+     "value": "87 - 96 %"
+    },
+    {
+     "label": "Weight",
+     "value": "15.2 kg (33 lbs)"
+    },
+    {
+     "label": "Dimensions (HxWxD)",
+     "value": "600x390x230 mm"
+    },
+    {
+     "label": "Average power consumption",
+     "value": "310W/120V/60Hz"
+    },
+    {
+     "label": "Operating environment",
+     "value": "10 - 37 °C"
+    },
+    {
+     "label": "Humidity range (%)",
+     "value": "15 - 95"
+    },
+    {
+     "label": "Oxygen purity alarm",
+     "value": "Low oxygen: 82%"
+    },
+    {
+     "label": "Additional functions",
+     "value": "Metal oxygen outlet for fireproofing"
+    }
+   ],
+   "warranty": null,
+   "category": "M50",
+   "subcategory": "Concentrators",
+   "options": {},
+   "skus": [
+    {
+     "sku": "304051011",
+     "name": "M50 Stationary 5L Concentrator",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "https://www.gce-medical.com/en-us/products/m50-stationary-oxygen-concentrator",
+   "documents": [],
+   "videos": [],
+   "images_gallery": [],
+   "image": "",
+   "field_provenance": {
+    "specs": "GCE's M50 page https://www.gce-medical.com/en-us/products/m50-stationary-oxygen-concentrator — '304051011 M50 Oxygen Concentrator with USA plug' (read 2026-11-15); U.S. power row only; outlet pressure, 230V/50Hz and EU class omitted; owner-approved milestone M-2026-11-15"
+   }
+  },
+  "gce-501150007": {
+   "manufacturer": "ohio-medical",
+   "page_key": "gce-501150007",
+   "name": "Gross Particle Washable Intake filter",
+   "status": "published",
+   "description": "",
+   "features": [],
+   "specs": [
+    {
+     "label": "Compatibility",
+     "value": "Suitable for M50"
+    }
+   ],
+   "warranty": null,
+   "category": "M50",
+   "subcategory": "Accessories & Parts",
+   "options": {},
+   "skus": [
+    {
+     "sku": "501150007",
+     "name": "Gross Particle Washable Intake filter",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "https://www.gce-medical.com/en-us/products/m50-stationary-oxygen-concentrator",
+   "documents": [],
+   "videos": [],
+   "images_gallery": [],
+   "image": "",
+   "field_provenance": {
+    "specs": "GCE's M50 page parts table — '501150007 Air filter suitable for M50' (read 2026-11-15); owner-approved milestone M-2026-11-15"
+   }
+  }
+ }
+}

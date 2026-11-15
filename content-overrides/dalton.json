@@ -3277,8 +3277,12 @@
     "value": "Four elastic corner straps"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E0185"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    }
   ],
   "source_url": "https://daltonmedical.com/product/b-t1505-gel-mattress-overlay-76-x-34-x-3-5-inch-e0185/",
@@ -3301,7 +3305,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-t1505-gel-mattress-overlay-76-x-34-x-3-5-inch-e0185/ (every number and claim checked against the page)",
-   "name": "B-T1505: dealer-facing name corrected — HCPS name began with another product's text (\"42\"x80\"x6\", 600LB WT. CAP.\"); Dalton: Gel Overlay 76″X34″X3.5″, E0185"
+   "name": "B-T1505: dealer-facing name corrected — HCPS name began with another product's text (\"42\"x80\"x6\", 600LB WT. CAP.\"); Dalton: Gel Overlay 76″X34″X3.5″, E0185",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/b-t1505-gel-mattress-overlay-76-x-34-x-3-5-inch-e0185/ states E0185 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "5-zone-therapeutic-mattress-36-inx80-inx6-in-e0184": {
@@ -4137,8 +4142,12 @@
     "value": "Included"
    },
    {
-    "label": "HCPCS code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E0181"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Quantity",
@@ -4152,7 +4161,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-xcell2000-app-system-50-60hz-pressure-range-70-130mmhg-e0181/ (every number and claim checked against the page)",
-   "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
+   "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-xcell2000-app-system-50-60hz-pressure-range-70-130mmhg-e0181/ states E0181 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   },
   "image": "/assets/products/dalton/gallery/4e3811c7a324ecae23d3.jpg",
   "images_gallery": [
@@ -7342,8 +7352,12 @@
     "value": "Foam wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2601"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Available Widths",
@@ -7369,7 +7383,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ (every number and claim checked against the page)",
-   "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
+   "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ states E2601 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   },
   "image": "/assets/products/dalton/gallery/0437a1ca16815371c3c3.png",
   "images_gallery": [
@@ -7406,8 +7421,12 @@
     "value": "Foam wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2601"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Depth",
@@ -7428,7 +7447,8 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ (read 2026-11-03)",
-   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ (read 2026-11-03); size line for this model from the family page"
+   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ (read 2026-11-03); size line for this model from the family page",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ states E2601 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "e2601-comfy-foam-cushion-20wx16dx2h": {
@@ -7456,8 +7476,12 @@
     "value": "Foam wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2601"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Depth",
@@ -7478,7 +7502,8 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ (read 2026-11-03)",
-   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ (read 2026-11-03); size line for this model from the family page"
+   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ (read 2026-11-03); size line for this model from the family page",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gf16162-e2601-comfy-foam-cushion/ states E2601 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "e2603-comfy-gel-cushion-16wx16dx3h": {
@@ -7509,8 +7534,12 @@
     "value": "Gel and foam wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2603"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Depth",
@@ -7548,7 +7577,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gg16163-e2603-comfy-gel-wheelchair-cushion/ (every number and claim checked against the page)",
-   "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
+   "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gg16163-e2603-comfy-gel-wheelchair-cushion/ states E2603 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   },
   "image": "/assets/products/dalton/gallery/3af4dad5a2dff350c11f.png",
   "images_gallery": [
@@ -7710,8 +7740,12 @@
     "value": "Bariatric gel-and-foam wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2604"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Available Widths",
@@ -7749,7 +7783,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (every number and claim checked against the page)",
-   "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
+   "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ states E2604 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   },
   "image": "/assets/products/dalton/gallery/3af4dad5a2dff350c11f.png",
   "images_gallery": [
@@ -7789,8 +7824,12 @@
     "value": "Bariatric gel-and-foam wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2604"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Height",
@@ -7815,7 +7854,8 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03)",
-   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03); size line for this model from the family page"
+   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03); size line for this model from the family page",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ states E2604 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "e2604-bariatric-gel-cushion-26wx20dx3h": {
@@ -7846,8 +7886,12 @@
     "value": "Bariatric gel-and-foam wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2604"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Height",
@@ -7872,7 +7916,8 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03)",
-   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03); size line for this model from the family page"
+   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03); size line for this model from the family page",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ states E2604 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "e2604-bariatric-gel-cushion-28wx20dx3h": {
@@ -7903,8 +7948,12 @@
     "value": "Bariatric gel-and-foam wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2604"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Height",
@@ -7929,7 +7978,8 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03)",
-   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03); size line for this model from the family page"
+   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03); size line for this model from the family page",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ states E2604 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "e2604-bariatric-gel-cushion-30wx20dx3h": {
@@ -7960,8 +8010,12 @@
     "value": "Bariatric gel-and-foam wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2604"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Height",
@@ -7986,7 +8040,8 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03)",
-   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03); size line for this model from the family page"
+   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03); size line for this model from the family page",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ states E2604 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "e2604-bariatric-gel-cushion-32wx20dx3h": {
@@ -8017,8 +8072,12 @@
     "value": "Bariatric gel-and-foam wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2604"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Height",
@@ -8043,7 +8102,8 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03)",
-   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03); size line for this model from the family page"
+   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ (read 2026-11-03); size line for this model from the family page",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gg22183-e2604-bariatric-gel-cushion/ states E2604 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "e2607-positioning-gel-cushion-16wx16dx3h": {
@@ -8077,8 +8137,12 @@
     "value": "Skin-protection and positioning wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2607"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Available Widths",
@@ -8116,7 +8180,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ (every number and claim checked against the page)",
-   "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
+   "images": "2026-11-05: 3 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ states E2607 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   },
   "image": "/assets/products/dalton/gallery/920ca8786e5dd582a25b.png",
   "images_gallery": [
@@ -8159,8 +8224,12 @@
     "value": "Skin-protection and positioning wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2607"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Depth",
@@ -8189,7 +8258,8 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ (read 2026-11-03)",
-   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ (read 2026-11-03); size line for this model from the family page"
+   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ (read 2026-11-03); size line for this model from the family page",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ states E2607 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "e2607-positioning-gel-cushion-20wx16dx3h": {
@@ -8223,8 +8293,12 @@
     "value": "Skin-protection and positioning wheelchair seat cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2607"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Depth",
@@ -8253,7 +8327,8 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ (read 2026-11-03)",
-   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ (read 2026-11-03); size line for this model from the family page"
+   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ (read 2026-11-03); size line for this model from the family page",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gp16163-e2607-positioning-gel-cushion/ states E2607 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "e2611-comfy-back-cushion-16wx16lx2h": {
@@ -8281,8 +8356,12 @@
     "value": "Wheelchair back cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2611"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Available Widths",
@@ -8304,7 +8383,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ (every number and claim checked against the page)",
-   "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
+   "images": "2026-11-05: 2 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ states E2611 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   },
   "image": "/assets/products/dalton/gallery/b8ee925f977eaa560e89.png",
   "images_gallery": [
@@ -8341,8 +8421,12 @@
     "value": "Wheelchair back cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2611"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Height",
@@ -8373,7 +8457,8 @@
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ (read 2026-11-03)",
    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ (read 2026-11-03); size line for this model from the family page",
-   "name": "PM-GB18162: dealer-facing name corrected — HCPS name said 16W; Dalton lists PM-GB18162 as 18″ W x 16″ H x 2″"
+   "name": "PM-GB18162: dealer-facing name corrected — HCPS name said 16W; Dalton lists PM-GB18162 as 18″ W x 16″ H x 2″",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ states E2611 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "e2611-comfy-back-cushion-20wx16lx2h": {
@@ -8401,8 +8486,12 @@
     "value": "Wheelchair back cushion"
    },
    {
-    "label": "HCPCS Code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E2611"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Height",
@@ -8419,7 +8508,8 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ (read 2026-11-03)",
-   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ (read 2026-11-03); size line for this model from the family page"
+   "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ (read 2026-11-03); size line for this model from the family page",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm-gb16162-e2611-comfy-back-cushion/ states E2611 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "easy-flex-cpap-tubing-10-ft": {
@@ -15520,8 +15610,12 @@
     "value": "Included"
    },
    {
-    "label": "HCPCS code",
+    "label": "HCPCS code referenced by Dalton",
     "value": "E0277"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    },
    {
     "label": "Quantity",
@@ -15534,7 +15628,8 @@
    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm8080-1-low-air-loss-mattress-system-35x80x8-e0277/ (read 2026-11-03)",
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
-   "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm8080-1-low-air-loss-mattress-system-35x80x8-e0277/ (every number and claim checked against the page)"
+   "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm8080-1-low-air-loss-mattress-system-35x80x8-e0277/ (every number and claim checked against the page)",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm8080-1-low-air-loss-mattress-system-35x80x8-e0277/ states E0277 in its title and body (read 2026-11-15); shown as referenced by Dalton with the payer-coverage qualification; owner-approved milestone M-2026-11-15"
   }
  },
  "mini-o2-reulator-0-1-8-1-2-1-1-5-2-3-4-6-8-10-15": {

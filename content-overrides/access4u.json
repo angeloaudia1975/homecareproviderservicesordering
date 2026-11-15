@@ -3109,5 +3109,83 @@
         }
       ]
     }
-  ]
+  ],
+  "basic-threshold-ramps": {
+    "features": [
+      "1/2\" - 3\" Rise",
+      "600 lb Capacity",
+      "No Curb",
+      "Just place top transition plate on threshold",
+      "Installs in minutes",
+      "Aluminum slip resistant walking surface"
+    ]
+  },
+  "adjustable-threshold-ramps": {
+    "features": [
+      "2 1/2' - 6' long",
+      "600 lb capacity",
+      "No Curb",
+      "Adjustable Rise",
+      "Aluminum slip resistant walking surface",
+      "Independently adjusting leveling pads for uneven floors",
+      "Butts up to door or slide in top piece for smooth transition",
+      "Installs in minutes"
+    ]
+  },
+  "composite-rubber-threshold-ramps": {
+    "features": [
+      "Molded slip resistant surface",
+      "Tapered edges for smooth transition",
+      "Can be cut to fit available space",
+      "No assembly required"
+    ]
+  },
+  "stairs": {
+    "documents": [
+      {
+        "title": "Stair Assembly Instructions (July 2023)",
+        "url": "https://www.rampsaccess4u.com/_files/ugd/3916ca_63bedc8167df4808a5349f1c134cd8d9.pdf"
+      }
+    ]
+  },
+  "platforms": {
+    "documents": [
+      {
+        "title": "Platform Assembly Instructions",
+        "url": "https://www.rampsaccess4u.com/_files/ugd/3916ca_bffab635bc644a3c866130d6e4e0088e.pdf"
+      }
+    ]
+  },
+  "ground-platforms": {
+    "documents": [
+      {
+        "title": "Platform Assembly Instructions",
+        "url": "https://www.rampsaccess4u.com/_files/ugd/3916ca_bffab635bc644a3c866130d6e4e0088e.pdf"
+      }
+    ]
+  },
+  "modular-ramp-sections": {
+    "documents": [
+      {
+        "title": "Ramp System Assembly Instructions",
+        "url": "https://www.rampsaccess4u.com/_files/ugd/3916ca_e4e7b757bcf046d5beb0bbdc059d082a.pdf"
+      }
+    ]
+  },
+  "starter-ramps": {
+    "documents": [
+      {
+        "title": "Ramp System Assembly Instructions",
+        "url": "https://www.rampsaccess4u.com/_files/ugd/3916ca_e4e7b757bcf046d5beb0bbdc059d082a.pdf"
+      }
+    ]
+  },
+  "rest-ramp-section": {
+    "documents": [
+      {
+        "title": "Ramp System Assembly Instructions",
+        "url": "https://www.rampsaccess4u.com/_files/ugd/3916ca_e4e7b757bcf046d5beb0bbdc059d082a.pdf"
+      }
+    ]
+  }
 }

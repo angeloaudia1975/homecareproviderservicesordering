@@ -1118,7 +1118,12 @@
    "name": "Active Orthotics™ 3/4-Length Firm Support Insoles",
    "status": "published",
    "description": "Special materials and PediFix’s proven, 'Perfect Fit' biomechanical shape supports and stabilizes your feet to relieve forefoot, arch, heel and plantar fasciitis discomfort, weak and 'flattened' arches, other common foot conditions. Thin design fits in almost all footwear styles — on top of existing shoe insoles and linings. ¾ length will not crowd toes. Unlike ordinary insoles, PediFix Active Orthotics 3/4-Length Firm Support Insoles are available in every shoe size for Men and Women for a precise fit, proper positioning of the arch support, and maximum comfort and effectiveness.",
-   "features": [],
+   "features": [
+    "Arch Raise Limits Pronation & Supports Flat Feet, Low & Fallen Arches",
+    "Heel Cups Boost Shock Absorption",
+    "Relieve Plantar Fasciitis Pain",
+    "Fit Easily in Most Footwear"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -1262,7 +1267,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/active-orthotics-34-length-firm-support-insoles-p5300",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P5300-W5 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/active-orthotics-34-length-firm-support-insoles-p5300"
+    "retail_model": "PediFix Retail Model P5300-W5 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/active-orthotics-34-length-firm-support-insoles-p5300",
+    "features": "pedifix.com product page https://www.pedifix.com/products/active-orthotics-34-length-firm-support-insoles-p5300 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/99667ace548fe2601fcf.jpg",
    "images_gallery": [
@@ -1868,7 +1874,13 @@
    "name": "Advantage Orthotics™ 3/4-Length Carbon Graphite Arch Supports",
    "status": "published",
    "description": "PediFix Advantage Orthotics 3/4-Length Carbon Graphite Arch Supports help end foot pain in casual, dressy & athletic footwear. Exclusive Carbon material and PediFix’s proven, 'Perfect Fit' biomechanical shape supports and stabilizes your feet to relieve forefoot, arch, heel and plantar fasciitis discomfort, weak and 'flattened' arches, other common foot conditions. Thin design fits in almost all footwear styles — on top of existing shoe insoles and linings. 3/4-length will not crowd toes.",
-   "features": [],
+   "features": [
+    "Carbon Graphite Never Flattens - Strong, Light, Thin - Fits in Any Shoes",
+    "Arch Raise Limits Pronation",
+    "Heel Cup Boosts Shock Absorption",
+    "Support Flat Feet, Low & Fallen Arches",
+    "Relieve Plantar Fasciitis Pain"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -1957,7 +1969,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/advantage-orthotics-34-length-carbon-graphite-arch-supports-p4860",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P4860-XS-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/advantage-orthotics-34-length-carbon-graphite-arch-supports-p4860"
+    "retail_model": "PediFix Retail Model P4860-XS-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/advantage-orthotics-34-length-carbon-graphite-arch-supports-p4860",
+    "features": "pedifix.com product page https://www.pedifix.com/products/advantage-orthotics-34-length-carbon-graphite-arch-supports-p4860 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/0165778271a15921b295.jpg",
    "images_gallery": [
@@ -2123,7 +2136,13 @@
    "name": "Arch Cradles®",
    "status": "published",
    "description": "PediFix Arch Cradles provide soft support for weak, flat arches, heel and ball-of-foot pain. 3/4-length orthotics fit comfortably in most footwear.",
-   "features": [],
+   "features": [
+    "Relieve Heel, Arch & General Foot Pain",
+    "Orthopedically-Designed",
+    "Heel Cushioning, Arch Support, Metatarsal Padding",
+    "Support Weak & Fallen Arches, Flat Feet",
+    "Fit Easily in Most Footwear Styles"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -2212,7 +2231,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/arch-cradles-p182",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P182-M — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/arch-cradles-p182"
+    "retail_model": "PediFix Retail Model P182-M — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/arch-cradles-p182",
+    "features": "pedifix.com product page https://www.pedifix.com/products/arch-cradles-p182 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/f3fe252022ce2f54a178.jpg",
    "images_gallery": [
@@ -2383,7 +2403,13 @@
    "name": "Arch Cradles® Full-Length Insoles",
    "status": "published",
    "description": "These professional-grade orthotics are recommended by foot specialists to provide support, stability, protection, comfort and relief of common foot conditions like arch and heel pain, plantar fasciitis, flat feet, excessive pronation, and more. Compare Arch Cradles® to ordinary insoles, and you'll feel the difference!",
-   "features": [],
+   "features": [
+    "Comfort Sore, Aching Feet",
+    "Relieve Plantar Fasciitis",
+    "Support Flat Feet, Fallen Arches",
+    "Heel Cup Boosts Shock Absorption",
+    "Firm Base for Noticeable Arch Support"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -2450,7 +2476,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/arch-cradles-full-length-insoles-p5625",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P5625-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/arch-cradles-full-length-insoles-p5625"
+    "retail_model": "PediFix Retail Model P5625-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/arch-cradles-full-length-insoles-p5625",
+    "features": "pedifix.com product page https://www.pedifix.com/products/arch-cradles-full-length-insoles-p5625 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/8fc6aefbca662afb823a.jpg",
    "images_gallery": [
@@ -2605,7 +2632,12 @@
    "name": "Arch Support Bandages",
    "status": "published",
    "description": "PediFix Arch Support Bandages ease fallen arches, flat feet and related heel, toe, ball-of-foot or bunion pain. This soft elastic bandage gently compresses the midfoot to provide support and stability. Makes shoes more comfortable. Interchangeable for left or right foot.",
-   "features": [],
+   "features": [
+    "Eases Heel Pain, Plantar Fasciitis",
+    "Supports Flat Feet & Fallen Arches",
+    "Soothes Bunion, Neuroma & Forefoot Pain",
+    "Takes Up No Space in Shoes!"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -2699,7 +2731,8 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "retail_model": "PediFix Retail Model P60-OSFM-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/arch-support-bandages-p60",
-    "options": "PediFix catalog page 26 (Small–XLarge 2/pk; OSFM 1/pk) and pedifix.com https://www.pedifix.com/products/arch-support-bandages-p60-1 variant titles ('Small Pair' … 'One Size Fits Most')"
+    "options": "PediFix catalog page 26 (Small–XLarge 2/pk; OSFM 1/pk) and pedifix.com https://www.pedifix.com/products/arch-support-bandages-p60-1 variant titles ('Small Pair' … 'One Size Fits Most')",
+    "features": "pedifix.com product page https://www.pedifix.com/products/arch-support-bandages-p60 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/c9bf24406755c6f3d0de.jpg",
    "images_gallery": [
@@ -2868,7 +2901,13 @@
    "name": "Arch Support Bandage with Metatarsal Pad",
    "status": "published",
    "description": "The PediFix Arch Support Bandage with Metatarsal Pad provides mild arch compression and support to keep feet comfortable, balanced and aligned. Contoured pad lifts and separates metatarsals to relieve neuroma, ball-of-foot pain and calluses. Midfoot compression helps relieve heel, arch and bunion pain. The PediFix Arch Support Bandage with Metatarsal Pad is interchangeable for right or left foot. Sizing is based on Arch Circumference. Small fits narrow feet, 19cm arch circumference; Medium fits average width feet, 21cm arch circumference; Large fits wide feet, 23cm arch circumference.",
-   "features": [],
+   "features": [
+    "Supports Metatarsal & Arch",
+    "Relieves Neuroma and Bunion Pain",
+    "Eases Plantar Fasciitis and Heel Pain",
+    "Gentle Compression Relieves Pain",
+    "Met Pad Eases Ball-of-Foot Pain"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -2924,7 +2963,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/arch-support-bandage-with-metatarsal-pad-p6002",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P6002-M — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/arch-support-bandage-with-metatarsal-pad-p6002"
+    "retail_model": "PediFix Retail Model P6002-M — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/arch-support-bandage-with-metatarsal-pad-p6002",
+    "features": "pedifix.com product page https://www.pedifix.com/products/arch-support-bandage-with-metatarsal-pad-p6002 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/ae7d9e6be519f6240d3d.jpg",
    "images_gallery": [
@@ -4782,7 +4822,10 @@
    "name": "Deep-Healing Foot Cream™ — 4 oz.",
    "status": "published",
    "description": "PediFix Deep-Healing Foot Cream moisturizes and softens dry, rough skin and callused areas. The formula contains Mineral Oil, Urea and Vitamins A, D and E to help condition skin and restore moisture to dry feet. The non-greasy cream is suitable for regular foot care and is doctor-recommended for people with diabetes and sensitive feet.",
-   "features": [],
+   "features": [
+    "Non-Greasy Cream Features Mineral Oil and Vitamins A, D and E",
+    "Moisturizes and Softens Calluses and Dry, Rough Skin"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Skin & Nail Care",
@@ -4812,7 +4855,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/deep-healing-foot-cream-p3069",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P3069 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/deep-healing-foot-cream-p3069"
+    "retail_model": "PediFix Retail Model P3069 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/deep-healing-foot-cream-p3069",
+    "features": "pedifix.com product page https://www.pedifix.com/products/deep-healing-foot-cream-p3069 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/3530a11a23503cbe8eac.jpg",
    "images_gallery": [
@@ -6213,7 +6257,12 @@
    "name": "Dexterity™ Visco-GEL® Silicone Scar Management Sheets (Clear Top Cover) — 2.5\" x 3\" trimmable",
    "status": "published",
    "description": "PediFix Visco-GEL Silicone Scar Management Sheets smooth, soften, and improve the texture, color and thickness of scars. Help relieve itching and pain. PediFix Visco-GEL Silicone Scar Management Sheets are washable and reusable for repeated applications. Soft, pliable, comfortable. Cost effective, easy to use and durable. 2.5\" x 3\" sheets.",
-   "features": [],
+   "features": [
+    "Soft, Pliable & Comfortable",
+    "Tear-Resistant, Washable & Reusable",
+    "Self-Adhesive to Stay in Place",
+    "GEL Cushions & Protects"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Cushioning & Padding",
@@ -6243,7 +6292,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/visco-gel-silicone-scar-management-sheets-p806",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P806-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-silicone-scar-management-sheets-p806"
+    "retail_model": "PediFix Retail Model P806-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-silicone-scar-management-sheets-p806",
+    "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-silicone-scar-management-sheets-p806 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/bcca76d76f47445e1159.jpg",
    "images_gallery": [
@@ -6328,7 +6378,11 @@
    "name": "Dexterity™ Visco-GEL® Silicone Scar Sheets ( Top Cover) — 4\" x 6\" trimmable",
    "status": "published",
    "description": "PediFix Silicone Scar Sheets soften and smooth scar tissue to make scars less noticeable. Color, texture and thickness of scars should improve over time. Scar Sheets cushion and protect, relieve itching and pain. PediFix Silicone Scar Sheets are washable and reusable for repeated applications. Scissor-trim to any size or shape. Self-adhesive to stay in place.",
-   "features": [],
+   "features": [
+    "Soft, Pliable & Comfortable",
+    "Tear-Resistant, Washable & Reusable",
+    "Self-Adhesive to Stay in Place"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Cushioning & Padding",
@@ -6373,7 +6427,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/silicone-scar-sheets-p4180p4181",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P4180-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/silicone-scar-sheets-p4180p4181"
+    "retail_model": "PediFix Retail Model P4180-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/silicone-scar-sheets-p4180p4181",
+    "features": "pedifix.com product page https://www.pedifix.com/products/silicone-scar-sheets-p4180p4181 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/03ddfa1402e9078a3edd.jpg",
    "images_gallery": [
@@ -7113,7 +7168,13 @@
    "name": "Diabetic Defense® Daily Therapy Foot Wash — 5.1 oz.",
    "status": "published",
    "description": "PediFix Diabetic Defense Daily Therapy Foot Wash is Physician-Formulated, 100% purely natural formula with 12 specialized and Essential Oils. Tea Tree Oil cleans and protects while ginger stimulates circulation. PediFix Diabetic Defense Daily Therapy Foot Wash includes Shea Butter with vitamins A, E & F to moisturize. Shower, bath or tub convenience. Regular use helps soothe, soften, moisturize skin and helps minimize infection risk by washing fungus and bacteria from the skin surface.",
-   "features": [],
+   "features": [
+    "Tea Tree Oil Cleans & Protects",
+    "Ginger Stimulates Circulation",
+    "Shea Butter with vitamins A, E & F Moisturizes",
+    "100% Natural Formula to Cleanse, Stimulate & Moisturize, Safely",
+    "Formulated Specifically for Diabetic Foot Care, Beneficial for All Skin Types"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Socks & Diabetic Care",
@@ -7143,7 +7204,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/diabetic-defense-daily-therapy-foot-wash-p3076",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P3076 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/diabetic-defense-daily-therapy-foot-wash-p3076"
+    "retail_model": "PediFix Retail Model P3076 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/diabetic-defense-daily-therapy-foot-wash-p3076",
+    "features": "pedifix.com product page https://www.pedifix.com/products/diabetic-defense-daily-therapy-foot-wash-p3076 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/a92469e69d9e6bb941fc.jpg",
    "images_gallery": [
@@ -7475,7 +7537,12 @@
    "name": "Everyday Socks",
    "status": "published",
    "description": "PediFix Everyday Socks feature hand-sewn toe seams to eliminate irritating ridges, which is especially beneficial to people with diabetes, arthritis or sensitive feet. Their cross-stretch design conforms to feet without binding or bunching and an anti-bacterial finish protects against germs.",
-   "features": [],
+   "features": [
+    "Hand-sewn toe seams eliminate irritating ridges",
+    "Cross-stretch design conforms to feet without binding or bunching",
+    "Anti-bacterial finish",
+    "No Irritating Toe Seams!"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Socks & Diabetic Care",
@@ -7531,7 +7598,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/everyday-socks-p795",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P795-ML — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/everyday-socks-p795"
+    "retail_model": "PediFix Retail Model P795-ML — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/everyday-socks-p795",
+    "features": "pedifix.com product page https://www.pedifix.com/products/everyday-socks-p795 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/aa989021a4d0db483ea0.jpg",
    "images_gallery": [
@@ -7819,7 +7887,13 @@
    "name": "EZ Mornings™ Heel Relief Stretching Splint",
    "status": "published",
    "description": "'Plantar Fasciitis' is the medical term for pain that results from strain and microscopic tearing of the plantar fascia ligament on the bottom of the foot. One common symptom of this condition is sharp heel pain upon arising in the morning (because the ligament contracts during the night). Worn while resting or sleeping, the PediFix EZ Mornings Heel Relief Stretching Splint stretches the fascia continuously to minimize morning pain and help speed healing. Adjustable stretch.",
-   "features": [],
+   "features": [
+    "Gently Stretches Plantar Fascia & Achilles",
+    "Helps Relieve Morning Heel & Calf Pain",
+    "Works While You Rest or Sleep",
+    "Adjustable Stretch",
+    "Heel-Free Design is Cool and Comfortable"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -7864,7 +7938,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/ez-mornings-heel-relief-stretching-splint-p6040",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P6040-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/ez-mornings-heel-relief-stretching-splint-p6040"
+    "retail_model": "PediFix Retail Model P6040-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/ez-mornings-heel-relief-stretching-splint-p6040",
+    "features": "pedifix.com product page https://www.pedifix.com/products/ez-mornings-heel-relief-stretching-splint-p6040 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/196b247ac76e8606716e.jpg",
    "images_gallery": [
@@ -7971,7 +8046,11 @@
    "name": "FasciaFIX® Plantar Fascia Stretching Sock",
    "status": "published",
    "description": "PediFix FasciaFIX Plantar Fascia Stretching Sock keeps your foot stretched while resting or sleeping. Helps prevent microscopic tearing of plantar fascia ligament, speeds healing. Small fits Calf Circumference less than 7.75\"; Medium fits Calf Circumference 7.75-15.75\"; Large fits Calf Circumference larger than 15.75\".",
-   "features": [],
+   "features": [
+    "Gentle Stretch While Resting or Sleeping",
+    "Helps Reduce Sharp Pains That Occur During 1st Morning Steps",
+    "Helps Reduce Plantar Fascia Retraction"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Socks & Diabetic Care",
@@ -8028,7 +8107,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/fasciafix-plantar-fascia-stretching-sock-p6045",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P6045-S-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/fasciafix-plantar-fascia-stretching-sock-p6045"
+    "retail_model": "PediFix Retail Model P6045-S-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/fasciafix-plantar-fascia-stretching-sock-p6045",
+    "features": "pedifix.com product page https://www.pedifix.com/products/fasciafix-plantar-fascia-stretching-sock-p6045 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/4d953afaa0e381997c1e.jpg",
    "images_gallery": [
@@ -8130,7 +8210,12 @@
    "name": "FasciaFix® Plantar Fasciitis Relief Sleeve",
    "status": "published",
    "description": "PediFix FasciaFix Plantar Fasciitis Relief Sleeve is a unique, multi-zone compression sleeve with a knitted pattern and subtle 'nodules' that help relieve pain and swelling associated with plantar fasciitis. Supports the arch and plantar fascia ligament to help stop heel pain. Promotes healing, enhances circulation and helps minimize the effects of inflammation. PediFix FasciaFix Plantar Fasciitis Relief Sleeve is thin enough to be worn under or over socks. Comfortable for all day or all night use. Sizing is approximate and based on Arch Circumference; Small 5\"-7.5\"; Medium 7.5\"-10\"; Large 10-12.5\"; Extra Large 12.5\"-15\".",
-   "features": [],
+   "features": [
+    "Reduces Stress on Plantar Fascia Ligament",
+    "Minimizes Inflammation & Swelling",
+    "Special Knit 'Nodules' Provide Gentle Massage",
+    "Daytime or Nighttime Treatment"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -8198,7 +8283,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/fasciafix-plantar-fasciitis-relief-sleeve-p6023",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P6023-M-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/fasciafix-plantar-fasciitis-relief-sleeve-p6023"
+    "retail_model": "PediFix Retail Model P6023-M-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/fasciafix-plantar-fasciitis-relief-sleeve-p6023",
+    "features": "pedifix.com product page https://www.pedifix.com/products/fasciafix-plantar-fasciitis-relief-sleeve-p6023 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/9ae5ab57d272edfccce4.jpg",
    "images_gallery": [
@@ -9310,7 +9396,13 @@
    "name": "FELTastic® Heel Pads",
    "status": "published",
    "description": "PediFix FELTastic Heel Pads absorb shock, cushion and lift heels to ease foot, arch and heel pain, Achilles and calf strain. Equalize leg length differences to help align hips and back, too. 1/4\" Thick.",
-   "features": [],
+   "features": [
+    "Absorb Shock",
+    "Help Reduce Heel & Plantar Fasciitis Pain",
+    "Ease Calf & Achilles Strain",
+    "Balance Leg Length Differences & Improve Body Alignment",
+    "Self-Adhering to Stay In Place"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -9366,7 +9458,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/feltastic-heel-pads-p8534",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P8534-M — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/feltastic-heel-pads-p8534"
+    "retail_model": "PediFix Retail Model P8534-M — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/feltastic-heel-pads-p8534",
+    "features": "pedifix.com product page https://www.pedifix.com/products/feltastic-heel-pads-p8534 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/672eb3f437b8dc1420aa.jpg",
    "images_gallery": [
@@ -9665,7 +9758,13 @@
    "name": "FELTastic® Metatarsal Support Pads",
    "status": "published",
    "description": "PediFix FELTastic Metatarsal Support Pads adhere to the insides of shoes to cushion, protect and support metatarsals. Unlike flat pads, their unique orthopedic shape actually helps improve the position of foot structures to relieve the cause of forefoot problems, not just the symptoms, like calluses and pain — sometimes described as \"like walking on a pebble\". Felt conforms to the wearer's feet for customized relief.",
-   "features": [],
+   "features": [
+    "Cushion, Protect and SUPPORT Metatarsals",
+    "Relieve & Prevent Calluses, Metatarsalgia, Neuroma Pain",
+    "Just Adhere Inside Shoes",
+    "Orthopedically-Contoured for Support & Comfort",
+    "100% Genuine Wool Felt Conforms to Your Feet"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Ball-of-Foot & Metatarsal",
@@ -9710,7 +9809,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/feltastic-metatarsal-support-pads-p86",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P86-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/feltastic-metatarsal-support-pads-p86"
+    "retail_model": "PediFix Retail Model P86-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/feltastic-metatarsal-support-pads-p86",
+    "features": "pedifix.com product page https://www.pedifix.com/products/feltastic-metatarsal-support-pads-p86 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/204c12c1aff496e2b002.jpg",
    "images_gallery": [
@@ -10503,7 +10603,12 @@
    "name": "Gel Ultimates® Moisturizing Gloves",
    "status": "published",
    "description": "PediFix Gel Ultimates Moisturizing Gloves start to moisturize, soothe and soften hard, dry, rough or cracked skin in just hours. Get smooth hands after a few short treatments. Exclusive Gel gradually releases jojoba, avocado, olive and other natural oils onto the skin's surface. Help relieve cracked fingers and scars. Comprehensive hand coverage. PediFix Gel Ultimates Moisturizing Gloves are Washable and reusable for months.",
-   "features": [],
+   "features": [
+    "Softens and Protects",
+    "Deep Moisturizing Treatment",
+    "Helps Relieve Dry, Flaky Skin",
+    "All-Around Moisture for the Hands"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Skin & Nail Care",
@@ -10533,7 +10638,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/gel-ultimates-moisturizing-gloves-p218",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P218-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gel-ultimates-moisturizing-gloves-p218"
+    "retail_model": "PediFix Retail Model P218-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gel-ultimates-moisturizing-gloves-p218",
+    "features": "pedifix.com product page https://www.pedifix.com/products/gel-ultimates-moisturizing-gloves-p218 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/44329fed0be4ba4e40ac.jpg",
    "images_gallery": [
@@ -10790,7 +10896,13 @@
    "name": "GelStep® 3/4 Length Insoles",
    "status": "published",
    "description": "PediFix GelStep 3/4 Length Insoles comfort, support and protect feet to ease heel, arch and forefoot pain. Mild metatarsal pad. Softer heel and ball-of-foot Blue Zones for extra foot cushioning.",
-   "features": [],
+   "features": [
+    "Medical-grade Silicone absorbs shock, cushions & protects, never flattens",
+    "Dual-durometer -- softer \"Blue Zone\" heel and metatarsal pads for added relief",
+    "3/4 length leaves room for toes",
+    "Low profile design fits comfortably in most footwear",
+    "Anti-microbial top cover absorbs odor, minimizes friction & allows foot to slide easily into shoe"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Insoles & Orthotics",
@@ -10868,7 +10980,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/gelstep-34-length-insoles-7000",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model 7000-C-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gelstep-34-length-insoles-7000"
+    "retail_model": "PediFix Retail Model 7000-C-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gelstep-34-length-insoles-7000",
+    "features": "pedifix.com product page https://www.pedifix.com/products/gelstep-34-length-insoles-7000 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/ae6d14a3ced3b4c5d133.jpg",
    "images_gallery": [
@@ -10999,7 +11112,13 @@
    "name": "GelStep® Full Length Replacement Insoles",
    "status": "published",
    "description": "PediFix GelStep Full Length Replacement Insoles are made from 100% medical-grade silicone. Specifically designed to cushion, protect, absorb shock and relieve pressure on heels and metatarsal heads. 'Blue Zone' comfort spots feature softer Silicone for extra protection in high-impact areas. This dual-durometer design provides maximum comfort and cushioning. Antimicrobial top cover to help absorb perspiration, reduce friction and improve comfort.",
-   "features": [],
+   "features": [
+    "Relieves heel pain, supports arch, protects metatarsal heads",
+    "Genuine dual durometer Silicone never flattens, deforms, degrades",
+    "Fits in most footwear",
+    "Adds cushioning to thin-soled shoes",
+    "Anti-microbial top cover absorbs odor, reduces friction & allows foot to slide easily into the shoe"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Insoles & Orthotics",
@@ -11088,7 +11207,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/gelstep-full-length-replacement-insoles-7050",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model 7050-C-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gelstep-full-length-replacement-insoles-7050"
+    "retail_model": "PediFix Retail Model 7050-C-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gelstep-full-length-replacement-insoles-7050",
+    "features": "pedifix.com product page https://www.pedifix.com/products/gelstep-full-length-replacement-insoles-7050 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/721f7634c05677f7d7dd.jpg",
    "images_gallery": [
@@ -11240,7 +11360,13 @@
    "name": "GelStep® Heel Cups with Soft Center Spot",
    "status": "published",
    "description": "PediFix GelStep Heel Cups with Soft Center Spot include an even softer Blue Zone for extra cushioning, protection and relief of heel pain. Center Spot provides larger relief area than 'Spur Spot'. 1 pair.",
-   "features": [],
+   "features": [
+    "Relieves heel pain, reduces shock to skeletal system",
+    "Genuine medical-grade Silicone never flattens, deforms or degrades",
+    "Dual durometer cushioning with softer 'Blue Zone' provides extra shock absorption",
+    "Medium density firmness absorbs impact efficiently, recovers quickly",
+    "Available with or without Antimicrobial Top Cover"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -11373,7 +11499,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/gelstep-heel-cups-with-soft-center-spot-5025",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model 5025-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gelstep-heel-cups-with-soft-center-spot-5025"
+    "retail_model": "PediFix Retail Model 5025-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gelstep-heel-cups-with-soft-center-spot-5025",
+    "features": "pedifix.com product page https://www.pedifix.com/products/gelstep-heel-cups-with-soft-center-spot-5025 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/3fbabd9966904b396a7b.jpg",
    "images_gallery": [
@@ -11570,7 +11697,13 @@
    "name": "GelStep® Heel Cups with Soft Spur Spot",
    "status": "published",
    "description": "PediFix GelStep Heel Cups with Soft Spur Spot include an even softer Blue Zone for extra cushioning, protection and relief of heel pain. In a clinical medical study, this exact design was proven 'most effective' compared to several different treatment options for relieving heel pain. 1 pair.",
-   "features": [],
+   "features": [
+    "Relieves heel pain, reduces shock to skeletal system",
+    "Genuine medical-grade Silicone never flattens, deforms or degrades",
+    "Dual durometer cushioning with softer 'Blue Zone' provides extra shock absorption",
+    "Medium density firmness absorbs impact efficiently, recovers quickly",
+    "Available with or without Antimicrobial Top Cover"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -11703,7 +11836,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/gelstep-heel-cups-with-soft-spur-spot-5050",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model 5050-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gelstep-heel-cups-with-soft-spur-spot-5050"
+    "retail_model": "PediFix Retail Model 5050-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gelstep-heel-cups-with-soft-spur-spot-5050",
+    "features": "pedifix.com product page https://www.pedifix.com/products/gelstep-heel-cups-with-soft-spur-spot-5050 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/746d1a22c59a9bddb5ca.jpg",
    "images_gallery": [
@@ -11900,7 +12034,13 @@
    "name": "GelStep® Heel Pad with Soft Center Spot",
    "status": "published",
    "description": "PediFix GelStep Heel Pad with Soft Center Spot provides an even softer Blue Zone for extra cushioning, protection and relief of heel pain. Pads require less space in shoes than Cups. Center Spot provides larger relief area than 'Spur Spot'.",
-   "features": [],
+   "features": [
+    "Relieves heel pain, reduces shock to skeletal system",
+    "Genuine medical-grade Silicone never flattens, deforms or degrades",
+    "Dual durometer cushioning with softer center spot 'Blue Zone' provides extra shock absorption",
+    "Low profile design fits comfortably in most footwear",
+    "Available with or without Antimicrobial Top Cover"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -11989,7 +12129,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/gelstep-heel-pad-with-soft-center-spot-5105",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model 5105-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gelstep-heel-pad-with-soft-center-spot-5105"
+    "retail_model": "PediFix Retail Model 5105-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gelstep-heel-pad-with-soft-center-spot-5105",
+    "features": "pedifix.com product page https://www.pedifix.com/products/gelstep-heel-pad-with-soft-center-spot-5105 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/0f49793e5829c8fa781b.jpg",
    "images_gallery": [
@@ -12697,7 +12838,13 @@
    "name": "GelStep® Thin Dress Insole with Low, Wide Met Rise — Covered",
    "status": "published",
    "description": "PediFix GelStep® Dress Shoe Insoles with Low, Wide Metatarsal Pads help cushion and support the ball of the foot to relieve forefoot pressure and improve comfort in high heels and dress shoes. Soft gel metatarsal padding redistributes weight and reduces stress on sensitive areas to help ease discomfort from prolonged standing or walking. Slim full-length insoles fit comfortably in women's dress shoes, pumps, heels, and other narrow footwear without crowding toes. Designed to improve shoe comfort, absorb shock, and provide targeted ball-of-foot support throughout the day.",
-   "features": [],
+   "features": [
+    "Eases pain from Morton's neuromas, metatarsalgia, fat pad atrophy, more",
+    "Genuine dual durometer Silicone never flattens, deforms or degrades",
+    "Adds cushioning to thin-soled shoes",
+    "Thin design fits most women's fashion footwear and high heels",
+    "Anti-microbial top cover absorbs oder, reduces friction & allows foot to slide easily into shoe"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Insoles & Orthotics",
@@ -12753,7 +12900,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/gelstep-dress-shoe-insole-with-low-wide-metatarsal-pad-7029",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model 7029-C-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gelstep-dress-shoe-insole-with-low-wide-metatarsal-pad-7029"
+    "retail_model": "PediFix Retail Model 7029-C-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/gelstep-dress-shoe-insole-with-low-wide-metatarsal-pad-7029",
+    "features": "pedifix.com product page https://www.pedifix.com/products/gelstep-dress-shoe-insole-with-low-wide-metatarsal-pad-7029 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/2dd7027d74f5304a44a8.jpg",
    "images_gallery": [
@@ -12868,7 +13016,11 @@
    "name": "Hammer ToeStrap™",
    "status": "published",
    "description": "Soft, fabric-lined, slightly elasticized Strap weaves between bent-under, crooked, overlapping, or 'floating' 2nd toes to align and reposition for comfort. Ideal for conservative or post-op management of toe deformities, including plantar plate injuries.",
-   "features": [],
+   "features": [
+    "Controls 2nd Toe Position",
+    "Aligns Hammer, Overlapping & 'Floating' Toes",
+    "Relieves Plantar Plate Injury"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Toe Care",
@@ -12898,7 +13050,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/hammer-toestrap-p6050",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P6050-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/hammer-toestrap-p6050"
+    "retail_model": "PediFix Retail Model P6050-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/hammer-toestrap-p6050",
+    "features": "pedifix.com product page https://www.pedifix.com/products/hammer-toestrap-p6050 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/21817f67157a37c8b2c4.jpg",
    "images_gallery": [
@@ -14453,7 +14606,13 @@
    "name": "NatraCure® Cold Therapy Socks",
    "status": "published",
    "description": "PediFix Cold Therapy Socks provide targeted cold therapy. Socks have pockets sewn in to hold gel packs in place. Targets relief to heel, top or ball of the foot. Developed by a team of well-known Health Care Professionals. PediFix Cold Therapy Socks help improve the mobility of sore, tired aching feet. Cold therapy is excellent for heel/plantar fasciitis. Soft, flannel-feel lining.",
-   "features": [],
+   "features": [
+    "Relieves pain from heel spurs, plantar fasciitis, toe problems, more",
+    "Eases discomfort on bottom of foot, top of foot and Achilles' Tendon",
+    "Soothes tired, sore muscles, strains and sprains",
+    "Place removable chilled or frozen Gel packs where needed",
+    "Effective after injury or surgery"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Socks & Diabetic Care",
@@ -14498,7 +14657,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/cold-therapy-socks-p705",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P705-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/cold-therapy-socks-p705"
+    "retail_model": "PediFix Retail Model P705-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/cold-therapy-socks-p705",
+    "features": "pedifix.com product page https://www.pedifix.com/products/cold-therapy-socks-p705 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/efbfdf144db46f74dd20.jpg",
    "images_gallery": [
@@ -14886,7 +15046,11 @@
    "name": "NoBend™ FootReacher™",
    "status": "published",
    "description": "PediFix NoBend FootReacher provides easier, better foot care for people who have difficulty reaching their feet. For cleaning & hygiene, improving skincare, applying creams, moisturizers, antifungals and more. Sturdy, 1\" thick, 22\" long fixed-length plastic handle, with two attachments – a permanent scrubbing brush, and replaceable foam 'fingers' for cleaning feet and toes, applying moisturizers, creams, antifungals and other medications. Replacement foam 'fingers' are available.",
-   "features": [],
+   "features": [
+    "Fixed Scrubbing Brush, Ideal for Cleaning Feet",
+    "Toe Sponge for Washing, Spreading Soap, Creams, Moisturizers & Antifungals",
+    "Perfect for Use with FungaSoap®!"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Braces, Post-Op & Recovery",
@@ -14931,7 +15095,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/nobend-footreacher-p3365",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P3365 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/nobend-footreacher-p3365"
+    "retail_model": "PediFix Retail Model P3365 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/nobend-footreacher-p3365",
+    "features": "pedifix.com product page https://www.pedifix.com/products/nobend-footreacher-p3365 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/e7a48b13f65db92bd40f.jpg",
    "images_gallery": [
@@ -15064,7 +15229,10 @@
    "name": "Nurturesce® Jock Wash Shower Gel — 6 fl. oz.",
    "status": "published",
    "description": "PediFix Nurturesce Jock Wash Shower Gel is a doctor recommended all-natural soap formulated to keep skin clean, fresh and healthy. Enriched with tea tree and other essential oils, PediFix Nurturesce Jock Wash Shower Gel helps wash away fungus and bacteria from the skin surface. All ingredients are derived from plant-based extracts and are completely free of chemicals. Use Jock Wash Shower Gel daily to help soothe itchy, irritated skin. Works great as all-over body wash too!",
-   "features": [],
+   "features": [
+    "Enriched with Tea Tree Oil",
+    "Soothes Itchy Irritated Skin"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Skin & Nail Care",
@@ -15094,7 +15262,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/nurturesce-jock-wash-shower-gel-p3805",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P3805 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/nurturesce-jock-wash-shower-gel-p3805"
+    "retail_model": "PediFix Retail Model P3805 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/nurturesce-jock-wash-shower-gel-p3805",
+    "features": "pedifix.com product page https://www.pedifix.com/products/nurturesce-jock-wash-shower-gel-p3805 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/8804bc4b7fd9e8d99da9.jpg",
    "images_gallery": [
@@ -15438,7 +15607,13 @@
    "name": "OverSized Socks",
    "status": "published",
    "description": "PediFix OverSized Socks feature hand-sewn toe seams to eliminate irritating ridges, which is especially beneficial to people with diabetes, arthritis or sensitive feet. Their cross-stretch design conforms to feet without binding or bunching and an anti-bacterial finish protects against germs, plus extra-wide tops stretch comfortably over enlarged feet, ankles and calves, casts and bandages, too. Resilient fibers allow them to return to their original shape after laundering. 1 pair.",
-   "features": [],
+   "features": [
+    "Stay Up Without Binding or Bunching",
+    "Easy to Put On & Take Off",
+    "Anti-bacterial finish",
+    "Helpful for People with Diabetes, Too",
+    "No Irritating Toe Seams!"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Socks & Diabetic Care",
@@ -15494,7 +15669,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/oversized-socks-p798",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P798-ML — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/oversized-socks-p798"
+    "retail_model": "PediFix Retail Model P798-ML — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/oversized-socks-p798",
+    "features": "pedifix.com product page https://www.pedifix.com/products/oversized-socks-p798 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/8029697f868287ae94c5.jpg",
    "images_gallery": [
@@ -16620,7 +16796,12 @@
    "name": "Pedi-GEL® Metatarsal Support Pads",
    "status": "published",
    "description": "PediFix Pedi-GEL Metatarsal Support Pads provide two benefits — they cushion and protect the forefoot from shock and pressure, and support the metatarsal or 'transverse' arch to help relieve calluses and neuroma pain. Self-adhering to stay in position in shoes.",
-   "features": [],
+   "features": [
+    "Relieve Ball-of-Foot Pain, Calluses",
+    "Cushion & Protect Forefoot",
+    "Contoured Pads Ease Neuroma Pain",
+    "Washable & Reusable"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Ball-of-Foot & Metatarsal",
@@ -16650,7 +16831,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/pedi-gel-metatarsal-support-pads-p8208",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P8208-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/pedi-gel-metatarsal-support-pads-p8208"
+    "retail_model": "PediFix Retail Model P8208-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/pedi-gel-metatarsal-support-pads-p8208",
+    "features": "pedifix.com product page https://www.pedifix.com/products/pedi-gel-metatarsal-support-pads-p8208 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/95120c4e57888696b1d9.jpg",
    "images_gallery": [
@@ -18060,7 +18242,12 @@
    "name": "Pedi-Smart® Compression Anklet - Beige",
    "status": "published",
    "description": "Unique, high-quality, German-made compression sleeve helps minimize foot and ankle swelling. Speeds healing after ankle or foot sprains, strains, or surgery. Graduated compression from metatarsal heads to the lower calf to improve venous activity. Lightweight, hypoallergenic elastic stretches comfortably for optimal fit. Special fabric and sewing technology is cool and comfortable, with exclusive ankle-heel hugging knit design. Fits in most shoes. Sizing based on Ankle Circumference, measure right above ankle bone.",
-   "features": [],
+   "features": [
+    "Reduces swelling, eases pain",
+    "Lightweight elastic stretches comfortably for optimal fit",
+    "Use conservatively following ankle sprains, post-op after foot or ankle surgery",
+    "Gently Compresses to Relieve Pain"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Braces, Post-Op & Recovery",
@@ -18138,7 +18325,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/pedi-smart-compression-anklet-beige-p6020",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P6020-M-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/pedi-smart-compression-anklet-beige-p6020"
+    "retail_model": "PediFix Retail Model P6020-M-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/pedi-smart-compression-anklet-beige-p6020",
+    "features": "pedifix.com product page https://www.pedifix.com/products/pedi-smart-compression-anklet-beige-p6020 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/c3444fb8331c65ca3fc4.jpg",
    "images_gallery": [
@@ -18262,7 +18450,12 @@
    "name": "Pedi-Smart® Compression Anklet - Black",
    "status": "published",
    "description": "Unique, high-quality, German-made compression sleeve helps minimize foot and ankle swelling. The PediFix Pedi-Smart Compression Anklet Speeds healing after ankle or foot sprains, strains, or surgery. Graduated compression from metatarsal heads to the lower calf to improve venous activity. Lightweight, hypoallergenic elastic stretches comfortably for optimal fit. Special fabric and sewing technology is cool and comfortable, with exclusive ankle-heel hugging knit design. The PediFix Pedi-Smart Compression Anklet Fits in most shoes. Sizing based on Ankle Circumference.",
-   "features": [],
+   "features": [
+    "Reduces swelling, eases pain",
+    "Lightweight elastic stretches comfortably for optimal fit",
+    "Use conservatively following ankle sprains, post-op after foot or ankle surgery",
+    "Gently Compresses to Relieve Pain"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Braces, Post-Op & Recovery",
@@ -18342,7 +18535,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/pedi-smart-compression-anklet-black-p6021",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P6021-M-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/pedi-smart-compression-anklet-black-p6021"
+    "retail_model": "PediFix Retail Model P6021-M-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/pedi-smart-compression-anklet-black-p6021",
+    "features": "pedifix.com product page https://www.pedifix.com/products/pedi-smart-compression-anklet-black-p6021 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/6f1ff5348c48d253a3c0.jpg",
    "images_gallery": [
@@ -18979,7 +19173,12 @@
    "name": "Plantar Fasciitis Relief Strips",
    "status": "published",
    "description": "If you suffer from heel pain, especially upon arising in the morning, you might have plantar fasciitis — injury to the ligament that connects your heel to your toes. PediFix Plantar Fasciitis Relief Strips are identical to those dispensed by foot specialists to provide fast relief from symptoms of plantar fasciitis, including heel and arch pain. These supplement and replicate fascia ligament function to allow healing while you stay active. PediFix Plantar Fasciitis Relief Strips measure approximately 3\" wide x 11\" long.",
-   "features": [],
+   "features": [
+    "Fast Relief from Heel Pain",
+    "Minimize Stress on Fascia Ligament",
+    "Trimmable, Self-Adhesive, Easy to Use",
+    "Thin Design, Fit in All Shoes"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -19024,7 +19223,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/plantar-fasciitis-relief-strips-p6060-1",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P6060-7 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/plantar-fasciitis-relief-strips-p6060-1"
+    "retail_model": "PediFix Retail Model P6060-7 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/plantar-fasciitis-relief-strips-p6060-1",
+    "features": "pedifix.com product page https://www.pedifix.com/products/plantar-fasciitis-relief-strips-p6060-1 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/52d041f9ab00e886145a.jpg",
    "images_gallery": [
@@ -19508,7 +19708,12 @@
    "name": "Podiatrists' Choice® Callus Control Cream™ — 4 oz.",
    "status": "published",
    "description": "PediFix Podiatrists' Choice Callus Control Cream combines moisturizing and exfoliating care in an extra-strength 20% Urea formula. It helps soften calluses and thick, hard skin while moisturizing dry, rough areas. Regular use helps keep feet feeling softer and smoother. Doctor-recommended for rough, hard, dry and cracked skin. Ingredients Aqua (Deionized Water), Urea, Cocamidopropyl Betaine, Behentrimonium Methosulfate, Cetyl Alcohol, Glyceryl Stearate, PEG-100 Stearate, Stearyl Alcohol, Propylene Glycol, Petrolatum, Mineral Oil, Xanthan Gum, Triethanolamine, Lactic Acid, Polyacrylamide, C13-14 Isoparaffin, Laureth-7, Phenoxyethanol, Ethylhexylglycerin.",
-   "features": [],
+   "features": [
+    "Hydrate and exfoliate in one step with this extra-strength formula",
+    "Urea penetrates calluses & thick, hard skin",
+    "Keeps feet soft, smooth & healthy looking",
+    "For rough, dry, cracked heels"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Toe Care",
@@ -19538,7 +19743,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/podiatrists-choice-callus-control-cream-p3310",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P3310 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/podiatrists-choice-callus-control-cream-p3310"
+    "retail_model": "PediFix Retail Model P3310 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/podiatrists-choice-callus-control-cream-p3310",
+    "features": "pedifix.com product page https://www.pedifix.com/products/podiatrists-choice-callus-control-cream-p3310 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/6b748138071c6b13f72e.jpg",
    "images_gallery": [
@@ -21394,7 +21600,12 @@
    "name": "Sensitive Feet™ Foot Protection Insoles — One Size (trim to fit)",
    "status": "published",
    "description": "PediFix Sensitive Feet Foot Protection Insoles are specifically designed to accommodate pressure points, reduce friction, help prevent calluses and absorb shock. Their innovative design compresses and rebounds with each step. Contain two layers of long-lasting foam for extra comfort. Trim to fit.",
-   "features": [],
+   "features": [
+    "Maximum Comfort for Diabetic and Arthritic Feet",
+    "Reduce Friction to Help Prevent Calluses",
+    "Absorb Shock and Pressure",
+    "Two Long-Lasting Layers Compress and Rebound with Each Step!"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Insoles & Orthotics",
@@ -21424,7 +21635,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/sensitive-feet-foot-protection-insoles-p235",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P235 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/sensitive-feet-foot-protection-insoles-p235"
+    "retail_model": "PediFix Retail Model P235 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/sensitive-feet-foot-protection-insoles-p235",
+    "features": "pedifix.com product page https://www.pedifix.com/products/sensitive-feet-foot-protection-insoles-p235 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/0c563a6198d6f329053c.jpg",
    "images_gallery": [
@@ -21535,7 +21747,11 @@
    "name": "Sesamoid Relief Sleeve™",
    "status": "published",
    "description": "The Sesamoids are two small, round bones located at the base of the big toe that stabilize the metatarsal 'head'. Pain here can result from injury or bruising, poor-fitting or high-heeled shoe use, and other causes. The PediFix Sesamoid Relief Sleeve positions a soft, specially-shaped ball-of-foot pad — with a 'cut out' that redistributes pressure and impact shock away from the sensitive area. Small fits Narrow & Average width feet, Large fits Wide width feet.",
-   "features": [],
+   "features": [
+    "Relieves Pain Under the Big Toe Joint",
+    "Re-distributes Pressure",
+    "Reduces Impact Shock"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -21604,7 +21820,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/sesamoid-relief-sleeve-p6003",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P6003-SL — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/sesamoid-relief-sleeve-p6003"
+    "retail_model": "PediFix Retail Model P6003-SL — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/sesamoid-relief-sleeve-p6003",
+    "features": "pedifix.com product page https://www.pedifix.com/products/sesamoid-relief-sleeve-p6003 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/029a877b2cdf627d2f4e.jpg",
    "images_gallery": [
@@ -22342,7 +22559,13 @@
    "name": "SoreSpot® Blister & Skin Protection Bandages with LiquiCell®",
    "status": "published",
    "description": "PediFix SoreSpot Blister & Skin Protection Bandages minimize friction and shear to prevent blisters, corns and calluses or protect them after they've formed. Ultra-thin so they fit in any shoes. Clear and nearly invisible. Flexible and conforming to foot contours. Self-adhesive so they stay in place. PediFix SoreSpot Blister & Skin Protection Bandages are effective for diabetic skin-care and other friction-reduction applications. Small Bandages fit toes. Large Bandages fit bunions, heels, ball-of-foot.",
-   "features": [],
+   "features": [
+    "Exclusive, Liquid-Filled Bandage Helps Prevent Skin Injury",
+    "Comfort & Protect Blisters, Corns, Calluses, Bunions, and More",
+    "Float Friction & Shear Over Protected Areas",
+    "Soft, Flexible, Super-Thin, Self-Adhesive & Nearly Invisible!",
+    "Multi-Day Protection"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Cushioning & Padding",
@@ -22387,7 +22610,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/sorespot-blister-amp-skin-protection-bandages-p810",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P810-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/sorespot-blister-amp-skin-protection-bandages-p810"
+    "retail_model": "PediFix Retail Model P810-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/sorespot-blister-amp-skin-protection-bandages-p810",
+    "features": "pedifix.com product page https://www.pedifix.com/products/sorespot-blister-amp-skin-protection-bandages-p810 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/6913536c379e27bdfbe2.jpg",
    "images_gallery": [
@@ -23254,7 +23478,13 @@
    "name": "Stretch Socks™",
    "status": "published",
    "description": "PediFix Stretch Socks provide extra protection for enlarged feet and calves. These socks are recommended for those with foot pain, diabetes, arthritis, edema, obesity or post-surgical care over bandages and casts. The Acrylic fabric with Micro-COOL stays softer than cotton and wicks moisture away from skin to keep feet dry. The design features a non-bunching, non-binding fit with non-irritating toe seams!",
-   "features": [],
+   "features": [
+    "Resilient, non-bunching construction",
+    "Micro-Cool™ treatment process moves moisture away from skin surface",
+    "Anti-microbial agent inhibits the growth of bacteria and fungus on sock fibers to help prevent odor",
+    "Helpful for People with Diabetes, Too",
+    "Cuffed to Prevent Unraveling & Stretches to 20 Inches"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Socks & Diabetic Care",
@@ -23310,7 +23540,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/stretch-socks-p760",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P760-L — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/stretch-socks-p760"
+    "retail_model": "PediFix Retail Model P760-L — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/stretch-socks-p760",
+    "features": "pedifix.com product page https://www.pedifix.com/products/stretch-socks-p760 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/804e3a35de1fd4376319.jpg",
    "images_gallery": [
@@ -26162,7 +26393,11 @@
    "name": "Visco-GEL® Arch Support Wrap",
    "status": "published",
    "description": "PediFix Visco-GEL Arch Support Wrap includes Stretchable fabric with hook-and-loop closure that positions a soft silicone Gel cushion under the arch. Designed for wear under or over socks, or when barefoot. Thin profile design fits comfortably in most footwear. PediFix Visco-GEL Arch Support Wrap is washable and reusable for months. Interchangeable to fit left or right foot.",
-   "features": [],
+   "features": [
+    "Eases Heel Pain & Plantar Fasciitis",
+    "Supports Flat Feet & Fallen Arches",
+    "Comfortable Soft Gel Pad & Stretchable Strap"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Heel & Arch Supports",
@@ -26207,7 +26442,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/visco-gel-arch-support-wrap-p1291",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P1291-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-arch-support-wrap-p1291"
+    "retail_model": "PediFix Retail Model P1291-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-arch-support-wrap-p1291",
+    "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-arch-support-wrap-p1291 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/5bfc2acac82872ccca25.jpg",
    "images_gallery": [
@@ -26760,7 +26996,13 @@
    "name": "Visco-GEL® Ball-of-Foot Wrap",
    "status": "published",
    "description": "PediFix Visco-GEL Ball-of-Foot Wrap includes stretchable nylon fabric that positions a soft, silicone Gel pad that cushions and protects the forefoot area. Helps relieve ball-of-foot pain, metatarsalgia, calluses and fat pad atrophy. Designed for wear under or over socks. Thin profile fits comfortably in most footwear. PediFix Visco-GEL Ball-of-Foot Wrap is washable and reusable for months. Adjustable. Interchangeable — fits right or left foot. Small fits Narrow feet. Large fits Wide feet.",
-   "features": [],
+   "features": [
+    "Soft Gel Cushions & Protects Forefoot",
+    "Relieves & Prevents Pain, Calluses, Metatarsalgia",
+    "Absorbs Pressure, Friction & Shock",
+    "Use Under or Over Socks, or Barefoot",
+    "Thin profile fits comfortably in most footwear"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Ball-of-Foot & Metatarsal",
@@ -26805,7 +27047,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/visco-gel-ball-of-foot-wrap-p1295",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P1295-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-ball-of-foot-wrap-p1295"
+    "retail_model": "PediFix Retail Model P1295-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-ball-of-foot-wrap-p1295",
+    "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-ball-of-foot-wrap-p1295 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/75f88fcdd37931d8a153.jpg",
    "images_gallery": [
@@ -27210,7 +27453,12 @@
    "name": "Visco-GEL® Corn Protectors",
    "status": "published",
    "description": "PediFix Visco-GEL Corn Protectors absorbs pressure & friction, protects, soothes and softens corns. Visco-GEL releases mineral oil enriched with vitamin E to moisturize skin while the Soft'N Stretch™ Fabric Sleeve keeps Gel in position without adhesives.",
-   "features": [],
+   "features": [
+    "Cushion & Protect",
+    "Absorb Pressure & Friction",
+    "Effective for Weeks",
+    "Gel Softens & Moisturizes"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Toe Care",
@@ -27255,7 +27503,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/visco-gel-corn-protectors-p81",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P81-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-corn-protectors-p81"
+    "retail_model": "PediFix Retail Model P81-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-corn-protectors-p81",
+    "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-corn-protectors-p81 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/3c7b24cc612f0b67531e.jpg",
    "images_gallery": [
@@ -29131,7 +29380,13 @@
    "name": "Visco-GEL® Heel-So-Smooth® Heel Sleeves",
    "status": "published",
    "description": "PediFix Visco-GEL Heel-So-Smooth Heel Sleeves are lined with Visco-GEL that releases vitamin E-enriched mineral oil onto the skin surface to help soften and moisturize rough, dry, cracked heels. Improvement is noticeable after just a few hours. Typically worn while resting, or overnight. Apply moisturizing creams to heels before use for even faster results.",
-   "features": [],
+   "features": [
+    "Unique Gel Soothes with Mineral Oil",
+    "Moisture Zone Softens Skin",
+    "Washable and Reusable",
+    "Use Alone, or With Heel Creams for Intensive Treatment",
+    "Heel Cream Sample Included"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Skin & Nail Care",
@@ -29161,7 +29416,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/visco-gel-heel-so-smooth-heel-sleeves-p800",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P800-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-heel-so-smooth-heel-sleeves-p800"
+    "retail_model": "PediFix Retail Model P800-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-heel-so-smooth-heel-sleeves-p800",
+    "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-heel-so-smooth-heel-sleeves-p800 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/1eff2222ae45c9a002d2.jpg",
    "images_gallery": [
@@ -29401,7 +29657,11 @@
    "name": "Visco-GEL® Little Toe Sleeves™",
    "status": "published",
    "description": "PediFix Visco-GEL Little Toe Sleeves offer effective relief for corns, blisters, ingrown nails, and various toe irritations. Crafted from a unique Gel material, these sleeves absorb pressure and friction, providing unparalleled protection, soothing comfort, and moisturization. With their exclusive conical shape, they remain securely in place throughout the day. Designed to fit in most shoes, these sleeves ensure maximum comfort and relief for your toes. Say goodbye to discomfort with PediFix Visco-GEL Little Toe Sleeves.",
-   "features": [],
+   "features": [
+    "Relieve Corns, Toe Irritations",
+    "Absorb Pressure & Friction",
+    "Effective for Weeks"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Toe Care",
@@ -29431,7 +29691,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/visco-gel-little-toe-sleeves-p32",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P32-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-little-toe-sleeves-p32"
+    "retail_model": "PediFix Retail Model P32-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-little-toe-sleeves-p32",
+    "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-little-toe-sleeves-p32 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/6ed579cfe0de0f44034d.jpg",
    "images_gallery": [
@@ -29531,7 +29792,12 @@
    "name": "Visco-GEL® Little ToeBuddy®",
    "status": "published",
    "description": "PediFix Visco-GEL Little ToeBuddy effectively divides toes, providing relief from corns while assisting in maintaining proper toe alignment. The soft, flexible loops slip over toes to keep the Spacer in place, ensuring all-day comfort. Additionally, the Visco-GEL material gradually releases mineral oil to soothe and soften the skin, enhancing comfort and relieving irritation.",
-   "features": [],
+   "features": [
+    "Soft Spacer Gently Separates & Aligns Crooked Toes",
+    "Relieves Between-Toe Corns & Irritations",
+    "Two Loops Keep Spacer in Place",
+    "Washable, Durable, Reusable"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Toe Care",
@@ -29561,7 +29827,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/visco-gel-little-toebuddy-p35",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P35 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-little-toebuddy-p35"
+    "retail_model": "PediFix Retail Model P35 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-little-toebuddy-p35",
+    "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-little-toebuddy-p35 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/9b9f841d9f17b918d5b4.jpg",
    "images_gallery": [
@@ -30842,7 +31109,12 @@
    "name": "Visco-GEL® Slip-On Toe Spacers™",
    "status": "published",
    "description": "PediFix® Visco-GEL® Slip-On Toe Spacers help separate and align crooked, overlapping, or crowded toes to reduce rubbing, friction, and toe pain. Soft fabric sleeves keep the gel toe spacers securely positioned between the first and second toes for comfortable daily wear. Ideal for bunion relief and toe alignment support, these toe separators help gently straighten the big toe while cushioning sensitive skin from pressure and irritation. Exclusive Visco-GEL® slowly releases mineral oil to soothe, moisturize, and protect skin while providing soft cushioning and comfort. The interchangeable design fits either foot and can be worn over the first or second toe.",
-   "features": [],
+   "features": [
+    "Separate & Align Crooked Toes the Rub",
+    "Cushion & Relieve Pressure",
+    "Fabric Sleeve Keeps Gel in Place",
+    "Effective for Weeks"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Toe Care",
@@ -30887,7 +31159,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/visco-gel-slip-on-toe-spacers-p30",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P30-M — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-slip-on-toe-spacers-p30"
+    "retail_model": "PediFix Retail Model P30-M — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-slip-on-toe-spacers-p30",
+    "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-slip-on-toe-spacers-p30 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/b83dc45984080b26f469.jpg",
    "images_gallery": [
@@ -31409,7 +31682,13 @@
    "name": "Visco-GEL® Stay-Put Toe Spacers®",
    "status": "published",
    "description": "PediFix Visco-GEL Stay-Put Toe Spacers, designed with a soft gel loop to secure snugly between your first and second toes. These innovative toe separators not only prevent uncomfortable rubbing and friction but also assist in aligning and separating misaligned or crooked toes. They provide gentle correction for the big toe, offering relief from bunion pressure and pain. PediFix’s unique gel formula, enriched with mineral oil, moisturizes and soothes the skin for an enhanced comfort experience. These toe spacers are suitable for use on either the left or right foot, with a loop that easily adjusts to fit over your 1st or 2nd toe.",
-   "features": [],
+   "features": [
+    "Separate and Align Toes that Rub",
+    "Reduce Friction, Absorb Pressure",
+    "Gel Loop Keeps Spacer in Place",
+    "Effective for Weeks!",
+    "Effective Between First and Second Toes"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Toe Care",
@@ -31454,7 +31733,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/visco-gel-stay-put-toe-spacers-p27",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P27-M — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-stay-put-toe-spacers-p27"
+    "retail_model": "PediFix Retail Model P27-M — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-stay-put-toe-spacers-p27",
+    "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-stay-put-toe-spacers-p27 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/44972cdc8870aa356e16.jpg",
    "images_gallery": [
@@ -31549,7 +31829,11 @@
    "name": "Visco-GEL® Toe Separators™",
    "status": "published",
    "description": "PediFix Visco-GEL Toe Separators are designed to absorb pressure and friction, providing effective relief from rubbing, pinching, cramping, and between-toe corns. The exclusive gel material releases mineral oil and vitamin E, delivering soothing relief to irritations while simultaneously softening the skin. Whether you're seeking relief from foot discomfort or addressing specific foot issues, PediFix Visco-GEL Toe Separators offer unparalleled comfort and care.",
-   "features": [],
+   "features": [
+    "Relieve Corns, Toe Irritations",
+    "Cushion, Align Crooked Toes",
+    "Effective for Weeks"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Toe Care",
@@ -31605,7 +31889,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/visco-gel-toe-separators-p31",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P31-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-toe-separators-p31"
+    "retail_model": "PediFix Retail Model P31-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-toe-separators-p31",
+    "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-toe-separators-p31 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/a62da2db417ce1f3a046.jpg",
    "images_gallery": [
@@ -31746,7 +32031,11 @@
    "name": "Visco-GEL® Toe Spacers",
    "status": "published",
    "description": "PediFix Visco-GEL® Toe Spacers help separate, align, and cushion crooked toes that rub, reducing pressure and discomfort caused by bunions and overlapping toes. Designed to fit comfortably between the big toe and second toe, these soft gel toe separators help straighten the big toe while minimizing friction, irritation, and pressure points. Made with exclusive Visco-GEL® technology, these reusable toe spacers slowly release medical-grade mineral oil to help soothe, moisturize, and soften skin for added comfort. The soft gel construction cushions sensitive areas while fitting comfortably in most shoes for daily wear.",
-   "features": [],
+   "features": [
+    "Straighten & Align Crooked Toes that Rub",
+    "Cushion & Relieve Pressure",
+    "Effective for Weeks"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Toe Care",
@@ -31803,7 +32092,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/visco-gel-toe-spacers-p28",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P28-S-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-toe-spacers-p28"
+    "retail_model": "PediFix Retail Model P28-S-E — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-toe-spacers-p28",
+    "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-toe-spacers-p28 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/375f6203feb8418534cb.jpg",
    "images_gallery": [
@@ -32052,7 +32342,12 @@
    "name": "Visco-GEL® ToeBuddy®",
    "status": "published",
    "description": "PediFix Visco-GEL ToeBuddy provides immediate relief from discomfort caused by crooked, overlapping toes, which may lead to pain, blisters, and corns. This therapeutic solution comes highly recommended by doctors to gently realign and straighten toes, offering instant relief. The innovative design cushions and protects toes while maintaining their proper position for all-day comfort. Whether you prefer sandals or sneakers, this ToeBuddy fits seamlessly into any style of footwear. They're also versatile, interchangeable for either the right or left foot, ensuring a perfect fit every time. Plus, they're washable and reusable, offering effective relief for months on end.",
-   "features": [],
+   "features": [
+    "Soft Gel Spacer Stays in Place to Separate Toes That Rub",
+    "Helps Align Crooked, Overlapping Toes",
+    "Two Loops for Better Spacer Positioning",
+    "Washable, Reusable, Durable"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Toe Care",
@@ -32082,7 +32377,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/visco-gel-toebuddy-p33",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P33 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-toebuddy-p33"
+    "retail_model": "PediFix Retail Model P33 — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/visco-gel-toebuddy-p33",
+    "features": "pedifix.com product page https://www.pedifix.com/products/visco-gel-toebuddy-p33 (read 2026-11-15) — the manufacturer's own bullets, with the owner-reviewed targeted edits; owner-approved milestone M-2026-11-15 (B)"
    },
    "image": "/assets/products/pedifix/gallery/d03ec08aa3abe7b936c7.jpg",
    "images_gallery": [
@@ -32559,7 +32855,13 @@
    "name": "XTC Carbon Graphite Turf Toe Relief Insole",
    "status": "published",
    "description": "PediFix XTC Carbon Graphite Turf Toe Relief Insole fits in the front of your shoe, beneath your big toe and big toe joint, to help limit movement that may cause pain. XTC Carbon Graphite is lighter and thinner than steel, allowing the insole to fit and function comfortably in most footwear. Important: Choose an insole size that is smaller than your shoe size. These insoles cannot be trimmed shorter or narrower.",
-   "features": [],
+   "features": [
+    "Limits Big Toe Motion to Relieve Pain",
+    "Rigid 'Morton's Extension'",
+    "Doctor Approved & Recommended",
+    "Keeps You Active Without Pain",
+    "Thinner, Lighter Than Steel"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Insoles & Orthotics",
@@ -32604,7 +32906,8 @@
     "description": "manufacturer page — https://www.pedifix.com/products/xtc-carbon-graphite-turf-toe-relief-insole-p4862",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "retail_model": "PediFix Retail Model P4862-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/xtc-carbon-graphite-turf-toe-relief-insole-p4862"
+    "retail_model": "PediFix Retail Model P4862-S — alias only; the HCPS SKU is the ordering code — https://www.pedifix.com/products/xtc-carbon-graphite-turf-toe-relief-insole-p4862",
+    "features": "pedifix.com product page https://www.pedifix.com/products/xtc-carbon-graphite-turf-toe-relief-insole-p4862 (read 2026-11-15) — the manufacturer's own bullets, verbatim; owner-approved milestone M-2026-11-15 (A)"
    },
    "image": "/assets/products/pedifix/gallery/50f68a31c6f9eb80682f.jpg",
    "images_gallery": [
