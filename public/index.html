@@ -9666,7 +9666,7 @@ async function loadAdsView(){
 const VIC_ENDPOINT=API_BASE+"/victoria-dealer-api";
 let VIC=null, VICLOG=[], VICBUSY=false;
 async function vicProbe(){
-  if(window.__PREVIEW__||MEMBER) return;
+  if(window.__PREVIEW__||(typeof MEMBER!=="undefined"&&MEMBER)) return;   // technician logins (when that package ships) never see it
   const j=await api(VIC_ENDPOINT,{action:"facts"}).catch(()=>null);
   if(j&&j.ok&&j.enabled===true&&j.facts){ VIC=j; const n=$("#vicNav"); if(n) n.style.display=""; }
 }
