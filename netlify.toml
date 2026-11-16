@@ -18,6 +18,18 @@
   # stays scanned, so it can never be committed to code.
   SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL"
 
+# Golden Tech Service Portal (owner 2026-11-15 22:32 CT): technicians sign in at /service — the same page (index.html) in
+# service mode (its own sign-in screen and branding). A rewrite (200), not a redirect, so the address stays /service.
+[[redirects]]
+  from = "/service"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/service/"
+  to = "/index.html"
+  status = 200
+
 [[headers]]
   for = "/data/*"
   [headers.values]
