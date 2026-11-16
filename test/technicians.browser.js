@@ -78,6 +78,14 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
       await page.evaluate(() => { sessionStorage.removeItem('hcps_member_invite'); AUTH.session = null; document.getElementById('p360wrap').style.display = 'none'; location.hash = 'member_invite=' + 'p'.repeat(43); });
       await page.waitForTimeout(400); ok(await page.$('#memberJoin'), 'dialog opened'); ok(await page.evaluate(() => sessionStorage.getItem('hcps_member_invite')) === 'p'.repeat(43), 'token kept'); ok(!/member_invite/.test(await page.evaluate(() => location.href)), 'address bar cleaned');
       await page.evaluate(() => { document.getElementById('memberJoin').remove(); document.getElementById('p360wrap').style.display = ''; }); });
+    await t(`${w}: a technician signing in on the login screen is let in (not told "no dealer account") — live pilot 2026-11-15`, async () => {
+      const r = await page.evaluate(async () => {
+        const box = document.createElement('div'); box.innerHTML = '<input id="si_email" value="tech@dealer.test"><input id="si_pass" value="Blue-Wrench-2026"><div id="si_msg"></div>'; document.body.appendChild(box);
+        window.sbToken = async () => ({ access_token: 'tech-jwt', refresh_token: 'r', expires_in: 3600 }); window.authMe = async () => { AUTH.status = 'none'; };
+        window.__nav = null; try { await doSignin(); } catch (e) { return 'threw ' + e.message; }
+        const msg = document.getElementById('si_msg').textContent; box.remove(); return msg; });
+      ok(/opening Golden Service/.test(r), 'message: ' + r + ' calls ' + JSON.stringify(calls.slice(-3).map((c) => [c.body.action, c.auth])) + ' on ' + state.on); ok(calls.some((c) => c.body.action === 'me' && c.auth === 'Bearer tech-jwt'), 'member check with the new login');
+    });
     await page.context().close();
   }
   await b.close(); console.log(`\ntechnicians (browser): ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
