@@ -1,4 +1,4 @@
-/* Service technicians (Golden Service 360 Stage 5) in the REAL page: the Account Center card, a one-time link, cancel / remove,
+/* Service technicians (Golden Service 360 Stage 5) in the REAL page: the Account Center card, an emailed invitation (typed twice, explicit access, no password), resend / cancel / remove,
    the card hidden when the server is switched off or in a staff preview, and accepting an invitation. The members API is
    answered locally (no network). Phone, tablet, desktop.   ADMIN_REPO=… node test/technicians.browser.js */
 const { chromium, open } = require('./_shop-harness.js');
@@ -13,10 +13,10 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
     await page.route('**/dealer-members-api', async (route) => { const body = JSON.parse(route.request().postData() || '{}'); calls.push({ body, auth: route.request().headers().authorization });
       if (!state.on) return route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'switched_off' }) });
       if (body.action === 'list') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, invites: state.invites, members: state.members }) });
-      if (body.action === 'invite') { state.invites = [{ id: '44444444-4444-4444-8444-444444444444', email: body.email, role: body.role, status: 'pending', expires_at: '2026-11-22T00:00:00Z' }];
-        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, invite: { id: state.invites[0].id, email: body.email, role: body.role, expires_at: '2026-11-22T00:00:00Z' }, link: 'https://shop.test/?member_invite=' + 'k'.repeat(43) }) }); }
-      if (body.action === 'create_member') { state.members = state.members.concat([{ uid: '55555555-5555-4555-8555-555555555555', email: body.email, role: body.role, active: true }]);
-        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, member: { uid: '55555555-5555-4555-8555-555555555555', email: body.email, role: body.role }, emailed: !/nomail/.test(body.email) }) }); }
+      if (body.action === 'invite') { const emailed = !/nomail/.test(body.email); state.invites = [{ id: '44444444-4444-4444-8444-444444444444', email: body.email, role: body.role, status: 'pending', expires_at: '2026-11-22T00:00:00Z', delivery: emailed ? 'sent' : 'failed', last_sent_at: '2026-11-15T03:00:00Z', sends: 1 }];
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, invite: { id: state.invites[0].id, email: body.email, role: body.role, expires_at: '2026-11-22T00:00:00Z' }, emailed, email_reason: emailed ? null : 'email_failed' }) }); }
+      if (body.action === 'resend_invite') { state.invites = state.invites.map((i) => Object.assign({}, i, { delivery: 'sent', sends: i.sends + 1 })); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"emailed":true}' }); }
+      if (body.action === 'create_member') return route.fulfill({ status: 410, contentType: 'application/json', body: '{"ok":false,"error":"retired"}' });
       if (body.action === 'revoke_invite') { state.invites = []; return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); }
       if (body.action === 'accept_new') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, role: 'viewer', email: 'new.tech@dealer.test' }) });
       if (body.action === 'accept') return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"role":"viewer"}' });
@@ -32,28 +32,28 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
       const txt = await page.$eval('#techCard', (e) => e.textContent); ok(/Service technicians/.test(txt) && /tech@dealer\.test/.test(txt) && /Technician \+ Service/.test(txt), txt.slice(0, 200));
       ok(/never see prices, orders, purchases or reports/.test(txt), 'warning text'); ok(calls.at(-1).auth === 'Bearer dealer-jwt', 'own session token ' + calls.at(-1).auth);
       const ov = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth); ok(ov <= 1, 'horizontal overflow ' + ov); });
-    await t(`${w}: dealer creates the login with a password; HCPS emails it; password cleared, never shown back`, async () => {
-      await page.evaluate(() => techAddOpen()); ok(/Add a technician/.test(await page.$eval('#modal', (e) => e.innerText)), 'dialog');
-      await page.fill('#techEmail', 'pw.tech@dealer.test'); await page.selectOption('#techRole', 'technician_service');
-      await page.evaluate(async () => { document.getElementById('techPw').value = 'short'; await techCreate(); }); ok(!calls.some((c) => c.body.action === 'create_member'), 'short password sent'); ok(/10–72 characters/.test(await page.$eval('#acErr', (e) => e.textContent)), 'error shown in the dialog');
-      await page.evaluate(async () => { document.getElementById('techPw').value = '1234567890'; await techCreate(); }); ok(!calls.some((c) => c.body.action === 'create_member'), 'digits-only password sent');
-      await page.fill('#techPw', 'Blue-Wrench-2026'); const pwBox = await page.$eval('#techPw', (e) => ({ type: e.type, h: e.getBoundingClientRect().height, fs: getComputedStyle(e).fontSize })); ok(pwBox.type === 'password' && (w > 640 || (pwBox.h >= 44 && pwBox.fs === '16px')), JSON.stringify(pwBox));   // phone: 44 px / 16 px; larger: the same field style as Add a contact (checked below)
-      const same = await page.evaluate(() => { const a = getComputedStyle(document.getElementById('techEmail')), b = getComputedStyle(document.getElementById('techPw')); return document.getElementById('techPw').parentElement.className === 'fld2' && ['fontSize', 'height', 'borderRadius', 'padding'].every((k) => a[k] === b[k]); }); ok(same, 'password field styled like the contact fields');
-      await page.evaluate(async () => { await techCreate(); }); await page.waitForFunction(() => /emailed it the sign-in details/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
-      const c = calls.find((x) => x.body.action === 'create_member'); ok(c && c.body.email === 'pw.tech@dealer.test' && c.body.role === 'technician_service' && c.body.password === 'Blue-Wrench-2026' && c.auth === 'Bearer dealer-jwt', JSON.stringify(c));
-      const txt = await page.$eval('#techCard', (e) => e.textContent + [...e.querySelectorAll('input')].map((i) => i.value).join('|')); ok(!txt.includes('Blue-Wrench-2026'), 'password shown back'); ok(/pw\.tech@dealer\.test/.test(txt), 'listed');
-      ok(!/on/.test(await page.$eval('#modal', (e) => e.className)), 'dialog closed after success');
-      await page.evaluate(() => techAddOpen()); await page.fill('#techEmail', 'nomail@dealer.test'); await page.fill('#techPw', 'Blue-Wrench-2027'); await page.evaluate(async () => { await techCreate(); });
-      await page.waitForFunction(() => /could not be sent/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
-      state.members = state.members.filter((m) => !/pw\.tech|nomail/.test(m.email)); await page.evaluate(async () => { TECH_MSG = ''; await techCard(); }); });
-    await t(`${w}: invitation — one-time link shown with its warning, copy button, then cancel`, async () => {
-      await page.evaluate(() => techAddOpen()); await page.fill('#techEmail', 'new@dealer.test'); await page.selectOption('#techRole', 'viewer');
-      await page.evaluate(async () => { await techInvite(); });
-      await page.waitForFunction(() => /shown only now/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
-      const txt = await page.$eval('#techCard', (e) => e.textContent); ok(/shown only now/.test(txt) && /HCPS does not email it/.test(txt) && /member_invite=k{43}/.test(txt), txt.slice(0, 300));
-      ok(calls.some((c) => c.body.action === 'invite' && c.body.email === 'new@dealer.test' && c.body.role === 'viewer' && !('can_see_prices' in c.body)), 'invite call ' + JSON.stringify(calls.map((c) => c.body)));
-      await page.evaluate(async () => { await techRevokeInvite('44444444-4444-4444-8444-444444444444'); });
-      ok(!/Open invitations/.test(await page.$eval('#techCard', (e) => e.textContent)), 'cancelled'); });
+    await t(`${w}: invite — address typed twice, access chosen explicitly (no default), no password anywhere; HCPS emails it; the link is never shown`, async () => {
+      await page.evaluate(() => techAddOpen()); const dlg = await page.$eval('#modal', (e) => e.innerText); ok(/Invite a technician/.test(dlg) && !/password/i.test(dlg.replace(/choose(s)? their own password|never see or send a password/gi, '')), 'dialog: ' + dlg.slice(0, 300));
+      ok(!(await page.$('#techPw')) && !(await page.$('#techRole')), 'no password field, no pre-selected access dropdown');
+      ok(await page.evaluate(() => [...document.querySelectorAll('input[name="techRole"]')].every((r) => !r.checked)), 'no access chosen by default');
+      const send = async () => page.evaluate(async () => { await techInvite(); }); const errTxt = () => page.$eval('#acErr', (e) => e.textContent);
+      await page.fill('#techEmail', 'new@dealer.test'); await page.fill('#techEmail2', 'new@dealer.tst'); await send(); ok(/don't match/.test(await errTxt()), 'mismatch');
+      await page.fill('#techEmail2', 'NEW@dealer.test'); await send(); ok(/Choose the access/.test(await errTxt()), 'access required');
+      await page.check('input[name="techRole"][value="viewer"]'); await send(); ok(/reads email at this address/.test(await errTxt()), 'ownership confirmation required');
+      ok(!calls.some((c) => c.body.action === 'invite'), 'nothing sent before the form is complete');
+      if (w <= 640) { const hs = await page.evaluate(() => ['techEmail', 'techEmail2'].map((id) => { const e = document.getElementById(id), r = e.getBoundingClientRect(); return [r.height, getComputedStyle(e).fontSize]; }).concat([...document.querySelectorAll('#modal label')].filter((l) => l.querySelector('input[type=radio],input[type=checkbox]')).map((l) => [l.getBoundingClientRect().height, '16px']))); ok(hs.every(([h, f]) => h >= 44 && f === '16px'), 'phone targets ' + JSON.stringify(hs)); }
+      await page.check('#techOwns'); await send();
+      await page.waitForFunction(() => /Invitation emailed to new@dealer\.test/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
+      const c = calls.find((x) => x.body.action === 'invite'); ok(c && c.body.email === 'new@dealer.test' && c.body.confirm_email === 'new@dealer.test' && c.body.role === 'viewer' && !('password' in c.body) && c.auth === 'Bearer dealer-jwt', JSON.stringify(c));
+      const txt = await page.$eval('#techCard', (e) => e.textContent); ok(!/member_invite/.test(txt) && !(await page.$('#techLinkText')), 'no link shown'); ok(/Invitation emailed/.test(txt) && /Resend/.test(txt), txt.slice(0, 400));
+      await page.evaluate(async () => { await techRevokeInvite('44444444-4444-4444-8444-444444444444'); }); ok(!/new@dealer\.test/.test(await page.$eval('#techCard', (e) => e.textContent)), 'cancelled'); });
+    await t(`${w}: delivery failed — said plainly, Resend sends a new invitation`, async () => {
+      await page.evaluate(() => techAddOpen()); await page.fill('#techEmail', 'nomail@dealer.test'); await page.fill('#techEmail2', 'nomail@dealer.test'); await page.check('input[name="techRole"][value="technician_service"]'); await page.check('#techOwns');
+      await page.evaluate(async () => { await techInvite(); }); await page.waitForFunction(() => /could not be sent/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
+      ok(/Email not sent/.test(await page.$eval('#techCard', (e) => e.textContent)), 'row says the email was not sent');
+      await page.click('#techCard a[onclick^="techResend"]'); await page.waitForFunction(() => /emailed again/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
+      ok(calls.some((x) => x.body.action === 'resend_invite' && x.body.id === '44444444-4444-4444-8444-444444444444'), 'resend call');
+      state.invites = []; await page.evaluate(async () => { TECH_MSG = ''; await techCard(); }); });
     await t(`${w}: server switched off — no card`, async () => { state.on = false; await page.evaluate(async () => { await techCard(); }); ok(!(await page.$('#techCard .card'))); state.on = true; });
     await t(`${w}: invitation link — token kept for the tab, address bar cleaned, accept once signed in, member banner`, async () => {
       await page.evaluate(() => { history.replaceState(null, '', '/?member_invite=' + 'k'.repeat(43)); });
@@ -68,11 +68,14 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
       await page.evaluate(() => { document.getElementById('p360wrap').style.display = 'none'; });   // signed out = portal hidden behind the login screen
       await page.evaluate(async () => { await memberInviteCheck(); }); ok(/Create login/.test(await page.$eval('#memberJoin', (e) => e.innerText)), 'create option');
       const box = await page.$eval('#memberPw', (e) => { const r = e.getBoundingClientRect(); return { h: r.height, w: r.width, top: document.elementFromPoint(r.left + 5, r.top + 5) === e }; }); ok(box.h >= 44 && box.w > 100 && box.top, 'password box visible on top of the login screen ' + JSON.stringify(box));
-      await page.fill('#memberPw', 'short'); await page.evaluate(async () => { await memberCreate(); }); ok(/at least 10/.test(await page.$eval('#memberMsg', (e) => e.textContent)), 'short refused locally');
-      await page.fill('#memberPw', 'longenough1'); await page.evaluate(async () => { await memberCreate(); });
-      const c = calls.find((x) => x.body.action === 'accept_new'); ok(c && c.body.token === 'k'.repeat(43) && c.body.password === 'longenough1' && !c.auth && !('email' in c.body), 'accept_new call ' + JSON.stringify(c));
-      ok(/login is ready \(new\.tech@dealer\.test\)/.test(await page.$eval('#memberMsg', (e) => e.textContent)), 'confirmation'); ok(!(await page.evaluate(() => sessionStorage.getItem('hcps_member_invite'))), 'token cleared');
-      await page.evaluate(() => { document.getElementById('memberJoin').remove(); document.getElementById('p360wrap').style.display = ''; });
+      for (const p of ['short', '1234567890', 'has space 12']) { await page.fill('#memberPw', p); await page.evaluate(async () => { await memberCreate(); }); ok(/10–72 characters/.test(await page.$eval('#memberMsg', (e) => e.textContent)), p + ' refused locally'); }
+      ok(!calls.some((x) => x.body.action === 'accept_new'), 'nothing sent for a weak password');
+      const si = await page.evaluate(() => { const box = document.createElement('div'); box.id = 'siBox'; box.innerHTML = '<input id="si_email"><input id="si_pass"><div id="si_msg"></div>'; document.body.appendChild(box); return true; });
+      await page.fill('#memberPw', 'Blue-Wrench-2026'); await page.evaluate(async () => { await memberCreate(); });
+      const c = calls.find((x) => x.body.action === 'accept_new'); ok(si && c && c.body.token === 'k'.repeat(43) && c.body.password === 'Blue-Wrench-2026' && !c.auth && !('email' in c.body), 'accept_new call ' + JSON.stringify(c));
+      ok(!(await page.$('#memberJoin')), 'dialog closed'); ok(await page.$eval('#si_email', (e) => e.value) === 'new.tech@dealer.test', 'sign-in email filled in');
+      ok(/login is ready \(new\.tech@dealer\.test\)/.test(await page.$eval('#si_msg', (e) => e.textContent)), 'confirmation'); ok(!(await page.evaluate(() => sessionStorage.getItem('hcps_member_invite'))), 'token cleared');
+      await page.evaluate(() => { document.getElementById('siBox').remove(); document.getElementById('p360wrap').style.display = ''; });
     });
     await t(`${w}: a link pasted into an open tab (#fragment only, no reload) still opens the invitation`, async () => {
       await page.evaluate(() => { sessionStorage.removeItem('hcps_member_invite'); AUTH.session = null; document.getElementById('p360wrap').style.display = 'none'; location.hash = 'member_invite=' + 'p'.repeat(43); });
