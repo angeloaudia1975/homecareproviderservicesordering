@@ -9324,8 +9324,8 @@ function techRender(){
   /* same card, header, row list and buttons as Contacts / Pricing export in the left column (owner 2026-11-15) */
   box.innerHTML=`<div class="card"><div class="chead"><h3>Service technicians</h3><a class="btn gh acsm" onclick="techAddOpen()">Add a technician</a></div>
     <div style="font-size:13px;color:var(--ink-2)">Give your service people their own login for Golden Service &amp; Support. They never see prices, orders, purchases or reports, and you can remove them at any time.</div>
-    <div class="rowlist" style="margin-top:8px">${mem.length?mem.map(m=>`<div class="rl"><div class="b"><div class="n">${esc(m.email)}</div><div class="m">${esc(TECH_ROLE[m.role]||m.role)}</div></div><div class="acr"><a class="btn gh acsm" onclick="techRevokeMember('${esc(m.uid)}')">Remove</a></div></div>`).join(""):'<div class="m">No technicians yet.</div>'}
-    ${inv.map(i=>`<div class="rl"><div class="b"><div class="n">${esc(i.email)}</div><div class="m">${esc(TECH_ROLE[i.role]||i.role)} · ${esc(st[i.status]||i.status)} until ${esc(String(i.expires_at||"").slice(0,10))}</div></div><div class="acr"><a class="btn gh acsm" onclick="techRevokeInvite('${esc(i.id)}')">Cancel</a></div></div>`).join("")}</div>
+    <div class="rowlist" style="margin-top:8px">${mem.length?mem.map(m=>`<div class="rl"><div class="b"><div class="n">${esc(m.email)}</div><div class="m">${esc(TECH_ROLE[m.role]||m.role)}</div></div><div class="acr"><a class="btn gh acsm" data-k="${esc(m.uid)}" onclick="techRevokeMember(this.dataset.k)">Remove</a></div></div>`).join(""):'<div class="m">No technicians yet.</div>'}
+    ${inv.map(i=>`<div class="rl"><div class="b"><div class="n">${esc(i.email)}</div><div class="m">${esc(TECH_ROLE[i.role]||i.role)} · ${esc(st[i.status]||i.status)} until ${esc(String(i.expires_at||"").slice(0,10))}</div></div><div class="acr"><a class="btn gh acsm" data-k="${esc(i.id)}" onclick="techRevokeInvite(this.dataset.k)">Cancel</a></div></div>`).join("")}</div>
     ${TECH_MSG?`<div class="m" role="status" style="margin-top:8px">${esc(TECH_MSG)}</div>`:""}
     ${TECH_LINK?`<div class="card" style="margin-top:10px;background:#f6f8fb"><b>Invitation link for ${esc(TECH_LINK.email)}</b> — shown only now. Give it to that person yourself (HCPS does not email it); it works only for that email address and expires ${esc(String(TECH_LINK.expires_at).slice(0,10))}.<div style="margin-top:6px;word-break:break-all"><code id="techLinkText">${esc(TECH_LINK.link)}</code></div><a class="btn gh acsm" style="margin-top:6px" onclick="techCopy()">Copy link</a></div>`:""}</div>`;
 }
@@ -9347,7 +9347,9 @@ async function techCreate(){
   const email=(($("#techEmail")||{}).value||"").trim(), role=($("#techRole")||{}).value||"viewer", pwEl=$("#techPw"), password=String((pwEl||{}).value||"");
   const err=(m)=>{ const e=$("#acErr"); if(e) e.textContent=m; else toast(m); };
   if(!/^[\x21-\x7E]{10,72}$/.test(password)){ err("The password needs 10–72 characters, with no spaces."); return; }
+  const btn=$("#techSave"); if(btn){ if(btn.dataset.busy) return; btn.dataset.busy="1"; btn.style.pointerEvents="none"; btn.textContent="Creating…"; }
   const d=await api(MEMBERS_ENDPOINT,{action:"create_member",email,role,password});
+  if(btn){ delete btn.dataset.busy; btn.style.pointerEvents=""; btn.textContent="Create login & email it"; }
   if(pwEl) pwEl.value="";
   if(!d||d.ok===false){ err((d&&(d.message||d.error))||"Could not create the login."); return; }
   closeModal();
