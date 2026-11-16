@@ -338,10 +338,28 @@
       sec('pd-sizing','Sizing',(sizing||(d.sizing_note?' ':''))?sizing+(d.sizing_note?'<p class="pd-note">'+esc(d.sizing_note)+'</p>':''):''),
       sec('pd-warranty','Warranty',(d.warranty||[]).length?'<ul class="fcheck">'+d.warranty.map(function(w){return '<li>'+esc(w)+'</li>';}).join('')+'</ul>':''),
       sec('pd-docs','Documents & videos',(docs.length||(d.videos||[]).length)?'<div class="dlinks">'+docs.map(function(x){var kd=Object.prototype.hasOwnProperty.call(DOCKIND,x.kind)&&String(x.title||'').toLowerCase().indexOf(DOCKIND[x.kind].toLowerCase())<0?DOCKIND[x.kind]:'';return '<a href="'+esc(x.url)+'" target="_blank" rel="noopener"><i aria-hidden="true">📄</i><span>'+esc(x.title)+(kd?'<small class="dk">'+esc(kd)+'</small>':'')+'</span></a>';}).join('')+(d.videos||[]).map(function(v){return '<a href="'+esc(v.url)+'" target="_blank" rel="noopener"><i aria-hidden="true">▶</i>'+esc(v.title)+'</a>';}).join('')+'</div>':'')
+      ,sec('pd-compare','Compare models',(d.compare_rows||[]).length&&(d.related||[]).length?'<p class="pd-note">Compare '+esc(f.name)+' with another model this dealer carries:</p><div class="optrow" role="group" aria-label="Compare with">'+d.related.map(function(r){return '<button type="button" data-cmp="'+esc(r.code)+'" aria-pressed="false">'+esc(r.name)+'</button>';}).join('')+'</div><div id="pdcmp" aria-live="polite"></div>':'')
     ].filter(Boolean);
+    CMPCUR={d:d,name:f.name,code:p.code};
     if(!S.length){ if(ld) ld.remove(); return; }
     x.innerHTML=(S.length>1?'<nav class="pdnav" aria-label="Product information">'+S.map(function(z){return '<a href="#'+z.id+'" data-jump="'+z.id+'">'+esc(z.title)+'</a>';}).join('')+'</nav>':'')+S.map(function(z){return z.html;}).join('')+
       (d.source&&HTTPS.test(d.source.url||'')?'<div class="pd-src">'+esc(d.source.label||'Manufacturer product information')+' — <a href="'+esc(d.source.url)+'" target="_blank" rel="noopener">manufacturer page</a></div>':'');
+  }
+  /* "Compare models" (as the Shop's goldenCompare): this model's published comparison rows next to another model THIS dealer
+     carries — the other model's own public detail, loaded when chosen; values are ranges across the sizes shown here */
+  var CMPCUR=null;
+  function compareWith(code,btn){ var cur=CMPCUR, out=$('pdcmp'); if(!cur||!out) return;
+    var p2=D.products.filter(function(x){return x.manufacturer==='golden-technologies'&&x.code===code;})[0]; if(!p2) return;
+    [].forEach.call(document.querySelectorAll('[data-cmp]'),function(b){b.setAttribute('aria-pressed',String(b===btn));});
+    out.innerHTML='<p class="pd-note">Loading…</p>';
+    getDetail(p2,function(d2){ if(CMPCUR!==cur||!$('pdcmp')) return;
+      if(!d2){ out.innerHTML='<p class="pd-note">That model\'s details could not be loaded right now.</p>'; return; }
+      if(!(d2.compare_rows||[]).length){ out.innerHTML='<p class="pd-note">The manufacturer publishes no comparison figures for that model.</p>'; return; }
+      var keys=[], lab={}, a={}, b={}; (cur.d.compare_rows||[]).concat(d2.compare_rows).forEach(function(r){ if(keys.indexOf(r.key)<0){ keys.push(r.key); lab[r.key]=r.label; } });
+      (cur.d.compare_rows||[]).forEach(function(r){a[r.key]=r.value;}); d2.compare_rows.forEach(function(r){b[r.key]=r.value;});
+      var n2=(btn&&btn.textContent)||p2.family_name||p2.name, k2=p2.manufacturer+'|'+(p2.family||p2.code);
+      out.innerHTML='<div class="stbl-wrap"><table class="stbl"><thead><tr><th></th><th>'+esc(cur.name)+'</th><th>'+esc(n2)+'</th></tr></thead><tbody>'+keys.map(function(k){return '<tr><td class="k">'+esc(lab[k])+'</td><td>'+esc(a[k]||'—')+'</td><td>'+esc(b[k]||'—')+'</td></tr>';}).join('')+'</tbody></table></div><p class="pd-note">Values are the range across the sizes this dealer offers.</p><a class="btn" href="#product/'+encodeURIComponent(k2+'//'+p2.code)+'">View '+esc(n2)+' →</a>';
+    });
   }
   function loadDetail(p,f,key,gal){ getDetail(p,function(d){ renderDetail(d,p,f,key,gal); }); }
 
@@ -408,6 +426,7 @@
     if(t.closest('[data-home]')){ e.preventDefault(); F.q='';F.cats={};F.mfrs={};F.min='';F.max='';F.cap={};F.seat={};F.feat={};F.shown=48; var sq=$('sq'); if(sq) sq.value=''; if(PREVIEW||!location.hash||location.hash==='#') listing(); else location.hash=''; return; }
     var c=t.closest('[data-cat]'); if(c){ var name=c.getAttribute('data-cat'); var on=F.cats[name]&&count(F.cats)===1; F.cats={}; if(!on) F.cats[name]=true; F.shown=48; if(!PREVIEW&&(location.hash.indexOf('#product/')===0||(isNew()&&!on))) location.hash=on?'':'category/'+encodeURIComponent(name); else listing(); if(isNew()) window.scrollTo(0,0); return; }
     var o=t.closest('[data-opt]'); if(o){ var key=decodeURIComponent(location.hash.replace(/^#product\//,'')).split('//')[0]; var cur=PREVIEW?(o.closest('.pdp')&&o.closest('.pdp').getAttribute('data-k')):key; setHash('#product/'+encodeURIComponent((cur||key)+'//'+o.getAttribute('data-opt'))); return; }
+    var cm=t.closest('[data-cmp]'); if(cm){ compareWith(cm.getAttribute('data-cmp'),cm); return; }
     var g=t.closest('[data-g]'); if(g){ $('gmain').innerHTML=img(g.getAttribute('data-g'),''); [].forEach.call(document.querySelectorAll('[data-g]'),function(b){b.setAttribute('aria-pressed',String(b===g));}); return; }
     var af=t.closest('[data-askf]'); if(af){ var ff=BYKEY[af.getAttribute('data-askf')]; if(ff) ask(ff.ps.length===1?ff.ps[0]:null, ff.ps.length>1?ff.name:null); return; }
     var ak=t.closest('[data-ask]'); if(ak){ var i=ak.getAttribute('data-ask'); ask(i===''?null:D.products[+i]); return; }
