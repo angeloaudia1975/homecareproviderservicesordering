@@ -2423,15 +2423,23 @@ async function mergeCatalogEdits(slug, prods){
       if(rows==null) rows=await fetch(PC_URL,{headers:H}).then(x=>x.ok?x.json():null);
       if(Array.isArray(rows)&&rows.length){ dbPages={}; rows.forEach(r=>{ dbPages[r.page_key]=r; }); }
     }catch(e){}
-    { // static content file (same live gate applied client-side)
+    try{ // static content file (same live gate applied client-side); unreadable → the database pages alone
       const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"});
       if(cr.ok){ const cj=await cr.json(); if(staging) RAW.content[slug]=cj; const pg=(cj&&cj.pages)||{}; stPages={};
         for(const k in pg){ const st=pg[k].status; if(pg[k].disabled===true) continue; if(!CONFIG.CONTENT_APPROVED_ONLY || VISIBLE_STATUSES.includes(st)) stPages[k]=pg[k]; } }
-    }
+    }catch(e){ stPages=null; }
     if(dbPages||stPages){ pages={};
       const first=staging?stPages:dbPages, second=staging?dbPages:stPages;
       if(first) for(const k in first) pages[k]=first[k];
-      if(second) for(const k in second) if(!(k in pages)) pages[k]=second[k];
+      if(second){ /* a later page sharing a SKU or a variant group with an earlier one is left out WHOLE — never half-merged
+           (coordinator review 2026-11-16) */
+        const NC=sx=>String((sx&&(sx.sku||sx.code))||'').trim().toUpperCase(), VG=p=>String((p&&p.variant_group)||'').split('|').map(g=>g.trim()).filter(Boolean);
+        const claimed=new Set(), groups=new Set();
+        for(const k in pages){ (Array.isArray(pages[k].skus)?pages[k].skus:[]).forEach(sx=>{ const c=NC(sx); if(c) claimed.add(c); }); VG(pages[k]).forEach(g=>groups.add(g)); }
+        for(const k in second){ if(k in pages) continue; const p=second[k]||{};
+          if((Array.isArray(p.skus)?p.skus:[]).some(sx=>claimed.has(NC(sx)))) continue;
+          if(VG(p).some(g=>groups.has(g))) continue;
+          pages[k]=p; } }
     }
     if(pages){
       // Variant-aware routing: a product family (e.g. Gen 2 Walking Boot) can resolve into
