@@ -4,6 +4,21 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>360 Dealer Portal · HomeCare Provider Services</title>
+<script>/* /service = the Golden Tech Service Portal (technician sign-in), served by this same page (owner 2026-11-15 22:32 CT) */
+try{ if(location.pathname.replace(/\/+$/,"")==="/service"){ document.documentElement.classList.add("svc"); document.title="Golden Tech Service Portal · HomeCare Provider Services"; } }catch(e){}</script>
+<style>
+html.svc #bootcover{display:none!important}
+/* a technician login never sees the dealer portal's branding, search, cart or offers */
+body.memberon .hsearch,body.memberon #cartBtn,body.memberon .ub-cc,body.memberon .ub-dot,body.memberon header .brand .dp-lock,body.memberon header .brand .brand-sep{display:none!important}
+.svcmark{display:none;align-items:center;gap:12px;font-weight:800;color:#0b1f33;font-size:clamp(15px,2.2vw,20px);line-height:1.15}
+.svcmark img{height:30px;width:auto;max-width:42vw}
+@media(max-width:560px){.svcmark{font-size:13px;gap:8px}.svcmark span{max-width:96px}.svcmark img{height:22px}body.memberon #whoami .who{display:none}}
+body.memberon .svcmark{display:inline-flex}
+.svclogin .pl-logos{display:inline-flex;width:fit-content;align-items:center;gap:20px;background:#fff;border-radius:14px;padding:12px 18px;box-shadow:0 6px 18px rgba(0,0,0,.18);max-width:100%;box-sizing:border-box}
+.svclogin .pl-logos .pl-logochip{display:inline-flex;align-items:center;background:none!important;box-shadow:none!important;padding:0!important;border:0!important;width:auto!important;height:auto!important}
+.svclogin .pl-logos img{height:48px!important;width:auto!important;max-width:100%}
+@media(max-width:560px){.svclogin .pl-logos{gap:14px;padding:10px 14px}.svclogin .pl-logos img{height:34px!important}}
+</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -7050,21 +7065,14 @@ async function doSignin(){const msg=$("#si_msg"),email=$("#si_email").value.trim
   if(!email||!pass){msg.textContent='Enter your email and password.';return;}msg.textContent='Signing in…';
   if(remember) rememberEmail(email); else forgetEmail();
   try{const s=await sbToken(email,pass);saveSession(s);await authMe();
+    if(AUTH.status==='approved'&&SERVICE_MODE){ msg.textContent='Signed in — opening the 360 Dealer Portal…'; location.href="/"; return; }   /* a dealer on the technician page */
     if(AUTH.status==='approved'){closeLogin();applyAuth();toast(isProvisioned()?'Signed in ✓':'Signed in — account being set up');}
     else if(AUTH.status==='pending'){closeLogin();applyAuth();}   // keep them signed in; show the "application under review" screen
-    else{ /* a dealer's service technician has no dealer account by design: reload so the portal opens Golden Service & Support
-             for it (memberMode at start-up) — live pilot 2026-11-15 */
+    else{ /* a dealer's service technician has no dealer account by design: open the Golden Tech Service Portal for it
+             (memberMode at start-up) — live pilot 2026-11-15; owner 2026-11-15 22:32 CT: technicians live on /service */
       let m=null; try{ m=await fetch(CONFIG.AUTH_ENDPOINT.replace(/dealer-auth$/,"dealer-members-api"),{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+s.access_token},body:JSON.stringify({action:"me"})}).then(r=>r.json()); }catch(e){}
-      if(m&&m.ok!==false&&m.member){ msg.textContent='Signed in — opening Golden Service & Support…'; location.href="/"; return; }
-      /* an invited technician who ALREADY has a login (no dealer account, no active role yet) signs in to accept: the pending
-         invitation is accepted with this sign-in, then the page opens Golden Service & Support (pilot acceptance 2026-11-15 —
-         this path used to end the session before the invitation could be accepted) */
-      let inv=null; try{ inv=sessionStorage.getItem("hcps_member_invite"); }catch(e){}
-      if(inv){ msg.textContent='Signed in — accepting your technician invitation…';
-        let a=null; try{ a=await fetch(CONFIG.AUTH_ENDPOINT.replace(/dealer-auth$/,"dealer-members-api"),{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+s.access_token},body:JSON.stringify({action:"accept",token:inv})}).then(r=>r.json()); }catch(e){}
-        if(a&&a.ok){ try{ sessionStorage.removeItem("hcps_member_invite"); }catch(e){} msg.textContent='Invitation accepted — opening Golden Service & Support…'; location.href="/"; return; }
-        clearSession(); msg.textContent=(a&&(a.message||a.error))||'The invitation could not be accepted just now.'; return; }
-      clearSession();msg.innerHTML='Signed in, but no dealer account is linked yet — contact HCPS.';}
+      if(m&&m.ok!==false&&m.member){ msg.textContent='Signed in — opening the Golden Tech Service Portal…'; location.href="/service"; return; }
+      clearSession(); msg.innerHTML=SERVICE_MODE?'This email has no technician access. Your dealer sets it up for you — or call HCPS at (888) 626-3140.':'Signed in, but no dealer account is linked yet — contact HCPS.';}
   }catch(e){msg.textContent=String(e.message||e);}}
 async function doRegister(){const msg=$("#rg_msg"),g=id=>($(id)?.value||"").trim();
   const email=g("#rg_email"),pass=$("#rg_pass").value,company=g("#rg_company");
@@ -7096,7 +7104,7 @@ async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg
      stays vague — anyone can open this page — but a provider failure is not a secret. */
   msg.textContent='Sending…';
   try{
-    const r=await fetch('/.netlify/functions/password-reset',{method:'POST',
+    const r=await fetch(CONFIG.AUTH_ENDPOINT.replace(/dealer-auth$/,'password-reset'),{method:'POST',   /* the reset service is on the HCPS admin site — this site has none (it answered 404 until 2026-11-15) */
       headers:{'content-type':'application/json'},
       body:JSON.stringify({action:'request',email,audience:'dealer'})});
     const j=await r.json().catch(()=>null);
@@ -7176,7 +7184,40 @@ function wireRemember(){
     box.addEventListener('change',()=>{ setRememberPref(box.checked); if(!box.checked) forgetEmail(); });
   }catch(e){}
 }
-function renderLocked(){$("#tabs").innerHTML=""; document.body.classList.add('locked');
+const SERVICE_MODE=(()=>{ try{ return location.pathname.replace(/\/+$/,"")==="/service"; }catch(e){ return false; } })();
+/* Golden Tech Service Portal sign-in (owner 2026-11-15 22:32 CT): HCPS + Golden logos, one plain sign-in for service technicians.
+   Same sign-in, password reset and server checks as the dealer portal; only the screen and the words differ. */
+function renderServiceLogin(){ $("#tabs").innerHTML=""; document.body.classList.add('locked');
+  const eml=esc(savedEmail());
+  $("#content").innerHTML=`<div class="p360login svclogin">
+    <div class="p360login-hero">
+      <div class="pl-brand pl-logos"><span class="pl-logochip"><picture><source srcset="/assets/brand/hcps-logo-original.webp" type="image/webp"><img class="logo" alt="HomeCare Provider Services" src="/assets/brand/hcps-logo-original.png" width="451" height="180" onerror="this.style.display='none'"></picture></span><span class="pl-logochip"><img alt="Golden Technologies" src="/assets/brand/golden-logo.png" width="600" height="125" onerror="this.style.display='none'"></span></div>
+      <div class="pl-hero-mid">
+        <div class="pl-eyebrow">For service technicians</div>
+        <div class="pl-title" style="font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.1">Golden Tech Service Portal</div>
+        <div class="pl-tag">Golden troubleshooting, parts, documents, videos and service requests for your dealership.</div>
+      </div>
+      <div class="pl-hero-foot">HomeCare Provider Services · (888) 626-3140</div>
+    </div>
+    <div class="p360login-panel">
+      <div class="pl-card">
+        <div id="pane_signin">
+          <h2>Technician sign in</h2>
+          <p class="pl-sub">Use the email address and the password your dealer gave you.</p>
+          <div class="pl-field"><label for="si_email">Email address</label><div class="pl-inwrap"><input id="si_email" style="padding-left:13px" type="email" placeholder="you@yourdealer.com" autocomplete="username" value="${eml}"></div></div>
+          <div class="pl-field"><label for="si_pass">Password</label><div class="pl-inwrap"><input id="si_pass" style="padding-left:13px" type="password" placeholder="••••••••" autocomplete="current-password"></div></div>
+          <div class="pl-row"><label class="pl-remember"><input type="checkbox" id="si_remember"> Remember my email</label><button class="pl-forgot" onclick="doForgot()">Forgot password?</button></div>
+          <button class="pl-go" id="svcGo" onclick="doSignin()">Sign in →</button>
+          <div class="pl-authmsg" id="si_msg" role="status"></div>
+          <div class="pl-help">No login yet? Your dealer sets it up for you. Questions: call HCPS at (888) 626-3140.</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  const pw=$("#si_pass"); if(pw) pw.addEventListener("keydown",e=>{ if(e.key==="Enter") doSignin(); });
+  if(typeof wireRemember==="function") wireRemember();
+}
+function renderLocked(){ if(SERVICE_MODE) return renderServiceLogin(); $("#tabs").innerHTML=""; document.body.classList.add('locked');
   const eml=esc(savedEmail());
   const mailIcon=`<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>`;
   const lockIcon=`<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
@@ -9114,7 +9155,7 @@ async function loadGoldSvc(){
   let A=null; try{ A=await gsvAssets(); }catch(e){ A=null; }
   if(!A||!window.GSV_MOUNT){ host.innerHTML='<div class="ph"><div><h1>Golden Service &amp; Support</h1></div><div><a class="btn gh" onclick="showView(\'resources\')">← Resources</a></div></div><div class="card"><div class="msg">Golden Service &amp; Support could not be loaded just now — please try again, or use <a href="https://goldentechsupport.netlify.app/" target="_blank" rel="noopener">Golden\'s support site</a>.</div><a class="btn pri" onclick="loadGoldSvc()">Try again</a></div>'; return; }
   const pv=g.prices_visible===true, send=GSVS===true;
-  host.innerHTML=`<div class="ph"><div><h1>Golden Service &amp; Support</h1><div class="sub">${pv?"Your Golden dealer prices, as Golden shows them for your account.":"Golden shows parts prices only to authorized Golden dealers with a verified account."} ${send?"Requests go straight to Golden under your verified Golden account — you get a case number.":"Requests: use Golden's support site or call Golden Tech Support until sending from Dealer 360 is switched on."}</div></div><div><a class="btn gh" style="min-height:44px;display:inline-flex;align-items:center" onclick="showView('resources')">← Resources</a></div></div><div id="gsvHost"></div>`;
+  host.innerHTML=`<div class="ph"><div><h1>Golden Service &amp; Support</h1><div class="sub">${MEMBER?esc("Golden service information for "+(MEMBER.dealer_name||"your dealership")+".")+(MEMBER.role==="technician_service"?(send?" Service and parts requests go straight to Golden under your dealer's account — you get a case number.":" To send a request now, call Golden Tech Support."):""):(pv?"Your Golden dealer prices, as Golden shows them for your account.":"Golden shows parts prices only to authorized Golden dealers with a verified account.")+" "+(send?"Requests go straight to Golden under your verified Golden account — you get a case number.":"Requests: use Golden's support site or call Golden Tech Support until sending from Dealer 360 is switched on.")}</div></div><div><a class="btn gh" style="min-height:44px;display:inline-flex;align-items:center" onclick="showView('resources')">← Resources</a></div></div><div id="gsvHost"></div>`;
   const root=$("#gsvHost").attachShadow({mode:"open"}); GSVROOT=root;
   root.innerHTML=`<style>${A.css}</style>${A.html}`;
   try{ window.GSV_MOUNT(root,{parts:gsvPartsData(g)},{send:gsvSendCase}); }catch(e){ console.error("[gsv mount]",e); }
@@ -9314,9 +9355,16 @@ async function memberMode(){
   const d=await api(MEMBERS_ENDPOINT,{action:"me"}).catch(()=>null);
   if(!d||d.ok===false||!d.member) return false;
   MEMBER=d.member; document.body.classList.add("memberon");
+  /* Golden Tech Service Portal branding (owner 2026-11-15 22:32 CT): no 360 Dealer Portal wording, search, cart or offers */
+  document.title="Golden Tech Service Portal · HomeCare Provider Services";
+  const br=document.querySelector("header .brand"); if(br&&!br.querySelector(".svcmark")){ br.setAttribute("aria-label","Golden Tech Service Portal by HomeCare Provider Services"); br.setAttribute("href","/service");
+    const mk=document.createElement("span"); mk.className="svcmark"; mk.innerHTML='<img alt="Golden Technologies" src="/assets/brand/golden-logo.png" width="600" height="125" onerror="this.style.display=\'none\'"><span>Golden Tech Service Portal</span>'; br.appendChild(mk); }
+  const ub=document.querySelector(".utilbar .ub-left"); if(ub) ub.textContent="Golden Tech Service Portal · HomeCare Provider Services";
+  const who=$("#whoami"); if(who){ who.innerHTML=`<span class="who">${esc(MEMBER.email||"")}</span><button class="signout" id="outBtn">Sign out</button>`;
+    const ob=$("#outBtn"); if(ob) ob.onclick=()=>{ try{ localStorage.removeItem("hcps_session"); }catch(e){} location.href="/service"; }; }
   const nav=$("#nav"); if(nav) nav.innerHTML='<a class="on" onclick="showView(\'goldsvc\')">Golden Service &amp; Support</a>';
   const chip=$("#dealerChip"); if(chip) chip.style.display=""; const dn=$("#dealerName"); if(dn) dn.textContent=(MEMBER.dealer_name||"")+" · "+(TECH_ROLE[MEMBER.role]||MEMBER.role).split(" — ")[0];
-  const so=$("#signout"); if(so){ so.style.display=""; so.onclick=()=>{ try{ localStorage.removeItem("hcps_session"); }catch(e){} location.href="/"; }; }
+  const so=$("#signout"); if(so){ so.style.display=""; so.onclick=()=>{ try{ localStorage.removeItem("hcps_session"); }catch(e){} location.href="/service"; }; }
   showView("goldsvc"); return true;
 }
 const TECH_ROLE={viewer:"Viewer — service information only",technician_service:"Technician + Service — service information and service requests"};
@@ -9333,50 +9381,52 @@ async function techCard(){
 function techRender(){
   const box=document.getElementById("techCard"); if(!box||!TECH) return;
   const fd=(x)=>{ try{ return new Date(x).toLocaleDateString("en-US",{month:"short",day:"numeric"}); }catch(e){ return String(x||"").slice(0,10); } };
-  const dl=(i)=>i.delivery==="sent"?`Invitation emailed ${esc(fd(i.last_sent_at))} · open until ${esc(fd(i.expires_at))}`:i.delivery==="failed"?`<b style="color:#b42318">Email not sent</b> — check the address, then Resend · open until ${esc(fd(i.expires_at))}`:`Not emailed yet · open until ${esc(fd(i.expires_at))}`;
+  const dl=(i)=>`Old emailed invitation — no longer used; cancel it · open until ${esc(fd(i.expires_at))}`;
   const mem=(TECH.members||[]).filter(m=>m.active), inv=(TECH.invites||[]).filter(i=>i.status==="pending");
   /* same card, header, row list and buttons as Contacts / Pricing export in the left column (owner 2026-11-15) */
   box.innerHTML=`<div class="card"><div class="chead"><h3>Service technicians</h3><a class="btn gh acsm" onclick="techAddOpen()">Add a technician</a></div>
-    <div style="font-size:13px;color:var(--ink-2)">Invite your service people to their own login for Golden Service &amp; Support. HCPS emails them a one-time invitation; they choose their own password. They never see prices, orders, purchases or reports, and you can remove them at any time.</div>
+    <div style="font-size:13px;color:var(--ink-2)">Give your service people their own login for the Golden Tech Service Portal. You set their password; HCPS emails them the sign-in link (never the password). They never see prices, orders, purchases or reports, and you can remove them at any time.</div>
     <div class="rowlist" style="margin-top:8px">${mem.length?mem.map(m=>`<div class="rl"><div class="b"><div class="n">${esc(m.email)}</div><div class="m">${esc(TECH_ROLE[m.role]||m.role)}</div></div><div class="acr"><a class="btn gh acsm" data-k="${esc(m.uid)}" onclick="techRevokeMember(this.dataset.k)">Remove</a></div></div>`).join(""):'<div class="m">No technicians yet.</div>'}
-    ${inv.map(i=>`<div class="rl"><div class="b"><div class="n">${esc(i.email)}</div><div class="m">${esc(TECH_ROLE[i.role]||i.role)}</div><div class="m">${dl(i)}</div></div><div class="acr"><a class="btn gh acsm" data-k="${esc(i.id)}" onclick="techResend(this.dataset.k,this)">Resend</a> <a class="btn gh acsm" data-k="${esc(i.id)}" onclick="techRevokeInvite(this.dataset.k)">Cancel</a></div></div>`).join("")}</div>
+    ${inv.map(i=>`<div class="rl"><div class="b"><div class="n">${esc(i.email)}</div><div class="m">${esc(TECH_ROLE[i.role]||i.role)}</div><div class="m">${dl(i)}</div></div><div class="acr"><a class="btn gh acsm" data-k="${esc(i.id)}" onclick="techRevokeInvite(this.dataset.k)">Cancel</a></div></div>`).join("")}</div>
     ${TECH_MSG?`<div class="m" role="status" style="margin-top:8px">${esc(TECH_MSG)}</div>`:""}</div>`;
 }
-/* Add a technician — the same dialog layout as Add a contact (acF fields). The address is typed twice and the access is chosen
-   explicitly (no default); HCPS emails the invitation to that address only (owner correction 2026-11-15 21:10 CT). */
+/* Add a technician (owner decision 2026-11-15 22:32 CT) — the same dialog layout as Add a contact (acF fields). The dealer types
+   the address twice, chooses the access explicitly (no default) and sets the password. HCPS emails the technician only a
+   "login ready" note with the Golden Tech Service Portal link — never the password; the dealer gives the password in person. */
 function techAddOpen(){
   const opt=(v)=>`<label style="display:flex;align-items:flex-start;gap:8px;min-height:44px;font-size:13.5px;padding:6px 0"><input type="radio" name="techRole" value="${v}" style="margin-top:3px"> <span>${TECH_ROLE[v]}</span></label>`;
-  $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Invite a technician</h3><a class="mx" onclick="closeModal()">✕</a></div>
+  $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Add a technician</h3><a class="mx" onclick="closeModal()">✕</a></div>
     ${acF("techEmail","Technician's email","",'type="email" autocomplete="off"')}
     ${acF("techEmail2","Type the email again","",'type="email" autocomplete="off"')}
     <fieldset style="border:0;margin:6px 0 0;padding:0"><legend style="font-size:13px;font-weight:600;padding:0">Access</legend>${opt("viewer")}${opt("technician_service")}</fieldset>
-    <label style="display:flex;align-items:flex-start;gap:8px;min-height:44px;font-size:13px;padding:6px 0"><input type="checkbox" id="techOwns" style="margin-top:3px"> <span>This person reads email at this address. Only they can accept the invitation — from that mailbox.</span></label>
-    <div style="font-size:12.5px;color:var(--muted)">HCPS emails a one-time invitation link (valid 7 days) to this address. The technician opens it and chooses their own password — you never see or send a password.</div>
+    ${acF("techPw","Password you'll give the technician (10–72 characters: letters plus a number or symbol, no spaces)","",'type="password" autocomplete="new-password" minlength="10" maxlength="72"')}
+    <label style="display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:13px"><input type="checkbox" onchange="const x=document.getElementById('techPw');if(x)x.type=this.checked?'text':'password'"> Show password</label>
+    <div style="font-size:12.5px;color:var(--muted)">HCPS emails the technician a note that their Golden Tech Service Portal login is ready — <b>never the password</b>. Give them the password yourself, in person or by phone.</div>
     <div class="acerr" id="acErr" role="alert"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><a class="btn gh" onclick="closeModal()">Cancel</a><a class="btn pri" id="techSave" onclick="techInvite()">Send invitation</a></div></div>`;
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><a class="btn gh" onclick="closeModal()">Cancel</a><a class="btn pri" id="techSave" onclick="techCreate()">Create login</a></div></div>`;
   $("#modal").classList.add("on");
 }
 let TECH_MSG="";
-async function techInvite(){
+async function techCreate(){
   const email=(($("#techEmail")||{}).value||"").trim().toLowerCase(), email2=(($("#techEmail2")||{}).value||"").trim().toLowerCase();
-  const r=document.querySelector('input[name="techRole"]:checked'), role=r?r.value:"";
+  const r=document.querySelector('input[name="techRole"]:checked'), role=r?r.value:"", pwEl=$("#techPw"), password=String((pwEl||{}).value||"");
   const err=(m)=>{ const e=$("#acErr"); if(e) e.textContent=m; else toast(m); };
+  err("");
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ err("Enter the technician's email address."); return; }
   if(email!==email2){ err("The two email addresses don't match."); return; }
   if(!role){ err("Choose the access: Viewer or Technician + Service."); return; }
-  if(!($("#techOwns")||{}).checked){ err("Confirm the technician reads email at this address."); return; }
-  const btn=$("#techSave"); if(btn){ if(btn.dataset.busy) return; btn.dataset.busy="1"; btn.style.pointerEvents="none"; btn.textContent="Sending…"; }
-  const d=await api(MEMBERS_ENDPOINT,{action:"invite",email,confirm_email:email2,role});
-  if(btn){ delete btn.dataset.busy; btn.style.pointerEvents=""; btn.textContent="Send invitation"; }
-  if(!d||d.ok===false){ err((d&&(d.message||d.error))||"Could not send the invitation."); return; }
+  const runs="0123456789abcdefghijklmnopqrstuvwxyz", low=password.toLowerCase();   /* same rule as the server (strongPassword) */
+  if(!/^[\x21-\x7E]{10,72}$/.test(password)||!/[A-Za-z]/.test(password)||!/[^A-Za-z]/.test(password)||/^(.)\1+$/.test(password)||runs.includes(low)||runs.split("").reverse().join("").includes(low)){ err("Use 10–72 characters with letters and at least one number or symbol, no spaces (not 1234567890)."); return; }
+  if(low.includes(email.split("@")[0])){ err("The password must not contain the email name."); return; }
+  const btn=$("#techSave"); if(btn){ if(btn.dataset.busy) return; btn.dataset.busy="1"; btn.style.pointerEvents="none"; btn.textContent="Creating…"; }
+  const d=await api(MEMBERS_ENDPOINT,{action:"create_member",email,confirm_email:email2,role,password});
+  if(btn){ delete btn.dataset.busy; btn.style.pointerEvents=""; btn.textContent="Create login"; }
+  if(!d||d.ok===false){ err((d&&(d.message||d.error))||"Could not create the login."); return; }
+  if(pwEl) pwEl.value="";
   closeModal();
-  TECH_MSG=d.emailed?`Invitation emailed to ${d.invite.email}. It works once, only from that mailbox, for 7 days.`:`The invitation to ${d.invite.email} is saved but the email could not be sent. Check the address, then use Resend — or Cancel it.`;
+  TECH_MSG=d.emailed?`Login ready for ${d.member.email}. HCPS emailed them the Golden Tech Service Portal link (not the password) — give them the password yourself.`:`Login ready for ${d.member.email}, but the email could not be sent. Tell them to sign in at hcpsonlineordering.netlify.app/service with the password you set.`;
   await techCard();
 }
-async function techResend(id,el){ if(el){ if(el.dataset.busy) return; el.dataset.busy="1"; el.textContent="Sending…"; }
-  const d=await api(MEMBERS_ENDPOINT,{action:"resend_invite",id});
-  TECH_MSG=(!d||d.ok===false)?((d&&(d.message||d.error))||"Could not resend."):d.emailed?"Invitation emailed again — the earlier link no longer works.":"The email could not be sent. Check the address, or Cancel the invitation and call HCPS.";
-  await techCard(); }
 async function techRevokeInvite(id){ const d=await api(MEMBERS_ENDPOINT,{action:"revoke_invite",id}); if(!d||d.ok===false) toast((d&&d.error)||"Could not cancel."); else { TECH_MSG=""; await techCard(); } }
 async function techRevokeMember(uid){ if(!confirm("Remove this technician's access now?")) return; const d=await api(MEMBERS_ENDPOINT,{action:"revoke_member",uid}); if(!d||d.ok===false) toast((d&&d.error)||"Could not remove."); else await techCard(); }
 /* accepting: the link's token is kept for this tab only, the address bar is cleaned, and the person accepts once signed in
@@ -9388,14 +9438,11 @@ memberPickInvite();
 window.addEventListener("hashchange",()=>{ if(memberPickInvite()&&typeof memberInviteCheck==="function") memberInviteCheck(); });
 async function memberInviteCheck(){
   let t=null; try{ t=sessionStorage.getItem("hcps_member_invite"); }catch(e){}
-  const signed=typeof AUTH!=="undefined"&&AUTH.session&&AUTH.session.access_token;
-  /* signed out, the portal (and its #modal) is hidden behind the login screen: the create-login dialog gets its own overlay on
-     <body> (pilot 2026-11-15) */
-  if(t&&!signed){ let ov=document.getElementById("memberJoin"); if(ov&&document.getElementById("memberPw")) return;   /* already open: never wipe what is being typed */
-    if(!ov){ ov=document.createElement("div"); ov.id="memberJoin"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true"); ov.setAttribute("aria-label","Technician invitation");
+  if(t){ try{ sessionStorage.removeItem("hcps_member_invite"); }catch(e){}   /* emailed invitation links are retired (owner 2026-11-15 22:32 CT) */
+    let ov=document.getElementById("memberJoin"); if(!ov){ ov=document.createElement("div"); ov.id="memberJoin"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true"); ov.setAttribute("aria-label","Technician login");
       ov.style.cssText="position:fixed;inset:0;z-index:2147483000;background:rgba(16,38,63,.55);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box"; document.body.appendChild(ov); }
-    ov.innerHTML=`<div class="mbox" style="background:#fff;border-radius:14px;max-width:480px;width:100%;padding:20px;box-sizing:border-box;max-height:calc(100vh - 24px);overflow:auto;font:15px/1.45 system-ui,sans-serif;color:#0b1f33"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0;font-size:18px">Technician invitation</h3><a role="button" aria-label="Close" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer" onclick="document.getElementById('memberJoin').remove()">✕</a></div><p><b>New to the portal?</b> Choose a password to create your technician login for the email address the invitation was sent to.</p><label for="memberPw" style="display:block;font-size:13px;margin-top:8px">Choose a password (10–72 characters: letters plus a number or symbol, no spaces)</label><input id="memberPw" type="password" autocomplete="new-password" minlength="10" maxlength="72" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box"><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><a class="btn pri" role="button" style="min-height:44px;display:inline-flex;align-items:center;cursor:pointer" id="memberGo" onclick="memberCreate()">Create login &amp; accept</a><a class="btn" role="button" style="min-height:44px;display:inline-flex;align-items:center;cursor:pointer" onclick="document.getElementById('memberJoin').remove()">I already have a login — sign in to accept</a></div><div class="m" id="memberMsg" role="status" style="margin-top:8px"></div></div>`; return; }
-  if(t&&signed){ $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Technician invitation</h3><a class="mx" onclick="closeModal()">✕</a></div><p>Accept technician access with the login you are signed in with? You will see service information for that dealer — never its prices, orders or reports.</p><div style="margin-top:10px"><a class="btn" onclick="memberAccept()">Accept</a></div><div class="m" id="memberMsg"></div></div>`; $("#modal").classList.add("on"); return; }
+    ov.innerHTML=`<div class="mbox" style="background:#fff;border-radius:14px;max-width:480px;width:100%;padding:20px;box-sizing:border-box;font:15px/1.45 system-ui,sans-serif;color:#0b1f33"><h3 style="margin:0 0 8px;font-size:18px">This invitation link is no longer used</h3><p style="margin:0 0 14px">Your dealer now sets up your technician login and gives you your password. Sign in at the Golden Tech Service Portal.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn pri" role="button" href="/service" style="min-height:44px;display:inline-flex;align-items:center">Open the Golden Tech Service Portal</a><a class="btn" role="button" style="min-height:44px;display:inline-flex;align-items:center;cursor:pointer" onclick="document.getElementById('memberJoin').remove()">Close</a></div></div>`; return; }
+  const signed=typeof AUTH!=="undefined"&&AUTH.session&&AUTH.session.access_token;
   if(signed&&AUTH.status!=="approved"&&AUTH.status!=="pending") memberLand();
 }
 /* A signed-in login with no dealer account that IS a technician: leave the locked sign-in screen and open Golden Service &
@@ -9408,28 +9455,6 @@ async function memberLand(){
   const d=r?await r.json().catch(()=>null):null; if(!d||!d.ok||!d.member) return;
   document.body.classList.remove("locked"); showP360("goldsvc");
 }
-async function memberCreate(){
-  let t=null; try{ t=sessionStorage.getItem("hcps_member_invite"); }catch(e){}
-  const pw=String(($("#memberPw")||{}).value||""), m=document.getElementById("memberMsg"), low=pw.toLowerCase(), runs="0123456789abcdefghijklmnopqrstuvwxyz";
-  /* same rule as the server (strongPassword) */
-  if(!/^[\x21-\x7E]{10,72}$/.test(pw)||!/[A-Za-z]/.test(pw)||!/[^A-Za-z]/.test(pw)||/^(.)\1+$/.test(pw)||runs.includes(low)||runs.split("").reverse().join("").includes(low)){ if(m) m.textContent="Use 10–72 characters with letters and at least one number or symbol, no spaces."; return; }
-  const btn=document.getElementById("memberGo"); if(btn){ if(btn.dataset.busy) return; btn.dataset.busy="1"; btn.style.pointerEvents="none"; }
-  const r=await fetch(MEMBERS_ENDPOINT,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"accept_new",token:t,password:pw})}).catch(()=>null);
-  const d=r?await r.json().catch(()=>({})):{};
-  if(btn){ delete btn.dataset.busy; btn.style.pointerEvents=""; }
-  if(d&&d.ok){ try{ sessionStorage.removeItem("hcps_member_invite"); }catch(e){} const pe=document.getElementById("memberPw"); if(pe) pe.value="";
-    const ov=document.getElementById("memberJoin"); if(ov) ov.remove();
-    const se=$("#si_email"); if(se){ se.value=d.email||""; } const sp=$("#si_pass"); if(sp) sp.focus();
-    const sm=$("#si_msg"); if(sm) sm.textContent="Your technician login is ready ("+(d.email||"")+"). Sign in with the password you just chose."; return; }
-  if(m) m.textContent=(d&&(d.message||d.error))||"The login could not be created just now.";
-}
-async function memberAccept(){
-  let t=null; try{ t=sessionStorage.getItem("hcps_member_invite"); }catch(e){}
-  const r=await fetch(MEMBERS_ENDPOINT,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+AUTH.session.access_token},body:JSON.stringify({action:"accept",token:t})});
-  const d=await r.json().catch(()=>({}));
-  if(d&&d.ok){ try{ sessionStorage.removeItem("hcps_member_invite"); }catch(e){} closeModal(); memberBanner(); }
-  else { const m=document.getElementById("memberMsg"); if(m) m.textContent=(d&&(d.message||d.error))||"Could not accept the invitation."; }
-}
 async function memberBanner(){
   if(!(AUTH.session&&AUTH.session.access_token)) return;
   const r=await fetch(MEMBERS_ENDPOINT,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+AUTH.session.access_token},body:JSON.stringify({action:"me"})}).catch(()=>null);
@@ -9438,7 +9463,7 @@ async function memberBanner(){
   el.textContent="Technician access for "+d.member.dealer_name+" — "+(TECH_ROLE[d.member.role]||d.member.role)+". ";
   const b=document.createElement("a"); b.className="btn pri"; b.style.cssText="margin-left:8px;min-height:44px;display:inline-flex;align-items:center"; b.textContent="Open Golden Service & Support"; b.onclick=()=>showP360("goldsvc"); el.appendChild(b);
 }
-Object.assign(window,{techCard,techAddOpen,techInvite,techResend,techRevokeInvite,techRevokeMember,memberAccept,memberCreate,memberInviteCheck,memberMode});
+Object.assign(window,{techCard,techAddOpen,techCreate,techRevokeInvite,techRevokeMember,memberInviteCheck,memberMode});
 (function(){ let n=0; const tm=setInterval(()=>{ n++;   // wait for a restored session (or ~4 s of none) before asking
   if(typeof AUTH!=="undefined"&&((AUTH.session&&AUTH.status!=="anon")||n>=8)){ clearInterval(tm); memberInviteCheck(); } },500); })();
 function renderAccount0(){
