@@ -298,6 +298,8 @@
     fetch(API+'?s='+encodeURIComponent(slug)+'&d='+encodeURIComponent(k)).then(function(r){return r.json();}).then(function(j){ done(j&&j.ok&&j.detail?j.detail:false); }).catch(function(){ cb(false); });
   }
   var HEXRE=/^#[0-9a-f]{6}$/i, HTTPS=/^https:\/\/[^\s"'<>\\]+$/;   /* links are https only, here as on the server */
+  /* what each manufacturer document is, as the Shop labels Golden's (storefront parity 2026-11-16); unknown kinds show only the title */
+  var DOCKIND={sell_sheet:'Sell sheet',brochure:'Brochure',accessories_sheet:'Accessories sheet',owners_manual:"Owner's manual",quick_start:'Quick start guide',option_manual:'Option manual',setup_instructions:'Setup instructions',warranty:'Warranty'};
   function sec(id,title,html){ return html?{id:id,title:title,html:'<section class="pdsec" id="'+id+'" aria-labelledby="'+id+'-h"><h3 id="'+id+'-h">'+esc(title)+'</h3>'+html+'</section>'}:null; }
   function chipHtml(v){ var sw=v.swatch||(v.hex&&HEXRE.test(v.hex)?'':null);
     return '<span class="pd-chip'+(sw==null?' nosw':'')+'">'+(sw!=null?'<span class="pd-sw"'+(v.hex&&HEXRE.test(v.hex)?' style="background-color:'+v.hex+'"':'')+'>'+(v.swatch?'<img src="'+esc(v.swatch)+'" alt="" loading="lazy" data-ph="1">':'')+'</span>':'')+esc(v.name)+'</span>'; }
@@ -335,7 +337,7 @@
       sec('pd-specs','Specifications',specHtml),
       sec('pd-sizing','Sizing',(sizing||(d.sizing_note?' ':''))?sizing+(d.sizing_note?'<p class="pd-note">'+esc(d.sizing_note)+'</p>':''):''),
       sec('pd-warranty','Warranty',(d.warranty||[]).length?'<ul class="fcheck">'+d.warranty.map(function(w){return '<li>'+esc(w)+'</li>';}).join('')+'</ul>':''),
-      sec('pd-docs','Documents & videos',(docs.length||(d.videos||[]).length)?'<div class="dlinks">'+docs.map(function(x){return '<a href="'+esc(x.url)+'" target="_blank" rel="noopener"><i aria-hidden="true">📄</i>'+esc(x.title)+'</a>';}).join('')+(d.videos||[]).map(function(v){return '<a href="'+esc(v.url)+'" target="_blank" rel="noopener"><i aria-hidden="true">▶</i>'+esc(v.title)+'</a>';}).join('')+'</div>':'')
+      sec('pd-docs','Documents & videos',(docs.length||(d.videos||[]).length)?'<div class="dlinks">'+docs.map(function(x){var kd=Object.prototype.hasOwnProperty.call(DOCKIND,x.kind)&&String(x.title||'').toLowerCase().indexOf(DOCKIND[x.kind].toLowerCase())<0?DOCKIND[x.kind]:'';return '<a href="'+esc(x.url)+'" target="_blank" rel="noopener"><i aria-hidden="true">📄</i><span>'+esc(x.title)+(kd?'<small class="dk">'+esc(kd)+'</small>':'')+'</span></a>';}).join('')+(d.videos||[]).map(function(v){return '<a href="'+esc(v.url)+'" target="_blank" rel="noopener"><i aria-hidden="true">▶</i>'+esc(v.title)+'</a>';}).join('')+'</div>':'')
     ].filter(Boolean);
     if(!S.length){ if(ld) ld.remove(); return; }
     x.innerHTML=(S.length>1?'<nav class="pdnav" aria-label="Product information">'+S.map(function(z){return '<a href="#'+z.id+'" data-jump="'+z.id+'">'+esc(z.title)+'</a>';}).join('')+'</nav>':'')+S.map(function(z){return z.html;}).join('')+
