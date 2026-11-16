@@ -446,7 +446,10 @@ async function loadPricing(){
   if(PRICE) return;
   PRICE={}; PRICELIST=[];
   try{
-    const mf=await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]);
+    /* HCPS Test Line (owner 2026-11-16): a testOnly line is listed only for a dealer granted it — never in the fallback lists
+       (literature, terms, credit application) other dealers see. */
+    const mf=((await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]))||[])
+      .filter(m=>m&&(m.testOnly!==true||(typeof LINES!=='undefined'&&Array.isArray(LINES)&&LINES.map(x=>String(x&&x.slug||x)).includes(String(m.slug)))));
     MFRLIST=(mf||[]).map(m=>({slug:m.slug,name:m.name}));
     const withData=(mf||[]).filter(m=>m.hasData!==false);
     /* P0 (2026-10-23): the public files carry no prices. A line this dealer carries is priced from
