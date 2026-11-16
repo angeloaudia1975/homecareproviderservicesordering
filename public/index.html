@@ -7052,7 +7052,11 @@ async function doSignin(){const msg=$("#si_msg"),email=$("#si_email").value.trim
   try{const s=await sbToken(email,pass);saveSession(s);await authMe();
     if(AUTH.status==='approved'){closeLogin();applyAuth();toast(isProvisioned()?'Signed in ✓':'Signed in — account being set up');}
     else if(AUTH.status==='pending'){closeLogin();applyAuth();}   // keep them signed in; show the "application under review" screen
-    else{clearSession();msg.innerHTML='Signed in, but no dealer account is linked yet — contact HCPS.';}
+    else{ /* a dealer's service technician has no dealer account by design: reload so the portal opens Golden Service & Support
+             for it (memberMode at start-up) — live pilot 2026-11-15 */
+      let m=null; try{ m=await fetch(CONFIG.AUTH_ENDPOINT.replace(/dealer-auth$/,"dealer-members-api"),{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+s.access_token},body:JSON.stringify({action:"me"})}).then(r=>r.json()); }catch(e){}
+      if(m&&m.ok!==false&&m.member){ msg.textContent='Signed in — opening Golden Service & Support…'; location.href="/"; return; }
+      clearSession();msg.innerHTML='Signed in, but no dealer account is linked yet — contact HCPS.';}
   }catch(e){msg.textContent=String(e.message||e);}}
 async function doRegister(){const msg=$("#rg_msg"),g=id=>($(id)?.value||"").trim();
   const email=g("#rg_email"),pass=$("#rg_pass").value,company=g("#rg_company");
