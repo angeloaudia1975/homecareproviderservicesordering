@@ -2406,21 +2406,32 @@ async function mergeCatalogEdits(slug, prods){
   let _gated=0;                 // declared here because it is read after the catch below
   try{
     let pages=null;
-    /* the preview's own enrichment (static content file) comes first on a staging deploy */
-    if(typeof STAGING!=="undefined"&&STAGING){ try{ const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"}); if(cr.ok){ const cj=await cr.json(); RAW.content[slug]=cj; const pg=(cj&&cj.pages)||{};
-      const keys=Object.keys(pg).filter(k=>pg[k].disabled!==true&&VISIBLE_STATUSES.includes(pg[k].status)); if(keys.length){ pages={}; keys.forEach(k=>{ pages[k]=pg[k]; }); } } }catch(e){} }
-    if(!pages) try{
+    /* PAGES ARE MERGED PAGE BY PAGE (2026-11-16, owner: one content source per product). A line's content used to come from
+       the database (product_content) when the line had ANY visible database page, and otherwise from its static content file
+       (./data/content/<line>.json) — all or nothing, so the first page published in the admin editor would have replaced every
+       static page of the line. Now both are read and merged by page identity: a visible database page wins for its page_key
+       (and, read first, for the SKUs it lists); every other visible static page stays. On a staging deploy the preview's own
+       static file comes first instead. No line had visible pages in both places when this changed, so nothing a dealer sees
+       moved. A line with neither keeps the old answers: no file → no pages; a file with nothing visible → an empty set. */
+    const staging=(typeof STAGING!=="undefined"&&STAGING);
+    let dbPages=null, stPages=null;
+    try{
       const PC_URL=`${CONFIG.SUPABASE_URL}/rest/v1/product_content?manufacturer=eq.${encodeURIComponent(slug)}&status=in.(${VISIBLE_STATUSES.join(',')})&select=page_key,status,skus,name,tagline,description,features,clinical_applications,options,billing_codes,specs,warranty,source_url,image,images_gallery,sizing_table,sizing_note,documents,videos,variant_group,parent_key,variant_label,subcategory`;
       /* card_image (2026-10-12): the catalog-card photo the President chose for a grouped page. Until the
          database has the column, the pages are read without it — exactly as before. */
       let rows=await fetch(PC_URL+',card_image',{headers:H}).then(x=>x.ok?x.json():null);
       if(rows==null) rows=await fetch(PC_URL,{headers:H}).then(x=>x.ok?x.json():null);
-      if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); }
+      if(Array.isArray(rows)&&rows.length){ dbPages={}; rows.forEach(r=>{ dbPages[r.page_key]=r; }); }
     }catch(e){}
-    if(!pages){ // static fallback (same live gate applied client-side)
+    { // static content file (same live gate applied client-side)
       const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"});
-      if(cr.ok){ const cj=await cr.json(); const pg=(cj&&cj.pages)||{}; pages={};
-        for(const k in pg){ const st=pg[k].status; if(pg[k].disabled===true) continue; if(!CONFIG.CONTENT_APPROVED_ONLY || VISIBLE_STATUSES.includes(st)) pages[k]=pg[k]; } }
+      if(cr.ok){ const cj=await cr.json(); if(staging) RAW.content[slug]=cj; const pg=(cj&&cj.pages)||{}; stPages={};
+        for(const k in pg){ const st=pg[k].status; if(pg[k].disabled===true) continue; if(!CONFIG.CONTENT_APPROVED_ONLY || VISIBLE_STATUSES.includes(st)) stPages[k]=pg[k]; } }
+    }
+    if(dbPages||stPages){ pages={};
+      const first=staging?stPages:dbPages, second=staging?dbPages:stPages;
+      if(first) for(const k in first) pages[k]=first[k];
+      if(second) for(const k in second) if(!(k in pages)) pages[k]=second[k];
     }
     if(pages){
       // Variant-aware routing: a product family (e.g. Gen 2 Walking Boot) can resolve into
