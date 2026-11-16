@@ -15,6 +15,8 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
       if (body.action === 'list') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, invites: state.invites, members: state.members }) });
       if (body.action === 'invite') { state.invites = [{ id: '44444444-4444-4444-8444-444444444444', email: body.email, role: body.role, status: 'pending', expires_at: '2026-11-22T00:00:00Z' }];
         return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, invite: { id: state.invites[0].id, email: body.email, role: body.role, expires_at: '2026-11-22T00:00:00Z' }, link: 'https://shop.test/?member_invite=' + 'k'.repeat(43) }) }); }
+      if (body.action === 'create_member') { state.members = state.members.concat([{ uid: '55555555-5555-4555-8555-555555555555', email: body.email, role: body.role, active: true }]);
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, member: { uid: '55555555-5555-4555-8555-555555555555', email: body.email, role: body.role }, emailed: !/nomail/.test(body.email) }) }); }
       if (body.action === 'revoke_invite') { state.invites = []; return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); }
       if (body.action === 'accept_new') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, role: 'viewer', email: 'new.tech@dealer.test' }) });
       if (body.action === 'accept') return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"role":"viewer"}' });
@@ -30,6 +32,16 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
       const txt = await page.$eval('#techCard', (e) => e.textContent); ok(/Service technicians/.test(txt) && /tech@dealer\.test/.test(txt) && /Technician \+ Service/.test(txt), txt.slice(0, 200));
       ok(/never see prices, orders, purchases or reports/.test(txt), 'warning text'); ok(calls.at(-1).auth === 'Bearer dealer-jwt', 'own session token ' + calls.at(-1).auth);
       const ov = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth); ok(ov <= 1, 'horizontal overflow ' + ov); });
+    await t(`${w}: dealer creates the login with a password; HCPS emails it; password cleared, never shown back`, async () => {
+      await page.fill('#techEmail', 'pw.tech@dealer.test'); await page.selectOption('#techRole', 'technician_service');
+      await page.evaluate(async () => { document.getElementById('techPw').value = 'short'; await techCreate(); }); ok(!calls.some((c) => c.body.action === 'create_member'), 'short password sent');
+      await page.fill('#techPw', 'Blue-Wrench-2026'); const pwBox = await page.$eval('#techPw', (e) => ({ type: e.type, h: e.getBoundingClientRect().height, fs: getComputedStyle(e).fontSize })); ok(pwBox.type === 'password' && pwBox.h >= 44 && pwBox.fs === '16px', JSON.stringify(pwBox));
+      await page.evaluate(async () => { await techCreate(); }); await page.waitForFunction(() => /emailed it the sign-in details/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
+      const c = calls.find((x) => x.body.action === 'create_member'); ok(c && c.body.email === 'pw.tech@dealer.test' && c.body.role === 'technician_service' && c.body.password === 'Blue-Wrench-2026' && c.auth === 'Bearer dealer-jwt', JSON.stringify(c));
+      const txt = await page.$eval('#techCard', (e) => e.textContent + [...e.querySelectorAll('input')].map((i) => i.value).join('|')); ok(!txt.includes('Blue-Wrench-2026'), 'password shown back'); ok(/pw\.tech@dealer\.test/.test(txt), 'listed');
+      await page.fill('#techEmail', 'nomail@dealer.test'); await page.fill('#techPw', 'Blue-Wrench-2027'); await page.evaluate(async () => { await techCreate(); });
+      await page.waitForFunction(() => /could not be sent/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
+      state.members = state.members.filter((m) => !/pw\.tech|nomail/.test(m.email)); await page.evaluate(async () => { TECH_MSG = ''; await techCard(); }); });
     await t(`${w}: invitation — one-time link shown with its warning, copy button, then cancel`, async () => {
       await page.fill('#techEmail', 'new@dealer.test'); await page.selectOption('#techRole', 'viewer');
       await page.evaluate(async () => { await techInvite(); });
@@ -49,11 +61,19 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
       ok(/Technician access for Acme Medical/.test(await page.$eval('#memberBanner', (e) => e.innerText)), 'banner'); ok(!(await page.evaluate(() => sessionStorage.getItem('hcps_member_invite'))), 'token cleared'); });
     await t(`${w}: no login yet — create the technician login from the invitation (no sign-in, token + password only)`, async () => {
       await page.evaluate(() => { sessionStorage.setItem('hcps_member_invite', 'k'.repeat(43)); AUTH.session = null; });
-      await page.evaluate(async () => { await memberInviteCheck(); }); ok(/Create login/.test(await page.$eval('#modal', (e) => e.innerText)), 'create option');
+      await page.evaluate(() => { document.getElementById('p360wrap').style.display = 'none'; });   // signed out = portal hidden behind the login screen
+      await page.evaluate(async () => { await memberInviteCheck(); }); ok(/Create login/.test(await page.$eval('#memberJoin', (e) => e.innerText)), 'create option');
+      const box = await page.$eval('#memberPw', (e) => { const r = e.getBoundingClientRect(); return { h: r.height, w: r.width, top: document.elementFromPoint(r.left + 5, r.top + 5) === e }; }); ok(box.h >= 44 && box.w > 100 && box.top, 'password box visible on top of the login screen ' + JSON.stringify(box));
       await page.fill('#memberPw', 'short'); await page.evaluate(async () => { await memberCreate(); }); ok(/at least 10/.test(await page.$eval('#memberMsg', (e) => e.textContent)), 'short refused locally');
       await page.fill('#memberPw', 'longenough1'); await page.evaluate(async () => { await memberCreate(); });
       const c = calls.find((x) => x.body.action === 'accept_new'); ok(c && c.body.token === 'k'.repeat(43) && c.body.password === 'longenough1' && !c.auth && !('email' in c.body), 'accept_new call ' + JSON.stringify(c));
-      ok(/login is ready \(new\.tech@dealer\.test\)/.test(await page.$eval('#memberMsg', (e) => e.textContent)), 'confirmation'); ok(!(await page.evaluate(() => sessionStorage.getItem('hcps_member_invite'))), 'token cleared'); });
+      ok(/login is ready \(new\.tech@dealer\.test\)/.test(await page.$eval('#memberMsg', (e) => e.textContent)), 'confirmation'); ok(!(await page.evaluate(() => sessionStorage.getItem('hcps_member_invite'))), 'token cleared');
+      await page.evaluate(() => { document.getElementById('memberJoin').remove(); document.getElementById('p360wrap').style.display = ''; });
+    });
+    await t(`${w}: a link pasted into an open tab (#fragment only, no reload) still opens the invitation`, async () => {
+      await page.evaluate(() => { sessionStorage.removeItem('hcps_member_invite'); AUTH.session = null; document.getElementById('p360wrap').style.display = 'none'; location.hash = 'member_invite=' + 'p'.repeat(43); });
+      await page.waitForTimeout(400); ok(await page.$('#memberJoin'), 'dialog opened'); ok(await page.evaluate(() => sessionStorage.getItem('hcps_member_invite')) === 'p'.repeat(43), 'token kept'); ok(!/member_invite/.test(await page.evaluate(() => location.href)), 'address bar cleaned');
+      await page.evaluate(() => { document.getElementById('memberJoin').remove(); document.getElementById('p360wrap').style.display = ''; }); });
     await page.context().close();
   }
   await b.close(); console.log(`\ntechnicians (browser): ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
