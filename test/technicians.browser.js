@@ -49,11 +49,19 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
       ok(/Technician access for Acme Medical/.test(await page.$eval('#memberBanner', (e) => e.innerText)), 'banner'); ok(!(await page.evaluate(() => sessionStorage.getItem('hcps_member_invite'))), 'token cleared'); });
     await t(`${w}: no login yet — create the technician login from the invitation (no sign-in, token + password only)`, async () => {
       await page.evaluate(() => { sessionStorage.setItem('hcps_member_invite', 'k'.repeat(43)); AUTH.session = null; });
-      await page.evaluate(async () => { await memberInviteCheck(); }); ok(/Create login/.test(await page.$eval('#modal', (e) => e.innerText)), 'create option');
+      await page.evaluate(() => { document.getElementById('p360wrap').style.display = 'none'; });   // signed out = portal hidden behind the login screen
+      await page.evaluate(async () => { await memberInviteCheck(); }); ok(/Create login/.test(await page.$eval('#memberJoin', (e) => e.innerText)), 'create option');
+      const box = await page.$eval('#memberPw', (e) => { const r = e.getBoundingClientRect(); return { h: r.height, w: r.width, top: document.elementFromPoint(r.left + 5, r.top + 5) === e }; }); ok(box.h >= 44 && box.w > 100 && box.top, 'password box visible on top of the login screen ' + JSON.stringify(box));
       await page.fill('#memberPw', 'short'); await page.evaluate(async () => { await memberCreate(); }); ok(/at least 10/.test(await page.$eval('#memberMsg', (e) => e.textContent)), 'short refused locally');
       await page.fill('#memberPw', 'longenough1'); await page.evaluate(async () => { await memberCreate(); });
       const c = calls.find((x) => x.body.action === 'accept_new'); ok(c && c.body.token === 'k'.repeat(43) && c.body.password === 'longenough1' && !c.auth && !('email' in c.body), 'accept_new call ' + JSON.stringify(c));
-      ok(/login is ready \(new\.tech@dealer\.test\)/.test(await page.$eval('#memberMsg', (e) => e.textContent)), 'confirmation'); ok(!(await page.evaluate(() => sessionStorage.getItem('hcps_member_invite'))), 'token cleared'); });
+      ok(/login is ready \(new\.tech@dealer\.test\)/.test(await page.$eval('#memberMsg', (e) => e.textContent)), 'confirmation'); ok(!(await page.evaluate(() => sessionStorage.getItem('hcps_member_invite'))), 'token cleared');
+      await page.evaluate(() => { document.getElementById('memberJoin').remove(); document.getElementById('p360wrap').style.display = ''; });
+    });
+    await t(`${w}: a link pasted into an open tab (#fragment only, no reload) still opens the invitation`, async () => {
+      await page.evaluate(() => { sessionStorage.removeItem('hcps_member_invite'); AUTH.session = null; document.getElementById('p360wrap').style.display = 'none'; location.hash = 'member_invite=' + 'p'.repeat(43); });
+      await page.waitForTimeout(400); ok(await page.$('#memberJoin'), 'dialog opened'); ok(await page.evaluate(() => sessionStorage.getItem('hcps_member_invite')) === 'p'.repeat(43), 'token kept'); ok(!/member_invite/.test(await page.evaluate(() => location.href)), 'address bar cleaned');
+      await page.evaluate(() => { document.getElementById('memberJoin').remove(); document.getElementById('p360wrap').style.display = ''; }); });
     await page.context().close();
   }
   await b.close(); console.log(`\ntechnicians (browser): ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
