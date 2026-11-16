@@ -8,6 +8,7 @@
 try{ if(location.pathname.replace(/\/+$/,"")==="/service"){ document.documentElement.classList.add("svc"); document.title="Golden Tech Service Portal · HomeCare Provider Services"; } }catch(e){}</script>
 <style>
 html.svc #bootcover{display:none!important}
+html.svc body:not(.memberon) .utilbar{display:none!important}   /* the technician sign-in never shows the dealer portal strip */
 /* a technician login never sees the dealer portal's branding, search, cart or offers */
 body.memberon .hsearch,body.memberon #cartBtn,body.memberon .ub-cc,body.memberon .ub-dot,body.memberon header .brand .dp-lock,body.memberon header .brand .brand-sep{display:none!important}
 .svcmark{display:none;align-items:center;gap:12px;font-weight:800;color:#0b1f33;font-size:clamp(15px,2.2vw,20px);line-height:1.15}
