@@ -9310,7 +9310,9 @@ const TECH_ROLE={viewer:"Viewer — service information only",technician_service
 let TECH=null, TECH_LINK=null;
 async function techCard(){
   const host=$("#view-account"); if(!host||(window.__PREVIEW__&&window.__PREVIEW__.token)||(window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__())) return;
-  let box=document.getElementById("techCard"); if(!box){ box=document.createElement("div"); box.id="techCard"; host.appendChild(box); }
+  let box=document.getElementById("techCard"); if(!box){ box=document.createElement("div"); box.id="techCard";
+    const pe=[...host.querySelectorAll(".card")].find(c=>/^\s*Pricing export/.test((c.querySelector("h3")||{}).textContent||""));
+    if(pe&&pe.parentNode) pe.parentNode.insertBefore(box, pe.nextSibling); else host.appendChild(box); }   /* left column, under Pricing export (owner 2026-11-15) */
   const d=await api(MEMBERS_ENDPOINT,{action:"list"});
   if(!d||d.ok===false){ TECH=null; box.innerHTML=""; return; }   // switched off, not installed or not a dealer login: no card
   TECH=d; techRender();
@@ -9319,27 +9321,36 @@ function techRender(){
   const box=document.getElementById("techCard"); if(!box||!TECH) return;
   const st={pending:"Invitation open",accepted:"Accepted",revoked:"Revoked",expired:"Expired"};
   const mem=(TECH.members||[]).filter(m=>m.active), inv=(TECH.invites||[]).filter(i=>i.status==="pending");
-  box.innerHTML=`<div class="card"><div class="chead"><h3>Service technicians</h3></div>
-    <div class="m" style="margin-bottom:8px">Give your service people their own login for Golden Service & Support. They never see prices, orders, purchases or reports, and you can remove them at any time.</div>
-    ${mem.length?mem.map(m=>`<div class="rl"><div class="b"><div class="n">${esc(m.email)}</div><div class="m">${esc(TECH_ROLE[m.role]||m.role)}</div></div><a class="btn gh acsm" onclick="techRevokeMember('${esc(m.uid)}')">Remove</a></div>`).join(""):'<div class="m">No technicians yet.</div>'}
-    ${inv.length?`<h4 style="margin:12px 0 4px">Open invitations</h4>`+inv.map(i=>`<div class="rl"><div class="b"><div class="n">${esc(i.email)}</div><div class="m">${esc(TECH_ROLE[i.role]||i.role)} · ${esc(st[i.status]||i.status)} until ${esc(String(i.expires_at||"").slice(0,10))}</div></div><a class="btn gh acsm" onclick="techRevokeInvite('${esc(i.id)}')">Cancel</a></div>`).join(""):""}
-    <div class="acgrid" style="margin-top:12px"><label><span>Email</span><input id="techEmail" type="email" autocomplete="off" style="font-size:16px"></label>
-      <label><span>Access</span><select id="techRole" style="font-size:16px"><option value="viewer">${TECH_ROLE.viewer}</option><option value="technician_service">${TECH_ROLE.technician_service}</option></select></label></div>
-    <label style="display:block;margin-top:8px"><span>Password for the technician (at least 10 characters)</span><input id="techPw" type="password" autocomplete="new-password" minlength="10" maxlength="72" style="font-size:16px;width:100%;min-height:44px;box-sizing:border-box"></label>
-    <label style="display:inline-flex;align-items:center;gap:6px;margin-top:4px;min-height:44px;font-size:13px"><input type="checkbox" onchange="const x=document.getElementById('techPw');if(x)x.type=this.checked?'text':'password'"> Show password</label>
-    <div class="m" style="margin-top:4px">HCPS emails the technician this login (email + password). Ask them to change the password after signing in (Forgot password? on the sign-in page).</div>
-    <div style="margin-top:10px"><a class="btn" role="button" style="min-height:44px;display:inline-flex;align-items:center" onclick="techCreate()">Create login &amp; email it</a></div>
+  /* same card, header, row list and buttons as Contacts / Pricing export in the left column (owner 2026-11-15) */
+  box.innerHTML=`<div class="card"><div class="chead"><h3>Service technicians</h3><a class="btn gh acsm" onclick="techAddOpen()">Add a technician</a></div>
+    <div style="font-size:13px;color:var(--ink-2)">Give your service people their own login for Golden Service &amp; Support. They never see prices, orders, purchases or reports, and you can remove them at any time.</div>
+    <div class="rowlist" style="margin-top:8px">${mem.length?mem.map(m=>`<div class="rl"><div class="b"><div class="n">${esc(m.email)}</div><div class="m">${esc(TECH_ROLE[m.role]||m.role)}</div></div><div class="acr"><a class="btn gh acsm" onclick="techRevokeMember('${esc(m.uid)}')">Remove</a></div></div>`).join(""):'<div class="m">No technicians yet.</div>'}
+    ${inv.map(i=>`<div class="rl"><div class="b"><div class="n">${esc(i.email)}</div><div class="m">${esc(TECH_ROLE[i.role]||i.role)} · ${esc(st[i.status]||i.status)} until ${esc(String(i.expires_at||"").slice(0,10))}</div></div><div class="acr"><a class="btn gh acsm" onclick="techRevokeInvite('${esc(i.id)}')">Cancel</a></div></div>`).join("")}</div>
     ${TECH_MSG?`<div class="m" role="status" style="margin-top:8px">${esc(TECH_MSG)}</div>`:""}
     ${TECH_LINK?`<div class="card" style="margin-top:10px;background:#f6f8fb"><b>Invitation link for ${esc(TECH_LINK.email)}</b> — shown only now. Give it to that person yourself (HCPS does not email it); it works only for that email address and expires ${esc(String(TECH_LINK.expires_at).slice(0,10))}.<div style="margin-top:6px;word-break:break-all"><code id="techLinkText">${esc(TECH_LINK.link)}</code></div><a class="btn gh acsm" style="margin-top:6px" onclick="techCopy()">Copy link</a></div>`:""}</div>`;
+}
+/* Add a technician — the same dialog layout as Add a contact (acF fields); the dealer chooses the password (owner 2026-11-15) */
+function techAddOpen(){
+  $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Add a technician</h3><a class="mx" onclick="closeModal()">✕</a></div>
+    ${acF("techEmail","Email","",'type="email" autocomplete="off"')}
+    <div class="fld2"><label for="techRole">Access</label><select id="techRole"><option value="viewer">${TECH_ROLE.viewer}</option><option value="technician_service">${TECH_ROLE.technician_service}</option></select></div>
+    ${acF("techPw","Password (10–72 characters, no spaces)","",'type="password" autocomplete="new-password" minlength="10" maxlength="72"')}
+    <label style="display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:13px"><input type="checkbox" onchange="const x=document.getElementById('techPw');if(x)x.type=this.checked?'text':'password'"> Show password</label>
+    <div style="font-size:12.5px;color:var(--muted)">HCPS emails the technician this login (email + password). They can change the password with <b>Forgot password?</b> on the sign-in page.</div>
+    <div class="acerr" id="acErr" role="alert"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><a class="btn gh" onclick="closeModal()">Cancel</a><a class="btn pri" id="techSave" onclick="techCreate()">Create login &amp; email it</a></div></div>`;
+  $("#modal").classList.add("on");
 }
 let TECH_MSG="";
 /* owner 2026-11-15: the dealer chooses the technician's login + password; HCPS emails it to the technician (never shown back) */
 async function techCreate(){
   const email=(($("#techEmail")||{}).value||"").trim(), role=($("#techRole")||{}).value||"viewer", pwEl=$("#techPw"), password=String((pwEl||{}).value||"");
-  if(password.length<10){ toast("The password needs at least 10 characters."); return; }
+  const err=(m)=>{ const e=$("#acErr"); if(e) e.textContent=m; else toast(m); };
+  if(!/^[\x21-\x7E]{10,72}$/.test(password)){ err("The password needs 10–72 characters, with no spaces."); return; }
   const d=await api(MEMBERS_ENDPOINT,{action:"create_member",email,role,password});
   if(pwEl) pwEl.value="";
-  if(!d||d.ok===false){ toast((d&&(d.message||d.error))||"Could not create the login."); return; }
+  if(!d||d.ok===false){ err((d&&(d.message||d.error))||"Could not create the login."); return; }
+  closeModal();
   TECH_MSG=d.emailed?`Login created for ${d.member.email} — HCPS emailed it the sign-in details.`:`Login created for ${d.member.email}, but the email could not be sent — give the technician the password yourself.`;
   TECH_LINK=null; await techCard();
 }
@@ -9364,7 +9375,8 @@ async function memberInviteCheck(){
   const signed=typeof AUTH!=="undefined"&&AUTH.session&&AUTH.session.access_token;
   /* signed out, the portal (and its #modal) is hidden behind the login screen: the create-login dialog gets its own overlay on
      <body> (pilot 2026-11-15) */
-  if(t&&!signed){ let ov=document.getElementById("memberJoin"); if(!ov){ ov=document.createElement("div"); ov.id="memberJoin"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true"); ov.setAttribute("aria-label","Technician invitation");
+  if(t&&!signed){ let ov=document.getElementById("memberJoin"); if(ov&&document.getElementById("memberPw")) return;   /* already open: never wipe what is being typed */
+    if(!ov){ ov=document.createElement("div"); ov.id="memberJoin"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true"); ov.setAttribute("aria-label","Technician invitation");
       ov.style.cssText="position:fixed;inset:0;z-index:2147483000;background:rgba(16,38,63,.55);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box"; document.body.appendChild(ov); }
     ov.innerHTML=`<div class="mbox" style="background:#fff;border-radius:14px;max-width:480px;width:100%;padding:20px;box-sizing:border-box;max-height:calc(100vh - 24px);overflow:auto;font:15px/1.45 system-ui,sans-serif;color:#0b1f33"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0;font-size:18px">Technician invitation</h3><a role="button" aria-label="Close" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer" onclick="document.getElementById('memberJoin').remove()">✕</a></div><p><b>New to the portal?</b> Choose a password to create your technician login for the email address the invitation was sent to.</p><label for="memberPw" style="display:block;font-size:13px;margin-top:8px">Password (at least 10 characters)</label><input id="memberPw" type="password" autocomplete="new-password" minlength="10" maxlength="72" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box"><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><a class="btn pri" role="button" style="min-height:44px;display:inline-flex;align-items:center;cursor:pointer" onclick="memberCreate()">Create login &amp; accept</a><a class="btn" role="button" style="min-height:44px;display:inline-flex;align-items:center;cursor:pointer" onclick="document.getElementById('memberJoin').remove()">I already have a login — sign in</a></div><div class="m" id="memberMsg" role="status" style="margin-top:8px"></div></div>`; return; }
   if(t&&signed){ $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Technician invitation</h3><a class="mx" onclick="closeModal()">✕</a></div><p>Accept technician access with the login you are signed in with? You will see service information for that dealer — never its prices, orders or reports.</p><div style="margin-top:10px"><a class="btn" onclick="memberAccept()">Accept</a></div><div class="m" id="memberMsg"></div></div>`; $("#modal").classList.add("on"); return; }
@@ -9394,7 +9406,7 @@ async function memberBanner(){
   el.textContent="Technician access for "+d.member.dealer_name+" — "+(TECH_ROLE[d.member.role]||d.member.role)+". ";
   const b=document.createElement("a"); b.className="btn pri"; b.style.cssText="margin-left:8px;min-height:44px;display:inline-flex;align-items:center"; b.textContent="Open Golden Service & Support"; b.onclick=()=>showP360("goldsvc"); el.appendChild(b);
 }
-Object.assign(window,{techCard,techCreate,techInvite,techCopy,techRevokeInvite,techRevokeMember,memberAccept,memberCreate,memberInviteCheck,memberMode});
+Object.assign(window,{techCard,techAddOpen,techCreate,techInvite,techCopy,techRevokeInvite,techRevokeMember,memberAccept,memberCreate,memberInviteCheck,memberMode});
 (function(){ let n=0; const tm=setInterval(()=>{ n++;   // wait for a restored session (or ~4 s of none) before asking
   if(typeof AUTH!=="undefined"&&((AUTH.session&&AUTH.status!=="anon")||n>=8)){ clearInterval(tm); memberInviteCheck(); } },500); })();
 function renderAccount0(){
