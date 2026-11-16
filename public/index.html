@@ -9390,14 +9390,14 @@ function techRender(){
   const mem=(TECH.members||[]).filter(m=>m.active), inv=(TECH.invites||[]).filter(i=>i.status==="pending");
   /* same card, header, row list and buttons as Contacts / Pricing export in the left column (owner 2026-11-15) */
   box.innerHTML=`<div class="card"><div class="chead"><h3>Service technicians</h3><a class="btn gh acsm" onclick="techAddOpen()">Add a technician</a></div>
-    <div style="font-size:13px;color:var(--ink-2)">Give your service people their own login for the Golden Tech Service Portal. You set their password; HCPS emails them the sign-in link (never the password). They never see prices, orders, purchases or reports, and you can remove them at any time.</div>
+    <div style="font-size:13px;color:var(--ink-2)">Give your service people their own login for the Golden Tech Service Portal. You set their password; HCPS emails them the sign-in link and the password. They never see prices, orders, purchases or reports, and you can remove them at any time.</div>
     <div class="rowlist" style="margin-top:8px">${mem.length?mem.map(m=>`<div class="rl"><div class="b"><div class="n">${esc(m.email)}</div><div class="m">${esc(TECH_ROLE[m.role]||m.role)}</div></div><div class="acr"><a class="btn gh acsm" data-k="${esc(m.uid)}" onclick="techRevokeMember(this.dataset.k)">Remove</a></div></div>`).join(""):'<div class="m">No technicians yet.</div>'}
     ${inv.map(i=>`<div class="rl"><div class="b"><div class="n">${esc(i.email)}</div><div class="m">${esc(TECH_ROLE[i.role]||i.role)}</div><div class="m">${dl(i)}</div></div><div class="acr"><a class="btn gh acsm" data-k="${esc(i.id)}" onclick="techRevokeInvite(this.dataset.k)">Cancel</a></div></div>`).join("")}</div>
     ${TECH_MSG?`<div class="m" role="status" style="margin-top:8px">${esc(TECH_MSG)}</div>`:""}</div>`;
 }
 /* Add a technician (owner decision 2026-11-15 22:32 CT) — the same dialog layout as Add a contact (acF fields). The dealer types
    the address twice, chooses the access explicitly (no default) and sets the password. HCPS emails the technician only a
-   "login ready" note with the Golden Tech Service Portal link — never the password; the dealer gives the password in person. */
+   "login ready" email with the Golden Tech Service Portal link, their email and the password the dealer set (owner 2026-11-15 23:17 CT). */
 function techAddOpen(){
   const opt=(v)=>`<label style="display:flex;align-items:flex-start;gap:8px;min-height:44px;font-size:13.5px;padding:6px 0"><input type="radio" name="techRole" value="${v}" style="margin-top:3px"> <span>${TECH_ROLE[v]}</span></label>`;
   $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>Add a technician</h3><a class="mx" onclick="closeModal()">✕</a></div>
@@ -9406,7 +9406,7 @@ function techAddOpen(){
     <fieldset style="border:0;margin:6px 0 0;padding:0"><legend style="font-size:13px;font-weight:600;padding:0">Access</legend>${opt("viewer")}${opt("technician_service")}</fieldset>
     ${acF("techPw","Password you'll give the technician (10–72 characters: letters plus a number or symbol, no spaces)","",'type="password" autocomplete="new-password" minlength="10" maxlength="72"')}
     <label style="display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:13px"><input type="checkbox" onchange="const x=document.getElementById('techPw');if(x)x.type=this.checked?'text':'password'"> Show password</label>
-    <div style="font-size:12.5px;color:var(--muted)">HCPS emails the technician a note that their Golden Tech Service Portal login is ready — <b>never the password</b>. Give them the password yourself, in person or by phone.</div>
+    <div style="font-size:12.5px;color:var(--muted)">HCPS emails the technician their Golden Tech Service Portal sign-in link, email and <b>this password</b>. They can change it any time with “Forgot password?”.</div>
     <div class="acerr" id="acErr" role="alert"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><a class="btn gh" onclick="closeModal()">Cancel</a><a class="btn pri" id="techSave" onclick="techCreate()">Create login</a></div></div>`;
   $("#modal").classList.add("on");
@@ -9429,7 +9429,7 @@ async function techCreate(){
   if(!d||d.ok===false){ err((d&&(d.message||d.error))||"Could not create the login."); return; }
   if(pwEl) pwEl.value="";
   closeModal();
-  TECH_MSG=d.emailed?`Login ready for ${d.member.email}. HCPS emailed them the Golden Tech Service Portal link (not the password) — give them the password yourself.`:`Login ready for ${d.member.email}, but the email could not be sent. Tell them to sign in at hcpsonlineordering.netlify.app/service with the password you set.`;
+  TECH_MSG=d.emailed?`Login ready for ${d.member.email}. HCPS emailed them the Golden Tech Service Portal link and their password.`:`Login ready for ${d.member.email}, but the email could not be sent. Tell them to sign in at hcpsonlineordering.netlify.app/service with the password you set.`;
   await techCard();
 }
 async function techRevokeInvite(id){ const d=await api(MEMBERS_ENDPOINT,{action:"revoke_invite",id}); if(!d||d.ok===false) toast((d&&d.error)||"Could not cancel."); else { TECH_MSG=""; await techCard(); } }

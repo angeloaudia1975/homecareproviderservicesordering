@@ -68,6 +68,19 @@ css += `
   @media (max-width: 980px) { input, select, textarea { font-size: 16px !important; } }
   @media (max-width: 700px) { .case-table thead { display:none } .case-table tr { display:block; border-bottom:1px solid var(--border); padding:6px 0 }
     .case-table td { display:block; border:0; padding:3px 10px } .case-table td[data-l]::before { content: attr(data-l) ": "; font-weight:700; color: var(--slate) } }
+  /* Phone (owner 2026-11-15: technicians use this in the field): the black header fits a phone — no clipped title, the
+     call button stays one line and big enough to tap */
+  @container gsv (max-width: 520px) {
+    .site-header { height: auto; min-height: 56px; padding: 10px 12px; gap: 10px; flex-wrap: wrap; }
+    .header-brand { gap: 10px; min-width: 0; }
+    .header-logo { width: 32px; height: 32px; flex: none; }
+    .header-title { font-size: 15px; white-space: nowrap; }
+    .header-title span { display: none; }
+    .header-subtitle { font-size: 10px; letter-spacing: .3px; }
+    .header-right { flex: 1 1 100%; }
+    .header-support { min-height: 44px; padding: 6px 10px; width: 100%; justify-content: center; box-sizing: border-box; }
+    .header-support-num { font-size: 13px; white-space: nowrap; }
+  }
 `;
 
 /* ---------- HTML ---------- */

@@ -32,7 +32,7 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
       ok(/never see prices, orders, purchases or reports/.test(txt), 'warning text'); ok(calls.at(-1).auth === 'Bearer dealer-jwt', 'own session token ' + calls.at(-1).auth);
       const ov = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth); ok(ov <= 1, 'horizontal overflow ' + ov); });
     await t(`${w}: add a technician — address twice, explicit access (no default), the DEALER sets the password; never shown back; no link`, async () => {
-      await page.evaluate(() => techAddOpen()); const dlg = await page.$eval('#modal', (e) => e.innerText); ok(/Add a technician/.test(dlg) && /never the password/.test(dlg), 'dialog: ' + dlg.slice(0, 300));
+      await page.evaluate(() => techAddOpen()); const dlg = await page.$eval('#modal', (e) => e.innerText); ok(/Add a technician/.test(dlg) && /emails the technician their Golden Tech Service Portal sign-in link, email and this password/.test(dlg), 'dialog: ' + dlg.slice(0, 300));
       ok(await page.evaluate(() => [...document.querySelectorAll('input[name="techRole"]')].every((r) => !r.checked)), 'no access chosen by default');
       const send = async () => page.evaluate(async () => { await techCreate(); }); const errTxt = () => page.$eval('#acErr', (e) => e.textContent);
       await page.fill('#techEmail', 'pw.tech@dealer.test'); await page.fill('#techEmail2', 'pw.tech@dealer.tst'); await send(); ok(/don't match/.test(await errTxt()), 'mismatch');
@@ -45,7 +45,7 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
       await page.waitForFunction(() => /Login ready for pw\.tech@dealer\.test/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
       const c = calls.find((x) => x.body.action === 'create_member'); ok(c && c.body.email === 'pw.tech@dealer.test' && c.body.confirm_email === 'pw.tech@dealer.test' && c.body.role === 'technician_service' && c.body.password === 'Blue-Wrench-2026' && c.auth === 'Bearer dealer-jwt', JSON.stringify(c));
       const txt = await page.$eval('#techCard', (e) => e.textContent + [...e.querySelectorAll('input')].map((i) => i.value).join('|')); ok(!txt.includes('Blue-Wrench-2026') && !/member_invite/.test(txt), 'password or link shown back');
-      ok(/not the password/.test(txt), 'tells the dealer to give the password'); ok(!/on/.test(await page.$eval('#modal', (e) => e.className)), 'dialog closed');
+      ok(/emailed them the Golden Tech Service Portal link and their password/.test(txt), 'says the password was emailed'); ok(!/on/.test(await page.$eval('#modal', (e) => e.className)), 'dialog closed');
       state.members = state.members.filter((m) => !/pw\.tech/.test(m.email)); await page.evaluate(async () => { TECH_MSG = ''; await techCard(); }); });
     await t(`${w}: email not sent — the login still works and the dealer is told how the technician signs in`, async () => {
       await page.evaluate(() => techAddOpen()); await page.fill('#techEmail', 'nomail@dealer.test'); await page.fill('#techEmail2', 'nomail@dealer.test'); await page.check('input[name="techRole"][value="viewer"]'); await page.fill('#techPw', 'Blue-Wrench-2027');
