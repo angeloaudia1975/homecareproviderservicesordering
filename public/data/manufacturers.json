@@ -240,5 +240,14 @@
       "summary": "Yuwell shipping: the SPIRIT-3 (SP-3) always ships free, and any Yuwell order that includes an SP-3 ships free — accessories and monitors included. Orders without an SP-3 pay actual shipping, added from the order confirmation.",
       "actualNote": "Actual shipping is added to Yuwell orders without a SPIRIT-3 (SP-3). Add an SP-3 and the whole Yuwell order ships free."
     }
+  },
+  {
+    "slug": "hcps-test-line",
+    "name": "HCPS Test Line",
+    "testOnly": true,
+    "accent": "#6b7280",
+    "dark": "#0b1f33",
+    "hasData": true,
+    "sort": 99
   }
 ]

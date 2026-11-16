@@ -2845,6 +2845,15 @@ function fillMsrp(p){
 }
 
 /* ---------- render tabs (gated to the dealer's entitled lines) ---------- */
+/* HCPS TEST LINE (owner 2026-11-16 15:10 CT). A manufacturers.json entry with testOnly:true is shown ONLY to a dealer whose
+   access answer includes it (granted to TEST — Golden Sandbox alone). Every place that lists lines beyond the dealer's own
+   entitlement (quotes, price list, partner list) passes through this. */
+function testLineVisible(m){
+  if(!m||m.testOnly!==true) return true;
+  if(typeof AUTH==='undefined'||!AUTH||AUTH.status!=='approved') return false;
+  const acc=AUTH.access?[...(AUTH.access.your_accounts||[]),...(AUTH.access.available||[])]:(AUTH.lines||[]);
+  return acc.map(String).includes(String(m.slug));
+}
 function entitledManufacturers(){
   if(AUTH.status!=='approved') return [];
   // With the access engine: show every line the dealer can order — the ones they already
@@ -3955,7 +3964,7 @@ async function loadPartners(){
   return null;   // not cached: the next visit tries again
 }
 function shopPartnerList(roster){
-  const mf=(state.manufacturers||[]).filter(m=>m&&m.slug&&!m.retired);
+  const mf=(state.manufacturers||[]).filter(m=>m&&m.slug&&!m.retired).filter(m=>(typeof testLineVisible!=='function'||testLineVisible(m)));
   const out=[], seen=new Set();
   const add=(slug,name,img,blurb)=>{ if(!slug||seen.has(slug)) return; seen.add(slug); out.push({slug,name,img,blurb:blurb||""}); };
   if(roster){ roster.forEach(p=>{ const slug=isGoldenSlug(p.id)?CONFIG.GOLDEN_SLUG:p.id;
@@ -8240,7 +8249,7 @@ async function hubStoreCatalog(){
   const ent=((typeof entitledManufacturers==='function')?entitledManufacturers():[]).filter(Boolean);
   const listed=(typeof state!=='undefined'&&state&&Array.isArray(state.manufacturers))?state.manufacturers:[];
   const seen=new Set(ent.map(m=>m.slug));
-  const all=ent.concat((ent.length||(typeof AUTH!=='undefined'&&AUTH&&AUTH.status==='approved'))?listed.filter(m=>m&&!seen.has(m.slug)):[]);
+  const all=ent.concat((ent.length||(typeof AUTH!=='undefined'&&AUTH&&AUTH.status==='approved'))?listed.filter(m=>m&&!seen.has(m.slug)).filter(m=>typeof testLineVisible!=='function'||testLineVisible(m)):[]);
   const lines=all.filter(m=>m&&m.hasData!==false&&!(typeof isGoldenSlug==='function'&&isGoldenSlug(m.slug))&&quotableLine(m.slug));
   const own=new Set(ent.map(m=>String(m.slug)));
   const out=[]; QUOTE_UNAVAILABLE=[];
@@ -8278,7 +8287,7 @@ async function loadPricing(){
     /* Retired lines never listed (any spelling); a line switched off (manufacturer_meta.active=false) is never listed
        either — the price list, showroom and quotes follow the same list as the catalog (review 2026-11-04). */
     const shopList=(typeof state!=="undefined"&&state&&Array.isArray(state.manufacturers)&&state.manufacturers.length)?new Set(state.manufacturers.map(m=>String(m.slug))):null;
-    const mf=((await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]))||[]).filter(m=>m&&!isRetiredSlug(m.slug)&&(!shopList||shopList.has(String(m.slug))));
+    const mf=((await fetch('/data/manufacturers.json').then(r=>r.json()).catch(()=>[]))||[]).filter(m=>m&&!isRetiredSlug(m.slug)&&(!shopList||shopList.has(String(m.slug)))).filter(m=>typeof testLineVisible!=='function'||testLineVisible(m));
     MFRLIST=(mf||[]).map(m=>({slug:m.slug,name:m.name,quotable:m.quotable}));
     const withData=(mf||[]).filter(m=>m.hasData!==false);
     /* P0 (2026-10-23): the public files carry no prices. A line this dealer carries is priced from
