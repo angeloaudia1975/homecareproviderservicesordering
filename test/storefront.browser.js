@@ -32,7 +32,7 @@ const DETAILS = { 'golden-technologies|PR-501': { tagline: 'Sleep-friendly <comf
   option_note: 'Ask the dealer about available options, colors and upgrade pricing.',
   spec_table: { columns: [{ code: 'PR-501', label: 'Small' }, { code: 'PR-501M', label: 'Medium' }], rows: [{ label: 'Seat width', values: { 'PR-501': '20"', 'PR-501M': '21"' } }] }, specs: [],
   sizing: { columns: ['Size', 'Height'], rows: [['S', '5\'0"']] }, sizing_note: 'Measure seated.', warranty: ['Lifetime frame'],
-  documents: [{ title: 'Sell sheet', url: 'https://goldentech.com/s.pdf' }], videos: [{ title: 'Tour', url: 'https://www.youtube.com/watch?v=abcdefghijk' }],
+  documents: [{ title: 'Sell sheet', kind: 'sell_sheet', url: 'https://goldentech.com/s.pdf' }, { title: 'Universal manual', kind: 'owners_manual', url: 'https://goldentech.com/m.pdf' }, { title: 'Odd', kind: 'x<b>', url: 'https://goldentech.com/o.pdf' }], videos: [{ title: 'Tour', url: 'https://www.youtube.com/watch?v=abcdefghijk' }],
   gallery: ['https://d3325uqufdmhie.cloudfront.net/g2.jpg', 'https://d3325uqufdmhie.cloudfront.net/g3.jpg'], source: { label: 'Product information from Golden Technologies', url: 'https://goldentech.com/cloud' } } };
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
@@ -203,6 +203,7 @@ const layout = (page, sel) => page.evaluate((sel) => {
           th: [...document.querySelectorAll('#pd-specs thead th')].map((x) => x.textContent + (x.classList.contains('on') ? '*' : '')), sizing: document.querySelector('#pd-sizing').textContent,
           war: document.querySelector('#pd-warranty').textContent, links: [...document.querySelectorAll('#pd-docs a')].map((a) => [a.getAttribute('href'), a.getAttribute('target')]),
           thumbs: document.querySelectorAll('.thumbs button').length, lead: document.querySelector('.pdp .lead') && document.querySelector('.pdp .lead').textContent, loading: !!document.getElementById('pdload'),
+          dk: [...document.querySelectorAll('#pd-docs small.dk')].map((x) => x.textContent),
           iframes: document.querySelectorAll('iframe').length, text: document.querySelector('.pdp').innerText }));
         ok(r.tag === 'Sleep-friendly <comfort>', r.tag); ok(JSON.stringify(r.hl) === '["Weight capacity375 LBS","Comfort zones5"]', JSON.stringify(r.hl));
         ok(JSON.stringify(r.nav) === '["Overview","Features & benefits","Options & configurations","Specifications","Sizing","Warranty","Documents & videos"]', JSON.stringify(r.nav));
@@ -210,7 +211,8 @@ const layout = (page, sel) => page.evaluate((sel) => {
         ok(r.opts.join('|') === 'Upholstery|Standard colors|Upgrades', r.opts.join('|')); ok(r.chips.includes('Ivory') && r.chips.includes('Cross-Over'), r.chips.join('|'));
         ok(r.sw[0].includes('#eeeeee') && !r.sw.some((x) => /url\(/.test(x)), 'swatch colors validated: ' + JSON.stringify(r.sw));
         ok(JSON.stringify(r.th) === '["Specification","SmallPR-501*","MediumPR-501M"]', JSON.stringify(r.th)); ok(/Measure seated/.test(r.sizing) && /5'0"/.test(r.sizing), r.sizing); ok(/Lifetime frame/.test(r.war), r.war);
-        ok(JSON.stringify(r.links) === JSON.stringify([['https://goldentech.com/s.pdf', '_blank'], ['https://www.homecareproviderservices.org/assets/docs/cloud.pdf', '_blank'], ['https://www.youtube.com/watch?v=abcdefghijk', '_blank']]), 'manufacturer + HCPS documents, then videos: ' + JSON.stringify(r.links));
+        ok(JSON.stringify(r.links) === JSON.stringify([['https://goldentech.com/s.pdf', '_blank'], ['https://goldentech.com/m.pdf', '_blank'], ['https://goldentech.com/o.pdf', '_blank'], ['https://www.homecareproviderservices.org/assets/docs/cloud.pdf', '_blank'], ['https://www.youtube.com/watch?v=abcdefghijk', '_blank']]), 'manufacturer + HCPS documents, then videos: ' + JSON.stringify(r.links));
+        ok(JSON.stringify(r.dk) === JSON.stringify(["Owner's manual"]), 'document kinds labelled, never repeating the title, unknown kinds unlabelled: ' + JSON.stringify(r.dk));
         ok(r.thumbs === 4, 'gallery merged: ' + r.thumbs); ok(r.lead === 'The Cloud is <b>soft</b>.', 'short lead: ' + r.lead); ok(!r.loading, 'loading note gone'); ok(!r.iframes, 'nothing embedded');
         ok(/Ask the dealer about available options/.test(r.text) && !/\$\s?\d[\d,]*\.\d\d(?![\s\S]*From)/.test(r.text.replace(/\$1,899\.00/g, '')), 'option pricing is the dealer\'s');
         ok(!st.csp.length, 'CSP violations: ' + st.csp.join(' | ')); ok(JSON.stringify(st.details) === '["golden-technologies|PR-501"]', JSON.stringify(st.details));
