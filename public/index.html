@@ -7187,7 +7187,7 @@ function wireRemember(){
 const SERVICE_MODE=(()=>{ try{ return location.pathname.replace(/\/+$/,"")==="/service"; }catch(e){ return false; } })();
 /* Golden Tech Service Portal sign-in (owner 2026-11-15 22:32 CT): HCPS + Golden logos, one plain sign-in for service technicians.
    Same sign-in, password reset and server checks as the dealer portal; only the screen and the words differ. */
-function renderServiceLogin(){ $("#tabs").innerHTML=""; document.body.classList.add('locked');
+function renderServiceLogin(dealerSignedIn){ $("#tabs").innerHTML=""; document.body.classList.add('locked');
   const eml=esc(savedEmail());
   $("#content").innerHTML=`<div class="p360login svclogin">
     <div class="p360login-hero">
@@ -7202,6 +7202,7 @@ function renderServiceLogin(){ $("#tabs").innerHTML=""; document.body.classList.
     <div class="p360login-panel">
       <div class="pl-card">
         <div id="pane_signin">
+          ${dealerSignedIn?`<div class="pl-authmsg" role="status" style="background:#fff4e5;color:#7a3d00;border-radius:10px;padding:10px 12px;margin:0 0 12px">You're signed in to the 360 Dealer Portal as ${esc((AUTH.dealer&&AUTH.dealer.name)||"a dealer")}. To sign in as a technician, sign out first. <button class="pl-forgot" id="svcOut" style="margin-left:4px">Sign out</button> · <a href="/">Back to the 360 Dealer Portal</a></div>`:""}
           <h2>Technician sign in</h2>
           <p class="pl-sub">Use the email address and the password your dealer gave you.</p>
           <div class="pl-field"><label for="si_email">Email address</label><div class="pl-inwrap"><input id="si_email" style="padding-left:13px" type="email" placeholder="you@yourdealer.com" autocomplete="username" value="${eml}"></div></div>
@@ -7215,6 +7216,7 @@ function renderServiceLogin(){ $("#tabs").innerHTML=""; document.body.classList.
     </div>
   </div>`;
   const pw=$("#si_pass"); if(pw) pw.addEventListener("keydown",e=>{ if(e.key==="Enter") doSignin(); });
+  const so=$("#svcOut"); if(so) so.onclick=()=>{ try{ localStorage.removeItem("hcps_session"); }catch(e){} location.href="/service"; };
   if(typeof wireRemember==="function") wireRemember();
 }
 function renderLocked(){ if(SERVICE_MODE) return renderServiceLogin(); $("#tabs").innerHTML=""; document.body.classList.add('locked');
@@ -7279,6 +7281,8 @@ function isProvisioned(){ return AUTH.status==='approved' && !!AUTH.dealer && ac
 function applyAuth(){
   // Authentication is resolved — safe to reveal the correct screen. Drop the boot cover.
   const _bc=document.getElementById('bootcover'); if(_bc) _bc.remove();
+  /* /service is the technician sign-in: a signed-in DEALER sees it with a note to sign out first, never the dealer portal there */
+  if(SERVICE_MODE&&(AUTH.status==='approved'||AUTH.status==='pending')){ document.body.classList.add('guest'); return renderServiceLogin(true); }
   if(PREVIEW) ensurePreviewBar();     // staff previewing a dealer — pin the read-only banner
   ensureStagingBar();
   const approved=AUTH.status==='approved';
