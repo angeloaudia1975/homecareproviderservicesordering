@@ -2405,7 +2405,7 @@ async function mergeCatalogEdits(slug, prods){
   const VISIBLE_STATUSES=['published','active','discontinued'];
   let _gated=0;                 // declared here because it is read after the catch below
   try{
-    let pages=null;
+    let pages=null, _fromDb=false;
     /* the preview's own enrichment (static content file) comes first on a staging deploy */
     if(typeof STAGING!=="undefined"&&STAGING){ try{ const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"}); if(cr.ok){ const cj=await cr.json(); RAW.content[slug]=cj; const pg=(cj&&cj.pages)||{};
       const keys=Object.keys(pg).filter(k=>pg[k].disabled!==true&&VISIBLE_STATUSES.includes(pg[k].status)); if(keys.length){ pages={}; keys.forEach(k=>{ pages[k]=pg[k]; }); } } }catch(e){} }
@@ -2415,13 +2415,29 @@ async function mergeCatalogEdits(slug, prods){
          database has the column, the pages are read without it — exactly as before. */
       let rows=await fetch(PC_URL+',card_image',{headers:H}).then(x=>x.ok?x.json():null);
       if(rows==null) rows=await fetch(PC_URL,{headers:H}).then(x=>x.ok?x.json():null);
-      if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); }
+      if(Array.isArray(rows)&&rows.length){ pages={}; rows.forEach(r=>{ pages[r.page_key]=r; }); _fromDb=true; }
     }catch(e){}
     if(!pages){ // static fallback (same live gate applied client-side)
       const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"});
       if(cr.ok){ const cj=await cr.json(); const pg=(cj&&cj.pages)||{}; pages={};
         for(const k in pg){ const st=pg[k].status; if(pg[k].disabled===true) continue; if(!CONFIG.CONTENT_APPROVED_ONLY || VISIBLE_STATUSES.includes(st)) pages[k]=pg[k]; } }
     }
+    /* PER-PAGE CONTENT (2026-11-16). A line's database pages used to replace its static content file WHOLE: the first
+       page published in the database made every other static page of the line disappear. Now each page stands on its
+       own — a visible database page wins for its page_key, its SKUs and its variant groups; every other visible static
+       page still fills in. A static page that shares a page_key, a SKU or a variant group with a visible database page
+       is left out entirely (never half-merged). A line with no visible database page reads its static file exactly as
+       before. Same rule on the server (_storefront_catalog) and in the extracted engine (_shop_engine.js). */
+    if(pages&&_fromDb){ try{ const cr=await fetch(`./data/content/${slug}.json`,{cache:"no-store"});
+      if(cr.ok){ const cj=await cr.json(); const sp=(cj&&cj.pages)||{}; const NC=sx=>String((sx&&(sx.sku||sx.code))||'').trim().toUpperCase();
+        const claimed=new Set(), groups=new Set();
+        Object.keys(pages).forEach(k=>{ const d=pages[k]||{}; (Array.isArray(d.skus)?d.skus:[]).forEach(sx=>{ const c=NC(sx); if(c) claimed.add(c); });
+          String(d.variant_group||'').split('|').forEach(g=>{ g=g.trim(); if(g) groups.add(g); }); });
+        for(const k in sp){ const st=sp[k]; if(!st||pages[k]||st.disabled===true) continue;
+          if(CONFIG.CONTENT_APPROVED_ONLY && !VISIBLE_STATUSES.includes(st.status)) continue;
+          if((Array.isArray(st.skus)?st.skus:[]).some(sx=>claimed.has(NC(sx)))) continue;
+          if(String(st.variant_group||'').split('|').some(g=>g.trim()&&groups.has(g.trim()))) continue;
+          pages[k]=st; } } }catch(e){} }
     if(pages){
       // Variant-aware routing: a product family (e.g. Gen 2 Walking Boot) can resolve into
       // multiple MODEL variants, each with its own page/images. A SKU is routed to its model
