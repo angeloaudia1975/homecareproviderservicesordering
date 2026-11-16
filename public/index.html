@@ -9325,8 +9325,23 @@ function techRender(){
     ${inv.length?`<h4 style="margin:12px 0 4px">Open invitations</h4>`+inv.map(i=>`<div class="rl"><div class="b"><div class="n">${esc(i.email)}</div><div class="m">${esc(TECH_ROLE[i.role]||i.role)} · ${esc(st[i.status]||i.status)} until ${esc(String(i.expires_at||"").slice(0,10))}</div></div><a class="btn gh acsm" onclick="techRevokeInvite('${esc(i.id)}')">Cancel</a></div>`).join(""):""}
     <div class="acgrid" style="margin-top:12px"><label><span>Email</span><input id="techEmail" type="email" autocomplete="off" style="font-size:16px"></label>
       <label><span>Access</span><select id="techRole" style="font-size:16px"><option value="viewer">${TECH_ROLE.viewer}</option><option value="technician_service">${TECH_ROLE.technician_service}</option></select></label></div>
-    <div style="margin-top:10px"><a class="btn" onclick="techInvite()">Create invitation link</a></div>
+    <label style="display:block;margin-top:8px"><span>Password for the technician (at least 10 characters)</span><input id="techPw" type="password" autocomplete="new-password" minlength="10" maxlength="72" style="font-size:16px;width:100%;min-height:44px;box-sizing:border-box"></label>
+    <label style="display:inline-flex;align-items:center;gap:6px;margin-top:4px;min-height:44px;font-size:13px"><input type="checkbox" onchange="const x=document.getElementById('techPw');if(x)x.type=this.checked?'text':'password'"> Show password</label>
+    <div class="m" style="margin-top:4px">HCPS emails the technician this login (email + password). Ask them to change the password after signing in (Forgot password? on the sign-in page).</div>
+    <div style="margin-top:10px"><a class="btn" role="button" style="min-height:44px;display:inline-flex;align-items:center" onclick="techCreate()">Create login &amp; email it</a></div>
+    ${TECH_MSG?`<div class="m" role="status" style="margin-top:8px">${esc(TECH_MSG)}</div>`:""}
     ${TECH_LINK?`<div class="card" style="margin-top:10px;background:#f6f8fb"><b>Invitation link for ${esc(TECH_LINK.email)}</b> — shown only now. Give it to that person yourself (HCPS does not email it); it works only for that email address and expires ${esc(String(TECH_LINK.expires_at).slice(0,10))}.<div style="margin-top:6px;word-break:break-all"><code id="techLinkText">${esc(TECH_LINK.link)}</code></div><a class="btn gh acsm" style="margin-top:6px" onclick="techCopy()">Copy link</a></div>`:""}</div>`;
+}
+let TECH_MSG="";
+/* owner 2026-11-15: the dealer chooses the technician's login + password; HCPS emails it to the technician (never shown back) */
+async function techCreate(){
+  const email=(($("#techEmail")||{}).value||"").trim(), role=($("#techRole")||{}).value||"viewer", pwEl=$("#techPw"), password=String((pwEl||{}).value||"");
+  if(password.length<10){ toast("The password needs at least 10 characters."); return; }
+  const d=await api(MEMBERS_ENDPOINT,{action:"create_member",email,role,password});
+  if(pwEl) pwEl.value="";
+  if(!d||d.ok===false){ toast((d&&(d.message||d.error))||"Could not create the login."); return; }
+  TECH_MSG=d.emailed?`Login created for ${d.member.email} — HCPS emailed it the sign-in details.`:`Login created for ${d.member.email}, but the email could not be sent — give the technician the password yourself.`;
+  TECH_LINK=null; await techCard();
 }
 async function techInvite(){
   const email=(($("#techEmail")||{}).value||"").trim(), role=($("#techRole")||{}).value||"viewer";
@@ -9379,7 +9394,7 @@ async function memberBanner(){
   el.textContent="Technician access for "+d.member.dealer_name+" — "+(TECH_ROLE[d.member.role]||d.member.role)+". ";
   const b=document.createElement("a"); b.className="btn pri"; b.style.cssText="margin-left:8px;min-height:44px;display:inline-flex;align-items:center"; b.textContent="Open Golden Service & Support"; b.onclick=()=>showP360("goldsvc"); el.appendChild(b);
 }
-Object.assign(window,{techCard,techInvite,techCopy,techRevokeInvite,techRevokeMember,memberAccept,memberCreate,memberInviteCheck,memberMode});
+Object.assign(window,{techCard,techCreate,techInvite,techCopy,techRevokeInvite,techRevokeMember,memberAccept,memberCreate,memberInviteCheck,memberMode});
 (function(){ let n=0; const tm=setInterval(()=>{ n++;   // wait for a restored session (or ~4 s of none) before asking
   if(typeof AUTH!=="undefined"&&((AUTH.session&&AUTH.status!=="anon")||n>=8)){ clearInterval(tm); memberInviteCheck(); } },500); })();
 function renderAccount0(){

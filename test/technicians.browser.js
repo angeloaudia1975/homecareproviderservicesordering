@@ -15,6 +15,8 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
       if (body.action === 'list') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, invites: state.invites, members: state.members }) });
       if (body.action === 'invite') { state.invites = [{ id: '44444444-4444-4444-8444-444444444444', email: body.email, role: body.role, status: 'pending', expires_at: '2026-11-22T00:00:00Z' }];
         return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, invite: { id: state.invites[0].id, email: body.email, role: body.role, expires_at: '2026-11-22T00:00:00Z' }, link: 'https://shop.test/?member_invite=' + 'k'.repeat(43) }) }); }
+      if (body.action === 'create_member') { state.members = state.members.concat([{ uid: '55555555-5555-4555-8555-555555555555', email: body.email, role: body.role, active: true }]);
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, member: { uid: '55555555-5555-4555-8555-555555555555', email: body.email, role: body.role }, emailed: !/nomail/.test(body.email) }) }); }
       if (body.action === 'revoke_invite') { state.invites = []; return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); }
       if (body.action === 'accept_new') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, role: 'viewer', email: 'new.tech@dealer.test' }) });
       if (body.action === 'accept') return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"role":"viewer"}' });
@@ -30,6 +32,16 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
       const txt = await page.$eval('#techCard', (e) => e.textContent); ok(/Service technicians/.test(txt) && /tech@dealer\.test/.test(txt) && /Technician \+ Service/.test(txt), txt.slice(0, 200));
       ok(/never see prices, orders, purchases or reports/.test(txt), 'warning text'); ok(calls.at(-1).auth === 'Bearer dealer-jwt', 'own session token ' + calls.at(-1).auth);
       const ov = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth); ok(ov <= 1, 'horizontal overflow ' + ov); });
+    await t(`${w}: dealer creates the login with a password; HCPS emails it; password cleared, never shown back`, async () => {
+      await page.fill('#techEmail', 'pw.tech@dealer.test'); await page.selectOption('#techRole', 'technician_service');
+      await page.evaluate(async () => { document.getElementById('techPw').value = 'short'; await techCreate(); }); ok(!calls.some((c) => c.body.action === 'create_member'), 'short password sent');
+      await page.fill('#techPw', 'Blue-Wrench-2026'); const pwBox = await page.$eval('#techPw', (e) => ({ type: e.type, h: e.getBoundingClientRect().height, fs: getComputedStyle(e).fontSize })); ok(pwBox.type === 'password' && pwBox.h >= 44 && pwBox.fs === '16px', JSON.stringify(pwBox));
+      await page.evaluate(async () => { await techCreate(); }); await page.waitForFunction(() => /emailed it the sign-in details/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
+      const c = calls.find((x) => x.body.action === 'create_member'); ok(c && c.body.email === 'pw.tech@dealer.test' && c.body.role === 'technician_service' && c.body.password === 'Blue-Wrench-2026' && c.auth === 'Bearer dealer-jwt', JSON.stringify(c));
+      const txt = await page.$eval('#techCard', (e) => e.textContent + [...e.querySelectorAll('input')].map((i) => i.value).join('|')); ok(!txt.includes('Blue-Wrench-2026'), 'password shown back'); ok(/pw\.tech@dealer\.test/.test(txt), 'listed');
+      await page.fill('#techEmail', 'nomail@dealer.test'); await page.fill('#techPw', 'Blue-Wrench-2027'); await page.evaluate(async () => { await techCreate(); });
+      await page.waitForFunction(() => /could not be sent/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
+      state.members = state.members.filter((m) => !/pw\.tech|nomail/.test(m.email)); await page.evaluate(async () => { TECH_MSG = ''; await techCard(); }); });
     await t(`${w}: invitation — one-time link shown with its warning, copy button, then cancel`, async () => {
       await page.fill('#techEmail', 'new@dealer.test'); await page.selectOption('#techRole', 'viewer');
       await page.evaluate(async () => { await techInvite(); });
