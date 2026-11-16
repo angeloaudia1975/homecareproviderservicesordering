@@ -9164,8 +9164,12 @@ async function loadGoldSvc(){
   const root=$("#gsvHost").attachShadow({mode:"open"}); GSVROOT=root;
   root.innerHTML=`<style>${A.css}</style>${A.html}`;
   try{ window.GSV_MOUNT(root,{parts:gsvPartsData(g)},{send:gsvSendCase}); }catch(e){ console.error("[gsv mount]",e); }
-  if(MEMBER){ const st=document.createElement("style"); st.textContent='.tab-btn[onclick*="\'labor\'"],#tab-labor{display:none!important}'+(MEMBER.role==="technician_service"?"":'.tab-btn[onclick*="\'request\'"],#tab-request,.tab-btn[onclick*="\'history\'"],#tab-history{display:none!important}'); root.appendChild(st);
-    host.querySelectorAll('a.btn.gh').forEach(a=>{ if(/Resources/.test(a.textContent)) a.remove(); }); }
+  if(MEMBER){ const st=document.createElement("style"); st.textContent='.tab-btn[onclick*="\'labor\'"],#tab-labor{display:none!important}'
+      /* a technician never sees a price (the server sends none): Golden's price columns, totals and "$0.00 estimated total" are hidden */
+      +'.price-cell,.parts-table th:nth-child(4),.cart-items-table th:nth-child(4),.cart-items-table th:nth-child(7),#orderSummaryTable th:nth-child(7),#orderSummaryTable tbody tr:last-child,.cart-bar-left p,.cart-total{display:none!important}'+(MEMBER.role==="technician_service"?"":'.tab-btn[onclick*="\'request\'"],#tab-request,.tab-btn[onclick*="\'history\'"],#tab-history{display:none!important}'); root.appendChild(st);
+    host.querySelectorAll('a.btn.gh').forEach(a=>{ if(/Resources/.test(a.textContent)) a.remove(); });
+    /* a technician never sees prices, so Golden's "dealer pricing / dealer cost" line is replaced (acceptance 2026-11-16) */
+    root.querySelectorAll('#tab-parts p').forEach(p=>{ if(/dealer pricing|dealer cost/i.test(p.textContent)) p.textContent=MEMBER.role==="technician_service"?"Look up Golden parts by model, add them to a request, and send it to Golden. Golden confirms prices with your dealer.":"Look up Golden parts by model. Golden confirms prices with your dealer."; }); }
   gsvPrefill(root); gsvHistory();
 }
 function gsvTab(t){ GSVT=t; if(t!=="history") GSVMSG=""; renderGoldSvc(); }

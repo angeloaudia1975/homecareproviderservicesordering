@@ -36,6 +36,11 @@ async function openOriginal(browser, w, h) {
   /* the ONE documented layout difference: Dealer 360's mobile rule (RULE 10) — inputs are 16px on phones / tablets so iOS
      does not zoom. It is applied to the original too, so the pixel comparison measures everything else. */
   if (w <= 980) await page.addStyleTag({ content: 'input, select, textarea { font-size: 16px !important; }' });
+  /* documented difference 3 (acceptance 2026-11-16): technicians tap these on phones, so below 700px of portal width every
+     button is at least 44px. The rules are read from the built CSS (one source) and applied to the original as well. */
+  if (w <= 700) { const css = fs.readFileSync(path.join(__dirname, '..', 'public', 'golden-support', 'gsv.css'), 'utf8');
+    const m = css.match(/Phone \+ small tablet[\s\S]*?@container gsv \(max-width: 700px\) \{([\s\S]*?)\n  \}/); if (!m) throw new Error('phone tap-target rules not found in gsv.css');
+    await page.addStyleTag({ content: m[1] }); }
   /* documented difference 2: the original's derived "MSRP" (dealer × 2) is labelled "Calc. retail" in Dealer 360 */
   await page.evaluate(() => { const f = window.formatDealerMsrp; window.formatDealerMsrp = (p) => { const o = f(p); o.cell = String(o.cell).replace(' · MSRP ', ' · Calc. retail '); o.inline = String(o.inline).replace(' · MSRP ', ' · Calc. retail '); return o; }; });
   return { ctx, page, st };
