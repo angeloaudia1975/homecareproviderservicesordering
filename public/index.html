@@ -1585,7 +1585,7 @@ body.gck-lock{overflow:hidden}body.gck-lock .gck-pill{display:none}.gck-ov{displ
 
 <div class="utilbar"><div class="utilbar-in">
   <span class="ub-left">HomeCare Provider Services · <b>360 Dealer Portal</b></span>
-  <span class="ub-right"><a class="ub-cc" href="https://www.cardchamp.com/homecareproviderservices?utm_source=hcps&amp;utm_medium=ordering&amp;utm_campaign=dealer-services&amp;utm_content=cardchamp" target="_blank" rel="noopener" onclick="ccClick&&ccClick()">💳 Card Fees → Cash Flow</a><span class="ub-dot">·</span>Need help? (855) 400-0345</span>
+  <span class="ub-right"><a class="ub-cc" href="https://www.cardchamp.com/homecareproviderservices?utm_source=hcps&amp;utm_medium=ordering&amp;utm_campaign=dealer-services&amp;utm_content=cardchamp" target="_blank" rel="noopener" onclick="ccClick&&ccClick()">💳 Card Fees → Cash Flow</a><span class="ub-dot">·</span>Need help? (888) 626-3140</span>
 </div></div>
 <header>
   <div class="htop">
@@ -3476,7 +3476,7 @@ function gckHelpHtml(){ return `<details class="gck-help" data-gk="help"${GCART.
   <li><b>Review cart</b> — check your chairs, quantities and optional reference names. Remove or change a chair here or in your cart.</li>
   <li><b>Shipping &amp; total</b> — choose one of Golden's ship-to addresses for your account and confirm the contact. Golden prices the order (merchandise, freight and 3% shipping &amp; handling) and verifies it automatically. If anything changes, it checks again.</li>
   <li><b>Place order</b> — press <b>Place order with Golden</b> once. Golden places the order and shows its order number, which also appears in My Orders. If the connection drops, “Check again” asks Golden about the same order and can never create a second one.</li></ol>
-  <p class="gck-note">Nothing is ordered until you press Place order with Golden. Questions? Call HCPS at (855) 400-0345.</p></details>`; }
+  <p class="gck-note">Nothing is ordered until you press Place order with Golden. Questions? Call HCPS at (888) 626-3140.</p></details>`; }
 // Decide the next automatic step. Quote: chairs + ship-to set and no current price. Validate: current price + contact
 // complete + no answer yet. Never while Golden is answering, while an attempt is pending, after an error, or to place.
 function gckSchedule(delay){
@@ -7088,10 +7088,10 @@ async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg
       headers:{'content-type':'application/json'},
       body:JSON.stringify({action:'request',email,audience:'dealer'})});
     const j=await r.json().catch(()=>null);
-    if(!r.ok||!j){ msg.textContent='Could not reach the sign-in service ('+r.status+'). Please try again, or call (855) 400-0345.'; return; }
+    if(!r.ok||!j){ msg.textContent='Could not reach the sign-in service ('+r.status+'). Please try again, or call (888) 626-3140.'; return; }
     if(j.ok===false){ msg.textContent=j.message||'Could not send the reset email.'; return; }
     msg.innerHTML=esc(j.message||'If that email has a dealer account, a reset link is on its way.')
-      +'<br><span style="opacity:.75">It comes from hello@homecareproviderservices.us. Nothing after a few minutes? Check spam, then call (855) 400-0345.</span>';
+      +'<br><span style="opacity:.75">It comes from hello@homecareproviderservices.us. Nothing after a few minutes? Check spam, then call (888) 626-3140.</span>';
   }catch(e){ msg.textContent='Could not reach the sign-in service. Check your connection and try again.'; }}
 function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];AUTH.prices={};AUTH.rates={};state.dealer=null;
   SESSION_ID=null; if(_hbT){clearInterval(_hbT);_hbT=null;}                 // stop the activity heartbeat
@@ -7179,7 +7179,7 @@ function renderLocked(){$("#tabs").innerHTML=""; document.body.classList.add('lo
           <span class="pl-pill">🛒 Ordering</span><span class="pl-pill">📚 Resources</span><span class="pl-pill">📈 Reporting</span><span class="pl-pill">🏬 Showroom development</span><span class="pl-pill">🌱 Dealer growth</span>
         </div>
       </div>
-      <div class="pl-hero-foot">Trusted by HomeCare providers nationwide · (855) 400-0345</div>
+      <div class="pl-hero-foot">Trusted by HomeCare providers nationwide · (888) 626-3140</div>
     </div>
     <div class="p360login-panel">
       <div class="pl-card">
@@ -7194,7 +7194,7 @@ function renderLocked(){$("#tabs").innerHTML=""; document.body.classList.add('lo
           <div class="pl-authmsg" id="si_msg"></div>
           <div class="pl-divider">New to HCPS?</div>
           <div class="pl-dealer"><div><b>Become an HCPS dealer</b><span>Apply for a 360 Dealer Portal account in minutes.</span></div><a onclick="authTab('register')">Request access →</a></div>
-          <div class="pl-help">Need help signing in? Contact your rep or call (855) 400-0345.</div>
+          <div class="pl-help">Need help signing in? Contact your rep or call (888) 626-3140.</div>
         </div>
         <div id="pane_register" style="display:none">
           <h2>Request 360 Dealer Portal access</h2>
