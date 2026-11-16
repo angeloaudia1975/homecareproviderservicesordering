@@ -27,6 +27,7 @@
  *                                         <orders@homecareproviderservices.us>"
  * ==========================================================================*/
 
+const B = require("./_email_brand.js");   // RULE 22: one HCPS email design (verbatim copy of the admin repo module)
 const DEFAULT_TO = "orders@homecareproviderservices.us";
 /* Every HCPS dealer order reaches the owner's intake mailbox (owner, 2026-10-27), whatever ORDER_TO adds.
    Orders are NEVER sent to a manufacturer: HCPS reviews each one and places it with the manufacturer itself. */
@@ -260,7 +261,7 @@ function buildEmail(dealer, order, submittedAt) {
 
 /* ---------- send one email via Resend ---------- */
 async function sendEmail(apiKey, from, to, replyTo, built) {
-  const payload = { from, to, subject: built.subject, html: built.html, text: built.text };
+  const payload = { from, to, subject: built.subject, html: B.cardFooter(built.html), text: built.text + B.textFooter };
   if (replyTo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(replyTo))) payload.reply_to = replyTo;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
