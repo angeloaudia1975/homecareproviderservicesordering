@@ -353,7 +353,8 @@
     [].forEach.call(document.querySelectorAll('[data-cmp]'),function(b){b.setAttribute('aria-pressed',String(b===btn));});
     out.innerHTML='<p class="pd-note">Loading…</p>';
     getDetail(p2,function(d2){ if(CMPCUR!==cur||!$('pdcmp')) return;
-      if(!d2||!(d2.compare_rows||[]).length){ out.innerHTML='<p class="pd-note">That model\'s details could not be loaded right now.</p>'; return; }
+      if(!d2){ out.innerHTML='<p class="pd-note">That model\'s details could not be loaded right now.</p>'; return; }
+      if(!(d2.compare_rows||[]).length){ out.innerHTML='<p class="pd-note">The manufacturer publishes no comparison figures for that model.</p>'; return; }
       var keys=[], lab={}, a={}, b={}; (cur.d.compare_rows||[]).concat(d2.compare_rows).forEach(function(r){ if(keys.indexOf(r.key)<0){ keys.push(r.key); lab[r.key]=r.label; } });
       (cur.d.compare_rows||[]).forEach(function(r){a[r.key]=r.value;}); d2.compare_rows.forEach(function(r){b[r.key]=r.value;});
       var n2=(btn&&btn.textContent)||p2.family_name||p2.name, k2=p2.manufacturer+'|'+(p2.family||p2.code);
