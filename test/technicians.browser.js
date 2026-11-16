@@ -33,17 +33,20 @@ const ok = (c, m) => { if (!c) throw new Error(m || ('not ok @' + new Error().st
       ok(/never see prices, orders, purchases or reports/.test(txt), 'warning text'); ok(calls.at(-1).auth === 'Bearer dealer-jwt', 'own session token ' + calls.at(-1).auth);
       const ov = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth); ok(ov <= 1, 'horizontal overflow ' + ov); });
     await t(`${w}: dealer creates the login with a password; HCPS emails it; password cleared, never shown back`, async () => {
+      await page.evaluate(() => techAddOpen()); ok(/Add a technician/.test(await page.$eval('#modal', (e) => e.innerText)), 'dialog');
       await page.fill('#techEmail', 'pw.tech@dealer.test'); await page.selectOption('#techRole', 'technician_service');
-      await page.evaluate(async () => { document.getElementById('techPw').value = 'short'; await techCreate(); }); ok(!calls.some((c) => c.body.action === 'create_member'), 'short password sent');
-      await page.fill('#techPw', 'Blue-Wrench-2026'); const pwBox = await page.$eval('#techPw', (e) => ({ type: e.type, h: e.getBoundingClientRect().height, fs: getComputedStyle(e).fontSize })); ok(pwBox.type === 'password' && pwBox.h >= 44 && pwBox.fs === '16px', JSON.stringify(pwBox));
+      await page.evaluate(async () => { document.getElementById('techPw').value = 'short'; await techCreate(); }); ok(!calls.some((c) => c.body.action === 'create_member'), 'short password sent'); ok(/10–72 characters/.test(await page.$eval('#acErr', (e) => e.textContent)), 'error shown in the dialog');
+      await page.fill('#techPw', 'Blue-Wrench-2026'); const pwBox = await page.$eval('#techPw', (e) => ({ type: e.type, h: e.getBoundingClientRect().height, fs: getComputedStyle(e).fontSize })); ok(pwBox.type === 'password' && (w > 640 || (pwBox.h >= 44 && pwBox.fs === '16px')), JSON.stringify(pwBox));   // phone: 44 px / 16 px; larger: the same field style as Add a contact (checked below)
+      const same = await page.evaluate(() => { const a = getComputedStyle(document.getElementById('techEmail')), b = getComputedStyle(document.getElementById('techPw')); return document.getElementById('techPw').parentElement.className === 'fld2' && ['fontSize', 'height', 'borderRadius', 'padding'].every((k) => a[k] === b[k]); }); ok(same, 'password field styled like the contact fields');
       await page.evaluate(async () => { await techCreate(); }); await page.waitForFunction(() => /emailed it the sign-in details/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
       const c = calls.find((x) => x.body.action === 'create_member'); ok(c && c.body.email === 'pw.tech@dealer.test' && c.body.role === 'technician_service' && c.body.password === 'Blue-Wrench-2026' && c.auth === 'Bearer dealer-jwt', JSON.stringify(c));
       const txt = await page.$eval('#techCard', (e) => e.textContent + [...e.querySelectorAll('input')].map((i) => i.value).join('|')); ok(!txt.includes('Blue-Wrench-2026'), 'password shown back'); ok(/pw\.tech@dealer\.test/.test(txt), 'listed');
-      await page.fill('#techEmail', 'nomail@dealer.test'); await page.fill('#techPw', 'Blue-Wrench-2027'); await page.evaluate(async () => { await techCreate(); });
+      ok(!/on/.test(await page.$eval('#modal', (e) => e.className)), 'dialog closed after success');
+      await page.evaluate(() => techAddOpen()); await page.fill('#techEmail', 'nomail@dealer.test'); await page.fill('#techPw', 'Blue-Wrench-2027'); await page.evaluate(async () => { await techCreate(); });
       await page.waitForFunction(() => /could not be sent/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
       state.members = state.members.filter((m) => !/pw\.tech|nomail/.test(m.email)); await page.evaluate(async () => { TECH_MSG = ''; await techCard(); }); });
     await t(`${w}: invitation — one-time link shown with its warning, copy button, then cancel`, async () => {
-      await page.fill('#techEmail', 'new@dealer.test'); await page.selectOption('#techRole', 'viewer');
+      await page.evaluate(() => techAddOpen()); await page.fill('#techEmail', 'new@dealer.test'); await page.selectOption('#techRole', 'viewer');
       await page.evaluate(async () => { await techInvite(); });
       await page.waitForFunction(() => /shown only now/.test((document.getElementById('techCard') || {}).textContent || ''), null, { timeout: 5000 });
       const txt = await page.$eval('#techCard', (e) => e.textContent); ok(/shown only now/.test(txt) && /HCPS does not email it/.test(txt) && /member_invite=k{43}/.test(txt), txt.slice(0, 300));
