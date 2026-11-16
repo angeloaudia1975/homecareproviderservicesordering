@@ -385,6 +385,27 @@ const layout = (page, sel) => page.evaluate((sel) => {
       await t(label + ': My Storefront has no horizontal scroll' + (w < 768 ? '; 44 px targets' : ''), () => { ok(L2.overflow <= 1, 'overflow ' + L2.overflow); if (w < 768) ok(!L2.small.length, 'small: ' + L2.small.join('|')); });
       await ctx.close();
     }
+    /* Compare models (storefront next wave 2026-11-16): another Golden model this dealer carries, side by side */
+    const CDATA = JSON.parse(JSON.stringify(PUBLIC)); CDATA.products.push({ manufacturer: 'golden-technologies', code: 'PR-519', name: 'Cloud <b>bold</b> (Small)', family: 'PR-519', family_name: 'Cloud <b>bold</b>', category: 'Lift Chairs', image: null, attributes: {}, price: null, price_label: 'Call for Price' });
+    const CDET = { 'golden-technologies|PR-501': Object.assign({}, DETAILS['golden-technologies|PR-501'], { compare_rows: [{ key: 'weight_capacity', label: 'Weight capacity', value: '375 LBS' }, { key: 'seat_width', label: 'Seat width', value: '20" / 22"' }], related: [{ family: 'PR-519', code: 'PR-519', name: 'Cloud <b>bold</b>' }] }),
+      'golden-technologies|PR-519': { paragraphs: ['Other.'], compare_rows: [{ key: 'weight_capacity', label: 'Weight capacity', value: '500 LBS' }, { key: 'twilight', label: 'Twilight', value: 'Yes' }], related: [] } };
+    for (const [w, h, label] of [[390, 844, 'phone'], [1280, 900, 'desktop']]) {
+      const { ctx, page, st } = await publicPage(browser, w, h, CDATA, CDET);
+      await page.evaluate(() => { location.hash = '#product/' + encodeURIComponent('golden-technologies|PR-501//PR-501'); }); await page.waitForSelector('#pd-compare');
+      await t(label + ': Compare models — another model this dealer carries, side by side (ranges; "—" where a model has no value; names escaped)', async () => {
+        ok(await page.$$eval('#pd-compare [data-cmp]', (b) => b.map((x) => x.textContent).join('|')) === 'Cloud <b>bold</b>', 'button text escaped');
+        await page.click('#pd-compare [data-cmp]'); await page.waitForSelector('#pdcmp table');
+        const r = await page.evaluate(() => ({ head: [...document.querySelectorAll('#pdcmp th')].map((x) => x.textContent), rows: [...document.querySelectorAll('#pdcmp tbody tr')].map((tr) => [...tr.children].map((x) => x.textContent).join('|')),
+          link: document.querySelector('#pdcmp a').getAttribute('href'), pressed: document.querySelector('#pd-compare [data-cmp]').getAttribute('aria-pressed'), bold: !!document.querySelector('#pdcmp b') }));
+        ok(JSON.stringify(r.head) === JSON.stringify(['', 'Cloud lift chair', 'Cloud <b>bold</b>']), JSON.stringify(r.head));
+        ok(JSON.stringify(r.rows) === JSON.stringify(['Weight capacity|375 LBS|500 LBS', 'Seat width|20" / 22"|—', 'Twilight|—|Yes']), JSON.stringify(r.rows));
+        ok(r.link === '#product/' + encodeURIComponent('golden-technologies|PR-519//PR-519') && r.pressed === 'true' && !r.bold, JSON.stringify(r));
+        ok(st.details.includes('golden-technologies|PR-519'), 'the other model\'s own public detail');
+        const L = await layout(page, '#pd-compare button, #pdcmp a'); ok(L.overflow <= 1, 'overflow ' + L.overflow); if (w < 768) ok(!L.small.length, 'small: ' + L.small.join('|'));
+        ok(!st.csp.length, 'CSP: ' + st.csp.join('|'));
+      });
+      await ctx.close();
+    }
   } finally { await browser.close(); }
   console.log(`\nstorefront (browser): ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
