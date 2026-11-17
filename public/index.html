@@ -6818,13 +6818,13 @@ function exitPreview(){ try{ window.close(); }catch(e){} setTimeout(()=>{ try{ l
    The server decides everything (switch, role, this location, each action) and records every change under the staff
    member's name. Two modes: Manage Dealer (allowed actions on) and View as Dealer (read-only — the session is ended). */
 let MANAGE=null;
-const MANAGE_TOOLS=new Set(["account_change_request","default_ship_set","logo_upload","branding_set","logo_studio_restore","showroom_save"]);
+const MANAGE_TOOLS=new Set(["account_change_request","default_ship_set","logo_upload","branding_set","logo_studio_restore","showroom_save","favorites_toggle","resale_cert_set","pricing_request","literature_request","tracking_request"]);
 function manageCan(a){ return !!(MANAGE&&MANAGE.actions&&MANAGE.actions.some(x=>x.key===a)); }
 window.__MANAGE_TOKEN__=()=>MANAGE&&MANAGE.token||'';
 /* the bearer for the dealer tool APIs in a Manage Dealer session (the server decides what the session may do there) */
 function mgBearer(){ const t=window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__(); return t?'manage:'+t:''; }
 window.mgBearer=mgBearer;
-window.__MANAGE_TOOLS__={has:a=>MANAGE_TOOLS.has(a)&&manageCan(({account_change_request:'account_change',default_ship_set:'default_ship',logo_upload:'logo_edit',branding_set:'logo_edit',logo_studio_restore:'logo_edit',showroom_save:'showroom_edit'})[a])};
+window.__MANAGE_TOOLS__={has:a=>MANAGE_TOOLS.has(a)&&manageCan(({account_change_request:'account_change',default_ship_set:'default_ship',logo_upload:'logo_edit',branding_set:'logo_edit',logo_studio_restore:'logo_edit',showroom_save:'showroom_edit',favorites_toggle:'favorites_edit',resale_cert_set:'account_change',pricing_request:'dealer_request',literature_request:'dealer_request',tracking_request:'dealer_request'})[a])};
 async function manageCall(action,why){
   try{ const r=await fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,token:MANAGE?MANAGE.token:'',why})}); return await r.json().catch(()=>({})); }
   catch(e){ return {ok:false}; }
@@ -8202,7 +8202,20 @@ function ghWire(){
   const pr=box.querySelector("[data-ghprint]"); if(pr) pr.onclick=ghPrint;
   const t=box.querySelector("[data-ghretry]"); if(t) t.onclick=()=>{ GH.focus="retry"; goldenHistoryLoad(false).then(()=>{ if(!GH.focus){ const b=$("#goldenHist [data-ghbtn]"); if(b) b.focus(); } }); };
 }
-async function reqTracking(id,mfr,summary){ try{ await api(TOOLS_ENDPOINT,{action:"tracking_request",order_ref:id,manufacturer:mfr,summary}); }catch(e){} alert("Tracking request sent to HCPS — we'll get the tracking from the manufacturer and send it to you."); }
+/* Dealer requests (owner 2026-11-17): the dealer is told whether the request was SAVED and whether HCPS's email WENT.
+   One submission = one request_key; sending the same request again (Try again) reuses it, so the server never makes a
+   second request or a second email. A changed request is a new one. */
+const REQ_KEYS={};
+function reqKeyFor(sig){ return REQ_KEYS[sig]||(REQ_KEYS[sig]=((window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,12)))); }
+async function sendDealerRequest(body,okMsg){
+  const sig=JSON.stringify(body), request_key=reqKeyFor(sig); let d=null;
+  try{ d=await api(TOOLS_ENDPOINT,Object.assign({},body,{request_key})); }catch(e){ d=null; }
+  if(d&&d.ok&&d.saved&&d.notified){ delete REQ_KEYS[sig]; alert(okMsg); return true; }
+  if(d&&d.ok&&d.saved){ alert(d.message||"Your request is saved, but HCPS's email notice did not go out. Send it again to retry, or call HCPS at 937-626-5141."); return false; }
+  if(d&&d.ok&&d.notified){ delete REQ_KEYS[sig]; alert(d.message||"HCPS received your request by email, but it could not be saved to your account history."); return true; }
+  alert((d&&d.error)||"Your request was not sent — please try again, or call HCPS at 937-626-5141."); return false;
+}
+async function reqTracking(id,mfr,summary){ await sendDealerRequest({action:"tracking_request",order_ref:id,manufacturer:mfr,summary},"Tracking request sent to HCPS — we'll get the tracking from the manufacturer and send it to you."); }
 
 /* ================= PHASE 2: pricing map, reports, exports ================= */
 let PRICE=null, PRICELIST=null, QUOTELIST=null;
@@ -8965,8 +8978,8 @@ async function submitPriceReq(){
   const sel=$("#prProd");
   if(sel){ const v=sel.value; const i=v.indexOf("|"); mfr=v.slice(0,i); code=v.slice(i+1); const p=PRICE&&PRICE[v]; product=(p&&p.name)||""; }
   else { const p=PRICE&&PRICE[mfr+"|"+code]; product=(p&&p.name)||""; }
-  try{ await api(TOOLS_ENDPOINT,{action:"pricing_request",manufacturer:mfr,code,product,current_price:($("#prPrice")||{}).value,quantity:($("#prQty")||{}).value,competitor_note:($("#prNote")||{}).value}); }catch(e){}
-  closeModal(); alert("Sent to HCPS — your rep will follow up on pricing.");
+  const okp=await sendDealerRequest({action:"pricing_request",manufacturer:mfr,code,product,current_price:($("#prPrice")||{}).value,quantity:($("#prQty")||{}).value,competitor_note:($("#prNote")||{}).value},"Sent to HCPS — your rep will follow up on pricing.");
+  if(okp) closeModal();   /* not sent: the form stays open so Send to HCPS retries the same request */
 }
 
 /* ================= PHASE 4: showroom, literature, tracking UI ================= */
@@ -9263,8 +9276,7 @@ async function submitLit(){
   const mfrSlug=$("#litMfr").value; const items=[];
   document.querySelectorAll(".litChk").forEach(chk=>{ if(chk.checked){ const q=chk.parentNode.querySelector(".litQty"); items.push({material:chk.dataset.m,qty:(q&&q.value)||1}); } });
   if(!items.length){ alert("Choose at least one material."); return; }
-  try{ await api(TOOLS_ENDPOINT,{action:"literature_request",manufacturer:mfrNameOf(mfrSlug),items,ship_to:($("#litShip")||{}).value,note:($("#litNote")||{}).value}); }catch(e){}
-  alert("Literature request submitted to HCPS.");
+  await sendDealerRequest({action:"literature_request",manufacturer:mfrNameOf(mfrSlug),items,ship_to:($("#litShip")||{}).value,note:($("#litNote")||{}).value},"Literature request submitted to HCPS.");
 }
 
 /* ================= PHASE 5: account setup + intelligence ================= */
