@@ -219,7 +219,8 @@
       "groups": [],
       "elseActual": true,
       "otherLabel": "Dalton freight — per Dalton’s Nov 1, 2026 LTL policy"
-    }
+    },
+    "services": [{"key": "liftgate", "label": "Liftgate service", "fee": 45, "per": "order", "offer": "Add liftgate service — $45", "question": "Would you like liftgate service added for $45?", "askWhen": {"codePrefixes": ["BED"]}}]
   },
   {
     "slug": "yuwell",
