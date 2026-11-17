@@ -172,12 +172,12 @@ function emProducts(items) {
 }
 /* totals kept together: [[label, value, strong]] — value text is escaped here */
 function emTotals(rows) {
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:6px;">${rows.map(([l, v, strong]) =>
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr><td colspan="2" style="height:6px;line-height:6px;font-size:1px;">&nbsp;</td></tr>${rows.map(([l, v, strong]) =>
     `<tr><td align="right" style="font-family:${EM.FONT};font-size:${strong ? 15 : 14}px;line-height:22px;color:${EM.INK};${strong ? "font-weight:bold;border-top:1px solid " + EM.LINE + ";" : ""}padding:${strong ? "8px" : "3px"} 0 3px 0;">${esc(l)}</td>
       <td align="right" width="110" style="width:110px;font-family:${EM.FONT};font-size:${strong ? 16 : 14}px;line-height:22px;white-space:nowrap;${strong ? "font-weight:bold;color:" + EM.ORANGE + ";border-top:1px solid " + EM.LINE + ";" : "color:" + EM.INK + ";"}padding:${strong ? "8px" : "3px"} 0 3px 12px;">${esc(v)}</td></tr>`).join("")}</table>`;
 }
 function emNote(text, label) {
-  return text ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr><td style="background:${EM.SOFT};border:1px solid ${EM.LINE};padding:12px 14px;font-family:${EM.FONT};font-size:14px;line-height:21px;color:${EM.INK};">${label ? `<div style="font-size:11px;line-height:16px;font-weight:bold;letter-spacing:.6px;text-transform:uppercase;color:${EM.MUTED};">${esc(label)}</div>` : ""}<div style="white-space:pre-wrap;">${esc(text)}</div></td></tr></table>` : "";
+  return text ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr><td style="background:${EM.SOFT};border:1px solid ${EM.LINE};padding:12px 14px;font-family:${EM.FONT};font-size:14px;line-height:21px;color:${EM.INK};">${label ? `<div style="font-size:11px;line-height:16px;font-weight:bold;letter-spacing:.6px;text-transform:uppercase;color:${EM.MUTED};">${esc(label)}</div>` : ""}<div>${esc(text).replace(/\r?\n/g, "<br>")}</div></td></tr></table>` : "";
 }
 const emSmall = (text) => text ? `<div style="font-family:${EM.FONT};font-size:12px;line-height:18px;color:${EM.MUTED};">${esc(text)}</div>` : "";
 /* the whole document. sections: [html…] each in its own padded row */
@@ -196,7 +196,7 @@ function emDocument(o) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background:${EM.BG};"><tr><td align="center" style="padding:24px 8px;">
 <!--[if mso]><table role="presentation" width="${EM.W}" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
 <table role="presentation" class="em-wrap" width="${EM.W}" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${EM.W}px;background:#ffffff;border:1px solid ${EM.LINE};">
-${row(`<a href="${EM.SITE}" target="_blank"><img src="${EM.LOGO}" width="170" alt="HomeCare Provider Services" style="display:block;width:170px;max-width:60%;height:auto;"></a>`, "20px 28px 16px 28px")}
+${row(`<a href="${EM.SITE}" target="_blank"><img src="${EM.LOGO}" width="170" height="84" alt="HomeCare Provider Services" style="display:block;width:170px;max-width:60%;height:auto;"></a>`, "20px 28px 16px 28px")}
 <tr><td class="em-pad" style="background:${EM.NAVY};padding:18px 28px 16px 28px;border-bottom:3px solid ${EM.ORANGE};">
   <div style="font-family:${EM.FONT};font-size:11px;line-height:16px;font-weight:bold;letter-spacing:.8px;text-transform:uppercase;color:#aebbd0;">${esc(o.kicker || "")}</div>
   <div class="em-title" style="font-family:${EM.FONT};font-size:22px;line-height:28px;font-weight:bold;color:#ffffff;">${esc(o.title)}</div>
@@ -228,7 +228,7 @@ function emMoney(o) {
   const rows = [[`Merchandise subtotal${n ? ` (${n} item${n === 1 ? "" : "s"})` : ""}`, money(sub)]]
     .concat(svc.map((x) => [x.label, money(x.fee)]))
     .concat((o.freight_lines || []).length || fee ? [["Freight", pending && !fee ? "Pending" : (pending ? money(fee) + " + pending" : freightShort(o).replace(/^FREE$/, "Free"))]] : [])
-    .concat([[pending ? "Total excluding pending freight" : "Total", money(pending ? known : (o.estimated_total != null ? o.estimated_total : known)), true]]);
+    .concat([[pending ? "Total excluding pending freight" : (!(o.freight_lines || []).length && !fee ? "Total (freight not included)" : "Total"), money(pending ? known : (o.estimated_total != null ? o.estimated_total : known)), true]]);
   const note = pending ? "Freight is pending: the actual charge comes from the manufacturer's order confirmation, after HCPS places the order." + (o.freight_note ? " " + o.freight_note : "") : "";
   return { rows, note, pending, known, total: pending ? known : Number(o.estimated_total != null ? o.estimated_total : known) };
 }
@@ -267,7 +267,7 @@ function buildEmail(dealer, order, submittedAt) {
         { label: "Ship to", lines: ship.length ? ship : ["—"] },
       ].concat(offered ? [{ label: "Delivery services", lines: [svc || "None requested"] }] : [])),
       emProducts((order.items || []).map((it) => Object.assign({}, it))),
-      emTotals(mny.rows) + (mny.note ? `<div style="height:8px;line-height:8px;font-size:1px;">&nbsp;</div>` + emSmall(mny.note) : ""),
+      emTotals(mny.rows) + (mny.note ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:8px;line-height:8px;font-size:1px;">&nbsp;</td></tr></table>` + emSmall(mny.note) : ""),
       order.notes ? emNote(order.notes, "Order notes") : "",
     ],
     button: emButton(link, "Review order"),
@@ -313,20 +313,22 @@ function buildDealerAck(dealer, summaries, opts) {
   const many = S.length > 1, when = emWhen(opts.submittedAt), ship = emShipTo(dealer);
   const held = S.filter((s) => s.account_hold), lines = S.map((s) => s.line);
   const next = held.length
-    ? `Pending Manufacturer Account Setup — your order${many ? "s are" : " is"} saved. HCPS will place ${held.map((s) => s.line).join(", ")} as soon as your account with ${held.length > 1 ? "those manufacturers" : "that manufacturer"} is open${held.length < S.length ? "; the others go to the manufacturer after HCPS reviews them" : ""}.`
+    ? `Pending Manufacturer Account Setup — your order${many ? "s are" : " is"} saved; ${held.length < S.length ? held.map((s) => s.line).join(", ") + " waits for" : "it waits for"} the manufacturer account step below${held.length < S.length ? ", and HCPS reviews the others and places them with the manufacturer" : ""}.`
     : `HCPS will review ${many ? "them" : "it"} and place ${many ? "them" : "it"} with ${lines.join(" and ")}. You'll receive the manufacturer's confirmation once ${many ? "they're" : "it's"} placed.`;
   const blocks = S.map((s) => {
     const items = (s.items || []).map((it) => ({ code: it.code, name: it.name, qty: it.qty, unit: it.unit_price != null ? it.unit_price : it.unit, line: it.line_total, config: it.unit_label || "" }));
     const mny = emMoney(Object.assign({}, s, { items, items_subtotal: s.subtotal }));
-    /* a held order is explained once, in the status line; a new-account notice (not held) gets its own note */
-    const notice = s.account_notice && !s.account_hold ? emNote(`${s.account_notice} — HCPS will help you open this manufacturer account. Your order is recorded and is not held for it.`) : "";
+    /* the server's own words for this order: a held order says exactly what is needed (open the account, or HCPS checking an
+       account it could not read); a new-account notice (not held) says the order is not held for it */
+    const notice = s.account_notice ? emNote(s.account_hold ? s.account_notice : `${s.account_notice} — HCPS will help you open this manufacturer account. Your order is recorded and is not held for it.`) : "";
     return { s, mny, html:
-      `<div style="font-family:${EM.FONT};font-size:16px;line-height:22px;font-weight:bold;color:${EM.NAVY};padding:0 0 8px 0;">${esc(s.line)} <span style="font-weight:normal;color:${EM.MUTED};font-size:14px;">· PO ${esc(s.po || "—")} · Ref ${esc(emRef(s.order_id))}</span></div>`
-      + (notice ? notice + `<div style="height:10px;line-height:10px;font-size:1px;">&nbsp;</div>` : "")
-      + emProducts(items) + emTotals(mny.rows) + (mny.note ? `<div style="height:8px;line-height:8px;font-size:1px;">&nbsp;</div>` + emSmall(mny.note) : "") };
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr><td style="font-family:${EM.FONT};font-size:16px;line-height:22px;font-weight:bold;color:${EM.NAVY};padding:0 0 8px 0;">${esc(s.line)} <span style="font-weight:normal;color:${EM.MUTED};font-size:14px;">· PO ${esc(s.po || "—")} · Ref ${esc(emRef(s.order_id))}</span></td></tr></table>`
+      + (notice ? notice + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:10px;line-height:10px;font-size:1px;">&nbsp;</td></tr></table>` : "")
+      + emProducts(items) + emTotals(mny.rows) + (mny.note ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:8px;line-height:8px;font-size:1px;">&nbsp;</td></tr></table>` + emSmall(mny.note) : "") };
   });
   const first = S.find((s) => s.order_id && !/^PREVIEW-/.test(String(s.order_id)));
-  const link = first ? `${portal}?order=${encodeURIComponent(first.order_id)}` : portal;
+  /* one order: open that order; several: My Orders (each order is listed there with its PO) */
+  const link = first && !many ? `${portal}?order=${encodeURIComponent(first.order_id)}` : `${portal}?order=orders`;
   const head = held.length === S.length ? "We've received your order — waiting for your account" : `We've received your order${many ? "s" : ""}`;
   const html = emDocument({
     title: head, kicker: "Order received", subtitle: dealer.business || "",
@@ -345,7 +347,7 @@ function buildDealerAck(dealer, summaries, opts) {
     `Submitted: ${when}`, `Ship to  : ${ship.join(" · ") || "—"}`, "",
   ].concat(blocks.map(({ s, mny }) => [
     `${s.line} — PO ${s.po || "—"} · Ref ${emRef(s.order_id)}`,
-    s.account_notice && !s.account_hold ? `  ${s.account_notice} — HCPS will help you open this manufacturer account. Your order is recorded and is not held for it.` : "",
+    s.account_notice ? (s.account_hold ? `  ${s.account_notice}` : `  ${s.account_notice} — HCPS will help you open this manufacturer account. Your order is recorded and is not held for it.`) : "",
     ...(s.items || []).map((it) => `  ${Number(it.qty)} x ${it.name || it.code || "Item"}${it.unit_label ? " (" + it.unit_label + ")" : ""} @ ${money(it.unit_price != null ? it.unit_price : it.unit)} = ${money(it.line_total)}`),
     ...mny.rows.map((r) => `  ${r[0]}: ${r[1]}`),
     mny.note ? "  " + mny.note : "",
