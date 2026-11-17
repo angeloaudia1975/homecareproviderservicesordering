@@ -510,9 +510,14 @@ async function loadReports(){
 function reportAgg(year){
   const lines=[];
   for(const o of (HISTORY||[])){
+    /* counted once (owner 2026-11-17): no recorded invoices or cancelled orders; a portal order counts only the quantity no
+       manufacturer report holds yet (open_qty from the server) — the reported part is in its reported month */
+    if(o.invoice_only||o.status==='invoice_recorded'||o.status==='cancelled') continue;
     const ym=String(o.ym||(o.date||'').slice(0,7)); const y=ym.slice(0,4);
     for(const l of (o.lines||[])){
-      const qty=Number(l.qty)||0; const line=Number(l.line!=null?l.line:l.cost)||0; const unit=qty?line/qty:line;
+      const q0=Number(l.qty)||0; const l0=Number(l.line!=null?l.line:l.cost)||0; const unit=q0?l0/q0:l0;
+      const qty=(o.source==='portal'&&l.open_qty!=null)?Number(l.open_qty)||0:q0; const line=q0?unit*qty:l0;
+      if(!qty&&q0) continue;
       const r=retailUnit(o.manufacturer,l.code,unit);
       lines.push({ym,y,mfr:o.manufacturer,mfrName:o.manufacturerName,code:l.code,name:l.name,qty,cost:line,retail:r.v*qty,est:r.est});
     }
