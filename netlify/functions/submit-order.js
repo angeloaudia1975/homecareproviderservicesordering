@@ -68,7 +68,11 @@ function applyServerPrices(orders, recorded) {
     const notice = rec.account_notice ? { account_notice: String(rec.account_notice) } : {};
     if (rec.account_hold === true) notice.account_hold = true;   // owner 2026-11-06: held — Pending Manufacturer Account Setup
     if (rec.account_unchecked === true) notice.account_unchecked = true;   // the account could not be read: held all the same (fail closed)
-    return Object.assign({}, o, extra, notice, { items, items_subtotal: sub, estimated_total: r2(sub + fee), order_id: rec.order_id });
+    /* delivery services (Dalton liftgate) and the dealer's manufacturer account number come from the recorded order */
+    const svc = Array.isArray(rec.services) ? { services: rec.services.filter((x) => x && x.selected), services_fee: r2(rec.services_fee || 0), services_offered: rec.services.length > 0 } : { services: [], services_fee: 0 };
+    if (rec.manufacturer_account) svc.manufacturer_account = String(rec.manufacturer_account);
+    if (rec.status) svc.status = String(rec.status);
+    return Object.assign({}, o, extra, notice, svc, { items, items_subtotal: sub, estimated_total: r2(sub + fee + svc.services_fee), order_id: rec.order_id });
   });
 }
 
@@ -104,24 +108,6 @@ function freightShort(o) {
   if (lines.length) return free ? free.freeLabel : "FREE";
   return "—";
 }
-function freightTermsHtml(o) {
-  const lines = o.freight_lines || [];
-  if (!lines.length && !o.freight_note) return "";
-  let rows = lines.map((r) => {
-    let right =
-      r.status === "peritem" ? (r.pending ? (Number(r.fee) > 0 ? money(r.fee) + " + pending" : "pending") : (Number(r.fee) > 0 ? money(r.fee) : "included"))
-      : r.status === "free" ? (r.freeLabel || "FREE freight")
-      : r.status === "flat" ? money(r.fee) + " " + (r.flatLabel || "freight")
-      : "actual freight — pending";
-    let sub = r.remaining > 0 && r.freeAt ? ` (add ${money(r.remaining)} to reach ${r.freeLabel ? r.freeLabel.toLowerCase() : "free freight"} at ${money(r.freeAt)})` : "";
-    return `<tr><td style="padding:2px 10px 2px 0;font:400 12px Arial,sans-serif;color:#4b5563;">${esc(r.label)}${sub}</td><td style="padding:2px 0;font:600 12px Arial,sans-serif;color:#10263f;text-align:right;white-space:nowrap;">${esc(right)}</td></tr>`;
-  }).join("");
-  const note = o.freight_note ? `<div style="font:italic 11px Arial,sans-serif;color:#9aa2ac;margin-top:4px;">${esc(o.freight_note)}</div>` : "";
-  return `<div style="margin-top:10px;padding:8px 10px;background:#f6f7f5;border:1px solid #e6e2dc;border-radius:8px;">
-    <div style="font:700 10px Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:4px;">Freight</div>
-    <table style="border-collapse:collapse;width:100%;">${rows}</table>${note}</div>`;
-}
-
 /* ---------- item rows ---------- */
 /* The unit the quantity counts (agreed 2026-10-09): "4-pack (4 each)" for a pack SKU, so
    "1 x A1005" can never be read as one cane holder. */
@@ -155,107 +141,128 @@ function itemsText(items) {
 }
 
 /* ---------- build one manufacturer email ---------- */
+/* THE STANDARD HCPS ORDER EMAIL (owner 2026-11-17; design reference: Golden's order email). One layout for every
+   manufacturer and for dealer checkout and Manage Dealer alike: compact header, ONE status message, dealer + manufacturer
+   account, contact, PO and order reference, submitted, ship-to, delivery services, a product table (SKU, description /
+   configuration, qty, unit, line), totals that keep the merchandise subtotal apart from the total of known charges and say
+   when freight is pending, the dealer's notes, and one link to the order screen for the processing detail. Phone-width
+   friendly (stacked blocks, 600px max) and prints cleanly. The text part keeps "N x Item (CODE, unit)" lines and a
+   "Freight:" line (Manufacturer Center's mc_verify reads them). Recipients are unchanged (routing is the handler's). */
+const ORDER_SCREEN = "https://www.homecareproviderservices.org/admin/order-fulfillment.html";
+function orderStatus(order) {
+  const m = order.manufacturer_name || "the manufacturer";
+  /* a held order's server notice is written for the dealer, so HCPS gets its own words; a new-account notice (no hold) is
+     HCPS's own text from orders-api and is shown under the status */
+  const detail = !order.account_hold && order.account_notice ? String(order.account_notice) : "";
+  if (order.account_hold) return { tone: "hold", detail, text: order.account_unchecked
+    ? `Pending manufacturer account setup — the dealer's ${m} account could not be checked when this order came in. Confirm it on Dealer 360 before placing this order.`
+    : `Pending manufacturer account setup — do not place this order until the dealer's ${m} account is open.` };
+  if (order.account_notice) return { tone: "warn", detail, text: `New ${m} account needed — received, not blocked. Open the account before placing this order.` };
+  return { tone: "ok", detail: "", text: `Received by HCPS — ready to place with ${m}. Nothing has been sent to the manufacturer.` };
+}
+function servicesWords(order) {
+  const L = (order.services || []).filter((x) => x && x.selected);
+  return L.length ? L.map((x) => `${x.label} — ${money(x.fee)}`).join(" · ") : "";
+}
+function configLine(it) {
+  const bits = [];
+  if (it.brand) bits.push(it.brand);
+  if (unitLabel(it)) bits.push(unitLabel(it));
+  if (it.upgrade) bits.push("Option: " + it.upgrade);
+  return bits.join(" · ");
+}
 function buildEmail(dealer, order, submittedAt) {
   const submitted = submittedAt ? new Date(submittedAt) : new Date();
-  const submittedStr = submitted.toLocaleString("en-US", {
-    timeZone: "America/Chicago", dateStyle: "medium", timeStyle: "short",
-  }) + " CT";
-
-  const shipParts = [dealer.address, [dealer.city, dealer.state].filter(Boolean).join(", "), dealer.zip]
-    .map((x) => (x || "").trim()).filter(Boolean);
+  const submittedStr = submitted.toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "medium", timeStyle: "short" }) + " CT";
+  const shipParts = [dealer.ship_to_label, dealer.address, [dealer.city, dealer.state].filter(Boolean).join(", "), dealer.zip].map((x) => (x || "").trim()).filter(Boolean);
   const shipping = shipParts.length ? shipParts.join(" · ") : "—";
+  const st = orderStatus(order);
+  const tone = { ok: ["#e8f4ec", "#b9dcc4", "#14532d"], warn: ["#fff7e6", "#f1d9a6", "#8a5a00"], hold: ["#fdecea", "#f3b8b0", "#9b1c1c"] }[st.tone];
+  /* freight not yet known: an "actual freight" line with no figure, or a per-item (Corsicana) charge still to be quoted */
+  const pending = ((order.freight_lines || []).some((r) => r.status === "actual") && !(Number(order.freight_fee) > 0))
+    || (order.freight_lines || []).some((r) => r.status === "peritem" && r.pending);
+  const svcFee = r2(order.services_fee || 0);
+  const known = r2(Number(order.items_subtotal || 0) + (Number(order.freight_fee) > 0 ? Number(order.freight_fee) : 0) + svcFee);
+  const svc = servicesWords(order);
+  /* "not on file" only when HCPS knows it is missing (a hold / new-account notice); otherwise a dash — never a guess */
+  const acctWords = order.manufacturer_account || (order.account_hold && !order.account_unchecked || order.account_notice ? "not on file" : "—");
+  const ref = order.order_id ? String(order.order_id).slice(0, 8).toUpperCase() : "—";
+  const link = order.order_id ? `${ORDER_SCREEN}?order=${encodeURIComponent(order.order_id)}` : ORDER_SCREEN;
+  const nItems = Number(order.items_count) || (order.items || []).reduce((n, it) => n + Number(it.qty || 0), 0);
 
-  const field = (label, val) =>
-    `<tr><td style="padding:3px 12px 3px 0;font:600 12px Arial,sans-serif;color:#6b7280;white-space:nowrap;vertical-align:top;">${esc(label)}</td><td style="padding:3px 0;font:400 13px Arial,sans-serif;color:#10263f;">${esc(val || "—")}</td></tr>`;
+  const L = "font:600 11px Arial,sans-serif;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin:0 0 2px";
+  const V = "font:400 13px/1.45 Arial,sans-serif;color:#10263f";
+  const block = (label, lines) => `<div style="display:inline-block;vertical-align:top;width:100%;max-width:270px;margin:0 0 12px;padding-right:12px;box-sizing:border-box">
+      <div style="${L}">${esc(label)}</div><div style="${V}">${lines.filter((x) => x != null && x !== "").map((x) => esc(x)).join("<br>") || "—"}</div></div>`;
+  const TD = "padding:9px 8px;border-bottom:1px solid #eceae6;font:400 13px Arial,sans-serif;color:#10263f;vertical-align:top";
+  const rows = (order.items || []).map((it) => {
+    const unit = Number(it.unit), line = Number.isFinite(unit) ? unit * Number(it.qty || 0) : null, cfg = configLine(it);
+    return `<tr><td style="${TD};white-space:nowrap;font-weight:700">${esc(it.code)}</td>
+      <td style="${TD}">${esc(it.name)}${cfg ? `<div style="font-size:11.5px;color:#6b7280;margin-top:2px">${esc(cfg)}</div>` : ""}</td>
+      <td style="${TD};text-align:center">${esc(it.qty)}</td>
+      <td style="${TD};text-align:right;white-space:nowrap">${Number.isFinite(unit) ? money(unit) : "—"}</td>
+      <td style="${TD};text-align:right;white-space:nowrap;font-weight:700">${line != null ? money(line) : "—"}</td></tr>`;
+  }).join("");
+  const tr = (label, val, strong) => `<tr><td style="padding:3px 8px;text-align:right;font:${strong ? "800 14px" : "400 13px"} Arial,sans-serif;color:#10263f">${label}</td><td style="padding:3px 8px;text-align:right;min-width:88px;max-width:210px;font:${strong ? "800 15px" : "600 13px"} Arial,sans-serif;color:${strong ? "#ef6325" : "#10263f"}">${val}</td></tr>`;
+  const totals = tr(`Merchandise subtotal (${nItems} item${nItems === 1 ? "" : "s"})`, money(order.items_subtotal))
+    + (order.services || []).filter((x) => x && x.selected).map((x) => tr(esc(x.label), money(x.fee))).join("")
+    + tr("Freight", esc(pending && !(Number(order.freight_fee) > 0) ? "Pending" : freightShort(order)))
+    + tr(pending ? "Total of known charges (freight pending)" : "Total", money(pending ? known : order.estimated_total), true);
 
-  const pending = !(Number(order.freight_fee) > 0) && (order.freight_lines || []).some((r) => r.status === "actual");
-  const feeRow = Number(order.freight_fee) > 0
-    ? `<tr><td colspan="4" style="padding:4px 10px;text-align:right;font:400 12px Arial,sans-serif;color:#6b7280;">Freight</td><td style="padding:4px 10px;text-align:right;font:600 12px Arial,sans-serif;color:#10263f;white-space:nowrap;">${money(order.freight_fee)}</td></tr>`
-    : "";
-
-  const html = `<!doctype html><html><body style="margin:0;background:#f6f7f5;padding:24px;">
-  <div style="max-width:680px;margin:0 auto;background:#fff;border:1px solid #e6e2dc;border-radius:12px;overflow:hidden;">
-    <div style="background:#10263f;border-bottom:3px solid #ef6325;padding:18px 22px;">
-      <div style="font:800 20px Arial,sans-serif;color:#fff;letter-spacing:.5px;">HomeCare Provider Services</div>
-      <div style="font:600 11px Arial,sans-serif;color:#9fb0c4;letter-spacing:2px;text-transform:uppercase;">New Dealer Order — ${esc(order.manufacturer_name)}</div>
+  const html = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media print{.noprint{display:none!important}}</style></head>
+<body style="margin:0;background:#f4f5f3;padding:16px 8px;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #e6e2dc;border-radius:10px;overflow:hidden;">
+    <div style="background:#10263f;border-bottom:3px solid #ef6325;padding:12px 18px;">
+      <div style="font:800 15px Arial,sans-serif;color:#fff">HCPS · New order · ${esc(order.manufacturer_name)}</div>
+      <div style="font:400 12px Arial,sans-serif;color:#c9d4e2;margin-top:2px">${esc(dealer.business || "Dealer")} · PO ${esc(order.po || "—")} · Ref ${esc(ref)}</div>
     </div>
-    <div style="background:#fff7e6;border-bottom:1px solid #f1d9a6;padding:10px 22px;font:600 12px Arial,sans-serif;color:#8a5a00;">Received by HCPS — NOT yet placed with ${esc(order.manufacturer_name)}. Nothing was sent to the manufacturer; HCPS places this order and sends the dealer the confirmation.</div>
-    ${order.account_hold ? `<div style="background:#fdecea;border-bottom:1px solid #f3b8b0;padding:10px 22px;font:700 13px Arial,sans-serif;color:#9b1c1c;">⚠ PENDING MANUFACTURER ACCOUNT SETUP — ${order.account_unchecked ? `the dealer's ${esc(order.manufacturer_name)} account could not be checked when this order came in (held to be safe; check Dealer 360)` : `no ${esc(order.manufacturer_name)} account is on file for this dealer`}. The order is recorded and HELD: ${order.account_unchecked ? "confirm the account in Dealer 360 (or open it from the dealer's application)" : "review the dealer's application, open the account, record it in Dealer 360"}, then release the order in Order Review. Do not place it before that.</div>` : order.account_notice ? `<div style="background:#fdecea;border-bottom:1px solid #f3b8b0;padding:10px 22px;font:700 13px Arial,sans-serif;color:#9b1c1c;">⚠ ${esc(order.account_notice)} — the dealer has no ${esc(order.manufacturer_name)} account number on file. Open the account (dealer application) before placing this order. The order is recorded and was not blocked.</div>` : ""}
-    <div style="padding:22px;">
-      <table style="border-collapse:collapse;width:100%;margin-bottom:8px;">
-        ${field("Manufacturer", order.manufacturer_name)}
-        ${field("PO Number", order.po)}
-        ${field("Dealer / Business", dealer.business)}
-        ${field("HCPS Account #", dealer.account)}
-        ${field("Contact", dealer.contact)}
-        ${field("Email", dealer.email)}
-        ${field("Phone", dealer.phone)}
-        ${field("Ship to", shipping)}
-        ${field("Submitted", submittedStr)}
-        ${field("HCPS order ID", order.order_id)}
-        ${field("Status", "Received by HCPS (not yet placed with the manufacturer)")}
-      </table>
-
-      <table style="border-collapse:collapse;width:100%;margin-top:14px;">
-        <thead><tr>
-          <th style="padding:6px 10px;text-align:left;font:700 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:1px solid #e6e2dc;">Product</th>
-          <th style="padding:6px 10px;text-align:left;font:700 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:1px solid #e6e2dc;">Item&nbsp;#</th>
-          <th style="padding:6px 10px;text-align:center;font:700 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:1px solid #e6e2dc;">Qty</th>
-          <th style="padding:6px 10px;text-align:right;font:700 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:1px solid #e6e2dc;">Unit</th>
-          <th style="padding:6px 10px;text-align:right;font:700 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:1px solid #e6e2dc;">Line</th>
-        </tr></thead>
-        <tbody>${itemsHtml(order.items)}</tbody>
-        <tfoot>
-          <tr><td colspan="4" style="padding:8px 10px 2px;text-align:right;font:400 12px Arial,sans-serif;color:#6b7280;">Subtotal (${esc(order.items_count)} item${Number(order.items_count) === 1 ? "" : "s"})</td>
-              <td style="padding:8px 10px 2px;text-align:right;font:600 12px Arial,sans-serif;color:#10263f;white-space:nowrap;">${money(order.items_subtotal)}</td></tr>
-          ${feeRow}
-          <tr><td colspan="4" style="padding:6px 10px;text-align:right;font:700 13px Arial,sans-serif;color:#10263f;border-top:1px solid #e6e2dc;">${pending ? "Merchandise total — freight pending" : "Estimated total"}</td>
-              <td style="padding:6px 10px;text-align:right;font:800 15px Arial,sans-serif;color:#ef6325;white-space:nowrap;border-top:1px solid #e6e2dc;">${money(order.estimated_total)}</td></tr>
-        </tfoot>
-      </table>
-
-      ${freightTermsHtml(order)}
-
-      ${order.notes ? `<div style="margin-top:14px;padding:12px 14px;background:#f6f7f5;border-radius:8px;border:1px solid #e6e2dc;"><div style="font:700 11px Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:4px;">Notes</div><div style="font:400 13px/1.5 Arial,sans-serif;color:#10263f;white-space:pre-wrap;">${esc(order.notes)}</div></div>` : ""}
-
-      <div style="margin-top:18px;font:400 11px/1.5 Arial,sans-serif;color:#9aa2ac;">
-        Item prices are the dealer's account pricing as recorded by the server when the order was submitted. ${pending ? "Freight is pending: add the actual freight from the manufacturer's order confirmation (Order Review &amp; Fulfillment → Record manufacturer confirmation). " : ""}Reply to this email to reach the dealer directly.
-      </div>
+    <div style="background:${tone[0]};border-bottom:1px solid ${tone[1]};padding:10px 18px;font:700 13px Arial,sans-serif;color:${tone[2]}">${esc(st.text)}${st.detail ? `<div style="font:400 12px/1.45 Arial,sans-serif;margin-top:3px">${esc(st.detail)}</div>` : ""}</div>
+    <div style="padding:16px 18px 6px;">
+      ${block("Dealer", [dealer.business, dealer.account ? "HCPS account " + dealer.account : "", order.manufacturer_name + " account " + (acctWords)])}
+      ${block("Contact", [dealer.contact, dealer.email, dealer.phone])}
+      ${block("Order", ["PO " + (order.po || "—"), "HCPS order " + ref, "Submitted " + submittedStr].concat(order.placed_by ? [order.placed_by] : []))}
+      ${block("Ship to", [shipping])}
+      ${(order.services || []).length || order.services_offered ? block("Delivery services", [svc || "None requested"]) : ""}
     </div>
+    <div style="padding:0 10px 4px;">
+      <table role="presentation" style="border-collapse:collapse;width:100%">
+        <thead><tr>${["SKU", "Description", "Qty", "Unit", "Line"].map((h, k) => `<th style="padding:6px 8px;text-align:${k < 2 ? "left" : k === 2 ? "center" : "right"};font:700 10.5px Arial,sans-serif;text-transform:uppercase;letter-spacing:.4px;color:#6b7280;border-bottom:2px solid #e6e2dc">${h}</th>`).join("")}</tr></thead>
+        <tbody>${rows}</tbody></table>
+      <table role="presentation" style="border-collapse:collapse;width:100%;margin-top:6px">${totals}</table>
+      ${pending ? `<div style="font:400 11.5px/1.45 Arial,sans-serif;color:#6b7280;text-align:right;padding:2px 8px 0">Freight pending: the actual charge comes from the manufacturer's confirmation, after HCPS places the order.${order.freight_note ? " " + esc(order.freight_note) : ""}</div>` : ""}
+    </div>
+    ${order.notes ? `<div style="margin:12px 18px 0;padding:10px 12px;background:#f6f7f5;border:1px solid #e6e2dc;border-radius:8px"><div style="${L}">Order notes</div><div style="${V};white-space:pre-wrap">${esc(order.notes)}</div></div>` : ""}
+    <div class="noprint" style="padding:16px 18px 18px"><a href="${esc(link)}" style="display:inline-block;background:#10263f;color:#fff;text-decoration:none;font:700 13px Arial,sans-serif;padding:11px 16px;border-radius:8px">Open this order in Order Review &amp; Fulfillment</a></div>
   </div></body></html>`;
 
   const text = [
-    `NEW DEALER ORDER — ${order.manufacturer_name}`,
-    "HomeCare Provider Services",
+    `HCPS · NEW ORDER · ${order.manufacturer_name}`,
+    st.text,
+    st.detail,
     "",
-    `PO Number         : ${order.po || "—"}`,
-    `Dealer / Business : ${dealer.business || "—"}`,
-    `HCPS Account #    : ${dealer.account || "—"}`,
-    `Contact           : ${dealer.contact || "—"}`,
-    `Email             : ${dealer.email || "—"}`,
-    `Phone             : ${dealer.phone || "—"}`,
-    `Ship to           : ${shipping}`,
-    `Submitted         : ${submittedStr}`,
-    `HCPS order ID     : ${order.order_id || "—"}`,
-    "STATUS: Received by HCPS — NOT yet placed with the manufacturer. Nothing was sent to the manufacturer.",
-    order.account_hold ? `*** PENDING MANUFACTURER ACCOUNT SETUP — ${order.account_unchecked ? `the ${order.manufacturer_name} account could not be checked (held to be safe; check Dealer 360)` : `no ${order.manufacturer_name} account on file`}. The order is recorded and HELD: ${order.account_unchecked ? "confirm the account in Dealer 360" : "open the account, record it in Dealer 360"}, then release it in Order Review. Do not place it before that. ***`
-      : order.account_notice ? `*** ${order.account_notice} — no ${order.manufacturer_name} account number on file. Open the account (dealer application) before placing this order. The order is recorded and was not blocked. ***` : "",
+    `Dealer   : ${dealer.business || "—"}${dealer.account ? " (HCPS account " + dealer.account + ")" : ""}`,
+    `${order.manufacturer_name} account: ${acctWords}`,
+    `Contact  : ${[dealer.contact, dealer.email, dealer.phone].filter(Boolean).join(" · ") || "—"}`,
+    `PO       : ${order.po || "—"}   HCPS order: ${ref}`,
+    `Submitted: ${submittedStr}`,
+    order.placed_by ? order.placed_by : "",
+    `Ship to  : ${shipping}`,
+    (order.services || []).length || order.services_offered ? `Delivery services: ${svc || "None requested"}` : "",
     "",
     "ITEMS",
-    "=====",
     itemsText(order.items),
     "",
-    `Subtotal (${order.items_count} item${Number(order.items_count) === 1 ? "" : "s"}): ${money(order.items_subtotal)}`,
+    `Merchandise subtotal (${nItems} item${nItems === 1 ? "" : "s"}): ${money(order.items_subtotal)}`,
+    ...(order.services || []).filter((x) => x && x.selected).map((x) => `${x.label}: ${money(x.fee)}`),
     `Freight: ${freightShort(order)}`,
-    pending ? `Merchandise total: ${money(order.items_subtotal)} + freight (pending)` : `Estimated total: ${money(order.estimated_total)}`,
-    order.freight_note ? `\n${order.freight_note}` : "",
-    order.notes ? `\nNOTES\n-----\n${order.notes}` : "",
-  ].join("\n");
+    pending ? `Total of known charges: ${money(known)} + freight (pending)` : `Total: ${money(order.estimated_total)}`,
+    order.notes ? `\nORDER NOTES\n${order.notes}` : "",
+    "",
+    `Open the order: ${link}`,
+  ].filter((x, k, a) => !(x === "" && a[k - 1] === "")).join("\n");
 
-  const subject = (order.account_hold ? "[Pending account setup] " : order.account_notice ? "[New account required] " : "") +
-    `New order — ${dealer.business || "Dealer"} — ${order.manufacturer_name}` +
-    ` · PO ${order.po || "—"} · ${order.items_count} item${Number(order.items_count) === 1 ? "" : "s"} · ${money(order.estimated_total)}`;
-
+  const subject = (order.account_hold ? "[Held — account setup] " : order.account_notice ? "[New account needed] " : "") +
+    `New order · ${dealer.business || "Dealer"} · ${order.manufacturer_name} · PO ${order.po || "—"} · ${money(pending ? known : order.estimated_total)}${pending ? " + freight" : ""}`;
   return { html, text, subject };
 }
 
@@ -343,6 +350,8 @@ exports.handler = async (event) => {
     if (res.status === 409 && rec && rec.status === "prices_changed")
       return json(409, { ok: false, recorded: false, status: "prices_changed", orders: rec.orders || [] });
     if (res.status === 428 && rec && rec.status === "confirm_required") return json(428, { ok: false, recorded: false, status: "confirm_required", error: rec.error });
+    /* a delivery service the order must answer (Dalton liftgate with a bed) was not answered: nothing recorded */
+    if (res.status === 400 && rec && rec.status === "services_choice_required") return json(400, { ok: false, recorded: false, status: "services_choice_required", error: rec.error, orders: rec.orders || [] });
     if (rec && rec.status === "unauthorized") return json(401, { ok: false, recorded: false, status: "unauthorized", error: "Please sign in again to submit this order." });
     /* Every order of this checkout was already recorded (a retry after a timeout, a second tab): nothing is recorded
        or emailed again. orders-api has noted the resubmission on the order so staff check the HCPS email arrived. */
@@ -373,7 +382,7 @@ exports.handler = async (event) => {
   }
 
   /* Placed by HCPS on a dealer's behalf: the HCPS order email says so first (the sentence comes from orders-api) */
-  if (rec.placed_by_hcps) orders = orders.map((o) => Object.assign({}, o, { notes: String(rec.placed_by_hcps).slice(0, 300) + (o.notes ? "\n" + o.notes : "") }));
+  if (rec.placed_by_hcps) orders = orders.map((o) => Object.assign({}, o, { placed_by: String(rec.placed_by_hcps).slice(0, 300) }));
 
   /* Staff routing (owner 2026-11-13, switch opening_orders_v2 on the order server): Lori and the dealer's own rep are added
      to the HCPS order email. Only HCPS addresses are ever accepted from that answer. */
