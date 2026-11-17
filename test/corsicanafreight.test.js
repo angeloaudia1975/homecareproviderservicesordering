@@ -27,7 +27,7 @@ t('SBKDB-30 alone: freight PENDING, never "included" or free',()=>{
   const r=ctx.cf('corsicana',[{p:TBD,qty:1}]); eq([r.fee,r.rows[0].pending],[0,true]);
   const fr=ctx.rows(r).split('<div class="fnote">')[0]; eq(/pending/.test(fr)&&!/included/.test(fr),true,'cart row'); eq(/pending/.test(r.actualNote),true,'note');
   const o={freight_fee:0,freight_lines:r.rows,freight_note:r.actualNote,items:[],items_subtotal:100,estimated_total:100,items_count:1,manufacturer_name:'Corsicana Healthcare'};
-  const e=SO._buildEmail({business:'x'},o); eq(/pending/.test(e.text)&&!/FREE/.test(e.text),true,'HCPS email text'); eq(/>pending</.test(e.html),true,'HCPS email html'); });
+  const e=SO._buildEmail({business:'x'},o); eq(/pending/.test(e.text)&&!/FREE/.test(e.text),true,'HCPS email text'); eq(/>Pending</.test(e.html)&&/Freight pending: the actual charge/.test(e.html)&&!/FREE/.test(e.html)&&/Total of known charges/.test(e.html),true,'HCPS email html'); });
 t('SBKDB-30 with other items: their charges + pending',()=>{
   const r=ctx.cf('corsicana',[{p:TBD,qty:1},{p:A,qty:1}]); eq([r.fee,r.rows[0].pending],[30,true]); eq(/\$30\.00 \+ pending/.test(ctx.rows(r)),true); });
 t('no TBD item → the row carries no pending flag (unchanged shape)',()=>{ eq(Object.keys(ctx.cf('corsicana',[{p:A,qty:1}]).rows[0]),['label','status','fee']); });

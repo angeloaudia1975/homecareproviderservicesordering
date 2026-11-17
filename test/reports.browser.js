@@ -19,7 +19,7 @@ const HQ = 'hq', BR = 'br';
 const S = (d, m, per, code, q, a, src) => ({ dealer_id: d, manufacturer: m, period: per, product_code: code, product_name: code + ' <b>name</b>', qty: q, amount: a, source: src || 'sales_report', external_ref: 'x' });
 const sales = [S(HQ, 'strongback', `${Y}-01-01`, 'SB1', 2, 600), S(HQ, 'strongback', `${Y - 1}-01-01`, 'SB1', 1, 1300), S(HQ, 'strongback', `${Y - 2}-03-01`, 'SB1', 1, 50), S(BR, 'bemis', `${Y}-01-01`, 'BE1', 4, 400)];
 const locations = [{ id: HQ, name: 'Acme Medical', city: 'Dayton' }, { id: BR, name: 'Acme Branch', city: 'Xenia' }];
-const build = (scope) => REP.build({ year: String(Y), today: TODAY, locations, scope, sales, orders: [{ dealer_id: HQ, manufacturer: 'strongback', status: 'submitted', subtotal: 250, submitted_at: `${Y}-01-15T00:00:00Z` }],
+const build = (scope) => REP.build({ year: String(Y), today: TODAY, locations, scope, sales, orders: [{ id: 'po1', dealer_id: HQ, manufacturer: 'strongback', status: 'submitted', subtotal: 250, submitted_at: `${Y}-01-15T00:00:00Z`, items: [{ code: 'SB9', name: 'Cane', qty: 1, unit_price: 250, line_total: 250 }] }],
   quotes: [{ location_id: HQ, status: 'sent', created_at: `${Y}-01-03`, lines: [{}] }], catalog: { strongback: { SB1: { name: 'Excursion', category: 'Wheelchairs' } }, bemis: { BE1: { name: 'Seat', category: 'Bath Safety' } } },
   resolve: (sl, c) => (sl === 'strongback' && c === 'SB1' ? { code: 'SB1', name: 'Excursion', category: 'Wheelchairs', ref: 500, ref_source: 'msrp' } : null), customPrice: (l, sl, c) => (c === 'SB1' ? 520 : null),
   mfrName: { strongback: 'Strongback', bemis: 'Bemis' }, reportedMonths: { strongback: [`${Y - 2}-03`, `${Y - 1}-01`, `${Y}-01`], bemis: [`${Y}-01`] }, network: [] });
@@ -63,7 +63,7 @@ const layout = (page) => page.evaluate(() => {
       const txt = await page.evaluate(() => document.querySelector('#view-reports').textContent);
       await t(label + ': company view — purchases manufacturer-reported, portal orders and quotes apart, "—" where history is missing', () => {
         ok(/Acme Medical — all locations/.test(txt), 'scope name'); ok(/\$1,000/.test(txt), 'company purchases 1000'); ok(/Same months: \$600 vs \$1,300 last year/.test(txt) && /This year, same months/.test(txt), 'company like-for-like (Bemis not reported last year)');
-        ok(/Portal orders/.test(txt) && /shown apart/.test(txt) && /never added to purchases/.test(txt), 'portal apart'); ok(/Quotes created \/ sent\s*1 \/ 1/.test(txt), 'quotes'); ok(/HCPS history from/.test(txt), 'history note'); ok(/No year-over-year comparison for: Bemis/.test(txt), 'note');
+        ok(/Portal orders/.test(txt) && /Purchases \+ on order\s*\$1,250/.test(txt) && /counts as on order from the moment it is saved/.test(txt) && /never counted twice/.test(txt) && !/never added to purchases/.test(txt), 'the saved $250 portal order counts at once as on order, once (owner 2026-11-17)'); ok(/Quotes created \/ sent\s*1 \/ 1/.test(txt), 'quotes'); ok(/HCPS history from/.test(txt), 'history note'); ok(/No year-over-year comparison for: Bemis/.test(txt), 'note');
         ok(/Acme Branch/.test(txt) && /Locations/.test(txt), 'locations table'); ok(!/<b>name<\/b>/.test(txt) || true, 'escaped');
       });
       await t(label + ': HCPS read-only preview shows no AI button', async () => ok(!(await page.$('#rptAi')), 'AI button in preview'));
