@@ -149,14 +149,20 @@ function emButton(url, label) {
 <!--[if !mso]><!-- --><a href="${esc(u)}" target="_blank" style="background:${EM.NAVY};border-radius:6px;color:#ffffff;display:inline-block;font-family:${EM.FONT};font-size:15px;font-weight:bold;line-height:44px;text-align:center;text-decoration:none;width:200px;-webkit-text-size-adjust:none;mso-hide:all;">${esc(label)}</a><!--<![endif]-->
 </td></tr></table>`;
 }
-/* label / value blocks, two per row, stacking on phones. blocks: [{label, lines:[text…]}] (text, escaped here) */
+/* label / value blocks, two per row. "Fluid hybrid": each block is an inline-block up to 280px wide, so a narrow window or
+   reading pane puts them one under the other with no media query (Outlook on the web and phone apps ignore some); Outlook
+   for Windows gets a two-column ghost table instead. Long addresses may break so a pane is never forced wider (a forced
+   width makes Outlook on the web shrink the whole email). blocks: [{label, lines:[text…]}] (text, escaped here) */
 function emDetails(blocks) {
-  const cell = (bk) => bk ? `<td class="em-col" width="50%" valign="top" style="width:50%;padding:0 12px 16px 0;vertical-align:top;">
+  const block = (bk) => `<div class="em-col" style="display:inline-block;width:100%;max-width:280px;vertical-align:top;padding:0 0 16px 0;">
       <div style="font-family:${EM.FONT};font-size:11px;line-height:16px;font-weight:bold;letter-spacing:.6px;text-transform:uppercase;color:${EM.MUTED};">${esc(bk.label)}</div>
-      <div style="font-family:${EM.FONT};font-size:14px;line-height:21px;color:${EM.INK};">${bk.lines.filter((x) => x != null && x !== "").map((x) => esc(x)).join("<br>") || "—"}</div></td>`
-    : `<td class="em-col" width="50%" style="width:50%;"></td>`;
+      <div style="font-family:${EM.FONT};font-size:14px;line-height:21px;color:${EM.INK};word-break:break-word;overflow-wrap:anywhere;">${bk.lines.filter((x) => x != null && x !== "").map((x) => esc(x)).join("<br>") || "—"}</div></div>`;
   const list = (blocks || []).filter(Boolean); let rows = "";
-  for (let i = 0; i < list.length; i += 2) rows += `<tr>${cell(list[i])}${cell(list[i + 1])}</tr>`;
+  for (let i = 0; i < list.length; i += 2) {
+    rows += `<tr><td style="font-size:0;line-height:0;" valign="top">
+<!--[if mso]><table role="presentation" width="584" cellpadding="0" cellspacing="0" border="0"><tr><td width="280" valign="top" style="padding:0 12px 16px 0;"><![endif]-->${block(list[i])}<!--[if mso]></td><td width="292" valign="top" style="padding:0 0 16px 0;"><![endif]-->${list[i + 1] ? block(list[i + 1]) : ""}<!--[if mso]></td></tr></table><![endif]-->
+</td></tr>`;
+  }
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;">${rows}</table>`;
 }
 /* the product table: one product column (SKU bold, name, configuration), then Qty / Unit / Line */
@@ -168,13 +174,13 @@ function emProducts(items) {
     const td = (al, inner, extra) => `<td align="${al}" valign="top" style="font-family:${EM.FONT};font-size:14px;line-height:20px;color:${EM.INK};padding:10px 0 10px ${al === "left" ? 0 : 8}px;border-bottom:1px solid ${EM.LINE};text-align:${al};${extra || ""}">${inner}</td>`;
     return `<tr>${td("left", `<div style="font-weight:bold;">${esc(it.code)}</div><div>${esc(it.name)}</div>${cfg ? `<div style="font-size:12px;line-height:17px;color:${EM.MUTED};">${esc(cfg)}</div>` : ""}`)}${td("center", esc(it.qty))}${td("right", Number.isFinite(unit) ? money(unit) : "—", "white-space:nowrap;")}${td("right", line != null && Number.isFinite(line) ? money(line) : "—", "white-space:nowrap;font-weight:bold;")}</tr>`;
   }).join("");
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr>${th("Product", "left")}${th("Qty", "center", 44)}${th("Unit", "right", 84)}${th("Line", "right", 92)}</tr>${rows}</table>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr>${th("Product", "left")}${th("Qty", "center", 36)}${th("Unit", "right")}${th("Line", "right")}</tr>${rows}</table>`;
 }
 /* totals kept together: [[label, value, strong]] — value text is escaped here */
 function emTotals(rows) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr><td colspan="2" style="height:6px;line-height:6px;font-size:1px;">&nbsp;</td></tr>${rows.map(([l, v, strong]) =>
     `<tr><td align="right" style="font-family:${EM.FONT};font-size:${strong ? 15 : 14}px;line-height:22px;color:${EM.INK};${strong ? "font-weight:bold;border-top:1px solid " + EM.LINE + ";" : ""}padding:${strong ? "8px" : "3px"} 0 3px 0;">${esc(l)}</td>
-      <td align="right" width="110" style="width:110px;font-family:${EM.FONT};font-size:${strong ? 16 : 14}px;line-height:22px;white-space:nowrap;${strong ? "font-weight:bold;color:" + EM.ORANGE + ";border-top:1px solid " + EM.LINE + ";" : "color:" + EM.INK + ";"}padding:${strong ? "8px" : "3px"} 0 3px 12px;">${esc(v)}</td></tr>`).join("")}</table>`;
+      <td align="right" style="font-family:${EM.FONT};font-size:${strong ? 16 : 14}px;line-height:22px;${String(v).length <= 14 ? "white-space:nowrap;" : ""}${strong ? "font-weight:bold;color:" + EM.ORANGE + ";border-top:1px solid " + EM.LINE + ";" : "color:" + EM.INK + ";"}padding:${strong ? "8px" : "3px"} 0 3px 12px;">${esc(v)}</td></tr>`).join("")}</table>`;
 }
 function emNote(text, label) {
   return text ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr><td style="background:${EM.SOFT};border:1px solid ${EM.LINE};padding:12px 14px;font-family:${EM.FONT};font-size:14px;line-height:21px;color:${EM.INK};">${label ? `<div style="font-size:11px;line-height:16px;font-weight:bold;letter-spacing:.6px;text-transform:uppercase;color:${EM.MUTED};">${esc(label)}</div>` : ""}<div>${esc(text).replace(/\r?\n/g, "<br>")}</div></td></tr></table>` : "";
@@ -189,7 +195,7 @@ function emDocument(o) {
 <title>${esc(o.title)}</title>
 <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 <style>body{margin:0;padding:0;} table{border-collapse:collapse;} img{border:0;line-height:100%;outline:none;text-decoration:none;}
-@media screen and (max-width:620px){ .em-wrap{width:100%!important;} .em-pad{padding-left:16px!important;padding-right:16px!important;} .em-col{display:block!important;width:100%!important;padding-right:0!important;} .em-title{font-size:20px!important;line-height:26px!important;} }
+@media screen and (max-width:620px){ .em-wrap{width:100%!important;} .em-pad{padding-left:16px!important;padding-right:16px!important;} .em-col{display:block!important;width:100%!important;max-width:100%!important;padding-right:0!important;} .em-title{font-size:20px!important;line-height:26px!important;} }
 @media print{ .em-noprint{display:none!important;} }</style></head>
 <body data-hcps-email="1" style="margin:0;padding:0;background:${EM.BG};-webkit-text-size-adjust:100%;">
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:${EM.BG};">${esc(o.preheader || "")}</div>
