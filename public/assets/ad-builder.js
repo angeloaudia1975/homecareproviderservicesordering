@@ -59,8 +59,10 @@
   }
   /* Cached Gemini pilot scenes, delivered from a server-controlled allowlist. No paid call. */
   const SCENE_IDS = ['premium','features','lifestyle-chair','lifestyle-mobility','lifestyle-bed'];
+  /* CRE-04: a scene HCPS's AI image pipeline made, named by its exact storage path (the server checks it again) */
+  const GEN_SCENE = /^gen:ai-pilot\/scene\/[a-z0-9-]{1,40}\/[a-z0-9.-]{3,60}-(square|portrait|story|landscape)-[0-9a-f]{40}\.(jpg|png)$/;
   function sceneImage(id) {
-    if (!SCENE_IDS.includes(id)) return Promise.resolve(null);
+    if (!SCENE_IDS.includes(id) && !GEN_SCENE.test(String(id || ''))) return Promise.resolve(null);
     if (!S.scenes.has(id)) S.scenes.set(id, (async () => {
       const r = await A.api({ action: 'ad_scene', location_id: S.loc, scene: id });
       return r && r.ok && r.data_url ? loadImg(r.data_url) : null;
@@ -433,17 +435,19 @@
     return /bed|mattress|sleep/.test(t) ? 'lifestyle-bed' :
       /wheelchair|scooter|mobility|walker|rollator|transport|power chair/.test(t) ? 'lifestyle-mobility' : 'lifestyle-chair';
   }
-  function buildLayout(tpl, fmtKey, n, refs) {
+  function buildLayout(tpl, fmtKey, n, refs, sceneOverride) {
     const fn = STUDIO_TPL[tpl] || STUDIO_TPL['st-spotlight']; const G = geo((S.ctx && S.ctx.formats[fmtKey]) || { w: 1080, h: 1080 });
     const out = fn(G, Math.max(0, Math.min(4, n == null ? 1 : n))).filter((e) => e && !(e.w < 0.002 || e.h < 0.002) && !e.hidden).map((e) => Object.assign({}, e, { id: nid() }));
     if (tpl === 'st-ai-lifestyle') for (const e of out) if (e.type === 'scene') e.scene = lifestyleScene(refs && refs[0]);
+    /* the ad's own background choice (a stock scene or one the AI pipeline generated) replaces the template's default */
+    if (sceneOverride && (SCENE_IDS.includes(sceneOverride) || GEN_SCENE.test(sceneOverride))) for (const e of out) if (e.type === 'scene') e.scene = sceneOverride;
     return out;
   }
   /* the layers of the size on screen — made from the template the first time a size is opened */
   function layoutOf(cur, fmtKey, keep) {
     cur = cur || S.cur; fmtKey = fmtKey || cur.format;
     if (cur.layouts && Array.isArray(cur.layouts[fmtKey])) return cur.layouts[fmtKey];
-    const L = buildLayout(cur.template, fmtKey, cur.products.length, cur.products);
+    const L = buildLayout(cur.template, fmtKey, cur.products.length, cur.products, cur.scene);
     if (keep !== false) { cur.layouts = Object.assign({}, cur.layouts || {}); cur.layouts[fmtKey] = L; }
     return L;
   }
@@ -1116,7 +1120,7 @@
   async function drawThumbs(host) { const run = ++ED.thumbs; const cvs = [...host.querySelectorAll('[data-tth]')];
     for (const cv of cvs) { if (run !== ED.thumbs || !host.contains(cv)) return; const k = cv.getAttribute('data-tth'), t = S.ctx.templates[k] || {};
       const prods = t.kind === 'general' ? [] : S.cur.products.length ? S.cur.products.slice(0, t.kind === 'single' ? 1 : t.max || 4) : [];
-      const pv = Object.assign(deep(S.cur), { template: k, layouts: null, products: prods }); pv.layouts = { [pv.format]: buildLayout(k, pv.format, prods.length, prods) };
+      const pv = Object.assign(deep(S.cur), { template: k, layouts: null, products: prods }); pv.layouts = { [pv.format]: buildLayout(k, pv.format, prods.length, prods, pv.scene) };
       try { await drawStudio(cv, pv, 0.16); } catch (x) {} await new Promise((r) => setTimeout(r, 0)); } }
 
   function list() {
