@@ -203,10 +203,10 @@ function buildEmail(dealer, order, submittedAt) {
       <td style="${TD};text-align:right;white-space:nowrap">${Number.isFinite(unit) ? money(unit) : "—"}</td>
       <td style="${TD};text-align:right;white-space:nowrap;font-weight:700">${line != null ? money(line) : "—"}</td></tr>`;
   }).join("");
-  const tr = (label, val, strong) => `<tr><td style="padding:3px 8px;text-align:right;font:${strong ? "800 14px" : "400 13px"} Arial,sans-serif;color:#10263f">${label}</td><td style="padding:3px 8px;text-align:right;white-space:nowrap;font:${strong ? "800 15px" : "600 13px"} Arial,sans-serif;color:${strong ? "#ef6325" : "#10263f"}">${val}</td></tr>`;
+  const tr = (label, val, strong) => `<tr><td style="padding:3px 8px;text-align:right;font:${strong ? "800 14px" : "400 13px"} Arial,sans-serif;color:#10263f">${label}</td><td style="padding:3px 8px;text-align:right;min-width:88px;max-width:210px;font:${strong ? "800 15px" : "600 13px"} Arial,sans-serif;color:${strong ? "#ef6325" : "#10263f"}">${val}</td></tr>`;
   const totals = tr(`Merchandise subtotal (${nItems} item${nItems === 1 ? "" : "s"})`, money(order.items_subtotal))
     + (order.services || []).filter((x) => x && x.selected).map((x) => tr(esc(x.label), money(x.fee))).join("")
-    + tr("Freight", esc(pending && !(Number(order.freight_fee) > 0) ? "Pending — from the manufacturer's confirmation" : freightShort(order)))
+    + tr("Freight", esc(pending && !(Number(order.freight_fee) > 0) ? "Pending" : freightShort(order)))
     + tr(pending ? "Total of known charges (freight pending)" : "Total", money(pending ? known : order.estimated_total), true);
 
   const html = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media print{.noprint{display:none!important}}</style></head>
@@ -229,7 +229,7 @@ function buildEmail(dealer, order, submittedAt) {
         <thead><tr>${["SKU", "Description", "Qty", "Unit", "Line"].map((h, k) => `<th style="padding:6px 8px;text-align:${k < 2 ? "left" : k === 2 ? "center" : "right"};font:700 10.5px Arial,sans-serif;text-transform:uppercase;letter-spacing:.4px;color:#6b7280;border-bottom:2px solid #e6e2dc">${h}</th>`).join("")}</tr></thead>
         <tbody>${rows}</tbody></table>
       <table role="presentation" style="border-collapse:collapse;width:100%;margin-top:6px">${totals}</table>
-      ${pending && order.freight_note ? `<div style="font:400 11.5px/1.45 Arial,sans-serif;color:#6b7280;text-align:right;padding:2px 8px 0">${esc(order.freight_note)}</div>` : ""}
+      ${pending ? `<div style="font:400 11.5px/1.45 Arial,sans-serif;color:#6b7280;text-align:right;padding:2px 8px 0">Freight pending: the actual charge comes from the manufacturer's confirmation, after HCPS places the order.${order.freight_note ? " " + esc(order.freight_note) : ""}</div>` : ""}
     </div>
     ${order.notes ? `<div style="margin:12px 18px 0;padding:10px 12px;background:#f6f7f5;border:1px solid #e6e2dc;border-radius:8px"><div style="${L}">Order notes</div><div style="${V};white-space:pre-wrap">${esc(order.notes)}</div></div>` : ""}
     <div class="noprint" style="padding:16px 18px 18px"><a href="${esc(link)}" style="display:inline-block;background:#10263f;color:#fff;text-decoration:none;font:700 13px Arial,sans-serif;padding:11px 16px;border-radius:8px">Open this order in Order Review &amp; Fulfillment</a></div>
