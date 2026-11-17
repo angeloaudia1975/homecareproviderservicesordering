@@ -4402,7 +4402,7 @@ const PENDING_PRODUCT_KEY='hcps_pending_product';
 const PENDING_ORDER_KEY='hcps_pending_order';
 function capturePendingOrder(){
   try{ const q=new URLSearchParams(location.search); const id=(q.get('order')||'').trim();
-    if(!/^[0-9a-f-]{8,64}$/i.test(id)) return;
+    if(!/^[0-9a-f-]{8,64}$/i.test(id)&&id!=='orders') return;   // "orders" = My Orders without a highlight (an email about several orders)
     sessionStorage.setItem(PENDING_ORDER_KEY,JSON.stringify({id,at:Date.now()}));
     try{ q.delete('order'); const qs=q.toString(); history.replaceState(null,'',location.pathname+(qs?'?'+qs:'')+location.hash); }catch(e){}
   }catch(e){}
@@ -4410,7 +4410,7 @@ function capturePendingOrder(){
 function consumePendingOrder(){
   let it=null; try{ const raw=sessionStorage.getItem(PENDING_ORDER_KEY); if(!raw) return false; it=JSON.parse(raw); sessionStorage.removeItem(PENDING_ORDER_KEY); }catch(e){ return false; }
   if(!it||!it.id||Date.now()-Number(it.at||0)>3600e3) return false;
-  showP360('orders');
+  showP360('orders'); if(it.id==='orders') return true;
   let tries=0; const find=()=>{ const row=document.querySelector(`#view-orders tr[data-order="${(window.CSS&&CSS.escape)?CSS.escape(it.id):it.id}"]`);
     if(row){ row.classList.add('order-hit'); try{ row.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){} return; }
     if(++tries<40) setTimeout(find,250); };
