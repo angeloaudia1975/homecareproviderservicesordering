@@ -7126,7 +7126,8 @@ async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg
      from a supabase.co address with no mention of HomeCare Provider Services — the one email
      a dealer is asked to trust completely, arriving from a domain they have never dealt with.
      It now goes through our own function, which mints the link with the admin API and sends
-     it through Resend from hello@homecareproviderservices.us on the HCPS template.
+     it through Resend from the auth sender (HCPS_AUTH_FROM, no-reply@auth.homecareproviderservices.us
+     since 2026-11-16 — tracking off) on the HCPS template.
 
      The answer is also READ. The old version fired and printed "on its way" whatever came
      back, so a rate limit and a genuine send looked identical. Whether the account EXISTS
@@ -7140,7 +7141,7 @@ async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg
     if(!r.ok||!j){ msg.textContent='Could not reach the sign-in service ('+r.status+'). Please try again, or call (888) 626-3140.'; return; }
     if(j.ok===false){ msg.textContent=j.message||'Could not send the reset email.'; return; }
     msg.innerHTML=esc(j.message||'If that email has a dealer account, a reset link is on its way.')
-      +'<br><span style="opacity:.75">It comes from hello@homecareproviderservices.us. Nothing after a few minutes? Check spam, then call (888) 626-3140.</span>';
+      +'<br><span style="opacity:.75">Nothing after a few minutes? Check spam, then call (888) 626-3140.</span>';   /* the message above names the sender (password-reset reads HCPS_AUTH_FROM) */
   }catch(e){ msg.textContent='Could not reach the sign-in service. Check your connection and try again.'; }}
 function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];AUTH.prices={};AUTH.rates={};state.dealer=null;
   SESSION_ID=null; if(_hbT){clearInterval(_hbT);_hbT=null;}                 // stop the activity heartbeat
