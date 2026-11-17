@@ -117,20 +117,6 @@ function unitLabel(it) {
   if (n > 1) return `${u || n + "-pack"} (${n} each)`;
   return u;
 }
-function itemsHtml(items) {
-  return (items || []).map((it) => {
-    const unit = Number(it.unit);
-    const line = Number.isFinite(unit) ? unit * Number(it.qty || 0) : null;
-    const codeUom = esc(it.code) + (unitLabel(it) ? ` · ${esc(unitLabel(it))}` : "");
-    return `<tr>
-      <td style="padding:8px 10px;border-bottom:1px solid #e6e2dc;font:400 13px Arial,sans-serif;color:#10263f;">${esc(it.name)}${it.brand ? `<div style="font:400 11px Arial,sans-serif;color:#9aa2ac;">${esc(it.brand)}</div>` : ""}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #e6e2dc;font:400 12px Arial,sans-serif;color:#6b7280;white-space:nowrap;">${codeUom}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #e6e2dc;font:600 13px Arial,sans-serif;color:#10263f;text-align:center;">${esc(it.qty)}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #e6e2dc;font:400 13px Arial,sans-serif;color:#10263f;text-align:right;white-space:nowrap;">${Number.isFinite(unit) ? money(unit) : "—"}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #e6e2dc;font:700 13px Arial,sans-serif;color:#10263f;text-align:right;white-space:nowrap;">${line != null ? money(line) : "—"}</td>
-    </tr>`;
-  }).join("");
-}
 function itemsText(items) {
   return (items || []).map((it) => {
     const unit = Number(it.unit);
@@ -140,15 +126,114 @@ function itemsText(items) {
   }).join("\n");
 }
 
-/* ---------- build one manufacturer email ---------- */
-/* THE STANDARD HCPS ORDER EMAIL (owner 2026-11-17; design reference: Golden's order email). One layout for every
-   manufacturer and for dealer checkout and Manage Dealer alike: compact header, ONE status message, dealer + manufacturer
-   account, contact, PO and order reference, submitted, ship-to, delivery services, a product table (SKU, description /
-   configuration, qty, unit, line), totals that keep the merchandise subtotal apart from the total of known charges and say
-   when freight is pending, the dealer's notes, and one link to the order screen for the processing detail. Phone-width
-   friendly (stacked blocks, 600px max) and prints cleanly. The text part keeps "N x Item (CODE, unit)" lines and a
-   "Freight:" line (Manufacturer Center's mc_verify reads them). Recipients are unchanged (routing is the handler's). */
+/* ---------- THE HCPS ORDER EMAIL KIT (owner 2026-11-17, second pass after his Outlook review) ----------
+   One set of email-safe building blocks for BOTH order emails: the processing email HCPS receives (buildEmail) and the
+   dealer's acknowledgment (buildDealerAck — orders-api runs it from its verbatim copy, _hcps_email.js), so both show the
+   same order information the same way. Built for Outlook as well as phones: a 640px centred table (an MSO ghost table
+   holds the width in Outlook for Windows), layout tables with explicit widths, inline styles, two-column details that
+   stack below 620px, one product column (SKU + name + configuration) then Qty / Unit / Line, totals kept together, the
+   pending-freight explanation said ONCE, and a "bulletproof" button (VML roundrect in Outlook, a padded link elsewhere).
+   The HCPS logo heads every email; the footer is one short line. The data-hcps-email mark tells _email_brand.js the email
+   already carries the HCPS design (RULE 22), so frame()/cardFooter() leave it unchanged. */
+const EM = { NAVY: "#0f2440", ORANGE: "#ef6325", INK: "#1f2937", MUTED: "#6b7280", LINE: "#e5e7eb", SOFT: "#f8fafc", BG: "#f1f3f6",
+  FONT: "Arial,Helvetica,sans-serif", W: 640,
+  LOGO: "https://www.homecareproviderservices.org/assets/brand/hcps-email-logo.png", SITE: "https://www.homecareproviderservices.org",
+  PHONE: "937-626-5141", EMAIL: "info@homecareproviderservices.us" };
 const ORDER_SCREEN = "https://www.homecareproviderservices.org/admin/order-fulfillment.html";
+const PORTAL_ORDERS = "https://hcpsonlineordering.netlify.app/";
+const emTone = { ok: ["#ecf7f0", "#14532d"], warn: ["#fff7e6", "#8a5a00"], hold: ["#fdecea", "#9b1c1c"], info: ["#eef3fa", "#0f2440"] };
+function emButton(url, label) {
+  const u = /^https:\/\/[^\s"'<>]+$/i.test(String(url || "")) ? String(url) : ""; if (!u) return "";
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td>
+<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${esc(u)}" style="height:44px;v-text-anchor:middle;width:200px;" arcsize="14%" strokecolor="${EM.NAVY}" fillcolor="${EM.NAVY}"><w:anchorlock/><center style="color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">${esc(label)}</center></v:roundrect><![endif]-->
+<!--[if !mso]><!-- --><a href="${esc(u)}" target="_blank" style="background:${EM.NAVY};border-radius:6px;color:#ffffff;display:inline-block;font-family:${EM.FONT};font-size:15px;font-weight:bold;line-height:44px;text-align:center;text-decoration:none;width:200px;-webkit-text-size-adjust:none;mso-hide:all;">${esc(label)}</a><!--<![endif]-->
+</td></tr></table>`;
+}
+/* label / value blocks, two per row, stacking on phones. blocks: [{label, lines:[text…]}] (text, escaped here) */
+function emDetails(blocks) {
+  const cell = (bk) => bk ? `<td class="em-col" width="50%" valign="top" style="width:50%;padding:0 12px 16px 0;vertical-align:top;">
+      <div style="font-family:${EM.FONT};font-size:11px;line-height:16px;font-weight:bold;letter-spacing:.6px;text-transform:uppercase;color:${EM.MUTED};">${esc(bk.label)}</div>
+      <div style="font-family:${EM.FONT};font-size:14px;line-height:21px;color:${EM.INK};">${bk.lines.filter((x) => x != null && x !== "").map((x) => esc(x)).join("<br>") || "—"}</div></td>`
+    : `<td class="em-col" width="50%" style="width:50%;"></td>`;
+  const list = (blocks || []).filter(Boolean); let rows = "";
+  for (let i = 0; i < list.length; i += 2) rows += `<tr>${cell(list[i])}${cell(list[i + 1])}</tr>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;">${rows}</table>`;
+}
+/* the product table: one product column (SKU bold, name, configuration), then Qty / Unit / Line */
+function emProducts(items) {
+  const th = (t, al, w) => `<th align="${al}"${w ? ` width="${w}"` : ""} style="font-family:${EM.FONT};font-size:11px;line-height:16px;font-weight:bold;letter-spacing:.6px;text-transform:uppercase;color:${EM.MUTED};padding:8px 0 8px ${al === "left" ? 0 : 8}px;border-bottom:2px solid ${EM.LINE};text-align:${al};">${t}</th>`;
+  const rows = (items || []).map((it) => {
+    const unit = Number(it.unit), line = it.line != null ? Number(it.line) : (Number.isFinite(unit) ? unit * Number(it.qty || 0) : null);
+    const cfg = [it.brand, unitLabel(it), it.upgrade ? "Option: " + it.upgrade : "", it.config].filter(Boolean).join(" · ");
+    const td = (al, inner, extra) => `<td align="${al}" valign="top" style="font-family:${EM.FONT};font-size:14px;line-height:20px;color:${EM.INK};padding:10px 0 10px ${al === "left" ? 0 : 8}px;border-bottom:1px solid ${EM.LINE};text-align:${al};${extra || ""}">${inner}</td>`;
+    return `<tr>${td("left", `<div style="font-weight:bold;">${esc(it.code)}</div><div>${esc(it.name)}</div>${cfg ? `<div style="font-size:12px;line-height:17px;color:${EM.MUTED};">${esc(cfg)}</div>` : ""}`)}${td("center", esc(it.qty))}${td("right", Number.isFinite(unit) ? money(unit) : "—", "white-space:nowrap;")}${td("right", line != null && Number.isFinite(line) ? money(line) : "—", "white-space:nowrap;font-weight:bold;")}</tr>`;
+  }).join("");
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr>${th("Product", "left")}${th("Qty", "center", 44)}${th("Unit", "right", 84)}${th("Line", "right", 92)}</tr>${rows}</table>`;
+}
+/* totals kept together: [[label, value, strong]] — value text is escaped here */
+function emTotals(rows) {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:6px;">${rows.map(([l, v, strong]) =>
+    `<tr><td align="right" style="font-family:${EM.FONT};font-size:${strong ? 15 : 14}px;line-height:22px;color:${EM.INK};${strong ? "font-weight:bold;border-top:1px solid " + EM.LINE + ";" : ""}padding:${strong ? "8px" : "3px"} 0 3px 0;">${esc(l)}</td>
+      <td align="right" width="110" style="width:110px;font-family:${EM.FONT};font-size:${strong ? 16 : 14}px;line-height:22px;white-space:nowrap;${strong ? "font-weight:bold;color:" + EM.ORANGE + ";border-top:1px solid " + EM.LINE + ";" : "color:" + EM.INK + ";"}padding:${strong ? "8px" : "3px"} 0 3px 12px;">${esc(v)}</td></tr>`).join("")}</table>`;
+}
+function emNote(text, label) {
+  return text ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr><td style="background:${EM.SOFT};border:1px solid ${EM.LINE};padding:12px 14px;font-family:${EM.FONT};font-size:14px;line-height:21px;color:${EM.INK};">${label ? `<div style="font-size:11px;line-height:16px;font-weight:bold;letter-spacing:.6px;text-transform:uppercase;color:${EM.MUTED};">${esc(label)}</div>` : ""}<div style="white-space:pre-wrap;">${esc(text)}</div></td></tr></table>` : "";
+}
+const emSmall = (text) => text ? `<div style="font-family:${EM.FONT};font-size:12px;line-height:18px;color:${EM.MUTED};">${esc(text)}</div>` : "";
+/* the whole document. sections: [html…] each in its own padded row */
+function emDocument(o) {
+  const tone = emTone[o.tone] || emTone.info;
+  const row = (inner, pad) => `<tr><td class="em-pad" style="padding:${pad || "0 28px 18px 28px"};">${inner}</td></tr>`;
+  return `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="x-apple-disable-message-reformatting"><meta name="format-detection" content="telephone=no,address=no,email=no">
+<title>${esc(o.title)}</title>
+<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
+<style>body{margin:0;padding:0;} table{border-collapse:collapse;} img{border:0;line-height:100%;outline:none;text-decoration:none;}
+@media screen and (max-width:620px){ .em-wrap{width:100%!important;} .em-pad{padding-left:16px!important;padding-right:16px!important;} .em-col{display:block!important;width:100%!important;padding-right:0!important;} .em-title{font-size:20px!important;line-height:26px!important;} }
+@media print{ .em-noprint{display:none!important;} }</style></head>
+<body data-hcps-email="1" style="margin:0;padding:0;background:${EM.BG};-webkit-text-size-adjust:100%;">
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:${EM.BG};">${esc(o.preheader || "")}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background:${EM.BG};"><tr><td align="center" style="padding:24px 8px;">
+<!--[if mso]><table role="presentation" width="${EM.W}" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+<table role="presentation" class="em-wrap" width="${EM.W}" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${EM.W}px;background:#ffffff;border:1px solid ${EM.LINE};">
+${row(`<a href="${EM.SITE}" target="_blank"><img src="${EM.LOGO}" width="170" alt="HomeCare Provider Services" style="display:block;width:170px;max-width:60%;height:auto;"></a>`, "20px 28px 16px 28px")}
+<tr><td class="em-pad" style="background:${EM.NAVY};padding:18px 28px 16px 28px;border-bottom:3px solid ${EM.ORANGE};">
+  <div style="font-family:${EM.FONT};font-size:11px;line-height:16px;font-weight:bold;letter-spacing:.8px;text-transform:uppercase;color:#aebbd0;">${esc(o.kicker || "")}</div>
+  <div class="em-title" style="font-family:${EM.FONT};font-size:22px;line-height:28px;font-weight:bold;color:#ffffff;">${esc(o.title)}</div>
+  ${o.subtitle ? `<div style="font-family:${EM.FONT};font-size:13px;line-height:19px;color:#d4dcea;">${esc(o.subtitle)}</div>` : ""}</td></tr>
+${o.status ? `<tr><td class="em-pad" style="background:${tone[0]};padding:12px 28px;font-family:${EM.FONT};font-size:14px;line-height:21px;font-weight:bold;color:${tone[1]};">${esc(o.status)}${o.statusDetail ? `<div style="font-weight:normal;font-size:13px;line-height:19px;">${esc(o.statusDetail)}</div>` : ""}</td></tr>` : ""}
+<tr><td style="height:20px;line-height:20px;font-size:1px;">&nbsp;</td></tr>
+${(o.sections || []).filter(Boolean).map((x) => row(x)).join("\n")}
+${o.button ? `<tr><td class="em-pad em-noprint" style="padding:4px 28px 24px 28px;">${o.button}</td></tr>` : ""}
+<tr><td class="em-pad" style="padding:14px 28px;border-top:1px solid ${EM.LINE};font-family:${EM.FONT};font-size:12px;line-height:18px;color:${EM.MUTED};" align="center">HomeCare Provider Services · ${EM.PHONE} · <a href="mailto:${EM.EMAIL}" style="color:${EM.MUTED};text-decoration:underline;">${EM.EMAIL}</a></td></tr>
+</table>
+<!--[if mso]></td></tr></table><![endif]-->
+</td></tr></table></body></html>`;
+}
+/* order facts shared by both emails */
+function emPending(o) {
+  const L = o.freight_lines || [];
+  return (L.some((r) => r.status === "actual") && !(Number(o.freight_fee) > 0)) || L.some((r) => r.status === "peritem" && r.pending);
+}
+const emRef = (id) => (id ? String(id).slice(0, 8).toUpperCase() : "—");
+const emWhen = (d) => (d ? new Date(d) : new Date()).toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "medium", timeStyle: "short" }) + " CT";
+const emShipTo = (dealer) => [dealer.ship_to_label, dealer.address, [dealer.city, dealer.state].filter(Boolean).join(", ") + (dealer.zip ? " " + dealer.zip : "")].map((x) => String(x || "").trim()).filter(Boolean);
+/* the totals block + the ONE freight explanation: subtotal, each chosen service, freight, then either "Total" or
+   "Total excluding pending freight" */
+function emMoney(o) {
+  const pending = emPending(o), sub = Number(o.items_subtotal != null ? o.items_subtotal : o.subtotal) || 0;
+  const svc = (o.services || []).filter((x) => x && x.selected), svcFee = r2(o.services_fee || svc.reduce((t, x) => t + Number(x.fee || 0), 0));
+  const fee = Number(o.freight_fee) > 0 ? Number(o.freight_fee) : 0, known = r2(sub + fee + svcFee);
+  const n = Number(o.items_count) || (o.items || []).reduce((t, it) => t + Number(it.qty || 0), 0);
+  const rows = [[`Merchandise subtotal${n ? ` (${n} item${n === 1 ? "" : "s"})` : ""}`, money(sub)]]
+    .concat(svc.map((x) => [x.label, money(x.fee)]))
+    .concat((o.freight_lines || []).length || fee ? [["Freight", pending && !fee ? "Pending" : (pending ? money(fee) + " + pending" : freightShort(o).replace(/^FREE$/, "Free"))]] : [])
+    .concat([[pending ? "Total excluding pending freight" : "Total", money(pending ? known : (o.estimated_total != null ? o.estimated_total : known)), true]]);
+  const note = pending ? "Freight is pending: the actual charge comes from the manufacturer's order confirmation, after HCPS places the order." + (o.freight_note ? " " + o.freight_note : "") : "";
+  return { rows, note, pending, known, total: pending ? known : Number(o.estimated_total != null ? o.estimated_total : known) };
+}
+
+/* ---------- build one manufacturer email (the processing email HCPS receives) ---------- */
 function orderStatus(order) {
   const m = order.manufacturer_name || "the manufacturer";
   /* a held order's server notice is written for the dealer, so HCPS gets its own words; a new-account notice (no hold) is
@@ -164,76 +249,29 @@ function servicesWords(order) {
   const L = (order.services || []).filter((x) => x && x.selected);
   return L.length ? L.map((x) => `${x.label} — ${money(x.fee)}`).join(" · ") : "";
 }
-function configLine(it) {
-  const bits = [];
-  if (it.brand) bits.push(it.brand);
-  if (unitLabel(it)) bits.push(unitLabel(it));
-  if (it.upgrade) bits.push("Option: " + it.upgrade);
-  return bits.join(" · ");
-}
 function buildEmail(dealer, order, submittedAt) {
-  const submitted = submittedAt ? new Date(submittedAt) : new Date();
-  const submittedStr = submitted.toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "medium", timeStyle: "short" }) + " CT";
-  const shipParts = [dealer.ship_to_label, dealer.address, [dealer.city, dealer.state].filter(Boolean).join(", "), dealer.zip].map((x) => (x || "").trim()).filter(Boolean);
-  const shipping = shipParts.length ? shipParts.join(" · ") : "—";
-  const st = orderStatus(order);
-  const tone = { ok: ["#e8f4ec", "#b9dcc4", "#14532d"], warn: ["#fff7e6", "#f1d9a6", "#8a5a00"], hold: ["#fdecea", "#f3b8b0", "#9b1c1c"] }[st.tone];
-  /* freight not yet known: an "actual freight" line with no figure, or a per-item (Corsicana) charge still to be quoted */
-  const pending = ((order.freight_lines || []).some((r) => r.status === "actual") && !(Number(order.freight_fee) > 0))
-    || (order.freight_lines || []).some((r) => r.status === "peritem" && r.pending);
-  const svcFee = r2(order.services_fee || 0);
-  const known = r2(Number(order.items_subtotal || 0) + (Number(order.freight_fee) > 0 ? Number(order.freight_fee) : 0) + svcFee);
-  const svc = servicesWords(order);
-  /* "not on file" only when HCPS knows it is missing (a hold / new-account notice); otherwise a dash — never a guess */
+  const st = orderStatus(order), mny = emMoney(order), ref = emRef(order.order_id), when = emWhen(submittedAt);
+  const svc = servicesWords(order), offered = (order.services || []).length || order.services_offered;
   const acctWords = order.manufacturer_account || (order.account_hold && !order.account_unchecked || order.account_notice ? "not on file" : "—");
-  const ref = order.order_id ? String(order.order_id).slice(0, 8).toUpperCase() : "—";
+  const ship = emShipTo(dealer);
   const link = order.order_id ? `${ORDER_SCREEN}?order=${encodeURIComponent(order.order_id)}` : ORDER_SCREEN;
-  const nItems = Number(order.items_count) || (order.items || []).reduce((n, it) => n + Number(it.qty || 0), 0);
-
-  const L = "font:600 11px Arial,sans-serif;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin:0 0 2px";
-  const V = "font:400 13px/1.45 Arial,sans-serif;color:#10263f";
-  const block = (label, lines) => `<div style="display:inline-block;vertical-align:top;width:100%;max-width:270px;margin:0 0 12px;padding-right:12px;box-sizing:border-box">
-      <div style="${L}">${esc(label)}</div><div style="${V}">${lines.filter((x) => x != null && x !== "").map((x) => esc(x)).join("<br>") || "—"}</div></div>`;
-  const TD = "padding:9px 8px;border-bottom:1px solid #eceae6;font:400 13px Arial,sans-serif;color:#10263f;vertical-align:top";
-  const rows = (order.items || []).map((it) => {
-    const unit = Number(it.unit), line = Number.isFinite(unit) ? unit * Number(it.qty || 0) : null, cfg = configLine(it);
-    return `<tr><td style="${TD};white-space:nowrap;font-weight:700">${esc(it.code)}</td>
-      <td style="${TD}">${esc(it.name)}${cfg ? `<div style="font-size:11.5px;color:#6b7280;margin-top:2px">${esc(cfg)}</div>` : ""}</td>
-      <td style="${TD};text-align:center">${esc(it.qty)}</td>
-      <td style="${TD};text-align:right;white-space:nowrap">${Number.isFinite(unit) ? money(unit) : "—"}</td>
-      <td style="${TD};text-align:right;white-space:nowrap;font-weight:700">${line != null ? money(line) : "—"}</td></tr>`;
-  }).join("");
-  const tr = (label, val, strong) => `<tr><td style="padding:3px 8px;text-align:right;font:${strong ? "800 14px" : "400 13px"} Arial,sans-serif;color:#10263f">${label}</td><td style="padding:3px 8px;text-align:right;min-width:88px;max-width:210px;font:${strong ? "800 15px" : "600 13px"} Arial,sans-serif;color:${strong ? "#ef6325" : "#10263f"}">${val}</td></tr>`;
-  const totals = tr(`Merchandise subtotal (${nItems} item${nItems === 1 ? "" : "s"})`, money(order.items_subtotal))
-    + (order.services || []).filter((x) => x && x.selected).map((x) => tr(esc(x.label), money(x.fee))).join("")
-    + tr("Freight", esc(pending && !(Number(order.freight_fee) > 0) ? "Pending" : freightShort(order)))
-    + tr(pending ? "Total of known charges (freight pending)" : "Total", money(pending ? known : order.estimated_total), true);
-
-  const html = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media print{.noprint{display:none!important}}</style></head>
-<body style="margin:0;background:#f4f5f3;padding:16px 8px;">
-  <div style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #e6e2dc;border-radius:10px;overflow:hidden;">
-    <div style="background:#10263f;border-bottom:3px solid #ef6325;padding:12px 18px;">
-      <div style="font:800 15px Arial,sans-serif;color:#fff">HCPS · New order · ${esc(order.manufacturer_name)}</div>
-      <div style="font:400 12px Arial,sans-serif;color:#c9d4e2;margin-top:2px">${esc(dealer.business || "Dealer")} · PO ${esc(order.po || "—")} · Ref ${esc(ref)}</div>
-    </div>
-    <div style="background:${tone[0]};border-bottom:1px solid ${tone[1]};padding:10px 18px;font:700 13px Arial,sans-serif;color:${tone[2]}">${esc(st.text)}${st.detail ? `<div style="font:400 12px/1.45 Arial,sans-serif;margin-top:3px">${esc(st.detail)}</div>` : ""}</div>
-    <div style="padding:16px 18px 6px;">
-      ${block("Dealer", [dealer.business, dealer.account ? "HCPS account " + dealer.account : "", order.manufacturer_name + " account " + (acctWords)])}
-      ${block("Contact", [dealer.contact, dealer.email, dealer.phone])}
-      ${block("Order", ["PO " + (order.po || "—"), "HCPS order " + ref, "Submitted " + submittedStr].concat(order.placed_by ? [order.placed_by] : []))}
-      ${block("Ship to", [shipping])}
-      ${(order.services || []).length || order.services_offered ? block("Delivery services", [svc || "None requested"]) : ""}
-    </div>
-    <div style="padding:0 10px 4px;">
-      <table role="presentation" style="border-collapse:collapse;width:100%">
-        <thead><tr>${["SKU", "Description", "Qty", "Unit", "Line"].map((h, k) => `<th style="padding:6px 8px;text-align:${k < 2 ? "left" : k === 2 ? "center" : "right"};font:700 10.5px Arial,sans-serif;text-transform:uppercase;letter-spacing:.4px;color:#6b7280;border-bottom:2px solid #e6e2dc">${h}</th>`).join("")}</tr></thead>
-        <tbody>${rows}</tbody></table>
-      <table role="presentation" style="border-collapse:collapse;width:100%;margin-top:6px">${totals}</table>
-      ${pending ? `<div style="font:400 11.5px/1.45 Arial,sans-serif;color:#6b7280;text-align:right;padding:2px 8px 0">Freight pending: the actual charge comes from the manufacturer's confirmation, after HCPS places the order.${order.freight_note ? " " + esc(order.freight_note) : ""}</div>` : ""}
-    </div>
-    ${order.notes ? `<div style="margin:12px 18px 0;padding:10px 12px;background:#f6f7f5;border:1px solid #e6e2dc;border-radius:8px"><div style="${L}">Order notes</div><div style="${V};white-space:pre-wrap">${esc(order.notes)}</div></div>` : ""}
-    <div class="noprint" style="padding:16px 18px 18px"><a href="${esc(link)}" style="display:inline-block;background:#10263f;color:#fff;text-decoration:none;font:700 13px Arial,sans-serif;padding:11px 16px;border-radius:8px">Open this order in Order Review &amp; Fulfillment</a></div>
-  </div></body></html>`;
+  const html = emDocument({
+    title: `New order · ${order.manufacturer_name}`, kicker: "HCPS order processing", subtitle: `${dealer.business || "Dealer"} · PO ${order.po || "—"} · Ref ${ref}`,
+    preheader: `${dealer.business || "Dealer"} · ${order.manufacturer_name} · PO ${order.po || "—"} · ${money(mny.total)}${mny.pending ? " + freight" : ""}`,
+    tone: st.tone, status: st.text, statusDetail: st.detail,
+    sections: [
+      emDetails([
+        { label: "Dealer", lines: [dealer.business, dealer.account ? "HCPS account " + dealer.account : "", `${order.manufacturer_name} account ${acctWords}`] },
+        { label: "Contact", lines: [dealer.contact, dealer.email, dealer.phone] },
+        { label: "Order", lines: ["PO " + (order.po || "—"), "HCPS order " + ref, "Submitted " + when].concat(order.placed_by ? [order.placed_by] : []) },
+        { label: "Ship to", lines: ship.length ? ship : ["—"] },
+      ].concat(offered ? [{ label: "Delivery services", lines: [svc || "None requested"] }] : [])),
+      emProducts((order.items || []).map((it) => Object.assign({}, it))),
+      emTotals(mny.rows) + (mny.note ? `<div style="height:8px;line-height:8px;font-size:1px;">&nbsp;</div>` + emSmall(mny.note) : ""),
+      order.notes ? emNote(order.notes, "Order notes") : "",
+    ],
+    button: emButton(link, "Review order"),
+  });
 
   const text = [
     `HCPS · NEW ORDER · ${order.manufacturer_name}`,
@@ -244,25 +282,76 @@ function buildEmail(dealer, order, submittedAt) {
     `${order.manufacturer_name} account: ${acctWords}`,
     `Contact  : ${[dealer.contact, dealer.email, dealer.phone].filter(Boolean).join(" · ") || "—"}`,
     `PO       : ${order.po || "—"}   HCPS order: ${ref}`,
-    `Submitted: ${submittedStr}`,
+    `Submitted: ${when}`,
     order.placed_by ? order.placed_by : "",
-    `Ship to  : ${shipping}`,
-    (order.services || []).length || order.services_offered ? `Delivery services: ${svc || "None requested"}` : "",
+    `Ship to  : ${ship.join(" · ") || "—"}`,
+    offered ? `Delivery services: ${svc || "None requested"}` : "",
     "",
     "ITEMS",
     itemsText(order.items),
     "",
-    `Merchandise subtotal (${nItems} item${nItems === 1 ? "" : "s"}): ${money(order.items_subtotal)}`,
-    ...(order.services || []).filter((x) => x && x.selected).map((x) => `${x.label}: ${money(x.fee)}`),
+    ...mny.rows.slice(0, -1).filter((r) => r[0] !== "Freight").map((r) => `${r[0]}: ${r[1]}`),
     `Freight: ${freightShort(order)}`,
-    pending ? `Total of known charges: ${money(known)} + freight (pending)` : `Total: ${money(order.estimated_total)}`,
+    mny.pending ? `Total of known charges: ${money(mny.known)} + freight (pending)` : `Total: ${money(mny.total)}`,
     order.notes ? `\nORDER NOTES\n${order.notes}` : "",
     "",
-    `Open the order: ${link}`,
+    `Review order: ${link}`,
   ].filter((x, k, a) => !(x === "" && a[k - 1] === "")).join("\n");
 
   const subject = (order.account_hold ? "[Held — account setup] " : order.account_notice ? "[New account needed] " : "") +
-    `New order · ${dealer.business || "Dealer"} · ${order.manufacturer_name} · PO ${order.po || "—"} · ${money(pending ? known : order.estimated_total)}${pending ? " + freight" : ""}`;
+    `New order · ${dealer.business || "Dealer"} · ${order.manufacturer_name} · PO ${order.po || "—"} · ${money(mny.total)}${mny.pending ? " + freight" : ""}`;
+  return { html, text, subject };
+}
+
+/* ---------- the dealer's acknowledgment (orders-api sends it; built here so both emails share one kit) ----------
+   dealer: {business, contact, email, phone, ship_to_label, address, city, state, zip, _onBehalf}
+   summaries: the recorded orders [{line, po, order_id, items:[{code,name,qty,unit_price,line_total,unit_label}], subtotal,
+     freight_fee, estimated_total, freight_lines, freight_note, services, services_fee, account_notice, account_hold, status_label}]
+   opts: {portal, holdLabel, submittedAt} */
+function buildDealerAck(dealer, summaries, opts) {
+  opts = opts || {}; const S = (summaries || []).filter(Boolean); const portal = /^https:\/\//.test(String(opts.portal || "")) ? String(opts.portal).replace(/\/?$/, "/") : PORTAL_ORDERS;
+  const many = S.length > 1, when = emWhen(opts.submittedAt), ship = emShipTo(dealer);
+  const held = S.filter((s) => s.account_hold), lines = S.map((s) => s.line);
+  const next = held.length
+    ? `Pending Manufacturer Account Setup — your order${many ? "s are" : " is"} saved. HCPS will place ${held.map((s) => s.line).join(", ")} as soon as your account with ${held.length > 1 ? "those manufacturers" : "that manufacturer"} is open${held.length < S.length ? "; the others go to the manufacturer after HCPS reviews them" : ""}.`
+    : `HCPS will review ${many ? "them" : "it"} and place ${many ? "them" : "it"} with ${lines.join(" and ")}. You'll receive the manufacturer's confirmation once ${many ? "they're" : "it's"} placed.`;
+  const blocks = S.map((s) => {
+    const items = (s.items || []).map((it) => ({ code: it.code, name: it.name, qty: it.qty, unit: it.unit_price != null ? it.unit_price : it.unit, line: it.line_total, config: it.unit_label || "" }));
+    const mny = emMoney(Object.assign({}, s, { items, items_subtotal: s.subtotal }));
+    /* a held order is explained once, in the status line; a new-account notice (not held) gets its own note */
+    const notice = s.account_notice && !s.account_hold ? emNote(`${s.account_notice} — HCPS will help you open this manufacturer account. Your order is recorded and is not held for it.`) : "";
+    return { s, mny, html:
+      `<div style="font-family:${EM.FONT};font-size:16px;line-height:22px;font-weight:bold;color:${EM.NAVY};padding:0 0 8px 0;">${esc(s.line)} <span style="font-weight:normal;color:${EM.MUTED};font-size:14px;">· PO ${esc(s.po || "—")} · Ref ${esc(emRef(s.order_id))}</span></div>`
+      + (notice ? notice + `<div style="height:10px;line-height:10px;font-size:1px;">&nbsp;</div>` : "")
+      + emProducts(items) + emTotals(mny.rows) + (mny.note ? `<div style="height:8px;line-height:8px;font-size:1px;">&nbsp;</div>` + emSmall(mny.note) : "") };
+  });
+  const first = S.find((s) => s.order_id && !/^PREVIEW-/.test(String(s.order_id)));
+  const link = first ? `${portal}?order=${encodeURIComponent(first.order_id)}` : portal;
+  const head = held.length === S.length ? "We've received your order — waiting for your account" : `We've received your order${many ? "s" : ""}`;
+  const html = emDocument({
+    title: head, kicker: "Order received", subtitle: dealer.business || "",
+    preheader: S.map((s) => `${s.line} · PO ${s.po || "—"}`).join(" · "),
+    tone: held.length ? "warn" : "info", status: next, statusDetail: dealer._onBehalf || "",
+    sections: [
+      emDetails([
+        { label: many ? "Orders" : "Order", lines: S.map((s) => `${many ? s.line + " · " : ""}PO ${s.po || "—"} · Ref ${emRef(s.order_id)}`).concat(["Submitted " + when]) },
+        { label: "Ship to", lines: ship.length ? ship : ["—"] },
+      ]),
+    ].concat(blocks.map((b) => b.html)),
+    button: emButton(link, many ? "View orders" : "View order"),
+  });
+  const text = [
+    head, "", next, dealer._onBehalf || "", "",
+    `Submitted: ${when}`, `Ship to  : ${ship.join(" · ") || "—"}`, "",
+  ].concat(blocks.map(({ s, mny }) => [
+    `${s.line} — PO ${s.po || "—"} · Ref ${emRef(s.order_id)}`,
+    s.account_notice && !s.account_hold ? `  ${s.account_notice} — HCPS will help you open this manufacturer account. Your order is recorded and is not held for it.` : "",
+    ...(s.items || []).map((it) => `  ${Number(it.qty)} x ${it.name || it.code || "Item"}${it.unit_label ? " (" + it.unit_label + ")" : ""} @ ${money(it.unit_price != null ? it.unit_price : it.unit)} = ${money(it.line_total)}`),
+    ...mny.rows.map((r) => `  ${r[0]}: ${r[1]}`),
+    mny.note ? "  " + mny.note : "",
+    "",
+  ].filter((x) => x !== "").join("\n"))).concat([`View ${many ? "your orders" : "your order"}: ${link}`]).filter((x, k, a) => !(x === "" && a[k - 1] === "")).join("\n");
+  const subject = `We've received your order${many ? "s" : ""} — ` + S.map((s) => `${s.line} · PO ${s.po || "—"}`).join("; ");
   return { html, text, subject };
 }
 
@@ -415,6 +504,7 @@ exports.handler = async (event) => {
 
 // Exported for local testing.
 exports._buildEmail = buildEmail;
+exports._buildDealerAck = buildDealerAck;
 exports._normalize = normalize;
 exports._applyServerPrices = applyServerPrices;
 exports._recipients = recipients;

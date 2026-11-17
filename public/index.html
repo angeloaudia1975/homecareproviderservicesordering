@@ -1132,6 +1132,7 @@ body.locked #toast{z-index:120;}
 #previewbar .pv-l b{font-weight:800;}
 #previewbar .pv-x{background:var(--orange,#ef6325);color:#fff;border:none;border-radius:7px;padding:6px 14px;font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit;white-space:nowrap;}
 #previewbar .pv-x:hover{filter:brightness(1.06);}
+#view-orders tr.order-hit td{background:#fff4e8;box-shadow:inset 0 0 0 0 transparent}#view-orders tr.order-hit td:first-child{box-shadow:inset 4px 0 0 var(--orange,#ef6325)}
 #previewbar.managing{background:linear-gradient(90deg,#5a2a08,#a2460f);}
 #previewbar .pv-tag{font-size:11px;font-weight:800;background:rgba(255,255,255,.18);border-radius:999px;padding:1px 8px;margin-left:4px;}
 #previewbar .pv-acts{display:flex;gap:8px;flex-wrap:wrap;}
@@ -4395,6 +4396,26 @@ async function renderHome(){
    sign-in or a registration causes. Cleared as soon as it is used, so it can never
    hijack a later visit. */
 const PENDING_PRODUCT_KEY='hcps_pending_product';
+/* ── Order deep link from the dealer's "View order" email button (owner 2026-11-17) ─────────
+   ?order=<order id> is held through sign-in like a product link, then My Orders opens with that order highlighted. The
+   order list comes from the dealer's own authenticated history, so a link to someone else's order shows nothing extra. */
+const PENDING_ORDER_KEY='hcps_pending_order';
+function capturePendingOrder(){
+  try{ const q=new URLSearchParams(location.search); const id=(q.get('order')||'').trim();
+    if(!/^[0-9a-f-]{8,64}$/i.test(id)) return;
+    sessionStorage.setItem(PENDING_ORDER_KEY,JSON.stringify({id,at:Date.now()}));
+    try{ q.delete('order'); const qs=q.toString(); history.replaceState(null,'',location.pathname+(qs?'?'+qs:'')+location.hash); }catch(e){}
+  }catch(e){}
+}
+function consumePendingOrder(){
+  let it=null; try{ const raw=sessionStorage.getItem(PENDING_ORDER_KEY); if(!raw) return false; it=JSON.parse(raw); sessionStorage.removeItem(PENDING_ORDER_KEY); }catch(e){ return false; }
+  if(!it||!it.id||Date.now()-Number(it.at||0)>3600e3) return false;
+  showP360('orders');
+  let tries=0; const find=()=>{ const row=document.querySelector(`#view-orders tr[data-order="${(window.CSS&&CSS.escape)?CSS.escape(it.id):it.id}"]`);
+    if(row){ row.classList.add('order-hit'); try{ row.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){} return; }
+    if(++tries<40) setTimeout(find,250); };
+  setTimeout(find,200); return true;
+}
 function capturePendingProduct(){
   try{
     const q=new URLSearchParams(location.search);
@@ -7371,8 +7392,8 @@ function applyAuth(){
   // Fully provisioned dealers land on their Partner 360 dashboard (concept home).
   document.body.classList.remove('locked');   // authenticated: unlock the persistent header/nav
   showP360('dash');
-  // A product link from an HCPS email lands here once the dealer is actually signed in.
-  consumePendingProduct();}
+  // A product or order link from an HCPS email lands here once the dealer is actually signed in.
+  if(!consumePendingOrder()) consumePendingProduct();}
 // Signed in but not yet able to order: "under review" (registered, not approved) or
 // "being set up" (approved, but HCPS hasn't finished linking the dealer account / lines).
 function renderPendingSetup(){
@@ -7457,7 +7478,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
        held while they sign in or register and honoured the moment they are through.
        Without holding it, a dealer who had to register would land on the portal home
        having lost the very product the email was about. */
-    capturePendingProduct();
+    capturePendingProduct(); capturePendingOrder();
     AUTH.session=loadStoredSession();
     await authMe();          // restore any signed-in dealer (refreshes the token if needed)
     if(AUTH.status==='approved'){ try{ await goldenInit(); }catch(e){} }   // Golden decides whether its line shows (B2)
@@ -8037,7 +8058,7 @@ async function loadOrders(){
       +(o.source==="portal"&&o.status!=="cancelled"&&o.reporting==="reported"?`<div class="m">Reported by the manufacturer — counted in your purchases</div>`:o.source==="portal"&&o.reporting==="partly_reported"?`<div class="m">Partly reported by the manufacturer — ${esc(cents(o.on_order||0))} still on order</div>`:o.source==="portal"&&o.reporting==="not_found_in_reports"?`<div class="m">Not found in the manufacturer's reports yet — HCPS will review; not counted twice</div>`:"")
       +(o.invoice_only?`<div class="m">Invoice ${esc(o.invoice_no||"")} recorded — ${esc(cents(o.billed||0))} billed${o.date_basis==="first_statement"?" (dated by the first statement that listed it)":""}. Payment status not established from the available import.${o.last_statement?" Last observed in the "+esc(monthName(o.last_statement))+" statement.":""} Not counted in your purchases.</div>`+(o.ambiguous?`<div class="m" style="color:#9b1c1c">The manufacturer's statements list this invoice differently (${(o.versions||[]).map(v=>esc(monthName(v.statement))+": "+v.lines.map(l=>esc(l.code)+" ×"+l.qty).join(", ")).join(" · ")}) — the latest is shown; ask HCPS before relying on the quantities.</div>`:""):"");
     const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
-    return `<tr><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b>${extra}</td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${cents(orderTotal(o))}${freightNote(o)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
+    return `<tr data-order="${esc(o.id||"")}"><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b>${extra}</td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${cents(orderTotal(o))}${freightNote(o)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
   }).join("");
   const total=purchasesOnly(HISTORY).reduce((s,o)=>s+countedTotal(o),0); const nInv=HISTORY.filter(o=>o.invoice_only||o.status==="invoice_recorded").length; const nRep=HISTORY.filter(o=>o.source==="portal"&&o.status!=="cancelled"&&(o.reporting==="reported"||o.reporting==="partly_reported")).length;
   $("#view-orders").innerHTML=`
