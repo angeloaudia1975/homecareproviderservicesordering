@@ -28,8 +28,8 @@ for (const file of ["index.html", "dashboard.html"]) {
 }
 Promise.all(Object.values(module.exports)).then(() => {
   const idx = fs.readFileSync(path.join(__dirname, "../public/index.html"), "utf8");
-  for (const a of ["favorites_toggle", "resale_cert_set", "pricing_request", "literature_request", "tracking_request"])
-    assert.ok(new RegExp(`const MANAGE_TOOLS=new Set\\(\\[[^\\]]*"${a}"`).test(idx) && new RegExp(`${a}:'[a-z_]+'`).test(idx), "Manage Dealer routes " + a), checks++;
+  /* Manage Dealer: api() sends EVERY dealer-tools call with the manage token (mgAll), so these need no MANAGE_TOOLS entry */
+  assert.ok(/const mgAll=[^\n]*endpoint===TOOLS_ENDPOINT/.test(idx), "Manage Dealer routes every dealer-tools call"); checks++;
   for (const f of ["index.html", "dashboard.html"]) { const s = fs.readFileSync(path.join(__dirname, "../public", f), "utf8");
     assert.ok(!/try\{ await api\(TOOLS_ENDPOINT,\{action:"(pricing|literature|tracking)_request"/.test(s), f + ": no silent request"); checks++; }
   console.log(`dealer request feedback: ${checks} checks pass`);

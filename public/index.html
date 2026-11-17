@@ -6818,13 +6818,13 @@ function exitPreview(){ try{ window.close(); }catch(e){} setTimeout(()=>{ try{ l
    The server decides everything (switch, role, this location, each action) and records every change under the staff
    member's name. Two modes: Manage Dealer (allowed actions on) and View as Dealer (read-only — the session is ended). */
 let MANAGE=null;
-const MANAGE_TOOLS=new Set(["account_change_request","default_ship_set","logo_upload","branding_set","logo_studio_restore","showroom_save","favorites_toggle","resale_cert_set","pricing_request","literature_request","tracking_request"]);
+const MANAGE_TOOLS=new Set(["account_change_request","default_ship_set","logo_upload","branding_set","logo_studio_restore","showroom_save"]);
 function manageCan(a){ return !!(MANAGE&&MANAGE.actions&&MANAGE.actions.some(x=>x.key===a)); }
 window.__MANAGE_TOKEN__=()=>MANAGE&&MANAGE.token||'';
 /* the bearer for the dealer tool APIs in a Manage Dealer session (the server decides what the session may do there) */
 function mgBearer(){ const t=window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__(); return t?'manage:'+t:''; }
 window.mgBearer=mgBearer;
-window.__MANAGE_TOOLS__={has:a=>MANAGE_TOOLS.has(a)&&manageCan(({account_change_request:'account_change',default_ship_set:'default_ship',logo_upload:'logo_edit',branding_set:'logo_edit',logo_studio_restore:'logo_edit',showroom_save:'showroom_edit',favorites_toggle:'favorites_edit',resale_cert_set:'account_change',pricing_request:'dealer_request',literature_request:'dealer_request',tracking_request:'dealer_request'})[a])};
+window.__MANAGE_TOOLS__={has:a=>MANAGE_TOOLS.has(a)&&manageCan(({account_change_request:'account_change',default_ship_set:'default_ship',logo_upload:'logo_edit',branding_set:'logo_edit',logo_studio_restore:'logo_edit',showroom_save:'showroom_edit'})[a])};
 async function manageCall(action,why){
   try{ const r=await fetch(CONFIG.AUTH_ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,token:MANAGE?MANAGE.token:'',why})}); return await r.json().catch(()=>({})); }
   catch(e){ return {ok:false}; }
