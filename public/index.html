@@ -7848,7 +7848,8 @@ const money=n=>"$"+Math.round(Number(n)||0).toLocaleString();
 const cents=n=>"$"+(Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const monthName=ym=>{ const m=/^(\d{4})-(\d{2})$/.exec(String(ym||"")); return m?new Date(Date.UTC(+m[1],+m[2]-1,1)).toLocaleDateString("en-US",{month:"long",year:"numeric",timeZone:"UTC"}):String(ym||""); };
 const orderTotal=o=>Number(o&&o.total!=null?o.total:(o&&o.cost))||0;
-const freightNote=o=>(o&&Number(o.freight)>0)?`<div class="m" style="font-weight:400;font-size:11px;color:var(--muted,#667085)">incl. ${cents(o.freight)} freight</div>`:"";
+const freightNote=o=>((o&&Number(o.freight)>0)?`<div class="m" style="font-weight:400;font-size:11px;color:var(--muted,#667085)">incl. ${cents(o.freight)} freight</div>`:"")
+  +((o&&Array.isArray(o.services))?o.services.filter(x=>x&&Number(x.fee)>0).map(x=>`<div class="m" style="font-weight:400;font-size:11px;color:var(--muted,#667085)">incl. ${cents(x.fee)} ${esc(String(x.label||"").toLowerCase())}</div>`).join(""):"");   // delivery services chosen on the order (Dalton liftgate)
 /* owner 2026-11-15: an "Invoice recorded" entry (open manufacturer invoice, payment status not established) is never a purchase —
    kept out of every purchase total, product/category analytics and suggestions; listed apart in the table and CSV */
 /* counted once (owner 2026-11-17): a cancelled order is never a purchase, and a portal order the manufacturer has already
