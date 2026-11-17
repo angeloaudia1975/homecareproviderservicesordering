@@ -42,12 +42,6 @@ const SNIPPETS = [
   /* Dealer-portal tabs added by C3-07 (Showroom Designer label, My Storefront, Social Ads — owner 2026-11-05/06). */
   [/\['showroom','Showroom Designer',\(\)=>showShowroomStudio\(\), a==='p360:showroom'\],\n    \['storefront','My Storefront',\(\)=>showP360\('storefront'\), a==='p360:storefront'\],\n    \['ads','Social Ads',\(\)=>showP360\('ads'\), a==='p360:ads'\],/,
    "['showroom','Showroom',()=>showShowroomStudio(), a==='p360:showroom'],"],
-  /* Delivery services (owner 2026-11-17, Dalton liftgate): a line with no "services" in manufacturers.json renders nothing
-     new and adds $0, so every other line's cart is unchanged. Taken back out exactly. */
-  [/, sv=deliveryServicesFor\(slug,lines\), tot=f\.itemsTotal\+f\.fee\+sv\.fee;/, ', tot=f.itemsTotal+f.fee;'],
-  [/\n        \$\{servicesBoxHtml\(slug,sv\)\}/, ''],
-  [/\n          \$\{sv\.services\.filter\(x=>x\.selected\)\.map\([^\n]*/, ''],
-  [/\n    g\.querySelectorAll\("\.svcbox \[data-svcv\]"\)[^\n]*/, ''],
 ];
 function undoLineDiscount(html) {
   let s = String(html);

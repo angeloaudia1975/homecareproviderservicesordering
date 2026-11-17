@@ -7710,6 +7710,20 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #view-reports .rpt-alert{margin-top:12px;padding:10px 14px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;font-size:13px}
   #view-reports .rpt-vs{display:grid;gap:8px}#view-reports .rpt-vs div{display:flex;justify-content:space-between;gap:10px;font-size:13px;border-bottom:1px solid var(--line,#e5e7eb);padding-bottom:6px}
   #view-reports .rpt-ai{padding:10px 0;border-bottom:1px solid var(--line,#e5e7eb);font-size:13.5px}#view-reports .rpt-ai div{color:var(--ink-2);margin-top:3px}
+  #view-reports .lm{margin-top:14px;padding-top:12px;border-top:2px solid var(--line,#e5e7eb);min-width:0}
+  #view-reports .lm-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:6px 0 12px}
+  #view-reports .lm-t{background:#f6f9fc;border:1px solid var(--line,#e5e7eb);border-radius:8px;padding:9px 10px;min-width:0}#view-reports .lm-t b{font-size:17px;color:#0b1f33}
+  #view-reports .lm-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px;align-items:start}
+  #view-reports .lm-map{width:100%;max-width:420px;height:auto;display:block;margin:0 auto}
+  #view-reports .lm-sec{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:12px 0 4px}
+  #view-reports .lm-bar{display:grid;grid-template-columns:minmax(0,8.5em) minmax(0,1fr) auto;gap:8px;align-items:center;font-size:12.5px;margin:3px 0}
+  #view-reports .lm-bar i{display:block;height:9px;background:#edf2f7;border-radius:5px;overflow:hidden}#view-reports .lm-bar b{display:block;height:100%;background:#1681c2}
+  #view-reports .lm-bar em{font-style:normal;white-space:nowrap}
+  #view-reports .lm-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}#view-reports .lm-tag{font-size:11.5px;border-radius:12px;padding:2px 9px}
+  #view-reports .lm-tag.me{background:#fff1e9;color:#9a3d12}#view-reports .lm-tag.es{background:#eaf3fb;color:#0f5c8f}
+  #view-reports .lm-more{margin-top:10px;font-size:13px}#view-reports .lm-more summary{cursor:pointer;min-height:32px;line-height:32px;font-weight:600}
+  #view-reports .lm-z{border-collapse:collapse;font-size:12.5px;min-width:260px}#view-reports .lm-z td,#view-reports .lm-z th{padding:4px 10px 4px 0;border-bottom:1px solid var(--line,#e5e7eb)}
+  @media(max-width:760px){#view-reports .lm-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}#view-reports .lm-grid{grid-template-columns:minmax(0,1fr)}#view-reports .lm-more summary{min-height:44px;line-height:44px}#view-reports .lm .btn{min-height:44px}}
   #view-reports .rpt-aih{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
   #view-reports .rpt-link{cursor:pointer;color:var(--navy)}#view-reports .rpt-notes{margin:0;padding-left:18px;font-size:12.5px;color:var(--ink-2)}
   @media(max-width:760px){#view-reports .rpt-ctl .btn,#view-reports .rpt-ctl select,#view-reports .rpt-aih .btn{min-height:44px}#view-reports .rpt-ctl{width:100%}#view-reports .rpt-ctl select{flex:1 1 100%}#view-reports .rpt-link{display:inline-block;min-height:44px;line-height:44px}}
@@ -8478,12 +8492,13 @@ function retailUnit(mfr,code,unitCost){
    Purchases = manufacturer-reported; portal orders, quotes and network opportunities are shown APART and never added to them;
    year-over-year only where HCPS history covers the period; AI suggestions only when asked; PDF built by HCPS's server. */
 const REPORTS_ENDPOINT=API_BASE+"/dealer-reports-api";
+let RPT_LM=null, RPT_LMBUSY=false;
 let REPORT_YEAR=null, RPT=null, RPT_SCOPE=null, RPT_AI=null, RPT_AIBUSY=false, RPT_PDFBUSY=false, RPT_TAB='overview', RPT_XLBUSY=false;
 async function loadReports(){
   if(RPT_KEEP&&RPT){ RPT_KEEP=false; renderReports(); return; }   /* back from Orders & Tracking: the same report, not a reload */
   RPT_KEEP=false;
   $("#view-reports").innerHTML='<div class="msg">Loading your report…</div>';
-  RPT_AI=null;
+  RPT_AI=null; RPT_LM=null;
   const d=await api(REPORTS_ENDPOINT,{action:'report',scope:RPT_SCOPE||undefined,year:REPORT_YEAR||undefined});
   if(!d||!d.ok){ RPT_SCOPE=null; REPORT_YEAR=null;   /* a location or year the account no longer allows is never resent by Try again */
     $("#view-reports").innerHTML=`<div class="ph"><div><h1>Reports</h1></div></div><div class="card"><div class="msg">${esc((d&&d.error)||'Your report could not be loaded just now — please try again.')}</div><a class="btn pri" onclick="loadReports()">Try again</a></div>`; return; }
@@ -8538,7 +8553,7 @@ function renderReports(){
     <div class="card rpt-card"><h3>By product category</h3><div class="rpt-sub">Categories as listed in the current HCPS catalog.</div>${cats}</div>
     <div class="card rpt-card"><h3>Top products</h3>${prods}</div>
     <div class="card rpt-card"><h3>Assortment opportunities</h3><div class="rpt-sub">Products other HCPS dealers order (at least 3 of them) on lines you already buy, that you haven’t ordered in 12 months. A suggestion, not a forecast — no other dealer’s name or figures are shown.</div>${opp}</div>
-    <div class="card rpt-card"><div class="rpt-aih"><h3>AI growth suggestions</h3>${typeof PREVIEW!=='undefined'&&PREVIEW&&!mgBearer()?'':`<a class="btn pri" id="rptAi" onclick="rptAi()">${RPT_AI&&!RPT_AI.error?'Refresh suggestions':'Get suggestions'}</a>`}</div>${ai}</div>
+    <div class="card rpt-card"><div class="rpt-aih"><h3>AI growth suggestions</h3>${typeof PREVIEW!=='undefined'&&PREVIEW&&!mgBearer()?'':`<a class="btn pri" id="rptAi" onclick="rptAi()">${RPT_AI&&!RPT_AI.error?'Refresh suggestions':'Get suggestions'}</a>`}</div>${ai}${lmHtml()}</div>
     ${R.notes.length?`<div class="card rpt-card"><h3>About these figures</h3><ul class="rpt-notes">${R.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></div>`:''}
     <div class="card"><div class="chead"><h3>Pricing export</h3></div><div style="font-size:13px;color:var(--ink-2)">Export your full HCPS product &amp; dealer-pricing file — SKU, manufacturer, description, dealer cost, MAP, MSRP, category — for billing, ERP, inventory or POS.</div>
       <a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">⬇ Export pricing file (Excel/CSV)</a></div>`;
@@ -8602,6 +8617,51 @@ async function rptAi(){
   if(RPT_AIBUSY) return; RPT_AIBUSY=true; const b=$("#rptAi"); if(b){b.textContent='Writing suggestions…';b.style.pointerEvents='none';}
   const d=await api(REPORTS_ENDPOINT,{action:'report_ai',scope:RPT_SCOPE,year:RPT&&RPT.report.period.year});
   RPT_AIBUSY=false; RPT_AI=d&&d.ok?{list:d.recommendations||[],note:d.note||''}:{error:(d&&d.error)||'Suggestions are not available just now.'}; renderReports();
+}
+/* YOUR LOCAL MARKET (owner 2026-11-17): the selected branch's 25-mile Census profile — every figure computed by the server
+   (dealer-reports-api local_market); this only draws it. Estimates are labelled as estimates, the dealer's own HCPS activity
+   as measured, and the sources, data years and limits are always shown. */
+async function rptLocal(){
+  if(RPT_LMBUSY) return; RPT_LMBUSY=true; const b=$("#rptLm"); if(b){b.textContent='Loading Census data…';b.style.pointerEvents='none';}
+  const d=await api(REPORTS_ENDPOINT,{action:'local_market',scope:RPT_SCOPE,year:RPT&&RPT.report.period.year});
+  RPT_LMBUSY=false; RPT_LM=d&&d.ok?{m:d.market,recs:d.recommendations||[]}:{error:(d&&d.error)||'Your local market could not be loaded just now — please try again.'}; renderReports();
+  const el=document.getElementById('rptLmBox'); if(el&&el.scrollIntoView) el.scrollIntoView({block:'nearest'});
+}
+window.rptLocal=rptLocal;
+function lmMap(m){
+  const k=Math.cos(m.center.lat*Math.PI/180), R=m.radius_miles, pts=(m.zip_areas||[]).map(z=>({z:z.zcta,p:z.population||0,x:(z.lng-m.center.lng)*69.17*k,y:(m.center.lat-z.lat)*69.0}));
+  const mx=Math.max(1,...pts.map(q=>q.p)), top=new Set(pts.slice().sort((a,b)=>b.p-a.p).slice(0,4).map(q=>q.z)), V=R+3;
+  const dots=pts.map(q=>`<circle cx="${q.x.toFixed(2)}" cy="${q.y.toFixed(2)}" r="${(0.5+1.5*Math.sqrt(q.p/mx)).toFixed(2)}" fill="#1681c2" fill-opacity=".55" stroke="#0f5c8f" stroke-width=".15"><title>ZIP ${esc(q.z)} · about ${Number(q.p).toLocaleString('en-US')} people</title></circle>`+(top.has(q.z)?`<text x="${(q.x+1.4).toFixed(2)}" y="${(q.y-1.2).toFixed(2)}" font-size="1.9" fill="#0b1f33">${esc(q.z)}</text>`:'')).join('');
+  return `<svg class="lm-map" viewBox="${-V} ${-V} ${2*V} ${2*V}" role="img" aria-label="Map of the ${pts.length} Census ZIP areas within ${R} miles of this location; dot size shows population">
+    <circle cx="0" cy="0" r="${R}" fill="#eef5fb" stroke="#1681c2" stroke-width=".25" stroke-dasharray="1 .8"/><circle cx="0" cy="0" r="${R/2}" fill="none" stroke="#c9dceb" stroke-width=".15"/>
+    ${dots}<path d="M0,-2.2 L.65,-.7 2.1,-.7 .95,.25 1.35,1.8 0,.9 -1.35,1.8 -.95,.25 -2.1,-.7 -.65,-.7Z" fill="#ef6325" stroke="#fff" stroke-width=".25"><title>This location</title></path>
+    <text x="0" y="${-R+2.4}" font-size="1.8" text-anchor="middle" fill="#5b6b7f">${R} miles</text><text x="${R/2+.6}" y="-.6" font-size="1.6" fill="#5b6b7f">${R/2}</text></svg>
+    <div class="rpt-s">N ↑ · each dot is one Census ZIP area, sized by population · ★ this location</div>`;
+}
+function lmHtml(){
+  const pv=typeof PREVIEW!=='undefined'&&PREVIEW&&!mgBearer();
+  const head=`<div class="rpt-aih lm-h"><h3 style="font-size:15px">Your local market <span class="rpt-s">· 25 miles · U.S. Census</span></h3>${pv?'':`<a class="btn" id="rptLm" onclick="rptLocal()">${RPT_LM&&!RPT_LM.error?'Refresh':'Show my local market'}</a>`}</div>`;
+  if(!RPT_LM) return `<div class="lm" id="rptLmBox">${head}<div class="rpt-sub">Population, ages, households and incomes within 25 miles of ${RPT_SCOPE==='company'?'your head office':'this location'}, with nearby ZIP areas on a map and three practical suggestions — from U.S. Census estimates.</div></div>`;
+  if(RPT_LM.error) return `<div class="lm" id="rptLmBox">${head}<div class="msg">${esc(RPT_LM.error)}</div></div>`;
+  const m=RPT_LM.m, n=x=>x==null?'—':Number(x).toLocaleString('en-US'), pm=o=>o&&o.moe?` <span class="rpt-s">±${n(o.moe)}</span>`:'';
+  const bar=(label,pct,val)=>`<div class="lm-bar"><span>${esc(label)}</span><i><b style="width:${Math.max(0,Math.min(100,pct||0))}%"></b></i><em>${pct==null?'—':pct+'%'}${val!=null?` <span class="rpt-s">(${n(val)})</span>`:''}</em></div>`;
+  const med=m.income.median;
+  const tiles=[['People',n(m.population.estimate)+pm(m.population)],['Households',n(m.households.estimate)+pm(m.households)],['Aged 65+',(m.age.a65p.pct==null?'—':m.age.a65p.pct+'%')+` <span class="rpt-s">(${n(m.age.a65p.estimate)})</span>`],['Median household income',med?(med.open?'≥ ':'')+'$'+n(med.value)+' <span class="rpt-s">est.</span>':'—']]
+    .map(([l,v])=>`<div class="lm-t"><div class="rpt-s">${l}</div><b>${v}</b></div>`).join('');
+  const zips=(m.zip_areas||[]).slice(0,12).map(z=>`<tr><td>${esc(z.zcta)}</td><td style="text-align:right">${z.miles} mi</td><td style="text-align:right">${n(z.population)}</td></tr>`).join('');
+  const recs=(RPT_LM.recs||[]).map(r=>`<div class="rpt-ai"><b>${esc(r.title)}</b><div>${esc(r.detail)}</div><div class="lm-tags">${r.measured?`<span class="lm-tag me">Your HCPS activity · ${esc(r.measured)}</span>`:''}${r.estimated?`<span class="lm-tag es">Census estimate · ${esc(r.estimated)}</span>`:''}</div></div>`).join('');
+  return `<div class="lm" id="rptLmBox">${head}
+    <div class="rpt-sub">${esc(m.branch.name)}${m.branch.address?' · '+esc(m.branch.address):''}${m.branch.company_view?' (head office)':''}${m.approx_location?' · placed at town level':''}</div>
+    <div class="lm-tiles">${tiles}</div>
+    <div class="lm-grid"><div>${lmMap(m)}</div><div>
+      <div class="lm-sec">Age</div>${bar('55–64',m.age.a55_64.pct,m.age.a55_64.estimate)}${bar('65–74',m.age.a65_74.pct,m.age.a65_74.estimate)}${bar('75 and over',m.age.a75p.pct,m.age.a75p.estimate)}
+      <div class="lm-sec">Sex</div>${bar('Female',m.sex.female.pct,m.sex.female.estimate)}${bar('Male',m.sex.male.pct,m.sex.male.estimate)}
+      <div class="lm-sec">Household income</div>${m.income.groups.map(g=>bar(g.label,g.pct,null)).join('')}
+    </div></div>
+    <div class="lm-sec">Three suggestions for your market</div>${recs}
+    <details class="lm-more"><summary>Nearby ZIP areas (${(m.zip_areas||[]).length})</summary><div class="table-scroll"><table class="lm-z"><tr><th style="text-align:left">ZIP area</th><th style="text-align:right">Distance</th><th style="text-align:right">People (est.)</th></tr>${zips}</table></div>${(m.zip_areas||[]).length>12?`<div class="rpt-s">The ${n((m.zip_areas||[]).length-12)} farther ZIP areas are on the map.</div>`:''}</details>
+    <details class="lm-more"><summary>Sources, data years and limits</summary><ul class="rpt-notes"><li>${esc(m.source.acs)}.</li><li>${esc(m.source.geography)}.</li>${(m.limits||[]).map(l=>`<li>${esc(l)}</li>`).join('')}<li>Suggestions combine these estimates with your own HCPS activity; they are not a forecast of sales.</li></ul></details>
+  </div>`;
 }
 async function rptPdf(){
   if(RPT_PDFBUSY) return; RPT_PDFBUSY=true; const b=$("#rptPdf"); if(b){b.textContent='Preparing PDF…';b.style.pointerEvents='none';}
