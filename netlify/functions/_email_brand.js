@@ -16,6 +16,7 @@ const PHONE = "937-626-5141", TOLL_FREE = "888-626-3140", FAX = "888-330-8630"; 
 const EMAIL = "info@homecareproviderservices.us";
 const NAVY = "#0f2440", ORANGE = "#ef6325";
 const MARK = "data-hcps-email=\"1\"";
+const HAS_MARK = /<(body|table)\b[^>]*data-hcps-email="1"/i;   // only a real tag counts — text a person typed never does
 const FONT = "-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif";
 const esc = (x) => String(x == null ? "" : x).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const safeUrl = (u) => (/^https:\/\/[^\s"'<>]+$/i.test(String(u || "")) ? String(u) : null);
@@ -58,14 +59,14 @@ function layout(o) {
    <body> content; an email that already carries the design comes back unchanged. */
 function frame(html, o) {
   const s = String(html || "");
-  if (s.includes(MARK)) return s;
+  if (!s) return html; if (HAS_MARK.test(s)) return s;
   const m = s.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   return shell(m ? m[1] : s, o);
 }
 /* A person-written email keeps its text exactly; the HCPS footer is added below it. */
 function signature(html) {
   const s = String(html || "");
-  if (s.includes(MARK)) return s;
+  if (!s) return html; if (HAS_MARK.test(s)) return s;
   const block = `<div style="margin-top:24px;max-width:600px">${footerHtml()}</div>`;
   return /<\/body>/i.test(s) ? s.replace(/<\/body>/i, block + "</body>") : s + block;
 }
@@ -73,7 +74,7 @@ function signature(html) {
    the card's last row. Falls back to signature() when the card cannot be found. Idempotent. */
 function cardFooter(html) {
   const s = String(html || "");
-  if (s.includes(MARK)) return s;
+  if (!s) return html; if (HAS_MARK.test(s)) return s;
   const i = s.lastIndexOf("</div></body>");
   return i < 0 ? signature(s) : s.slice(0, i) + footerHtml() + s.slice(i);
 }
