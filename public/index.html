@@ -9134,8 +9134,12 @@ async function loadShowroom(){
   await ensureCatalogFav();
   /* a failed read is never cached as "no orders" (C3-06): My Orders asks again and says so */
   if(!HISTORY){ try{ const d=await api(HISTORY_ENDPOINT,{action:"history",limit:500}); if(d&&d.ok!==false&&Array.isArray(d.orders)) HISTORY=d.orders; }catch(e){} }
-  try{ const d=await api(TOOLS_ENDPOINT,{action:"showroom_get"}); if(d&&d.ok&&d.layout&&Array.isArray(d.layout.zones)){ SHOWROOM=d.layout; } else { const ls=localStorage.getItem("hcps_showroom"); if(ls)SHOWROOM=JSON.parse(ls); } }
-  catch(e){ try{ const ls=localStorage.getItem("hcps_showroom"); if(ls)SHOWROOM=JSON.parse(ls); }catch(_){} }
+  SHOWROOM={zones:[]};
+  try{
+    const d=await api(TOOLS_ENDPOINT,{action:"showroom_get"});
+    if(!d || !d.ok) throw new Error();
+    if(d.layout && Array.isArray(d.layout.zones)) SHOWROOM={zones:d.layout.zones};
+  }catch(e){ $("#view-showroom").textContent="Could not load this location's showroom. Reopen it to retry."; return; }
   ensureZones(); renderShowroom();
 }
 function showroomStats(){ let retail=0,cost=0,filled=0; const lines=new Set(); for(const z of SHOWROOM.zones){ if(!z)continue; filled++; const r=prodRec(z.mfr+"|"+z.code); retail+=r.msrp; if(r.cost!=null)cost+=r.cost; lines.add(z.mfr); } return {retail,cost,margin:retail-cost,filled,open:ZONE_N-filled,lines:lines.size}; }
@@ -9168,7 +9172,10 @@ function swPick(i){ SW_PICK_IDX=i; const list=PRICELIST||[]; const purchased=new
   $("#modal").classList.add("on");
 }
 function swPlace(){ const v=$("#swSel").value; const i=v.indexOf("|"); if(SW_PICK_IDX!=null&&v){ SHOWROOM.zones[SW_PICK_IDX]={mfr:v.slice(0,i),code:v.slice(i+1)}; } closeModal(); renderShowroom(); }
-async function swSave(){ try{ localStorage.setItem("hcps_showroom",JSON.stringify(SHOWROOM)); }catch(e){} try{ await api(TOOLS_ENDPOINT,{action:"showroom_save",layout:SHOWROOM}); }catch(e){} alert("Showroom layout saved."); }
+async function swSave(){
+  const result=await api(TOOLS_ENDPOINT,{action:"showroom_save",layout:{zones:SHOWROOM.zones}}).catch(()=>null);
+  alert(result && result.ok ? "Showroom layout saved." : "Could not save this location's showroom.");
+}
 
 /* resources — literature request center */
 async function loadResourcesView(){ await loadPricing(); renderResources(); }
@@ -11044,14 +11051,28 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
   // base showSec (the engine wraps this; non-showroom names are no-ops here)
   if(typeof window.showSec!=='function') window.showSec=function(){};
   window.sdRefreshHostGlobals=function(){
-    try{ var d=(window.AUTH&&AUTH.dealer)||{}; window._DEALER_SLUG=d.hcps_account||d.email||'dealer'; window._DEALER_NAME=d.name||'Dealer'; }
-    catch(e){ window._DEALER_SLUG='dealer'; window._DEALER_NAME='Dealer'; }
+    window._DEALER_SLUG=sdDealerId();
+    window._DEALER_NAME=(AUTH.dealer && AUTH.dealer.name)||'Dealer';
   };
 
-  /* ================= localStorage backend (dealer-showroom-design shim) ================= */
-  function storeKey(){ return 'hcps_sd_'+(window._DEALER_SLUG||'dealer'); }
-  function loadStore(){ try{ return JSON.parse(localStorage.getItem(storeKey())||'null')||{seq:1,designs:{}}; }catch(e){ return {seq:1,designs:{}}; } }
-  function saveStore(s){ try{ localStorage.setItem(storeKey(), JSON.stringify(s)); }catch(e){} }
+  // The tools API resolves the location from the dealer, preview, or Manage Dealer session.
+  // Never adopt the old shared browser floorplans: their owner is unknown.
+  let plannerLocation = '', plannerRevision = null, plannerQueue = Promise.resolve();
+  async function plannerRequest(action, locationId, layout){
+    await ensureFreshSession();
+    if (!locationId || locationId !== sdDealerId() || AUTH.status !== 'approved')
+      throw new Error('Open the planner again for this location.');
+    const bearer = mgBearer() || (PREVIEW ? 'preview:'+PREVIEW.token : AUTH.session && AUTH.session.access_token);
+    if (!bearer) throw new Error('Sign in to open a showroom.');
+    const response = await fetch(CONFIG.AUTH_ENDPOINT.replace(/dealer-auth$/, 'dealer-tools-api'), {
+      method:'POST', headers:{'content-type':'application/json',authorization:'Bearer '+bearer},
+      body:JSON.stringify({action,location_id:locationId,layout})
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok || locationId !== sdDealerId())
+      throw new Error(result.error || 'Showroom request failed.');
+    return result;
+  }
   function nowISO(){ return new Date().toISOString(); }
   function sqftOf(d){ return (d.floor_cells&&d.floor_cells.length) || (d.grid_width*d.grid_height) || 0; }
   function listShape(d){ return { id:d.id, name:d.name, updated_at:d.updated_at, total_sqft:sqftOf(d) }; }
@@ -11089,20 +11110,28 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
   function myDefaults(s){ var d=sdDealerId(); return (d && s.type_defaults_by_dealer && s.type_defaults_by_dealer[d]) || {}; }
   function resp(obj){ return Promise.resolve({ ok:true, status:200, json:function(){return Promise.resolve(obj);}, text:function(){return Promise.resolve(JSON.stringify(obj));} }); }
 
-  function handle(url, opts){
+  async function handle(url, opts, locationId){
     opts=opts||{}; var method=(opts.method||'GET').toUpperCase();
     var q={}; var qs=url.split('?')[1]||''; qs.split('&').forEach(function(kv){ if(!kv)return; var p=kv.split('='); q[decodeURIComponent(p[0])]=decodeURIComponent(p[1]||''); });
     var body={}; try{ body=opts.body?JSON.parse(opts.body):{}; }catch(e){ body={}; }
     var action=q.action||body.action||'';
-    var s=loadStore();
-    function commit(){ saveStore(s); }
+    if(method==='GET' && action==='footprints') return resp({footprints:Object.values(FP)});
+    if(method==='GET' && action==='presets') return resp({presets:PRESETS.slice()});
+    const result = await plannerRequest('showroom_get',locationId);
+    const stored = result.layout && result.layout.floor_planner;
+    if (stored && stored.location !== locationId) throw new Error('Showroom location mismatch.');
+    const revision = stored ? stored.revision : 0;
+    const s = stored ? stored.data : {seq:1,designs:{}};
+    if (method==='GET' && ((action==='designs' && plannerRevision===null) || (!action && q.design_id))) plannerRevision=revision;
+    async function commit(){
+      if (plannerRevision !== revision) throw new Error('This showroom changed. Reopen it before saving.');
+      await plannerRequest('showroom_save',locationId,{floor_planner:{location:locationId,revision:revision+1,data:s}});
+      plannerRevision=revision+1;
+    }
 
     // ----- designs list -----
     if(method==='GET' && action==='designs'){ return resp({designs:Object.keys(s.designs).map(function(k){return listShape(s.designs[k]);})}); }
     // ----- Showroom Designer: the signed-in dealer's saved default sizes per equipment type -----
-    // NOTE: this browser store is shared by everyone who signs in on the same browser (storeKey() resolves to
-    // 'hcps_sd_dealer' — a pre-existing limit of the floorplans too). Defaults are therefore filed under the signed-in
-    // dealer's id inside it, so one dealer's defaults never reach another. Saving or resetting never touches an item.
     if(method==='GET' && action==='type_defaults'){ return resp({defaults:myDefaults(s)}); }
     if(method==='POST' && action==='type_defaults'){
       var did=sdDealerId(); if(!did) return resp({ok:false, error:'not signed in', defaults:{}});
@@ -11116,7 +11145,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
         if([0,90,180,270].indexOf(dr)<0) return resp({ok:false, error:'invalid rotation', defaults:mine});
         mine[tid]={width_cells:dw, height_cells:dh, rotation_deg:dr};
       }
-      commit(); return resp({ok:true, defaults:mine});
+      await commit(); return resp({ok:true, defaults:mine});
     }
     // ----- footprints / presets -----
     if(method==='GET' && action==='footprints'){ return resp({footprints:Object.keys(FP).map(function(k){return FP[k];})}); }
@@ -11129,7 +11158,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     if(method==='GET' && !action && q.design_id){ var dd=s.designs[q.design_id]; if(!dd) return resp({showroom:null,items:[]}); return resp({showroom:showroomShape(dd), items:itemsArr(dd)}); }
 
     // ----- rename -----
-    if(method==='POST' && action==='rename'){ var dr=s.designs[body.design_id]; if(dr){ dr.name=body.name||dr.name; dr.updated_at=nowISO(); commit(); return resp({showroom:listShape(dr)}); } return resp({showroom:null}); }
+    if(method==='POST' && action==='rename'){ var dr=s.designs[body.design_id]; if(dr){ dr.name=body.name||dr.name; dr.updated_at=nowISO(); await commit(); return resp({showroom:listShape(dr)}); } return resp({showroom:null}); }
 
     // ----- create item / update item -----
     if(method==='POST' && action==='items'){
@@ -11146,11 +11175,11 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
       else if(body.sales_price!==undefined){ it.sales_price=body.sales_price; }
       if(it.turn_rate_weeks==null) it.turn_rate_weeks=4;
       if(it.rotation_deg==null) it.rotation_deg=0;
-      di.updated_at=nowISO(); commit();
+      di.updated_at=nowISO(); await commit();
       return resp({item:it});
     }
     // ----- delete item -----
-    if(method==='DELETE' && action==='items'){ var dx=null,idl=q.id; for(var k in s.designs){ if(s.designs[k].items[idl]){ dx=s.designs[k]; break; } } if(dx){ delete dx.items[idl]; dx.updated_at=nowISO(); commit(); } return resp({ok:true}); }
+    if(method==='DELETE' && action==='items'){ var dx=null,idl=q.id; for(var k in s.designs){ if(s.designs[k].items[idl]){ dx=s.designs[k]; break; } } if(dx){ delete dx.items[idl]; dx.updated_at=nowISO(); await commit(); } return resp({ok:true}); }
 
     // ----- snapshot create -----
     if(method==='POST' && action==='snapshot'){
@@ -11158,7 +11187,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
       dsc.snapSeq=(dsc.snapSeq||0)+1; var sid='sn'+dsc.id+'_'+dsc.snapSeq;
       var items=itemsArr(dsc);
       dsc.snapshots[sid]={ id:sid, snapshot_date:nowISO(), snapshot_type:body.snapshot_type||'manual', summary_json:summaryOf(items), layout_json:{ showroom:showroomShape(dsc), items:JSON.parse(JSON.stringify(items)) } };
-      commit(); return resp({snapshot:dsc.snapshots[sid]});
+      await commit(); return resp({snapshot:dsc.snapshots[sid]});
     }
     // ----- restore snapshot -----
     if(method==='POST' && action==='restore'){
@@ -11167,18 +11196,18 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
       var lay=snp.layout_json||{}; var sh=lay.showroom||{};
       dre.grid_width=sh.grid_width; dre.grid_height=sh.grid_height; dre.floor_cells=sh.floor_cells||[];
       dre.items={}; (lay.items||[]).forEach(function(it){ dre.items[it.id]=JSON.parse(JSON.stringify(it)); });
-      dre.updated_at=nowISO(); commit();
+      dre.updated_at=nowISO(); await commit();
       return resp({showroom:showroomShape(dre), items:itemsArr(dre)});
     }
     // ----- clear -----
-    if(method==='DELETE' && action==='clear'){ var dc=s.designs[q.design_id]; if(dc){ dc.grid_width=0; dc.grid_height=0; dc.floor_cells=[]; dc.items={}; dc.updated_at=nowISO(); commit(); } return resp({ok:true}); }
+    if(method==='DELETE' && action==='clear'){ var dc=s.designs[q.design_id]; if(dc){ dc.grid_width=0; dc.grid_height=0; dc.floor_cells=[]; dc.items={}; dc.updated_at=nowISO(); await commit(); } return resp({ok:true}); }
 
     // ----- save floor shape (bare POST, upsert) -----
     if(method==='POST' && !action){
       var d=body.design_id?s.designs[body.design_id]:null;
       if(!d){ var nid='d'+(s.seq++); d={ id:nid, name:body.name||('Showroom '+Object.keys(s.designs).length+1), grid_width:0, grid_height:0, floor_cells:[], items:{}, itemSeq:0, snapshots:{}, snapSeq:0 }; s.designs[nid]=d; }
       d.grid_width=body.grid_width; d.grid_height=body.grid_height; d.floor_cells=body.floor_cells||[]; d.total_sqft=body.total_sqft; d.updated_at=nowISO();
-      commit();
+      await commit();
       return resp({showroom:listShape(d)});
     }
     return resp({ok:true});
@@ -11187,7 +11216,12 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
   // Install a scoped fetch shim: only intercept the showroom-design endpoint.
   var _origFetch = window.fetch ? window.fetch.bind(window) : null;
   window.fetch = function(url, opts){
-    try{ var u=(typeof url==='string')?url:((url&&url.url)||''); if(u.indexOf('dealer-showroom-design')>=0) return handle(u, opts||{}); }catch(e){}
+    try{ var u=(typeof url==='string')?url:((url&&url.url)||''); if(u.indexOf('dealer-showroom-design')>=0) {
+      const scope=plannerLocation;
+      const request=plannerQueue.then(()=>handle(u,opts||{},scope));
+      plannerQueue=request.catch(()=>{});
+      return request;
+    } }catch(e){}
     return _origFetch ? _origFetch(url, opts) : Promise.reject(new Error('no fetch'));
   };
 
@@ -11196,6 +11230,8 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     document.body.classList.remove('p360on','home','shopall'); document.body.classList.add('hubon','sdon');
     var pw=document.getElementById('p360wrap'); if(pw)pw.style.display='none';
     try{ state.active='p360:showroom'; renderTabs(); }catch(e){}
+    if(plannerLocation && plannerLocation!==sdDealerId()){ location.reload(); return; }
+    plannerLocation=sdDealerId();
     sdRefreshHostGlobals();
     /* first open: show a loading panel straight away instead of a blank page while the lines load */
     if(!window.__sdCatalogLoaded){
@@ -11474,8 +11510,9 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
       })
       .catch(function(){
         if(loadingEl)loadingEl.style.display='none';
-        toast('Could not load your showroom design.');
-        sdShowScreen('setup');
+        loaded=false;
+        sdShowScreen('none');
+        if(loadingEl){ loadingEl.style.display='block'; loadingEl.textContent='Could not load this showroom. Reopen the planner to retry.'; }
       });
   }
   // Loads one specific design by its own id into the editor — shared by the
