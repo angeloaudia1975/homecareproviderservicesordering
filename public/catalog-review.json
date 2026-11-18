@@ -1,15 +1,17 @@
 {
-  "review_id": "22d4bb83fc13",
+  "review_id": "a0baddc899ca",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-18T01:56:58Z",
+  "built_at": "2026-11-18T01:57:25Z",
   "main": "f7cec60d57319a225124a9996462e8b62e32fe95",
-  "included": [],
-  "skipped": [
+  "included": [
     {
       "pr": 82,
       "title": "Apply approved compact dealer navigation",
       "branch": "compact-dealer-navigation",
-      "reason": "checks pending on its latest commit — added automatically once they pass"
+      "head": "be7b8c3e350398016b6ccd32bf2757091d4b3780",
+      "manufacturers": [],
+      "other_files": 3
     }
-  ]
+  ],
+  "skipped": []
 }
