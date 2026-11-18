@@ -179,8 +179,32 @@ function emProducts(items) {
 /* totals kept together: [[label, value, strong]] — value text is escaped here */
 function emTotals(rows) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr><td colspan="2" style="height:6px;line-height:6px;font-size:1px;">&nbsp;</td></tr>${rows.map(([l, v, strong]) =>
-    `<tr><td align="right" style="font-family:${EM.FONT};font-size:${strong ? 15 : 14}px;line-height:22px;color:${EM.INK};${strong ? "font-weight:bold;border-top:1px solid " + EM.LINE + ";" : ""}padding:${strong ? "8px" : "3px"} 0 3px 0;">${esc(l)}</td>
-      <td align="right" style="font-family:${EM.FONT};font-size:${strong ? 16 : 14}px;line-height:22px;${String(v).length <= 14 ? "white-space:nowrap;" : ""}${strong ? "font-weight:bold;color:" + EM.ORANGE + ";border-top:1px solid " + EM.LINE + ";" : "color:" + EM.INK + ";"}padding:${strong ? "8px" : "3px"} 0 3px 12px;">${esc(v)}</td></tr>`).join("")}</table>`;
+    `<tr><td align="right" style="font-family:${EM.FONT};font-size:${strong ? 15 : 14}px;line-height:22px;color:${EM.INK};${strong ? "font-weight:bold;border-top:1px solid " + EM.LINE + ";background:" + EM.SOFT + ";" : ""}padding:${strong ? "10px" : "3px"} 0 ${strong ? "10px" : "3px"} 0;">${esc(l)}</td>
+      <td align="right" style="font-family:${EM.FONT};font-size:${strong ? 16 : 14}px;line-height:22px;${String(v).length <= 14 ? "white-space:nowrap;" : ""}${strong ? "font-weight:bold;color:" + EM.ORANGE + ";border-top:1px solid " + EM.LINE + ";background:" + EM.SOFT + ";" : "color:" + EM.INK + ";"}padding:${strong ? "10px" : "3px"} ${strong ? "8px" : "0"} ${strong ? "10px" : "3px"} 12px;">${esc(v)}</td></tr>`).join("")}</table>`;
+}
+/* PROGRESS (owner 2026-11-17 19:10: "clearly distinguish HCPS receipt from manufacturer confirmation"): three steps in one
+   row — what HCPS has done, what happens next, and the manufacturer's own confirmation (which comes from the manufacturer,
+   never from this email). steps: [{label, sub, state: done|next|wait|hold}] */
+function emProgress(steps) {
+  const C = { done: ["#14532d", "#ecf7f0", "&#10003;"], next: [EM.NAVY, "#eef3fa", "&#8594;"], wait: [EM.MUTED, "#f8fafc", "&#8226;"], hold: ["#9b1c1c", "#fdecea", "!"] };
+  /* fluid hybrid, like the details: three steps side by side where there is room, one under the other on a phone or a narrow
+     reading pane (no media query needed); Outlook for Windows gets a three-column ghost table */
+  const step = (x, last) => { const c = C[x.state] || C.wait;
+    return `<div class="em-col" style="display:inline-block;width:100%;max-width:186px;vertical-align:top;padding:0 ${last ? 0 : 6}px 6px 0;">
+      <div style="background:${c[1]};border-top:3px solid ${c[0]};padding:8px 10px;font-family:${EM.FONT};">
+      <div style="font-size:12px;line-height:17px;font-weight:bold;color:${c[0]};">${c[2]} ${esc(x.label)}</div>${x.sub ? `<div style="font-size:11px;line-height:15px;color:${EM.MUTED};">${esc(x.sub)}</div>` : ""}</div></div>`; };
+  const L = steps || [];
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr><td style="font-size:0;line-height:0;" valign="top">
+<!--[if mso]><table role="presentation" width="584" cellpadding="0" cellspacing="0" border="0"><tr><![endif]-->${L.map((x, i) => `<!--[if mso]><td width="${i === L.length - 1 ? 192 : 196}" valign="top"><![endif]-->${step(x, i === L.length - 1)}<!--[if mso]></td><![endif]-->`).join("")}<!--[if mso]></tr></table><![endif]-->
+</td></tr></table>`;
+}
+const emLabel = (t) => `<div style="font-family:${EM.FONT};font-size:11px;line-height:16px;font-weight:bold;letter-spacing:.6px;text-transform:uppercase;color:${EM.MUTED};padding:0 0 4px 0;">${esc(t)}</div>`;
+/* the delivery facts said one way in both emails: chosen services, then the freight terms */
+function emDelivery(o) {
+  const svc = (o.services || []).filter((x) => x && x.selected);
+  const offered = (o.services || []).length || o.services_offered;
+  const fr = emPending(o) ? "Freight: pending (explained with the totals)" : (o.freight_lines || []).length || Number(o.freight_fee) > 0 ? "Freight: " + freightShort(o).replace(/^FREE$/, "Free") : "Freight: not included";
+  return [offered ? (svc.length ? svc.map((x) => `${x.label} — ${money(x.fee)}`).join(" · ") : "No delivery services requested") : "", fr].filter(Boolean);
 }
 function emNote(text, label) {
   return text ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr><td style="background:${EM.SOFT};border:1px solid ${EM.LINE};padding:12px 14px;font-family:${EM.FONT};font-size:14px;line-height:21px;color:${EM.INK};">${label ? `<div style="font-size:11px;line-height:16px;font-weight:bold;letter-spacing:.6px;text-transform:uppercase;color:${EM.MUTED};">${esc(label)}</div>` : ""}<div>${esc(text).replace(/\r?\n/g, "<br>")}</div></td></tr></table>` : "";
@@ -266,13 +290,17 @@ function buildEmail(dealer, order, submittedAt) {
     preheader: `${dealer.business || "Dealer"} · ${order.manufacturer_name} · PO ${order.po || "—"} · ${money(mny.total)}${mny.pending ? " + freight" : ""}`,
     tone: st.tone, status: st.text, statusDetail: st.detail,
     sections: [
+      emProgress([{ label: order.account_hold ? "Recorded by HCPS" : "Received by HCPS", sub: when, state: "done" },
+        order.account_hold ? { label: "Account setup", sub: "Manufacturer account needed first", state: "hold" } : { label: "Place with manufacturer", sub: "HCPS's next step", state: "next" },
+        { label: "Manufacturer confirmation", sub: "Comes from the manufacturer once placed", state: "wait" }]),
       emDetails([
         { label: "Dealer", lines: [dealer.business, dealer.account ? "HCPS account " + dealer.account : "", `${order.manufacturer_name} account ${acctWords}`] },
         { label: "Contact", lines: [dealer.contact, dealer.email, dealer.phone] },
         { label: "Order", lines: ["PO " + (order.po || "—"), "HCPS order " + ref, "Submitted " + when].concat(order.placed_by ? [order.placed_by] : []) },
         { label: "Ship to", lines: ship.length ? ship : ["—"] },
-      ].concat(offered ? [{ label: "Delivery services", lines: [svc || "None requested"] }] : [])),
-      emProducts((order.items || []).map((it) => Object.assign({}, it))),
+        { label: "Delivery", lines: emDelivery(order) },
+      ]),
+      emLabel("Products") + emProducts((order.items || []).map((it) => Object.assign({}, it))),
       emTotals(mny.rows) + (mny.note ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:8px;line-height:8px;font-size:1px;">&nbsp;</td></tr></table>` + emSmall(mny.note) : ""),
       order.notes ? emNote(order.notes, "Order notes") : "",
     ],
@@ -341,9 +369,15 @@ function buildDealerAck(dealer, summaries, opts) {
     preheader: S.map((s) => `${s.line} · PO ${s.po || "—"}`).join(" · "),
     tone: held.length ? "warn" : "info", status: next, statusDetail: dealer._onBehalf || "",
     sections: [
+      emProgress([{ label: held.length ? "Saved by HCPS" : "Received by HCPS", sub: when, state: "done" },
+        held.length === S.length ? { label: "Account setup", sub: "Manufacturer account first", state: "hold" }
+          : held.length ? { label: "HCPS places your orders", sub: "Some wait for a manufacturer account", state: "hold" } : { label: "HCPS places your order", sub: "With the manufacturer", state: "next" },
+        { label: "Manufacturer confirmation", sub: "Sent to you once placed", state: "wait" }]),
       emDetails([
         { label: many ? "Orders" : "Order", lines: S.map((s) => `${many ? s.line + " · " : ""}PO ${s.po || "—"} · Ref ${emRef(s.order_id)}`).concat(["Submitted " + when]) },
+        { label: "Account", lines: [dealer.business, dealer.contact, dealer.email] },
         { label: "Ship to", lines: ship.length ? ship : ["—"] },
+        { label: "Delivery", lines: many ? S.map((s) => s.line + ": " + emDelivery(s).join(" · ")) : emDelivery(S[0] || {}) },
       ]),
     ].concat(blocks.map((b) => b.html)),
     button: emButton(link, many ? "View orders" : "View order"),
