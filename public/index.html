@@ -1217,16 +1217,19 @@ header .htop{flex-wrap:nowrap;}
 .avatarchip .avmeta span{font-size:11.5px;color:var(--gray);}
 .hactions .signout{border:none;background:none;color:var(--gray);font-weight:600;font-size:12.5px;cursor:pointer;padding:6px;font-family:inherit;}
 .hactions .signout:hover{color:var(--navy);text-decoration:underline;}
-/* unified icon nav */
-#tabs.tabs{display:flex;gap:2px;padding:0 22px;max-width:1360px;margin:0 auto;overflow-x:auto;background:transparent;border:none;}
-#tabs.tabs::-webkit-scrollbar{height:0;}
-.navtab{display:inline-flex;align-items:center;gap:8px;background:none;border:none;border-bottom:2.5px solid transparent;padding:13px 15px;font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:#5a6674;cursor:pointer;white-space:nowrap;}
-.navtab svg{width:17px;height:17px;stroke-width:2;}
-.navtab:hover{color:var(--navy);}
-.navtab.active{color:#072b5a;border-bottom-color:var(--orange);}
-/* 360 Dealer Portal nav band (approved 2026-11-05): light band, navy labels, orange active rule */
-#tabs.tabs{background:#f6f8fa;box-shadow:0 0 0 100vmax #f6f8fa;clip-path:inset(0 -100vmax);}
-.navtab{color:#33465e;border-bottom-width:3px;}
+/* Dealer navigation */
+#tabs.tabs{display:grid;gap:5px;padding:12px 10px;border:0;background:#f4f6f8;}
+#tabs.tabs:empty{display:none;}
+.dealer-nav-row{display:flex;justify-content:center;gap:clamp(4px,1.3vw,30px);}
+.navtab{display:inline-flex;align-items:center;gap:9px;padding:10px 12px;border:0;border-radius:9px;background:none;color:#092e59;font:600 clamp(13px,1.05vw,16px) Arial,sans-serif;text-align:left;cursor:pointer;}
+.navtab svg{flex:none;width:1.2em;height:1.2em;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
+.navtab:hover{background:#e4ecf3;}
+.navtab.active{background:#d4eafb;}
+@media(max-width:800px){
+  #tabs.tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;}
+  .dealer-nav-row{display:contents;}
+  .navtab{font-size:14px;padding:10px 5px;min-height:44px;}
+}
 /* line selector inside Shop */
 /* Same rail as .wrap (1240px / 20px). It was 1360px with 22px padding, so the manufacturer
    row sat 60px wider than the title above it and the filters below — the whole header read
@@ -3899,37 +3902,45 @@ function ownedSlugSet(){
   const acct=AUTH.acctBySlug||{}; return new Set(Object.keys(acct).filter(s=>acct[s]));
 }
 const NAVICON={
-  dash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
-  shop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>',
-  reports:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>',
-  quotes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
-  showroom:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>',
-  account:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>',
-  storefront:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M5 13v8h14v-8"/><path d="M10 21v-5h4v5"/></svg>',
-  resources:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'
-};
-function renderTabs(){
+  dash:'<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>',
+  shop:'<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 8h16l1 13H3z M8 9V6a4 4 0 0 1 8 0v3"/></svg>',
+  reports:'<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 3v17h19 M6 15l5-6 4 3 6-7"/></svg>',
+  quotes:'<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 2h9l5 5v15H5z M14 2v6h5"/></svg>',
+  showroom:'<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10l2-6h14l2 6 M3 10q2 5 5 0 2 5 5 0 2 5 5 0 2 4 3 0 M5 13v8h14v-8 M10 21v-6h4v6"/></svg>',
+  storefront:'<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v13H4z M4 17l-3 3h22l-3-3"/></svg>',
+  ads:'<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 9h5l12-5v16L8 15H3z M8 15l2 6H7l-2-6"/></svg>',
+  account:'<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M3 22v-2a9 7 0 0 1 18 0v2"/></svg>',
+  resources:'<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0 M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0 M5 5l4 4 M15 15l4 4 M5 19l4-4 M15 9l4-4"/></svg>'
+};function renderTabs(){
   const el=$("#tabs"); el.innerHTML="";
   if(AUTH.status!=='approved') return;
   const a=state.active||'';
   const inShop = a && a!==HOME && a.indexOf('p360:')!==0;   // a manufacturer catalog / product detail
   const items=[
-    ['dash','Dashboard',()=>showP360('dash'), a==='p360:dash'||a===HOME],
-    ['shop','Shop',()=>showShop(), inShop],
-    ['reports','Reports',()=>showP360('reports'), a==='p360:reports'],
-    ['quotes','Quotes',()=>showQuotesHub(), a==='p360:quotes'],
-    ['showroom','Showroom Designer',()=>showShowroomStudio(), a==='p360:showroom'],
-    ['storefront','My Storefront',()=>showP360('storefront'), a==='p360:storefront'],
-    ['ads','Social Ads',()=>showP360('ads'), a==='p360:ads'],
-    ['account','Account',()=>showP360('account'), a==='p360:account'],
-    ['resources','Resources',()=>showP360('resources'), a==='p360:resources']
+    ['dash','Dealer Overview',()=>showP360('dash'), a==='p360:dash'||a===HOME],
+    ['shop','Shop Products',()=>showShop(), inShop],
+    ['reports','Reports, Growth & Ideas',()=>showP360('reports'), a==='p360:reports'],
+    ['quotes','Customer Quotes',()=>showQuotesHub(), a==='p360:quotes'],
+    ['showroom','Showroom Layout Planner',()=>showShowroomStudio(), a==='p360:showroom'],
+    ['storefront','Storefront Website Builder',()=>showP360('storefront'), a==='p360:storefront'],
+    ['ads','Social Media Advertising',()=>showP360('ads'), a==='p360:ads'],
+    ['account','My Account',()=>showP360('account'), a==='p360:account'],
+    ['resources','Resources & Support',()=>showP360('resources'), a==='p360:resources']
   ];
-  items.forEach(function(it){
-    const b=document.createElement('button');
-    b.className='navtab'+(it[3]?' active':'');
-    b.innerHTML=(NAVICON[it[0]]||'')+'<span>'+it[1]+'</span>';
-    b.onclick=it[2]; el.appendChild(b);
-  });
+  const rows = [items.slice(0,5), items.slice(5)];
+  for (const row of rows) {
+    const group = document.createElement("div");
+    group.className = "dealer-nav-row";
+    el.appendChild(group);
+    for (const it of row) {
+      const b=document.createElement('button');
+      b.className='navtab'+(it[3]?' active':'');
+      if(it[3]) b.setAttribute('aria-current','page');
+      b.innerHTML=NAVICON[it[0]]+'<span>'+it[1]+'</span>';
+      b.onclick=it[2];
+      group.appendChild(b);
+    }
+  }
 }
 // Unified Shop: pick the dealer's line to browse (chips), reusing the per-line catalog engine.
 function showShop(slug){

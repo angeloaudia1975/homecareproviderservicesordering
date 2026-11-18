@@ -81,7 +81,7 @@ async function modalErr(page) { return page.evaluate(() => { const e = document.
 
     await t('navigation tab and page heading read "Showroom Designer"', async () => {
       const r = await page.evaluate(() => ({ tab: (document.querySelector('#tabs .navtab.active') || {}).textContent || '', h1: document.querySelector('#sec-showroom h1').textContent, legacyTab: (document.getElementById('sd-tab') || {}).textContent || '' }));
-      ok(/^\s*Showroom Designer\s*$/.test(r.tab), 'tab "' + r.tab + '"'); eq(r.h1.trim(), 'Showroom Designer'); ok(!r.legacyTab || /Showroom Designer/.test(r.legacyTab), r.legacyTab);
+      ok(/^\s*Showroom Layout Planner\s*$/.test(r.tab), 'tab "' + r.tab + '"'); eq(r.h1.trim(), 'Showroom Designer'); ok(!r.legacyTab || /Showroom Designer/.test(r.legacyTab), r.legacyTab);
     });
     await t('both floorplans saved before the upgrade are listed', async () => {
       const txt = await page.evaluate(() => document.getElementById('sd-picker-list').innerText);
@@ -376,7 +376,7 @@ async function modalErr(page) { return page.evaluate(() => { const e = document.
       await vp.waitForTimeout(200);
       await vp.evaluate(() => sdOpenEquip('beds')); await vp.waitForSelector('#sd-equip-w', { state: 'visible' });
       const r = await vp.evaluate(() => { const f = document.getElementById('sd-equip-form').getBoundingClientRect(); const inp = document.getElementById('sd-equip-w').getBoundingClientRect();
-        const tab = [...document.querySelectorAll('#tabs .navtab')].find(x => /Showroom Designer/.test(x.textContent));
+        const tab = [...document.querySelectorAll('#tabs .navtab')].find(x => /Showroom Layout Planner/.test(x.textContent));
         return { sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, fl: f.left, fr: f.right, ih: inp.height, cards: document.querySelectorAll('#sd-gallery-grid .sd-gallery-card').length, tab: !!tab, h1: document.querySelector('#sec-showroom h1').textContent }; });
       await t(`${label}: no sideways scroll; size panel on screen with full-size inputs; 24 cards; tab + heading say Showroom Designer`, () => {
         ok(r.sw <= r.cw + 1, r.sw + '>' + r.cw); ok(r.fl >= 0 && r.fr <= w + 1, JSON.stringify(r)); ok(r.ih >= 40, 'input height ' + r.ih); eq(r.cards, 24); ok(r.tab, 'tab'); eq(r.h1.trim(), 'Showroom Designer'); });
