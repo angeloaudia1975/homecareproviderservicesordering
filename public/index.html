@@ -8656,7 +8656,7 @@ function lmHtml(){
   const zips=(m.zip_areas||[]).slice(0,12).map(z=>`<tr><td>${esc(z.zcta)}</td><td style="text-align:right">${z.miles} mi</td><td style="text-align:right">${n(z.population)}</td></tr>`).join('');
   const recs=(RPT_LM.recs||[]).map(r=>`<div class="rpt-ai"><b>${esc(r.title)}</b><div>${esc(r.detail)}</div><div class="lm-tags">${r.measured?`<span class="lm-tag me">Your HCPS activity · ${esc(r.measured)}</span>`:''}${r.estimated?`<span class="lm-tag es">Census estimate · ${esc(r.estimated)}</span>`:''}</div></div>`).join('');
   return `<div class="lm" id="rptLmBox">${head}
-    <div class="rpt-sub">${esc(m.branch.name)}${m.branch.address?' · '+esc(m.branch.address):''}${m.branch.company_view?' (head office)':''}${m.approx_location?' · placed at town level':''}</div>
+    <div class="rpt-sub">${esc(m.branch.name)}${m.branch.address?' · '+esc(m.branch.address):''}${m.branch.address_source==='default ship-to'?' (default ship-to address)':''}${m.branch.company_view?' (head office)':''}${m.approx_location?' · placed at town level':''}</div>
     <div class="lm-tiles">${tiles}</div>
     <div class="lm-grid"><div>${lmMap(m)}</div><div>
       <div class="lm-sec">Age</div>${bar('55–64',m.age.a55_64.pct,m.age.a55_64.estimate)}${bar('65–74',m.age.a65_74.pct,m.age.a65_74.estimate)}${bar('75 and over',m.age.a75p.pct,m.age.a75p.estimate)}
