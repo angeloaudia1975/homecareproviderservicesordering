@@ -1,17 +1,8 @@
 {
-  "review_id": "1329498f10c9",
+  "review_id": "6063cfdd2f54",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-18T03:06:15Z",
-  "main": "06e7667a9f56faa50542c29726a1b05801446627",
-  "included": [
-    {
-      "pr": 83,
-      "title": "Isolate showroom layouts by dealer location",
-      "branch": "showroom-location-storage",
-      "head": "3f971492d2d78111ddbd9de088ecd87762f7fade",
-      "manufacturers": [],
-      "other_files": 3
-    }
-  ],
+  "built_at": "2026-11-18T03:06:50Z",
+  "main": "03682a4c888611b3e30bc954904e273b28a7b32e",
+  "included": [],
   "skipped": []
 }
