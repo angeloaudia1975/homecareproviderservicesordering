@@ -46,7 +46,7 @@ async function market() {
       await t(label + ': a Golden order (Golden history) shows at once: Orders placed counts it, Last order says Golden, on order $900', async () => {
         const tx = await page.evaluate(() => document.querySelector('#view-reports').textContent);
         ok(/Orders placed\s*1/.test(tx) && /1 Golden, 0 portal/.test(tx), 'orders tile'); ok(/Last order \d{4}-01-20 \(Golden\)/.test(tx), 'last order'); ok(/Purchases \+ on order\s*\$900/.test(tx), 'on order');
-        ok(/a Golden order from the day Golden books it/.test(tx), 'explainer'); ok(/Golden orders counted as on order \(1\)/.test(tx) && /G-SO1/.test(tx) && /7\.9\.26/.test(tx), 'order list'); });
+        ok(/a Golden order from the day Golden books it/.test(tx), 'explainer'); ok(/Golden orders not on a commission statement yet — counted \(1\)/.test(tx) && /G-SO1/.test(tx) && /7\.9\.26/.test(tx), 'order list'); });
       st.noKey = true; await page.evaluate(() => rptLocal()); await page.waitForFunction(() => /not connected yet/.test(document.getElementById('rptLmBox').textContent) && !/Loading Census/.test(document.getElementById('rptLmBox').textContent), null, { timeout: 10000 });
       await t(label + ': no Census key → a plain "not connected yet" message', async () => { const x = await page.evaluate(() => document.getElementById('rptLmBox').textContent); ok(/not connected yet/.test(x), 'message: ' + x.slice(0, 200)); });
       st.noKey = false; await page.evaluate(() => rptLocal()); await page.waitForFunction(() => document.querySelector('#rptLmBox .lm-map') && document.querySelector('#rptLmBox .lm-tiles') && !/Loading Census/.test(document.getElementById('rptLmBox').textContent), null, { timeout: 10000 });
