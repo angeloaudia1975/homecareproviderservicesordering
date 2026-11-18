@@ -271,7 +271,7 @@ const layout = (page, sel) => page.evaluate((sel) => {
         const r = await page.evaluate(() => [...document.querySelectorAll('#view-storefront .sf-check')].filter((l) => l.offsetParent).map((l) => { const i = l.querySelector('input').getBoundingClientRect(), b = l.getBoundingClientRect(); return { w: i.width, dy: Math.abs((i.top + i.bottom) / 2 - (b.top + b.bottom) / 2), h: b.height }; }));
         ok(r.length >= 2 && r.every((x) => x.w < 60 && x.dy < 6), JSON.stringify(r)); });
       await t(label + ': My Storefront tab, settings save exactly what was typed', async () => {
-        ok(await page.evaluate(() => [...document.querySelectorAll('.navtab span')].some((s) => s.textContent === 'My Storefront')), 'tab');
+        ok(await page.evaluate(() => [...document.querySelectorAll('.navtab span')].some((s) => s.textContent === 'Storefront Website Builder')), 'tab');
         await page.fill('#sfHead', 'Welcome'); await page.uncheck('#sfAll'); await page.uncheck('.sf-line[value="strongback"]'); await page.selectOption('#sfPrice', 'call');
         ok(await page.$('#sfPublish') && /Save without publishing/.test(await page.textContent('#sfSave')), 'publish and save-without-publishing offered');
         await page.evaluate(() => sfSave(false)); await page.waitForTimeout(400);
