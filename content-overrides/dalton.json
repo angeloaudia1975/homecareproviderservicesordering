@@ -1531,7 +1531,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "name": "TB-5006-2: dealer-facing name corrected — Dalton page title says 300 lb; its description and specifications say 250 lb (disputed value hidden until Dalton confirms)",
-   "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/tb-5006-2-transfer-bench-300-lb-capacity-2-case/ (every number and claim checked against the page)"
+   "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/tb-5006-2-transfer-bench-300-lb-capacity-2-case/ (every number and claim checked against the page)",
+   "capacity_review": "INTERNAL — not shown to dealers. Owner selection 2026-11-18: 300 lb per unit. Conflicting published ratings: Dalton page title 300 lb; Dalton description and specifications 250 lb. The capacity stays out of the name, specs, brochures and quotes until the product label, the model-specific manual or Dalton's written confirmation verifies it (dalton-exceptions D-1/D-4/D-5/D-6)."
   },
   "description": "The Dalton Medical transfer bench is a bathtub transfer bench with a blow-molded seat and backrest, a textured nonslip seating surface and drainage holes that help prevent water accumulation. Its rust-resistant aluminum frame adjusts in seat height from 18.5 to 22.5 inches, and the reversible design accommodates right- or left-facing entry. It comes two benches per case.",
   "source_url": "https://daltonmedical.com/product/tb-5006-2-transfer-bench-300-lb-capacity-2-case/"
@@ -3334,6 +3335,14 @@
    {
     "label": "Cover Material",
     "value": "Water-Resistant, Easy Clean, Vapor Permeable"
+   },
+   {
+    "label": "HCPCS code referenced by Dalton",
+    "value": "E0184"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    }
   ],
   "source_url": "https://daltonmedical.com/product/b-matt-m236-5-zone-therapeutic-mattress-36x80x6-e0184/",
@@ -3343,7 +3352,8 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-matt-m236-5-zone-therapeutic-mattress-36x80x6-e0184/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m236-5-zone-therapeutic-mattress-36x80x6-e0184/ (read 2026-11-03)",
-   "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
+   "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/b-matt-m236-5-zone-therapeutic-mattress-36x80x6-e0184/ states E0184 in its product title (\"B-MATT-M236 5 ZONE THERAPEUTIC MATTRESS 36″x80″X6″, E0184\", re-read 2026-11-18); the code is not repeated in the page body. Shown as referenced by Dalton with the payer-coverage qualification; owner approval 2026-11-18 (evening)"
   },
   "image": "/assets/products/dalton/gallery/4746c985f3b3f174bf23.png",
   "images_gallery": [
@@ -3765,6 +3775,14 @@
    {
     "label": "Cover Material",
     "value": "Stretch, Fluid-Resistant Nylon Top Waterproof Vinyl Bottom"
+   },
+   {
+    "label": "HCPCS code referenced by Dalton",
+    "value": "E0184"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    }
   ],
   "source_url": "https://daltonmedical.com/product/b-matt-m336l-advantage-8-pressure-redistribution-mattress-36x84x6-e0184/",
@@ -3773,7 +3791,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-matt-m336l-advantage-8-pressure-redistribution-mattress-36x84x6-e0184/ (every number and claim checked against the page)",
-   "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m336l-advantage-8-pressure-redistribution-mattress-36x84x6-e0184/ (read 2026-11-03)"
+   "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m336l-advantage-8-pressure-redistribution-mattress-36x84x6-e0184/ (read 2026-11-03)",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/b-matt-m336l-advantage-8-pressure-redistribution-mattress-36x84x6-e0184/ states E0184 in its product title (\"B-MATT-M336S ADVANTAGE 8, PRESSURE REDIST. MATTRESS W/RAISED SIDES 36″X80″X9″, E0184\", re-read 2026-11-18); the code is not repeated in the page body. Shown as referenced by Dalton with the payer-coverage qualification; owner approval 2026-11-18 (evening)"
   }
  },
  "advantage-8-pressure-redistribution-mattress-36-inx84-inx6": {
@@ -3800,6 +3819,14 @@
    {
     "label": "Cover Material",
     "value": "Stretch, Fluid-Resistant Nylon Top Waterproof Vinyl Bottom"
+   },
+   {
+    "label": "HCPCS code referenced by Dalton",
+    "value": "E0184"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    }
   ],
   "source_url": "https://daltonmedical.com/product/b-matt-m336l-advantage-8-pressure-redistribution-mattress-36x84x6-e0184-copy/",
@@ -3808,7 +3835,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-matt-m336l-advantage-8-pressure-redistribution-mattress-36x84x6-e0184-copy/ (every number and claim checked against the page)",
-   "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m336l-advantage-8-pressure-redistribution-mattress-36x84x6-e0184-copy/ (read 2026-11-03)"
+   "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m336l-advantage-8-pressure-redistribution-mattress-36x84x6-e0184-copy/ (read 2026-11-03)",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/b-matt-m336l-advantage-8-pressure-redistribution-mattress-36x84x6-e0184-copy/ states E0184 in its product title (\"B-MATT-M336L ADVANTAGE 8, PRESSURE REDISTRIBUTION MATTRESS 36″X84″X6″, E0184\", re-read 2026-11-18); the code is not repeated in the page body. Shown as referenced by Dalton with the payer-coverage qualification; owner approval 2026-11-18 (evening)"
   }
  },
  "aircraft-aisle-walker-w-5-inwhl-14-9-in-wide-can-be": {
@@ -4199,6 +4227,14 @@
    {
     "label": "Cover Material",
     "value": "Water-Resistant, Easy Clean, Vapor Permeable"
+   },
+   {
+    "label": "HCPCS code referenced by Dalton",
+    "value": "E0184"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    }
   ],
   "source_url": "https://daltonmedical.com/product/b-matt-m242-bariatirc-5-zone-therapectic-mattress-42x80x6-500lb-wt-cap-e0184/",
@@ -4208,7 +4244,8 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-matt-m242-bariatirc-5-zone-therapectic-mattress-42x80x6-500lb-wt-cap-e0184/ (every number and claim checked against the page)",
    "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m242-bariatirc-5-zone-therapectic-mattress-42x80x6-500lb-wt-cap-e0184/ (read 2026-11-03)",
-   "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
+   "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/b-matt-m242-bariatirc-5-zone-therapectic-mattress-42x80x6-500lb-wt-cap-e0184/ states E0184 in its product title (\"B-MATT-M242 BARIATIRC 5 ZONE THERAPECTIC MATTRESS 42″x80″X6″ , 500LB WT. CAP, E0184\", re-read 2026-11-18); the code is not repeated in the page body. Shown as referenced by Dalton with the payer-coverage qualification; owner approval 2026-11-18 (evening)"
   },
   "image": "/assets/products/dalton/gallery/4746c985f3b3f174bf23.png",
   "images_gallery": [
@@ -5211,6 +5248,14 @@
    {
     "label": "Quantity",
     "value": "One system"
+   },
+   {
+    "label": "HCPCS code referenced by Dalton",
+    "value": "E0277"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    }
   ],
   "source_url": "https://daltonmedical.com/product/pm8080-42c8-low-air-loss-mattress-system-42x80x8-e0277-copy/",
@@ -5219,7 +5264,8 @@
    "specs": "Dalton official product page, stated values only — https://daltonmedical.com/product/pm8080-42c8-low-air-loss-mattress-system-42x80x8-e0277-copy/ (read 2026-11-03)",
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
-   "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm8080-42c8-low-air-loss-mattress-system-42x80x8-e0277-copy/ (every number and claim checked against the page)"
+   "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pm8080-42c8-low-air-loss-mattress-system-42x80x8-e0277-copy/ (every number and claim checked against the page)",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pm8080-42c8-low-air-loss-mattress-system-42x80x8-e0277-copy/ states E0277 in its product title (\"PM8080-42C8  LOW AIR LOSS MATTRESS SYSTEM, 42″x80″x8″, E0277\", re-read 2026-11-18); the code is not repeated in the page body. Shown as referenced by Dalton with the payer-coverage qualification; owner approval 2026-11-18 (evening)"
   }
  },
  "bariatric-mattress-hd-foam-42-inx80-inx6-in-600lb-weight": {
@@ -6007,7 +6053,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/com-300f-4-folding-steel-3-in-1-commode-300-lb-capacity-4-case/ (every number and claim checked against the page)",
-   "name": "COM-300F-4: dealer-facing name corrected — Dalton page title says 350 lb; its specifications say 300 lb (disputed value hidden until Dalton confirms)"
+   "name": "COM-300F-4: dealer-facing name corrected — Dalton page title says 350 lb; its specifications say 300 lb (disputed value hidden until Dalton confirms)",
+   "capacity_review": "INTERNAL — not shown to dealers. Owner selection 2026-11-18: 300 lb per unit. Conflicting published ratings: Dalton page title 350 lb; Dalton specifications 300 lb. The capacity stays out of the name, specs, brochures and quotes until the product label, the model-specific manual or Dalton's written confirmation verifies it (dalton-exceptions D-1/D-4/D-5/D-6)."
   }
  },
  "commode-drop-arm-300lb-weight-capacity-2-case": {
@@ -7316,6 +7363,14 @@
    {
     "label": "Cover Material",
     "value": "Stretch, Fluid-Resistant Nylon Top Waterproof Vinyl Bottom"
+   },
+   {
+    "label": "HCPCS code referenced by Dalton",
+    "value": "E0184"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    }
   ],
   "source_url": "https://daltonmedical.com/product/b-matt-m336-advantage-8-pressure-redistribution-mattress-36x80x6-e0184/",
@@ -7324,7 +7379,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/b-matt-m336-advantage-8-pressure-redistribution-mattress-36x80x6-e0184/ (every number and claim checked against the page)",
-   "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m336-advantage-8-pressure-redistribution-mattress-36x80x6-e0184/ (read 2026-11-03)"
+   "features": "Dalton official product page, verbatim — https://daltonmedical.com/product/b-matt-m336-advantage-8-pressure-redistribution-mattress-36x80x6-e0184/ (read 2026-11-03)",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/b-matt-m336-advantage-8-pressure-redistribution-mattress-36x80x6-e0184/ states E0184 in its product title (\"B-MATT-M336 ADVANTAGE 8, PRESSURE REDISTRIBUTION MATTRESS 36″X80″X6″, E0184\", re-read 2026-11-18); the code is not repeated in the page body. Shown as referenced by Dalton with the payer-coverage qualification; owner approval 2026-11-18 (evening)"
   }
  },
  "e2601-comfy-foam-cushion-16wx16dx2h": {
@@ -10404,7 +10460,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/a-wa1200br-gait-walker-bronze-22-width-26-depth-15-19-220lb-wt-cap/ (every number and claim checked against the page)",
-   "name": "A-WA1200BR: dealer-facing name corrected — Dalton page title says 300 lb; its specifications say 220 lb (disputed value hidden until Dalton confirms)"
+   "name": "A-WA1200BR: dealer-facing name corrected — Dalton page title says 300 lb; its specifications say 220 lb (disputed value hidden until Dalton confirms)",
+   "capacity_review": "INTERNAL — not shown to dealers. Owner selection 2026-11-18: 300 lb per unit. Conflicting published ratings: Dalton page title 300 lb; Dalton specifications 220 lb. The capacity stays out of the name, specs, brochures and quotes until the product label, the model-specific manual or Dalton's written confirmation verifies it (dalton-exceptions D-1/D-4/D-5/D-6)."
   }
  },
  "gait-walker-blue-width-26-in-depth-32-2-4-in-32-in": {
@@ -17123,6 +17180,14 @@
    {
     "label": "Quantity",
     "value": "One each"
+   },
+   {
+    "label": "HCPCS code referenced by Dalton",
+    "value": "K0823"
+   },
+   {
+    "label": "Coverage",
+    "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
    }
   ],
   "source_url": "https://daltonmedical.com/product/pc-mp3cm3ar20-powerchair-20-seat-10-wheel-2-u1-batteries-300lb-wt-cap-k0823/",
@@ -17132,7 +17197,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/pc-mp3cm3ar20-powerchair-20-seat-10-wheel-2-u1-batteries-300lb-wt-cap-k0823/ (every number and claim checked against the page)",
-   "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))"
+   "images": "2026-11-05: 1 wrong photo(s) removed by the owner (Dalton photo review export 2026-11-05 (dalton-photo-fixes.json))",
+   "specs_hcpcs": "Dalton's own product page https://daltonmedical.com/product/pc-mp3cm3ar20-powerchair-20-seat-10-wheel-2-u1-batteries-300lb-wt-cap-k0823/ states K0823 in its product title (\"PC-MP3CM3AR20 POWERCHAIR 20″ SEAT, 10″ WHEEL, W/2 U1 BATTERY, 300LB WT. CAP, K0823\", re-read 2026-11-18); the code is not repeated in the page body. Shown as referenced by Dalton with the payer-coverage qualification; owner approval 2026-11-18 (evening)"
   },
   "image": "/assets/products/dalton/gallery/80b385a75dc378198ccb.png",
   "images_gallery": [
@@ -20337,7 +20403,8 @@
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
    "description": "HCPS-written 2026-11-03 strictly from facts on Dalton's official product page https://daltonmedical.com/product/a-rhb1037-wooden-transfer-30-x-7-5-inch-300-lb-weight-capacity/ (every number and claim checked against the page)",
-   "name": "A-RHB1037: dealer-facing name corrected — Dalton page title says 300 lb; its specifications say 440 lb (disputed value hidden until Dalton confirms)"
+   "name": "A-RHB1037: dealer-facing name corrected — Dalton page title says 300 lb; its specifications say 440 lb (disputed value hidden until Dalton confirms)",
+   "capacity_review": "INTERNAL — not shown to dealers. Owner selection 2026-11-18: 300 lb per unit. Conflicting published ratings: Dalton page title 300 lb; Dalton specifications 440 lb. The capacity stays out of the name, specs, brochures and quotes until the product label, the model-specific manual or Dalton's written confirmation verifies it (dalton-exceptions D-1/D-4/D-5/D-6)."
   }
  },
  "xx-large-waist-63-in-69-in-4-bags-of-12-48-ct": {

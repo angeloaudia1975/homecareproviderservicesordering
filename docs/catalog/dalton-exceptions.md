@@ -35,6 +35,21 @@ Every published fact comes from Dalton's page, every number in a description app
 | D-14 | K09FX19F15 | Dalton's own page note "Listed Overall Width 21.75″ — confirm before publishing" (left out). | 2026-11-03 |
 | D-15 | MC27 | Dalton's own page note "Medical Cart Compatibility: Confirm before ordering" (left out). | 2026-11-03 |
 
+### Owner capacity selections (2026-11-18) — recorded, not yet shown to dealers
+
+Angelo selected **300 lb per unit** for A-RHB1037 (wooden transfer board), TB-5006-2 (reversible transfer bench, 2 per case),
+COM-300F-4 (folding steel commode, 4 per case) and A-WA1200BR (bronze gait walker; its 15″–19″ dimension is the adjustable
+height). Dalton's published ratings still conflict (D-1, D-4, D-5, D-6 above), so the capacity stays out of the dealer-facing
+name, specs, brochures and quotes until the product label, the model-specific manual or Dalton's written confirmation verifies
+it. The selection is stored with each page's provenance (`capacity_review`). Working links and TB-5006KDHD-2's retired status
+are unchanged.
+
+### HCPCS references published (owner approval 2026-11-18)
+
+PM8080-42C8 E0277 · PC-MP3CM3AR20 K0823 · B-MATT-M336L, B-MATT-M336S, B-MATT-M336, B-MATT-M242, B-MATT-M236 E0184 — each
+matched to the code in its own Dalton product title (re-read 2026-11-18) and shown as "HCPCS code referenced by Dalton" with the
+payer-coverage line used for the other 19 entries (26 in all).
+
 ## B. No official Dalton product page (Dalton sitemap of 281 product pages checked)
 
 BS-5002-4, BS-5004-4, IN-UPP39040, K3DK16LTADJ, K3DK18LTADJ, K515FA, K520FA, K616EXP, K618EXP, PMC-260116-6, PMC-260118-6,

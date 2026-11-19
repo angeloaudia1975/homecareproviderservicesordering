@@ -13,7 +13,10 @@
    "name": "Aerogen® Power Cable",
    "status": "published",
    "description": "Aerogen® Solo nebulizer power cable",
-   "features": [],
+   "features": [
+    "Connects to the BiWaze Clear Aerogen® power port, which powers the Aerogen® Solo nebulizer",
+    "Wipe the exterior with an approved cleaning agent (listed in the BiWaze Clear User Manual)"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Accessories & Replacement Parts",
@@ -40,7 +43,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": null,
    "images_gallery": [],
@@ -86,7 +90,12 @@
    "name": "Air Inlet Filter",
    "status": "published",
    "description": "Replacement air inlet filters for BiWaze Clear and BiWaze Cough (Pack of 3).",
-   "features": [],
+   "features": [
+    "Filters air being brought into the control unit (BiWaze Clear and BiWaze Cough)",
+    "The package includes 3 filters — use one filter at a time",
+    "Only ABM Respiratory Care Air Inlet Filters (BC21274) should be used as replacement filters",
+    "Under normal usage, clean at least once every month and replace with a new filter every six months"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Accessories & Replacement Parts",
@@ -106,14 +115,25 @@
    ],
    "sku_count": 1,
    "source_url": null,
-   "documents": [],
+   "documents": [
+    {
+     "title": "A Patient Guide to BiWaze® Clear System (ABM BK386) — air inlet filter care",
+     "url": "https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf"
+    },
+    {
+     "title": "A Patient Guide to BiWaze Cough System (ABM BC23575) — air inlet filter care",
+     "url": "https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf"
+    }
+   ],
    "videos": [],
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf; ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part",
+    "documents": "ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf; ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/0719d2d3e7300245c8f5.jpg",
    "images_gallery": [
@@ -168,7 +188,9 @@
    "name": "Australia Power Cord",
    "status": "published",
    "description": "Power Cord – Australia",
-   "features": [],
+   "features": [
+    "Connects to the control unit's AC power inlet to power the control unit and charge the battery"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Accessories & Replacement Parts",
@@ -200,7 +222,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf; ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": null,
    "images_gallery": [],
@@ -246,7 +269,11 @@
    "name": "Battery",
    "status": "published",
    "description": "Rechargeable lithium-ion battery for the BiWaze platform systems",
-   "features": [],
+   "features": [
+    "Lithium-ion battery",
+    "Charged through the control unit's AC power inlet",
+    "ABM states the BiWaze Clear system's lithium-ion battery supports up to 10 therapies (10-minute therapy on a new, fully charged battery)"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Accessories & Replacement Parts",
@@ -273,7 +300,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf; ABM's BiWaze Clear home care quick reference guide, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/11/biwaze-clear-home-care-quick-reference-guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": null,
    "images_gallery": [],
@@ -319,8 +347,24 @@
    "name": "BiWaze Clear Dual Lumen – Child Face Mask",
    "status": "published",
    "description": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Child Face Mask",
-   "features": [],
-   "specs": [],
+   "features": [
+    "Coaxial bacterial/viral filter designed to filter bacterial and viral particles from flowing in and out of the control unit",
+    "Coaxial breathing tube separates the inhalation (outer path) from the exhalation (inner path)",
+    "Standard filter trap prevents aerosol from traveling upstream by capturing exhaled nebulized moisture",
+    "Aerogen® Solo vibrating mesh nebulizer",
+    "Handset provides a comfortable grip for therapy delivery and a spacer for the nebulizer",
+    "Patient interface: child face mask"
+   ],
+   "specs": [
+    {
+     "label": "HCPCS code referenced by ABM",
+     "value": "A7021"
+    },
+    {
+     "label": "Coverage",
+     "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
+    }
+   ],
    "warranty": null,
    "category": "Breathing Circuits",
    "subcategory": "BiWaze Clear Circuits",
@@ -346,7 +390,9 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part",
+    "specs_hcpcs": "ABM's published PDAC coding letter (DCN 24263003000000, Dec 6 2024) assigns A7021 to this BiWaze Clear Dual Lumen Breathing Circuit model, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2025/04/PDAC_BIWAZE-CLEAR.pdf (read 2026-11-18)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/e9902fe3ec9eba247b57.jpg",
    "images_gallery": [
@@ -401,8 +447,24 @@
    "name": "BiWaze Clear Dual Lumen – Mouthpiece",
    "status": "published",
    "description": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Mouthpiece",
-   "features": [],
-   "specs": [],
+   "features": [
+    "Coaxial bacterial/viral filter designed to filter bacterial and viral particles from flowing in and out of the control unit",
+    "Coaxial breathing tube separates the inhalation (outer path) from the exhalation (inner path)",
+    "Standard filter trap prevents aerosol from traveling upstream by capturing exhaled nebulized moisture",
+    "Aerogen® Solo vibrating mesh nebulizer",
+    "Handset provides a comfortable grip for therapy delivery and a spacer for the nebulizer",
+    "Patient interface: mouthpiece"
+   ],
+   "specs": [
+    {
+     "label": "HCPCS code referenced by ABM",
+     "value": "A7021"
+    },
+    {
+     "label": "Coverage",
+     "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
+    }
+   ],
    "warranty": null,
    "category": "Breathing Circuits",
    "subcategory": "BiWaze Clear Circuits",
@@ -429,7 +491,9 @@
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)"
+    "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part",
+    "specs_hcpcs": "ABM's published PDAC coding letter (DCN 24263003000000, Dec 6 2024) assigns A7021 to this BiWaze Clear Dual Lumen Breathing Circuit model, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2025/04/PDAC_BIWAZE-CLEAR.pdf (read 2026-11-18)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/6ef97f8306e640b41751.jpg",
    "images_gallery": [
@@ -482,8 +546,24 @@
    "name": "BiWaze Clear Dual Lumen – Trach",
    "status": "published",
    "description": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Flexible Trach Adaptor",
-   "features": [],
-   "specs": [],
+   "features": [
+    "Coaxial bacterial/viral filter designed to filter bacterial and viral particles from flowing in and out of the control unit",
+    "Coaxial breathing tube separates the inhalation (outer path) from the exhalation (inner path)",
+    "Standard filter trap prevents aerosol from traveling upstream by capturing exhaled nebulized moisture",
+    "Aerogen® Solo vibrating mesh nebulizer",
+    "Handset provides a comfortable grip for therapy delivery and a spacer for the nebulizer",
+    "Patient interface: flexible trach adapter"
+   ],
+   "specs": [
+    {
+     "label": "HCPCS code referenced by ABM",
+     "value": "A7021"
+    },
+    {
+     "label": "Coverage",
+     "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
+    }
+   ],
    "warranty": null,
    "category": "Breathing Circuits",
    "subcategory": "BiWaze Clear Circuits",
@@ -510,7 +590,9 @@
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)"
+    "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part",
+    "specs_hcpcs": "ABM's published PDAC coding letter (DCN 24263003000000, Dec 6 2024) assigns A7021 to this BiWaze Clear Dual Lumen Breathing Circuit model, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2025/04/PDAC_BIWAZE-CLEAR.pdf (read 2026-11-18)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/a9f0de12e0d4bee4c6d4.jpg",
    "images_gallery": [
@@ -670,14 +752,20 @@
    ],
    "sku_count": 1,
    "source_url": null,
-   "documents": [],
+   "documents": [
+    {
+     "title": "BiWaze® Clear Quick Reference Guide — ABM BK388 Rev 5.0 SEP-2025",
+     "url": "https://abmrc.com/wp-content/uploads/2025/10/BiWaze-Clear-QRG-Hospital-Reference-Guide_InLine.pdf"
+    }
+   ],
    "videos": [],
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "documents": "abmrc.com lists this guide; its footer carries ABM part number BK388 — https://abmrc.com/wp-content/uploads/2025/10/BiWaze-Clear-QRG-Hospital-Reference-Guide_InLine.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/0350c9c05a29f2f1f54f.jpg",
    "images_gallery": [
@@ -731,7 +819,16 @@
    "name": "BiWaze Clear System – Home Care USA",
    "status": "published",
    "description": "Control Unit, Internal Battery, User Manual, Home Care QRG, Power Cord - USA, Carrying Bag, Dual-Lumen Breathing Circuit - Mouthpiece",
-   "features": [],
+   "features": [
+    "Expiratory flow bias during oscillations to improve secretion clearance",
+    "Closed circuit design with an Aerogen® Solo nebulizer and built-in controller",
+    "Dual air-path control to separate inhaled and exhaled air",
+    "Advanced therapy programming to customize each therapy",
+    "Store up to 10 therapy profiles with customizable names",
+    "Touchscreen control and intuitive user interface",
+    "Lightweight system is only 9 lbs, including the lithium-ion battery",
+    "A lithium-ion battery is included with each system, supporting up to 10 therapies (10-minute therapy on a new, fully charged battery)"
+   ],
    "specs": [],
    "warranty": null,
    "category": "BiWaze Systems",
@@ -759,7 +856,8 @@
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)"
+    "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)",
+    "features": "ABM's own wording, ABM's BiWaze Clear home care quick reference guide, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/11/biwaze-clear-home-care-quick-reference-guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/2fb20960b10dcbf1e33c.jpg",
    "images_gallery": [
@@ -1023,7 +1121,12 @@
    "name": "BiWaze Cough Dual Lumen Circuit – Adult Face Mask",
    "status": "published",
    "description": "Dual Lumen adult patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, adult face mask) — choose Small (BC23406), Medium (BC23412) or Large (BC23418).",
-   "features": [],
+   "features": [
+    "Dual Lumen design: a tube within a tube separates the inhaled air from the exhaled mucus",
+    "Includes a custom viral/bacterial filter that connects directly to the BiWaze Cough control unit — no Patient Port Adapter needed",
+    "Replace the breathing circuit after 30 days or 90 therapy cycles, whichever comes first",
+    "Patient interface: adult face mask"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Breathing Circuits",
@@ -1076,7 +1179,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": null,
    "images_gallery": [],
@@ -1122,7 +1226,12 @@
    "name": "BiWaze Cough Dual Lumen Circuit – Child Face Mask",
    "status": "published",
    "description": "Dual Lumen child patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, child face mask)",
-   "features": [],
+   "features": [
+    "Dual Lumen design: a tube within a tube separates the inhaled air from the exhaled mucus",
+    "Includes a custom viral/bacterial filter that connects directly to the BiWaze Cough control unit — no Patient Port Adapter needed",
+    "Replace the breathing circuit after 30 days or 90 therapy cycles, whichever comes first",
+    "Patient interface: child face mask"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Breathing Circuits",
@@ -1149,7 +1258,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": null,
    "images_gallery": [],
@@ -1195,7 +1305,12 @@
    "name": "BiWaze Cough Dual Lumen Circuit – Mouthpiece",
    "status": "published",
    "description": "Dual Lumen mouthpiece patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, mouthpiece)",
-   "features": [],
+   "features": [
+    "Dual Lumen design: a tube within a tube separates the inhaled air from the exhaled mucus",
+    "Includes a custom viral/bacterial filter that connects directly to the BiWaze Cough control unit — no Patient Port Adapter needed",
+    "Replace the breathing circuit after 30 days or 90 therapy cycles, whichever comes first",
+    "Patient interface: mouthpiece"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Breathing Circuits",
@@ -1222,7 +1337,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": null,
    "images_gallery": [],
@@ -1268,7 +1384,12 @@
    "name": "BiWaze Cough Dual Lumen Circuit – Trach",
    "status": "published",
    "description": "Dual Lumen trach patient circuit (includes coaxial breathing tube, coaxial bacterial/viral filter, trach adapter)",
-   "features": [],
+   "features": [
+    "Dual Lumen design: a tube within a tube separates the inhaled air from the exhaled mucus",
+    "Includes a custom viral/bacterial filter that connects directly to the BiWaze Cough control unit — no Patient Port Adapter needed",
+    "Replace the breathing circuit after 30 days or 90 therapy cycles, whichever comes first",
+    "Patient interface: flexible trach adapter"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Breathing Circuits",
@@ -1295,7 +1416,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": null,
    "images_gallery": [],
@@ -1448,14 +1570,20 @@
    ],
    "sku_count": 1,
    "source_url": null,
-   "documents": [],
+   "documents": [
+    {
+     "title": "A Patient Guide to BiWaze Cough System — ABM BC23575 Rev 5.0 AUG-2025",
+     "url": "https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf"
+    }
+   ],
    "videos": [],
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "documents": "abmrc.com lists this guide; its footer carries ABM part number BC23575 — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/c3866f01492b430e8ddd.jpg",
    "images_gallery": [
@@ -1509,7 +1637,13 @@
    "name": "BiWaze Cough Standard Circuit – Adult Face Mask",
    "status": "published",
    "description": "Standard adult patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, adult face mask) — choose Small (BC21088), Medium (BC21089) or Large (BC21273).",
-   "features": [],
+   "features": [
+    "Standard 22 mm, 6 ft (1.8 m) breathing tube delivers air between the control unit and the patient interface",
+    "Viral/bacterial filter prevents germs from entering or leaving the control unit, keeping the system clean",
+    "Connects to the control unit through the Patient Port Adapter",
+    "Replace the breathing circuit after 30 days or 90 therapy cycles, whichever comes first",
+    "Patient interface: adult face mask"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Breathing Circuits",
@@ -1562,7 +1696,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/85df23aae8923ebed004.jpg",
    "images_gallery": [
@@ -1624,7 +1759,13 @@
    "name": "BiWaze Cough Standard Circuit – Child Face Mask",
    "status": "published",
    "description": "Standard child patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, child face mask)",
-   "features": [],
+   "features": [
+    "Standard 22 mm, 6 ft (1.8 m) breathing tube delivers air between the control unit and the patient interface",
+    "Viral/bacterial filter prevents germs from entering or leaving the control unit, keeping the system clean",
+    "Connects to the control unit through the Patient Port Adapter",
+    "Replace the breathing circuit after 30 days or 90 therapy cycles, whichever comes first",
+    "Patient interface: child face mask"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Breathing Circuits",
@@ -1651,7 +1792,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/ccd97dfe963c5b2c3d9b.jpg",
    "images_gallery": [
@@ -1714,7 +1856,13 @@
    "name": "BiWaze Cough Standard Circuit – Mouthpiece",
    "status": "published",
    "description": "Standard mouthpiece patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, mouthpiece)",
-   "features": [],
+   "features": [
+    "Standard 22 mm, 6 ft (1.8 m) breathing tube delivers air between the control unit and the patient interface",
+    "Viral/bacterial filter prevents germs from entering or leaving the control unit, keeping the system clean",
+    "Connects to the control unit through the Patient Port Adapter",
+    "Replace the breathing circuit after 30 days or 90 therapy cycles, whichever comes first",
+    "Patient interface: mouthpiece"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Breathing Circuits",
@@ -1741,7 +1889,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
    "images_gallery": [
@@ -1796,7 +1945,13 @@
    "name": "BiWaze Cough Standard Circuit – Trach",
    "status": "published",
    "description": "Standard trach patient circuit (includes single path breathing tube, adapter, bacterial/viral filter, trach adapter)",
-   "features": [],
+   "features": [
+    "Standard 22 mm, 6 ft (1.8 m) breathing tube delivers air between the control unit and the patient interface",
+    "Viral/bacterial filter prevents germs from entering or leaving the control unit, keeping the system clean",
+    "Connects to the control unit through the Patient Port Adapter",
+    "Replace the breathing circuit after 30 days or 90 therapy cycles, whichever comes first",
+    "Patient interface: flexible trach adapter"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Breathing Circuits",
@@ -1823,7 +1978,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
    "images_gallery": [
@@ -2086,8 +2242,24 @@
    "name": "BiWaze Clear Dual Lumen – Adult Face Mask",
    "status": "published",
    "description": "Dual-Lumen Bacterial/Viral Filter, 2 – Corrugated Dual-Lumen® Breathing Tubes, 2 - Standard filter traps, Handset, Aerogen Solo, Adult Face Mask — choose Small (BK289), Medium (BK287) or Large (BK285).",
-   "features": [],
-   "specs": [],
+   "features": [
+    "Coaxial bacterial/viral filter designed to filter bacterial and viral particles from flowing in and out of the control unit",
+    "Coaxial breathing tube separates the inhalation (outer path) from the exhalation (inner path)",
+    "Standard filter trap prevents aerosol from traveling upstream by capturing exhaled nebulized moisture",
+    "Aerogen® Solo vibrating mesh nebulizer",
+    "Handset provides a comfortable grip for therapy delivery and a spacer for the nebulizer",
+    "Patient interface: adult face mask"
+   ],
+   "specs": [
+    {
+     "label": "HCPCS code referenced by ABM",
+     "value": "A7021"
+    },
+    {
+     "label": "Coverage",
+     "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
+    }
+   ],
    "warranty": null,
    "category": "Breathing Circuits",
    "subcategory": "BiWaze Clear Circuits",
@@ -2140,7 +2312,9 @@
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)"
+    "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part",
+    "specs_hcpcs": "ABM's published PDAC coding letter (DCN 24263003000000, Dec 6 2024) assigns A7021 to this BiWaze Clear Dual Lumen Breathing Circuit model, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2025/04/PDAC_BIWAZE-CLEAR.pdf (read 2026-11-18)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/490f148a99c297b3e29b.jpg",
    "images_gallery": [
@@ -2193,7 +2367,11 @@
    "name": "Carrying Bag",
    "status": "published",
    "description": "Soft sided carrying bag with ABM Respiratory Care logo",
-   "features": [],
+   "features": [
+    "Protects the control unit and the accessories",
+    "When traveling, the carrying bag is for carry-on luggage only — it will not protect the system in checked baggage",
+    "Do not place other baggage on top of the system"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Accessories & Replacement Parts",
@@ -2220,7 +2398,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf; ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/41e02caf73b1e4aa4fdf.jpg",
    "images_gallery": [
@@ -2296,7 +2475,10 @@
    "name": "Dual Lumen B/V Filter",
    "status": "published",
    "description": "Dual lumen bacteria/viral filters designed for the BiWaze platform systems – MOQ = 20",
-   "features": [],
+   "features": [
+    "Coaxial bacterial/viral filter designed to filter bacterial and viral particles from flowing in and out of the control unit",
+    "Do not wash the filter; discard it if it is damaged"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Accessories & Replacement Parts",
@@ -2323,7 +2505,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": null,
    "images_gallery": [],
@@ -2458,7 +2641,10 @@
    "name": "Nonin Sensor",
    "status": "published",
    "description": "Nonin soft sensor with 1 meter cable — Small (8000SS, BK373), Medium (8000SM, BK372) or Large (8000SL, BK374).",
-   "features": [],
+   "features": [
+    "BiWaze Clear's USB ports connect external SpO2 sensors",
+    "Do not attach unapproved devices to the BiWaze Clear system"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Accessories & Replacement Parts",
@@ -2511,7 +2697,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/2fa7890cffca9f44d720.jpg",
    "images_gallery": [
@@ -2566,7 +2753,10 @@
    "name": "Nonin SpO2 Pulse Oximeter",
    "status": "published",
    "description": "Nonin Xpod 3012 LP with USB Connector Data Format 2, 1 meter cable",
-   "features": [],
+   "features": [
+    "BiWaze Clear's USB ports connect external SpO2 sensors",
+    "Do not attach unapproved devices to the BiWaze Clear system"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Accessories & Replacement Parts",
@@ -2593,7 +2783,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/436243a9adbe4652b0a5.jpg",
    "images_gallery": [
@@ -2648,7 +2839,11 @@
    "name": "Patient Port Adapter",
    "status": "published",
    "description": "Adapter for a standard circuit to the BiWaze Cough control unit",
-   "features": [],
+   "features": [
+    "Connects a standard 22 mm viral/bacterial filter to the BiWaze Cough control unit",
+    "Not used with the Dual Lumen Breathing Circuit",
+    "Not replaced with a new breathing circuit — keep the patient port adapter"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Accessories & Replacement Parts",
@@ -2675,7 +2870,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/680918740b324aa0971b.jpg",
    "images_gallery": [
@@ -2730,7 +2926,9 @@
    "name": "Power Cord",
    "status": "published",
    "description": "Standard power cord – USA",
-   "features": [],
+   "features": [
+    "Connects to the control unit's AC power inlet to power the control unit and charge the battery"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Accessories & Replacement Parts",
@@ -2757,7 +2955,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf; ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/5f2c83ed4458fabb2619.jpg",
    "images_gallery": [
@@ -2812,7 +3011,11 @@
    "name": "Standard Filter Trap",
    "status": "published",
    "description": "Standard 22mm b/v filter used as a moisture trap with BiWaze Clear – MOQ = 20",
-   "features": [],
+   "features": [
+    "Part of the BiWaze Clear Dual Lumen Breathing Circuit",
+    "Prevents aerosol from traveling upstream by capturing exhaled nebulized moisture",
+    "Gently shake after each therapy session to remove any built-up nebulizer fluid"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Accessories & Replacement Parts",
@@ -2839,7 +3042,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/42c5363d6cb3725ece4d.jpg",
    "images_gallery": [
@@ -2894,7 +3098,9 @@
    "name": "Switzerland Power Cord",
    "status": "published",
    "description": "Power Cord - Switzerland",
-   "features": [],
+   "features": [
+    "Connects to the control unit's AC power inlet to power the control unit and charge the battery"
+   ],
    "specs": [],
    "warranty": null,
    "category": "Accessories & Replacement Parts",
@@ -2926,7 +3132,8 @@
    "field_provenance": {
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
-    "category": "HCPS catalog (what dealers see today)"
+    "category": "HCPS catalog (what dealers see today)",
+    "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf; ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
    "image": null,
    "images_gallery": [],
