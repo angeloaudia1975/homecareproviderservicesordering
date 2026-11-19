@@ -2069,6 +2069,13 @@
     "source": "PediFix OTC Wholesale Catalog 2021–2022 (HCPS copy pedifix-catalog-2025.pdf)",
     "note": "catalog page 59, colour swatch 'Plant Your Sugar Lips Here — #520' — colour swatch cropped from the catalog page 2026-11-03"
    }
+  ],
+  "D17-DEX": [
+   {
+    "url": "/assets/products/pedifix/gallery/fe64ffc3aed0336829dd.jpg",
+    "source": "PediFix OTC Wholesale Catalog 2021–2022 (HCPS copy pedifix-catalog-2025.pdf)",
+    "note": "catalog page 56, '#D17-DEX — Dexterity® 2-Sided counter top spinner display' — display photo cropped from the catalog page 2026-11-19"
+   }
   ]
  },
  "_retired": {
@@ -2799,9 +2806,9 @@
   "field_provenance": {
    "warranty": "not stated by the source — left blank",
    "category": "HCPS catalog (what dealers see today)",
-   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 30 — read against the page image 2026-11-03; pedifix.com product page https://www.pedifix.com/products/pedi-quick-safety-corn-callus-trimmer-p3035 (read 2026-11-03)",
-   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 30 — read against the page image 2026-11-03",
-   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 30 — read against the page image 2026-11-03"
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 58 (corrected 2026-11-19: printed page number; was given as the PDF page 30) — read against the page image 2026-11-03; pedifix.com product page https://www.pedifix.com/products/pedi-quick-safety-corn-callus-trimmer-p3035 (read 2026-11-03)",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 58 (corrected 2026-11-19: printed page number; was given as the PDF page 30) — read against the page image 2026-11-03",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 58 (corrected 2026-11-19: printed page number; was given as the PDF page 30) — read against the page image 2026-11-03"
   }
  },
  "gelstep-heel-pad-with-soft-spur-spot-covered": {
@@ -2933,7 +2940,7 @@
    "category": "HCPS catalog (what dealers see today)",
    "description": "pedifix.com product page https://www.pedifix.com/products/justfortoenails-enhanced-nail-polish-m905 (read 2026-11-03) (the JustForToenails™ product line)",
    "features": "pedifix.com product page https://www.pedifix.com/products/justfortoenails-enhanced-nail-polish-m905 (read 2026-11-03)",
-   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 30 — read against the page image 2026-11-03 (colour swatch and name); size from the HCPS catalog"
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 59 (corrected 2026-11-19: printed page number; was given as the PDF page 30) — read against the page image 2026-11-03 (colour swatch and name); size from the HCPS catalog"
   }
  },
  "sockless-terry-comfort-insoles": {
@@ -4203,5 +4210,31 @@
    "Supports Hammer Toes & Toe Tips",
    "Separates & Straightens 1st and 2nd Toes"
   ]
+ },
+ "dexterity-2-sided-counter-top-spinner-display-22-inh-x-13-5": {
+  "description": "PediFix's Dexterity® 2-Sided Counter-Top Spinner Display (#D17-DEX) is a double-sided counter-top spinner for PediFix's Dexterity™ Hand Therapy products. Contents and size are as listed in PediFix's 2021–2022 OTC Wholesale Catalog; the current assortment should be confirmed with PediFix.",
+  "features": [
+   "12 products (2–4 pieces each, assorted sizes as applicable)",
+   "1 double-sided display header (16\" x 7\")",
+   "25 product guides / referral brochures with holder",
+   "Out-of-stock tags"
+  ],
+  "specs": [
+   {
+    "label": "Item #",
+    "value": "D17-DEX"
+   },
+   {
+    "label": "Size",
+    "value": "22\" H x 13.5\" W x 12\" D"
+   }
+  ],
+  "field_provenance": {
+   "warranty": "not stated by the source — left blank",
+   "category": "HCPS catalog (what dealers see today)",
+   "description": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 56 — read against the page image 2026-11-19 (Dexterity™ Hand Therapy pages 56–57); not on pedifix.com",
+   "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 56 — read against the page image 2026-11-19",
+   "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 56 — read against the page image 2026-11-19"
+  }
  }
 }

@@ -1,6 +1,6 @@
 /* Portal improvements (owner 2026-11-18) — pure checks on the shop's own code, extracted VERBATIM from public/index.html:
-   Suggested retail (2 × the dealer cost of one order unit when there is neither an MSRP nor a MAP; a pack per its unit with
-   a known count; the four Gold-Standard lines untouched), markup over dealer cost, the order view's "not yet supplied" list,
+   Suggested retail (2 × the dealer cost of ONE PIECE when there is neither an MSRP nor a MAP — a pack with a stated count is
+   divided, a unit whose count isn't stated is never divided; the four Gold-Standard lines untouched), markup over dealer cost, the order view's "not yet supplied" list,
    and the brochure's sales contact (escaped; the shared validator is the admin site's file byte for byte).
      node test/portal-improvements.test.js */
 const fs = require('fs'), path = require('path');
@@ -13,22 +13,36 @@ const ok = (c, w) => { if (!c) throw new Error(w); };
 function grab(name) { const i = H.indexOf('function ' + name + '('); if (i < 0) throw new Error('missing ' + name); let j = H.indexOf('{', i), d = 0;
   for (let k = j; k < H.length; k++) { if (H[k] === '{') d++; else if (H[k] === '}') { d--; if (!d) return H.slice(i, k + 1); } } throw new Error('unbalanced ' + name); }
 const line = (a) => { const i = H.indexOf(a); return H.slice(i, H.indexOf('\n', i)); };
-const env = new Function(line('const SR_FROZEN=') + '\n' + ['packOf', 'srFrozen', 'msrpWord', 'suggestedRetail', 'qMarkupUnit', 'orderMissingList'].map(grab).join('\n') +
-  '\nreturn {packOf,srFrozen,msrpWord,suggestedRetail,qMarkupUnit,orderMissingList};')();
+const env = new Function(line('const SR_FROZEN=') + '\n' + ['packOf', 'srFrozen', 'msrpWord', 'srUnitOf', 'suggestedRetail', 'suggestedRetailText', 'quoteMapPerUnit', 'qMarkupUnit', 'orderMissingList'].map(grab).join('\n') +
+  '\nconst esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",\'"\':"&quot;"}[c])); const money=n=>"$"+Number(n).toFixed(2);\nreturn {packOf,srFrozen,msrpWord,suggestedRetail,suggestedRetailText,quoteMapPerUnit,qMarkupUnit,orderMissingList};')();
 t('Suggested retail = 2 × dealer cost of one order unit, only with neither MSRP nor MAP', () => {
-  eq(env.suggestedRetail({ manufacturer: 'dalton', base_price: 100 }), { amount: 200, unit: null, n: 1 });
+  eq(env.suggestedRetail({ manufacturer: 'dalton', base_price: 100 }), { amount: 200, each: false, unit: null, n: null, unitAmount: 200 });
+  eq(env.suggestedRetail({ manufacturer: 'dalton', base_price: 100, uom: 'Each' }), { amount: 200, each: false, unit: null, n: null, unitAmount: 200 }, 'a per-piece price is used directly');
   eq(env.suggestedRetail({ manufacturer: 'dalton', base_price: 100, msrp: 250 }), null, 'manufacturer MSRP wins');
   eq(env.suggestedRetail({ manufacturer: 'dalton', base_price: 100, map: 180 }), null, 'a MAP means advertising rules apply');
   eq(env.suggestedRetail({ manufacturer: 'dalton', base_price: 0 }), null, 'no cost → none');
 });
-t('a case-priced product: per its order unit with a known piece count; unknown count → none', () => {
-  eq(env.suggestedRetail({ manufacturer: 'dalton', base_price: 120, uom: 'Case', case_qty: 2 }), { amount: 240, unit: 'Case', n: 2 });
-  eq(env.suggestedRetail({ manufacturer: 'dalton', base_price: 120, case_qty: 4 }), { amount: 240, unit: '4-pack', n: 4 });
+t('a case-priced product: 2 × (case cost ÷ stated count) each, with the case equivalent; no stated count → never divided', () => {
+  eq(env.suggestedRetail({ manufacturer: 'dalton', base_price: 120, uom: 'Case', case_qty: 2 }), { amount: 120, each: true, unit: 'Case', n: 2, unitAmount: 240 });
+  eq(env.suggestedRetail({ manufacturer: 'dalton', base_price: 100, case_qty: 3 }), { amount: 66.67, each: true, unit: '3-pack', n: 3, unitAmount: 200 });
+  eq(env.suggestedRetail({ manufacturer: 'airavant-bongorx', base_price: 30, uom: 'Pack of 4' }), { amount: 60, each: false, unit: 'Pack of 4', n: null, unitAmount: 60 }, 'count only in text → per that unit');
+  eq(env.suggestedRetailText(env.suggestedRetail({ manufacturer: 'dalton', base_price: 120, uom: 'Case', case_qty: 2 })), 'Suggested retail $120.00 each · $240.00 per Case (2 each)');
+  eq(env.suggestedRetailText(env.suggestedRetail({ manufacturer: 'pedifix', base_price: 10, uom: 'Pack of 10', case_qty: 10 })), 'Suggested retail $2.00 each · $20.00 per Pack of 10');
+  eq(env.suggestedRetailText(env.suggestedRetail({ manufacturer: 'pedifix', base_price: 10, uom: 'Pair' })), 'Suggested retail $20.00 per Pair');
+  eq(env.suggestedRetailText(env.suggestedRetail({ manufacturer: 'dalton', base_price: 10, uom: '<b>' })), 'Suggested retail $20.00 per &lt;b&gt;', 'escaped');
 });
 t('the four Gold-Standard lines and Golden keep exactly what they show', () => {
   for (const m of ['climbing-steps', 'strongback-mobility', 'ovation-medical', 'bemis']) { eq(env.suggestedRetail({ manufacturer: m, base_price: 10 }), null, m); eq(env.msrpWord({ manufacturer: m, _msrp_suggested: true }), 'MSRP', m); }
   eq(env.suggestedRetail({ manufacturer: 'golden-technologies', _golden: true, base_price: 10 }), null);
   eq(env.msrpWord({ manufacturer: 'pedifix', _msrp_suggested: true }), 'Suggested retail'); eq(env.msrpWord({ manufacturer: 'pedifix' }), 'MSRP');
+});
+t('quote MAP floor is per order unit, the server rule (mapsFor): × count only when MAP is recorded per piece', () => {
+  eq(env.quoteMapPerUnit({ map: 50 }), 50, 'single item');
+  eq(env.quoteMapPerUnit({ map: 12, uom: 'Case', case_qty: 4, map_basis: 'each' }), 48);
+  eq(env.quoteMapPerUnit({ map: 40, uom: 'Case', case_qty: 4, map_basis: 'order_unit' }), 40);
+  eq(env.quoteMapPerUnit({ map: 12, uom: 'Case', case_qty: 4 }), null, 'unit not recorded → none (the server checks)');
+  eq(env.quoteMapPerUnit({ map: 12, uom: 'Pair', map_basis: 'each' }), null, 'no stated count → none');
+  eq(env.quoteMapPerUnit({ map: 30, uom: 'Case', case_qty: 4, msrp: 100, msrp_basis: 'order_unit' }), 30, 'an MSRP per order unit proves a per-pack MAP');
 });
 t('markup over dealer cost: $2,000 at 40% = $2,800; no cost → none', () => {
   eq(env.qMarkupUnit({ cost: 2000 }, 40), 2800); eq(env.qMarkupUnit({ cost: 19.99 }, 35), 26.99); eq(env.qMarkupUnit({ cost: null }, 40), null);
