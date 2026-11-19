@@ -8360,6 +8360,7 @@ async function goldenHistoryLoad(more){
     // An older page that could not be read never wipes the orders already shown.
     GH.state="ready"; GH.moreErr=true; GH.focus="more"; ghRender(); return;
   }
+  if(!r&&window.__PREVIEW__&&window.__PREVIEW__.token){ GH.state="preview"; ghRender(); return; }   // staff View as Dealer never reads a dealer's live Golden history (by design)
   if(!r||r.enabled!==true){ GH.state="off"; box.innerHTML=""; ghLive(""); return; }
   if(r.available!==true){
     GH.state=(r.reason==="branch_history_not_permitted")?"branch":(r.reason==="history_unavailable"||r.reason==="golden_unavailable"||r.retry)?"retry":"off"; GH.why=r.reason||"";
@@ -8378,6 +8379,7 @@ function ghRender(){
   ghLive(msg);   // one region that stays in the page, so changes are announced
   const live="";
   if(GH.state==="loading"&&!GH.orders.length){ box.innerHTML='<div class="card">'+head+live+'<div class="msg">Loading your Golden orders…</div></div>'; return; }
+  if(GH.state==="preview"){ box.innerHTML='<div class="card">'+head+'<div class="msg" role="status">Live Golden order history is not shown in View as Dealer (staff preview, read-only) \u2014 the dealer\u2019s own sign-in shows it.'+esc(ghOlderNote())+'</div></div>'; return; }
   if(GH.state==="branch"){ box.innerHTML='<div class="card">'+head+'<div class="msg" role="status">Golden order history is shown on your head-office account.</div></div>'; return; }
   if(GH.state==="retry"){ box.innerHTML='<div class="card">'+head+'<div class="msg" role="status">'+esc(ghRetryText())+' <button type="button" class="btn gh" data-ghretry>Try again</button></div></div>'; ghWire(); ghRestoreFocus(); return; }
   const cols=GH.pv?8:7;
@@ -8442,11 +8444,15 @@ function trkCopy(b){ const n=b.getAttribute("data-copy"); const done=()=>{ b.tex
   const manual=()=>{ let okc=false; const i=document.createElement("input"); i.value=n; document.body.appendChild(i); i.select(); try{ okc=document.execCommand("copy"); }catch(x){} i.remove();
     if(okc) done(); else { b.textContent="Tracking number: "+n; setTimeout(()=>{ b.textContent="Copy tracking number"; },6000); } };
   try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(n).then(done,manual); else manual(); }catch(e){ manual(); } }
-/* Golden answers history_unavailable both when it is briefly down AND while some of the dealer's portal orders are still
-   being matched to their Golden sales orders (Golden then withholds the history rather than show an order twice). */
-function ghRetryText(){ return GH.why==="history_unavailable"
-  ? "Your Golden order history isn\u2019t available here just now \u2014 Golden holds it back while some of your orders are still being matched to their Golden sales orders (or Golden is briefly unavailable). Please try again later."
-  : "Golden could not be reached just now."; }
+/* Golden answers history_unavailable when it cannot read the dealer's history (since 2026-11-19 a portal order still waiting
+   for its sales-order link is joined for display instead of withholding the history). */
+/* owner 2026-11-19: when live history fails, say current Golden history is unavailable and name the older records still
+   shown (HCPS-imported Golden months, through the newest one on file) — never let an import cut-off pass for current history. */
+function ghOlderNote(){ try{ const im=(HISTORY||[]).filter(o=>o.source==="imported"&&/golden/i.test(String(o.manufacturer||o.manufacturerName||""))).map(o=>String(o.date||"").slice(0,10)).filter(Boolean).sort();
+  return im.length?" The Golden records listed above are older HCPS imports of Golden\u2019s monthly reports, through "+dateShort(im[im.length-1])+"; they do not include more recent Golden orders.":""; }catch(e){ return ""; } }
+function ghRetryText(){ return (GH.why==="history_unavailable"
+  ? "Current Golden order history is unavailable right now (Golden did not return it). Please try again later."
+  : "Current Golden order history is unavailable right now \u2014 Golden could not be reached.")+ghOlderNote(); }
 /* what changed on a revised confirmation, against the earlier version of the same Golden SO (both kept as originals) */
 function ghConfChanges(x){ const c=x&&x.changes; if(!c||!Array.isArray(c.items)) return "";
   const money=v=>"$"+Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
