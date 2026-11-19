@@ -9433,7 +9433,7 @@ async function loadReimbView(){
   window.HCPSReimb.mount(host,{ api:(b)=>api(REIMB_API,b), prefill:pre, back:()=>showP360('resources') });
 }
 function openReimb(prefill){ REIMB_PREFILL=prefill||null; if(typeof showP360==="function") showP360('reimb'); }
-window.openReimb=openReimb;
+window.openReimb=openReimb;   /* the product detail page runs in another script scope: both are reached through window */
 /* A model's verified HCPCS code(s): the SKU's own catalog / record code and its published product page's billing codes.
    When both exist and disagree, neither is used (never pick one, never infer from a similar model). */
 function reimbCodesOf(p){
@@ -9453,6 +9453,7 @@ async function reimbCard(el,p){
   const c=reimbCodesOf(p);
   window.HCPSReimb.card(el,{ api:(b)=>api(REIMB_API,b), product:{name:p.name,code:p.code,codes:c.codes,conflict:c.conflict,why:c.why||''}, open:openReimb });
 }
+window.reimbCard=reimbCard;
 function renderResources(){
   const lines=(LINES&&LINES.length)?LINES.map(l=>({slug:l.slug,name:mfrNameOf(l.slug)})):(MFRLIST||[]);
   const mats=["Product catalog","Line brochure","Showroom / point-of-sale materials","Spec sheets","Warranty & care cards"];
@@ -10951,7 +10952,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
       ${curatedAlt.length?`<div class="pd-sect"><h2>Also available from other HCPS manufacturers</h2><div class="pd-rel">${curatedAlt.map(r=>{const mn=((state.manufacturers||[]).find(x=>x.slug===r.related_manufacturer)||{}).name||r.related_manufacturer||"";return `<div class="pd-relc"><div class="ri">${r.related_image?`<img src="${esc(r.related_image)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain" onerror="imgFail(this)">`:'<span class="ph">No image</span>'}</div><div class="rb"><div class="rn">${esc(r.related_name||r.related_code)}</div><div class="rp" style="font-weight:600;color:#6b7580;font-size:12px">${esc(mn)}</div></div></div>`;}).join("")}</div><div style="font-size:12px;color:#6b7580;margin-top:6px">Comparable options carried by HCPS — ask your rep about lines you don't yet have access to.</div></div>`:""}
     </div>`;
     if(typeof wireAdd==="function") wireAdd(host);
-    if(typeof reimbCard==="function") reimbCard(host.querySelector('#pdReimb'),p);
+    if(typeof window.reimbCard==="function") window.reimbCard(host.querySelector('#pdReimb'),p);
     if(p._golden){ goldenConfigWire(host); goldenMobWire(host); }
     if(G) host.querySelectorAll('[data-gcmp]').forEach(b=>b.addEventListener('click',function(){ host.querySelectorAll('[data-gcmp]').forEach(x=>x.classList.toggle('on',x===b)); const out=host.querySelector('#gcmpOut'); if(out) out.innerHTML='<p class="gmuted">Loading…</p>'; goldenCompare(G,b.getAttribute('data-gcmp'),out); }));
     if(!opts.keepScroll) window.scrollTo({top:0,behavior:"smooth"});
