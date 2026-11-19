@@ -1301,6 +1301,13 @@ header .htop{flex-wrap:nowrap;}
 <style id="p360-content">
 .pd-tagline{color:var(--orange);font-weight:800;font-size:14.5px;margin:2px 0 6px;}
 .pd-billing{font-size:12.5px;color:var(--gray);margin-top:6px;}.pd-billing b{color:var(--navy);}
+.pd-reimb{margin-top:10px;border:1px solid #d9e3ee;border-radius:10px;padding:10px 12px;background:#f7fafd;font-size:13px}
+.pd-reimb-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--navy)}.pd-reimb-s{font-size:12px;color:var(--gray);margin-top:3px}
+.pd-reimb-amt{font-size:22px;font-weight:800;color:var(--navy);margin-top:4px}.pd-reimb-amt span{font-size:12px;font-weight:600;color:var(--gray);margin-left:6px}
+.pd-reimb-miss{font-weight:800;color:#9b1c1c;margin-top:4px}.pd-reimb-miss span{font-weight:600;color:var(--gray)}
+.pd-reimb-go{display:inline-flex;align-items:center;min-height:44px;font-weight:700;cursor:pointer;color:var(--blue,#1681c2)}.pd-reimb-src{font-size:11.5px;color:var(--gray)}.pd-reimb-src a{word-break:break-word}
+.reimb-tile{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:0;margin-bottom:14px}.reimb-tile h3{margin:2px 0 4px}.reimb-tile .btn{min-height:44px;display:inline-flex;align-items:center}
+.reimb-eyebrow{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
 .pd-feat{margin:0;padding-left:20px;color:#39424e;font-size:14.5px;line-height:1.7;}
 .pd-opt{margin-bottom:12px;}.pd-opt .ol{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);margin-bottom:6px;}
 .pd-chip{display:inline-block;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;color:var(--navy);margin:0 6px 6px 0;}
@@ -7962,6 +7969,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   <div class="view" id="view-favorites"><div class="msg">Loading…</div></div>
   <div class="view" id="view-showroom"><div class="msg">Loading…</div></div>
   <div class="view" id="view-resources"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-reimb"><div class="msg">Loading…</div></div>
   <div class="view" id="view-account"><div class="msg">Loading…</div></div>
   <div class="view" id="view-ads"><div class="msg">Loading…</div></div>
   <div class="foot" id="foot"></div>
@@ -9413,10 +9421,43 @@ async function swSave(){
 
 /* resources — literature request center */
 async function loadResourcesView(){ await loadPricing(); renderResources(); }
+/* Provider reimbursement lookup (owner 2026-11-19): signed-in providers; the lookup itself is /assets/reimb.js and every
+   answer comes from reimbursement-api (admin site), which checks the sign-in. Opened from Resources & Support and from a
+   coded model on Shop Products (openReimb with its verified HCPCS code filled in). */
+const REIMB_API=API_BASE+"/reimbursement-api"; let REIMB_JS=null, REIMB_PREFILL=null;
+function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=2"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
+async function loadReimbView(){
+  const host=$("#view-reimb"); if(!host) return;
+  try{ await reimbLoadJs(); }catch(e){ host.innerHTML='<div class="ph"><div><h1>Reimbursement lookup</h1></div></div><div class="card"><div class="msg">The reimbursement lookup could not be loaded — please try again.</div></div>'; return; }
+  const pre=REIMB_PREFILL; REIMB_PREFILL=null;
+  window.HCPSReimb.mount(host,{ api:(b)=>api(REIMB_API,b), prefill:pre, back:()=>showP360('resources') });
+}
+function openReimb(prefill){ REIMB_PREFILL=prefill||null; if(typeof showP360==="function") showP360('reimb'); }
+window.openReimb=openReimb;
+/* A model's verified HCPCS code(s): the SKU's own catalog / record code and its published product page's billing codes.
+   When both exist and disagree, neither is used (never pick one, never infer from a similar model). */
+function reimbCodesOf(p){
+  /* The page's billing codes are shared by every model on that page: used only when the page lists exactly ONE code.
+     A page with several codes and a SKU without its own code → no verified code for this model (never pick one). */
+  const pick=s=>[...new Set((String(s||'').toUpperCase().match(/\b[A-V]\d{4}\b/g)||[]))];
+  const a=pick(p&&(p.hcpc||p.hcpcs)), b=pick(((p&&p._billing)||[]).join(' '));
+  if(a.length&&b.length&&!a.every(x=>b.includes(x))) return {codes:[],conflict:true,why:'The catalog and the product page list different codes for this model ('+a.join(', ')+' / '+b.join(', ')+'), so neither is used.'};
+  if(a.length) return {codes:a,conflict:false};
+  if(b.length===1) return {codes:b,conflict:false};
+  if(b.length>1) return {codes:[],conflict:false,why:'The product page lists several codes ('+b.join(', ')+') for its models, and none is assigned to this model.'};
+  return {codes:[],conflict:false};
+}
+async function reimbCard(el,p){
+  if(!el||!p) return;
+  try{ await reimbLoadJs(); }catch(e){ el.innerHTML=''; return; }
+  const c=reimbCodesOf(p);
+  window.HCPSReimb.card(el,{ api:(b)=>api(REIMB_API,b), product:{name:p.name,code:p.code,codes:c.codes,conflict:c.conflict,why:c.why||''}, open:openReimb });
+}
 function renderResources(){
   const lines=(LINES&&LINES.length)?LINES.map(l=>({slug:l.slug,name:mfrNameOf(l.slug)})):(MFRLIST||[]);
   const mats=["Product catalog","Line brochure","Showroom / point-of-sale materials","Spec sheets","Warranty & care cards"];
   $("#view-resources").innerHTML=`<div class="ph"><div><h1>Resources</h1><div class="sub">Literature request center &amp; dealer support</div></div></div>
+   <div class="card reimb-tile"><div><div class="reimb-eyebrow">Billing resource</div><h3>HCPCS reimbursement lookup</h3><div style="font-size:12.5px;color:var(--muted)">Look up a Medicare or Medicaid fee schedule amount by code, state, plan and date of service — with purchase or rental terms, coverage &amp; billing guidance and the payer's source.</div></div><a class="btn pri" onclick="openReimb()">Open reimbursement lookup →</a></div>
    <div class="grid2"><div>
      <div class="card" style="margin-top:0"><h3>Manufacturer Literature Request Center</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Select a line, choose materials &amp; quantities, and submit through HCPS.</div>
        <div class="fld2"><label>Manufacturer</label><select id="litMfr">${lines.map(m=>`<option value="${esc(m.slug)}">${esc(m.name)}</option>`).join("")}</select></div>
@@ -10185,7 +10226,7 @@ function showView(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
   $("#view-"+v).classList.add("on");
   document.querySelectorAll("#nav a").forEach(a=>a.classList.remove("on"));
-  const idx={dash:0,orders:2,showroom:3,reports:4,quotes:5,ads:6,resources:8,account:9,victoria:10}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
+  const idx={dash:0,orders:2,showroom:3,reports:4,quotes:5,ads:6,resources:8,reimb:8,account:9,victoria:10}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
   window.scrollTo({top:0});
   if(v==="orders")loadOrders();
   if(v==="reports")loadReports();
@@ -10196,6 +10237,7 @@ function showView(v){
   if(v==="favorites")loadFavView();
   if(v==="showroom")loadShowroom();
   if(v==="resources")loadResourcesView();
+  if(v==="reimb")loadReimbView();
   if(v==="account")loadAccountView();
   if(v==="ads")loadAdsView();
   if(v==="goldsvc")loadGoldSvc();
@@ -10853,6 +10895,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
           ${p._tagline?`<div class="pd-tagline">${esc(p._tagline)}</div>`:""}
           <div class="pd-code">Item # ${esc(p.code)}${variants.length>1?" · "+esc(p._axes?Object.values(p._axes).join(' · '):variantLabel(p)):""}${p.category?" · "+esc(p.category):""}${p.hcpc?" · HCPC "+esc(p.hcpc):""}</div>
           ${(p._billing&&p._billing.length)?`<div class="pd-billing">HCPC / PDAC <b>${p._billing.map(esc).join(' · ')}</b></div>`:""}
+          <div id="pdReimb" class="pd-reimb-host"></div>
           <div class="pd-pricebox">
             ${eff>0?`<div class="pd-plabel">${cp!=null?"Your contract price":"Your dealer price"}</div>
               <div class="pd-price"><sup>$</sup>${d}<sup>.${c}</sup></div>
@@ -10908,6 +10951,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
       ${curatedAlt.length?`<div class="pd-sect"><h2>Also available from other HCPS manufacturers</h2><div class="pd-rel">${curatedAlt.map(r=>{const mn=((state.manufacturers||[]).find(x=>x.slug===r.related_manufacturer)||{}).name||r.related_manufacturer||"";return `<div class="pd-relc"><div class="ri">${r.related_image?`<img src="${esc(r.related_image)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain" onerror="imgFail(this)">`:'<span class="ph">No image</span>'}</div><div class="rb"><div class="rn">${esc(r.related_name||r.related_code)}</div><div class="rp" style="font-weight:600;color:#6b7580;font-size:12px">${esc(mn)}</div></div></div>`;}).join("")}</div><div style="font-size:12px;color:#6b7580;margin-top:6px">Comparable options carried by HCPS — ask your rep about lines you don't yet have access to.</div></div>`:""}
     </div>`;
     if(typeof wireAdd==="function") wireAdd(host);
+    if(typeof reimbCard==="function") reimbCard(host.querySelector('#pdReimb'),p);
     if(p._golden){ goldenConfigWire(host); goldenMobWire(host); }
     if(G) host.querySelectorAll('[data-gcmp]').forEach(b=>b.addEventListener('click',function(){ host.querySelectorAll('[data-gcmp]').forEach(x=>x.classList.toggle('on',x===b)); const out=host.querySelector('#gcmpOut'); if(out) out.innerHTML='<p class="gmuted">Loading…</p>'; goldenCompare(G,b.getAttribute('data-gcmp'),out); }));
     if(!opts.keepScroll) window.scrollTo({top:0,behavior:"smooth"});
