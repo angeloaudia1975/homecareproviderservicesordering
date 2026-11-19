@@ -206,15 +206,17 @@
       "id": "shipment-tracking",
       "area": "tracking",
       "title": "Tracking your shipments",
-      "updated": "2026-11-15",
+      "updated": "2026-11-18",
       "open": "orders",
       "summary": "Orders & Tracking lists every order. When HCPS has shipment details from the manufacturer or carrier, they appear under the order.",
       "steps": [
         "Open Orders & Tracking (also a tab in Reports).",
+        "Choose View / print on an order to open the original order — its date, PO, products with their SKUs and configurations, quantities and the prices recorded on it — and print it.",
         "Each shipment shows its tracking number. When the carrier is known (UPS, FedEx, USPS, DHL) the number is a link to the carrier's tracking page.",
         "When HCPS records what a shipment contained, you see it under the order: \"Partially shipped\" with how many units have shipped, or \"Shipped in full\" once every unit has gone.",
         "Items the manufacturer has backordered are listed as Backordered, with the date HCPS recorded it.",
-        "Shipped dates, estimated ship dates (from the manufacturer) and estimated delivery dates (from the carrier) show only when they were confirmed.",
+        "The estimated ship date (from the manufacturer) and the estimated arrival (from the carrier) are shown separately, and only when they were confirmed.",
+        "The order view lists the details the manufacturer has not supplied yet, such as its sales order number or a tracking number.",
         "No tracking yet? Use Request tracking and HCPS will ask the manufacturer."
       ],
       "notes": [
@@ -224,10 +226,12 @@
       "ui_checks": [
         "Orders &amp; Tracking",
         "Request tracking",
+        "View / print",
         "carrier not confirmed",
-        "Estimated delivery",
+        "Estimated arrival",
         "Partially shipped",
-        "Backordered"
+        "Backordered",
+        "Not yet supplied by the manufacturer"
       ]
     },
     {

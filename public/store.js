@@ -171,7 +171,7 @@
   /* ---------- listing ---------- */
   function priceHtml(f){
     if(f.min==null) return '<div class="price call">Call for Price</div>';
-    var p=f.ps.filter(function(x){return x.price===f.min;})[0]; var tag=p.price_label==='MSRP'?'MSRP':'';
+    var p=f.ps.filter(function(x){return x.price===f.min;})[0]; var tag=p.price_label==='MSRP'?'MSRP':p.price_label==='Suggested retail'?'Suggested retail':'';
     var units={}; f.ps.forEach(function(x){ if(x.price!=null) units[x.price_unit||'']=1; }); var mixed=Object.keys(units).length>1;   /* a family mixing per-pack and each prices names no unit on the card */
     var unit=p.price_unit&&!mixed?(tag?' ':'')+esc(p.price_unit):'';
     var from=(f.min!==f.max||!f.allPriced)?'<span class="from">From</span>':'';
@@ -264,7 +264,7 @@
     var at=Object.keys(p.attributes||{}), a=d.address||{}, where=[a.street,a.city,[a.state,a.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     var feats=(p.features&&p.features.length?p.features:f.feats).slice(0,8);
     var rel=FAM.filter(function(x){return x!==f&&x.cat===f.cat;}).slice(0,4);
-    var pr=p.price!=null?'<div class="price" style="font-size:26px">'+money(p.price)+(p.price_label==='MSRP'||p.price_unit?'<small>'+(p.price_label==='MSRP'?'MSRP':'')+(p.price_unit?' '+esc(p.price_unit):'')+'</small>':'')+'</div>':'<div class="price call" style="font-size:20px">Call for Price</div>';
+    var pr=p.price!=null?'<div class="price" style="font-size:26px">'+money(p.price)+(p.price_label==='MSRP'||p.price_label==='Suggested retail'||p.price_unit?'<small>'+(p.price_label==='MSRP'||p.price_label==='Suggested retail'?p.price_label:'')+(p.price_unit?' '+esc(p.price_unit):'')+'</small>':'')+'</div>':'<div class="price call" style="font-size:20px">Call for Price</div>';
     $('main').innerHTML='<div class="crumbs"><a href="#" data-home="1">Home</a> › <a href="#category/'+encodeURIComponent(f.cat)+'">'+esc(f.cat)+'</a> › '+esc(f.name)+'</div>'+
       '<a class="back" href="#category/'+encodeURIComponent(f.cat)+'">← Back to '+esc(f.cat)+'</a>'+
       '<article class="pdp" data-k="'+esc(key)+'" data-c="'+esc(p.code)+'"><div class="pdp-top"><div class="gal"><div class="main" id="gmain">'+img(gal[0],f.name)+'</div>'+(gal.length>1?'<div class="thumbs">'+gal.slice(0,8).map(function(u,i){return '<button type="button" data-g="'+esc(u)+'" aria-pressed="'+(i===0)+'" aria-label="Photo '+(i+1)+'">'+img(u,'')+'</button>';}).join('')+'</div>':'')+'</div>'+
