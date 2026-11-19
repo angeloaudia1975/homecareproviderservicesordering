@@ -9429,7 +9429,7 @@ async function loadResourcesView(){ await loadPricing(); renderResources(); }
    answer comes from reimbursement-api (admin site), which checks the sign-in. Opened from Resources & Support and from a
    coded model on Shop Products (openReimb with its verified HCPCS code filled in). */
 const REIMB_API=API_BASE+"/reimbursement-api"; let REIMB_JS=null, REIMB_PREFILL=null;
-function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=5"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
+function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=6"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
 async function loadReimbView(){
   const host=$("#view-reimb"); if(!host) return;
   try{ await reimbLoadJs(); }catch(e){ host.innerHTML='<div class="ph"><div><h1>Reimbursement lookup</h1></div></div><div class="card"><div class="msg">The reimbursement lookup could not be loaded — please try again.</div></div>'; return; }
