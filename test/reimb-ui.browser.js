@@ -122,7 +122,8 @@ const settle = (pg) => pg.waitForFunction(() => !document.querySelector('[data-a
       let txt = await calcRun(pg, { code: 'E0260', state: 'KY', plan: 'medicare', location: 'nonrural', dos: '2026-11-19' }, { cost: '600' });
       ok(/Allowed amount over the period\s+\$820\.68/i.test(txt) && /months 1–3 at \$78\.16, months 4–13 at \$58\.62/.test(txt), '13 months: ' + txt.slice(0, 400));
       await pg.fill('#rbCalc [data-c="months"]', '6'); await pg.dispatchEvent('#rbCalc [data-c="months"]', 'change'); txt = await pg.$eval('#rbCalc', (e) => e.innerText);
-      ok(/Allowed amount over the period\s+\$410\.34/i.test(txt) && /Break-even\s+Not reached/i.test(txt), 'early stop'); await pg.close();
+      ok(/Allowed amount over the period\s+\$410\.34/i.test(txt) && /Break-even\s+Not reached/i.test(txt), 'early stop');
+      ok(/Estimated gross margin\s+−\$189\.66 \(-46\.2%\)/i.test(txt) && !/\$-/.test(txt), 'a loss reads −$189.66'); await pg.close();
     });
     await t('calculator — Golden lift chair: mechanism-only, margin unavailable until the dealer enters the mechanism cost', async () => {
       const pg = await page(browser);
