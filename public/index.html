@@ -1305,7 +1305,11 @@ header .htop{flex-wrap:nowrap;}
 .pd-reimb-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--navy)}.pd-reimb-s{font-size:12px;color:var(--gray);margin-top:3px}
 .pd-reimb-amt{font-size:22px;font-weight:800;color:var(--navy);margin-top:4px}.pd-reimb-amt span{font-size:12px;font-weight:600;color:var(--gray);margin-left:6px}
 .pd-reimb-miss{font-weight:800;color:#9b1c1c;margin-top:4px}.pd-reimb-miss span{font-weight:600;color:var(--gray)}
-.pd-reimb-go{display:inline-flex;align-items:center;min-height:44px;font-weight:700;cursor:pointer;color:var(--blue,#1681c2)}.pd-reimb-src{font-size:11.5px;color:var(--gray)}.pd-reimb-src a{word-break:break-word}
+.pd-reimb-go{display:inline-flex;align-items:center;min-height:44px;font-weight:700;cursor:pointer;color:var(--blue,#1681c2)}
+.pd-reimb-ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:8px 0}.pd-reimb-ctl label{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:700;color:var(--gray)}
+.pd-reimb-ctl select,.pd-reimb-ctl input{font-size:16px;min-height:44px;border:1px solid #d5dbe3;border-radius:8px;padding:4px 8px;background:#fff;min-width:0;width:100%;box-sizing:border-box}
+.pd-reimb-code{font-weight:800;color:var(--navy);margin-top:8px}.pd-reimb-row{border-top:1px solid #e3eaf2;padding:8px 0 4px;margin-top:6px}.pd-reimb-p{font-size:12px;font-weight:700;color:var(--navy)}
+.pd-reimb-cond{background:#fff7e6;border:1px solid #f1d39b;border-radius:6px;padding:6px 8px}.pd-reimb-links{display:flex;gap:16px;flex-wrap:wrap}.pd-reimb-src{font-size:11.5px;color:var(--gray)}.pd-reimb-src a{word-break:break-word}
 .reimb-tile{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:0;margin-bottom:14px}.reimb-tile h3{margin:2px 0 4px}.reimb-tile .btn{min-height:44px;display:inline-flex;align-items:center}
 .reimb-eyebrow{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
 .pd-feat{margin:0;padding-left:20px;color:#39424e;font-size:14.5px;line-height:1.7;}
@@ -9425,7 +9429,7 @@ async function loadResourcesView(){ await loadPricing(); renderResources(); }
    answer comes from reimbursement-api (admin site), which checks the sign-in. Opened from Resources & Support and from a
    coded model on Shop Products (openReimb with its verified HCPCS code filled in). */
 const REIMB_API=API_BASE+"/reimbursement-api"; let REIMB_JS=null, REIMB_PREFILL=null;
-function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=2"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
+function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=4"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
 async function loadReimbView(){
   const host=$("#view-reimb"); if(!host) return;
   try{ await reimbLoadJs(); }catch(e){ host.innerHTML='<div class="ph"><div><h1>Reimbursement lookup</h1></div></div><div class="card"><div class="msg">The reimbursement lookup could not be loaded — please try again.</div></div>'; return; }
@@ -9434,24 +9438,17 @@ async function loadReimbView(){
 }
 function openReimb(prefill){ REIMB_PREFILL=prefill||null; if(typeof showP360==="function") showP360('reimb'); }
 window.openReimb=openReimb;   /* the product detail page runs in another script scope: both are reached through window */
-/* A model's verified HCPCS code(s): the SKU's own catalog / record code and its published product page's billing codes.
-   When both exist and disagree, neither is used (never pick one, never infer from a similar model). */
-function reimbCodesOf(p){
-  /* The page's billing codes are shared by every model on that page: used only when the page lists exactly ONE code.
-     A page with several codes and a SKU without its own code → no verified code for this model (never pick one). */
-  const pick=s=>[...new Set((String(s||'').toUpperCase().match(/\b[A-V]\d{4}\b/g)||[]))];
-  const a=pick(p&&(p.hcpc||p.hcpcs)), b=pick(((p&&p._billing)||[]).join(' '));
-  if(a.length&&b.length&&!a.every(x=>b.includes(x))) return {codes:[],conflict:true,why:'The catalog and the product page list different codes for this model ('+a.join(', ')+' / '+b.join(', ')+'), so neither is used.'};
-  if(a.length) return {codes:a,conflict:false};
-  if(b.length===1) return {codes:b,conflict:false};
-  if(b.length>1) return {codes:[],conflict:false,why:'The product page lists several codes ('+b.join(', ')+') for its models, and none is assigned to this model.'};
-  return {codes:[],conflict:false};
-}
+/* A model's verified HCPCS code(s) are resolved on the server (reimbursement-api "product" → _reimb_map.resolve): the
+   reviewed Golden / Dalton / Ovation / ABM tables, the Golden lift-chair mechanism rule, then the catalog SKU code and the
+   published page's billing codes. The page sends only the facts it already holds. The dealer's own cost goes to the
+   dealer-only calculator in this signed-in view and nowhere else. */
 async function reimbCard(el,p){
   if(!el||!p) return;
   try{ await reimbLoadJs(); }catch(e){ el.innerHTML=''; return; }
-  const c=reimbCodesOf(p);
-  window.HCPSReimb.card(el,{ api:(b)=>api(REIMB_API,b), product:{name:p.name,code:p.code,codes:c.codes,conflict:c.conflict,why:c.why||''}, open:openReimb });
+  /* the dealer's cost per ONE item: a pack or case price is divided by its pack quantity (the allowance is per HCPCS unit) */
+  let cost=null, costNote=''; try{ const u=(!p._golden&&typeof unitPrice==='function')?Number(unitPrice(p,1)):Number(p.base_price); const q=Number(p.case_qty)>1?Number(p.case_qty):1;
+    cost=isFinite(u)&&u>0?Math.round(u/q*100)/100:null; if(cost!=null&&q>1) costNote='Your cost per item: the '+(p.uom||'pack')+' price ÷ '+q+' items. Check the payer\'s billing unit for this code.'; }catch(e){ cost=null; }
+  window.HCPSReimb.card(el,{ api:(b)=>api(REIMB_API,b), product:{name:p.name,code:p.code,manufacturer:p.manufacturer,category:p.category||'',sku_code:String(p.hcpc||p.hcpcs||''),page_codes:(p._billing||[]).map(String),cost,cost_note:costNote}, open:openReimb });
 }
 window.reimbCard=reimbCard;
 function renderResources(){
