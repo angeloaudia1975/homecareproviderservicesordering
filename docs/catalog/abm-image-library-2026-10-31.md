@@ -54,8 +54,10 @@ Status is kept current here; sourcing continues from official ABM material only.
 Other decisions recorded with this register:
 - **BK388** — *superseded 2026-11-19 (owner):* ABM's own BK388 document (Rev 5.0 SEP-2025) is the "BiWaze Clear System –
   Hospital and Long-Term Care Quick Reference Guide", so the row now uses that title ("BiWaze Clear Hospital and Long-Term
-  Care Quick Reference Guide") and the hospital guide stays linked to it as the matching document. The earlier price-list
-  wording "BiWaze Clear Home Care QRG" is retired; the item remains hidden from dealer ordering (owner 2026-11-02).
+  Care Quick Reference Guide") and the hospital guide stays linked to it as the matching document. The product page carries ABM's
+  title; the public catalog file row keeps the price-list wording for now, because changing it changes the file's identity and
+  needs a new stored commercial record (the build gate refuses it otherwise). The item stays hidden from dealer ordering
+  (owner 2026-11-02), so dealers see neither wording.
 - **BC21275** has no purchase restriction (none is printed on ABM's list). **BK536** keeps the printed rule (only with a
   BK367, at most 2 per system).
 - **Extended warranties** keep the documented maximum ("maximum 2 years extended"); clarification of the terms is on the
