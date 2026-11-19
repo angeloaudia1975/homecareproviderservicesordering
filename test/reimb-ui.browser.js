@@ -94,6 +94,12 @@ const settle = (pg) => pg.waitForFunction(() => !document.querySelector('[data-a
       ok(JSON.stringify(f({ hcpc: 'L0642/L0627', _billing: ['L0627 / L0642'] }).codes) === '["L0642","L0627"]', 'sku dual code agrees with page');
       const c = f({ hcpc: 'L4397', _billing: ['L4396'] }); ok(c.codes.length === 0 && c.conflict && /different codes/.test(c.why), 'conflict');
     });
+    await t('index.html wiring: the product page (another script scope) reaches the card and the lookup through window', () => {
+      const src = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+      ok(/window\.reimbCard=reimbCard;/.test(src) && /window\.openReimb=openReimb;/.test(src), 'exported');
+      ok(/typeof window\.reimbCard==="function"\) window\.reimbCard\(host\.querySelector\('#pdReimb'\),p\)/.test(src), 'detail page calls window.reimbCard');
+      ok(!/typeof reimbCard==="function"/.test(src), 'no bare cross-scope call');
+    });
     await t('an uncoded card shows the reason under the exact message', async () => {
       const pg = await page(browser);
       await pg.evaluate(() => window.HCPSReimb.card(document.getElementById('cardHost'), { api: window.API, product: { name: 'Brace', code: 'X', codes: [], why: 'The product page lists several codes (L0627, L0642) for its models, and none is assigned to this model.' }, open: () => {} }));
