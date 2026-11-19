@@ -78,3 +78,13 @@ appears in the catalog HCPS holds as `pedifix-catalog-2025.pdf` (2021–2022 edi
 Two earlier notes cited a PDF page index instead of the printed page: P3036 (blade refills) is on printed page **58** and
 M905RR (JustForToenails) on page **59**, not "page 30". Corrected in the source notes; every other cited page was checked
 against the page images and stands.
+
+## Photos dealers see — live count (2026-11-19, staff View as Dealer)
+The shop lists **488 PediFix part numbers; all 488 show a photo and none shows a placeholder** (every image URL answered
+as an image). D17-DEX shows the display photo from catalog page 56. P3036 and P3071-PACKET-100 have no photo on their
+product pages, but each carries a photo on the catalog layer, which the shop shows:
+- **P3036** — PediFix's own package of "Pedi-Quick Safety Corn & Callus Trimmer Replacement Blades — 6 reversible
+  replacement blades" (the right item). PF-8's "no photo" applies to the product page only.
+- **P3071-PACKET-100** — the photo is the **6 oz FungaSoap bottle, not the 3 ml packets**. It is the wrong item and needs
+  the owner's decision (remove it from the catalog layer, or keep it until PediFix supplies a packet photo). Not changed.
+
