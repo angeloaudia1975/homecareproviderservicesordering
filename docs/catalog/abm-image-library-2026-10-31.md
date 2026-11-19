@@ -52,9 +52,10 @@ Status is kept current here; sourcing continues from official ABM material only.
 | BK536 / BC21275 | BiWaze Clear / Cough Extended Warranty | Not applicable | A service, not a physical product — placeholder by design. |
 
 Other decisions recorded with this register:
-- **BK388** keeps the ABM price-list name and description ("BiWaze Clear Home Care QRG"). Its photo is page 1 of the guide printed
-  "BK388 Rev 5.0 SEP-2025", which ABM titles "Hospital and Long-Term Care" — the title difference is on the open questions
-  list for ABM; the price-list wording stands until it is reconciled.
+- **BK388** — *superseded 2026-11-19 (owner):* ABM's own BK388 document (Rev 5.0 SEP-2025) is the "BiWaze Clear System –
+  Hospital and Long-Term Care Quick Reference Guide", so the row now uses that title ("BiWaze Clear Hospital and Long-Term
+  Care Quick Reference Guide") and the hospital guide stays linked to it as the matching document. The earlier price-list
+  wording "BiWaze Clear Home Care QRG" is retired; the item remains hidden from dealer ordering (owner 2026-11-02).
 - **BC21275** has no purchase restriction (none is printed on ABM's list). **BK536** keeps the printed rule (only with a
   BK367, at most 2 per system).
 - **Extended warranties** keep the documented maximum ("maximum 2 years extended"); clarification of the terms is on the

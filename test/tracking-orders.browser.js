@@ -32,7 +32,7 @@ const ORDERS = [
         ok(/Partially shipped — 4 of 6 units/.test(r.text), r.text.slice(0, 400)); ok(/Backordered: P26-S ×2/.test(r.text) && /as of Nov 11, 2026/.test(r.text), 'backorder'); ok(/Contains P15 ×4/.test(r.text), 'contents'); });
       await t(`${label}: two shipments complete an order — "2 shipments", "Shipped in full — 3 of 3 units", each with its own tracking link`, () => {
         ok(/2 shipments/.test(r.text) && /Shipped in full — 3 of 3 units/.test(r.text), 'complete'); ok(r.html.includes('fedex.com') && r.html.includes('usps.com'), 'carrier links'); });
-      await t(`${label}: an estimate is never "shipped" — "Scheduled to ship" with the manufacturer's estimated date`, () => ok(/Scheduled to ship/.test(r.text) && /Estimated ship Nov 20, 2026 \(manufacturer\)/.test(r.text), 'scheduled'));
+      await t(`${label}: an estimate is never "shipped" — "Scheduled to ship" with the manufacturer's estimated date`, () => ok(/Scheduled to ship/.test(r.text) && /Estimated ship date Nov 20, 2026 \(manufacturer\)/.test(r.text), 'scheduled'));
       await t(`${label}: a shipment without recorded contents says so; carrier not confirmed is shown, never guessed`, () => ok(/Shipped — contents not listed/.test(r.text) && /PRO12345/.test(r.text) && /carrier not confirmed/.test(r.text), 'unknown'));
       await t(`${label}: no raw [items …] tags reach the dealer; no horizontal scroll`, () => { ok(!/\[items|\[backordered/.test(r.text), 'raw tags'); ok(r.sw <= r.cw + 1, 'scroll ' + r.sw + '>' + r.cw); });
       if (label === 'iphone') await page.screenshot({ path: path.join(process.env.SHOTS || '/tmp', 'tracking-iphone.png'), fullPage: false });

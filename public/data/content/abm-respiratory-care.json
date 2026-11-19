@@ -724,9 +724,9 @@
   "biwaze-clear-home-care-qrg": {
    "manufacturer": "abm-respiratory-care",
    "page_key": "biwaze-clear-home-care-qrg",
-   "name": "BiWaze Clear Home Care QRG",
+   "name": "BiWaze Clear Hospital and Long-Term Care Quick Reference Guide",
    "status": "published",
-   "description": "Quick Reference Guide for home care use of BiWaze Clear",
+   "description": "Hospital and long-term care quick reference guide for BiWaze Clear (ABM document BK388; for trained personnel)",
    "features": [],
    "specs": [],
    "warranty": null,
@@ -736,7 +736,7 @@
    "skus": [
     {
      "sku": "BK388",
-     "name": "BiWaze Clear Home Care QRG",
+     "name": "BiWaze Clear Hospital and Long-Term Care Quick Reference Guide",
      "size": "",
      "status": "hidden",
      "disabled": true,
@@ -754,7 +754,7 @@
    "source_url": null,
    "documents": [
     {
-     "title": "BiWaze® Clear Quick Reference Guide — ABM BK388 Rev 5.0 SEP-2025",
+     "title": "BiWaze® Clear System — Hospital and Long-Term Care Quick Reference Guide — ABM BK388 Rev 5.0 SEP-2025",
      "url": "https://abmrc.com/wp-content/uploads/2025/10/BiWaze-Clear-QRG-Hospital-Reference-Guide_InLine.pdf"
     }
    ],
@@ -762,10 +762,11 @@
    "sizing_note": null,
    "aliases": [],
    "field_provenance": {
-    "description": "HCPS catalog line only (no product-specific manufacturer source)",
+    "description": "ABM's own BK388 document (cover: 'Hospital and Long-Term Care Quick Reference Guide'; footer 'BK388 Rev 5.0 SEP-2025'; https://abmrc.com/wp-content/uploads/2025/10/BiWaze-Clear-QRG-Hospital-Reference-Guide_InLine.pdf, read 2026-11-19) — owner decision 2026-11-19: ABM identifies BK388 as the hospital guide, so the row uses ABM's hospital title (the earlier price-list wording 'BiWaze Clear Home Care QRG' is replaced)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "documents": "abmrc.com lists this guide; its footer carries ABM part number BK388 — https://abmrc.com/wp-content/uploads/2025/10/BiWaze-Clear-QRG-Hospital-Reference-Guide_InLine.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
+    "documents": "abmrc.com lists this guide; its cover reads 'Hospital and Long-Term Care Quick Reference Guide' and its footer carries ABM part number BK388 Rev 5.0 SEP-2025 — matches this row's part number and (after the 2026-11-19 retitle) its audience",
+    "name": "ABM's own BK388 document (cover: 'Hospital and Long-Term Care Quick Reference Guide'; footer 'BK388 Rev 5.0 SEP-2025'; https://abmrc.com/wp-content/uploads/2025/10/BiWaze-Clear-QRG-Hospital-Reference-Guide_InLine.pdf, read 2026-11-19) — owner decision 2026-11-19: ABM identifies BK388 as the hospital guide, so the row uses ABM's hospital title (the earlier price-list wording 'BiWaze Clear Home Care QRG' is replaced)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/0350c9c05a29f2f1f54f.jpg",
    "images_gallery": [
@@ -774,7 +775,7 @@
      "primary": true,
      "caption": "",
      "source": "https://abmrc.com/wp-content/uploads/2025/10/BiWaze-Clear-QRG-Hospital-Reference-Guide_InLine.pdf",
-     "note": "Page 1 of the BiWaze Clear Quick Reference Guide, printed 'BK388 Rev 5.0 SEP-2025'. NOTE: ABM titles this BK388 document 'Hospital and Long-Term Care', while the HCPS SKU is named 'Home Care QRG' — confirm the SKU name with ABM."
+     "note": "Page 1 of ABM's 'BiWaze Clear System – Hospital and Long-Term Care Quick Reference Guide', printed 'BK388 Rev 5.0 SEP-2025'."
     }
    ],
    "enrichment_flags": {
@@ -785,9 +786,9 @@
      "sources": [],
      "fields": {
       "description": {
-       "source": "HCPS catalog line only (no product-specific manufacturer source)",
-       "url": null,
-       "evidence": "Quick Reference Guide for home care use of BiWaze Clear"
+       "source": "ABM document BK388 (cover title)",
+       "url": "https://abmrc.com/wp-content/uploads/2025/10/BiWaze-Clear-QRG-Hospital-Reference-Guide_InLine.pdf",
+       "evidence": "Hospital and long-term care quick reference guide for BiWaze Clear (ABM document BK388; for trained personnel)"
       },
       "warranty": {
        "source": "not stated by the source — left blank",

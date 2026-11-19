@@ -1988,22 +1988,45 @@ function packOf(p){
   return { n, label: u || (n+'-pack') };
 }
 function packNote(p){ const k=packOf(p); return k ? `Dealer order unit = 1 ${k.label} (${k.n} each)` : ""; }
-/* SUGGESTED RETAIL (owner 2026-11-18). When a product has neither an MSRP nor a MAP, the shop shows 2 × the dealer cost of ONE
-   order unit (quantity 1, no tier, no contract price), labelled "Suggested retail" — never "MSRP". A pack (case) shows it per
-   that pack with its piece count, so the cost basis is the unit the dealer actually buys; a pack whose quantity isn't known shows
-   none. An MSRP the shop derived itself (_msrp_suggested) is worded the same way. The four Gold-Standard lines keep exactly what
-   they show today (their MSRP / MAP state is frozen). Dealer-only: the dealer's own cost is never on a public page here. */
+/* SUGGESTED RETAIL (owner 2026-11-18; unit basis 2026-11-19). When a product has neither an MSRP nor a MAP, the shop shows
+   2 × the dealer cost of ONE PIECE (quantity 1, no tier, no contract price), labelled "Suggested retail" — never "MSRP".
+   Prices are per ORDER UNIT. A pack / case whose piece count the record states (case_qty > 1) shows the per-piece figure
+   (case cost ÷ count × 2) with the case equivalent beside it; a unit whose count the record does NOT state ("Pair", "Kit",
+   "Pack of 4" without case_qty) is shown per that unit and never divided; a single item uses its price directly. An MSRP the
+   shop derived itself (_msrp_suggested) is worded the same way. The four Gold-Standard lines keep exactly what they show
+   today (their MSRP / MAP state is frozen). Dealer-only: the dealer's own cost is never on a public page here. */
 const SR_FROZEN=['climbing-steps','strongback-mobility','ovation-medical','bemis'];
 function srFrozen(p){ return SR_FROZEN.includes(String(p&&p.manufacturer||'').toLowerCase()); }
 function msrpWord(p){ return (p&&p._msrp_suggested&&!srFrozen(p))?'Suggested retail':'MSRP'; }
+function srUnitOf(p){
+  const pk=(typeof packOf==='function')?packOf(p):null; if(pk) return {label:pk.label,n:pk.n};
+  const u=String((p&&p.uom)||'').trim(); return (u&&!/^(each|ea|1)$/i.test(u))?{label:u,n:null}:null;
+}
 function suggestedRetail(p){
   if(!p||p._golden||srFrozen(p)) return null;
   if(p.msrp!=null&&p.msrp!==''&&Number(p.msrp)>0) return null;
   if(p.map!=null&&p.map!==''&&Number(p.map)>0) return null;
   const base=Number(p.base_price); if(!(base>0)) return null;
-  const pk=(typeof packOf==='function')?packOf(p):null;
-  if(pk&&!(pk.n>1)) return null;
-  return {amount:Math.round(base*2*100)/100, unit:pk?pk.label:null, n:pk?pk.n:1};
+  const u=srUnitOf(p), perUnit=Math.round(base*2*100)/100;
+  if(u&&u.n>1) return {amount:Math.round(base*2/u.n*100)/100, each:true, unit:u.label, n:u.n, unitAmount:perUnit};
+  return {amount:perUnit, each:false, unit:u?u.label:null, n:null, unitAmount:perUnit};
+}
+/* MAP per ORDER UNIT for a quote line (owner 2026-11-19) — the same rule the server enforces (admin _retail_price.js mapsFor):
+   a single item → its MAP; a pack → MAP × count when MAP is per piece, as is when per order unit; a pack whose MAP unit or piece
+   count isn't recorded → no comparable MAP (the server checks the offer), except an MSRP stated per order unit that proves the
+   MAP is per pack. Never a guess. */
+function quoteMapPerUnit(p){
+  const m=Number(p&&p.map); if(!(m>0)) return null;
+  const u=String((p&&p.uom)||'').trim(), q=Number(p&&p.case_qty);
+  if(!(q>1||(u&&!/^(each|ea|1)$/i.test(u)))) return m;
+  const basis=p.map_basis;
+  if(basis!=='each'&&basis!=='order_unit'){ const ms=Number(p.msrp); return (ms>0&&q>1&&p.msrp_basis==='order_unit'&&m*q>ms+0.005)?m:null; }
+  return basis==='order_unit'?m:(q>1?Math.round(m*q*100)/100:null);
+}
+function suggestedRetailText(sr){
+  if(!sr) return "";
+  return sr.each ? `Suggested retail ${money(sr.amount)} each · ${money(sr.unitAmount)} per ${esc(sr.unit)}${/\d/.test(sr.unit)?'':` (${sr.n} each)`}`
+                 : `Suggested retail ${money(sr.amount)}${sr.unit?` per ${esc(sr.unit)}`:""}`;
 }
 /* MSRP / MAP BASIS FROM THE RECORD (Manufacturer Center Phase 4, 2026-10-10). On a pack SKU the
    manufacturer quotes MSRP and MAP either per piece ("each") or for the order unit. The master record
@@ -2053,7 +2076,7 @@ function priceHtml(p){
   const msrpFloor=msrpEach ? Number(p.base_price)/msrpPack.n : Number(p.base_price);
   const _sr=(cp==null&&typeof suggestedRetail==='function')?suggestedRetail(p):null;
   const msrp = (cp==null && p.msrp!=null && Number(p.msrp)>msrpFloor) ? `<div class="msrp">${typeof msrpWord==='function'?msrpWord(p):"MSRP"} ${money(p.msrp)}${msrpEach?" each":""}</div>`
-    : (_sr ? `<div class="msrp">Suggested retail ${money(_sr.amount)}${_sr.unit?` per ${esc(_sr.unit)}`:""}</div>` : "");
+    : (_sr ? `<div class="msrp">${suggestedRetailText(_sr)}</div>` : "");
   const note=dealerPriceNote(p.price_note, p);
   /* One line, from the field, for every product that has a MAP — instead of only the
      ones somebody remembered to type it into. */
@@ -8452,9 +8475,14 @@ function quoteEntry(p, line, upgrade){
   const m=Number(q.msrp); const msrp=(!q._msrp_suggested&&isFinite(m)&&m>0)?m:null;
   let cost=null; try{ const u=Number(unitPrice(q,1)); cost=isFinite(u)&&u>0?u:null; }catch(e){}
   const opt=quoteOptionText(p);
+  /* owner 2026-11-19: a quote line is priced per ORDER UNIT (the server checks offers against MAP per order unit), so the
+     cost, the markup result and the MAP floor shown here are all per that unit; a per-piece MAP on a pack is multiplied out. */
+  const pk=(typeof packOf==='function')?packOf(q):null, mapRaw=(q.map!=null&&q.map!==''&&isFinite(Number(q.map))&&Number(q.map)>0)?Number(q.map):null;
+  const mapU=(typeof quoteMapPerUnit==='function')?quoteMapPerUnit(q):(pk?null:mapRaw);
+  const unitTxt=pk?(pk.label+(/\d/.test(pk.label)?'':' ('+pk.n+' each)')):((q.uom&&!/^(each|ea|1)$/i.test(String(q.uom).trim()))?String(q.uom).trim():'');
   return {key:line.slug+'|'+p.code+(upgrade?'|u='+upgrade:''), code:p.code, mfr:line.slug, mfrName:line.name, family:groupDisplayName(p)||p.name||p.code,
     option:[opt, upgrade?('Upgrade: '+upgrade):''].filter(Boolean).join(' · '), name:p.name||p.code, msrp, msrpEach:!!(msrp!=null&&typeof msrpIsEach==='function'&&msrpIsEach(q)),
-    cost, map:(q.map!=null&&q.map!==''&&isFinite(Number(q.map)))?Number(q.map):null, category:p.category||'', upgrade:upgrade||'', image:quoteImg(p)};
+    cost, map:mapU, mapAsPublished:mapRaw, unit:unitTxt, category:p.category||'', upgrade:upgrade||'', image:quoteImg(p)};
 }
 let QUOTE_UNAVAILABLE=[];   /* lines whose catalog could not be loaded — said on screen, never silently missing */
 async function hubStoreCatalog(){
@@ -8528,7 +8556,8 @@ async function loadPricing(){
         if(!priced) items=items.map(p=>Object.assign({},p,{base_price:null,msrp:null,map:null}));
         for(const p of items){
           const code=String(p.code||'').trim(); if(!code) continue;
-          const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(p.map!=null?Number(p.map):null),cost:(p.base_price!=null?(typeof dealerCostOf==='function'?dealerCostOf(p,m.slug):Number(p.base_price)):null),category:p.category||'',name:p.name||'',mfrName:m.name};
+          const _mp=(p.map!=null&&Number(p.map)>0)?Number(p.map):null;
+          const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(typeof quoteMapPerUnit==='function')?quoteMapPerUnit(p):(((typeof packOf==='function')&&packOf(p))?null:_mp),cost:(p.base_price!=null?(typeof dealerCostOf==='function'?dealerCostOf(p,m.slug):Number(p.base_price)):null),category:p.category||'',name:p.name||'',mfrName:m.name};
           PRICE[m.slug+'|'+code]=rec;   /* history / favourites / existing quotes — not an offer */
         }
       }catch(e){}
@@ -8555,8 +8584,8 @@ async function buildQuoteCatalog(sig){
       for(const e of rows){
         const opt={code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category,account:e.account!==false};
         quote.push(opt);
-        if(!e.upgrade) list.push({code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:e.map,msrp:e.msrp,category:e.category,account:e.account!==false});
-        PRICE[e.key]={msrp:e.msrp,map:e.map,cost:e.cost,category:e.category,name:e.family,option:e.option,sku:e.code,mfrName:e.mfrName,msrpEach:e.msrpEach,quotable:true,image:e.image};
+        if(!e.upgrade) list.push({code:e.key.slice(e.mfr.length+1),mfr:e.mfr,mfrName:e.mfrName,name:e.family+(e.option?' — '+e.option:''),cost:e.cost,map:(e.mapAsPublished!==undefined?e.mapAsPublished:e.map),msrp:e.msrp,category:e.category,account:e.account!==false});
+        PRICE[e.key]={msrp:e.msrp,map:e.map,cost:e.cost,unit:e.unit||'',category:e.category,name:e.family,option:e.option,sku:e.code,mfrName:e.mfrName,msrpEach:e.msrpEach,quotable:true,image:e.image};
       }
     }
   }catch(e){}
@@ -8593,7 +8622,7 @@ async function applyDefaultRetail(list){
     const r=await quotesCall({action:'default_retail',items:need.slice(i,i+500).map(e=>({manufacturer:e.mfr,code:e.code}))});
     if(!(r&&r.ok&&Array.isArray(r.items))) break;
     for(const x of r.items){ if(!x) continue; const k=x.manufacturer+'|'+x.code; checked.add(k); if(x.active===false) hidden.push(k);
-      if(PRICE&&PRICE[k]&&Number(x.map)>0&&!(Number(PRICE[k].map)>0)) PRICE[k].map=Number(x.map); }
+      if(PRICE&&PRICE[k]&&Number(x.map)>0) PRICE[k].map=Number(x.map); }
     const by=new Map(r.items.filter(x=>x&&Number(x.price)>0).map(x=>[x.manufacturer+'|'+x.code,x]));
     for(const e of need){ const d=by.get(e.mfr+'|'+e.code); if(!d) continue; const k=e.mfr+'|'+e.code;
       e.msrp=Number(d.price); e.msrpCalc=d.source==='calculated';
@@ -8871,7 +8900,7 @@ function quotableLine(slug){ if(typeof isRetiredSlug==="function"&&isRetiredSlug
 function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">Price on Request</span>'; }
 function quoteItemHtml(r){ return `${esc(r.name)}<div style="font-size:10.5px;color:var(--muted)">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)}</div>`; }
 function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const sn=(typeof QSNAP!=="undefined"&&QSNAP[k])||{};const p=(PRICE&&PRICE[k])||((typeof GQUOTE!=="undefined"&&GQUOTE[k])||sn);
-  return {key:k,mfr,code,sku:p.sku||sn.sku||code.split("|u=")[0],name:p.name||sn.name||code,option:p.option||sn.option||"",mfrName:p.mfrName||sn.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach,msrpCalc:!!p.msrpCalc,image:p.image||sn.image||"",map:(!/^golden/.test(mfr)&&!/\|u=/.test(code)&&Number(p.map)>0)?Number(p.map):null,cost:(!/\|u=/.test(code)&&Number(p.cost)>0)?Number(p.cost):null};}); }
+  return {key:k,mfr,code,sku:p.sku||sn.sku||code.split("|u=")[0],name:p.name||sn.name||code,option:p.option||sn.option||"",mfrName:p.mfrName||sn.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach,msrpCalc:!!p.msrpCalc,image:p.image||sn.image||"",unit:p.unit||"",map:(!/^golden/.test(mfr)&&!/\|u=/.test(code)&&Number(p.map)>0)?Number(p.map):null,cost:(!/\|u=/.test(code)&&Number(p.cost)>0)?Number(p.cost):null};}); }
 /* ---------- C3-07 Stage 4: CUSTOMER QUOTES (owner 2026-11-05; pricing choices D3) ----------
    Each line has a quantity and ONE customer price basis — the three approved choices:
      MSRP     the manufacturer's verified suggested retail (never a 2x estimate; an upgraded configuration has none)
@@ -8942,10 +8971,10 @@ function qDelAt(i){ const k=quotePicked()[i]; if(k){ QUOTE=QUOTE.filter(x=>x!==k
 function qLineHtml(r,i){
   const m=qMeta(r), saved=qSaved(r), u=qUnit(r);
   const opt=(v,label,on)=>`<option value="${v}" ${m.basis===v?'selected':''} ${on?'':'disabled'}>${label}</option>`;
-  return `<div class="rl qline"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)} · ${esc(r.mfrName)}</div>
+  return `<div class="rl qline"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)} · ${esc(r.mfrName)}${r.unit?` · priced per ${esc(r.unit)}`:""}</div>
     <div class="qctl"><label>Qty <input type="number" min="1" max="9999" step="1" value="${m.qty}" aria-label="Quantity for ${esc(r.name)}" onchange="qSetQty(${i},this.value)"></label>
       <select aria-label="Customer price for ${esc(r.name)}" onchange="qSetBasis(${i},this.value)">${opt('msrp',(r.msrpCalc?'Retail price (HCPS calculated) ':'MSRP ')+(qMsrpOk(r)?qMoney(r.msrp)+(r.msrpEach?' each':''):'— not published'),qMsrpOk(r))}${opt('retail','My retail '+(saved!=null?qMoney(saved):'— none saved'),saved!=null)}${opt('map','Manufacturer advertised price (MAP) '+(r.map?qMoney(r.map):'— none on file'),r.map>0)}${r.cost>0?`<option value="markup">Markup over my dealer cost…</option>`:''}${opt('once',m.fromMk?'Markup over my dealer cost':'One-time price',true)}${opt('none','No price (Price on Request)',true)}</select>
-      ${m.basis==='once'&&m.fromMk&&r.cost>0?`<label class="qmk">Markup <input type="number" min="0" max="1000" step="1" value="${esc(String(m.mk))}" aria-label="Markup over dealer cost for ${esc(r.name)}, percent" onchange="qSetMarkup(${i},this.value)"> % <span class="qmk-n">= ${m.unit>0?qMoney(m.unit):'—'} (your cost ${qMoney(r.cost)} × ${(1+m.mk/100).toFixed(2)})${r.map?` · MAP floor ${qMoney(r.map)}`:''}</span></label>`:''}
+      ${m.basis==='once'&&m.fromMk&&r.cost>0?`<label class="qmk">Markup <input type="number" min="0" max="1000" step="1" value="${esc(String(m.mk))}" aria-label="Markup over dealer cost for ${esc(r.name)}, percent" onchange="qSetMarkup(${i},this.value)"> % <span class="qmk-n">= ${m.unit>0?qMoney(m.unit):'—'} ${r.unit?` per ${esc(r.unit)}`:''} (your cost ${qMoney(r.cost)} × ${(1+m.mk/100).toFixed(2)})${r.map?` · MAP floor ${qMoney(r.map)}${r.unit?` per ${esc(r.unit)}`:''}`:''}</span></label>`:''}
       ${m.basis==='once'&&!m.fromMk?`<input class="qonce" inputmode="decimal" placeholder="$0.00" value="${m.unit>0?m.unit:''}" aria-label="One-time price for ${esc(r.name)}" onchange="qSetUnit(${i},this.value)">
         <button type="button" class="btn gh acsm" onclick="qSaveRetail(${i})" ${m.unit>0&&!QLOCRETAIL?'':'disabled'} ${QLOCRETAIL?'title="Set this location\'s prices in My Retail Prices"':''}>Save as my retail price</button>`:''}
       ${qRef(r)!=null||(['retail','once','map'].includes(m.basis)&&r.msrp!=null&&!r.msrpCalc)?`<label class="qcmp" style="font-size:12px;display:inline-flex;gap:5px;align-items:center;min-height:44px"><input type="checkbox" ${m.compare!==false?'checked':''} onchange="qSetCompare(${i},this.checked)"> Show MSRP &amp; savings</label>`:''}
@@ -10487,10 +10516,10 @@ function sfPricesRender(){
    ${SFP.mkPrev?sfpMarkupPreviewHtml():''}`:''}
    <div class="sfp-wrap"><table class="sfp"><thead><tr><th>Product</th><th>Customers see</th><th>${ed?'Your retail price':'Your saved price'}</th></tr></thead><tbody>
    ${shown.map(p=>{ const k=sfpKey(p), dv=SFP.dirty[k], cur=dv!==undefined?dv:sfpCurrent(p);
-     const why=(p.flags||[]).map(x=>d.flag_text[x.flag]+(x.map?' MAP '+money(x.map)+'.':'')).filter(Boolean)[0];
+     const why=(p.flags||[]).map(x=>d.flag_text[x.flag]+(x.map?' MAP '+cents(x.map)+'.':'')).filter(Boolean)[0];
      return `<tr><td><b>${esc(p.name)}</b><div class="sf-s">${esc(p.code)} · ${esc(p.category)}</div></td>
-       <td>${p.price!=null?money(p.price):'—'} <span class="sfp-src s-${esc(p.source)}">${esc(SFP_SRC[p.source]||'')}</span>${p.price_unit?`<div class="sf-s">${esc(p.price_unit)}</div>`:''}${why?`<div class="sfp-why">${esc(why)}</div>`:''}${p.calculated&&p.source!=='calculated'?`<div class="sf-s">HCPS calculated retail: ${money(p.calculated)}</div>`:''}</td>
-       <td>${ed?`<input class="sfp-in" inputmode="decimal" aria-label="Your price for ${esc(p.name)}" data-k="${esc(k)}" value="${cur!=null?esc(Number(cur).toFixed(2)):''}" placeholder="—" onchange="sfpSet(this)">`:(cur!=null?money(cur):'—')}</td></tr>`; }).join('')}
+       <td>${p.price!=null?cents(p.price):'—'} <span class="sfp-src s-${esc(p.source)}">${esc(p.source==='calculated'&&p.price_label==='Suggested retail'?'Suggested retail (2 × your cost)':(SFP_SRC[p.source]||''))}</span>${p.price_unit?`<div class="sf-s">${esc(p.price_unit)}</div>`:''}${p.price_each!=null?`<div class="sf-s">Equivalent to ${cents(p.price_each)} each</div>`:''}${why?`<div class="sfp-why">${esc(why)}</div>`:''}${p.calculated&&p.source!=='calculated'?`<div class="sf-s">HCPS calculated retail: ${cents(p.calculated)}${p.price_unit&&p.price_unit!=='each'?' '+esc(p.price_unit):''}</div>`:''}</td>
+       <td>${ed?`<input class="sfp-in" inputmode="decimal" aria-label="Your price for ${esc(p.name)}" data-k="${esc(k)}" value="${cur!=null?esc(Number(cur).toFixed(2)):''}" placeholder="—" onchange="sfpSet(this)">`:(cur!=null?cents(cur):'—')}</td></tr>`; }).join('')}
    </tbody></table></div>${rows.length>200?`<div class="sf-s">Showing 200 of ${rows.length} — narrow the list to see the rest.</div>`:''}
    ${ed?`<div class="sf-acts"><a class="btn pri" onclick="sfpSave()">${n?`Save ${n} price change${n===1?'':'s'}`:'Save prices'}</a> <span class="sf-msg" id="sfpMsg">${esc(SFP.msg)}</span></div>`:''}`;
 }
@@ -10729,7 +10758,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
             ${eff>0?`<div class="pd-plabel">${cp!=null?"Your contract price":"Your dealer price"}</div>
               <div class="pd-price"><sup>$</sup>${d}<sup>.${c}</sup></div>
               ${cp!=null?`<div class="pd-contract">Contract price set by HCPS${(p.base_price!=null&&Number(p.base_price)>eff)?` · <span style="color:#8a94a6;text-decoration:line-through;font-weight:600">List ${money(p.base_price)}</span>`:""}</div>`:""}
-              ${msrp?`<div class="pd-msrp">${msrpWord(p)} ${money(msrp)}</div>`:(cp==null&&suggestedRetail(p)?`<div class="pd-msrp">Suggested retail ${money(suggestedRetail(p).amount)}${suggestedRetail(p).unit?` per ${esc(suggestedRetail(p).unit)}`:""}</div>`:"")}
+              ${msrp?`<div class="pd-msrp">${msrpWord(p)} ${money(msrp)}</div>`:(cp==null&&suggestedRetail(p)?`<div class="pd-msrp">${suggestedRetailText(suggestedRetail(p))}</div>`:"")}
               ${mapPrice?`<div class="pd-map" title="Minimum advertised price — do not advertise below this">${p._golden?"eMAP":"MAP"} ${money(mapPrice)}</div>`:""}
               ${margin?`<div class="pd-margin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Est. retail margin ${money(margin)}${marginPct?" · "+marginPct+"%":""}</div>`:""}`
               :`<div class="pd-plabel">Pricing</div><div class="pd-price" style="font-size:20px">${p._golden?(GOLDEN.cat&&GOLDEN.cat.prices?"Price on request":"Dealer price shows once your Golden account is linked"):((typeof isHeldSlug==="function"&&isHeldSlug(p.manufacturer))?(typeof HELD_NOTE!=="undefined"?HELD_NOTE:"Pricing being verified"):(state.dealer?"Call for pricing":"Log in for pricing"))}</div>

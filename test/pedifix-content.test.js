@@ -35,10 +35,10 @@ t('displays: description, contents and specs, each with PediFix provenance', () 
     const pv = p.field_provenance || {}; for (const f of ['description', 'features', 'specs']) if (!/2026-11-03/.test(pv[f] || '') || !/PediFix|pedifix\.com/.test(pv[f])) throw new Error(c + ' provenance ' + f);
   }
 });
-t('the 10 catalog photos are attached and exist; D17-DEX, P3036 and P3071-PACKET-100 stay without a photo (no PediFix photo)', () => {
-  for (const c of ['D1', 'D2', 'D3', 'D27', 'D37', 'D40', 'D40-2', 'D40-3', 'D77', 'M905RR']) { const p = pageOf(c);
+t('the 11 catalog photos are attached and exist (D17-DEX from catalog page 56, 2026-11-19); P3036 and P3071-PACKET-100 stay without a photo (no PediFix photo)', () => {
+  for (const c of ['D1', 'D2', 'D3', 'D27', 'D37', 'D40', 'D40-2', 'D40-3', 'D77', 'M905RR', 'D17-DEX']) { const p = pageOf(c);
     if (!p.image || !fs.existsSync(R('public' + p.image))) throw new Error(c + ' ' + p.image); }
-  for (const c of ['D17-DEX', 'P3036', 'P3071-PACKET-100']) { const p = pageOf(c); if (p.image || (p.images_gallery || []).length) throw new Error(c + ' has a photo'); }
+  for (const c of ['P3036', 'P3071-PACKET-100']) { const p = pageOf(c); if (p.image || (p.images_gallery || []).length) throw new Error(c + ' has a photo'); }
 });
 t('empty or weak pages now carry sourced copy (displays, felt / foam rolls, FungaFiles, Darco, blades, packets, soaps)', () => {
   for (const c of ['8520', '8620', 'P3012', '6210-M-M', 'P3036', '5100-C-S', 'P3070', 'P3071-PACKET-100', 'P3078-PACKET-100', 'M905RR']) {
@@ -51,9 +51,9 @@ t('kit contents match the PediFix catalog where they agree; D09-TTU states no co
   if (/\(\d\)/.test(s('D09-TTU'))) throw new Error('D09-TTU must not state counts');
   if (!/3 pairs \(#P220-3\)/.test(JSON.stringify(pageOf('P220-3').specs))) throw new Error('P220-3');
 });
-t('withheld values stay out: P244 has no invented description, D17-DEX has no copy', () => {
+t('withheld values stay out: P244 has no invented description; D17-DEX copy only from catalog page 56 (owner 2026-11-19: the catalog does list it)', () => {
   if (C['pressureoff-customizable-insole-system-9-wide-width'].description) throw new Error('P244 description');
-  if (pageOf('D17-DEX').description) throw new Error('D17-DEX description');
+  { const d = pageOf('D17-DEX'); if (!/2021–2022 OTC Wholesale Catalog/.test(d.description || '') || !/catalog page 56/.test(d.field_provenance.description) || !/12 products/.test(JSON.stringify(d.features))) throw new Error('D17-DEX: catalog page 56 copy'); }
 });
 t('no commercial fields, prices or emails in the content or overrides', () => {
   const s = JSON.stringify(C) + JSON.stringify(O);
