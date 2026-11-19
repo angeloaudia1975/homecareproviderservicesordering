@@ -192,11 +192,11 @@
   {
     "manufacturer": "abm-respiratory-care",
     "code": "BK388",
-    "name": "BiWaze Clear Hospital and Long-Term Care Quick Reference Guide",
+    "name": "BiWaze Clear Home Care QRG",
     "category": "Accessories & Replacement Parts",
     "subcategory": "BiWaze Clear",
     "brand": "ABM Respiratory Care",
-    "description": "Hospital and long-term care quick reference guide for BiWaze Clear (ABM document BK388; for trained personnel)",
+    "description": "Quick Reference Guide for home care use of BiWaze Clear",
     "hcpc": "",
     "uom": "Each",
     "image": "",
