@@ -39,6 +39,7 @@ const FROM = process.env.BROCHURE_FROM || process.env.ORDER_EMAIL_FROM || 'HomeC
 /* One plain address only — no display name, angle brackets or comments (they would let one person count as many
    recipients for the send limit, and the mail provider would read them as a display name). */
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/;
+const SALES = require('./_sales_contact.js');   // owner 2026-11-18: the salesperson printed on this brochure (and its quote)
 
 const esc = s => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -82,6 +83,10 @@ function renderBrochure(p, opts) {
   const dLogo = D ? esc(dealerLogo(D.logo_url)) : '';
   const dAddr = D ? esc([str(D.address, 120), [str(D.city, 60), [str(D.state, 20), str(D.zip, 12)].filter(Boolean).join(' ')].filter(Boolean).join(', ')].filter(Boolean).join(' · ')) : '';
   const dContact = D ? [str(D.phone, 40), str(D.email, 200), str(D.website, 200).replace(/^https?:\/\//i, '')].filter(Boolean).map(esc).join(' &nbsp;·&nbsp; ') : '';
+  /* the salesperson chosen for THIS brochure (a saved sales contact or a one-time entry) — only shown on a dealer-branded
+     brochure; the account's own contact line above stays as it is */
+  const SC = D && opts.sales_contact ? opts.sales_contact : null;
+  const scLine = SC ? `Your sales contact: <b>${esc(SC.name)}</b>${SC.title ? `, ${esc(SC.title)}` : ''}${[SC.phone, SC.email].filter(Boolean).map((x) => ' &nbsp;·&nbsp; ' + esc(x)).join('')}` : '';
 
   const name = esc(str(p.name, 200)) || 'Product';
   const code = esc(str(p.code, 60));
@@ -234,7 +239,7 @@ function renderBrochure(p, opts) {
 
   ${dName ? `<div class="foot dfoot">
     ${dLogo ? `<img src="${dLogo}" alt="${dName} logo" onerror="this.style.display='none'">` : ''}
-    <div class="ft"><b>${dName}</b>${dAddr ? `<br>${dAddr}` : ''}${dContact ? `<br>${dContact}` : ''}</div>
+    <div class="ft"><b>${dName}</b>${dAddr ? `<br>${dAddr}` : ''}${dContact ? `<br>${dContact}` : ''}${scLine ? `<br>${scLine}` : ''}</div>
     <div class="fr">Specifications subject to change<br>without notice.</div>
   </div>
   <div class="hcpsline">Product information supplied through HomeCare Provider Services</div>` : `<div class="foot">
@@ -463,6 +468,7 @@ exports.handler = async (event) => {
     else saving = (facts && facts.saving) || null;
   }
   const renderOpts = { reference: offer && compare ? reference : null, saving, offer_expires: b.offer_expires, offer_label: basis === 'map' ? 'Manufacturer\'s advertised price (MAP)' : 'Your price' };
+  if (b.sales_contact != null) { const sc = SALES.validate(b.sales_contact); if (sc.error) return json(400, { ok: false, error: sc.error }); renderOpts.sales_contact = sc.contact; }
   b.include_msrp = basis === 'msrp';
   const action = String(b.action || 'html');
   /* Branded only for a signed-in, approved dealer; a request cannot name or style the dealer. */

@@ -650,6 +650,7 @@ body.shopall .controls,body.shopall #a4uBuilder,body.shopall #swBuilder,body.sho
    itself at the top of the stacking order and should stay reachable. */
 .br-modal{position:fixed;inset:0;background:rgba(16,38,63,.55);display:flex;align-items:center;justify-content:center;z-index:10060;padding:18px}
 .br-box{background:#fff;border-radius:14px;max-width:460px;width:100%;padding:20px 22px;box-shadow:0 24px 70px rgba(0,0,0,.3)}
+.br-sc{margin:0 0 12px}.br-sc .br-l{display:block;font-size:12.5px;font-weight:700;margin-bottom:4px}.br-sc select,.br-sc input{width:100%;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:16px;box-sizing:border-box}.br-sc-once{display:grid;gap:6px;margin-top:6px}.br-sc .br-chk{display:flex;gap:8px;align-items:center;font-size:13px;min-height:44px}.br-sc .br-chk input{width:20px;height:20px;min-height:0}
 .br-box h3{margin:0 0 4px;font-size:17px;color:#10263f}
 .br-box .sub{font-size:13px;color:#6b7580;margin-bottom:14px}
 .br-row{display:flex;align-items:center;gap:9px;margin-bottom:11px;font-size:14px;color:#3c4855}
@@ -1987,6 +1988,23 @@ function packOf(p){
   return { n, label: u || (n+'-pack') };
 }
 function packNote(p){ const k=packOf(p); return k ? `Dealer order unit = 1 ${k.label} (${k.n} each)` : ""; }
+/* SUGGESTED RETAIL (owner 2026-11-18). When a product has neither an MSRP nor a MAP, the shop shows 2 × the dealer cost of ONE
+   order unit (quantity 1, no tier, no contract price), labelled "Suggested retail" — never "MSRP". A pack (case) shows it per
+   that pack with its piece count, so the cost basis is the unit the dealer actually buys; a pack whose quantity isn't known shows
+   none. An MSRP the shop derived itself (_msrp_suggested) is worded the same way. The four Gold-Standard lines keep exactly what
+   they show today (their MSRP / MAP state is frozen). Dealer-only: the dealer's own cost is never on a public page here. */
+const SR_FROZEN=['climbing-steps','strongback-mobility','ovation-medical','bemis'];
+function srFrozen(p){ return SR_FROZEN.includes(String(p&&p.manufacturer||'').toLowerCase()); }
+function msrpWord(p){ return (p&&p._msrp_suggested&&!srFrozen(p))?'Suggested retail':'MSRP'; }
+function suggestedRetail(p){
+  if(!p||p._golden||srFrozen(p)) return null;
+  if(p.msrp!=null&&p.msrp!==''&&Number(p.msrp)>0) return null;
+  if(p.map!=null&&p.map!==''&&Number(p.map)>0) return null;
+  const base=Number(p.base_price); if(!(base>0)) return null;
+  const pk=(typeof packOf==='function')?packOf(p):null;
+  if(pk&&!(pk.n>1)) return null;
+  return {amount:Math.round(base*2*100)/100, unit:pk?pk.label:null, n:pk?pk.n:1};
+}
 /* MSRP / MAP BASIS FROM THE RECORD (Manufacturer Center Phase 4, 2026-10-10). On a pack SKU the
    manufacturer quotes MSRP and MAP either per piece ("each") or for the order unit. The master record
    says which in msrp_basis / map_basis; an empty basis keeps the rule the storefront has always used
@@ -2033,7 +2051,9 @@ function priceHtml(p){
      the per-piece dealer price (case price / case qty) when deciding whether to show it. */
   const msrpPack=packOf(p), msrpEach=msrpIsEach(p);
   const msrpFloor=msrpEach ? Number(p.base_price)/msrpPack.n : Number(p.base_price);
-  const msrp = (cp==null && p.msrp!=null && Number(p.msrp)>msrpFloor) ? `<div class="msrp">MSRP ${money(p.msrp)}${msrpEach?" each":""}</div>` : "";
+  const _sr=(cp==null&&typeof suggestedRetail==='function')?suggestedRetail(p):null;
+  const msrp = (cp==null && p.msrp!=null && Number(p.msrp)>msrpFloor) ? `<div class="msrp">${typeof msrpWord==='function'?msrpWord(p):"MSRP"} ${money(p.msrp)}${msrpEach?" each":""}</div>`
+    : (_sr ? `<div class="msrp">Suggested retail ${money(_sr.amount)}${_sr.unit?` per ${esc(_sr.unit)}`:""}</div>` : "");
   const note=dealerPriceNote(p.price_note, p);
   /* One line, from the field, for every product that has a MAP — instead of only the
      ones somebody remembered to type it into. */
@@ -6687,6 +6707,41 @@ function pdAddQuote(code){
   if(typeof showP360==='function') showP360('quotes');
 }
 window.pdAddQuote=pdAddQuote;
+/* SALES CONTACT ON A BROCHURE (owner 2026-11-18). The brochure (and the quote price it carries) can name the salesperson: the
+   account's own contact (default), one of the dealer's saved sales contacts, or someone typed in for this brochure only. A one-time
+   entry never changes the account default — the next brochure starts from the account contact again. Saved contacts live in
+   Account Center → Sales contacts (dealer-tools-api; private to the dealer). */
+let SALESC=null, SALESC_ERR="";
+async function salesContactsLoad(force){
+  if(SALESC&&!force) return SALESC;
+  const r=window.salesContactsApi?await window.salesContactsApi({action:"sales_contacts_list"}).catch(()=>null):null;
+  if(r&&r.ok){ SALESC=r.contacts||[]; SALESC_ERR=""; } else { SALESC=SALESC||[]; SALESC_ERR=(r&&r.error)||"unavailable"; }
+  return SALESC;
+}
+function brScLoad(){ salesContactsLoad().then(()=>brScRender()); }
+function brScRender(){
+  const box=document.getElementById('brScBox'); if(!box) return;
+  const cur=(document.getElementById('brSc')||{}).value||"";
+  const opts=[['','Account contact (default)']].concat((SALESC||[]).map(c=>[c.id,c.name+(c.title?' — '+c.title:'')])).concat([['once','Someone else — this brochure only']]);
+  box.innerHTML=`<label class="br-l" for="brSc">Sales contact on this brochure</label>
+    <select id="brSc" onchange="brScRender()">${opts.map(o=>`<option value="${esc(o[0])}"${o[0]===cur?' selected':''}>${esc(o[1])}</option>`).join('')}</select>
+    ${cur==='once'?`<div class="br-sc-once"><input id="brScN" placeholder="Name" autocomplete="name" maxlength="120"><input id="brScT" placeholder="Title (optional)" maxlength="80"><input id="brScE" type="email" placeholder="Email" autocomplete="email" maxlength="200"><input id="brScP" type="tel" placeholder="Phone" autocomplete="tel" maxlength="30">
+      <label class="br-chk"><input type="checkbox" id="brScSave"> Also save to my sales contacts</label></div>`:''}`;
+}
+function brScValue(){
+  const sel=(document.getElementById('brSc')||{}).value||""; if(!sel) return null;
+  if(sel!=='once'){ const c=(SALESC||[]).find(x=>String(x.id)===sel); return c?{name:c.name,title:c.title||"",email:c.email||"",phone:c.phone||""}:null; }
+  const v=id=>((document.getElementById(id)||{}).value||"").trim();
+  const c={name:v('brScN'),title:v('brScT'),email:v('brScE'),phone:v('brScP')};
+  if(!c.name) return {error:"Enter the salesperson's name."};
+  if(!c.email&&!c.phone) return {error:"Enter an email or a phone number for the sales contact."};
+  if(c.email&&!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(c.email)) return {error:"Enter a valid email address for the sales contact."};
+  return c;
+}
+function brScMaybeSave(c){
+  const cb=document.getElementById('brScSave'); if(!cb||!cb.checked) return; cb.checked=false;
+  if(window.salesContactsApi) window.salesContactsApi({action:"sales_contact_save",contact:c}).then(r=>{ if(r&&r.ok){ salesContactsLoad(true); } }).catch(()=>{});
+}
 function openBrochure(code, officialDocs){
   const pl = brochurePayload(code); if(!pl) return;
   const docs = Array.isArray(officialDocs)?officialDocs:[];
@@ -6699,6 +6754,7 @@ function openBrochure(code, officialDocs){
     <div class="sub">${esc(pl.name)}${pl.code?` · Item ${esc(pl.code)}`:''}</div>
     <div id="brPriceBox"></div>
     <div class="sub" style="margin:4px 0 12px">Your dealer cost is never shown.</div>
+    <div id="brScBox" class="br-sc"></div>
     ${docs.length?`<div class="sub" style="margin:0 0 12px">Manufacturer's own: ${docs.map(d=>`<a href="${esc(d.url)}" target="_blank" rel="noopener" style="color:var(--navy);font-weight:700">${esc(d.title)} ↗</a>`).join(" · ")}</div>`:''}
     <div class="br-acts">
       <button onclick="brochurePrint()">🖨 Print / Save as PDF</button>
@@ -6708,11 +6764,13 @@ function openBrochure(code, officialDocs){
     <div class="br-msg" id="brMsg"></div>
   </div>`;
   document.body.appendChild(host);
-  brRenderPriceRow(); loadRetail().then(()=>brRenderPriceRow());
+  brRenderPriceRow(); loadRetail().then(()=>brRenderPriceRow()); brScRender(); brScLoad();
 }
 function closeBrochure(){ const el=document.getElementById('brModal'); if(el) el.remove(); }
 function _brMsg(t,bad){ const el=document.getElementById('brMsg'); if(el) el.innerHTML='<span style="color:'+(bad?'#b22b2b':'#2d7d46')+'">'+esc(t)+'</span>'; }
 async function _brPost(body){
+  if(body&&(body.action==='html'||body.action==='email')){ const sc=brScValue(); if(sc&&sc.error) return {ok:false,error:sc.error};
+    if(sc){ body=Object.assign({},body,{sales_contact:sc}); brScMaybeSave(sc); } }
   const mg=(typeof mgBearer==='function')?mgBearer():'';
   if(mg){   // Manage Dealer: branded for the managed location; an email needs its own confirmation and is recorded
     if(body&&body.action==='email'){ const loc=(MANAGE&&MANAGE.location&&MANAGE.location.name)||'the dealer';
@@ -7582,6 +7640,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .qline .qctl input[type=number]{width:70px;border:1px solid var(--line);border-radius:8px;padding:6px}
   #p360wrap .qline .qctl select{max-width:100%;border:1px solid var(--line);border-radius:8px;padding:6px;font-family:inherit;font-size:13px}
   #p360wrap .qline .qonce{width:100px;border:1px solid var(--line);border-radius:8px;padding:6px}
+  #p360wrap .qline .qmk{display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:44px;font-size:13px}#p360wrap .qline .qmk input{width:76px;min-height:40px;border:1px solid var(--line);border-radius:8px;padding:6px}#p360wrap .qline .qmk-n{color:var(--ink-2,#475569)}
   #p360wrap .qline .qamt{margin-left:auto;font-weight:700}
   #p360wrap .acloc-d{margin:8px 0 2px}
   #p360wrap .rp-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}
@@ -7611,7 +7670,10 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .pill.portal{background:#e6f0f8;color:#1466a3;border:1px solid #bcd8ef}
   #p360wrap .pill.imported{background:var(--surface-2);color:#6b7d90;border:1px solid var(--line)}
   #p360wrap .gh-row{cursor:pointer}#p360wrap .gh-row:hover td{background:var(--surface-2)}#p360wrap .gh-row:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}
-  #p360wrap .gh-filters{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;padding:12px 16px 4px}#p360wrap .gh-filters label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:700;color:var(--ink-2,#475569);min-width:0}#p360wrap .gh-filters input,#p360wrap .gh-filters select{min-height:40px;padding:6px 8px;border:1px solid var(--line,#cbd5e1);border-radius:8px;font:inherit;font-size:14px;max-width:100%}#p360wrap .gh-filters input[type=search]{width:240px}#p360wrap .gh-fbtn{display:flex;gap:8px}#p360wrap .gh-fbtn .btn{min-height:44px;display:inline-flex;align-items:center}#p360wrap .gh-fnote{padding:2px 16px 8px;font-size:13px;color:var(--ink-2,#475569)}@media (max-width:760px){#p360wrap .gh-filters label{flex:1 1 140px}#p360wrap .gh-filters input[type=search]{width:100%}#p360wrap .gh-filters input,#p360wrap .gh-filters select{font-size:16px;min-height:44px}#p360wrap .gh-fbtn .btn{min-height:44px}}@media print{body.print-gh #view-orders>*:not(#goldenHist){display:none!important}body.print-gh .gh-filters,body.print-gh [data-ghmore],body.print-gh #goldenHistLive{display:none!important}}#p360wrap .gh-detail td{background:var(--surface-2)}#p360wrap .gh-detail-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;padding:4px 0}
+  #p360wrap .gh-filters{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;padding:12px 16px 4px}#p360wrap .gh-filters label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:700;color:var(--ink-2,#475569);min-width:0}#p360wrap .gh-filters input,#p360wrap .gh-filters select{min-height:40px;padding:6px 8px;border:1px solid var(--line,#cbd5e1);border-radius:8px;font:inherit;font-size:14px;max-width:100%}#p360wrap .gh-filters input[type=search]{width:240px}#p360wrap .gh-fbtn{display:flex;gap:8px}#p360wrap .gh-fbtn .btn{min-height:44px;display:inline-flex;align-items:center}#p360wrap .gh-fnote{padding:2px 16px 8px;font-size:13px;color:var(--ink-2,#475569)}@media (max-width:760px){#p360wrap .gh-filters label{flex:1 1 140px}#p360wrap .gh-filters input[type=search]{width:100%}#p360wrap .gh-filters input,#p360wrap .gh-filters select{font-size:16px;min-height:44px}#p360wrap .gh-fbtn .btn{min-height:44px}}@media print{body.print-order *{visibility:hidden!important}body.print-order #modal,body.print-order #modal *{visibility:visible!important}body.print-order #modal{position:absolute!important;inset:0 auto auto 0!important;background:#fff!important;display:block!important}body.print-order #modal .mbox{box-shadow:none!important;max-width:none!important;width:100%!important;max-height:none!important;overflow:visible!important}body.print-order .noprint{display:none!important}}
+#modal .od-box{max-width:860px;width:calc(100vw - 32px)}#modal .od-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 14px;margin:8px 0 12px}#modal .od-grid span{display:block;font-size:11.5px;color:var(--muted)}#modal .od-grid b{font-size:14px;word-break:break-word}
+#modal .od-tbl td,#modal .od-tbl th{font-size:13px}#modal .od-h{margin:14px 0 6px}#modal .od-ship{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0}#modal .od-sh{font-weight:800;font-size:13px}#modal .od-bo{background:#fff7e6;border-radius:10px;padding:10px 12px;margin:8px 0;color:#7a4b00}#modal .od-miss{background:#f1f5f9;border-radius:10px;padding:10px 12px;margin:10px 0}#modal .od-miss ul{margin:6px 0 0 18px;padding:0}#modal .od-acts{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}#modal .od-acts .btn{min-height:44px}
+@media print{body.print-gh #view-orders>*:not(#goldenHist){display:none!important}body.print-gh .gh-filters,body.print-gh [data-ghmore],body.print-gh #goldenHistLive{display:none!important}}#p360wrap .gh-detail td{background:var(--surface-2)}#p360wrap .gh-detail-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;padding:4px 0}
   #p360wrap .gh-col h4{margin:0 0 6px;font-size:13px;color:var(--navy)}#p360wrap .gh-col ul{margin:0;padding-left:18px;font-size:13px}
   #p360wrap [data-ghmore],#p360wrap [data-ghretry]{min-height:44px}#p360wrap [data-ghmore][aria-disabled="true"]{opacity:.6;cursor:wait}
   #p360wrap .gh-open{background:none;border:0;padding:6px 0;min-height:44px;font:inherit;font-weight:800;color:var(--navy);cursor:pointer;text-align:inherit}
@@ -7657,6 +7719,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #view-storefront .sfp td{border-bottom:1px solid var(--line,#eef1f4);padding:7px 4px;vertical-align:top}#view-storefront .sfp-in{width:110px;padding:8px;border:1px solid var(--line,#d6dbe1);border-radius:8px;font:inherit;min-height:40px}
   #view-storefront .sfp-src{font-size:11px;font-weight:800;padding:2px 7px;border-radius:999px;background:#eef1f4;white-space:nowrap}#view-storefront .sfp-src.s-dealer{background:#e7f1fb;color:#0f5c8f}#view-storefront .sfp-src.s-msrp{background:#e5f4e4;color:#14532d}#view-storefront .sfp-src.s-calculated{background:#f9eeda;color:#7a4b00}
   #view-storefront .sfp-why{font-size:12px;color:#991b1b;margin-top:3px}
+  #view-storefront .sfp-mk{border:1px solid var(--line,#e5e7eb);border-radius:10px;padding:10px 12px;margin:8px 0;background:#fafbfc}
   /* Storefront design upgrade (2026-11-07): studio layout */
   #view-storefront .sfx{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
   #view-storefront .sfx-pv{position:sticky;top:10px}
@@ -8051,6 +8114,56 @@ function orderTrackHtml(raw){
 function shipDate(d){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d||"")); return m?new Date(Date.UTC(+m[1],+m[2]-1,+m[3])).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",timeZone:"UTC"}):""; }
 /* Partials / backorders (owner 2026-11-14 §5): only what HCPS recorded on each shipment — its contents and any
    backordered items — with the date that record was last updated; a shipment without recorded contents says so. */
+/* ORDER DETAIL & PRINT (owner 2026-11-18). A dealer opens any order HCPS recorded for them and prints it: the date, PO, the
+   products with SKUs, configurations (as recorded on the line), quantities and the prices recorded on the order; each shipment with
+   carrier, tracking (a link only for a confirmed carrier), the manufacturer's ESTIMATED SHIP date and the carrier's ESTIMATED ARRIVAL
+   kept apart; backordered items; and the details the manufacturer has not supplied yet. Only HCPS's own record — nothing guessed.
+   Golden orders carry Golden's sales orders (SO), items and tracking in the "Golden orders" section, which has its own print. */
+function orderMissingList(o){
+  const st=String(o.status||"").toLowerCase(); if(st==="cancelled"||o.source==="imported"||o.invoice_only) return [];
+  const ships=(Array.isArray(o.shipments)?o.shipments:[]).filter(Boolean), done=st==="delivered"||st==="completed";
+  const P=o.ship_progress||{}, miss=[];
+  if(o.source!=="golden") miss.push("Manufacturer sales order (SO) number");
+  if(!ships.length&&!done){ miss.push("Ship date"); if(!o.tracking) miss.push("Carrier and tracking number"); }
+  if(ships.some(x=>(x.ship_date||x.tracking_number)&&!x.tracking_number)&&!o.tracking) miss.push("Tracking number for a shipment");
+  if(ships.some(x=>x.tracking_number&&!x.carrier)) miss.push("Carrier for a tracking number");
+  if((P.backordered||[]).length&&!ships.some(x=>!x.ship_date&&x.est_ship_date)) miss.push("Estimated ship date for the backordered items");
+  if(!done&&ships.some(x=>x.ship_date)&&!ships.some(x=>x.est_delivery_date)) miss.push("Estimated arrival date");
+  return [...new Set(miss)];
+}
+function orderDetailHtml(o){
+  const lines=Array.isArray(o.lines)?o.lines:[], ships=(Array.isArray(o.shipments)?o.shipments:[]).filter(Boolean), P=o.ship_progress||{};
+  const row=(l)=>`<tr><td class="tnum">${esc(l.code||"—")}</td><td>${esc(l.name||l.code||"Item")}</td><td class="n tnum">${esc(String(l.qty||0))}</td><td class="n tnum">${l.cost!=null&&Number(l.cost)>0?cents(l.cost):"—"}</td><td class="n tnum">${l.line!=null&&Number(l.line)>0?cents(l.line):"—"}</td></tr>`;
+  const svc=(o.services||[]).map(x=>`<tr><td colspan="4" style="text-align:right">${esc(x.label)}</td><td class="n tnum">${cents(x.fee)}</td></tr>`).join("");
+  const shipHtml=ships.length?ships.map((x,i)=>{
+    const num=x.tracking_number?(x.url?`<a class="tnum" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.tracking_number)}</a>`:`<span class="tnum">${esc(x.tracking_number)}</span>`):"Not yet supplied";
+    const f=(k,v)=>`<div><span>${k}</span><b>${v}</b></div>`;
+    return `<div class="od-ship"><div class="od-sh">Shipment ${i+1}${ships.length>1?" of "+ships.length:""}</div><div class="od-grid">
+      ${f("Carrier",x.carrier?esc(x.carrier):(x.tracking_number?"Not confirmed":"Not yet supplied"))}${f("Tracking",num)}
+      ${f("Shipped",x.ship_date?esc(shipDate(x.ship_date)):"Not shipped yet")}
+      ${f("Estimated ship date (manufacturer)",x.est_ship_date?esc(shipDate(x.est_ship_date)):"—")}
+      ${f("Estimated arrival (carrier)",x.est_delivery_date?esc(shipDate(x.est_delivery_date)):"—")}
+      ${f("Contents",(x.items||[]).length?esc(x.items.map(it=>it.code+" ×"+it.qty).join(", ")):"Not listed")}</div>${x.note?`<div class="m">${esc(x.note)}</div>`:""}${x.updated_at?`<div class="m">Updated ${esc(shipDate(String(x.updated_at).slice(0,10)))}</div>`:""}</div>`; }).join("")
+    :(o.tracking?`<div class="m">${orderTrackHtml(o.tracking)}</div>`:`<div class="m">No shipment recorded yet.</div>`);
+  const bo=(P.backordered||[]).length?`<div class="od-bo"><b>Backordered:</b> ${esc(P.backordered.map(i=>i.code+" ×"+i.qty).join(", "))}${P.backordered_as_of?` <small>(as of ${esc(shipDate(String(P.backordered_as_of).slice(0,10)))})</small>`:""}<div class="m">The estimated ship date is when the manufacturer expects to ship; the estimated arrival is the carrier's delivery estimate once it ships.</div></div>`:"";
+  const prog=shipProgHtml(P);
+  const miss=orderMissingList(o);
+  const biz=(PROFILE&&PROFILE.name)||"";
+  return `<div class="mbox od-box" role="document"><div class="mhead"><h3>Order — ${esc(o.manufacturerName||"")}</h3><a class="mx noprint" onclick="closeModal()" aria-label="Close">✕</a></div>
+    <div class="od-grid od-head">
+      <div><span>Dealer</span><b>${esc(biz||"—")}</b></div><div><span>Order date</span><b>${esc(dateShort(o.date))}</b></div>
+      <div><span>PO</span><b>${esc(o.po||"—")}</b></div><div><span>HCPS order</span><b class="tnum">${esc(String(o.id||"").slice(0,8).toUpperCase()||"—")}</b></div>
+      <div><span>Status</span><b>${esc(ORDER_STATUS_LABEL[String(o.status||"").toLowerCase()]||o.status||"—")}</b></div><div><span>Source</span><b>${o.source==="golden"?"Golden":o.source==="portal"?"Ordered in the portal":"Imported sales record"}</b></div></div>
+    <div style="overflow-x:auto"><table class="tbl od-tbl"><thead><tr><th>SKU</th><th>Product / configuration</th><th class="n">Qty</th><th class="n">Unit price</th><th class="n">Line total</th></tr></thead>
+      <tbody>${lines.map(row).join("")||`<tr><td colspan="5" class="empty">No line items recorded.</td></tr>`}</tbody>
+      <tfoot>${o.cost?`<tr><td colspan="4" style="text-align:right">Merchandise</td><td class="n tnum">${cents(o.cost)}</td></tr>`:""}${svc}${o.freight!=null?`<tr><td colspan="4" style="text-align:right">Freight</td><td class="n tnum">${cents(o.freight)}</td></tr>`:""}<tr><td colspan="4" style="text-align:right;font-weight:800">Total</td><td class="n tnum" style="font-weight:800">${cents(orderTotal(o))}</td></tr></tfoot></table></div>
+    <h4 class="od-h">Shipping &amp; tracking</h4>${prog}${shipHtml}${bo}
+    ${o.source==="golden"?`<div class="m">Golden's sales orders (SO), items and tracking are in "Golden orders — live from Golden Technologies" below the order list.</div>`:""}
+    ${miss.length?`<div class="od-miss"><b>Not yet supplied by the manufacturer:</b><ul>${miss.map(m=>`<li>${esc(m)}</li>`).join("")}</ul></div>`:""}
+    <div class="od-acts noprint"><a class="btn gh" onclick="closeModal()">Close</a> <a class="btn pri" onclick="orderPrint()">🖨 Print order</a></div></div>`;
+}
+function openOrderDetail(id){ const o=(HISTORY||[]).find(x=>String(x.id)===String(id)); if(!o) return; $("#modal").innerHTML=orderDetailHtml(o); $("#modal").classList.add("on"); const b=$("#modal .mx"); if(b) b.focus&&b.focus(); }
+function orderPrint(){ document.body.classList.add("print-order"); const off=()=>{ document.body.classList.remove("print-order"); window.removeEventListener("afterprint",off); }; window.addEventListener("afterprint",off); window.print(); }
 function shipProgHtml(P){
   if(!P||P.state==="none") return "";
   const t={contents_unknown:"Shipped — contents not listed",scheduled:"Scheduled to ship",partial:`Partially shipped — ${P.units_shipped} of ${P.units_ordered} units`,complete:`Shipped in full — ${P.units_shipped} of ${P.units_ordered} units`}[P.state];
@@ -8064,8 +8177,8 @@ function orderShipHtml(list,prog){
     const car=x.carrier?` <small>(${esc(x.carrier)})</small>`:(x.tracking_number?' <small style="color:var(--muted)">(carrier not confirmed)</small>':"");
     const bits=[];
     if(x.ship_date) bits.push("Shipped "+shipDate(x.ship_date));
-    else if(x.est_ship_date) bits.push("Estimated ship "+shipDate(x.est_ship_date)+" (manufacturer)");
-    if(x.est_delivery_date) bits.push("Estimated delivery "+shipDate(x.est_delivery_date)+" (carrier)");
+    else if(x.est_ship_date) bits.push("Estimated ship date "+shipDate(x.est_ship_date)+" (manufacturer)");
+    if(x.est_delivery_date) bits.push("Estimated arrival "+shipDate(x.est_delivery_date)+" (carrier)");
     if((x.items||[]).length) bits.push("Contains "+x.items.map(i=>i.code+" ×"+i.qty).join(", "));
     if(x.updated_at) bits.push("updated "+shipDate(String(x.updated_at).slice(0,10)));
     return `<div class="m">${num?"Tracking "+num+car:""}${num&&bits.length?" · ":""}${esc(bits.join(" · "))}${x.note?` <small style="color:var(--muted)">— ${esc(x.note)}</small>`:""}</div>`;
@@ -8083,7 +8196,7 @@ async function loadOrders(){
       +(o.source==="portal"&&o.status!=="cancelled"&&o.reporting==="reported"?`<div class="m">Reported by the manufacturer — counted in your purchases</div>`:o.source==="portal"&&o.reporting==="partly_reported"?`<div class="m">Partly reported by the manufacturer — ${esc(cents(o.on_order||0))} still on order</div>`:o.source==="portal"&&o.reporting==="not_found_in_reports"?`<div class="m">Not in the manufacturer's reports yet — still counted in your totals; HCPS is reviewing it</div>`:"")+(o.source==="portal"&&o.reporting_uncertain?`<div class="m">Matched to the manufacturer's report by product only — HCPS is confirming the match</div>`:"")
       +(o.invoice_only?`<div class="m">Invoice ${esc(o.invoice_no||"")} recorded — ${esc(cents(o.billed||0))} billed${o.date_basis==="first_statement"?" (dated by the first statement that listed it)":""}. Payment status not established from the available import.${o.last_statement?" Last observed in the "+esc(monthName(o.last_statement))+" statement.":""} Not counted in your purchases.</div>`+(o.ambiguous?`<div class="m" style="color:#9b1c1c">The manufacturer's statements list this invoice differently (${(o.versions||[]).map(v=>esc(monthName(v.statement))+": "+v.lines.map(l=>esc(l.code)+" ×"+l.qty).join(", ")).join(" · ")}) — the latest is shown; ask HCPS before relying on the quantities.</div>`:""):"");
     const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
-    return `<tr data-order="${esc(o.id||"")}"><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b>${extra}</td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${cents(orderTotal(o))}${freightNote(o)}</td><td>${statPill(o.status)}</td><td>${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
+    return `<tr data-order="${esc(o.id||"")}"><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b>${extra}</td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${cents(orderTotal(o))}${freightNote(o)}</td><td>${statPill(o.status)}</td><td>${(o.lines||[]).length?`<a class="btn gh" onclick="openOrderDetail('${esc(o.id)}')">View / print</a> `:""}${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
   }).join("");
   const total=purchasesOnly(HISTORY).reduce((s,o)=>s+countedTotal(o),0); const nInv=HISTORY.filter(o=>o.invoice_only||o.status==="invoice_recorded").length; const nRep=HISTORY.filter(o=>o.source==="portal"&&o.status!=="cancelled"&&(o.reporting==="reported"||o.reporting==="partly_reported")).length;
   $("#view-orders").innerHTML=`
@@ -8758,7 +8871,7 @@ function quotableLine(slug){ if(typeof isRetiredSlug==="function"&&isRetiredSlug
 function quoteMsrpHtml(r,label){ return r.msrp!=null?(label||"")+money(r.msrp)+(r.msrpEach?" each":""):'<span class="est">Price on Request</span>'; }
 function quoteItemHtml(r){ return `${esc(r.name)}<div style="font-size:10.5px;color:var(--muted)">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)}</div>`; }
 function quotePicked(){ return QUOTE.map(k=>{const i=k.indexOf("|");const mfr=k.slice(0,i),code=k.slice(i+1);const sn=(typeof QSNAP!=="undefined"&&QSNAP[k])||{};const p=(PRICE&&PRICE[k])||((typeof GQUOTE!=="undefined"&&GQUOTE[k])||sn);
-  return {key:k,mfr,code,sku:p.sku||sn.sku||code.split("|u=")[0],name:p.name||sn.name||code,option:p.option||sn.option||"",mfrName:p.mfrName||sn.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach,msrpCalc:!!p.msrpCalc,image:p.image||sn.image||"",map:(!/^golden/.test(mfr)&&!/\|u=/.test(code)&&Number(p.map)>0)?Number(p.map):null};}); }
+  return {key:k,mfr,code,sku:p.sku||sn.sku||code.split("|u=")[0],name:p.name||sn.name||code,option:p.option||sn.option||"",mfrName:p.mfrName||sn.mfrName||retiredLineName(mfr)||mfr,msrp:quoteMsrp(p),msrpEach:!!p.msrpEach,msrpCalc:!!p.msrpCalc,image:p.image||sn.image||"",map:(!/^golden/.test(mfr)&&!/\|u=/.test(code)&&Number(p.map)>0)?Number(p.map):null,cost:(!/\|u=/.test(code)&&Number(p.cost)>0)?Number(p.cost):null};}); }
 /* ---------- C3-07 Stage 4: CUSTOMER QUOTES (owner 2026-11-05; pricing choices D3) ----------
    Each line has a quantity and ONE customer price basis — the three approved choices:
      MSRP     the manufacturer's verified suggested retail (never a 2x estimate; an upgraded configuration has none)
@@ -8831,8 +8944,9 @@ function qLineHtml(r,i){
   const opt=(v,label,on)=>`<option value="${v}" ${m.basis===v?'selected':''} ${on?'':'disabled'}>${label}</option>`;
   return `<div class="rl qline"><div class="b"><div class="n">${esc(r.name)}</div><div class="m">${r.option?esc(r.option)+" · ":""}#${esc(r.sku)} · ${esc(r.mfrName)}</div>
     <div class="qctl"><label>Qty <input type="number" min="1" max="9999" step="1" value="${m.qty}" aria-label="Quantity for ${esc(r.name)}" onchange="qSetQty(${i},this.value)"></label>
-      <select aria-label="Customer price for ${esc(r.name)}" onchange="qSetBasis(${i},this.value)">${opt('msrp',(r.msrpCalc?'Retail price (HCPS calculated) ':'MSRP ')+(qMsrpOk(r)?qMoney(r.msrp)+(r.msrpEach?' each':''):'— not published'),qMsrpOk(r))}${opt('retail','My retail '+(saved!=null?qMoney(saved):'— none saved'),saved!=null)}${opt('map','Manufacturer advertised price (MAP) '+(r.map?qMoney(r.map):'— none on file'),r.map>0)}${opt('once','One-time price',true)}${opt('none','No price (Price on Request)',true)}</select>
-      ${m.basis==='once'?`<input class="qonce" inputmode="decimal" placeholder="$0.00" value="${m.unit>0?m.unit:''}" aria-label="One-time price for ${esc(r.name)}" onchange="qSetUnit(${i},this.value)">
+      <select aria-label="Customer price for ${esc(r.name)}" onchange="qSetBasis(${i},this.value)">${opt('msrp',(r.msrpCalc?'Retail price (HCPS calculated) ':'MSRP ')+(qMsrpOk(r)?qMoney(r.msrp)+(r.msrpEach?' each':''):'— not published'),qMsrpOk(r))}${opt('retail','My retail '+(saved!=null?qMoney(saved):'— none saved'),saved!=null)}${opt('map','Manufacturer advertised price (MAP) '+(r.map?qMoney(r.map):'— none on file'),r.map>0)}${r.cost>0?`<option value="markup">Markup over my dealer cost…</option>`:''}${opt('once',m.fromMk?'Markup over my dealer cost':'One-time price',true)}${opt('none','No price (Price on Request)',true)}</select>
+      ${m.basis==='once'&&m.fromMk&&r.cost>0?`<label class="qmk">Markup <input type="number" min="0" max="1000" step="1" value="${esc(String(m.mk))}" aria-label="Markup over dealer cost for ${esc(r.name)}, percent" onchange="qSetMarkup(${i},this.value)"> % <span class="qmk-n">= ${m.unit>0?qMoney(m.unit):'—'} (your cost ${qMoney(r.cost)} × ${(1+m.mk/100).toFixed(2)})${r.map?` · MAP floor ${qMoney(r.map)}`:''}</span></label>`:''}
+      ${m.basis==='once'&&!m.fromMk?`<input class="qonce" inputmode="decimal" placeholder="$0.00" value="${m.unit>0?m.unit:''}" aria-label="One-time price for ${esc(r.name)}" onchange="qSetUnit(${i},this.value)">
         <button type="button" class="btn gh acsm" onclick="qSaveRetail(${i})" ${m.unit>0&&!QLOCRETAIL?'':'disabled'} ${QLOCRETAIL?'title="Set this location\'s prices in My Retail Prices"':''}>Save as my retail price</button>`:''}
       ${qRef(r)!=null||(['retail','once','map'].includes(m.basis)&&r.msrp!=null&&!r.msrpCalc)?`<label class="qcmp" style="font-size:12px;display:inline-flex;gap:5px;align-items:center;min-height:44px"><input type="checkbox" ${m.compare!==false?'checked':''} onchange="qSetCompare(${i},this.checked)"> Show MSRP &amp; savings</label>`:''}
       <span class="qamt">${u!=null?qMoney(u*m.qty):'<span class="est">Price on Request</span>'}</span></div>
@@ -8840,7 +8954,14 @@ function qLineHtml(r,i){
     <a class="btn gh" title="Remove" aria-label="Remove ${esc(r.name)}" onclick="qDelAt(${i})">✕</a></div>`;
 }
 function qSetQty(i,v){ const r=quotePicked()[i]; if(!r) return; const n=Math.max(1,Math.min(9999,Math.round(Number(v)||1))); qMeta(r).qty=n; QDIRTY=true; renderQuotes(); }
-function qSetBasis(i,v){ const r=quotePicked()[i]; if(!r) return; qMeta(r).basis=v; QDIRTY=true; renderQuotes(); }
+/* MARKUP OVER DEALER COST (owner 2026-11-18): a one-time price worked out as dealer cost × (1 + markup ÷ 100); the result is an
+   ordinary one-time price, so the server applies the same rules (never printed or emailed below MAP). */
+function qMarkupUnit(r,pct){ return r.cost>0&&isFinite(pct)&&pct>=0?Math.round(r.cost*(1+pct/100)*100)/100:null; }
+function qSetBasis(i,v){ const r=quotePicked()[i]; if(!r) return; const m=qMeta(r);
+  if(v==='markup'){ m.mk=(m.mk!=null?m.mk:40); m.basis='once'; m.fromMk=true; m.unit=qMarkupUnit(r,m.mk); }
+  else { m.basis=v; m.fromMk=false; }
+  QDIRTY=true; renderQuotes(); }
+function qSetMarkup(i,v){ const r=quotePicked()[i]; if(!r) return; const m=qMeta(r); const n=Number(String(v).replace(/[%\s]/g,'')); if(!(isFinite(n)&&n>=0&&n<=1000)) return; m.mk=n; m.unit=qMarkupUnit(r,n); m.fromMk=true; QDIRTY=true; renderQuotes(); }
 function qSetCompare(i,v){ const r=quotePicked()[i]; if(!r) return; qMeta(r).compare=!!v; QDIRTY=true; qPreview(); }
 function qSetUnit(i,v){ const r=quotePicked()[i]; if(!r) return; const n=Number(String(v).replace(/[$,\s]/g,'')); qMeta(r).unit=(n>0&&n<=1000000)?Math.round(n*100)/100:null; QDIRTY=true; renderQuotes(); }
 async function qSaveRetail(i){ const r=quotePicked()[i]; if(!r) return; const m=qMeta(r); if(!(m.unit>0)) return;
@@ -9681,7 +9802,7 @@ function renderAccount0(){
   ${pend.length?`<div class="card acpend" style="margin-top:0"><b>${pend.length} change${pend.length===1?"":"s"} waiting for HCPS approval</b> — your account updates once HCPS approves ${pend.length===1?"it":"them"}.</div>`:""}
   <div class="grid2"><div>
     <div class="card" style="margin-top:0"><div class="chead"><h3>Company</h3><a class="btn gh acsm" onclick="acCompanyOpen()">Request a change</a></div>
-      <div class="acgrid"><div><span>Business</span><b>${esc(co.business_name||"—")}</b></div><div><span>${esc(co.hcps_account_label||"HCPS account")}</span><b>${esc(co.hcps_account||"—")}</b></div>
+      <div class="acgrid"><div><span>Business</span><b>${esc(co.business_name||"—")}</b></div>${co.hcps_account_hidden||/golden/i.test(co.hcps_account_label||"")?"":`<div><span>${esc(co.hcps_account_label||"HCPS account")}</span><b>${esc(co.hcps_account||"—")}</b></div>`}
         <div><span>Main contact</span><b>${esc(co.contact_name||"—")}</b></div><div><span>Phone</span><b>${esc(co.phone||"—")}</b></div>
         <div><span>Email</span><b>${esc(co.email||"—")}</b></div><div><span>Website</span><b>${co.website?(/^https?:\/\//i.test(co.website)?`<a href="${esc(co.website)}" target="_blank" rel="noopener">${esc(co.website)}</a>`:esc(co.website)):"—"}</b></div></div></div>
     <div class="card"><div class="chead"><h3>Contacts</h3><a class="btn gh acsm" onclick="acContactOpen()">Add a contact</a></div>
@@ -9696,6 +9817,7 @@ function renderAccount0(){
       <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="resaleRef" placeholder="Certificate # / reference" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.reference)||"")}" style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><input id="resaleState" placeholder="State" maxlength="2" value="${esc((ACCOUNT.resale&&ACCOUNT.resale.state)||"")}" style="width:70px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit"><a class="btn gh acsm" onclick="submitResale()">Save</a></div></div>
     <div class="card"><h3>Manufacturer account applications</h3><p class="m" style="margin:0 0 8px">Complete and sign each manufacturer's own application in the Account Setup Center — saved as you go, reviewed privately by HCPS, who sends it to the manufacturer.</p><a class="btn pri acsm" onclick="showP360('apply')">Open Account Setup Center</a>${appsHtml&&!/No applications on file/.test(appsHtml)?`<div class="rowlist" style="margin-top:10px">${appsHtml}</div>`:''}</div>
     <div class="card"><h3>Pricing export</h3><div style="font-size:12.5px;color:var(--muted)">Your HCPS product &amp; dealer-pricing file for billing, ERP, inventory or POS.</div><a class="btn pri" style="margin-top:10px" onclick="exportPricingCSV()">Download pricing CSV</a></div>
+    <div class="card" id="acSales"><div class="chead"><h3>Sales contacts</h3><a class="btn gh acsm" onclick="acSalesAdd()">Add a sales contact</a></div><p class="m" style="margin:0 0 8px">Your salespeople, to name on a brochure and its quote. Saved for your account only — HCPS approval is not needed, and your account contact stays the default.</p><div id="acSalesList"><div class="m">Loading…</div></div></div>
   </div><div>
     <div class="card" style="margin-top:0"><h3>Your logo</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Printed on your quotes, brochures and storefront. JPEG or PNG, 1 MB max.</div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">${co.logo_url?`<img src="${esc(co.logo_url)}" alt="Your logo" style="max-width:160px;max-height:64px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:8px;padding:4px" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'m',textContent:'Logo could not be shown — upload it again'}))">`:`<span class="m" style="color:var(--muted)">No logo yet</span>`}</div>
@@ -9705,6 +9827,7 @@ function renderAccount0(){
       ${acAccountsHtml(self)}
       ${others.length?`<h4 style="margin:14px 0 6px">Your other locations</h4>${others.map(l=>`<details class="acloc"><summary><b>${esc(l.name)}</b> <span class="m">${esc([l.city,l.state].filter(Boolean).join(", "))}</span> <span class="m">· ${l.accounts.filter(x=>x.status==="verified").length} verified</span></summary>${acLocHtml(l)}${acAccountsHtml(l)}</details>`).join("")}`:""}</div>
   </div></div>`;
+  acSalesLoad();
 }
 function acModal(title,body,onSave){
   $("#modal").innerHTML=`<div class="mbox"><div class="mhead"><h3>${esc(title)}</h3><a class="mx" onclick="closeModal()">✕</a></div>${body}<div class="acerr" id="acErr" role="alert"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><a class="btn gh" onclick="closeModal()">Cancel</a><a class="btn pri" id="acSave">Send to HCPS</a></div></div>`;
@@ -9719,6 +9842,24 @@ async function acSend(changes,locationId){
   if(btn){ btn.style.pointerEvents=""; btn.textContent="Send to HCPS"; }
   if(err) err.textContent=(r&&r.error)||"Could not send just now — please try again.";
 }
+function acSalesRender(){
+  const box=document.getElementById('acSalesList'); if(!box) return;
+  if(SALESC_ERR==='sales_contacts_not_set_up'){ box.innerHTML='<div class="m">Sales contacts open as soon as HCPS finishes a one-step setup.</div>'; return; }
+  const L=SALESC||[];
+  box.innerHTML=L.length?L.map(c=>`<div class="rl"><div class="b"><div class="n">${esc(c.name)}${c.title?` <span class="m">· ${esc(c.title)}</span>`:''}</div><div class="m">${esc([c.phone,c.email].filter(Boolean).join(' · '))}</div></div>${(typeof PREVIEW!=='undefined'&&PREVIEW)?'':`<a class="btn gh acsm" onclick="acSalesRemove('${esc(c.id)}')">Remove</a>`}</div>`).join('')
+    :'<div class="m" style="color:var(--muted)">No sales contacts saved yet.</div>';
+}
+function acSalesLoad(){ salesContactsLoad(true).then(acSalesRender); }
+function acSalesAdd(){
+  acModal("Add a sales contact",acF("scN","Name","")+acF("scT","Title (optional)","")+acF("scE","Email","",'type="email"')+acF("scP","Phone","",'type="tel" inputmode="tel"'),async()=>{
+    const c={name:acV("scN"),title:acV("scT"),email:acV("scE"),phone:acV("scP")}; const btn=$("#acSave"); if(btn){ btn.style.pointerEvents="none"; btn.textContent="Saving…"; }
+    const r=await api(TOOLS_ENDPOINT,{action:"sales_contact_save",contact:c}).catch(()=>null);
+    if(r&&r.ok){ closeModal(); acToast("Sales contact saved."); acSalesLoad(); return; }
+    if(btn){ btn.style.pointerEvents=""; btn.textContent="Save"; } $("#acErr").textContent=(r&&r.error==='sales_contacts_not_set_up')?'Sales contacts open as soon as HCPS finishes a one-step setup.':((r&&r.error)||'Could not save — please try again.'); });
+  const b=$("#acSave"); if(b) b.textContent="Save";
+}
+async function acSalesRemove(id){ const c=(SALESC||[]).find(x=>String(x.id)===String(id)); if(!c) return; if(!confirm('Remove '+c.name+' from your sales contacts?')) return;
+  const r=await api(TOOLS_ENDPOINT,{action:"sales_contact_remove",id}).catch(()=>null); if(r&&r.ok){ acToast("Removed."); acSalesLoad(); } else acToast("Could not remove — please try again."); }
 function acCompanyOpen(){ const co=(AC&&AC.company)||{};
   acModal("Request a company change",acF("acCn","Main contact",co.contact_name)+acF("acPh","Phone",co.phone,'type="tel" inputmode="tel"')+acF("acEm","Email",co.email,'type="email"')+acF("acWs","Website",co.website,'type="url" placeholder="https://"')
     +`<div class="lead-note">Business name changes: call HCPS. Changes apply once HCPS approves them.</div>`,
@@ -10341,7 +10482,9 @@ function sfPricesRender(){
     <select aria-label="Show" onchange="sfpF('only',this.value)"><option value="">All products</option>${[['dealer','Your price'],['msrp','MSRP'],['calculated','HCPS calculated retail'],['call','Call for Price'],['held','Your price held back']].map(o=>`<option value="${o[0]}"${o[0]===SFP.f.only?' selected':''}>${o[1]}</option>`).join('')}</select>
     <input type="search" placeholder="Search" aria-label="Search products" value="${esc(SFP.f.q)}" oninput="sfpF('q',this.value)"></div>
    ${ed&&d.head_office?`<div class="sfp-scope"><label><input type="radio" name="sfpScope" value="company"${SFP.scope==='company'?' checked':''} onchange="sfpScope('company')"> Company price (all locations)</label><label><input type="radio" name="sfpScope" value="location"${SFP.scope==='location'?' checked':''} onchange="sfpScope('location')"> This location only</label></div>`:''}
-   ${ed?`<div class="sfp-bulk"><span>For the ${rows.length} product${rows.length===1?'':'s'} listed:</span> <label>set your price to <input id="sfpPct" type="number" min="1" max="1000" step="1" value="100" aria-label="Percent"> % of the MSRP (or HCPS calculated retail when there is no MSRP)</label> <a class="btn gh" onclick="sfpBulk('pct')">Apply</a> <a class="btn gh" onclick="sfpBulk('clear')">Clear your prices</a></div>`:''}
+   ${ed?`<div class="sfp-bulk"><span>For the ${rows.length} product${rows.length===1?'':'s'} listed:</span> <label>set your price to <input id="sfpPct" type="number" min="1" max="1000" step="1" value="100" aria-label="Percent"> % of the MSRP (or HCPS calculated retail when there is no MSRP)</label> <a class="btn gh" onclick="sfpBulk('pct')">Apply</a> <a class="btn gh" onclick="sfpBulk('clear')">Clear your prices</a></div>
+   <div class="sfp-bulk"><label>or set it to <b>markup over your dealer cost</b> <input id="sfpMk" type="number" min="0" max="1000" step="1" value="${esc(String(SFP.mk!=null?SFP.mk:40))}" aria-label="Markup over dealer cost, percent"> %</label> <a class="btn gh" onclick="sfpMarkupPreview()">Preview</a> <span class="sf-s">price = dealer cost × (1 + markup ÷ 100) — a 40% markup on a cost of 2,000 gives 2,800</span></div>
+   ${SFP.mkPrev?sfpMarkupPreviewHtml():''}`:''}
    <div class="sfp-wrap"><table class="sfp"><thead><tr><th>Product</th><th>Customers see</th><th>${ed?'Your retail price':'Your saved price'}</th></tr></thead><tbody>
    ${shown.map(p=>{ const k=sfpKey(p), dv=SFP.dirty[k], cur=dv!==undefined?dv:sfpCurrent(p);
      const why=(p.flags||[]).map(x=>d.flag_text[x.flag]+(x.map?' MAP '+money(x.map)+'.':'')).filter(Boolean)[0];
@@ -10363,6 +10506,26 @@ function sfpBulk(mode){ const pct=Number((document.getElementById('sfpPct')||{})
   let n=0; for(const p of sfpRows()){ const k=sfpKey(p); if(mode==='clear'){ if(sfpCurrent(p)!=null||SFP.dirty[k]!=null){ SFP.dirty[k]=null; n++; } continue; }
     const base=p.msrp||p.calculated; if(!base) continue; SFP.dirty[k]=Math.round(base*pct)/100; n++; }
   SFP.msg=n?`${n} change${n===1?'':'s'} ready — not saved yet.`:'Nothing to change in this list.'; sfPricesRender(); }
+/* MARKUP OVER DEALER COST (owner 2026-11-18), beside "% of MSRP". price = unit dealer cost × (1 + markup ÷ 100), worked from the
+   editor's 2× figure (cost = calculated ÷ 2 — the server never sends the cost itself). The dealer sees every calculated amount and
+   the public MAP floor BEFORE confirming; nothing changes until "Use these prices", and nothing is saved until "Save prices". A
+   price below the MAP floor is shown as held (the storefront keeps its rule: it is never published below MAP). */
+function sfpMarkupRows(m){
+  return sfpRows().map(p=>{ const cost=p.calculated?Math.round(p.calculated/2*100)/100:null; if(!(cost>0)) return {p,cost:null,price:null};
+    const price=Math.round(cost*(1+m/100)*100)/100, floor=p.map_floor||null;
+    return {p,cost,price,floor,below:!!(floor&&price<floor)}; });
+}
+function sfpMarkupPreview(){ const m=Number((document.getElementById('sfpMk')||{}).value); if(!(isFinite(m)&&m>=0&&m<=1000)){ SFP.msg='Enter a markup between 0 and 1000%.'; return sfPricesRender(); }
+  SFP.mk=m; SFP.mkPrev=sfpMarkupRows(m); SFP.msg=''; sfPricesRender(); }
+function sfpMarkupPreviewHtml(){
+  const R=SFP.mkPrev||[], ok=R.filter(r=>r.price!=null), none=R.length-ok.length, below=ok.filter(r=>r.below).length;
+  return `<div class="sfp-mk" role="region" aria-label="Markup preview"><b>Markup ${esc(String(SFP.mk))}% — ${ok.length} price${ok.length===1?'':'s'} calculated${none?` · ${none} without a dealer cost on file (left as they are)`:''}${below?` · <span style="color:#991b1b">${below} below the MAP floor (held — not published below MAP)</span>`:''}</b>
+    <div class="sfp-wrap"><table class="sfp"><thead><tr><th>Product</th><th>Dealer cost</th><th>New price</th><th>MAP floor</th></tr></thead><tbody>${ok.slice(0,50).map(r=>`<tr><td>${esc(r.p.name)}<div class="sf-s">${esc(r.p.code)}${r.p.price_unit?' · '+esc(r.p.price_unit):''}</div></td><td>${cents(r.cost)}</td><td><b>${cents(r.price)}</b></td><td>${r.floor?cents(r.floor)+(r.below?' <span class="sfp-why">below MAP</span>':''):'—'}</td></tr>`).join('')}</tbody></table></div>${ok.length>50?`<div class="sf-s">Showing 50 of ${ok.length}.</div>`:''}
+    <div class="sf-acts"><a class="btn pri" onclick="sfpMarkupApply()">Use these prices</a> <a class="btn gh" onclick="sfpMarkupCancel()">Cancel</a></div></div>`;
+}
+function sfpMarkupCancel(){ SFP.mkPrev=null; sfPricesRender(); }
+function sfpMarkupApply(){ const R=SFP.mkPrev||[]; let n=0; for(const r of R){ if(r.price==null) continue; SFP.dirty[sfpKey(r.p)]=r.price; n++; }
+  SFP.mkPrev=null; SFP.msg=n?`${n} change${n===1?'':'s'} ready — not saved yet. Press "Save prices" to keep them.`:'Nothing to change in this list.'; sfPricesRender(); }
 async function sfpSave(){
   const keys=Object.keys(SFP.dirty); if(!keys.length){ SFP.msg='Nothing to save.'; return sfPricesRender(); }
   const loc=SFP.scope==='location'?SFP.loc:null; const rows=keys.map(k=>{ const i=k.indexOf('|'); return {manufacturer:k.slice(0,i),code:k.slice(i+1),price:SFP.dirty[k],location_id:loc}; });
@@ -10404,6 +10567,7 @@ async function sfSave(mode){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
+Object.assign(window,{openOrderDetail,orderPrint,qSetMarkup,sfpMarkupPreview,sfpMarkupApply,sfpMarkupCancel,acSalesAdd,acSalesRemove,salesContactsApi:(b)=>api(TOOLS_ENDPOINT,b)});
 Object.assign(window,{apTradeRef,gsvAdd,gsvQty,gsvForm,gsvSend,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
@@ -10565,7 +10729,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
             ${eff>0?`<div class="pd-plabel">${cp!=null?"Your contract price":"Your dealer price"}</div>
               <div class="pd-price"><sup>$</sup>${d}<sup>.${c}</sup></div>
               ${cp!=null?`<div class="pd-contract">Contract price set by HCPS${(p.base_price!=null&&Number(p.base_price)>eff)?` · <span style="color:#8a94a6;text-decoration:line-through;font-weight:600">List ${money(p.base_price)}</span>`:""}</div>`:""}
-              ${msrp?`<div class="pd-msrp">MSRP ${money(msrp)}</div>`:""}
+              ${msrp?`<div class="pd-msrp">${msrpWord(p)} ${money(msrp)}</div>`:(cp==null&&suggestedRetail(p)?`<div class="pd-msrp">Suggested retail ${money(suggestedRetail(p).amount)}${suggestedRetail(p).unit?` per ${esc(suggestedRetail(p).unit)}`:""}</div>`:"")}
               ${mapPrice?`<div class="pd-map" title="Minimum advertised price — do not advertise below this">${p._golden?"eMAP":"MAP"} ${money(mapPrice)}</div>`:""}
               ${margin?`<div class="pd-margin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Est. retail margin ${money(margin)}${marginPct?" · "+marginPct+"%":""}</div>`:""}`
               :`<div class="pd-plabel">Pricing</div><div class="pd-price" style="font-size:20px">${p._golden?(GOLDEN.cat&&GOLDEN.cat.prices?"Price on request":"Dealer price shows once your Golden account is linked"):((typeof isHeldSlug==="function"&&isHeldSlug(p.manufacturer))?(typeof HELD_NOTE!=="undefined"?HELD_NOTE:"Pricing being verified"):(state.dealer?"Call for pricing":"Log in for pricing"))}</div>

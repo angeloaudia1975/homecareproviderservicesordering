@@ -153,6 +153,12 @@ nav.mainnav .search button{border-radius:0 999px 999px 0;min-height:40px;backgro
 .catdrop .cg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .catdrop a{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 10px;border-radius:10px;color:var(--ink);text-decoration:none;font-weight:600;font-size:14px}
 .catdrop a:hover{background:var(--brand-soft)}.catdrop a span{color:var(--muted);font-weight:500;margin-left:auto;font-size:12px}
+/* Category names are black on a light background in every theme, readable before hover (owner 2026-11-18). The menu sits inside
+   the header bar, whose link color is the theme's on-brand text (white on dark themes) — these rules win over it. */
+nav.mainnav .catdrop a,nav.mainnav .catdrop a:visited{display:flex;color:#111;background:#fff;font-weight:600;font-size:14px;min-height:48px;padding:6px 10px;border-bottom:0}
+nav.mainnav .catdrop a:hover,nav.mainnav .catdrop a:focus{color:#111;background:var(--brand-soft)}
+nav.mainnav .catdrop a span{color:#4b5563}
+.cat b,.ccard b{color:#111}
 .home{margin:18px 0 6px;display:flex;flex-direction:column;gap:22px}
 .hero{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px}
 .heroban{position:relative;border-radius:18px;overflow:hidden;background:var(--brand);color:var(--on-brand);display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);min-height:300px}
@@ -277,6 +283,6 @@ body.lay .price{color:var(--ink)}
 <main class="wrap" id="main"><div class="msg">Loading products…</div></main>
 <footer><div class="wrap" id="foot"></div></footer>
 <div class="ov" id="ov" role="dialog" aria-modal="true" aria-label="Request information"><div class="dlg" id="dlg" tabindex="-1"></div></div>
-<script src="/store.js?v=5" defer></script>
+<script src="/store.js?v=6" defer></script>
 </body>
 </html>

@@ -83,7 +83,7 @@ async function openCenter(page) {
         ['Company', 'Contacts', 'Addresses', 'Your logo', 'Your manufacturer accounts', 'Manufacturer account applications', 'Pricing export', 'Resale / tax-exemption certificate', 'Acme Branch'].forEach(s => ok(r.text.toLowerCase().includes(s.toLowerCase()), 'missing ' + s));
         ok(!/Your terms by line/i.test(r.text), 'the terms card is removed'); });
       await t(`${label}: Resale certificate, Manufacturer account applications and Pricing export sit directly under Addresses (left column)`, () => {
-        ok(r.order.join('|') === 'Company|Contacts|Addresses|Resale / tax-exemption certificate|Manufacturer account applications|Pricing export', r.order.join('|')); });
+        ok(r.order.join('|') === 'Company|Contacts|Addresses|Resale / tax-exemption certificate|Manufacturer account applications|Pricing export|Sales contacts', r.order.join('|')); });
       await t(`${label}: statuses green / amber / red with their meaning`, () => {
         ok(r.chips.includes('ok:Verified') && r.chips.includes('warn:Pending') && r.chips.includes('none:No account'), r.chips.join('|'));
         ok(/Ordering access is set separately by HCPS/.test(r.text), 'separate from ordering'); });
