@@ -6695,6 +6695,7 @@ function brPriceSet(pl){
   else if(mode==='once'){ const v=Number(String(((document.getElementById('brOnce')||{}).value)||'').replace(/[$,\s]/g,'')); if(!(v>0&&v<=1000000)) return {error:'Enter the price for this brochure.'}; out.quote_price=Math.round(v*100)/100; }
   const cmp=document.getElementById('brCompare'), exp=document.getElementById('brExpires');
   const until=exp&&/^\d{4}-\d{2}-\d{2}$/.test(exp.value)?exp.value:'';
+  if(until&&until<new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'})) return {error:'The offer date has already passed — clear it or choose a future date.'};
   return {payload:out,include_msrp,price_basis:mode,compare:!cmp||cmp.checked,offer_expires:until};
 }
 async function brSaveRetail(){
@@ -6720,7 +6721,7 @@ function brRenderPriceRow(){
     <div class="br-row" id="brOnceRow" style="display:${cur==='once'?'flex':'none'};gap:8px;align-items:center;flex-wrap:wrap"><input id="brOnce" inputmode="decimal" placeholder="$0.00" style="max-width:140px"><button type="button" class="ghost" onclick="brSaveRetail()">Save as my retail price</button></div>
     <div id="brOfferOpts" style="display:${['retail','once','map'].includes(cur)?'block':'none'}">
       <label class="br-row"><input type="checkbox" id="brCompare" checked> Show the manufacturer's MSRP and your customer's savings (when a verified MSRP exists)</label>
-      <label class="br-row" style="gap:8px;align-items:center;flex-wrap:wrap">Offer valid through (optional) <input type="date" id="brExpires" style="max-width:170px"></label>
+      <label class="br-row" style="gap:8px;align-items:center;flex-wrap:wrap">Offer valid through (optional) <input type="date" id="brExpires" autocomplete="off" min="${new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'})}" style="max-width:170px"></label>
       <div class="br-sub" style="font-size:12px">${pl._map?`Manufacturer's MAP: <b>${fm(pl._map)}</b> <button type="button" class="ghost" onclick="brUseMap()">Use MAP</button> · `:''}This brochure is a private document for your customer — you may print or send it at the price you choose, including below MAP. MAP still applies to your public storefront.</div></div>`;
   host.querySelectorAll('input[name="brPrice"]').forEach(r=>r.onchange=()=>{ const row=document.getElementById('brOnceRow'); if(row) row.style.display=brPriceChoice()==='once'?'flex':'none';
     const oo=document.getElementById('brOfferOpts'); if(oo) oo.style.display=['retail','once','map'].includes(brPriceChoice())?'block':'none'; });
@@ -7612,6 +7613,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .btn.gh{background:#fff;color:var(--ink-2);border:1px solid var(--line)}
   #goldenHist [data-ghconf]{min-height:44px;margin:4px 6px 0 0}
   #goldenHist a.gh-trk{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;font-weight:700}
+  #p360wrap a.gh-trk{font-weight:700}#p360wrap .gh-copy{min-height:36px;padding:2px 10px;margin-left:4px;border:1px solid var(--line,#cbd5e1);border-radius:8px;background:#fff;font-size:12px;cursor:pointer}@media print{.gh-copy{display:none!important}}
   #p360wrap .mainnav{background:var(--navy)}
   #p360wrap .mn-in{max-width:1240px;margin:0 auto;display:flex;gap:1px;padding:0 14px;overflow-x:auto}
   #p360wrap .mn-in a{color:#aebdd0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:12px 14px;border-bottom:3px solid transparent;white-space:nowrap}
@@ -8203,7 +8205,7 @@ function shipProgHtml(P){
 function orderShipHtml(list,prog){
   const L=(list||[]).filter(Boolean); if(!L.length) return "";
   return shipProgHtml(prog)+(L.length>1?`<div class="m" style="font-weight:700">${L.length} shipments</div>`:"")+L.map(x=>{
-    const num=x.tracking_number?(x.url?`<a class="tnum" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.tracking_number)}</a>`:`<span class="tnum">${esc(x.tracking_number)}</span>`):"";
+    const num=x.tracking_number?(x.url?`<a class="tnum" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.tracking_number)}</a> <a class="gh-trk" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">Track with ${esc(x.carrier||"the carrier")}</a>`:`<span class="tnum">${esc(x.tracking_number)}</span>`)+trkCopyBtn(x.tracking_number):"";
     const car=x.carrier?` <small>(${esc(x.carrier)})</small>`:(x.tracking_number?' <small style="color:var(--muted)">(carrier not confirmed)</small>':"");
     const bits=[];
     if(x.ship_date) bits.push("Shipped "+shipDate(x.ship_date));
@@ -8395,7 +8397,7 @@ function ghDetail(o){
   /* Carrier tracking opens the CARRIER's own page, built here from fixed https templates for known carriers and a
      tracking number of letters/digits only — never a link Golden (or anyone) supplies. Golden's record has no delivery
      date, so a shipped order says "Delivery not confirmed" rather than a guessed date. */
-  const trk=(o.tracking||[]).map(t=>'<li>'+(t.ship_date?ghDay(t.ship_date)+' · ':'')+esc(t.carrier||"Carrier not given")+(t.tracking_number?' · Tracking <span class="tnum">'+esc(t.tracking_number)+'</span>'+ghTrackLink(t):' · no tracking number yet')+(t.so_number?' (SO '+esc(t.so_number)+')':'')+'</li>').join("")||'<li>Not shipped yet.</li>';
+  const trk=(o.tracking||[]).map(t=>'<li>'+(t.ship_date?ghDay(t.ship_date)+' · ':'')+esc(t.carrier||"Carrier not given")+(t.tracking_number?' · Tracking '+((u=>u?'<a class="tnum gh-trk" href="'+esc(u.url)+'" target="_blank" rel="noopener noreferrer">'+esc(t.tracking_number)+'</a>':'<span class="tnum">'+esc(t.tracking_number)+'</span>')(ghTrackUrl(t)))+ghTrackLink(t):' · no tracking number yet')+(t.so_number?' (SO '+esc(t.so_number)+')':'')+'</li>').join("")||'<li>Not shipped yet.</li>';
   const dlv=(o.tracking||[]).length?'<li><small>Delivery not confirmed — Golden\u2019s record has no delivery date.</small></li>':'';
   const life=(o.lifecycle||[]).map(e=>'<li>'+(e.at?ghDay(e.at)+' · ':'')+esc(e.label||GH_EVENT[e.type]||e.type)+(e.so_number?' (SO '+esc(e.so_number)+')':'')+'</li>').join("")||'<li>—</li>';
   const m=v=>v!=null?esc(cents(v)):"—";
@@ -8417,11 +8419,17 @@ function ghDetail(o){
   else if(C&&C.state==="error") conf='<div class="gh-col"><h4>Golden confirmation</h4><ul><li>Confirmations could not be loaded just now.</li></ul></div>';
   return '<div class="gh-detail-in"><div class="gh-col"><h4>Items</h4><ul>'+items+'</ul></div><div class="gh-col"><h4>Tracking</h4><ul>'+trk+dlv+'</ul></div><div class="gh-col"><h4>History</h4><ul>'+life+'</ul></div>'+tot+conf+'</div>';
 }
-const GH_CARRIER=[[/\bups\b/i,"https://www.ups.com/track?tracknum="],[/fed\s*ex/i,"https://www.fedex.com/fedextrack/?trknbr="],[/\busps\b|postal/i,"https://tools.usps.com/go/TrackConfirmAction?tLabels="],
+const GH_CARRIER=[[/\bxpo\b|con-?way/i,"https://ext-web.ltl-xpo.com/public-app/shipments?referenceNumber=","XPO"],[/\bups\b/i,"https://www.ups.com/track?tracknum="],[/fed\s*ex/i,"https://www.fedex.com/fedextrack/?trknbr="],[/\busps\b|postal/i,"https://tools.usps.com/go/TrackConfirmAction?tLabels="],
   [/estes/i,"https://www.estes-express.com/myestes/shipment-tracking/?type=PRO&query="],[/old\s*dominion|\bodfl\b/i,"https://www.odfl.com/us/en/tools/trace-track-ltl-freight/trace.html?proNumbers="],[/\bsaia\b/i,"https://www.saia.com/track/details;pro="],[/\br\s*\+?\s*l\b|r&l/i,"https://www.rlcarriers.com/freight/shipping/shipment-tracing?pro="]];
-function ghTrackLink(t){ const n=String(t.tracking_number||"").replace(/\s+/g,""); if(!/^[A-Za-z0-9]{6,40}$/.test(n)) return "";
-  const c=GH_CARRIER.find(x=>x[0].test(String(t.carrier||""))); if(!c) return "";
-  return ' <a class="gh-trk" href="'+esc(c[1]+encodeURIComponent(n))+'" target="_blank" rel="noopener noreferrer">Track with '+esc(String(t.carrier).slice(0,30))+'</a>'; }
+function ghTrackUrl(t){ const n=String(t.tracking_number||"").replace(/\s+/g,""); if(!/^[A-Za-z0-9]{6,40}$/.test(n)) return null;
+  const c=GH_CARRIER.find(x=>x[0].test(String(t.carrier||""))); return c?{url:c[1]+encodeURIComponent(n),name:c[2]||String(t.carrier).slice(0,30)}:null; }
+function ghTrackLink(t){ const u=ghTrackUrl(t); return (u?' <a class="gh-trk" href="'+esc(u.url)+'" target="_blank" rel="noopener noreferrer">Track with '+esc(u.name)+'</a>':'')+trkCopyBtn(t.tracking_number); }
+/* owner 2026-11-19: every tracking number can be copied (the carrier's own page may ask for it — XPO asks for a CAPTCHA first) */
+function trkCopyBtn(n){ n=String(n||"").trim(); return /^[A-Za-z0-9-]{3,40}$/.test(n)?' <button type="button" class="gh-copy noprint" data-copy="'+esc(n)+'" onclick="trkCopy(this)">Copy tracking number</button>':''; }
+function trkCopy(b){ const n=b.getAttribute("data-copy"); const done=()=>{ b.textContent="Copied"; setTimeout(()=>{ b.textContent="Copy tracking number"; },1800); };
+  const manual=()=>{ let okc=false; const i=document.createElement("input"); i.value=n; document.body.appendChild(i); i.select(); try{ okc=document.execCommand("copy"); }catch(x){} i.remove();
+    if(okc) done(); else { b.textContent="Tracking number: "+n; setTimeout(()=>{ b.textContent="Copy tracking number"; },6000); } };
+  try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(n).then(done,manual); else manual(); }catch(e){ manual(); } }
 /* Golden answers history_unavailable both when it is briefly down AND while some of the dealer's portal orders are still
    being matched to their Golden sales orders (Golden then withholds the history rather than show an order twice). */
 function ghRetryText(){ return GH.why==="history_unavailable"
@@ -8994,7 +9002,7 @@ function qUnit(r){ const m=qMeta(r); return m.basis==='msrp'?r.msrp:m.basis==='r
 /* owner 2026-11-12: the preview's reference price and saving — the same rule the server prints with (RP.savings: verified MSRP
    only, offer below it, percent rounded down); the printed / emailed quote is decided on the server. */
 function qRef(r){ const m=qMeta(r); return (m.compare!==false&&['retail','once','map'].includes(m.basis)&&r.msrp!=null&&!r.msrpCalc&&!r.msrpEach&&!qIsUpgrade(r.key))?Number(r.msrp):null; }
-function qSaving(r){ const R=qRef(r), O=qUnit(r); if(!(R>0&&O>0&&O<R)) return null; const d=Math.round((R-O)*100)/100; if(!(d>=0.01)) return null; return {dollars:d,percent:Math.floor(d/R*100+1e-9)}; }
+function qSaving(r){ const R=qRef(r), O=qUnit(r); if(!(R>0&&O>0&&O<R)) return null; const d=Math.round((R-O)*100)/100; if(!(d>=0.01)) return null; return {dollars:d,percent:Math.floor(d/R*1000+1e-9)/10}; }
 function qBelowMap(r){ const m=qMeta(r), u=qUnit(r); return ['retail','once'].includes(m.basis)&&r.map>0&&u>0&&u<r.map-0.004; }
 function quoteTotal(picked){ return picked.reduce((s,r)=>{ const u=qUnit(r); return s+(u!=null?u*qMeta(r).qty:0); },0); }
 function qMoney(v){ return '$'+Number(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
@@ -9002,14 +9010,14 @@ function quotePaperHtml(picked,total){
   const co=(typeof AC!=='undefined'&&AC&&AC.company)||{};
   const biz=co.business_name||(PROFILE&&PROFILE.name)||"Your Business";
   const logo=co.logo_url||BRANDING.logo_url;
-  return `<div class="qhead"><div style="display:flex;gap:11px;align-items:center">${logo?`<img src="${esc(logo)}" alt="" style="max-width:120px;max-height:46px;object-fit:contain" onerror="this.remove()">`:brandLogoHtml(46)}<div><div class="qbiz">${esc(biz)}</div><div class="qc">${esc([co.phone,co.email].filter(Boolean).join(" · "))}</div></div></div>
+  return `<div class="qhead"><div style="display:flex;gap:11px;align-items:center">${logo?`<img src="${esc(logo)}" alt="" style="max-width:120px;max-height:46px;object-fit:contain" onerror="this.remove()">`:brandLogoHtml(46)}<div><div class="qbiz">${esc(biz)}</div><div class="qc">${QCUST.sc&&QCUST.sc.name?'Your sales contact: <b>'+esc(QCUST.sc.name)+'</b>'+(QCUST.sc.title?', '+esc(QCUST.sc.title):'')+esc([QCUST.sc.phone,QCUST.sc.email].filter(Boolean).map(x=>' · '+x).join('')):esc([co.phone,co.email].filter(Boolean).join(" · "))}</div></div></div>
     <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>${QSAVED?esc(QSAVED.quote_no):"Draft"}</b><div class="qc">Valid ${esc(QCUST.valid||"30 days")}</div></div></div>
     ${QCUST.name||QCUST.title?`<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">${QCUST.name?`Prepared for <b>${esc(QCUST.name)}</b>`:""}${QCUST.title?`<div>${esc(QCUST.title)}</div>`:""}</div>`:""}
     <table class="qtbl"><thead><tr><th>Product</th><th style="text-align:right">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Amount</th></tr></thead><tbody>${picked.map(r=>{ const u=qUnit(r), q=qMeta(r).qty;
-      return `<tr><td>${quoteItemHtml(r)}</td><td style="text-align:right">${q}</td><td style="text-align:right">${u!=null?qMoney(u)+(qMeta(r).basis==='msrp'&&r.msrpEach?' each':'')+(r.unit&&!(qMeta(r).basis==='msrp'&&r.msrpEach)?'<div style="font-size:9.5px;color:var(--muted)">per '+esc(r.unit)+'</div>':'')+(qMeta(r).basis==='msrp'?'<div style="font-size:9.5px;color:var(--muted)">'+(r.msrpCalc?'Retail price (HCPS calculated)':'MSRP')+'</div>':'')+(qRef(r)!=null?'<div style="font-size:9.5px;color:var(--muted)">MSRP '+qMoney(qRef(r))+'</div>':'')+(qSaving(r)?'<div style="font-size:10px;color:#1d6b3a;font-weight:700">You save '+qMoney(qSaving(r).dollars)+' ('+(qSaving(r).percent>=1?qSaving(r).percent+'%':'under 1%')+')'+(q>1?' each':'')+'</div>':''):(qMsrpOk(r)?'<span class="est">Price on request</span>':'<span class="est">Price on Request</span>')}</td><td style="text-align:right">${u!=null?qMoney(u*q):'—'}</td></tr>`; }).join("")||'<tr><td colspan="4" style="color:var(--muted)">Add products to build the quote.</td></tr>'}</tbody></table>
+      return `<tr><td>${quoteItemHtml(r)}</td><td style="text-align:right">${q}</td><td style="text-align:right">${u!=null?qMoney(u)+(qMeta(r).basis==='msrp'&&r.msrpEach?' each':'')+(r.unit&&!(qMeta(r).basis==='msrp'&&r.msrpEach)?'<div style="font-size:9.5px;color:var(--muted)">per '+esc(r.unit)+'</div>':'')+(qMeta(r).basis==='msrp'?'<div style="font-size:9.5px;color:var(--muted)">'+(r.msrpCalc?'Retail price (HCPS calculated)':'MSRP')+'</div>':'')+(qRef(r)!=null?'<div style="font-size:9.5px;color:var(--muted)">MSRP '+qMoney(qRef(r))+'</div>':'')+(qSaving(r)?'<div style="font-size:10px;color:#1d6b3a;font-weight:700">You save '+qMoney(qSaving(r).dollars)+' ('+(qSaving(r).percent>=0.1?qSaving(r).percent.toFixed(1)+'%':'under 0.1%')+')'+(q>1?' each':'')+'</div>':''):(qMsrpOk(r)?'<span class="est">Price on request</span>':'<span class="est">Price on Request</span>')}</td><td style="text-align:right">${u!=null?qMoney(u*q):'—'}</td></tr>`; }).join("")||'<tr><td colspan="4" style="color:var(--muted)">Add products to build the quote.</td></tr>'}</tbody></table>
     <div class="qtot">Total: ${qMoney(total)}</div>
     ${(()=>{ let sv=0, ref=0; picked.forEach(r=>{ const x=qSaving(r); if(x){ const q=qMeta(r).qty; sv+=x.dollars*q; ref+=qRef(r)*q; } }); sv=Math.round(sv*100)/100;
-      return sv>0?`<div class="qtot" style="color:#1d6b3a;font-size:13px">Your total savings: ${qMoney(sv)} (${Math.floor(sv/ref*100+1e-9)>=1?Math.floor(sv/ref*100+1e-9)+'%':'under 1%'})</div>`:''; })()}
+      return sv>0?`<div class="qtot" style="color:#1d6b3a;font-size:13px">Your total savings: ${qMoney(sv)} (${Math.floor(sv/ref*1000+1e-9)>=1?(Math.floor(sv/ref*1000+1e-9)/10).toFixed(1)+'%':'under 0.1%'})</div>`:''; })()}
     ${QCUST.notes?`<div style="font-size:11px;margin-top:8px;white-space:pre-wrap">${esc(QCUST.notes)}</div>`:""}
     <div style="font-size:10px;color:var(--muted);margin-top:10px">Prices quoted by ${esc(biz)}.${picked.some(r=>qUnit(r)==null)?" Items without a price are not in the total.":""} The printed / emailed quote is checked against HCPS's records.</div>`;
 }
@@ -9057,14 +9065,29 @@ async function qSaveRetail(i){ const r=quotePicked()[i]; if(!r) return; const m=
 function qToast(msg,bad){ const el=$("#qmsg"); if(el){ el.textContent=msg; el.style.color=bad?'#b42323':''; } }
 function qLinesPayload(){ return quotePicked().map(r=>{ const m=qMeta(r); const golden=/^golden(-technologies)?$/.test(r.mfr);
   return {mfr:r.mfr,code:r.code,sku:r.sku,name:r.name,option:r.option||'',mfrName:r.mfrName,qty:m.qty,basis:m.basis,unit:m.basis==='once'?m.unit:(m.basis==='msrp'&&golden?r.msrp:null),image:r.image||'',compare:m.compare!==false}; }); }
-function qHeaderPayload(){ return {title:QCUST.title||'',customer_name:QCUST.name||'',customer_email:QCUST.email||'',customer_phone:QCUST.phone||'',valid_for:QCUST.valid||'30 days',notes:QCUST.notes||''}; }
-function qCheckLines(){ const p=quotePicked(); if(!p.length) return 'Add at least one product.'; const bad=p.find(r=>qMeta(r).basis==='once'&&!(qMeta(r).unit>0)); return bad?('Enter the one-time price for '+bad.name+'.'):''; }
+/* SALESPERSON ON A QUOTE (owner 2026-11-19): the account's own contact (default), one of the dealer's saved sales contacts, or
+   someone typed in for this quote only — then that person is the quote's SOLE customer contact. A one-time entry never
+   changes the account's contact or the saved list. */
+function qScValue(){ const c=QCUST.sc; return c&&String(c.name||'').trim()?{name:c.name,title:c.title||'',phone:c.phone||'',email:c.email||''}:null; }
+function qScHtml(){ const SL=(typeof SALESC!=='undefined')?SALESC:[]; if(SL===null&&typeof salesContactsLoad==='function'){ salesContactsLoad().then(()=>{ if(document.getElementById('qScSel')) renderQuotes(); }); }
+  const sel=QCUST.scSel||''; const L=SL||[];
+  const opts=[['','Account contact (default)']].concat(L.map(c=>[String(c.id),c.name+(c.title?' — '+c.title:'')])).concat([['once','Someone else — this quote only']]);
+  const c=QCUST.sc||{}; const inp=(k,lab,ty)=>`<div class="fld2"><label for="qSc_${k}">${lab}</label><input id="qSc_${k}" ${ty||''} value="${esc(c[k]||'')}" oninput="qScSet('${k}',this.value)"></div>`;
+  return `<div class="fld2"><label for="qScSel">Sales contact on this quote</label><select id="qScSel" onchange="qScPick(this.value)" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:16px">${opts.map(o=>`<option value="${esc(o[0])}"${o[0]===sel?' selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`
+    +(sel==='once'?inp('name','Salesperson name')+inp('title','Title (optional)')+inp('phone','Phone','type="tel" inputmode="tel"')+inp('email','Email','type="email"'):'');
+}
+function qScPick(v){ QCUST.scSel=v||''; if(!v) QCUST.sc=null; else if(v==='once') QCUST.sc=QCUST.sc&&QCUST.scSelOnce?QCUST.sc:{name:'',title:'',phone:'',email:''};
+  else { const c=(((typeof SALESC!=='undefined')&&SALESC)||[]).find(x=>String(x.id)===String(v)); QCUST.sc=c?{name:c.name,title:c.title||'',phone:c.phone||'',email:c.email||''}:null; }
+  QCUST.scSelOnce=v==='once'; QDIRTY=true; renderQuotes(); }
+function qScSet(k,v){ if(!['name','title','phone','email'].includes(k)) return; QCUST.sc=QCUST.sc||{name:'',title:'',phone:'',email:''}; QCUST.sc[k]=String(v==null?'':v).slice(0,k==='email'?200:120); QDIRTY=true; qPreview(); }
+function qHeaderPayload(){ return {title:QCUST.title||'',customer_name:QCUST.name||'',customer_email:QCUST.email||'',customer_phone:QCUST.phone||'',valid_for:QCUST.valid||'30 days',notes:QCUST.notes||'',sales_contact:qScValue()}; }
+function qCheckLines(){ const p=quotePicked(); if(!p.length) return 'Add at least one product.'; { const c=qScValue(); if(c){ if(!c.phone&&!c.email) return 'Enter a phone number or an email for the salesperson, or choose the account contact.'; if(c.email&&!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(c.email)) return 'Enter a valid email address for the salesperson.'; } } const bad=p.find(r=>qMeta(r).basis==='once'&&!(qMeta(r).unit>0)); return bad?('Enter the one-time price for '+bad.name+'.'):''; }
 async function qSave(){
   if(QBUSY) return false; const e=qCheckLines(); if(e){ qToast(e,true); return false; }
   QBUSY=true; qToast('Saving…');
   const body={action:'quote_save',header:qHeaderPayload(),lines:qLinesPayload()}; if(QSAVED){ body.id=QSAVED.id; body.updated_at=QSAVED.updated_at; }
   const r=await quotesCall(body); QBUSY=false;
-  if(r&&r.ok&&r.quote){ QSAVED={id:r.quote.id,quote_no:r.quote.quote_no,updated_at:r.quote.updated_at,status:r.quote.status}; QDIRTY=false; QLIST=null; qToast('Saved as quote '+r.quote.quote_no+'.'); renderQuotes(); return true; }
+  if(r&&r.ok&&r.quote){ QSAVED={id:r.quote.id,quote_no:r.quote.quote_no,updated_at:r.quote.updated_at,status:r.quote.status}; QDIRTY=false; QLIST=null; qToast('Saved as quote '+r.quote.quote_no+'.'+(r.sales_contact_saved===false&&QCUST.sc?' The salesperson prints and emails with this quote from this screen; reopening it later shows the account contact until HCPS finishes a one-step setup.':'')); renderQuotes(); return true; }
   qToast((r&&r.error)||'Could not save just now.',true); return false;
 }
 function qNew(){ if(QDIRTY&&!confirm('Start a new quote? Unsaved changes to this one will be lost.')) return; QUOTE=[]; QMETA={}; QSNAP={}; QSAVED=null; QLOCRETAIL=null; QDIRTY=false; QCUST={name:"",email:"",phone:"",title:"",valid:"30 days",notes:""}; renderQuotes(); }
@@ -9076,6 +9099,8 @@ async function qOpen(id){
   (q.lines||[]).forEach(l=>{ const k=l.mfr+'|'+l.code; if(QUOTE.includes(k)) return; QUOTE.push(k); QMETA[k]={qty:l.qty||1,basis:l.basis,unit:l.basis==='once'?l.unit:null};
     QSNAP[k]={name:l.name,option:l.option,sku:l.sku,mfrName:l.mfrName,msrp:(/^golden/.test(l.mfr)&&l.basis==='msrp')?l.unit:null,image:l.image}; });
   QCUST={name:q.customer_name||"",email:q.customer_email||"",phone:q.customer_phone||"",title:q.title||"",valid:q.valid_for||"30 days",notes:q.notes||""};
+  { const sc=q.sales_contact&&q.sales_contact.name?q.sales_contact:null; QCUST.sc=sc?{name:sc.name||"",title:sc.title||"",phone:sc.phone||"",email:sc.email||""}:null;
+    const m=sc&&(((typeof SALESC!=='undefined')&&SALESC)||[]).find(c=>c.name===sc.name&&(c.email||"")===(sc.email||"")&&(c.phone||"")===(sc.phone||"")); QCUST.scSel=sc?(m?String(m.id):'once'):''; }
   QLOCRETAIL=r.own_location===false?(r.retail_at_location||{}):null;   // a branch's quote previews at that branch's prices
   QSAVED={id:q.id,quote_no:q.quote_no,updated_at:q.updated_at,status:q.status}; QDIRTY=false; renderQuotes(); window.scrollTo({top:0}); }
 async function qDelete(id,no){ if(!confirm('Delete quote '+no+'? This cannot be undone.')) return;
@@ -9083,7 +9108,7 @@ async function qDelete(id,no){ if(!confirm('Delete quote '+no+'? This cannot be 
 async function qPrint(){
   const e=qCheckLines(); if(e){ qToast(e,true); return; }
   qToast('Building your quote…');
-  const r=await quotesCall(QSAVED&&!QDIRTY?{action:'quote_render',id:QSAVED.id}:{action:'quote_render',header:qHeaderPayload(),lines:qLinesPayload()});
+  const r=await quotesCall(QSAVED&&!QDIRTY?{action:'quote_render',id:QSAVED.id,sales_contact:qScValue()}:{action:'quote_render',header:qHeaderPayload(),lines:qLinesPayload()});
   if(!(r&&r.ok&&r.html)){ qToast((r&&r.error)||'Could not build the quote.',true); return; }
   const old=document.getElementById('qFrame'); if(old) old.remove();
   const f=document.createElement('iframe'); f.id='qFrame'; f.setAttribute('title','Quote for printing'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0';
@@ -9100,7 +9125,7 @@ async function qEmailOpen(){
     <div class="acerr" id="qErr" role="alert"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><a class="btn gh" onclick="closeModal()">Cancel</a><a class="btn pri" id="qSend">Send quote</a></div></div>`;
   $("#modal").classList.add("on");
   $("#qSend").onclick=async()=>{ const btn=$("#qSend"); btn.style.pointerEvents="none"; btn.textContent="Sending…";
-    const r=await quotesCall({action:'quote_email',id:QSAVED.id,to:($("#qTo").value||'').trim(),message:$("#qMsg").value||''});
+    const r=await quotesCall({action:'quote_email',id:QSAVED.id,sales_contact:qScValue(),to:($("#qTo").value||'').trim(),message:$("#qMsg").value||''});
     if(r&&r.ok){ closeModal(); QLIST=null; qToast('Quote '+QSAVED.quote_no+' sent to '+r.sent_to+'.'); const g=await quotesCall({action:'quote_get',id:QSAVED.id}); if(g&&g.ok&&g.quote) QSAVED.updated_at=g.quote.updated_at; renderQuotes(); return; }
     btn.style.pointerEvents=""; btn.textContent="Send quote"; $("#qErr").textContent=(r&&r.error)||'Could not send just now.'; };
 }
@@ -9129,6 +9154,7 @@ function renderQuotes(){
         <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Customer</div>
         ${fld('qcn','Customer name','name')}${fld('qce','Customer email','email','type="email"')}${fld('qcp','Customer phone','phone','type="tel" inputmode="tel"')}
         ${fld('qct','Project / reference (optional)','title')}${fld('qcv','Valid for','valid')}
+        ${qScHtml()}
         <div class="fld2"><label for="qcnotes">Notes on the quote (optional)</label><textarea id="qcnotes" rows="3" oninput="qCust('notes',this.value)" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:16px">${esc(QCUST.notes||"")}</textarea></div>
       </div>
     </div>
@@ -10669,7 +10695,7 @@ async function sfSave(mode){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{openOrderDetail,orderPrint,ghOpenOrder,ghCloseOrder,qSetMarkup,sfpMarkupPreview,sfpMarkupApply,sfpMarkupCancel,sfpUseMap,sfpFixBelow,acSalesAdd,acSalesRemove,salesContactsApi:(b)=>api(TOOLS_ENDPOINT,b)});
+Object.assign(window,{openOrderDetail,orderPrint,ghOpenOrder,ghCloseOrder,trkCopy,qScPick,qScSet,qSetMarkup,sfpMarkupPreview,sfpMarkupApply,sfpMarkupCancel,sfpUseMap,sfpFixBelow,acSalesAdd,acSalesRemove,salesContactsApi:(b)=>api(TOOLS_ENDPOINT,b)});
 Object.assign(window,{apTradeRef,gsvAdd,gsvQty,gsvForm,gsvSend,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 

@@ -72,6 +72,9 @@ const dealerLogo = u => { const s = String(u || '').trim();
   if (/^https:\/\/[^\s"'<>`]+$/i.test(s) && s.length <= 2000) return s;
   if (/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/i.test(s) && s.length < 600000) return s;
   return ''; };
+/* owner 2026-11-19: the savings percentage to one decimal ("25.0%") — the admin site's RP.savings rounds it DOWN, so it is
+   never overstated; whole percentages from an older admin print as before */
+const pctText = (x) => { const n = Number(x); return !isFinite(n) ? '' : n < 0.1 ? 'under 0.1%' : n.toFixed(1) + '%'; };
 function renderBrochure(p, opts) {
   opts = opts || {};
   const showMsrp = !!opts.include_msrp;
@@ -85,8 +88,12 @@ function renderBrochure(p, opts) {
   const dContact = D ? [str(D.phone, 40), str(D.email, 200), str(D.website, 200).replace(/^https?:\/\//i, '')].filter(Boolean).map(esc).join(' &nbsp;·&nbsp; ') : '';
   /* the salesperson chosen for THIS brochure (a saved sales contact or a one-time entry) — only shown on a dealer-branded
      brochure; the account's own contact line above stays as it is */
+  /* owner 2026-11-19: a selected / entered salesperson is the SOLE customer contact — the dealer's name, logo and street
+     address stay; the account's own phone, email and website are not printed beside it. A blank field is left out. Only
+     with no salesperson does the account's own contact line print. */
   const SC = D && opts.sales_contact ? opts.sales_contact : null;
   const scLine = SC ? `Your sales contact: <b>${esc(SC.name)}</b>${SC.title ? `, ${esc(SC.title)}` : ''}${[SC.phone, SC.email].filter(Boolean).map((x) => ' &nbsp;·&nbsp; ' + esc(x)).join('')}` : '';
+  const contactLine = SC ? scLine : dContact;
 
   const name = esc(str(p.name, 200)) || 'Product';
   const code = esc(str(p.code, 60));
@@ -95,14 +102,14 @@ function renderBrochure(p, opts) {
   const hcpsLogo = safeUrl(p.hcps_logo);
   const tagline = esc(str(p.tagline, 300));
   const desc = esc(str(p.description, 4000));
-  const warranty = esc(str(p.warranty, 1200));
+  const warranty = esc(str(p.warranty, 8000));   // review 2026-11-19: the full warranty, never cut
   const srcUrl = safeUrl(p.source_url);
 
   const images = arr(p.images, 5).map(safeUrl).filter(Boolean);
   const hero = images[0] || '';
   const secondary = images.slice(1, 4);
 
-  const features = arr(p.features, 12).map(f => esc(str(f, 300))).filter(Boolean);
+  const features = arr(p.features, 40).map(f => esc(str(f, 400))).filter(Boolean);
   const clinical = arr(p.clinical, 12).map(f => esc(str(f, 120))).filter(Boolean);
   const specs = arr(p.specs, 30)
     .map(s => ({ k: esc(str(s && (s.label || s.name), 120)), v: esc(str(s && s.value, 300)) }))
@@ -114,6 +121,13 @@ function renderBrochure(p, opts) {
         rows: p.sizing.rows.slice(0, 30).map(r => (Array.isArray(r) ? r : []).slice(0, 8).map(c => esc(str(c, 80)))) }
     : null;
   const sizingNote = esc(str(p.sizing_note, 400));
+  /* owner 2026-11-19 (two-page brochure): a sizing table that is really a list of measurement / value pairs (two columns:
+     a label column and one value column) and the specifications print as labelled pairs, two per row. Nothing is dropped. */
+  const pairList = (sizing && sizing.columns.length === 2 && /^(name|measurement|measurements|spec|specs|specification|specifications|dimension|dimensions|feature|item|label|)$/i.test(String(sizing.columns[0]).trim()) && sizing.rows.length && sizing.rows.every(r => r[0] && !/^[\d.\s"'″-]+$/.test(String(r[0]))))
+    ? sizing.rows.filter(r => r[0] || r[1]).map(r => ({ k: r[0], v: r[1] })) : null;
+  const allPairs = specs.concat(pairList || []);
+  const pairsHtml = (list) => `<table class="pairs">${Array.from({ length: Math.ceil(list.length / 2) }, (_, i) => list.slice(i * 2, i * 2 + 2))
+    .map(row => `<tr>${row.map(x => `<td class="k">${x.k}</td><td class="v">${x.v || '—'}</td>`).join('')}${row.length < 2 ? '<td class="k"></td><td class="v"></td>' : ''}</tr>`).join('')}</table>`;
 
   /* C3-07 Stage 4: the dealer's chosen customer price (saved retail or a one-time price) shows when sent; MSRP only when
      asked for. Dealer cost is never a field this renderer reads. */
@@ -158,6 +172,12 @@ function renderBrochure(p, opts) {
   .sec p{margin:0 0 8px}
   ul.feat{margin:0;padding-left:1.05em}
   ul.feat li{margin-bottom:4px;break-inside:avoid}
+  ul.feat.two{columns:2;column-gap:22px}
+  table.pairs{width:100%;border-collapse:collapse;font-size:10pt;table-layout:fixed}
+  table.pairs td{padding:5px 8px;border-bottom:1px solid #eef1f4;vertical-align:top}
+  table.pairs td.k{color:#5a6672;font-weight:700;width:27%}
+  table.pairs td.v{width:23%;font-weight:600;color:#10263f}
+  table.pairs tr{break-inside:avoid}
   table.spec{width:100%;border-collapse:collapse;font-size:10.5pt}
   table.spec td{padding:5px 8px;border-bottom:1px solid #eef1f4;vertical-align:top}
   table.spec td.k{color:#6b7580;width:38%;font-weight:600}
@@ -189,7 +209,7 @@ function renderBrochure(p, opts) {
     background:#ef6325;color:#fff}
   .toolbar button.ghost{background:rgba(255,255,255,.14);color:#fff}
   .toolbar .hint{margin-left:auto;color:#b8c4d4;font-size:11.5px}
-  @media print{ .toolbar{display:none} body{font-size:10.5pt} .sheet{max-width:none} }
+  @media print{ .toolbar{display:none} body{font-size:10.5pt;line-height:1.42} .sheet{max-width:none;padding-bottom:0} .sec{margin-bottom:12px} .hero{margin-bottom:12px} .foot{margin-top:12px} }
 </style></head>
 <body>
 <div class="toolbar">
@@ -218,28 +238,28 @@ function renderBrochure(p, opts) {
   </div>
 
   ${(msrp || quote || ref) ? `<div class="price">
-      ${quote ? `<div class="pgrid">${ref ? `<div><div class="l">Manufacturer's suggested retail</div><div class="ref">${ref}</div></div>` : ''}
+      ${quote ? `<div class="pgrid">${ref ? `<div><div class="l">MSRP</div><div class="ref">${ref}</div></div>` : ''}
           <div><div class="l">${quoteLabel}</div><div class="v">${quote}</div></div>
-          ${sv ? `<div class="save"><div class="l">You save</div><div class="sv">${money(sv.dollars)}</div><div class="sp">${sv.percent >= 1 ? sv.percent + '% off MSRP' : 'under 1% off MSRP'}</div></div>` : ''}</div>`
+          ${sv ? `<div class="save"><div class="l">You save</div><div class="sv">${money(sv.dollars)} <span class="sp">(${pctText(sv.percent)})</span></div></div>` : ''}</div>`
               : ref && !msrp ? `<div class="l">Manufacturer's suggested retail</div><div class="v">${ref}</div>`
               : `<div class="l">${p.msrp_calculated === true ? 'Retail price' : 'Manufacturer\'s suggested retail'}</div><div class="v">${msrp}</div>`}
       ${until && quote ? `<div class="note"><b>Offer valid through ${esc(until)}.</b></div>` : ''}
       <div class="note">${sv ? 'Savings are measured against the manufacturer\'s suggested retail price (MSRP). ' : ''}Pricing shown is for reference and may vary. Contact us for a written quote.</div>
     </div>` : ''}
 
-  ${secHtml('Key features', features.length ? `<ul class="feat">${features.map(f => `<li>${f}</li>`).join('')}</ul>` : '')}
-  ${secHtml('Clinical applications', clinical.length ? `<div class="chips">${clinical.map(c => `<span>${c}</span>`).join('')}</div>` : '')}
-  ${secHtml('Specifications', specs.length ? `<table class="spec">${specs.map(s => `<tr><td class="k">${s.k}</td><td>${s.v}</td></tr>`).join('')}</table>` : '')}
-  ${secHtml('Sizing', sizing && sizing.rows.length
+  ${secHtml('Key features', features.length ? `<ul class="feat${features.length >= 5 ? ' two' : ''}">${features.map(f => `<li>${f}</li>`).join('')}</ul>` : '')}
+  ${secHtml(pairList ? 'Specifications &amp; measurements' : 'Specifications', allPairs.length ? pairsHtml(allPairs) + (pairList && sizingNote ? `<div class="note">${sizingNote}</div>` : '') : '')}
+  ${!pairList ? secHtml('Sizing', sizing && sizing.rows.length
       ? `<table class="size"><thead><tr>${sizing.columns.map(c => `<th>${c}</th>`).join('')}</tr></thead>`
         + `<tbody>${sizing.rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`
         + (sizingNote ? `<div class="note">${sizingNote}</div>` : '')
-      : '')}
+      : '') : ''}
+  ${secHtml('Clinical applications', clinical.length ? `<div class="chips">${clinical.map(c => `<span>${c}</span>`).join('')}</div>` : '')}
   ${secHtml('Warranty', warranty ? `<p>${warranty}</p>` : '')}
 
   ${dName ? `<div class="foot dfoot">
     ${dLogo ? `<img src="${dLogo}" alt="${dName} logo" onerror="this.style.display='none'">` : ''}
-    <div class="ft"><b>${dName}</b>${dAddr ? `<br>${dAddr}` : ''}${dContact ? `<br>${dContact}` : ''}${scLine ? `<br>${scLine}` : ''}</div>
+    <div class="ft"><b>${dName}</b>${dAddr ? `<br>${dAddr}` : ''}${contactLine ? `<br>${contactLine}` : ''}</div>
     <div class="fr">Specifications subject to change<br>without notice.</div>
   </div>
   <div class="hcpsline">Product information supplied through HomeCare Provider Services</div>` : `<div class="foot">
@@ -467,7 +487,11 @@ exports.handler = async (event) => {
     if (basis === 'map') { const f2 = await defaultRetail(product, event, offer); saving = (f2 && f2.saving) || null; }
     else saving = (facts && facts.saving) || null;
   }
-  const renderOpts = { reference: offer && compare ? reference : null, saving, offer_expires: b.offer_expires, offer_label: basis === 'map' ? 'Manufacturer\'s advertised price (MAP)' : 'Your price' };
+  /* owner 2026-11-19: an offer date that has already passed is never printed silently (the PDF the owner reviewed said
+     "valid through November 1, 2026" — no default date exists in the code; it came from the brochure's date field) */
+  { const ex = String(b.offer_expires || ''); const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+    if (/^\d{4}-\d{2}-\d{2}$/.test(ex) && ex < today) return json(422, { ok: false, error: 'The offer date (' + ex + ') has already passed — clear it or choose a future date.', flag: 'offer_expired' }); }
+  const renderOpts = { reference: offer && compare ? reference : null, saving, offer_expires: b.offer_expires, offer_label: 'Your price' };   // review 2026-11-19: MAP is never named on the customer's copy
   if (b.sales_contact != null) { const sc = SALES.validate(b.sales_contact); if (sc.error) return json(400, { ok: false, error: sc.error }); renderOpts.sales_contact = sc.contact; }
   b.include_msrp = basis === 'msrp';
   const action = String(b.action || 'html');

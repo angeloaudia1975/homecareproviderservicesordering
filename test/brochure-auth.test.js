@@ -70,16 +70,16 @@ await t('printing (html) still needs no sign-in and sends nothing',async()=>{ co
 const H=async(body,tok)=>{ const r=await B.handler(ev(body,tok)); return {code:r.statusCode,j:JSON.parse(r.body)}; };
 const SBP={name:'ErgoSteel Comfort 18"',code:'ES0001',_mfrSlug:'strongback-mobility',manufacturer:'Strongback Mobility'};
 const SVP={name:'Saver',code:'SAV1',_mfrSlug:'ovation-medical'};
-await t('ES0001: the manufacturer advertised price (MAP $399.95) can be the brochure price — labelled MAP (owner 2026-11-13), never MSRP, no savings',async()=>{
+await t('ES0001: the manufacturer advertised price (MAP $399.95) can be the brochure price — printed as "Your price" (owner 2026-11-19: MAP is never named on the customer copy), never MSRP, no savings',async()=>{
   const r=await H({action:'html',product:SBP,price_basis:'map'},'good'); ok(r.code===200,JSON.stringify(r.j));
-  ok(r.j.html.includes('$399.95')&&/advertised price \(MAP\)/.test(r.j.html)&&!/suggested retail/.test(r.j.html)&&!/You save/.test(r.j.html),'map basis'); });
+  ok(r.j.html.includes('$399.95')&&/Your price/.test(r.j.html)&&!/\bMAP\b|advertised price/.test(r.j.html)&&!/suggested retail/.test(r.j.html)&&!/You save/.test(r.j.html),'map basis: printed as "Your price", MAP never named (owner 2026-11-19)'); });
 await t('ES0001: an offer below MAP is refused (print and email); at or above MAP it prints with no savings claim',async()=>{
   let r=await H({action:'html',product:Object.assign({},SBP,{quote_price:350}),price_basis:'once'},'good'); ok(r.code===422&&/\$399\.95/.test(r.j.error),JSON.stringify(r.j));
   const n=sent.length; r=await H({action:'email',to:'c1@x.com',product:Object.assign({},SBP,{quote_price:350}),price_basis:'once'},'good'); ok(r.code===422&&sent.length===n,'email refused too');
   r=await H({action:'html',product:Object.assign({},SBP,{quote_price:450}),price_basis:'once'},'good'); ok(r.code===200&&r.j.html.includes('$450.00')&&!/You save/.test(r.j.html)); });
 await t('verified MSRP + lower offer: reference, offer, $ and % savings, expiry; compare off hides them; the page cannot fake MSRP',async()=>{
   let r=await H({action:'html',product:Object.assign({},SVP,{quote_price:349.99,msrp:9999}),price_basis:'once',offer_expires:'2026-12-31'},'good'); const h=r.j.html;
-  ok(h.includes('$399.99')&&h.includes('$349.99')&&h.includes('$50.00')&&h.includes('12% off MSRP')&&h.includes('Offer valid through December 31, 2026')&&!h.includes('9,999'),h.slice(h.indexOf('class="price"'),h.indexOf('class="price"')+900));
+  ok(h.includes('$399.99')&&h.includes('$349.99')&&h.includes('$50.00')&&h.includes('(12.0%)')&&h.includes('Offer valid through December 31, 2026')&&!h.includes('9,999'),h.slice(h.indexOf('class="price"'),h.indexOf('class="price"')+900));
   r=await H({action:'html',product:Object.assign({},SVP,{quote_price:349.99}),price_basis:'once',compare:false},'good'); ok(!/You save/.test(r.j.html)&&!r.j.html.includes('$399.99'),'compare off');
   r=await H({action:'html',product:Object.assign({},SVP,{quote_price:399.99}),price_basis:'once'},'good'); ok(!/You save/.test(r.j.html),'equal → no discount');
   r=await H({action:'html',product:Object.assign({},SVP,{quote_price:450}),price_basis:'once'},'good'); ok(!/You save/.test(r.j.html),'higher → no discount');
@@ -173,8 +173,8 @@ await t('manage: email needs its own confirmation (428); then begin recorded →
   const m=sent[sent.length-1]; ok(m.reply_to==='br@acme.test'&&!/angelo/.test(JSON.stringify(m)),'reply-to the dealer: '+m.reply_to);
   ok(MAUTH.filter(x=>x.action==='manage_audit').map(x=>x.audit.phase).join(',')==='begin,done',MAUTH.map(x=>x.action+':'+(x.audit&&x.audit.phase)).join(',')); });
 await t('manage: no begin record → no email (503)',async()=>{ SENDS.length=0; const n=sent.length; global.AUDIT_DOWN=true; const r=await mres({action:'email',product:P,to:'cust2@x.com',manage_confirm:'email'}); global.AUDIT_DOWN=false; ok(r.code===503&&sent.length===n,r.code); });
-await t('staff View as Dealer: the MAP choice works — read through the preview token (default_retail only), labelled MAP',async()=>{ global.DQ=[];
-  const r=await res(SBP,{action:'html',price_basis:'map'},null,{'x-hcps-preview':'c'.repeat(48)}); ok(r.code===200&&r.j.html.includes('$399.95')&&/advertised price \(MAP\)/.test(r.j.html),JSON.stringify(r.j).slice(0,160));
+await t('staff View as Dealer: the MAP choice works — read through the preview token (default_retail only), printed as Your price',async()=>{ global.DQ=[];
+  const r=await res(SBP,{action:'html',price_basis:'map'},null,{'x-hcps-preview':'c'.repeat(48)}); ok(r.code===200&&r.j.html.includes('$399.95')&&!/\bMAP\b/.test(r.j.html),JSON.stringify(r.j).slice(0,160));
   ok(DQ[0]&&DQ[0].h.authorization==='Bearer preview:'+'c'.repeat(48),'asked with the preview token'); });
 /* ---- owner 2026-11-14: the dealer is the seller on every dealer brochure ---- */
 await t('View as Dealer: the brochure is branded for the previewed location (logo, name, address, phone) — never HCPS as seller',async()=>{

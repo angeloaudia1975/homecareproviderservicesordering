@@ -8,7 +8,7 @@ const MF=JSON.parse(fs.readFileSync(path.join(__dirname,'..','public','data','ma
 let pass=0,fail=0; const t=(n,f)=>{ try{f();pass++;console.log('ok   '+n);}catch(e){fail++;console.log('FAIL '+n+'\n     '+e.message);} };
 function grab(name){ const i=H.indexOf('function '+name+'('); if(i<0) throw new Error('missing '+name);
   let d=0,j=H.indexOf('{',i); for(;j<H.length;j++){ if(H[j]==='{')d++; else if(H[j]==='}'){ d--; if(!d) break; } } return H.slice(i,j+1); }
-const names=['quoteMsrp','quotableLine','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qSaved','qMsrpOk','qMeta','qUnit','qMoney','qLineHtml','qListHtml','qRef','qSaving','qBelowMap'];
+const names=['quoteMsrp','quotableLine','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qSaved','qMsrpOk','qMeta','qUnit','qMoney','qLineHtml','qListHtml','qRef','qSaving','qBelowMap','qScHtml','qScValue'];
 const els={};
 const ctx={ money:v=>'$'+Number(v).toFixed(2), esc:s=>String(s), brandLogoHtml:()=>'', PROFILE:{name:'Dealer X'}, QCUST:{name:'',valid:'30 days'},
   FAVS:new Set(), BRANDING:{logo_url:''}, $:sel=>els[sel]||(els[sel]={innerHTML:''}), Number, isFinite, String, Math };
@@ -45,7 +45,7 @@ t('every quotable product is offered — no cap: 1,200 products across lines all
   const save=[ctx.QUOTELIST,ctx.QUOTE]; ctx.QUOTE=[];
   ctx.QUOTELIST=Array.from({length:1200},(_,i)=>({mfr:i<1100?'pedifix':'abm-respiratory-care',code:'C'+i,name:'Item '+i,mfrName:i<1100?'PediFix':'ABM Respiratory Care'}));
   ctx.renderQuotes(); const h=els['#view-quotes'].innerHTML;
-  const n=(h.match(/<option value=/g)||[]).length; ctx.QUOTELIST=save[0]; ctx.QUOTE=save[1];
+  const n=(h.match(/<option value="(pedifix|abm-respiratory-care)\|/g)||[]).length; ctx.QUOTELIST=save[0]; ctx.QUOTE=save[1];
   if(n!==1200) throw new Error('offered '+n);
   if(!/<optgroup label="ABM Respiratory Care">[\s\S]*value="abm-respiratory-care\|C1199"/.test(h)) throw new Error('ABM group missing');
 });
