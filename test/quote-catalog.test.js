@@ -40,7 +40,7 @@ function world(entitled){
   const els={}; ctx.$=sel=>els[sel]||(els[sel]={innerHTML:'',value:''}); ctx.els=els;
   vm.createContext(ctx);
   vm.runInContext('var QMETA={},QSNAP={},QSAVED=null,QLIST=[],QDIRTY=false,RETAIL=null,AC=null,QLOCRETAIL=null; const qIsUpgrade=k=>/\\|u=/.test(k); function qLoadList(){}\nvar GQUOTE={},PRICE=null,PRICELIST=null,QUOTELIST=null,MFRLIST=null,QUOTE=[],QSEARCH="",QUOTE_UNAVAILABLE=[],_quoteSig=null,_quoteBuild=null;'+
-    retiredDecls(H)+'\n'+extract(H)+'\n'+grabDecl(H,'function axesOf')+'\n'+['quotableLine','quoteOptionText','quoteEntry','hubStoreCatalog','ensureQuoteCatalog','buildQuoteCatalog','applyDefaultRetail','loadPricing','quoteMsrp','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qDelAt','qFilter','quoteImg','qSaved','qMsrpOk','qMeta','qUnit','qMoney','qLineHtml','qListHtml','qRef','qSaving','qBelowMap','qAdd','goldenQuoteRecord'].map(grab).join('\n')+
+    retiredDecls(H)+'\n'+extract(H)+'\n'+grabDecl(H,'function axesOf')+'\n'+['quotableLine','quoteOptionText','quoteEntry','hubStoreCatalog','ensureQuoteCatalog','buildQuoteCatalog','applyDefaultRetail','loadPricing','quoteMsrp','quoteTotal','quoteMsrpHtml','quoteItemHtml','quotePicked','quotePaperHtml','hashStr','quoteOptionsHtml','renderQuotes','qPreview','qDelAt','qFilter','quoteImg','qSaved','qMsrpOk','qMeta','qUnit','qMoney','qLineHtml','qListHtml','qRef','qSaving','qBelowMap','qScHtml','qScValue','qAdd','goldenQuoteRecord'].map(grab).join('\n')+
     ';this.S=()=>({PRICE,PRICELIST,QUOTELIST,QUOTE_UNAVAILABLE,QUOTE,GQUOTE,QMETA}); this.setQ=q=>{QUOTE=q;};',ctx);
   ctx.ent=entitled; return ctx;
 }
@@ -117,11 +117,11 @@ await t('SAVINGS PREVIEW (owner 2026-11-12): MSRP + "You save" for a lower offer
   w.setQ(['line-a|A1','line-a|A2']); const pk=w.quotePicked(); const m=S.QMETA;
   w.qMeta(pk[0]); w.qMeta(pk[1]);
   Object.assign(m['line-a|A1'],{basis:'once',unit:90,qty:2}); w.renderQuotes(); let v=w.els['#view-quotes'].innerHTML;
-  if(!/MSRP \$120\.00/.test(v)||!/You save \$30\.00 \(25%\) each/.test(v)) throw new Error('savings line');
+  if(!/MSRP \$120\.00/.test(v)||!/You save \$30\.00 \(25\.0%\) each/.test(v)) throw new Error('savings line');
   if(!/Manufacturer&#39;s MAP \$100\.00|Manufacturer's MAP \$100\.00/.test(v)||!/below MAP\. That is allowed on this private customer quote/.test(v)||!/Use MAP/.test(v)) throw new Error('below-MAP note + Use MAP (owner 2026-11-19: allowed on a private quote)');
-  if(!/Your total savings: \$60\.00 \(25%\)/.test(v)) throw new Error('total savings');
+  if(!/Your total savings: \$60\.00 \(25\.0%\)/.test(v)) throw new Error('total savings');
   Object.assign(m['line-a|A1'],{basis:'map'}); w.renderQuotes(); v=w.els['#view-quotes'].innerHTML;
-  if(!/You save \$20\.00 \(16%\)/.test(v)||/below MAP\. That is allowed/.test(v)) throw new Error('MAP basis: $100 vs MSRP $120');
+  if(!/You save \$20\.00 \(16\.6%\)/.test(v)||/below MAP\. That is allowed/.test(v)) throw new Error('MAP basis: $100 vs MSRP $120');
   Object.assign(m['line-a|A1'],{compare:false}); w.renderQuotes(); v=w.els['#view-quotes'].innerHTML; if(/You save/.test(v)) throw new Error('compare off');
   Object.assign(m['line-a|A2'],{basis:'none'}); eq(w.quoteTotal(w.quotePicked()),200,'no-price line out of the total');
   S.PRICE['line-a|A1'].msrpCalc=true; Object.assign(m['line-a|A1'],{compare:true,basis:'once',unit:90}); w.renderQuotes(); if(/You save/.test(w.els['#view-quotes'].innerHTML)) throw new Error('savings against a calculated retail'); });

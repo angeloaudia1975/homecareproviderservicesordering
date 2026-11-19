@@ -58,7 +58,7 @@ async function open(browser, w, h, opts) {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.host)) return route.fulfill({ status: 200, body: '' });
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '[]' });
   });
-  await page.goto((opts.host || HOST) + '/?preview=' + 'p'.repeat(48) + (opts.query ? '&' + opts.query : '') + (opts.hash || ''), { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto((opts.host || HOST) + '/?preview=' + 'p'.repeat(48) + (opts.hash || ''), { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForFunction(() => typeof AUTH !== 'undefined' && AUTH.status === 'approved' && (state.manufacturers || []).length > 5, null, { timeout: 30000 });
   await page.waitForTimeout(800);
   // Pricing is not under test here: catalogs open with their public rows only (no prices), so navigation can be checked.
