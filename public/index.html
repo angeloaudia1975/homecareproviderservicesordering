@@ -2015,11 +2015,14 @@ function suggestedRetail(p){
    a single item → its MAP; a pack → MAP × count when MAP is per piece, as is when per order unit; a pack whose MAP unit or piece
    count isn't recorded → no comparable MAP (the server checks the offer), except an MSRP stated per order unit that proves the
    MAP is per pack. Never a guess. */
-function quoteMapPerUnit(p){
+/* owner 2026-11-19: on these lines MAP is for the SKU's SELLING unit ($10 MAP on a pack of two = $10 for the pack; on a pair, for
+   the pair) — the same list as the server's RP.MAP_SELLING_UNIT_LINES; a recorded basis still wins. */
+const MAP_SELLING_UNIT_LINES=new Set(['pedifix']);
+function quoteMapPerUnit(p,line){
   const m=Number(p&&p.map); if(!(m>0)) return null;
   const u=String((p&&p.uom)||'').trim(), q=Number(p&&p.case_qty);
   if(!(q>1||(u&&!/^(each|ea|1)$/i.test(u)))) return m;
-  const basis=p.map_basis;
+  const basis=p.map_basis||(MAP_SELLING_UNIT_LINES.has(String(line||p.manufacturer||''))?'order_unit':'');
   if(basis!=='each'&&basis!=='order_unit'){ const ms=Number(p.msrp); return (ms>0&&q>1&&p.msrp_basis==='order_unit'&&m*q>ms+0.005)?m:null; }
   return basis==='order_unit'?m:(q>1?Math.round(m*q*100)/100:null);
 }
@@ -6649,7 +6652,9 @@ function brochurePayload(code){
        2× dealer cost (_msrp_suggested). */
     msrp: (p.msrp && !p._msrp_suggested && !p._upgrade) ? p.msrp : null,
     _upgrade: !!p._upgrade,   // an upgraded configuration has no published MSRP of its own
-    _map: (!p._upgrade && !p._golden && Number(p.map) > 0) ? Number(p.map) : null,   // shown on the choice only; the server reads its own MAP
+    /* owner 2026-11-19: on a selling-unit MAP line (PediFix) the MAP choice is the MAP for the SKU's selling unit; every other
+       line (the four frozen Gold-Standard lines included) shows exactly the MAP it always did */
+    _map: (!p._upgrade && !p._golden && Number(p.map) > 0) ? ((typeof MAP_SELLING_UNIT_LINES!=='undefined'&&MAP_SELLING_UNIT_LINES.has(String(p.manufacturer||state.active||'')))?quoteMapPerUnit(p,String(p.manufacturer||state.active||'')):Number(p.map)) : null,   // shown on the choice only; the server reads its own MAP
     // Dealer cost is deliberately NOT sent. A field that never leaves the page
     // cannot leak onto a document a dealer hands to a patient.
     quote_price: null,
@@ -6699,6 +6704,7 @@ async function brSaveRetail(){
   const r=await retailCall({action:'retail_set',rows:[{manufacturer:pl._mfrSlug,code:pl.code,price:v}]});
   if(r&&r.ok){ await loadRetail(true); _brMsg('Saved as your retail price for '+pl.code+'.'); brRenderPriceRow(); } else _brMsg((r&&r.error)||'Could not save just now.',true);
 }
+function brUseMap(){ const r=document.querySelector('input[name="brPrice"][value="map"]'); if(!r) return; r.checked=true; r.dispatchEvent(new Event('change')); _brMsg('Using the manufacturer\'s MAP for this brochure.'); }
 function brRenderPriceRow(){
   const pl=brochurePayload(_brCode); const host=document.getElementById('brPriceBox'); if(!pl||!host) return;
   const k=(pl._mfrSlug||'')+'|'+pl.code; const saved=RETAIL&&RETAIL.byKey[k]; const cur=brPriceChoice();
@@ -6715,7 +6721,7 @@ function brRenderPriceRow(){
     <div id="brOfferOpts" style="display:${['retail','once','map'].includes(cur)?'block':'none'}">
       <label class="br-row"><input type="checkbox" id="brCompare" checked> Show the manufacturer's MSRP and your customer's savings (when a verified MSRP exists)</label>
       <label class="br-row" style="gap:8px;align-items:center;flex-wrap:wrap">Offer valid through (optional) <input type="date" id="brExpires" style="max-width:170px"></label>
-      <div class="br-sub" style="font-size:12px">A price below the manufacturer's minimum advertised price (MAP) can't be printed or emailed.</div></div>`;
+      <div class="br-sub" style="font-size:12px">${pl._map?`Manufacturer's MAP: <b>${fm(pl._map)}</b> <button type="button" class="ghost" onclick="brUseMap()">Use MAP</button> · `:''}This brochure is a private document for your customer — you may print or send it at the price you choose, including below MAP. MAP still applies to your public storefront.</div></div>`;
   host.querySelectorAll('input[name="brPrice"]').forEach(r=>r.onchange=()=>{ const row=document.getElementById('brOnceRow'); if(row) row.style.display=brPriceChoice()==='once'?'flex':'none';
     const oo=document.getElementById('brOfferOpts'); if(oo) oo.style.display=['retail','once','map'].includes(brPriceChoice())?'block':'none'; });
   { const c=document.getElementById('brCompare'), e=document.getElementById('brExpires'), o=document.getElementById('brOnce'); if(c) c.checked=kept.cmp; if(e) e.value=kept.exp; if(o) o.value=kept.once; }
@@ -8181,11 +8187,12 @@ function orderDetailHtml(o){
       <tbody>${lines.map(row).join("")||`<tr><td colspan="5" class="empty">No line items recorded.</td></tr>`}</tbody>
       <tfoot>${o.cost?`<tr><td colspan="4" style="text-align:right">Merchandise</td><td class="n tnum">${cents(o.cost)}</td></tr>`:""}${svc}${o.freight!=null?`<tr><td colspan="4" style="text-align:right">Freight</td><td class="n tnum">${cents(o.freight)}</td></tr>`:""}<tr><td colspan="4" style="text-align:right;font-weight:800">Total</td><td class="n tnum" style="font-weight:800">${cents(orderTotal(o))}</td></tr></tfoot></table></div>
     <h4 class="od-h">Shipping &amp; tracking</h4>${prog}${shipHtml}${bo}
-    ${o.source==="golden"?`<div class="m">Golden's sales orders (SO), items and tracking are in "Golden orders — live from Golden Technologies" below the order list.</div>`:""}
+    ${(()=>{ const gm=ghOrdersFor(o); if(gm.length) return `<h4 class="od-h noprint">Golden orders${o.source==="imported"?" placed this month":""}</h4><div class="noprint">${gm.map(g=>`<a class="btn gh" style="margin:2px" data-ref="${esc(g.order_ref)}" onclick="ghOpenOrder(this.getAttribute('data-ref'))">${esc(ghSos(g)||g.order_ref)}${g.po_number?" · PO "+esc(g.po_number):""} — view / print</a>`).join("")}</div>`;
+      return o.source==="golden"?`<div class="m">Golden's sales orders (SO), items and tracking are in "Golden orders — live from Golden Technologies" below the order list.</div>`:""; })()}
     ${miss.length?`<div class="od-miss"><b>Not yet supplied by the manufacturer:</b><ul>${miss.map(m=>`<li>${esc(m)}</li>`).join("")}</ul></div>`:""}
     <div class="od-acts noprint"><a class="btn gh" onclick="closeModal()">Close</a> <a class="btn pri" onclick="orderPrint()">🖨 Print order</a></div></div>`;
 }
-function openOrderDetail(id){ const o=(HISTORY||[]).find(x=>String(x.id)===String(id)); if(!o) return; $("#modal").innerHTML=orderDetailHtml(o); $("#modal").classList.add("on"); const b=$("#modal .mx"); if(b) b.focus&&b.focus(); }
+function openOrderDetail(id){ const o=(HISTORY||[]).find(x=>String(x.id)===String(id)); if(!o) return; $("#modal").removeAttribute("data-gh"); $("#modal").innerHTML=orderDetailHtml(o); $("#modal").classList.add("on"); const b=$("#modal .mx"); if(b) b.focus&&b.focus(); }
 function orderPrint(){ document.body.classList.add("print-order"); const off=()=>{ document.body.classList.remove("print-order"); window.removeEventListener("afterprint",off); }; window.addEventListener("afterprint",off); window.print(); }
 function shipProgHtml(P){
   if(!P||P.state==="none") return "";
@@ -8207,9 +8214,57 @@ function orderShipHtml(list,prog){
     return `<div class="m">${x.so_number?`SO <span class="tnum">${esc(x.so_number)}</span>${num||bits.length?" · ":""}`:""}${num?"Tracking "+num+car:""}${num&&bits.length?" · ":""}${esc(bits.join(" · "))}${x.note?` <small style="color:var(--muted)">— ${esc(x.note)}</small>`:""}</div>`;
   }).join("");
 }
+/* GOLDEN ORDERS IN THE MAIN LIST (owner 2026-11-19): once Golden's own history has loaded (the "Golden orders — live from Golden
+   Technologies" panel, golden-proxy — same entitlement and branch rules), each Golden order is also a row of the main Orders &
+   Tracking list; "View / print" opens THAT order's detail directly (Golden's SOs, items, carrier tracking links, ship and
+   lifecycle dates, Golden's confirmation) with Print — no second search. These rows are for tracking only: they are never added
+   to the totals (Golden purchases are counted from Golden's monthly sales report, the "Imported" rows). */
+let ORD_HROWS=[];
+function ordRowsHtml(){
+  /* a Golden order the portal already lists (same PO, a portal-recorded Golden order) is not listed twice — its own row opens it */
+  const seen=new Set((HISTORY||[]).filter(o=>o.source==="golden"&&o.po).map(o=>String(o.po).trim().toUpperCase()));
+  const g=(GH.state==="ready"?GH.orders:[]).filter(o=>!(o.po_number&&seen.has(String(o.po_number).trim().toUpperCase()))).map(o=>({d:String(o.placed_on||"").slice(0,10),h:ghMainRow(o)}));
+  return ORD_HROWS.concat(g).map((x,i)=>Object.assign({i},x)).sort((a,b)=>(a.d<b.d?1:a.d>b.d?-1:a.i-b.i)).map(x=>x.h).join("");
+}
+function ordGhSync(){ const b=$("#ordBody"); if(!b||!GH.orders.length) return; const h=ordRowsHtml(); if(h) b.innerHTML=h; }
+function ghSos(o){ return (o.so_numbers&&o.so_numbers.length)?o.so_numbers.join(", "):""; }
+function ghMainRow(o){
+  const units=(o.items||[]).reduce((s,i)=>s+(Number.isInteger(i.qty)?i.qty:0),0), sos=ghSos(o);
+  const amt=GH.pv&&o.totals&&o.totals.total!=null?esc(cents(o.totals.total))+'<br><small style="color:var(--muted,#64748b)">not in the total</small>':'—';
+  return `<tr data-ghorder="${esc(o.order_ref)}"><td>${ghDay(o.placed_on)}</td><td>${srcPill("golden")}</td><td><b>Golden Technologies</b><div class="m">${sos?"Golden SO "+esc(sos):"Golden order "+esc(o.order_ref)}</div>${o.po_number?`<div class="m">PO ${esc(o.po_number)}</div>`:""}${(o.tracking||[]).length?`<div class="m">${(o.tracking||[]).length} shipment${(o.tracking||[]).length>1?"s":""} — tracking in the detail</div>`:""}</td><td>${(o.items||[]).length}</td><td class="n tnum">${units}</td><td class="n tnum">${amt}</td><td>${ghPill(o.status)}</td><td><a class="btn gh" data-ref="${esc(o.order_ref)}" onclick="ghOpenOrder(this.getAttribute('data-ref'))">View / print</a></td></tr>`;
+}
+function ghModalHtml(o){
+  const sos=ghSos(o), biz=(PROFILE&&PROFILE.name)||"";
+  return `<div class="mbox od-box" role="document"><div class="mhead"><h3>Golden order — ${esc(sos||o.order_ref)}</h3><a class="mx noprint" onclick="ghCloseOrder()" aria-label="Close">✕</a></div>
+    <div class="od-grid od-head">
+      <div><span>Dealer</span><b>${esc(biz||"—")}</b></div><div><span>Placed</span><b>${ghDay(o.placed_on)}</b></div>
+      <div><span>PO</span><b>${esc(o.po_number||"—")}</b></div><div><span>Golden SO${(o.so_numbers||[]).length>1?"s":""}</span><b class="tnum">${esc(sos||"Not yet booked by Golden")}</b></div>
+      <div><span>Golden order #</span><b class="tnum">${esc(o.order_ref)}</b></div><div><span>Ship to</span><b>${ghWhere(o)}</b></div>
+      <div><span>Status</span><b>${esc(GH_STATUS[o.status]||o.status||"—")}</b></div><div><span>Expected</span><b>${o.expected_date?ghDay(o.expected_date):"—"}</b></div></div>
+    ${ghDetail(o)}
+    <div class="m">Status, items, shipping and tracking come from Golden Technologies.</div>
+    <div class="od-acts noprint"><a class="btn gh" onclick="ghCloseOrder()">Close</a> <a class="btn pri" onclick="orderPrint()">🖨 Print order</a></div></div>`;
+}
+function ghModalRender(ref){ const md=$("#modal"); if(!md||!md.classList.contains("on")||md.getAttribute("data-gh")!==ref) return; const o=GH.orders.find(x=>x.order_ref===ref); if(!o) return;
+  md.innerHTML=ghModalHtml(o); md.querySelectorAll("[data-ghconf]").forEach(b=>{ b.onclick=e=>{ e.stopPropagation(); ghConfOpen(+b.getAttribute("data-ghconf"), b.getAttribute("data-ghdl")==="1"); }; }); }
+async function ghOpenOrder(ref){
+  const o=GH.orders.find(x=>x.order_ref===ref); const md=$("#modal"); if(!o||!md) return;
+  md.setAttribute("data-gh",ref); md.classList.add("on"); ghModalRender(ref); const b=md.querySelector(".mx"); if(b&&b.focus) b.focus();
+  if(!GH.conf[ref]) ghConfLoad(o);
+  const my=GH.seq; const r=await goldenCall("order",{order_ref:ref});   // Golden's latest for this order (tracking may be newer)
+  if(my!==GH.seq||!r||r.available!==true||!r.order||r.order.order_ref!==ref) return;
+  GH.orders=GH.orders.map(x=>x.order_ref===ref?r.order:x); if(r.prices_visible!==true) GH.pv=false; ghModalRender(ref);
+}
+function ghCloseOrder(){ const md=$("#modal"); if(md) md.removeAttribute("data-gh"); if(typeof closeModal==="function") closeModal(); }
+/* the Golden orders behind one main-list Golden row: a portal-recorded Golden order → Golden's order with the same PO; an
+   imported Golden month → the Golden orders placed that month */
+function ghOrdersFor(o){ if(GH.state!=="ready"||!/golden/.test(String(o.manufacturer||""))) return [];
+  if(o.source==="golden"&&o.po) return GH.orders.filter(g=>String(g.po_number||"").trim().toUpperCase()===String(o.po).trim().toUpperCase());
+  if(o.source==="imported"&&o.ym) return GH.orders.filter(g=>String(g.placed_on||"").slice(0,7)===o.ym);
+  return []; }
 async function loadOrders(){
   if(!HISTORY){ const d=await api(HISTORY_ENDPOINT,{action:"history",limit:300}); if(!d||d.ok===false){ $("#view-orders").innerHTML=`<div class="msg">Couldn't load your orders right now.</div>`; return; } HISTORY=d.orders||[]; }
-  const rows=HISTORY.map(o=>{
+  ORD_HROWS=HISTORY.map(o=>({d:String(o.date||"").slice(0,10),h:(()=>{
     const ships=Array.isArray(o.shipments)?o.shipments:[];
     const canTrack=(o.source==="portal"||o.source==="golden")&&String(o.status).toLowerCase()!=="delivered"&&!o.tracking&&!ships.some(x=>x.tracking_number);
     /* PO, the tracking number HCPS recorded, and a new-account notice (C3-06) — all shown as text. */
@@ -8220,14 +8275,15 @@ async function loadOrders(){
       +(o.invoice_only?`<div class="m">Invoice ${esc(o.invoice_no||"")} recorded — ${esc(cents(o.billed||0))} billed${o.date_basis==="first_statement"?" (dated by the first statement that listed it)":""}. Payment status not established from the available import.${o.last_statement?" Last observed in the "+esc(monthName(o.last_statement))+" statement.":""} Not counted in your purchases.</div>`+(o.ambiguous?`<div class="m" style="color:#9b1c1c">The manufacturer's statements list this invoice differently (${(o.versions||[]).map(v=>esc(monthName(v.statement))+": "+v.lines.map(l=>esc(l.code)+" ×"+l.qty).join(", ")).join(" · ")}) — the latest is shown; ask HCPS before relying on the quantities.</div>`:""):"");
     const summ=(o.lines||[]).map(l=>l.qty+"x "+(l.name||l.code||"")).join(", ").replace(/'/g,"’");
     return `<tr data-order="${esc(o.id||"")}"><td>${dateShort(o.date)}</td><td>${srcPill(o.source)}</td><td><b>${esc(o.manufacturerName)}</b>${extra}</td><td>${(o.lines||[]).length}</td><td class="n tnum">${o.units}</td><td class="n tnum">${cents(orderTotal(o))}${freightNote(o)}</td><td>${statPill(o.status)}</td><td>${(o.lines||[]).length?`<a class="btn gh" onclick="openOrderDetail('${esc(o.id)}')">View / print</a> `:""}${canTrack?`<a class="btn gh" onclick="reqTracking('${esc(o.id)}','${esc(o.manufacturer||"")}','${esc(summ)}')">Request tracking</a>`:""}</td></tr>`;
-  }).join("");
+  })()}));
+  const rows=ordRowsHtml();
   const total=purchasesOnly(HISTORY).reduce((s,o)=>s+countedTotal(o),0); const nInv=HISTORY.filter(o=>o.invoice_only||o.status==="invoice_recorded").length; const nRep=HISTORY.filter(o=>o.source==="portal"&&o.status!=="cancelled"&&(o.reporting==="reported"||o.reporting==="partly_reported")).length;
   $("#view-orders").innerHTML=`
     <div class="ph"><div><h1>Orders &amp; Tracking</h1><div class="sub">Consolidated history — imported sales, portal &amp; Golden · ${HISTORY.length} records</div></div>
       <div><a class="btn gh" onclick="exportHistoryCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a></div></div>
     ${typeof rptNavHtml==='function'?rptNavHtml('orders'):''}
     <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Date</th><th>Source</th><th>Manufacturer</th><th>Items</th><th class="n">Units</th><th class="n">Amount</th><th>Status</th><th></th></tr></thead>
-      <tbody>${rows||`<tr><td colspan="8" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
+      <tbody id="ordBody">${rows||`<tr><td colspan="8" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
       ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total (incl. freight)${nRep?`<div style="font-weight:400;font-size:12px;color:var(--muted,#64748b)">${nRep} portal order${nRep>1?"s are":" is"} also in a manufacturer report — counted once</div>`:""}${nInv?`<div style="font-weight:400;font-size:12px;color:var(--muted,#64748b)">Excludes ${nInv} recorded invoice${nInv>1?"s":""} — payment status not established</div>`:""}</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${cents(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
     </table></div>
     <div id="goldenHistLive" class="gh-live" role="status" aria-live="polite"></div>
@@ -8299,7 +8355,7 @@ async function goldenHistoryLoad(more){
   const seen=new Set(GH.orders.map(o=>o.order_ref)), fresh=(Array.isArray(r.orders)?r.orders:[]).filter(o=>o&&!seen.has(o.order_ref)&&seen.add(o.order_ref));
   const firstNew=fresh[0]&&fresh[0].order_ref;
   GH.pv=r.prices_visible===true; GH.orders=GH.orders.concat(fresh); GH.next=r.next_before||null; GH.state="ready";
-  GH.focus=more?(firstNew?"ref:"+firstNew:"more"):GH.focus; ghRender();
+  GH.focus=more?(firstNew?"ref:"+firstNew:"more"):GH.focus; ghRender(); ordGhSync();
 }
 function ghRender(){
   const box=$("#goldenHist"); if(!box) return;
@@ -8387,6 +8443,7 @@ async function ghConfLoad(o){
   else if(j&&j.ok===true&&Array.isArray(j.confirmations)) GH.conf[ref]={state:"ready",list:j.confirmations};
   else GH.conf[ref]={state:"error",list:[]};
   if(GH.open===ref){ GH.focus=GH.focus||("ref:"+ref); ghRender(); }
+  ghModalRender(ref);
 }
 async function ghConfOpen(id, download){
   const w=download?null:window.open("","_blank");
@@ -8478,7 +8535,7 @@ function quoteEntry(p, line, upgrade){
   /* owner 2026-11-19: a quote line is priced per ORDER UNIT (the server checks offers against MAP per order unit), so the
      cost, the markup result and the MAP floor shown here are all per that unit; a per-piece MAP on a pack is multiplied out. */
   const pk=(typeof packOf==='function')?packOf(q):null, mapRaw=(q.map!=null&&q.map!==''&&isFinite(Number(q.map))&&Number(q.map)>0)?Number(q.map):null;
-  const mapU=(typeof quoteMapPerUnit==='function')?quoteMapPerUnit(q):(pk?null:mapRaw);
+  const mapU=(typeof quoteMapPerUnit==='function')?quoteMapPerUnit(q,line.slug):(pk?null:mapRaw);
   const unitTxt=pk?(pk.label+(/\d/.test(pk.label)?'':' ('+pk.n+' each)')):((q.uom&&!/^(each|ea|1)$/i.test(String(q.uom).trim()))?String(q.uom).trim():'');
   return {key:line.slug+'|'+p.code+(upgrade?'|u='+upgrade:''), code:p.code, mfr:line.slug, mfrName:line.name, family:groupDisplayName(p)||p.name||p.code,
     option:[opt, upgrade?('Upgrade: '+upgrade):''].filter(Boolean).join(' · '), name:p.name||p.code, msrp, msrpEach:!!(msrp!=null&&typeof msrpIsEach==='function'&&msrpIsEach(q)),
@@ -8557,7 +8614,7 @@ async function loadPricing(){
         for(const p of items){
           const code=String(p.code||'').trim(); if(!code) continue;
           const _mp=(p.map!=null&&Number(p.map)>0)?Number(p.map):null;
-          const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(typeof quoteMapPerUnit==='function')?quoteMapPerUnit(p):(((typeof packOf==='function')&&packOf(p))?null:_mp),cost:(p.base_price!=null?(typeof dealerCostOf==='function'?dealerCostOf(p,m.slug):Number(p.base_price)):null),category:p.category||'',name:p.name||'',mfrName:m.name};
+          const rec={msrp:(p.msrp!=null?Number(p.msrp):null),map:(typeof quoteMapPerUnit==='function')?quoteMapPerUnit(p,m.slug):(((typeof packOf==='function')&&packOf(p))?null:_mp),cost:(p.base_price!=null?(typeof dealerCostOf==='function'?dealerCostOf(p,m.slug):Number(p.base_price)):null),category:p.category||'',name:p.name||'',mfrName:m.name};
           PRICE[m.slug+'|'+code]=rec;   /* history / favourites / existing quotes — not an offer */
         }
       }catch(e){}
@@ -8979,12 +9036,13 @@ function qLineHtml(r,i){
         <button type="button" class="btn gh acsm" onclick="qSaveRetail(${i})" ${m.unit>0&&!QLOCRETAIL?'':'disabled'} ${QLOCRETAIL?'title="Set this location\'s prices in My Retail Prices"':''}>Save as my retail price</button>`:''}
       ${qRef(r)!=null||(['retail','once','map'].includes(m.basis)&&r.msrp!=null&&!r.msrpCalc)?`<label class="qcmp" style="font-size:12px;display:inline-flex;gap:5px;align-items:center;min-height:44px"><input type="checkbox" ${m.compare!==false?'checked':''} onchange="qSetCompare(${i},this.checked)"> Show MSRP &amp; savings</label>`:''}
       <span class="qamt">${u!=null?qMoney(u*m.qty):'<span class="est">Price on Request</span>'}</span></div>
-      ${qBelowMap(r)?`<div style="font-size:12px;color:#b42323;margin-top:4px">Below the manufacturer's minimum advertised price (${qMoney(r.map)}) — this price can't be printed or emailed.</div>`:''}</div>
+      ${r.map>0&&['retail','once'].includes(m.basis)?`<div style="font-size:12px;margin-top:4px;${qBelowMap(r)?'color:#9a5b00':'color:var(--muted,#64748b)'}">Manufacturer's MAP ${qMoney(r.map)}${r.unit?` per ${esc(r.unit)}`:''}${qBelowMap(r)?' — your price is below MAP. That is allowed on this private customer quote; MAP still applies to your public storefront.':''} <button type="button" class="btn gh acsm" onclick="qSetBasis(${i},'map')">Use MAP</button></div>`:''}</div>
     <a class="btn gh" title="Remove" aria-label="Remove ${esc(r.name)}" onclick="qDelAt(${i})">✕</a></div>`;
 }
 function qSetQty(i,v){ const r=quotePicked()[i]; if(!r) return; const n=Math.max(1,Math.min(9999,Math.round(Number(v)||1))); qMeta(r).qty=n; QDIRTY=true; renderQuotes(); }
 /* MARKUP OVER DEALER COST (owner 2026-11-18): a one-time price worked out as dealer cost × (1 + markup ÷ 100); the result is an
-   ordinary one-time price, so the server applies the same rules (never printed or emailed below MAP). */
+   ordinary one-time price. Owner 2026-11-19: a private customer quote may carry the dealer's chosen price, below MAP included —
+   the MAP is shown with "Use MAP"; MAP is enforced on the public storefront. */
 function qMarkupUnit(r,pct){ return r.cost>0&&isFinite(pct)&&pct>=0?Math.round(r.cost*(1+pct/100)*100)/100:null; }
 function qSetBasis(i,v){ const r=quotePicked()[i]; if(!r) return; const m=qMeta(r);
   if(v==='markup'){ m.mk=(m.mk!=null?m.mk:40); m.basis='once'; m.fromMk=true; m.unit=qMarkupUnit(r,m.mk); }
@@ -9264,7 +9322,7 @@ function openPriceReq(mfr,code){
     <div style="text-align:right;margin-top:8px"><a class="btn gh" onclick="closeModal()">Cancel</a> <a class="btn pri" onclick="submitPriceReq()">Send to HCPS</a></div></div>`;
   $("#modal").classList.add("on");
 }
-function closeModal(){ $("#modal").classList.remove("on"); $("#modal").innerHTML=""; }
+function closeModal(){ $("#modal").classList.remove("on"); $("#modal").innerHTML=""; $("#modal").removeAttribute("data-gh"); }
 async function submitPriceReq(){
   let mfr=($("#prMfr")||{}).value||"", code=($("#prCode")||{}).value||"", product="";
   const sel=$("#prProd");
@@ -10519,22 +10577,37 @@ function sfPricesRender(){
      const why=(p.flags||[]).map(x=>d.flag_text[x.flag]+(x.map?' MAP '+cents(x.map)+'.':'')).filter(Boolean)[0];
      return `<tr><td><b>${esc(p.name)}</b><div class="sf-s">${esc(p.code)} · ${esc(p.category)}</div></td>
        <td>${p.price!=null?cents(p.price):'—'} <span class="sfp-src s-${esc(p.source)}">${esc(p.source==='calculated'&&p.price_label==='Suggested retail'?'Suggested retail (2 × your cost)':(SFP_SRC[p.source]||''))}</span>${p.price_unit?`<div class="sf-s">${esc(p.price_unit)}</div>`:''}${p.price_each!=null?`<div class="sf-s">Equivalent to ${cents(p.price_each)} each</div>`:''}${why?`<div class="sfp-why">${esc(why)}</div>`:''}${p.calculated&&p.source!=='calculated'?`<div class="sf-s">HCPS calculated retail: ${cents(p.calculated)}${p.price_unit&&p.price_unit!=='each'?' '+esc(p.price_unit):''}</div>`:''}</td>
-       <td>${ed?`<input class="sfp-in" inputmode="decimal" aria-label="Your price for ${esc(p.name)}" data-k="${esc(k)}" value="${cur!=null?esc(Number(cur).toFixed(2)):''}" placeholder="—" onchange="sfpSet(this)">`:(cur!=null?cents(cur):'—')}</td></tr>`; }).join('')}
+       <td>${ed?`<input class="sfp-in" inputmode="decimal" aria-label="Your price for ${esc(p.name)}" data-k="${esc(k)}" value="${cur!=null?esc(Number(cur).toFixed(2)):''}" placeholder="—" onchange="sfpSet(this)">`:(cur!=null?cents(cur):'—')}<div class="sf-s sfp-map" data-mapk="${esc(k)}">${sfpMapNote(p,cur,ed)}</div></td></tr>`; }).join('')}
    </tbody></table></div>${rows.length>200?`<div class="sf-s">Showing 200 of ${rows.length} — narrow the list to see the rest.</div>`:''}
-   ${ed?`<div class="sf-acts"><a class="btn pri" onclick="sfpSave()">${n?`Save ${n} price change${n===1?'':'s'}`:'Save prices'}</a> <span class="sf-msg" id="sfpMsg">${esc(SFP.msg)}</span></div>`:''}`;
+   ${ed?`<div class="sf-acts"><a class="btn pri" onclick="sfpSave()">${n?`Save ${n} price change${n===1?'':'s'}`:'Save prices'}</a> ${sfpBelowCount()?`<a class="btn gh" onclick="sfpFixBelow()">Raise ${sfpBelowCount()} below-MAP price${sfpBelowCount()===1?'':'s'} to MAP</a> `:''}<span class="sf-msg" id="sfpMsg">${esc(SFP.msg)}</span></div>`:''}`;
 }
 let SFP_T=null;
 function sfpF(k,v){ if(!SFP) return; SFP.f[k]=v; if(k==='m') SFP.f.c='';
   if(k==='q'){ clearTimeout(SFP_T); SFP_T=setTimeout(()=>{ const a=document.activeElement, pos=a&&a.selectionStart; sfPricesRender(); const q=document.querySelector('#sfPricesBody input[type=search]'); if(q){ q.focus(); try{ q.setSelectionRange(pos,pos); }catch(e){} } },250); return; }
   sfPricesRender(); }
+/* MAP ON THE PUBLIC STOREFRONT (owner 2026-11-19): beside the dealer's proposed price — typed, % of MSRP, markup over cost or
+   saved — the MAP that applies (per the price's own unit) and "Use MAP". A price below MAP is held from public display (the
+   server's RP.decide rule; customers then see the MSRP or Call for Price) and the note says how to fix it. */
+function sfpBelow(p,v){ const f=p.map_floor; return f>0&&v!=null&&v>0&&v<f-0.004; }
+function sfpMapNote(p,cur,ed){ const f=p.map_floor; if(!(f>0)) return '';
+  const below=sfpBelow(p,cur);
+  return `MAP ${cents(f)}${p.price_unit?' '+esc(p.price_unit):''}${below?` — <b style="color:#991b1b">your price ${cents(cur)} is below MAP, so it is held from your public storefront (customers see the MSRP or Call for Price). Raise it to at least ${cents(f)}${ed?' or use MAP':''}.</b>`:''}${ed?` <a class="btn gh acsm" data-k="${esc(sfpKey(p))}" onclick="sfpUseMap(this)">Use MAP</a>`:''}`; }
+function sfpRefreshNote(k){ const p=SFP.data.products.find(x=>sfpKey(x)===k); const el=[...document.querySelectorAll('#sfPricesBody [data-mapk]')].find(e=>e.getAttribute('data-mapk')===k); if(!p||!el) return;
+  const dv=SFP.dirty[k]; el.innerHTML=sfpMapNote(p,dv!==undefined?dv:sfpCurrent(p),true); }
+function sfpUseMap(el){ const k=el.getAttribute('data-k'); const p=SFP.data.products.find(x=>sfpKey(x)===k); if(!p||!(p.map_floor>0)) return;
+  SFP.dirty[k]=Math.round(p.map_floor*100)/100; const inp=[...document.querySelectorAll('#sfPricesBody .sfp-in')].find(e=>e.getAttribute('data-k')===k); if(inp) inp.value=SFP.dirty[k].toFixed(2);
+  SFP.msg='Set to MAP — not saved yet. Press "Save prices" to keep it.'; const m=$("#sfpMsg"); if(m) m.textContent=SFP.msg; sfpRefreshNote(k); }
+function sfpBelowCount(){ let n=0; for(const p of SFP.data.products){ const k=sfpKey(p), dv=SFP.dirty[k]; if(sfpBelow(p,dv!==undefined?dv:sfpCurrent(p))) n++; } return n; }
+function sfpFixBelow(){ let n=0; for(const p of SFP.data.products){ const k=sfpKey(p), dv=SFP.dirty[k]; if(sfpBelow(p,dv!==undefined?dv:sfpCurrent(p))){ SFP.dirty[k]=Math.round(p.map_floor*100)/100; n++; } }
+  SFP.msg=n?`${n} price${n===1?'':'s'} raised to MAP — not saved yet. Press "Save prices" to keep them.`:'No prices are below MAP.'; sfPricesRender(); }
 function sfpScope(v){ if(!SFP) return; if(Object.keys(SFP.dirty).length&&!confirm('Switching discards the changes you haven\'t saved. Continue?')) return sfPricesRender(); SFP.scope=v; SFP.dirty={}; SFP.msg=''; sfPricesRender(); }
 function sfpSet(el){ const k=el.getAttribute('data-k'); const raw=String(el.value).replace(/[$,\s]/g,''); if(raw===''){ SFP.dirty[k]=null; return; }
-  const v=Number(raw); if(!isFinite(v)||v<=0||v>1000000){ el.value=''; SFP.msg='Prices must be more than $0.'; sfPricesRender(); return; } SFP.dirty[k]=Math.round(v*100)/100; SFP.msg=''; }
+  const v=Number(raw); if(!isFinite(v)||v<=0||v>1000000){ el.value=''; SFP.msg='Prices must be more than $0.'; sfPricesRender(); return; } SFP.dirty[k]=Math.round(v*100)/100; SFP.msg=''; sfpRefreshNote(k); }
 function sfpBulk(mode){ const pct=Number((document.getElementById('sfpPct')||{}).value);
   if(mode==='pct'&&!(pct>0&&pct<=1000)){ SFP.msg='Enter a percentage.'; return sfPricesRender(); }
   let n=0; for(const p of sfpRows()){ const k=sfpKey(p); if(mode==='clear'){ if(sfpCurrent(p)!=null||SFP.dirty[k]!=null){ SFP.dirty[k]=null; n++; } continue; }
     const base=p.msrp||p.calculated; if(!base) continue; SFP.dirty[k]=Math.round(base*pct)/100; n++; }
-  SFP.msg=n?`${n} change${n===1?'':'s'} ready — not saved yet.`:'Nothing to change in this list.'; sfPricesRender(); }
+  const b=sfpBelowCount(); SFP.msg=n?`${n} change${n===1?'':'s'} ready — not saved yet.${b?` ${b} below MAP would be held from your public storefront — use "Raise below-MAP prices to MAP" or change them.`:''}`:'Nothing to change in this list.'; sfPricesRender(); }
 /* MARKUP OVER DEALER COST (owner 2026-11-18), beside "% of MSRP". price = unit dealer cost × (1 + markup ÷ 100), worked from the
    editor's 2× figure (cost = calculated ÷ 2 — the server never sends the cost itself). The dealer sees every calculated amount and
    the public MAP floor BEFORE confirming; nothing changes until "Use these prices", and nothing is saved until "Save prices". A
@@ -10596,7 +10669,7 @@ async function sfSave(mode){
 }
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
-Object.assign(window,{openOrderDetail,orderPrint,qSetMarkup,sfpMarkupPreview,sfpMarkupApply,sfpMarkupCancel,acSalesAdd,acSalesRemove,salesContactsApi:(b)=>api(TOOLS_ENDPOINT,b)});
+Object.assign(window,{openOrderDetail,orderPrint,ghOpenOrder,ghCloseOrder,qSetMarkup,sfpMarkupPreview,sfpMarkupApply,sfpMarkupCancel,sfpUseMap,sfpFixBelow,acSalesAdd,acSalesRemove,salesContactsApi:(b)=>api(TOOLS_ENDPOINT,b)});
 Object.assign(window,{apTradeRef,gsvAdd,gsvQty,gsvForm,gsvSend,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 

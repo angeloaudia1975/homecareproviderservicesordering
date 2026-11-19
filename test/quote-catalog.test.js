@@ -118,10 +118,10 @@ await t('SAVINGS PREVIEW (owner 2026-11-12): MSRP + "You save" for a lower offer
   w.qMeta(pk[0]); w.qMeta(pk[1]);
   Object.assign(m['line-a|A1'],{basis:'once',unit:90,qty:2}); w.renderQuotes(); let v=w.els['#view-quotes'].innerHTML;
   if(!/MSRP \$120\.00/.test(v)||!/You save \$30\.00 \(25%\) each/.test(v)) throw new Error('savings line');
-  if(!/Below the manufacturer&#39;s minimum advertised price|Below the manufacturer's minimum advertised price/.test(v)) throw new Error('below-MAP warning');
+  if(!/Manufacturer&#39;s MAP \$100\.00|Manufacturer's MAP \$100\.00/.test(v)||!/below MAP\. That is allowed on this private customer quote/.test(v)||!/Use MAP/.test(v)) throw new Error('below-MAP note + Use MAP (owner 2026-11-19: allowed on a private quote)');
   if(!/Your total savings: \$60\.00 \(25%\)/.test(v)) throw new Error('total savings');
   Object.assign(m['line-a|A1'],{basis:'map'}); w.renderQuotes(); v=w.els['#view-quotes'].innerHTML;
-  if(!/You save \$20\.00 \(16%\)/.test(v)||/Below the manufacturer/.test(v)) throw new Error('MAP basis: $100 vs MSRP $120');
+  if(!/You save \$20\.00 \(16%\)/.test(v)||/below MAP\. That is allowed/.test(v)) throw new Error('MAP basis: $100 vs MSRP $120');
   Object.assign(m['line-a|A1'],{compare:false}); w.renderQuotes(); v=w.els['#view-quotes'].innerHTML; if(/You save/.test(v)) throw new Error('compare off');
   Object.assign(m['line-a|A2'],{basis:'none'}); eq(w.quoteTotal(w.quotePicked()),200,'no-price line out of the total');
   S.PRICE['line-a|A1'].msrpCalc=true; Object.assign(m['line-a|A1'],{compare:true,basis:'once',unit:90}); w.renderQuotes(); if(/You save/.test(w.els['#view-quotes'].innerHTML)) throw new Error('savings against a calculated retail'); });

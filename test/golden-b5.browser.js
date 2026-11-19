@@ -166,6 +166,20 @@ const ghText = page => page.evaluate(() => (document.getElementById('goldenHist'
         ok(/Completed/.test(fSt) && !/PO-78/.test(fSt), fSt.slice(0, 300)); ok(/No Golden orders match these filters/.test(fDate), fDate.slice(0, 300));
         ok(/PO-77/.test(fAll) && /PO-78/.test(fAll) && !/Showing/.test(fAll), fAll.slice(0, 300)); ok(printed === true, 'print class'); ok(W.calls.length === callsBefore, 'filters call Golden'); });
 
+      // 3a — owner 2026-11-19: Golden orders are rows of the MAIN Orders & Tracking list; View / print opens that order directly
+      const main = await page.evaluate(() => { const b = document.getElementById('ordBody'); return { text: b ? b.innerText.replace(/\s+/g, ' ') : '', n: b ? b.querySelectorAll('tr[data-ghorder]').length : 0,
+        foot: (document.querySelector('#view-orders tfoot') || {}).innerText || '' }; });
+      await page.evaluate(() => { const r = [...document.querySelectorAll('#ordBody tr[data-ghorder]')].find(x => x.getAttribute('data-ghorder') === 'P501'); r.querySelector('a.btn').click(); });
+      await page.waitForFunction(() => /1Z1000/.test((document.getElementById('modal') || {}).innerText || ''), null, { timeout: 15000 });
+      const md = await page.evaluate(() => { const m = document.getElementById('modal'); return { on: m.classList.contains('on'), text: m.innerText.replace(/\s+/g, ' '), html: m.innerHTML }; });
+      const mprint = await page.evaluate(() => { let cls = null; const p = window.print; window.print = () => { cls = document.body.classList.contains('print-order'); }; [...document.querySelectorAll('#modal a')].find(a => /Print order/.test(a.textContent)).click(); window.print = p; return cls; });
+      await page.evaluate(() => ghCloseOrder());
+      await t(`${label}: Golden orders in the main list; View / print opens THAT order directly — SO, items, carrier link, dates, Print — never in the total`, () => {
+        ok(main.n === 3 && /Golden SO SO261001001/.test(main.text) && /PO PO-77/.test(main.text) && /not in the total/.test(main.text), JSON.stringify(main).slice(0, 500));
+        ok(md.on && /Golden order — SO261001001/.test(md.text) && /PO-77/.test(md.text) && /PR511-LAR/.test(md.text), md.text.slice(0, 500));
+        ok(/ups\.com\/track\?tracknum=1Z1000/.test(md.html) && /Oct 8, 2026|Oct 9, 2026/.test(md.text) && /Cincinnati, OH/.test(md.text), 'tracking link + dates: ' + md.text.slice(0, 400));
+        ok(!/LEAK/.test(md.html) && !/window\.__xss/.test(md.html.replace(/&lt;img[^]*?&gt;/g, '')), 'escaped'); ok(mprint === true, 'print'); });
+
       // 3b — a failed older page keeps the orders already shown
       await page.evaluate(() => showView('dash')); await page.waitForTimeout(200); await page.evaluate(() => showView('orders'));
       await page.waitForFunction(() => /PO-78/.test((document.getElementById('goldenHist') || {}).innerText || ''), null, { timeout: 15000 });
