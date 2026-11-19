@@ -48,6 +48,7 @@ t('markup over dealer cost: $2,000 at 40% = $2,800; no cost → none', () => {
   eq(env.qMarkupUnit({ cost: 2000 }, 40), 2800); eq(env.qMarkupUnit({ cost: 19.99 }, 35), 26.99); eq(env.qMarkupUnit({ cost: null }, 40), null);
 });
 t('order view: what the manufacturer has not supplied yet', () => {
+  eq(env.orderMissingList({ source: 'portal', status: 'placed', shipments: [{ so_number: 'SO260608844', est_ship_date: '2026-11-25' }] }), [], 'an SO recorded on a shipment is supplied (owner 2026-11-19)');
   eq(env.orderMissingList({ source: 'portal', status: 'placed' }), ['Manufacturer sales order (SO) number', 'Ship date', 'Carrier and tracking number']);
   eq(env.orderMissingList({ source: 'portal', status: 'shipped', shipments: [{ ship_date: '2026-11-10', tracking_number: '1Z999', carrier: 'UPS' }] }), ['Manufacturer sales order (SO) number', 'Estimated arrival date']);
   eq(env.orderMissingList({ source: 'portal', status: 'placed', ship_progress: { backordered: [{ code: 'A', qty: 1 }] }, shipments: [{ ship_date: '2026-11-10', tracking_number: 'X1', carrier: 'FedEx', est_delivery_date: '2026-11-14' }] }),

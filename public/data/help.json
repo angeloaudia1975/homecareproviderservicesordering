@@ -206,7 +206,7 @@
       "id": "shipment-tracking",
       "area": "tracking",
       "title": "Tracking your shipments",
-      "updated": "2026-11-18",
+      "updated": "2026-11-19",
       "open": "orders",
       "summary": "Orders & Tracking lists every order. When HCPS has shipment details from the manufacturer or carrier, they appear under the order.",
       "steps": [
@@ -216,7 +216,7 @@
         "When HCPS records what a shipment contained, you see it under the order: \"Partially shipped\" with how many units have shipped, or \"Shipped in full\" once every unit has gone.",
         "Items the manufacturer has backordered are listed as Backordered, with the date HCPS recorded it.",
         "The estimated ship date (from the manufacturer) and the estimated arrival (from the carrier) are shown separately, and only when they were confirmed.",
-        "The order view lists the details the manufacturer has not supplied yet, such as its sales order number or a tracking number.",
+        "When the manufacturer confirms a sales order (SO), its number is shown on the order and on each shipment it covers — an order split across several SOs shows each one with its own items and tracking.", "The order view lists the details the manufacturer has not supplied yet, such as its sales order number or a tracking number.",
         "No tracking yet? Use Request tracking and HCPS will ask the manufacturer."
       ],
       "notes": [

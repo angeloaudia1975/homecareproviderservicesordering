@@ -8146,7 +8146,7 @@ function orderMissingList(o){
   const st=String(o.status||"").toLowerCase(); if(st==="cancelled"||o.source==="imported"||o.invoice_only) return [];
   const ships=(Array.isArray(o.shipments)?o.shipments:[]).filter(Boolean), done=st==="delivered"||st==="completed";
   const P=o.ship_progress||{}, miss=[];
-  if(o.source!=="golden") miss.push("Manufacturer sales order (SO) number");
+  if(o.source!=="golden"&&!ships.some(x=>x.so_number)) miss.push("Manufacturer sales order (SO) number");
   if(!ships.length&&!done){ miss.push("Ship date"); if(!o.tracking) miss.push("Carrier and tracking number"); }
   if(ships.some(x=>(x.ship_date||x.tracking_number)&&!x.tracking_number)&&!o.tracking) miss.push("Tracking number for a shipment");
   if(ships.some(x=>x.tracking_number&&!x.carrier)) miss.push("Carrier for a tracking number");
@@ -8161,7 +8161,7 @@ function orderDetailHtml(o){
   const shipHtml=ships.length?ships.map((x,i)=>{
     const num=x.tracking_number?(x.url?`<a class="tnum" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.tracking_number)}</a>`:`<span class="tnum">${esc(x.tracking_number)}</span>`):"Not yet supplied";
     const f=(k,v)=>`<div><span>${k}</span><b>${v}</b></div>`;
-    return `<div class="od-ship"><div class="od-sh">Shipment ${i+1}${ships.length>1?" of "+ships.length:""}</div><div class="od-grid">
+    return `<div class="od-ship"><div class="od-sh">Shipment ${i+1}${ships.length>1?" of "+ships.length:""}${x.so_number?` · Manufacturer SO <span class="tnum">${esc(x.so_number)}</span>`:""}</div><div class="od-grid">
       ${f("Carrier",x.carrier?esc(x.carrier):(x.tracking_number?"Not confirmed":"Not yet supplied"))}${f("Tracking",num)}
       ${f("Shipped",x.ship_date?esc(shipDate(x.ship_date)):"Not shipped yet")}
       ${f("Estimated ship date (manufacturer)",x.est_ship_date?esc(shipDate(x.est_ship_date)):"—")}
@@ -8175,7 +8175,7 @@ function orderDetailHtml(o){
   return `<div class="mbox od-box" role="document"><div class="mhead"><h3>Order — ${esc(o.manufacturerName||"")}</h3><a class="mx noprint" onclick="closeModal()" aria-label="Close">✕</a></div>
     <div class="od-grid od-head">
       <div><span>Dealer</span><b>${esc(biz||"—")}</b></div><div><span>Order date</span><b>${esc(dateShort(o.date))}</b></div>
-      <div><span>PO</span><b>${esc(o.po||"—")}</b></div><div><span>HCPS order</span><b class="tnum">${esc(String(o.id||"").slice(0,8).toUpperCase()||"—")}</b></div>
+      <div><span>PO</span><b>${esc(o.po||"—")}</b></div>${(()=>{ const so=[...new Set(ships.map(x=>x.so_number).filter(Boolean))]; return so.length?`<div><span>Manufacturer SO${so.length>1?"s":""}</span><b class="tnum">${esc(so.join(", "))}</b></div>`:""; })()}<div><span>HCPS order</span><b class="tnum">${esc(String(o.id||"").slice(0,8).toUpperCase()||"—")}</b></div>
       <div><span>Status</span><b>${esc(ORDER_STATUS_LABEL[String(o.status||"").toLowerCase()]||o.status||"—")}</b></div><div><span>Source</span><b>${o.source==="golden"?"Golden":o.source==="portal"?"Ordered in the portal":"Imported sales record"}</b></div></div>
     <div style="overflow-x:auto"><table class="tbl od-tbl"><thead><tr><th>SKU</th><th>Product / configuration</th><th class="n">Qty</th><th class="n">Unit price</th><th class="n">Line total</th></tr></thead>
       <tbody>${lines.map(row).join("")||`<tr><td colspan="5" class="empty">No line items recorded.</td></tr>`}</tbody>
@@ -8204,7 +8204,7 @@ function orderShipHtml(list,prog){
     if(x.est_delivery_date) bits.push("Estimated arrival "+shipDate(x.est_delivery_date)+" (carrier)");
     if((x.items||[]).length) bits.push("Contains "+x.items.map(i=>i.code+" ×"+i.qty).join(", "));
     if(x.updated_at) bits.push("updated "+shipDate(String(x.updated_at).slice(0,10)));
-    return `<div class="m">${num?"Tracking "+num+car:""}${num&&bits.length?" · ":""}${esc(bits.join(" · "))}${x.note?` <small style="color:var(--muted)">— ${esc(x.note)}</small>`:""}</div>`;
+    return `<div class="m">${x.so_number?`SO <span class="tnum">${esc(x.so_number)}</span>${num||bits.length?" · ":""}`:""}${num?"Tracking "+num+car:""}${num&&bits.length?" · ":""}${esc(bits.join(" · "))}${x.note?` <small style="color:var(--muted)">— ${esc(x.note)}</small>`:""}</div>`;
   }).join("");
 }
 async function loadOrders(){
@@ -8949,7 +8949,7 @@ function quotePaperHtml(picked,total){
     <div style="text-align:right"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Quote</div><b>${QSAVED?esc(QSAVED.quote_no):"Draft"}</b><div class="qc">Valid ${esc(QCUST.valid||"30 days")}</div></div></div>
     ${QCUST.name||QCUST.title?`<div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">${QCUST.name?`Prepared for <b>${esc(QCUST.name)}</b>`:""}${QCUST.title?`<div>${esc(QCUST.title)}</div>`:""}</div>`:""}
     <table class="qtbl"><thead><tr><th>Product</th><th style="text-align:right">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Amount</th></tr></thead><tbody>${picked.map(r=>{ const u=qUnit(r), q=qMeta(r).qty;
-      return `<tr><td>${quoteItemHtml(r)}</td><td style="text-align:right">${q}</td><td style="text-align:right">${u!=null?qMoney(u)+(qMeta(r).basis==='msrp'&&r.msrpEach?' each':'')+(qMeta(r).basis==='msrp'?'<div style="font-size:9.5px;color:var(--muted)">'+(r.msrpCalc?'Retail price (HCPS calculated)':'MSRP')+'</div>':'')+(qRef(r)!=null?'<div style="font-size:9.5px;color:var(--muted)">MSRP '+qMoney(qRef(r))+'</div>':'')+(qSaving(r)?'<div style="font-size:10px;color:#1d6b3a;font-weight:700">You save '+qMoney(qSaving(r).dollars)+' ('+(qSaving(r).percent>=1?qSaving(r).percent+'%':'under 1%')+')'+(q>1?' each':'')+'</div>':''):(qMsrpOk(r)?'<span class="est">Price on request</span>':'<span class="est">Price on Request</span>')}</td><td style="text-align:right">${u!=null?qMoney(u*q):'—'}</td></tr>`; }).join("")||'<tr><td colspan="4" style="color:var(--muted)">Add products to build the quote.</td></tr>'}</tbody></table>
+      return `<tr><td>${quoteItemHtml(r)}</td><td style="text-align:right">${q}</td><td style="text-align:right">${u!=null?qMoney(u)+(qMeta(r).basis==='msrp'&&r.msrpEach?' each':'')+(r.unit&&!(qMeta(r).basis==='msrp'&&r.msrpEach)?'<div style="font-size:9.5px;color:var(--muted)">per '+esc(r.unit)+'</div>':'')+(qMeta(r).basis==='msrp'?'<div style="font-size:9.5px;color:var(--muted)">'+(r.msrpCalc?'Retail price (HCPS calculated)':'MSRP')+'</div>':'')+(qRef(r)!=null?'<div style="font-size:9.5px;color:var(--muted)">MSRP '+qMoney(qRef(r))+'</div>':'')+(qSaving(r)?'<div style="font-size:10px;color:#1d6b3a;font-weight:700">You save '+qMoney(qSaving(r).dollars)+' ('+(qSaving(r).percent>=1?qSaving(r).percent+'%':'under 1%')+')'+(q>1?' each':'')+'</div>':''):(qMsrpOk(r)?'<span class="est">Price on request</span>':'<span class="est">Price on Request</span>')}</td><td style="text-align:right">${u!=null?qMoney(u*q):'—'}</td></tr>`; }).join("")||'<tr><td colspan="4" style="color:var(--muted)">Add products to build the quote.</td></tr>'}</tbody></table>
     <div class="qtot">Total: ${qMoney(total)}</div>
     ${(()=>{ let sv=0, ref=0; picked.forEach(r=>{ const x=qSaving(r); if(x){ const q=qMeta(r).qty; sv+=x.dollars*q; ref+=qRef(r)*q; } }); sv=Math.round(sv*100)/100;
       return sv>0?`<div class="qtot" style="color:#1d6b3a;font-size:13px">Your total savings: ${qMoney(sv)} (${Math.floor(sv/ref*100+1e-9)>=1?Math.floor(sv/ref*100+1e-9)+'%':'under 1%'})</div>`:''; })()}
