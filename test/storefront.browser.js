@@ -250,7 +250,7 @@ const layout = (page, sel) => page.evaluate((sel) => {
         if (b.action === 'sf_inquiries') return R({ ok: true, inquiries: [{ id: 'i1', dealer_id: 'br', created_at: '2026-11-06T10:00:00Z', name: 'Pat <b>', email: 'pat@example.com', phone: null, message: 'Hi', product_name: 'Seat', product_code: 'B1', status: 'new' }] });
         if (b.action === 'sf_prices') return R({ ok: true, head_office: true, can_edit: true, lines: [{ slug: 'golden-technologies', name: 'Golden Technologies' }, { slug: 'bemis', name: 'Bemis' }], policies: { 'golden-technologies': 'map', bemis: 'unknown' },
           flag_text: { below_map: 'Below the minimum advertised price (MAP).', rules_unknown: 'Rules not recorded yet.' }, products: [
-            { manufacturer: 'golden-technologies', code: 'PR-501', name: 'Cloud <i>', category: 'Lift Chairs', price: 2499, price_label: 'MSRP', source: 'msrp', calculated: 2200, msrp: 2499, flags: [{ on: 'dealer', flag: 'below_map', map: 1999 }], your_price: 1500, your_price_here: null, company_price: 1500 },
+            { manufacturer: 'golden-technologies', code: 'PR-501', name: 'Cloud <i>', category: 'Lift Chairs', price: 2499, price_label: 'MSRP', source: 'msrp', calculated: 2200, msrp: 2499, flags: [{ on: 'dealer', flag: 'below_map', map: 1999 }], map_floor: 1999, price_unit: null, your_price: 1500, your_price_here: null, company_price: 1500 },
             { manufacturer: 'bemis', code: 'B1', name: 'Seat', category: 'Bath Safety', price: null, price_label: 'Call for Price', source: 'call', calculated: 111, msrp: null, flags: [{ on: 'calculated', flag: 'rules_unknown' }], your_price: null, your_price_here: null, company_price: null }] });
         if (b.action === 'sf_detail') return b.code === 'PR-501' ? R({ ok: true, detail: Object.assign({}, DETAILS['golden-technologies|PR-501'], { tagline: 'Preview detail' }) }) : R({ ok: false, error: 'That product is not shown on this storefront.' });
         if (b.action === 'sf_preview') return R(Object.assign({}, PUBLIC, { preview: true, dealer: Object.assign({}, PUBLIC.dealer, { name: 'Preview Dealer' }), price_note: 'Preview — this is what customers see.' }));
@@ -353,6 +353,15 @@ const layout = (page, sel) => page.evaluate((sel) => {
         ok(/Cloud <i>.*\$2,499(\.00)? MSRP.*Below the minimum advertised price \(MAP\)\. MAP \$1,999(\.00)?.*HCPS calculated retail: \$2,200/.test(r[0]), r[0]);
         ok(/Seat.*Call for Price.*Rules not recorded yet/.test(r[1]), "row2: " + JSON.stringify(r));
         ok(await page.evaluate(() => document.querySelector('.sfp-in').value === '1500.00'), 'company price shown');
+        { // owner 2026-11-19: the proposed price, its MAP, "Use MAP", and how to fix a below-MAP price (saved, typed, % or markup)
+          const note = await page.evaluate(() => document.querySelector('.sfp-map[data-mapk="golden-technologies|PR-501"]').textContent.replace(/\s+/g, ' '));
+          ok(/MAP \$1,999\.00/.test(note) && /your price \$1,500\.00 is below MAP, so it is held from your public storefront/.test(note) && /Raise it to at least \$1,999\.00/.test(note) && /Use MAP/.test(note), 'saved price below MAP: ' + note);
+          ok(await page.evaluate(() => /Raise 1 below-MAP price to MAP/.test(document.querySelector('#sfPricesBody .sf-acts').textContent)), 'bulk raise offered');
+          await page.fill('.sfp-in[data-k="golden-technologies|PR-501"]', '1800'); await page.dispatchEvent('.sfp-in[data-k="golden-technologies|PR-501"]', 'change');
+          ok(await page.evaluate(() => /your price \$1,800\.00 is below MAP/.test(document.querySelector('.sfp-map[data-mapk="golden-technologies|PR-501"]').textContent)), 'typed price checked at once');
+          await page.evaluate(() => document.querySelector('.sfp-map[data-mapk="golden-technologies|PR-501"] a').click());
+          ok(await page.evaluate(() => document.querySelector('.sfp-in[data-k="golden-technologies|PR-501"]').value === '1999.00' && !/below MAP/.test(document.querySelector('.sfp-map[data-mapk="golden-technologies|PR-501"]').textContent)), 'Use MAP sets the MAP and clears the warning');
+          await page.evaluate(() => sfPricesLoad()); await page.waitForSelector('.sfp tbody tr'); }
         await page.fill('.sfp-in[data-k="bemis|B1"]', '129.5'); await page.dispatchEvent('.sfp-in[data-k="bemis|B1"]', 'change');
         await page.evaluate(() => sfpSave()); await page.waitForTimeout(500);
         const sv = S.calls.filter((c) => c.api === 'retail' && c.action === 'retail_set').pop(); ok(sv && JSON.stringify(sv.rows) === JSON.stringify([{ manufacturer: 'bemis', code: 'B1', price: 129.5, location_id: null }]), "sv1: " + JSON.stringify(sv));

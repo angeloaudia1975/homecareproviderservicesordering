@@ -13,7 +13,7 @@ const ok = (c, w) => { if (!c) throw new Error(w); };
 function grab(name) { const i = H.indexOf('function ' + name + '('); if (i < 0) throw new Error('missing ' + name); let j = H.indexOf('{', i), d = 0;
   for (let k = j; k < H.length; k++) { if (H[k] === '{') d++; else if (H[k] === '}') { d--; if (!d) return H.slice(i, k + 1); } } throw new Error('unbalanced ' + name); }
 const line = (a) => { const i = H.indexOf(a); return H.slice(i, H.indexOf('\n', i)); };
-const env = new Function(line('const SR_FROZEN=') + '\n' + ['packOf', 'srFrozen', 'msrpWord', 'srUnitOf', 'suggestedRetail', 'suggestedRetailText', 'quoteMapPerUnit', 'qMarkupUnit', 'orderMissingList'].map(grab).join('\n') +
+const env = new Function(line('const SR_FROZEN=') + '\n' + line('const MAP_SELLING_UNIT_LINES=') + '\n' + ['packOf', 'srFrozen', 'msrpWord', 'srUnitOf', 'suggestedRetail', 'suggestedRetailText', 'quoteMapPerUnit', 'qMarkupUnit', 'orderMissingList'].map(grab).join('\n') +
   '\nconst esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",\'"\':"&quot;"}[c])); const money=n=>"$"+Number(n).toFixed(2);\nreturn {packOf,srFrozen,msrpWord,suggestedRetail,suggestedRetailText,quoteMapPerUnit,qMarkupUnit,orderMissingList};')();
 t('Suggested retail = 2 × dealer cost of one order unit, only with neither MSRP nor MAP', () => {
   eq(env.suggestedRetail({ manufacturer: 'dalton', base_price: 100 }), { amount: 200, each: false, unit: null, n: null, unitAmount: 200 });
@@ -43,6 +43,11 @@ t('quote MAP floor is per order unit, the server rule (mapsFor): × count only w
   eq(env.quoteMapPerUnit({ map: 12, uom: 'Case', case_qty: 4 }), null, 'unit not recorded → none (the server checks)');
   eq(env.quoteMapPerUnit({ map: 12, uom: 'Pair', map_basis: 'each' }), null, 'no stated count → none');
   eq(env.quoteMapPerUnit({ map: 30, uom: 'Case', case_qty: 4, msrp: 100, msrp_basis: 'order_unit' }), 30, 'an MSRP per order unit proves a per-pack MAP');
+  // owner 2026-11-19: PediFix MAP is for the selling unit — pack of two / pair; a recorded basis still wins; other lines unchanged
+  eq(env.quoteMapPerUnit({ map: 10, uom: 'Pack of 2', case_qty: 2 }, 'pedifix'), 10, 'PediFix pack of two');
+  eq(env.quoteMapPerUnit({ map: 10, uom: 'Pair', manufacturer: 'pedifix' }), 10, 'PediFix pair (line from the product)');
+  eq(env.quoteMapPerUnit({ map: 10, uom: 'Pack of 2', case_qty: 2, map_basis: 'each' }, 'pedifix'), 20, 'recorded basis wins');
+  eq(env.quoteMapPerUnit({ map: 10, uom: 'Pack of 2', case_qty: 2 }, 'access4u'), null, 'other lines unchanged');
 });
 t('markup over dealer cost: $2,000 at 40% = $2,800; no cost → none', () => {
   eq(env.qMarkupUnit({ cost: 2000 }, 40), 2800); eq(env.qMarkupUnit({ cost: 19.99 }, 35), 26.99); eq(env.qMarkupUnit({ cost: null }, 40), null);
