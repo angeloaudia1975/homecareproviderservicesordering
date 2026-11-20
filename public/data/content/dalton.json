@@ -59768,11 +59768,16 @@
      "sku": "ASP-HD",
      "name": "Rosco Heavy Duty Aspirator W/Canister, Bacteria Filter",
      "size": "",
-     "status": "active",
-     "disabled": false,
+     "status": "hidden",
+     "disabled": true,
      "image": "",
      "images": [],
-     "source": ""
+     "source": "",
+     "retired": {
+      "reason": "Owner decision 2026-11-20: replaced by the Cliq VC-701 Aspirator (VC-701) at $149 each — retired from new sales; order and sales history keep ASP-HD",
+      "decided": "2026-11-20",
+      "ref": "Owner directive 2026-11-20 16:48 CT"
+     }
     }
    ],
    "sku_count": 1,
@@ -59869,6 +59874,137 @@
      "status": "needs_content"
     }
    }
+  },
+  "cliq-vc-701-aspirator": {
+   "manufacturer": "dalton",
+   "page_key": "cliq-vc-701-aspirator",
+   "name": "Cliq VC-701 Aspirator",
+   "status": "published",
+   "tagline": "Portable high-vacuum aspirator for home suction needs.",
+   "description": "The Cliq VC-701 is a portable aspirator for home suction needs. It produces a maximum vacuum of 675 mmHg and has a high-quality vacuum regulator with an anti-vibration vacuum gauge setting, a filter design that helps prevent contamination, an oil-free piston motor with permanent lubrication, and a collection bottle with overflow protection. At 7.7 pounds it is easy to carry and easy to clean.",
+   "features": [
+    "Maximum vacuum of 675 mmHg",
+    "Filter design helps prevent contamination",
+    "High-quality vacuum regulator and anti-vibration vacuum gauge setting",
+    "Oil-free, permanent lubrication",
+    "Collection bottle with overflow protection",
+    "Protective gauge guard prevents damage",
+    "Designed for continuous operation",
+    "Easy to carry and clean (7.7 lb)"
+   ],
+   "specs": [
+    {
+     "label": "Model",
+     "value": "VC-701"
+    },
+    {
+     "label": "Performance category",
+     "value": "High vacuum / low flow"
+    },
+    {
+     "label": "Maximum vacuum",
+     "value": "675 mmHg (±3%)"
+    },
+    {
+     "label": "Flow rate",
+     "value": "Greater than 17 L/min"
+    },
+    {
+     "label": "Motor type",
+     "value": "Piston"
+    },
+    {
+     "label": "Electrical requirements",
+     "value": "100–120 V AC, 60 Hz"
+    },
+    {
+     "label": "Power consumption",
+     "value": "0.7 A / 72 W (100–120 V)"
+    },
+    {
+     "label": "Sound level",
+     "value": "Less than 53 dB"
+    },
+    {
+     "label": "Weight",
+     "value": "7.7 lb (3.5 kg)"
+    },
+    {
+     "label": "Dimensions",
+     "value": "13.00″ L × 5.91″ W × 8.27″ H"
+    },
+    {
+     "label": "Collection container",
+     "value": "800 mL, with overflow protection"
+    },
+    {
+     "label": "Operating conditions",
+     "value": "0–40 °C, 0–95% RH"
+    },
+    {
+     "label": "Storage conditions",
+     "value": "−40 to 70 °C, 0–95% RH"
+    },
+    {
+     "label": "Electrical protection",
+     "value": "Class II, Type BF"
+    },
+    {
+     "label": "HCPCS code",
+     "value": "E0600"
+    }
+   ],
+   "warranty": "2 years (as listed on Dalton's VC-701 specification sheet)",
+   "category": "Respiratory",
+   "subcategory": null,
+   "options": {},
+   "skus": [
+    {
+     "sku": "VC-701",
+     "name": "Cliq VC-701 Aspirator",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": "https://daltonmedical.com/product/cliq-vc-701-aspirator/",
+   "documents": [],
+   "videos": [],
+   "sizing_note": null,
+   "aliases": [],
+   "field_provenance": {
+    "description": "HCPS-written 2026-11-20 strictly from Dalton's Cliq VC-701 sell sheet (owner-supplied 2026-11-20)",
+    "features": "Dalton's Cliq VC-701 sell sheet (owner-supplied 2026-11-20)",
+    "specs": "Dalton's Cliq VC-701 sell sheet (owner-supplied 2026-11-20) (weight 3.5 kg / 7.7 lb; dimensions 13.00 × 5.91 × 8.27 in)",
+    "warranty": "Dalton's Cliq VC-701 sell sheet (owner-supplied 2026-11-20)",
+    "category": "HCPS catalog (Respiratory)",
+    "replaces": "Replaces ASP-HD for new sales (owner 2026-11-20 16:48: VC-701 replaces ASP-HD at $149 each)"
+   },
+   "image": "/assets/products/dalton/gallery/10b7c1b5ed587bb1e997.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/dalton/gallery/10b7c1b5ed587bb1e997.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied CLIQ photo (primary)"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/859ad3abf62d950d15f5.jpg",
+     "primary": false,
+     "caption": "Front",
+     "source": "owner-supplied CLIQ photo"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/ec2a39d780c000d43d3d.jpg",
+     "primary": false,
+     "caption": "Side",
+     "source": "owner-supplied CLIQ photo"
+    }
+   ]
   },
   "scooter-navigator-20-in-seat-36ah-btry-solid-tire-5-amp": {
    "manufacturer": "dalton",
