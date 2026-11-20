@@ -89,17 +89,21 @@
     function refreshChips() { const hasP = !!(DV.context && DV.context().product); sh.querySelectorAll('.chip[data-needs="product"]').forEach((c) => { c.hidden = !hasP; }); }
     function place() {
       const W = innerWidth, H = innerHeight, r = orbHost.getBoundingClientRect();
-      /* phone: a sheet that stops above the bottom strip, so the orb (right) and the Golden cart button (left) stay visible
-         and tappable while it is open */
-      if (W <= 600) Object.assign(P.style, { left: '8px', right: '8px', bottom: '84px', top: 'auto', width: 'auto', maxHeight: Math.max(300, H - 84 - 12) + 'px' });
+      /* the top search bar stays exactly where it is and stays usable while the panel is open (owner 2026-11-20) */
+      const hs = document.querySelector('.hsearch'); const hr = hs ? hs.getBoundingClientRect() : null;
+      const seen = !!(hr && hr.bottom > 0 && hr.width > 0 && hr.top < H);
+      /* phone: a sheet between the search bar and the bottom strip, so the search bar (top), the orb (right) and the Golden
+         cart button (left) all stay visible and tappable while it is open; the sheet scrolls inside itself */
+      if (W <= 600) { const top = seen ? Math.round(hr.bottom + 8) : 8;
+        Object.assign(P.style, { left: '8px', right: '8px', bottom: '84px', top: top + 'px', width: 'auto', maxHeight: Math.max(160, H - 84 - top) + 'px' }); }
       else {
-        /* desktop / tablet: a card above the orb that never reaches the top search bar (it stays exactly as it is) */
-        const hs = document.querySelector('.hsearch'); const hr = hs ? hs.getBoundingClientRect() : null;
-        const topLimit = hr && hr.bottom > 0 && hr.width > 0 ? Math.round(hr.bottom + 12) : 12;
+        /* desktop / tablet: a card above the orb that never reaches the top search bar */
+        const topLimit = seen ? Math.round(hr.bottom + 12) : 12;
         Object.assign(P.style, { right: '16px', left: 'auto', width: '400px', bottom: Math.round(H - r.top + 12) + 'px', top: 'auto', maxHeight: Math.max(280, Math.round(r.top - 12 - topLimit)) + 'px' });
       }
     }
     addEventListener('resize', () => { if (!P.hidden) place(); });
+    addEventListener('scroll', () => { if (!P.hidden) place(); }, { passive: true });
     $('.x').onclick = () => api.toggle(false);
     P.addEventListener('keydown', (e) => { if (e.key === 'Escape') api.toggle(false); });
     $('.chat').onclick = () => { if (DV.chat && DV.chat()) return; location.href = 'tel:' + S.phone_tel; };
@@ -119,7 +123,7 @@
     }
     function reimbCard(c) {
       const pay = (c.payers || []).map((p) => `<div style="margin-top:8px"><b>${esc(p.payer)}</b><div class="m">${esc([p.state, p.zip ? 'ZIP ' + p.zip + (p.zip_source === 'branch' ? ' (branch estimate)' : '') : '', p.date_of_service ? day(p.date_of_service) : ''].filter(Boolean).join(' · '))}</div>
-        ${p.available ? `<table>${(p.amounts || []).map((a) => `<tr><td>${esc(a.basis)}${a.modifier ? ' · ' + esc(a.modifier) : ''}</td><td>${money(a.amount)}</td></tr>`).join('')}${(p.capped_rental || []).map((x) => `<tr><td>Rental, months ${esc(x.months)}</td><td>${money(x.amount)}</td></tr>`).join('')}</table>${p.split ? `<div class="m">${esc(p.split)}</div>` : ''}<div class="src">${esc([p.source, p.effective].filter(Boolean).join(' — '))}</div>` : `<div class="m">${esc(p.reason || 'Rate unavailable for this plan/date')}</div>`}</div>`).join('');
+        ${p.available ? `<table>${(p.amounts || []).map((a) => `<tr><td>${esc(a.basis)}${a.modifier ? ' · ' + esc(a.modifier) : ''}${a.unit ? `<div class="m">${esc(a.unit)}</div>` : ''}</td><td>${money(a.amount)}</td></tr>`).join('')}${(p.capped_rental || []).map((x) => `<tr><td>Rental, months ${esc(x.months)}</td><td>${money(x.amount)}</td></tr>`).join('')}</table>${p.split ? `<div class="m">${esc(p.split)}</div>` : ''}<div class="src">${esc([p.source, p.effective].filter(Boolean).join(' — '))}</div>` : `<div class="m">${esc(p.reason || 'Rate unavailable for this plan/date')}</div>`}</div>`).join('');
       const el = cardEl(`<h5>${esc(c.product || c.sku)}${c.codes && c.codes.length ? ' · HCPCS ' + esc(c.codes.join(' / ')) : ''}</h5>${c.notice ? `<div class="n">${esc(c.notice)}</div>` : ''}${c.allowance_note ? `<div class="m">${esc(c.allowance_note)}</div>` : ''}${pay}
         <div>${DV.openCalc && DV.hasCalc && DV.hasCalc() ? '<button class="btn calc" type="button">Open the earnings calculator</button>' : ''}<button class="btn gh fee" type="button">Open the fee schedule</button></div>`);
       const cb = el.querySelector('.calc'); if (cb) cb.onclick = () => go(() => DV.openCalc());
@@ -158,7 +162,9 @@
       el.textContent = text; speak(text);
     }
     const api = {
-      toggle(on) { const show = on == null ? P.hidden : on; P.hidden = !show; if (show) { refreshChips(); place(); if (!greeted) hello(); setAi(aiOn); const f = sh.querySelector('.chip:not([hidden])') || inp; try { f.focus(); } catch (e) {} } else stopSpeaking(); },
+      toggle(on) { const show = on == null ? P.hidden : on; P.hidden = !show; if (show) { refreshChips(); place(); if (!greeted) hello(); setAi(aiOn); const f = sh.querySelector('.chip:not([hidden])') || inp; try { f.focus(); } catch (e) {} }
+        else { stopSpeaking(); if (on === false && orbHost.__dvFocus) orbHost.__dvFocus(); }   // closing gives focus back to the orb
+        if (orbHost.__dvExpanded) orbHost.__dvExpanded(show); },
       el: P, shadow: sh, ask, setAi,
     };
     return api;

@@ -64,6 +64,8 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       await page.evaluate(() => openProductDetail('K2DK16F')); await page.waitForSelector('#pdReimb .pd-reimb-cols', { timeout: 20000 });
       await page.selectOption('#pdReimb [data-k=state]', 'KY'); await page.waitForTimeout(600);
       await page.fill('#pdReimb [data-k=zip]', '42101'); await page.dispatchEvent('#pdReimb [data-k=zip]', 'change'); await page.waitForTimeout(800);
+      /* the agreed baseline date of service: November 19, 2026 (fixed, so the check does not move with the calendar) */
+      await page.fill('#pdReimb [data-k=dos]', '2026-11-19'); await page.dispatchEvent('#pdReimb [data-k=dos]', 'change'); await page.waitForTimeout(800);
       await page.evaluate(() => { const el = document.createElement('button'); el.id = 'gcartPill'; el.className = 'gck-pill'; el.textContent = 'Golden cart · 2'; document.body.appendChild(el); window.scrollTo(0, 0); });
       await page.waitForTimeout(400);
       const R = (sel) => page.evaluate((s) => { const e = typeof s === 'string' ? document.querySelector(s) : null; if (!e) return null; const r = e.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, w: r.width, h: r.height }; }, sel);
@@ -84,6 +86,7 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
         ok(pos.sw <= pos.vw + 1, 'scroll ' + pos.sw);
       });
       if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `dv-closed-${label}.png`) });
+      const searchClosed = await R('.hsearch');
       /* open: the panel loads now; first open greets by name */
       await page.evaluate(() => document.getElementById('dvOrbHost').shadowRoot.querySelector('button').click());
       await page.waitForFunction(() => { const h = document.getElementById('dvPanelHost'); return h && /Hello|Hi/.test(h.shadowRoot.querySelector('.hello').textContent); }, null, { timeout: 10000 });
@@ -93,7 +96,9 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
         const tapOk = (q) => { const x = (q.left + q.right) / 2, y = (q.top + q.bottom) / 2; const e = document.elementFromPoint(x, y); return e; };
         return { panel: box(r), orb: box(o), cart: box(c), orbTap: tapOk(o) === document.getElementById('dvOrbHost'), cartTap: tapOk(c) === document.getElementById('gcartPill'), support: [...s.querySelectorAll('.sup a, .sup button')].map((a) => (a.textContent || '').trim()),
           close: (() => { const q = s.querySelector('.x').getBoundingClientRect(); return [q.width, q.height]; })(), spoke: window.__spoken.length,
-          search: (() => { const e = document.querySelector('.hsearch'); if (!e) return null; const q = e.getBoundingClientRect(); return q.width && innerWidth > 600 ? { left: q.left, top: q.top, right: q.right, bottom: q.bottom, width: q.width } : null; })() }; });
+          search: (() => { const e = document.querySelector('.hsearch'); if (!e) return null; const q = e.getBoundingClientRect(); if (!q.width) return null; const inp = e.querySelector('input'); const y = (q.top + q.bottom) / 2, x = (q.left + q.right) / 2; const hit = document.elementFromPoint(x, y);
+            return { left: q.left, top: q.top, right: q.right, bottom: q.bottom, width: q.width, tappable: !!(hit && e.contains(hit)), visible: q.top >= 0 && q.bottom <= innerHeight }; })(),
+          expanded: document.getElementById('dvOrbHost').shadowRoot.querySelector('button').getAttribute('aria-expanded') }; });
       await t(`${label}: first open — "Hello, Ann. I’m Victoria, …"; no voice until turned on; support is in the panel`, () => {
         ok(g1 === 'Hello, Ann. I’m Victoria, your personal assistant in the 360 Dealer Portal. How can I help you today?', g1);
         ok(open1.spoke === 0, 'spoken without voice on');
@@ -102,8 +107,21 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       });
       await t(`${label}: open — the orb and the Golden cart stay visible and tappable; the panel never sits on either`, () => {
         ok(!inter(open1.panel, open1.orb) && !inter(open1.panel, open1.cart) && open1.orbTap && open1.cartTap, JSON.stringify(open1));
-        if (open1.search && open1.search.width) ok(!inter(open1.panel, open1.search), 'the panel covers the top search bar: ' + JSON.stringify([open1.panel, open1.search]));
       });
+      await t(`${label}: open — the top search bar stays where it is, uncovered and usable (typing works with the panel open)`, async () => {
+        ok(open1.search && open1.search.visible && open1.search.tappable && !inter(open1.panel, open1.search), 'search bar: ' + JSON.stringify([open1.panel, open1.search]));
+        ok(Math.abs(open1.search.top - (searchClosed && searchClosed.top)) < 1, 'the search bar moved: ' + JSON.stringify([searchClosed, open1.search]));
+        await page.click('.hsearch input'); await page.keyboard.type('K2DK'); const v = await page.$eval('.hsearch input', (e) => e.value); ok(v === 'K2DK', 'typed ' + v);
+        await page.fill('.hsearch input', ''); ok(await page.evaluate(() => !document.getElementById('dvPanelHost').shadowRoot.querySelector('.p').hidden), 'the panel stayed open');
+        ok(open1.expanded === 'true', 'aria-expanded ' + open1.expanded);
+      });
+      /* keyboard: focus is inside the panel on open; Esc closes it and gives focus back to the orb; Enter on the orb reopens */
+      await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; (s.querySelector('.chip:not([hidden])') || s.querySelector('.ask input')).focus(); });
+      await page.keyboard.press('Escape'); await page.waitForTimeout(150);
+      const kb1 = await page.evaluate(() => { const o = document.getElementById('dvOrbHost'); return { hidden: document.getElementById('dvPanelHost').shadowRoot.querySelector('.p').hidden, onOrb: document.activeElement === o && o.shadowRoot.activeElement === o.shadowRoot.querySelector('button'), exp: o.shadowRoot.querySelector('button').getAttribute('aria-expanded') }; });
+      await page.keyboard.press('Enter'); await page.waitForTimeout(250);
+      const kb2 = await page.evaluate(() => { const h = document.getElementById('dvPanelHost'); return { open: !h.shadowRoot.querySelector('.p').hidden, inPanel: document.activeElement === h }; });
+      await t(`${label}: keyboard — Esc closes the panel and returns focus to the orb; Enter on the orb reopens it with focus inside`, () => ok(kb1.hidden && kb1.onOrb && kb1.exp === 'false' && kb2.open && kb2.inPanel, JSON.stringify([kb1, kb2])));
       const cOpen = await checkCovered(true);
       report[label] = { viewport: `${w}×${h}`, orb: pos.orb, cart: pos.cart, panel: open1.panel, covered_when_closed: cClosed, covered_when_open: cOpen };
       if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `dv-open-${label}.png`) });
@@ -121,6 +139,7 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       await t(`${label}: reimbursement — the screen's state, ZIP, payer and date; same amounts and the same verification notice as the product's panel`, () => {
         ok(sent.code === 'K2DK16F' && sent.state === 'KY' && sent.zip === '42101' && sent.dos === '2026-11-19' && sent.manufacturer === 'dalton', JSON.stringify(sent));
         ok(/\$54\.13/.test(rc) && /\$40\.60/.test(rc) && /\$368\.60/.test(rc) && /\$36\.86/.test(rc) && /HCPCS reference only — model verification pending\./.test(rc) && /ZIP 42101/.test(rc) && /Nov 19, 2026/.test(rc), rc.slice(0, 700));
+        ok(/Per month/.test(rc) && /Per HCPCS unit as the code describes it/.test(rc) && /Kentucky Medicaid MSEA Fee Schedule 2026/.test(rc), 'billing units and source: ' + rc.slice(0, 900));
         ok(/\$54\.13/.test(panelTxt) && /HCPCS reference only — model verification pending/.test(panelTxt), 'the panel shows the same');
       });
       await t(`${label}: voice on — the answer is spoken and the orb animates while Victoria speaks`, async () => { const sp = await page.evaluate(() => [window.__spoken.slice(), window.__speakState.slice()]); ok(sp[0].includes('Here is what I found.') && sp[1].includes('speaking'), JSON.stringify(sp)); });
