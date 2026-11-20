@@ -29,7 +29,10 @@ t('339 catalog SKUs: 330 active on a published page, 9 retired by the owner (hid
 t('commercial and catalog files untouched: dalton.json (identity + prices), manufacturers.json (freight), other lines', () => {
   eq(fs.readFileSync(path.join(ROOT, 'public/data/dalton.json'), 'utf8'), gitRaw('public/data/dalton.json'));
   /* manufacturers.json may change for other lines (e.g. a retirement); Dalton's own entry (freight) may not. */
-  const own = l => JSON.stringify((l || []).find(m => m.slug === 'dalton'));
+  /* the one approved addition (owner 2026-11-17): Dalton's order-level liftgate service; freight terms stay exactly as they were */
+  const own = l => { const d = Object.assign({}, (l || []).find(m => m.slug === 'dalton')); delete d.services; return JSON.stringify(d); };
+  const svc = (JSON.parse(fs.readFileSync(path.join(ROOT, 'public/data/manufacturers.json'), 'utf8')).find(m => m.slug === 'dalton') || {}).services;
+  eq(JSON.stringify(svc), JSON.stringify([{ key: 'liftgate', label: 'Liftgate service', fee: 45, per: 'order', offer: 'Add liftgate service — $45', question: 'Would you like liftgate service added for $45?', askWhen: { codePrefixes: ['BED'] } }]));
   eq(own(JSON.parse(fs.readFileSync(path.join(ROOT, 'public/data/manufacturers.json'), 'utf8'))), own(JSON.parse(gitRaw('public/data/manufacturers.json'))));
   /* Other lines may change in their own PRs; a change that touches Dalton content must not touch another line too. */
   const daltonChanged = ['public/data/content/dalton.json', 'content-overrides/dalton.json'].some(f => fs.readFileSync(path.join(ROOT, f), 'utf8') !== gitRaw(f));
