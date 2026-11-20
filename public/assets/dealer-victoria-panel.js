@@ -1,6 +1,9 @@
 /* Dealer Victoria — the panel (owner 2026-11-19 22:07, TEST-dealer preview). Loaded only when the dealer opens the orb.
-   - Greeting: fixed text from the server for THIS person (first open vs later) — no model call. Shown as text; spoken
-     only when the dealer turns Voice on (the browser's own speech; the orb animates while Victoria speaks).
+   - Greeting: fixed text from the server for THIS person (first open vs later) — no model call. Every deliberate opening
+     turns voice ON and the launcher speaks the greeting inside that tap (owner 2026-11-20 10:37); the panel shows it at once.
+     "Voice off" stops the speech and mutes the rest of THIS opening; the next opening turns voice on again. Typing always
+     works. If the browser blocks audio, the text stays and "Tap to hear Victoria" retries (a tap is allowed to start audio).
+   - Every reimbursement answer carries HCPS's fixed billing disclaimer, in the text, the card and what is spoken.
    - Three workflows (Claude Haiku 5.5 on the server, under the dealer's own sign-in): Golden order + carrier tracking,
      the reimbursement for the product on screen (same state / ZIP / payer / date / notice as its panel), a draft quote
      for the product and variant on screen (left open for the dealer to review).
@@ -11,7 +14,7 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const money = (n) => (n == null || !isFinite(Number(n)) ? '—' : '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   const day = (d) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || '')); if (!m) return String(d || ''); return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }); };
-  const VKEY = 'dv_voice_on';
+  const BILLING_DISCLAIMER = 'HCPS is not a billing specialist and is not qualified to provide coding or billing advice. This information is for reference only. The biller is responsible for confirming that the exact product supplied meets the applicable HCPCS code requirements and for verifying the payer’s billing and coverage rules before submitting a claim.';
   window.DealerVictoriaPanel = function (orbHost) {
     const DV = window.DV || {}; const S = DV.support || { phone: '(888) 626-3140', phone_tel: '+18886263140', office: '937-626-5141', office_tel: '+19376265141', email: 'info@homecareproviderservices.us', chat: false };
     const host = document.createElement('div'); host.id = 'dvPanelHost';
@@ -21,7 +24,11 @@
       [hidden]{display:none!important}
       .p{position:fixed;z-index:2147482001;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#0b1f33;background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(11,31,51,.28);display:flex;flex-direction:column;overflow:hidden}
       .hd{display:flex;align-items:center;gap:10px;padding:12px 10px 12px 14px;background:#0b1f33;color:#fff}
-      .orb{width:40px;height:40px;border-radius:50%;flex:none;background:radial-gradient(circle at 38% 32%,#e9f7ff 0,#7fd3ff 18%,#1681c2 55%,#0b1f33 100%)}
+      .orb{width:40px;height:40px;border-radius:50%;flex:none;overflow:hidden;background:radial-gradient(circle at 38% 32%,#e9f7ff 0,#7fd3ff 18%,#1681c2 55%,#0b1f33 100%)}
+      .orb img{width:100%;height:100%;object-fit:cover;display:block}
+      .retry{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;min-height:44px;padding:0 12px;margin:0 0 10px;border-radius:10px;background:#eef5fb;color:#0f5c8f;font-weight:700;cursor:pointer}
+      .vnote{font-size:12.5px;color:#4a5b6b;margin:0 0 10px}
+      .disc{font-size:11.5px;color:#4a5b6b;border-top:1px solid #e3edf5;margin-top:8px;padding-top:6px}
       .orb[data-s="speaking"]{animation:sp .55s ease-in-out infinite alternate;box-shadow:0 0 18px rgba(127,211,255,.9)}
       .orb[data-s="thinking"]{animation:th 1.6s linear infinite}
       @keyframes sp{from{transform:scale(1)}to{transform:scale(1.12)}} @keyframes th{to{filter:hue-rotate(360deg)}}
@@ -52,11 +59,13 @@
       .src{font-size:11.5px;color:#5b6b7a;margin-top:4px}
     </style>
     <div class="p" role="dialog" aria-label="Victoria, your HCPS assistant" hidden>
-      <div class="hd"><div class="orb" data-s="idle" aria-hidden="true"></div><div><div class="t">Victoria</div><div class="s">Your personal assistant · TEST preview</div></div>
-        <button class="ib v x0" type="button" aria-pressed="false" title="Speak Victoria's answers aloud">🔈 Voice</button>
+      <div class="hd"><div class="orb" data-s="idle" aria-hidden="true"><img src="/assets/victoria/orb-still.webp" alt="" decoding="async"></div><div><div class="t">Victoria</div><div class="s">Your personal assistant · TEST preview</div></div>
+        <button class="ib v x0" type="button" aria-pressed="true" title="Stop Victoria speaking for the rest of this opening">🔇 Voice off</button>
         <button class="ib x" type="button" aria-label="Close Victoria">×</button></div>
       <div class="bd" aria-live="polite">
         <div class="bubble hello">…</div>
+        <button class="retry" type="button" hidden>🔊 Tap to hear Victoria</button>
+        <div class="m vnote" hidden></div>
         <div class="warn ai-off" hidden>Victoria can't answer just now. Contact HCPS support below — they can help right away.</div>
         <div class="chips">
           <button class="chip" type="button" data-q="Where is my Golden order?">Where is my Golden order?<small>Opens the order and its carrier tracking</small></button>
@@ -73,18 +82,21 @@
     </div>`;
     document.body.appendChild(host);
     const $ = (s) => sh.querySelector(s); const P = $('.p'), orb = $('.orb'), log = $('.log'), inp = $('.ask input');
-    let busy = false, greeted = false, aiOn = !(DV.ai && DV.ai.available === false);
-    let voiceOn = false; try { voiceOn = localStorage.getItem(VKEY) === '1'; } catch (e) {}
-    const vb = $('.v'); const setVoice = (on) => { voiceOn = !!on; vb.setAttribute('aria-pressed', String(voiceOn)); vb.textContent = voiceOn ? '🔊 Voice on' : '🔈 Voice'; try { localStorage.setItem(VKEY, voiceOn ? '1' : '0'); } catch (e) {} if (!voiceOn) stopSpeaking(); };
-    setVoice(voiceOn);
+    let busy = false, aiOn = !(DV.ai && DV.ai.available === false);
+    /* voice belongs to ONE opening: on when it opens, "Voice off" mutes the rest of it, the next opening turns it on again */
+    const SP = orbHost.__dvSpeech || { speak: () => false, stop: () => {}, supported: () => false };
+    let voiceOn = true, lastSpoken = '';
+    const vb = $('.v'), retry = $('.retry'), vnote = $('.vnote');
+    const setVoice = (on) => { voiceOn = !!on; vb.setAttribute('aria-pressed', String(voiceOn)); vb.textContent = voiceOn ? '🔇 Voice off' : '🔊 Voice on';
+      vb.title = voiceOn ? 'Stop Victoria speaking for the rest of this opening' : 'Turn voice back on for this opening'; if (!voiceOn) { SP.stop(); retry.hidden = true; } };
     vb.onclick = () => setVoice(!voiceOn);
-    function stopSpeaking() { try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {} if (orb.dataset.s === 'speaking') orb.dataset.s = 'idle'; }
-    function speak(text) {
-      if (!voiceOn || !text || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
-      try { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(String(text).slice(0, 600)); u.lang = 'en-US';
-        u.onstart = () => { orb.dataset.s = 'speaking'; }; u.onend = u.onerror = () => { if (orb.dataset.s === 'speaking') orb.dataset.s = 'idle'; };
-        window.speechSynthesis.speak(u); } catch (e) {}
-    }
+    SP.onstate = (st, why) => { orb.dataset.s = st === 'speaking' ? 'speaking' : 'idle';
+      if (st === 'speaking') { retry.hidden = true; vnote.hidden = true; }
+      if (st === 'blocked' && voiceOn) { retry.hidden = !SP.supported(); vnote.hidden = false;
+        vnote.textContent = SP.supported() ? 'Your browser didn\'t play Victoria\'s voice. The text is here — tap "Tap to hear Victoria" to try again.' : 'Voice isn\'t available in this browser. Everything Victoria says is shown here as text.'; } };
+    retry.onclick = () => { if (!voiceOn) setVoice(true); SP.speak(lastSpoken || $('.hello').textContent); };
+    function stopSpeaking() { SP.stop(); }
+    function speak(text) { lastSpoken = String(text || ''); if (!voiceOn || !text) return; SP.speak(text); }
     function setAi(on) { aiOn = on; $('.ai-off').hidden = on; sh.querySelectorAll('.chip').forEach((c) => { c.disabled = !on; }); inp.disabled = !on; $('.go').disabled = !on; }
     function refreshChips() { const hasP = !!(DV.context && DV.context().product); sh.querySelectorAll('.chip[data-needs="product"]').forEach((c) => { c.hidden = !hasP; }); }
     function place() {
@@ -125,7 +137,8 @@
       const pay = (c.payers || []).map((p) => `<div style="margin-top:8px"><b>${esc(p.payer)}</b><div class="m">${esc([p.state, p.zip ? 'ZIP ' + p.zip + (p.zip_source === 'branch' ? ' (branch estimate)' : '') : '', p.date_of_service ? day(p.date_of_service) : ''].filter(Boolean).join(' · '))}</div>
         ${p.available ? `<table>${(p.amounts || []).map((a) => `<tr><td>${esc(a.basis)}${a.modifier ? ' · ' + esc(a.modifier) : ''}${a.unit ? `<div class="m">${esc(a.unit)}</div>` : ''}</td><td>${money(a.amount)}</td></tr>`).join('')}${(p.capped_rental || []).map((x) => `<tr><td>Rental, months ${esc(x.months)}</td><td>${money(x.amount)}</td></tr>`).join('')}</table>${p.split ? `<div class="m">${esc(p.split)}</div>` : ''}<div class="src">${esc([p.source, p.effective].filter(Boolean).join(' — '))}</div>` : `<div class="m">${esc(p.reason || 'Rate unavailable for this plan/date')}</div>`}</div>`).join('');
       const el = cardEl(`<h5>${esc(c.product || c.sku)}${c.codes && c.codes.length ? ' · HCPCS ' + esc(c.codes.join(' / ')) : ''}</h5>${c.notice ? `<div class="n">${esc(c.notice)}</div>` : ''}${c.allowance_note ? `<div class="m">${esc(c.allowance_note)}</div>` : ''}${pay}
-        <div>${DV.openCalc && DV.hasCalc && DV.hasCalc() ? '<button class="btn calc" type="button">Open the earnings calculator</button>' : ''}<button class="btn gh fee" type="button">Open the fee schedule</button></div>`);
+        <div>${DV.openCalc && DV.hasCalc && DV.hasCalc() ? '<button class="btn calc" type="button">Open the earnings calculator</button>' : ''}<button class="btn gh fee" type="button">Open the fee schedule</button></div>
+        <div class="disc">${esc(c.disclaimer || BILLING_DISCLAIMER)}</div>`);
       const cb = el.querySelector('.calc'); if (cb) cb.onclick = () => go(() => DV.openCalc());
       el.querySelector('.fee').onclick = () => go(() => DV.openFee && DV.openFee());
     }
@@ -155,16 +168,22 @@
       for (const x of r.actions || []) if (x.type === 'open_quote') { quoteCard(x); go(() => DV.openQuote && DV.openQuote(x)); }
       a.scrollIntoView({ block: 'nearest' });
     }
-    async function hello() {
-      greeted = true; const el = $('.hello');
+    /* records this opening on the server (first welcome vs later, per person) — the text was already shown and spoken */
+    async function hello(shown) {
       let r = null; try { r = await DV.api({ action: 'hello' }); } catch (e) { r = null; }
-      const text = (r && r.ok && r.greeting) || 'Hello! How can I help you today?';
-      el.textContent = text; speak(text);
+      if (!shown) { const text = (r && r.ok && r.greeting) || 'Hello! How can I help you today?'; $('.hello').textContent = text; speak(text); }
     }
     const api = {
-      toggle(on) { const show = on == null ? P.hidden : on; P.hidden = !show; if (show) { refreshChips(); place(); if (!greeted) hello(); setAi(aiOn); const f = sh.querySelector('.chip:not([hidden])') || inp; try { f.focus(); } catch (e) {} }
-        else { stopSpeaking(); if (on === false && orbHost.__dvFocus) orbHost.__dvFocus(); }   // closing gives focus back to the orb
+      /* opts.greeting: the welcome the launcher already started speaking inside the opening tap */
+      toggle(on, opts) { const show = on == null ? P.hidden : on; P.hidden = !show;
+        if (show) {
+          setVoice(true); retry.hidden = true; vnote.hidden = true;                 // every opening: voice on
+          const g = opts && opts.greeting; if (g) { $('.hello').textContent = g; lastSpoken = g; }
+          refreshChips(); place(); hello(!!g); setAi(aiOn);
+          const f = sh.querySelector('.chip:not([hidden])') || inp; try { f.focus(); } catch (e) {}
+        } else { stopSpeaking(); if (on === false && orbHost.__dvFocus) orbHost.__dvFocus(); }   // closing gives focus back to the orb
         if (orbHost.__dvExpanded) orbHost.__dvExpanded(show); },
+      isOpen: () => !P.hidden,
       el: P, shadow: sh, ask, setAi,
     };
     return api;
