@@ -27,7 +27,11 @@ t('339 catalog SKUs: 330 active on a published page, 9 retired by the owner (hid
   eq(Object.keys(O._retired).sort(), FIX.retired);
 });
 t('commercial and catalog files untouched: dalton.json (identity + prices), manufacturers.json (freight), other lines', () => {
-  eq(fs.readFileSync(path.join(ROOT, 'public/data/dalton.json'), 'utf8'), gitRaw('public/data/dalton.json'));
+  /* the one approved change (owner 2026-11-20, NOV26): R-CART-6 is sold by the case of six (uom Case, case_qty 6) — nothing else */
+  const strip = (rows) => JSON.stringify(rows.map((r) => { if (r.code !== 'R-CART-6') return r; const x = Object.assign({}, r); delete x.case_qty; x.uom = 'Each'; return x; }));
+  const cur = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/data/dalton.json'), 'utf8')), base = JSON.parse(gitRaw('public/data/dalton.json'));
+  eq(strip(cur), strip(base));
+  const rc = cur.find((r) => r.code === 'R-CART-6'); eq(JSON.stringify([rc.uom, rc.case_qty || null]), JSON.stringify(['Case', 6]));
   /* manufacturers.json may change for other lines (e.g. a retirement); Dalton's own entry (freight) may not. */
   /* the one approved addition (owner 2026-11-17): Dalton's order-level liftgate service; freight terms stay exactly as they were */
   const own = l => { const d = Object.assign({}, (l || []).find(m => m.slug === 'dalton')); delete d.services; return JSON.stringify(d); };
