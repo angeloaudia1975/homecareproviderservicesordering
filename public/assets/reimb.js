@@ -20,8 +20,14 @@
      accepted default (the state's Medicaid fee-for-service). An explicit plan choice wins in both. */
   const planFor = (st, medicareFirst) => { const s = stateOf(st); if (!s) return ''; if (PREF_PLAN && s.plans.some((p) => p.id === PREF_PLAN)) return PREF_PLAN;
     const order = medicareFirst ? ['medicare', 'medicaid-ffs'] : ['medicaid-ffs', 'medicare']; return (s.plans.find((p) => p.id === order[0]) || s.plans.find((p) => p.id === order[1]) || s.plans[0]).id; };
-  const refOn = () => !!(S.product && S.product.reference && S.result && S.result.ok && (S.product.codes || []).some((c) => codeOf(c) === S.result.context.code));
-  const noCalc = () => !!(S.product && (S.product.informational || S.product.reference));
+  const refOn = () => !!(S.product && (S.product.reference || S.product.qualified) && S.result && S.result.ok && (S.product.codes || []).some((c) => codeOf(c) === S.result.context.code));
+  const refNote = () => (S.product && S.product.qualified ? listedTag(S.product) + '. ' + (S.product.qualifier || '') : REF_NOTE);
+  const refAllow = () => (S.product && S.product.qualified ? (S.product.allowance_note || REF_ALLOW) : REF_ALLOW);
+  const noCalc = () => !!(S.product && (S.product.informational || S.product.reference || S.product.listed));   // estimates: verified mappings only
+  /* manufacturer-listed code (owner approval 2026-11-19 20:03): shown with its source; a qualified listing (e.g. pending) gets
+     the qualification beside the code and with the rates, and no earnings estimate */
+  const LISTED = 'Manufacturer-listed HCPCS';
+  const listedTag = (p) => p && p.listed ? (p.qualified ? LISTED + ' — pending' : LISTED) : '';
   let META = null, METAP = null;
   const S = { code: '', state: '', plan: '', location: '', zip: null, zipSrc: 'branch', dos: '', modifier: '', otherMods: [], product: null, result: null, calc: null, busy: false, err: '' };
   const codeOf = (c) => (c && typeof c === 'object' ? c.code : String(c || ''));
@@ -82,6 +88,7 @@
         ${prod.pending ? `<div class="rb-miss" role="status">${esc(PENDING)}</div>${prod.why ? `<div class="rb-small">${esc(String(prod.why).replace(/^Coding verification pending\.\s*/, ''))}</div>` : ''}`
           : prod.noCode ? `<div class="rb-miss" role="status">${esc(NO_CODE)}</div>${prod.why ? `<div class="rb-small">${esc(prod.why)}</div>` : ''}`
           : prod.reference ? `<div class="rb-small">HCPCS ${prod.codes.map((c) => esc(codeLabel(c))).join(' · ')} <span class="rb-ref">${esc(REF_NOTE)}</span></div>${prod.why ? `<div class="rb-small">${esc(String(prod.why).replace(REF_NOTE, '').trim())}</div>` : ''}`
+          : prod.listed ? `<div class="rb-small">HCPCS ${prod.codes.map((c) => esc(codeLabel(c))).join(' · ')} <span class="${prod.qualified ? 'rb-ref' : 'rb-lst'}">${esc(listedTag(prod))}</span></div>${prod.why ? `<div class="rb-small">${esc(prod.why)}</div>` : ''}`
           : `<div class="rb-small">Verified HCPCS ${prod.codes.map((c) => esc(codeLabel(c))).join(' · ')}</div>${prod.why ? `<div class="rb-small">${esc(prod.why)}</div>` : ''}`}</div>` : ''}
       <div class="card rb-form">
         <div class="rb-grid">
@@ -143,7 +150,7 @@
     const c = r.context, a = r.allowance, pr = r.purchase_rental, g = r.guidance;
     const ctx = `<dl class="rb-ctx"><div><dt>Payer / plan</dt><dd>${esc(c.payer)} · ${esc(c.plan_label)} · ${esc(c.state_name)}</dd></div><div><dt>${c.pricing_area ? 'Medicare pricing area' : 'Service location'}</dt><dd>${esc(c.location_label)}${c.pricing_area && c.pricing_area.ok && c.pricing_area.source === 'branch' ? '<div class="rb-small">Branch estimate — Medicare prices by the beneficiary\'s residence ZIP.</div>' : ''}</dd></div><div><dt>Date of service</dt><dd>${esc(c.dos_label)}</dd></div><div><dt>HCPCS</dt><dd>${esc(c.code)}${c.description ? ' — ' + esc(c.description) : ''}</dd></div></dl>`;
     const om = r.other_modifiers && r.other_modifiers.length ? `<div class="rb-small">Also published with modifiers: ${r.other_modifiers.map(esc).join(', ')} — choose one under Modifier to see it.</div>` : '';
-    const refWarn = refOn() ? `<div class="rb-warn rb-refnote" role="note">${esc(REF_ALLOW)}</div>` : '';
+    const refWarn = refOn() ? `<div class="rb-warn rb-refnote" role="note">${esc(refAllow())}</div>` : '';
     const allow = a.status === 'ok'
       ? `${refWarn}${itemsHtml(a)}${om}<div class="rb-small">Effective: ${esc(a.effective || '')}${a.note ? ' · ' + esc(a.note) : ''}</div>${r.informational ? `<div class="rb-warn">${esc(r.informational)}</div>` : ''}<div class="rb-src">Source · ${link(a.source && a.source.url, a.source && a.source.title)}${a.source && a.source.page ? ', page ' + esc(a.source.page) : ''}</div>`
       : `${refWarn}<div class="rb-miss" role="status">${esc(a.message || NO_RATE)}</div><div class="rb-small">${esc(a.reason || '')}</div>${a.source ? `<div class="rb-src">Source checked · ${link(a.source.url, a.source.title)}</div>` : ''}`;
@@ -169,7 +176,7 @@
      with every link printed as its address so the paper copy is usable too. Printed from a hidden frame (no pop-up). */
   function printRef() {
     const r = S.result; if (!r || !r.ok) return;
-    const prod = S.product && !S.product.noCode ? `<p><b>Product:</b> ${esc(S.product.name || '')}${S.product.code ? ' · Item # ' + esc(S.product.code) : ''}${refOn() ? ` — HCPCS ${esc(r.context.code)}: ${esc(REF_NOTE)}` : ''}</p>` : '';
+    const prod = S.product && !S.product.noCode ? `<p><b>Product:</b> ${esc(S.product.name || '')}${S.product.code ? ' · Item # ' + esc(S.product.code) : ''}${refOn() ? ` — HCPCS ${esc(r.context.code)}: ${esc(refNote())}` : (S.product.listed ? ` — HCPCS ${esc(r.context.code)}: ${esc(listedTag(S.product))}` : '')}</p>` : '';
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Billing reference ${esc(r.context.code)}</title><style>
       body{font:12px/1.45 -apple-system,Segoe UI,Arial,sans-serif;color:#111;margin:0}h1{font-size:18px;margin:0 0 2px}h3{font-size:13px;margin:14px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px}
       .note{font-size:11px;color:#444}table{border-collapse:collapse;width:100%;margin:4px 0}th,td{border:1px solid #bbb;padding:4px 6px;text-align:left;vertical-align:top}th{background:#f2f2f2}
@@ -199,18 +206,22 @@
     const box0 = update && el.querySelector('.pd-reimb');
     if (box0) { box0.classList.add('pd-reimb-busy'); box0.setAttribute('aria-busy', 'true'); el.querySelectorAll('[data-k]').forEach((x) => { x.disabled = true; }); }
     else el.innerHTML = '<div class="pd-reimb pd-reimb-full"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-s">Loading…</div></div>';
-    let r; try { r = await cfg.api({ action: 'product', manufacturer: prod.manufacturer, sku: prod.code, category: prod.category, sku_code: prod.sku_code, page_codes: prod.page_codes,
+    let r; try { r = await cfg.api({ action: 'product', manufacturer: prod.manufacturer, sku: prod.code, category: prod.category, sku_code: prod.sku_code, page_codes: prod.page_codes, spec_codes: prod.spec_codes,
       state: st.state, dos: st.dos, zip: st.zip || '', zip_source: st.zsrc, medicaid_plan: st.mplan || undefined, medicaid_location: st.mploc || undefined }); } catch (e) { r = null; }
     if (!r || !r.ok) { el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-s">${esc((r && r.error) || 'The reimbursement lookup could not be loaded — please try again.')}</div></div>`; return; }
     const mp = r.mapping || { codes: [] };
-    const full = Object.assign({}, prod, { codes: mp.codes, why: mp.why, status: mp.status, noCode: !mp.codes.length, informational: !!mp.informational, reference: !!mp.reference, pending: !!mp.pending });
-    if (mp.informational || mp.reference) { delete full.cost; delete full.cost_note; }   // informational / reference only: no cost is carried, no estimate
+    const full = Object.assign({}, prod, { codes: mp.codes, why: mp.why, status: mp.status, noCode: !mp.codes.length, informational: !!mp.informational, reference: !!mp.reference, pending: !!mp.pending,
+      listed: !!mp.listed, qualified: !!mp.qualified, qualifier: mp.qualifier || '', allowance_note: mp.allowance_note || '' });
+    if (mp.informational || mp.reference || mp.listed) { delete full.cost; delete full.cost_note; }   // informational / reference only: no cost is carried, no estimate
     if (!mp.codes.length) {
       el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div>${mp.pending
         ? `<div class="pd-reimb-miss">${esc(PENDING)}</div>${mp.why ? `<div class="pd-reimb-s">${esc(String(mp.why).replace(/^Coding verification pending\.\s*/, ''))}</div>` : ''}`
         : `<div class="pd-reimb-miss">${esc(NO_CODE)}</div>${mp.why ? `<div class="pd-reimb-s">${esc(mp.why)}</div>` : ''}`}<a class="pd-reimb-go" role="button" tabindex="0">Open reimbursement lookup →</a></div>`;
       bindGo(el, () => cfg.open({ product: full })); return;
     }
+    /* the Specifications row says the same as the panel: a qualified listing is marked pending there too */
+    try { const pd = el.isConnected && el.closest('.pd'); const sr = pd && pd.querySelector('[data-hcpcs-spec]');   // this product page only; a late answer for another product is ignored
+      if (sr && mp.listed && mp.qualified && !sr.getAttribute('data-q')) { sr.setAttribute('data-q', '1'); sr.textContent = sr.textContent + ' — ' + listedTag(mp) + ' (' + String(mp.qualifier || '').replace(/^pending\s*—\s*/i, '') + ')'; } } catch (e) {}
     if (r.state) { st.state = r.state; st.dos = r.dos; st.zip = r.zip || ''; st.zsrc = r.zip_source || 'branch'; st.mplan = r.medicaid_plan || ''; st.mploc = r.medicaid_location || ''; }
     /* FULL-WIDTH PANEL (owner 2026-11-19 19:25): one Provider Reimbursement panel under the whole product area; Original Medicare
        on the left, the state's Medicaid on the right (stacked on a phone, Medicare first). Each payer has its own control —
@@ -229,7 +240,7 @@
           : `<div class="pd-reimb-miss">${esc(NO_RATE)}</div>${a.reason ? `<div class="pd-reimb-s">${esc(a.reason)}</div>` : ''}`);
       return `<div class="pd-reimb-row"><div class="pd-reimb-p">${head}</div>${body}</div>`;
     };
-    const codeHead = (c) => `<div class="pd-reimb-code">HCPCS ${esc(codeLabel(c))}${mp.reference ? ` <span class="pd-reimb-ref">${esc(REF_NOTE)}</span>` : ''}</div>`;
+    const codeHead = (c) => `<div class="pd-reimb-code">HCPCS ${esc(codeLabel(c))}${mp.reference ? ` <span class="pd-reimb-ref">${esc(REF_NOTE)}</span>` : mp.listed ? ` <span class="${mp.qualified ? 'pd-reimb-ref' : 'pd-reimb-lst'}">${esc(listedTag(mp))}</span>` : ''}</div>`;
     const colFor = (payer) => mp.codes.map((c) => {
       const isMed = (x) => (payer === 'medicare') === (x.payer === 'medicare');
       const rows = (r.rows || []).filter((x) => x.code === c.code && !x.conditional && isMed(x));
@@ -247,7 +258,7 @@
         <label>State<select data-k="state"><option value="">Choose…</option>${stOpts}</select></label>
         <label>Date of service<input type="date" data-k="dos" value="${esc(st.dos)}"></label>
       </div>
-      ${mp.reference && st.state ? `<div class="pd-reimb-s pd-reimb-cond" role="note">${esc(mp.allowance_note || REF_ALLOW)}</div>` : ''}
+      ${(mp.reference || mp.qualified) && st.state ? `<div class="pd-reimb-s pd-reimb-cond" role="note">${esc(mp.allowance_note || REF_ALLOW)}${mp.qualified && mp.qualifier ? ' ' + esc(mp.qualifier.charAt(0).toUpperCase() + mp.qualifier.slice(1)) : ''}</div>` : ''}
       ${st.state ? `<div class="pd-reimb-cols">
         <section class="pd-reimb-col" aria-label="Original Medicare"><h4>Original Medicare fee-for-service</h4>
           <div class="pd-reimb-ctl pd-reimb-ctl1"><label>Medicare ZIP<input data-k="zip" value="${esc(st.zip || '')}" maxlength="10" inputmode="numeric" placeholder="Patient residence ZIP" aria-describedby="pdZipHint"><span id="pdZipHint" class="pd-reimb-s${st.zip ? '' : ' pd-reimb-need'}">${esc(zipHint)}</span></label></div>
@@ -258,7 +269,7 @@
           ${mPlans.length ? colFor('medicaid') : `<div class="pd-reimb-miss">${esc(NO_RATE)}</div><div class="pd-reimb-s">No Medicaid plan is on file for this state.</div>`}</section>
       </div>` : '<div class="pd-reimb-s">Choose a state to see Original Medicare and Medicaid allowances.</div>'}
       ${mp.informational ? `<div class="pd-reimb-s pd-reimb-info">${esc(mp.informational_note || 'Informational only.')}</div>` : ''}
-      <div class="pd-reimb-links"><a class="pd-reimb-go" role="button" tabindex="0">${mp.reference ? 'Open the code\'s fee schedule →' : 'View billing details →'}</a>${mp.informational || mp.reference ? '' : '<a class="pd-reimb-go pd-reimb-calc" role="button" tabindex="0">Insurance earnings calculator (dealer only) →</a>'}</div>${mp.reference ? '<div class="pd-reimb-s">Insurance earnings estimates are available only for verified model codes.</div>' : ''}</div>`;
+      <div class="pd-reimb-links"><a class="pd-reimb-go" role="button" tabindex="0">${mp.reference || mp.qualified ? 'Open the code\'s fee schedule →' : 'View billing details →'}</a>${mp.informational || mp.reference || mp.listed ? '' : '<a class="pd-reimb-go pd-reimb-calc" role="button" tabindex="0">Insurance earnings calculator (dealer only) →</a>'}</div>${mp.reference || mp.listed ? '<div class="pd-reimb-s">Insurance earnings estimates are available only for verified model codes.</div>' : ''}</div>`;
     if (Math.abs(window.scrollY - y) > 1) window.scrollTo(0, y);   // the page stays where the dealer was
     if (fk) { const f = el.querySelector(`[data-k="${fk}"]`); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }
     el.querySelectorAll('[data-k]').forEach((x) => { x.onchange = () => { const k = x.getAttribute('data-k'); st[k] = String(x.value).trim(); if (k === 'zip') st.zsrc = m.branch_zip && st.zip === m.branch_zip ? 'branch' : 'patient'; if (k === 'state') { st.mplan = ''; st.mploc = ''; } if (k === 'mplan') st.mploc = ''; st._fk = k; st._y = window.scrollY; card(el, cfg, true); }; });
@@ -368,7 +379,7 @@
     .rb-calc th{width:45%}.rb-calcgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:14px;align-items:start}
     .rb-asm{background:var(--soft,#f6f8fb);border:1px solid var(--line-2,#e6eaf0);border-radius:10px;padding:10px 12px}.rb-asm h4{margin:0 0 6px;font-size:13px}
     .rb-assume{margin:0;display:flex;flex-direction:column;gap:6px}.rb-assume dt{font-size:11px;font-weight:800;color:var(--muted,#667);text-transform:uppercase;letter-spacing:.3px}.rb-assume dd{margin:1px 0 0;font-size:13px}
-    .rb-zipsrc{font-weight:400;font-size:11.5px}.rb-ref{font-weight:800;color:#7a4b00}
+    .rb-zipsrc{font-weight:400;font-size:11.5px}.rb-ref{font-weight:800;color:#7a4b00}.rb-lst{font-weight:700;color:#0f5c8f}
     @media (max-width:760px){.rb-calcgrid{grid-template-columns:1fr}.rb-grid{grid-template-columns:1fr}.rb-ctx{grid-template-columns:1fr 1fr}.rb-tab{font-size:13px}}`;
 
   window.HCPSReimb = { mount, card, estimate, NO_CODE, NO_RATE };

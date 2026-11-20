@@ -193,6 +193,21 @@ const settle = (pg) => pg.waitForFunction(() => !document.querySelector('[data-a
         await pg.close();
       }
     });
+    await t('manufacturer-listed codes (owner 2026-11-19 20:03): Golden GB108B K0800 (Pending) from its specs — code, qualification and allowance, no estimate; Golden GC240E K0807 listed without an estimate; Ovation 30004 L4397 pending', async () => {
+      const pg = await page(browser, 1280); await pg.addStyleTag({ content: PD_CSS }); await pg.evaluate(() => { try { sessionStorage.removeItem('hcps_reimb_plan'); } catch (e) {} });
+      await cardOf(pg, { name: 'Buzzaround LT', code: 'GB108B', manufacturer: 'golden-technologies', category: 'Scooters', spec_codes: ['K0800'], cost: 900 }); await cardText(pg);
+      await pg.selectOption('#cardHost select[data-k="state"]', 'IN'); await pg.waitForTimeout(400); await cardText(pg); let txt = await setZip(pg, '47501');
+      ok(/HCPCS K0800[^\n]*Manufacturer-listed HCPCS — pending/.test(txt) && /K0800 \(Pending\)/.test(txt) && /\$1,359\.25/.test(txt) && /Purchase|New/.test(txt), 'GB108B: ' + txt.slice(0, 900));
+      ok(!/earnings calculator/i.test(txt) && /only for verified model codes/.test(txt), 'no estimate for a pending listing');
+      await pg.click('#cardHost .pd-reimb-go'); const o = await pg.evaluate(() => window.__opened.pop()); ok(o.product.qualified && o.product.cost === undefined, 'no cost carried to the lookup');
+      await mount(pg, o); await settle(pg); await pg.click('[data-act="print"]');
+      await pg.waitForFunction(() => document.querySelector('iframe') && document.querySelector('iframe').contentDocument.body && document.querySelector('iframe').contentDocument.body.innerText.length > 100);
+      const pr = await pg.evaluate(() => document.querySelector('iframe').contentDocument.body.innerText); ok(/Manufacturer-listed HCPCS — pending/.test(pr) && /K0800 \(Pending\)/.test(pr), 'printed qualification');
+      await cardOf(pg, { name: 'Companion', code: 'GC240E', manufacturer: 'golden-technologies', category: 'Scooters', spec_codes: ['K0807'], cost: 1500 }); txt = await cardText(pg);
+      ok(/HCPCS K0807[^\n]*Manufacturer-listed HCPCS/.test(txt) && !/pending/i.test(txt.split('HCPCS K0807')[1].split('\n')[0]) && !/earnings calculator/i.test(txt) && /only for verified model codes/.test(txt), 'GC240E: listed, no estimate (verified mappings only): ' + txt.slice(0, 500));
+      await cardOf(pg, { name: 'Walker', code: '30004', manufacturer: 'ovation-medical', category: 'Walkers', sku_code: 'L4397', page_codes: ['L4396'] }); txt = await cardText(pg);
+      ok(/HCPCS L4397[^\n]*pending/.test(txt) && /product page lists L4396/.test(txt), 'Ovation 30004: ' + txt.slice(0, 500)); await pg.close();
+    });
     await t('changing the Medicaid plan, ZIP or date updates the panel in place — the page does not jump and never collapses to "Loading…"', async () => {
       const pg = await page(browser, 1280);
       await pg.evaluate(() => { const s = document.createElement('div'); s.style.height = '1600px'; document.body.insertBefore(s, document.getElementById('cardHost')); const e = document.createElement('div'); e.style.height = '1600px'; document.body.appendChild(e); });
