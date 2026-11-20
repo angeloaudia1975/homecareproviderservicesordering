@@ -1315,7 +1315,7 @@ header .htop{flex-wrap:nowrap;}
 .pd-reimb-ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:8px 0}.pd-reimb-ctl label{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:700;color:var(--gray)}
 .pd-reimb-ctl select,.pd-reimb-ctl input{font-size:16px;min-height:44px;border:1px solid #d5dbe3;border-radius:8px;padding:4px 8px;background:#fff;min-width:0;width:100%;box-sizing:border-box}
 .pd-reimb-code{font-weight:800;color:var(--navy);margin-top:8px}.pd-reimb-row{border-top:1px solid #e3eaf2;padding:8px 0 4px;margin-top:6px}.pd-reimb-p{font-size:12px;font-weight:700;color:var(--navy)}
-.pd-reimb-ref{font-size:12px;font-weight:800;color:#7a4b00;margin-left:4px}
+.pd-reimb-ref{font-size:12px;font-weight:800;color:#7a4b00;margin-left:4px}.pd-reimb-lst{font-size:12px;font-weight:700;color:#0f5c8f;margin-left:4px}
 .pd-reimb-full{margin-top:4px;padding:14px 16px}.pd-reimb-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:10px}
 .pd-reimb-col{background:#fff;border:1px solid #d9e3ee;border-radius:10px;padding:10px 12px;min-width:0}.pd-reimb-col h4{margin:0 0 6px;font-size:14px;color:var(--navy)}
 .pd-reimb-ctl1{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin:4px 0 6px}.pd-reimb-need{color:#9b1c1c;font-weight:700}.pd-reimb-est{font-weight:600;color:var(--gray)}
@@ -8494,7 +8494,7 @@ function ghDetail(o){
   return '<div class="gh-detail-in"><div class="gh-col"><h4>Items</h4><ul>'+items+'</ul></div><div class="gh-col"><h4>Tracking</h4><ul>'+trk+dlv+'</ul></div><div class="gh-col"><h4>History</h4><ul>'+life+'</ul></div>'+tot+conf+'</div>';
 }
 const GH_CARRIER=[[/\bxpo\b|con-?way/i,"https://ext-web.ltl-xpo.com/public-app/shipments?referenceNumber=","XPO"],[/\bups\b/i,"https://www.ups.com/track?tracknum="],[/fed\s*ex/i,"https://www.fedex.com/fedextrack/?trknbr="],[/\busps\b|postal/i,"https://tools.usps.com/go/TrackConfirmAction?tLabels="],
-  [/estes/i,"https://www.estes-express.com/myestes/shipment-tracking/?type=PRO&query="],[/old\s*dominion|\bodfl\b/i,"https://www.odfl.com/us/en/tools/trace-track-ltl-freight/trace.html?proNumbers="],[/\bsaia\b/i,"https://www.saia.com/track/details;pro="],[/\br\s*\+?\s*l\b|r&l/i,"https://www.rlcarriers.com/freight/shipping/shipment-tracing?pro="]];
+  [/estes/i,"https://www.estes-express.com/myestes/shipment-tracking/?type=PRO&query="],[/old\s*dominion|\bodfl\b/i,"https://www.odfl.com/us/en/tools/trace-track-ltl-freight/trace.html?proNumbers="],[/\bsaia\b/i,"https://www.saia.com/track/details;pro="],[/\br\s*[&+]?\s*l\b|r&l|r\s*\+\s*l\s*carriers/i,"https://www.rlcarriers.com/freight/shipping/shipment-tracing?pro="]];
 function ghTrackUrl(t){ const n=String(t.tracking_number||"").replace(/\s+/g,""); if(!/^[A-Za-z0-9]{6,40}$/.test(n)) return null;
   const c=GH_CARRIER.find(x=>x[0].test(String(t.carrier||""))); return c?{url:c[1]+encodeURIComponent(n),name:c[2]||String(t.carrier).slice(0,30)}:null; }
 function ghTrackLink(t){ const u=ghTrackUrl(t); return (u?' <a class="gh-trk" href="'+esc(u.url)+'" target="_blank" rel="noopener noreferrer">Track with '+esc(u.name)+'</a>':'')+trkCopyBtn(t.tracking_number); }
@@ -9495,7 +9495,7 @@ async function loadResourcesView(){ await loadPricing(); renderResources(); }
    answer comes from reimbursement-api (admin site), which checks the sign-in. Opened from Resources & Support and from a
    coded model on Shop Products (openReimb with its verified HCPCS code filled in). */
 const REIMB_API=API_BASE+"/reimbursement-api"; let REIMB_JS=null, REIMB_PREFILL=null;
-function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=8"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
+function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=9"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
 async function loadReimbView(){
   const host=$("#view-reimb"); if(!host) return;
   try{ await reimbLoadJs(); }catch(e){ host.innerHTML='<div class="ph"><div><h1>Reimbursement lookup</h1></div></div><div class="card"><div class="msg">The reimbursement lookup could not be loaded — please try again.</div></div>'; return; }
@@ -9514,7 +9514,13 @@ async function reimbCard(el,p){
   /* the dealer's cost per ONE item: a pack or case price is divided by its pack quantity (the allowance is per HCPCS unit) */
   let cost=null, costNote=''; try{ const u=(!p._golden&&typeof unitPrice==='function')?Number(unitPrice(p,1)):Number(p.base_price); const q=Number(p.case_qty)>1?Number(p.case_qty):1;
     cost=isFinite(u)&&u>0?Math.round(u/q*100)/100:null; if(cost!=null&&q>1) costNote='Your cost per item: the '+(p.uom||'pack')+' price ÷ '+q+' items. Check the payer\'s billing unit for this code.'; }catch(e){ cost=null; }
-  window.HCPSReimb.card(el,{ api:(b)=>api(REIMB_API,b), product:{name:p.name,code:p.code,manufacturer:p.manufacturer,category:p.category||'',sku_code:String(p.hcpc||p.hcpcs||''),page_codes:(p._billing||[]).map(String),cost,cost_note:costNote}, open:openReimb });
+  /* the manufacturer-listed code from the product's own specifications (owner 2026-11-19 20:03): Golden's "Medicare Code" row
+     (family specs for this exact SKU) and any per-SKU spec row naming a HCPCS / Medicare / billing code */
+  const spec_codes=[]; const isCodeRow=(l)=>/hcpcs?\b|medicare code|billing code/i.test(String(l||''));
+  try{ (Array.isArray(p._skuSpecs)?p._skuSpecs:[]).forEach(r=>{ if(r&&isCodeRow(r.label)&&r.value!=null) spec_codes.push(String(r.value)); });
+    if(p._golden&&p._goldenFamily&&typeof goldenFamilyDetail==='function'){ const j=await goldenFamilyDetail(p._goldenFamily); const rows=(j&&j.family&&j.family.specs&&j.family.specs.rows)||[];
+      rows.forEach(r=>{ if(r&&isCodeRow(r.label)&&r.values&&r.values[p.code]!=null) spec_codes.push(String(r.values[p.code])); }); } }catch(e){}
+  window.HCPSReimb.card(el,{ api:(b)=>api(REIMB_API,b), product:{name:p.name,code:p.code,manufacturer:p.manufacturer,category:p.category||'',sku_code:String(p.hcpc||p.hcpcs||''),page_codes:(p._billing||[]).map(String),spec_codes:spec_codes.slice(0,6),cost,cost_note:costNote}, open:openReimb });
 }
 window.reimbCard=reimbCard;
 function renderResources(){
@@ -10974,7 +10980,11 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     const thumbs = imgs.length>1 ? imgs.map((m,i)=>`<div class="pd-thumb${i===0?' on':''}" onclick="pdSwap(this,'${esc(imgUrl(m.url,900))}')"><img src="${esc(imgUrl(m.url,120))}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain;border-radius:10px" onerror="imgFail(this,'thumb')"></div>`).join("") : "";
     const [d,c]=eff.toFixed(2).split(".");
     const skuSpecRows = (Array.isArray(p._skuSpecs)&&p._skuSpecs.length) ? `<tr><td class="k">Item #</td><td class="v">${esc(p.code)}</td></tr>`+p._skuSpecs.map(s=>`<tr><td class="k">${esc(s.label)}</td><td class="v">${esc(String(s.value))}</td></tr>`).join("") : "";
-    const specRows = G ? "" : skuSpecRows + ((Array.isArray(p._specs)&&p._specs.length) ? p._specs.map(s=>`<tr><td class="k">${esc(s.label||s.name||"")}</td><td class="v">${esc(String(s.value||""))}</td></tr>`).join("") :
+    /* the manufacturer-listed HCPCS in Specifications (owner 2026-11-19 20:03), once, unless a spec row already names it */
+    const hasCodeRow=[].concat(p._skuSpecs||[],p._specs||[]).some(r=>r&&/hcpcs?\b|medicare code|billing code/i.test(String(r.label||r.name||'')));
+    const hcpcCodes=(String(p.hcpc||'').toUpperCase().match(/\b[A-V]\d{4}\b/g)||[]);   /* a real code only — "NA" is not one */
+    const hcpcRow=(!G&&hcpcCodes.length&&!hasCodeRow)?`<tr><td class="k">HCPCS (manufacturer-listed)</td><td class="v"><span data-hcpcs-spec>${esc(hcpcCodes.join(' / '))}</span></td></tr>`:"";
+    const specRows = G ? "" : hcpcRow + skuSpecRows + ((Array.isArray(p._specs)&&p._specs.length) ? p._specs.map(s=>`<tr><td class="k">${esc(s.label||s.name||"")}</td><td class="v">${esc(String(s.value||""))}</td></tr>`).join("") :
       (p.specs&&typeof p.specs==="object"&&!Array.isArray(p.specs)) ? Object.keys(p.specs).map(k=>`<tr><td class="k">${esc(k)}</td><td class="v">${esc(String(p.specs[k]))}</td></tr>`).join("") :
       (Array.isArray(p.attributes)?p.attributes.map(a=>`<tr><td class="k">${esc(a.label||a.name||"")}</td><td class="v">${esc(String(a.value||""))}</td></tr>`).join(""):""));
     host.innerHTML = `<div class="pd${G?" gpd":""}">
