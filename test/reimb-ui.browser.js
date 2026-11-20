@@ -118,7 +118,7 @@ const settle = (pg) => pg.waitForFunction(() => !document.querySelector('[data-a
       await cardOf(pg, { name: 'K4 16 Lightweight', code: 'K416FA0215', manufacturer: 'dalton', category: 'Wheelchairs' }); txt = await cardText(pg);
       ok(/HCPCS K0004 HCPCS reference only — model verification pending\./.test(txt) && !/\*/.test(txt), 'reference note beside the code, no asterisk: ' + txt.slice(0, 300));
       ok(/Published allowance for this code\. This product's classification is pending verification\./.test(txt) && /\$57\.95/.test(txt), 'allowance with the notice');
-      ok(!(await pg.$('#cardHost .pd-reimb-calc')) && /earnings estimates are available only for verified model codes/.test(txt) && /Open the code's fee schedule/.test(txt), 'no estimate, fee schedule link');
+      ok(!(await pg.$('#cardHost .pd-reimb-calc')) && !(await pg.$('#cardHost .pd-est-sc')) && /Explore a K\d{4} estimate/.test(txt) && /Open the code's fee schedule/.test(txt), 'no estimate until opted in, fee schedule link');
       // the notice stays when the ZIP, date or payer changes
       await pg.fill('#cardHost [data-k="zip"]', '41301'); await pg.dispatchEvent('#cardHost [data-k="zip"]', 'change'); await pg.waitForFunction(() => /41301/.test(document.getElementById('cardHost').innerText), null, { timeout: 8000 });
       txt = await cardText(pg); ok(/classification is pending verification/.test(txt) && /reference only/.test(txt), 'notice after a ZIP change');
@@ -185,7 +185,7 @@ const settle = (pg) => pg.waitForFunction(() => !document.querySelector('[data-a
         ok(/Published allowance for this code\. This product's classification is pending verification\./.test(L.top), 'allowance notice with the rates');
         ok(/\$85\.38/.test(med.t) && /Rental — one month · RR · Per HCPCS unit as the code describes it/.test(med.t) && /ZIP 47501 · rural/.test(med.t) && /November 19, 2026/.test(med.t) && /CMS DMEPOS Fee Schedule — October 2026/.test(med.t), 'Indiana Medicare amount: ' + med.t);
         ok(/Rate unavailable for this plan\/date/.test(mcd.t) && /starts January 1, 2027/.test(mcd.t) && /K0002 is not listed on the 2027 schedule either/.test(mcd.t), 'Indiana Medicaid reason: ' + mcd.t);
-        ok(!/earnings calculator/i.test(L.top) && /only for verified model codes/.test(L.top), 'no estimate for a reference code');
+        ok(!/earnings calculator/i.test(L.top) && /Explore a K0002 estimate/.test(L.top) && !/Dealer-only estimate/.test(L.top), 'reference code: opt-in only');
         ok(L.sw <= L.cw + 1, 'no sideways scroll ' + L.sw + '/' + L.cw);
         await pg.selectOption('#cardHost select[data-k="state"]', 'KY'); await pg.waitForTimeout(400); await cardText(pg); await setZip(pg, '40202');
         const ky = await pg.$$eval('#cardHost .pd-reimb-col', (e) => e.map((x) => x.innerText));
@@ -193,18 +193,18 @@ const settle = (pg) => pg.waitForFunction(() => !document.querySelector('[data-a
         await pg.close();
       }
     });
-    await t('manufacturer-listed codes (owner 2026-11-19 20:03): Golden GB108B K0800 (Pending) from its specs — code, qualification and allowance, no estimate; Golden GC240E K0807 listed without an estimate; Ovation 30004 L4397 pending', async () => {
+    await t('manufacturer-listed codes (owner 2026-11-19 20:03): Golden GB108B K0800 (Pending) from its specs — code, qualification and allowance, no estimate; Golden GC240E K0807 with dealer-only estimates; Ovation 30004 L4397 pending', async () => {
       const pg = await page(browser, 1280); await pg.addStyleTag({ content: PD_CSS }); await pg.evaluate(() => { try { sessionStorage.removeItem('hcps_reimb_plan'); } catch (e) {} });
       await cardOf(pg, { name: 'Buzzaround LT', code: 'GB108B', manufacturer: 'golden-technologies', category: 'Scooters', spec_codes: ['K0800'], cost: 900 }); await cardText(pg);
       await pg.selectOption('#cardHost select[data-k="state"]', 'IN'); await pg.waitForTimeout(400); await cardText(pg); let txt = await setZip(pg, '47501');
       ok(/HCPCS K0800[^\n]*Manufacturer-listed HCPCS — pending/.test(txt) && /K0800 \(Pending\)/.test(txt) && /\$1,359\.25/.test(txt) && /Purchase|New/.test(txt), 'GB108B: ' + txt.slice(0, 900));
-      ok(!/earnings calculator/i.test(txt) && /only for verified model codes/.test(txt), 'no estimate for a pending listing');
+      ok(!/earnings calculator/i.test(txt) && !/Explore a/.test(txt) && !/Dealer-only estimate/.test(txt) && /No earnings estimate while the manufacturer's code is pending/.test(txt), 'no estimate for a pending listing');
       await pg.click('#cardHost .pd-reimb-go'); const o = await pg.evaluate(() => window.__opened.pop()); ok(o.product.qualified && o.product.cost === undefined, 'no cost carried to the lookup');
       await mount(pg, o); await settle(pg); await pg.click('[data-act="print"]');
       await pg.waitForFunction(() => document.querySelector('iframe') && document.querySelector('iframe').contentDocument.body && document.querySelector('iframe').contentDocument.body.innerText.length > 100);
       const pr = await pg.evaluate(() => document.querySelector('iframe').contentDocument.body.innerText); ok(/Manufacturer-listed HCPCS — pending/.test(pr) && /K0800 \(Pending\)/.test(pr), 'printed qualification');
       await cardOf(pg, { name: 'Companion', code: 'GC240E', manufacturer: 'golden-technologies', category: 'Scooters', spec_codes: ['K0807'], cost: 1500 }); txt = await cardText(pg);
-      ok(/HCPCS K0807[^\n]*Manufacturer-listed HCPCS/.test(txt) && !/pending/i.test(txt.split('HCPCS K0807')[1].split('\n')[0]) && !/earnings calculator/i.test(txt) && /only for verified model codes/.test(txt), 'GC240E: listed, no estimate (verified mappings only): ' + txt.slice(0, 500));
+      ok(/HCPCS K0807[^\n]*Manufacturer-listed HCPCS/.test(txt) && !/pending/i.test(txt.split('HCPCS K0807')[1].split('\n')[0]) && /earnings calculator/i.test(txt) && /Dealer-only estimate/.test(txt) && /Estimated margin\s+\$\d/.test(txt), 'GC240E: exact-model listed code, no pending → dealer-only estimates (owner 2026-11-19 20:48): ' + txt.slice(700, 2600));
       await cardOf(pg, { name: 'Walker', code: '30004', manufacturer: 'ovation-medical', category: 'Walkers', sku_code: 'L4397', page_codes: ['L4396'] }); txt = await cardText(pg);
       ok(/HCPCS L4397[^\n]*pending/.test(txt) && /product page lists L4396/.test(txt), 'Ovation 30004: ' + txt.slice(0, 500)); await pg.close();
     });
@@ -285,10 +285,10 @@ const settle = (pg) => pg.waitForFunction(() => !document.querySelector('[data-a
       const box = await pg.$eval('#rbCalc .rb-calcgrid', (e) => { const t = e.children[0].getBoundingClientRect(), s = e.children[1].getBoundingClientRect(); return [t.right <= s.left + 1, Math.abs(t.top - s.top) < 8, getComputedStyle(e).display, e.children.length, t.top, s.top, t.right, s.left]; });
       ok(box[0] && box[1], 'beside the table on desktop ' + JSON.stringify(box)); await pg.close();
     });
-    await t('calculator — Medicaid rental defaults to 1 month with the not-modelled note; bad input never shows NaN or a negative', async () => {
+    await t('calculator — Medicaid rental defaults to a 12-month dealer scenario with the not-modelled note (same default as the product page); bad input never shows NaN or a negative', async () => {
       const pg = await page(browser);
       let txt = await calcRun(pg, { code: 'E1390', state: 'KY', plan: 'medicaid-ffs', dos: '2026-11-19' }, { cost: '445' });
-      ok(/1 month\(s\), your estimate/.test(txt) && /not modelled/.test(txt) && /Medicaid pays\s+\$91\.82/i.test(txt), 'medicaid default: ' + txt.slice(0, 600));
+      ok(/12 month\(s\), your estimate/.test(txt) && /not modelled/.test(txt) && /Medicaid pays\s+\$1,101\.84/i.test(txt), 'medicaid default: ' + txt.slice(0, 600));
       await pg.fill('#rbCalc [data-c="cost"]', 'abc'); await pg.dispatchEvent('#rbCalc [data-c="cost"]', 'change'); txt = await pg.$eval('#rbCalc', (e) => e.innerText);
       ok(!/NaN/.test(txt) && /Unavailable/.test(txt), 'non-number → blank');
       await pg.fill('#rbCalc [data-c="months"]', '-5'); await pg.dispatchEvent('#rbCalc [data-c="months"]', 'change'); txt = await pg.$eval('#rbCalc', (e) => e.innerText);

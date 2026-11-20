@@ -23,7 +23,11 @@
   const refOn = () => !!(S.product && (S.product.reference || S.product.qualified) && S.result && S.result.ok && (S.product.codes || []).some((c) => codeOf(c) === S.result.context.code));
   const refNote = () => (S.product && S.product.qualified ? listedTag(S.product) + '. ' + (S.product.qualifier || '') : REF_NOTE);
   const refAllow = () => (S.product && S.product.qualified ? (S.product.allowance_note || REF_ALLOW) : REF_ALLOW);
-  const noCalc = () => !!(S.product && (S.product.informational || S.product.reference || S.product.listed));   // estimates: verified mappings only
+  /* estimates (owner 2026-11-19 20:48): verified mappings and exact-model manufacturer-listed codes with no pending designation;
+     a reference-only code only when the dealer opted in ("Explore a <code> estimate"); never informational (lift chairs),
+     qualified (pending) or coding-pending products */
+  const estOk = (p) => !p || (!p.informational && !p.qualified && !p.pending && !p.noCode && (p.reference ? !!p.explore : true));   // a code typed in the lookup (no product) keeps the calculator
+  const noCalc = () => !estOk(S.product);
   /* manufacturer-listed code (owner approval 2026-11-19 20:03): shown with its source; a qualified listing (e.g. pending) gets
      the qualification beside the code and with the rates, and no earnings estimate */
   const LISTED = 'Manufacturer-listed HCPCS';
@@ -82,6 +86,7 @@
     const st = stateOf(S.state); const plans = st ? st.plans : []; const plan = planOf(S.state, S.plan);
     const prod = S.product;
     host.innerHTML = `<style>${CSS}</style>
+      ${CFG.ret ? `<button type="button" class="btn gh rb-ret" data-act="ret">← Back to ${esc(CFG.ret.name || 'the product')}</button>` : ''}
       <div class="ph"><div><div class="rb-crumb"><a data-act="resources">Resources &amp; Support</a> / Reimbursement lookup</div><h1>Reimbursement lookup</h1>
         <div class="sub">Provider billing reference — Medicare and Medicaid fee schedule amounts by HCPCS code, state, plan and date of service.</div></div></div>
       ${prod ? `<div class="card rb-prod"><div><b>${esc(prod.name || '')}</b>${prod.code ? ' · Item # ' + esc(prod.code) : ''}</div>
@@ -120,7 +125,7 @@
     $('rbCode').oninput = (e) => { S.code = e.target.value.toUpperCase(); S.otherMods = []; };
     $('rbCode').onkeydown = (e) => { if (e.key === 'Enter') run(); };
     bindCalc(host);
-    host.querySelectorAll('[data-act]').forEach((el) => { el.onclick = () => { const a = el.getAttribute('data-act'); if (a === 'go') run(); else if (a === 'print') printRef(); else if (a === 'resources' && CFG.back) CFG.back(); }; });
+    host.querySelectorAll('[data-act]').forEach((el) => { el.onclick = () => { const a = el.getAttribute('data-act'); if (a === 'go') run(); else if (a === 'print') printRef(); else if (a === 'resources' && CFG.back) CFG.back(); else if (a === 'ret' && CFG.ret && CFG.ret.back) CFG.ret.back(); }; });
   }
 
   async function run() {
@@ -196,23 +201,26 @@
      The server resolves the model's verified code(s) (_reimb_map) and looks both payers up; one payer without a rate keeps the
      other visible. The dealer can change the state, date, Medicare location and Medicaid plan right here. */
   const CARD = new WeakMap();
-  async function card(el, cfg, update) {
+  async function card(el, cfg, update, cached) {
     if (!el) return;
     let m; try { m = await meta(cfg.api); } catch (e) { el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-s">${esc(e.message)}</div></div>`; return; }
     const st = CARD.get(el) || { state: m.default_state || '', dos: m.today, zip: m.branch_zip || '', zsrc: 'branch', mplan: PREF_PLAN && PREF_PLAN !== 'medicare' ? PREF_PLAN : '', mploc: '' };
     CARD.set(el, st);
     const prod = cfg.product || {};
+    if (st.code !== prod.code) { st.code = prod.code; st.est = null; st.explore = false; st._last = null; }   // another product on this element: its own estimate inputs
     /* an update keeps the panel on screen (busy) instead of collapsing it to "Loading…" — the page never jumps */
     const box0 = update && el.querySelector('.pd-reimb');
     if (box0) { box0.classList.add('pd-reimb-busy'); box0.setAttribute('aria-busy', 'true'); el.querySelectorAll('[data-k]').forEach((x) => { x.disabled = true; }); }
     else el.innerHTML = '<div class="pd-reimb pd-reimb-full"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-s">Loading…</div></div>';
-    let r; try { r = await cfg.api({ action: 'product', manufacturer: prod.manufacturer, sku: prod.code, category: prod.category, sku_code: prod.sku_code, page_codes: prod.page_codes, spec_codes: prod.spec_codes,
+    let r; if (cached && st._last) r = st._last; else try { r = await cfg.api({ action: 'product', manufacturer: prod.manufacturer, sku: prod.code, category: prod.category, sku_code: prod.sku_code, page_codes: prod.page_codes, spec_codes: prod.spec_codes,
       state: st.state, dos: st.dos, zip: st.zip || '', zip_source: st.zsrc, medicaid_plan: st.mplan || undefined, medicaid_location: st.mploc || undefined }); } catch (e) { r = null; }
+    if (r && r.ok) st._last = r;
     if (!r || !r.ok) { el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-s">${esc((r && r.error) || 'The reimbursement lookup could not be loaded — please try again.')}</div></div>`; return; }
     const mp = r.mapping || { codes: [] };
     const full = Object.assign({}, prod, { codes: mp.codes, why: mp.why, status: mp.status, noCode: !mp.codes.length, informational: !!mp.informational, reference: !!mp.reference, pending: !!mp.pending,
-      listed: !!mp.listed, qualified: !!mp.qualified, qualifier: mp.qualifier || '', allowance_note: mp.allowance_note || '' });
-    if (mp.informational || mp.reference || mp.listed) { delete full.cost; delete full.cost_note; }   // informational / reference only: no cost is carried, no estimate
+      listed: !!mp.listed, qualified: !!mp.qualified, qualifier: mp.qualifier || '', allowance_note: mp.allowance_note || '', explore: !!st.explore });
+    const estMode = (mp.informational || mp.qualified || mp.pending || !mp.codes.length) ? 'off' : mp.reference ? (st.explore ? 'explore' : 'offer') : 'on';
+    if (estMode === 'off' || estMode === 'offer') { delete full.cost; delete full.cost_note; }   // no estimate: no cost is carried
     if (!mp.codes.length) {
       el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div>${mp.pending
         ? `<div class="pd-reimb-miss">${esc(PENDING)}</div>${mp.why ? `<div class="pd-reimb-s">${esc(String(mp.why).replace(/^Coding verification pending\.\s*/, ''))}</div>` : ''}`
@@ -229,6 +237,41 @@
        without a rate never hides the other. A reference-only code shows its published amount with both notices. */
     const plans = r.plans || []; const mPlans = plans.filter((p) => p.id !== 'medicare'); const mPlan = mPlans.find((p) => p.id === st.mplan);
     const ZIP_MSG = 'Enter patient ZIP to see Medicare allowance';
+    /* DEALER-ONLY MARGIN ESTIMATE beneath each payer's rates (owner 2026-11-19 20:48) — the SAME estimate() as the billing-details
+       calculator, so both agree. Every published amount is its own scenario (purchase and rental apart). Never printed, never on a
+       customer document; nothing here is sent anywhere. */
+    if (!st.est) st.est = { cost: prod.cost == null ? '' : String(prod.cost), setup: '0', service: '0', coins: '100', m: {} };
+    const E = st.est, estOn = estMode === 'on' || estMode === 'explore';
+    const refCode = mp.codes.map((c) => c.code).join(' / ');
+    const estBlock = (x) => {
+      if (!estOn) return '';
+      const res = x.result || {}, a = res.allowance || {}, pay = res.payment; if (!pay || !(a.items || []).length) return '';
+      const med = x.payer === 'medicare', rule = pay.rental || {}, stN = (res.context && res.context.state_name) || '';
+      return `<div class="pd-est" data-dealer-only>${estMode === 'explore' ? `<div class="pd-est-note">Estimate assumes this product qualifies under ${esc(x.code)}.</div>` : ''}${a.items.map((it, i) => {
+        const key = x.payer + ':' + x.code + ':' + i, rental = it.type === 'rental';
+        const defM = defMonths(rule);
+        const months = E.m[key] != null ? E.m[key] : defM;
+        const e = estimate({ item: it, payment: pay, cost: E.cost, setup: E.setup, service: E.service, months, coins_pct: med ? E.coins : 100, after: rule.kind === 'oxygen' ? '24' : '0' });
+        const sched = rental ? e.schedule.map((y) => 'Month' + (y.from === y.to ? ' ' + y.from : 's ' + y.from + '–' + y.to) + ' ' + money(y.amount)).join(' · ') : '';
+        const term = !rental ? 'One payment' : rule.kind === 'capped' ? 'Capped rental (' + esc(rule.rule || '') + ')' : rule.kind === 'oxygen' ? 'Oxygen — up to 36 paid months' : rule.kind === 'inexpensive' ? 'Total rental capped at the purchase fee' + (rule.cap ? ' ' + money(rule.cap) : '') : 'Dealer scenario — ' + esc(stN) + (med ? ' Medicare' : ' Medicaid') + '\'s rental term is not on file; the paid months are your estimate';
+        return `<div class="pd-est-sc"><div class="pd-est-h">Dealer-only estimate · ${esc(it.basis)}${it.modifier ? ' · ' + esc(it.modifier) : ''}</div>
+          <div class="pd-est-term">${term}</div>
+          ${rental ? `<label class="pd-est-in">Paid months<input data-e="m" data-key="${esc(key)}" inputmode="numeric" value="${esc(months)}"></label>` : ''}
+          <table class="pd-est-t"><tbody>
+            <tr><th>Estimated collections</th><td>${money(e.collections)}${med ? `<div class="pd-est-s">Medicare 80% ${money(e.program)} + patient / secondary 20% × ${esc(E.coins)}% collected ${money(e.patient)}</div>` : ''}</td></tr>
+            <tr><th>Dealer cost</th><td>${e.cost == null ? 'Enter your cost' : money(e.cost)}${e.setup ? ' + delivery / setup ' + money(e.setup) : ''}${rental && e.service ? ' + service ' + money(e.service) + ' × ' + e.service_months : ''}</td></tr>
+            <tr><th>Estimated margin</th><td class="pd-est-m">${e.margin == null ? '—' : money(e.margin) + (e.margin_pct == null ? '' : ' (' + e.margin_pct.toFixed(1) + '%)')}</td></tr>
+            ${rental ? `<tr><th>Break-even</th><td>${e.costs == null ? '—' : esc(e.break_even || 'Not reached in the paid months')}</td></tr>` : ''}
+          </tbody></table>${sched ? `<div class="pd-est-s">${esc(sched)}</div>` : ''}</div>`; }).join('')}</div>`;
+    };
+    const estInputs = estOn ? `<div class="pd-est-shared" data-dealer-only><div class="pd-est-h">Dealer-only margin estimate — private to your signed-in account; never on storefronts, quotes, customer emails or the printed billing reference${estMode === 'explore' ? '. Estimate assumes this product qualifies under ' + esc(refCode) + '.' : '.'}</div>
+        <div class="pd-reimb-ctl">
+          <label>Your equipment cost<input data-e="cost" inputmode="decimal" value="${esc(E.cost)}" placeholder="0.00"></label>
+          <label>Delivery / setup<input data-e="setup" inputmode="decimal" value="${esc(E.setup)}"></label>
+          <label>Service cost per rental month<input data-e="service" inputmode="decimal" value="${esc(E.service)}"></label>
+          <label>Medicare coinsurance collected (%)<input data-e="coins" inputmode="numeric" value="${esc(E.coins)}"></label>
+        </div>${prod.cost_note ? `<div class="pd-est-s">${esc(prod.cost_note)}</div>` : ''}</div>`
+      : estMode === 'offer' ? `<div class="pd-est-offer"><button type="button" class="pd-est-go" data-explore>Explore a ${esc(refCode)} estimate</button><span class="pd-reimb-s">Dealer only. Estimate assumes this product qualifies under ${esc(refCode)}.</span></div>` : '';
     const rowHtml = (x) => {
       const res = x.result || {}; const c = res.context || {}; const a = res.allowance || {}; const med = x.payer === 'medicare';
       const head = `${med ? 'Original Medicare fee-for-service' : esc(c.plan_label || 'Medicaid')} · ${esc(c.state_name || '')} · ${esc(c.location_label || '')} · ${esc(c.dos_label || '')}`;
@@ -238,7 +281,7 @@
           `<div class="pd-reimb-src">Source · ${link(a.source && a.source.url, a.source && a.source.title)}${a.source && a.source.page ? ', page ' + esc(a.source.page) : ''}</div>`
         : (med && !st.zip ? `<div class="pd-reimb-miss">${esc(ZIP_MSG)}</div><div class="pd-reimb-s">${esc(NO_RATE)} until a ZIP is entered — Medicare prices by the patient\'s residence ZIP.</div>`
           : `<div class="pd-reimb-miss">${esc(NO_RATE)}</div>${a.reason ? `<div class="pd-reimb-s">${esc(a.reason)}</div>` : ''}`);
-      return `<div class="pd-reimb-row"><div class="pd-reimb-p">${head}</div>${body}</div>`;
+      return `<div class="pd-reimb-row"><div class="pd-reimb-p">${head}</div>${body}${a.status === 'ok' ? estBlock(x) : ''}</div>`;
     };
     const codeHead = (c) => `<div class="pd-reimb-code">HCPCS ${esc(codeLabel(c))}${mp.reference ? ` <span class="pd-reimb-ref">${esc(REF_NOTE)}</span>` : mp.listed ? ` <span class="${mp.qualified ? 'pd-reimb-ref' : 'pd-reimb-lst'}">${esc(listedTag(mp))}</span>` : ''}</div>`;
     const colFor = (payer) => mp.codes.map((c) => {
@@ -268,12 +311,17 @@
             ${mPlan && mPlan.locations.length > 1 ? `<label>Medicaid location<select data-k="mploc">${mPlan.locations.map((l) => `<option value="${esc(l.id)}"${l.id === st.mploc ? ' selected' : ''}>${esc(l.label)}</option>`).join('')}</select></label>` : ''}</div>` : ''}
           ${mPlans.length ? colFor('medicaid') : `<div class="pd-reimb-miss">${esc(NO_RATE)}</div><div class="pd-reimb-s">No Medicaid plan is on file for this state.</div>`}</section>
       </div>` : '<div class="pd-reimb-s">Choose a state to see Original Medicare and Medicaid allowances.</div>'}
+      ${st.state ? estInputs : ''}
       ${mp.informational ? `<div class="pd-reimb-s pd-reimb-info">${esc(mp.informational_note || 'Informational only.')}</div>` : ''}
-      <div class="pd-reimb-links"><a class="pd-reimb-go" role="button" tabindex="0">${mp.reference || mp.qualified ? 'Open the code\'s fee schedule →' : 'View billing details →'}</a>${mp.informational || mp.reference || mp.listed ? '' : '<a class="pd-reimb-go pd-reimb-calc" role="button" tabindex="0">Insurance earnings calculator (dealer only) →</a>'}</div>${mp.reference || mp.listed ? '<div class="pd-reimb-s">Insurance earnings estimates are available only for verified model codes.</div>' : ''}</div>`;
+      <div class="pd-reimb-links"><a class="pd-reimb-go" role="button" tabindex="0">${mp.reference || mp.qualified ? 'Open the code\'s fee schedule →' : 'View billing details →'}</a>${estOn ? '<a class="pd-reimb-go pd-reimb-calc" role="button" tabindex="0">Insurance earnings calculator (dealer only) →</a>' : ''}</div>${mp.qualified ? '<div class="pd-reimb-s">No earnings estimate while the manufacturer\'s code is pending.</div>' : ''}</div>`;
     if (Math.abs(window.scrollY - y) > 1) window.scrollTo(0, y);   // the page stays where the dealer was
     if (fk) { const f = el.querySelector(`[data-k="${fk}"]`); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }
     el.querySelectorAll('[data-k]').forEach((x) => { x.onchange = () => { const k = x.getAttribute('data-k'); st[k] = String(x.value).trim(); if (k === 'zip') st.zsrc = m.branch_zip && st.zip === m.branch_zip ? 'branch' : 'patient'; if (k === 'state') { st.mplan = ''; st.mploc = ''; } if (k === 'mplan') st.mploc = ''; st._fk = k; st._y = window.scrollY; card(el, cfg, true); }; });
-    const go = () => cfg.open({ product: full, code: mp.codes[0], state: st.state, plan: planFor(st.state, true) || 'medicare', zip: st.zip || '', zipSrc: st.zsrc, dos: st.dos });
+    const fe = st._fe || null; st._fe = null; if (fe) { const f = el.querySelector(fe); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }
+    el.querySelectorAll('[data-e]').forEach((x) => { x.onchange = () => { const k = x.getAttribute('data-e'); if (k === 'm') E.m[x.getAttribute('data-key')] = String(x.value).trim(); else E[k] = String(x.value).trim();
+      st._fe = k === 'm' ? `[data-e="m"][data-key="${x.getAttribute('data-key')}"]` : `[data-e="${k}"]`; st._y = window.scrollY; card(el, cfg, true, true); }; });
+    const ex = el.querySelector('[data-explore]'); if (ex) ex.onclick = () => { st.explore = true; st._y = window.scrollY; card(el, cfg, true, true); };
+    const go = () => cfg.open({ product: Object.assign({}, full, estOn ? { cost: E.cost === '' ? null : Number(E.cost), est: Object.assign({}, E) } : {}), code: mp.codes[0], state: st.state, plan: planFor(st.state, true) || 'medicare', zip: st.zip || '', zipSrc: st.zsrc, dos: st.dos });
     el.querySelectorAll('.pd-reimb-go').forEach((a) => bindOne(a, go));
   }
   function bindOne(a, fn) { if (!a) return; a.onclick = fn; a.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } }; }
@@ -314,11 +362,14 @@
     return { months, schedule, paid_months: months.length, setup, service, service_months: serviceMonths, cost, after_months: after, allowed: r2(allowed), program: r2(program), patient: r2(patient), collections: r2(collections),
       costs: costs == null ? null : r2(costs), margin: costs == null ? null : r2(collections - costs), margin_pct: costs == null || !collections ? null : Math.round((collections - costs) / collections * 1000) / 10, break_even: breakEven };
   }
+  /* one default for the product page and the billing details: Medicare capped rental 13 paid months, oxygen 36, every other
+     rental 12 (a dealer scenario the dealer edits) */
+  const defMonths = (rule) => (rule && rule.kind === 'capped' ? '13' : rule && rule.kind === 'oxygen' ? '36' : '12');
   function calcDefaults(r) {
     const items = (r.allowance && r.allowance.items) || []; const rule = (r.payment && r.payment.rental) || {};
     const idx = Math.max(0, items.findIndex((i) => i.type === 'rental' && (rule.kind === 'capped' || rule.kind === 'oxygen')));
-    const prod = S.product || {};
-    return { idx: items.length ? idx : 0, cost: prod.informational || prod.cost == null ? '' : String(prod.cost), setup: '0', service: '0', months: rule.kind === 'capped' ? '13' : rule.kind === 'oxygen' ? '36' : rule.unmodelled ? '1' : '12', coins: '100', after: rule.kind === 'oxygen' ? '24' : '0' };
+    const prod = S.product || {}; const pe = prod.est || {};
+    return { idx: items.length ? idx : 0, cost: prod.informational || prod.cost == null ? '' : String(prod.cost), setup: pe.setup || '0', service: pe.service || '0', months: defMonths(rule), coins: pe.coins || '100', after: rule.kind === 'oxygen' ? '24' : '0' };
   }
   function calcHtml(r) {
     const c = S.calc || (S.calc = calcDefaults(r)); const items = r.allowance.items; const it = items[c.idx] || items[0]; const pay = r.payment; const rule = pay.rental || {};
@@ -339,7 +390,7 @@
       <div><dt>Dealer cost entered</dt><dd>${e.cost == null ? 'Not entered' : money(e.cost)}</dd></div>
       <div><dt>Delivery / setup entered</dt><dd>${money(e.setup)}</dd></div>
       ${rental ? `<div><dt>Service cost entered</dt><dd>${money(e.service)} × ${esc(String(e.service_months))} month(s) = ${money(e.service * e.service_months)}</dd></div>` : ''}</dl>`;
-    return `<section class="card rb-sec rb-calc"><h3>Insurance earnings estimate — dealer only</h3>
+    return `<section class="card rb-sec rb-calc"><h3>Insurance earnings estimate — dealer only</h3>${S.product && S.product.reference ? `<div class="rb-warn">Estimate assumes this product qualifies under ${esc(r.context.code)}.</div>` : ''}
       <div class="rb-small">Private to your signed-in account: never shown on storefronts, customer quotes, brochures, customer emails or the printed billing reference.</div>${packNote}
       <div class="rb-grid">
         <label>Allowance<select data-c="idx">${items.map((i, k) => `<option value="${k}"${k === c.idx ? ' selected' : ''}>${esc(money(i.amount) + ' · ' + i.basis + (i.modifier ? ' · ' + i.modifier : ''))}</option>`).join('')}</select></label>
@@ -379,7 +430,7 @@
     .rb-calc th{width:45%}.rb-calcgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:14px;align-items:start}
     .rb-asm{background:var(--soft,#f6f8fb);border:1px solid var(--line-2,#e6eaf0);border-radius:10px;padding:10px 12px}.rb-asm h4{margin:0 0 6px;font-size:13px}
     .rb-assume{margin:0;display:flex;flex-direction:column;gap:6px}.rb-assume dt{font-size:11px;font-weight:800;color:var(--muted,#667);text-transform:uppercase;letter-spacing:.3px}.rb-assume dd{margin:1px 0 0;font-size:13px}
-    .rb-zipsrc{font-weight:400;font-size:11.5px}.rb-ref{font-weight:800;color:#7a4b00}.rb-lst{font-weight:700;color:#0f5c8f}
+    .rb-ret{min-height:44px;margin:0 0 10px;font-weight:700}.rb-zipsrc{font-weight:400;font-size:11.5px}.rb-ref{font-weight:800;color:#7a4b00}.rb-lst{font-weight:700;color:#0f5c8f}
     @media (max-width:760px){.rb-calcgrid{grid-template-columns:1fr}.rb-grid{grid-template-columns:1fr}.rb-ctx{grid-template-columns:1fr 1fr}.rb-tab{font-size:13px}}`;
 
   window.HCPSReimb = { mount, card, estimate, NO_CODE, NO_RATE };
