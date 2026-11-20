@@ -35,7 +35,7 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       const { ctx, page } = await open(b, w, h, { prices: { dalton: 109 } });
       let first = true, aiOn = true, asks = [], hellos = 0, panelReq = 0, chatOpened = 0, spoken = [], speakReqs = [], playbacks = [], failedOnce = false;
       await page.route('**/dealer-victoria-api', async (r) => { const x = JSON.parse(r.request().postData() || '{}'); let body;
-        if (x.action === 'speak' && /^This information/.test(x.text) && !failedOnce) { failedOnce = true; speakReqs.push({ kind: x.kind, text: x.text, token: x.token || null, failed: true });
+        if (x.action === 'speak' && x.kind === 'answer' && /-1$/.test(String(x.token || '')) && !failedOnce) { failedOnce = true; speakReqs.push({ kind: x.kind, text: x.text, token: x.token || null, failed: true });
           return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ ok: false, error: 'voice_timeout' }) }); }
         if (x.action === 'speak') { speakReqs.push({ kind: x.kind, text: x.text, token: x.token || null });
           const fake = Buffer.concat([Buffer.from('FAKEMP3:' + x.text), Buffer.alloc(64)]).toString('base64');
