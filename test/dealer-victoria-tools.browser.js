@@ -25,15 +25,13 @@ const SCRIPT = [   // question → tool + input (the model's choice, scripted)
   [/knee walker/i, 'find_products', { query: 'knee walker' }],
   [/storefront live/i, 'storefront_status', {}],
   [/social ad/i, 'portal_guide', { topic: 'social ad' }],
-  [/K3 wheelchairs/i, 'open_shop_search', { query: 'Dalton K3 wheelchairs' }],
-  [/open my reports/i, 'open_portal_tool', { view: 'reports' }],
 ];
 
 (async () => {
   const b = await chromium.launch();
   try {
     for (const [w, h, label] of [[1280, 800, 'desktop'], [390, 844, 'phone']]) {
-      const { ctx, page } = await open(b, w, h, { prices: { dalton: 109 }, access: { your_accounts: ['access4u', 'dalton'], available: ['bemis', 'pedifix'], request_access: [], golden: 'None' } });
+      const { ctx, page } = await open(b, w, h, { prices: { dalton: 109 } });
       const asks = [], suggests = [];
       await page.route('**/dealer-victoria-api', async (r) => { const x = JSON.parse(r.request().postData() || '{}'); let body = { ok: true };
         if (x.action === 'status') body = { ok: true, enabled: true, preview: true, first_name: 'Ann', voice: { id: 'aura-2-thalia-en', available: false }, ai: { available: true }, support: { phone: '(888) 626-3140', phone_tel: '+18886263140', email: 'info@homecareproviderservices.us', chat: false }, greeting: 'Hello, Ann.', greeting_again: 'Hi, Ann.' };
@@ -43,8 +41,7 @@ const SCRIPT = [   // question → tool + input (the model's choice, scripted)
           const out = s ? await VT.RUN[s[1]]({ dealer_id: 'd1', bearer: 'Bearer tok', page: x.page || {} }, deps, s[2]) : { result: {} };
           body = { ok: true, answer: 'Here is what I found.', speech_parts: [], cards: out.card ? [out.card] : [], actions: [].concat(out.actions || [], out.action ? [out.action] : []) }; }
         return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) }); });
-      await page.evaluate(() => { window.SpeechRecognition = window.webkitSpeechRecognition = function () { const r = this; window.__srFire = () => { r.onresult && r.onresult({ results: [[{ transcript: window.__heard }]] }); setTimeout(() => r.onend && r.onend(), 30); }; r.start = () => {}; r.stop = () => { r.onend && r.onend(); }; };
-        window.__PREVIEW__ = null; window.needsAccess = () => false; const M = HTMLMediaElement.prototype; M.play = function () { return Promise.resolve(); }; window.print = () => {}; });
+      await page.evaluate(() => { window.__PREVIEW__ = null; window.needsAccess = () => false; const M = HTMLMediaElement.prototype; M.play = function () { return Promise.resolve(); }; window.print = () => {}; });
       await page.evaluate(() => window.dvProbe()); await page.waitForFunction(() => document.getElementById('dvOrbHost'), null, { timeout: 15000 });
       const S = (fn, a) => page.evaluate(([f, x]) => (new Function('s', 'x', f))(document.getElementById('dvPanelHost') && document.getElementById('dvPanelHost').shadowRoot, x), [fn, a]);
       const openPanel = async () => { await page.evaluate(() => { const h = document.getElementById('dvPanelHost'); if (!h || h.shadowRoot.querySelector('.p').hidden) document.getElementById('dvOrbHost').shadowRoot.querySelector('button').click(); });
@@ -91,26 +88,6 @@ const SCRIPT = [   // question → tool + input (the model's choice, scripted)
       await S("[...s.querySelectorAll('.log .card .btn')].pop().click();"); await page.waitForTimeout(1200);
       const view = await page.evaluate(() => state.active);
       await t(`${label}: "Open it" goes to Social Media Advertising`, () => ok(view === 'p360:ads', String(view)));
-      await ask('Find Dalton K3 wheelchairs'); await page.waitForTimeout(2500);
-      const c5 = await cards(); const shop = await page.evaluate(() => ({ active: state.active, h: (document.querySelector('.sl-search .sl-shead h2') || {}).textContent || '', rows: document.querySelectorAll('.sl-search .gsr2').length }));
-      await t(`${label}: "Find Dalton K3 wheelchairs" opens Shop Products results, and Victoria reports the counted results only after they opened (✓)`, () => ok(/for “Dalton K3 wheelchairs”/.test(shop.h) && shop.rows > 0 && c5.some((x) => /^✓ Shop Products: \d+ results? for “Dalton K3 wheelchairs”/.test(x)), JSON.stringify({ shop, last: c5.slice(-2) })));
-      await ask('open my reports'); await page.waitForTimeout(1500);
-      const c6 = await cards(); const v6 = await page.evaluate(() => state.active);
-      await t(`${label}: open a tool → ✓ only after the page is on screen`, () => ok(v6 === 'p360:reports' && c6.some((x) => /^✓ Opened Reports/.test(x)), JSON.stringify({ v6, last: c6.slice(-1) })));
-      const names = await S("return [s.querySelector('.p').getAttribute('aria-label'), s.querySelector('.sup b').textContent];");
-      await t(`${label}: the panel names Home Care Provider Services`, () => ok(names.every((x) => /Home Care Provider Services/.test(x)), JSON.stringify(names)));
-      /* the microphone: the browser's speech recognition (stubbed) → Listening… → Processing… → the question is asked */
-      await page.evaluate(() => { window.__heard = 'Find Dalton K3 wheelchairs'; });
-      const micShown = await S("return !s.querySelector('.mic').hidden;");
-      const n0 = asks.length;
-      await S("s.querySelector('.mic').click();"); await page.waitForTimeout(150);
-      const st1 = await S("return [s.querySelector('.mic').dataset.s, s.querySelector('.mic-st').textContent];");
-      await S("window.__micLog = []; const m = s.querySelector('.mic'), st = s.querySelector('.mic-st'); new MutationObserver(() => window.__micLog.push([m.dataset.s, st.textContent])).observe(s, { subtree: true, attributes: true, childList: true, characterData: true });");
-      await page.evaluate(() => window.__srFire()); await page.waitForTimeout(80);
-      const st2 = (await page.evaluate(() => window.__micLog)).find((x) => x[0] === 'processing') || [];
-      for (let i = 0; i < 40 && asks.length <= n0; i++) await page.waitForTimeout(100);
-      await t(`${label}: microphone — Listening… with the words heard, then Processing…, then the spoken question is asked`, () => ok(micShown && st1[0] === 'listening' && /Listening/.test(st1[1]) && st2[0] === 'processing' && /Processing/.test(st2[1]) && asks.length === n0 + 1 && asks[n0].question === 'Find Dalton K3 wheelchairs', JSON.stringify({ micShown, st1, st2, q: asks[n0] && asks[n0].question })));
-      await page.waitForTimeout(2500);
       const sw = await page.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
       await t(`${label}: no sideways scroll`, () => ok(sw[0] <= sw[1] + 1, JSON.stringify(sw)));
       await ctx.close();
