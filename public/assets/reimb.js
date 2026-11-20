@@ -207,6 +207,7 @@
     const st = CARD.get(el) || { state: m.default_state || '', dos: m.today, zip: m.branch_zip || '', zsrc: 'branch', mplan: PREF_PLAN && PREF_PLAN !== 'medicare' ? PREF_PLAN : '', mploc: '' };
     CARD.set(el, st);
     const prod = cfg.product || {};
+    st.prod = prod;   // Dealer Victoria reads the same product payload and panel state (stateOf)
     if (st.code !== prod.code) { st.code = prod.code; st.est = null; st.explore = false; st._last = null; }   // another product on this element: its own estimate inputs
     /* an update keeps the panel on screen (busy) instead of collapsing it to "Loading…" — the page never jumps */
     const box0 = update && el.querySelector('.pd-reimb');
@@ -436,5 +437,8 @@
     .rb-ret{min-height:44px;margin:0 0 10px;font-weight:700}.rb-zipsrc{font-weight:400;font-size:11.5px}.rb-ref{font-weight:800;color:#7a4b00}.rb-lst{font-weight:700;color:#0f5c8f}
     @media (max-width:760px){.rb-calcgrid{grid-template-columns:1fr}.rb-grid{grid-template-columns:1fr}.rb-ctx{grid-template-columns:1fr 1fr}.rb-tab{font-size:13px}}`;
 
-  window.HCPSReimb = { mount, card, estimate, NO_CODE, NO_RATE };
+  /* what this product card shows right now — Dealer Victoria asks with exactly these (owner 2026-11-19 22:07) */
+  function cardState(el) { const st = el && CARD.get(el); if (!st) return null;
+    return { product: st.prod ? Object.assign({}, st.prod) : null, state: st.state || '', zip: st.zip || '', zip_source: st.zsrc || '', dos: st.dos || '', medicaid_plan: st.mplan || '', medicaid_location: st.mploc || '' }; }
+  window.HCPSReimb = { mount, card, estimate, stateOf: cardState, NO_CODE, NO_RATE, REF_NOTE, REF_ALLOW, PENDING };
 })();
