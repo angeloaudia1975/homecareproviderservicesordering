@@ -10,6 +10,7 @@ const path = require('path'), fs = require('fs');
 const ADM = process.env.ADMIN_REPO || path.join(__dirname, '..', '..', 'adm');
 process.env.SUPABASE_URL = 'https://example.invalid'; process.env.SUPABASE_SERVICE_ROLE = 'service';
 const V = require(path.join(ADM, 'netlify', 'functions', 'dealer-victoria-api.js'));
+const VO = require(path.join(ADM, 'netlify', 'functions', '_dealer_victoria_voice.js'));
 const realFetch = global.fetch;   /* the reimbursement engine's own sign-in read, answered locally (a TEST dealer in KY) */
 global.fetch = async (url, o) => { const u = String(url); const okj = (x) => ({ ok: true, status: 200, json: async () => x, text: async () => JSON.stringify(x) });
   if (u.endsWith('/auth/v1/user')) return okj({ id: 'u1' }); if (u.includes('/dealer_users?')) return okj([{ status: 'approved', dealer_id: 'd1' }]);
@@ -47,7 +48,10 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
           /* voice on → the answer audio comes back WITH the answer (made on the server right after the model); not on the
              "Thanks" question, so the speak fallback (token) path is exercised too */
           const withAudio = x.voice === true && !/Thanks/.test(q) && !/^Where is my/.test(q);
-          body = { ok: true, speech_token: 'tok-' + asks.length, answer: ansText, speech: withAudio ? { ok: true, voice: 'aura-2-thalia-en', mime: 'audio/mpeg', audio: Buffer.concat([Buffer.from('FAKEMP3:' + ansText), Buffer.alloc(64)]).toString('base64'), tts_ms: 700 } : undefined, timing: { model_ms: 1500, total_ms: 2300 }, disclaimer: billing ? V._test.BILLING_DISCLAIMER : null, cards: tool.card ? [tool.card] : [], actions: tool.action ? [tool.action] : [], usage: { model: 'claude-haiku-5-5', usd: 0.0004, ms: 1500 } }; }
+          /* the answer in parts (the server's own splitter), the FIRST part's audio coming back with the answer */
+          const parts = VO.chunks(ansText).map((tx, i) => ({ text: tx, token: 'tok-' + asks.length + '-' + i }));
+          const fake = (tx) => Buffer.concat([Buffer.from('FAKEMP3:' + tx), Buffer.alloc(64)]).toString('base64');
+          body = { ok: true, speech_token: 'tok-' + asks.length, speech_parts: parts, answer: ansText, speech: withAudio ? { ok: true, part: 0, text: parts[0].text, voice: 'aura-2-thalia-en', mime: 'audio/mpeg', audio: fake(parts[0].text), tts_ms: 900 } : undefined, timing: { model_ms: 1500, total_ms: 2300 }, disclaimer: billing ? V._test.BILLING_DISCLAIMER : null, cards: tool.card ? [tool.card] : [], actions: tool.action ? [tool.action] : [], usage: { model: 'claude-haiku-5-5', usd: 0.0004, ms: 1500 } }; }
         return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) }); });
       await page.route('**/assets/dealer-victoria-panel.js*', (r) => { panelReq++; return r.fallback(); });
       await page.route('**/dealer-reports-api', (r) => { const x = JSON.parse(r.request().postData() || '{}'); return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(x.action === 'golden_orders' ? GOLDEN : { ok: false }) }); });
@@ -193,12 +197,15 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
         ok(rc.includes(D) && panelTxt.includes(D), 'the fixed disclaimer is in Victoria\'s card and the product panel');
       });
       await page.waitForTimeout(250);
-      await t(`${label}: voice on — the reimbursement answer is spoken WITH the disclaimer and the globe glows while Victoria speaks`, async () => { const sp = await page.evaluate(() => [window.__spoken.slice(), window.__speakState.slice()]); const D = V._test.BILLING_DISCLAIMER; ok(sp[0].some((x) => x.startsWith('Here is what I found.') && x.endsWith(D)) && sp[1].includes('speaking'), 'the spoken reimbursement answer ends with the fixed disclaimer: ' + JSON.stringify(sp).slice(0, 600)); });
+      await t(`${label}: voice on — the reimbursement answer is spoken WITH the disclaimer and the globe glows while Victoria speaks`, async () => { const sp = await page.evaluate(() => [window.__spoken.slice(), window.__speakState.slice()]); const D = V._test.BILLING_DISCLAIMER; ok(sp[0].join(' ').includes('Here is what I found. ' + D) && sp[1].includes('speaking'), 'the spoken reimbursement answer ends with the fixed disclaimer: ' + JSON.stringify(sp).slice(0, 600)); });
       await t(`${label}: the reimbursement answer's audio came WITH the answer — no separate speak request; it starts as the text appears`, async () => {
         const L = await page.evaluate(() => document.getElementById('dvOrbHost').__dvSpeech.log.slice());
         const sh = L.filter((x) => x.e === 'answer_shown' && x.audio_with_answer); ok(sh.length >= 1, 'answer_shown with audio: ' + JSON.stringify(L.slice(-8)));
         const pl = L.filter((x) => x.e === 'playing' && x.kind === 'answer' && x.after_text_ms != null); ok(pl.length && pl[pl.length - 1].after_text_ms < 300, 'text-to-audio ' + JSON.stringify(pl.slice(-2)));
-        ok(!speakReqs.some((x) => x.kind === 'answer' && x.text.endsWith(V._test.BILLING_DISCLAIMER)), 'no speak request for an answer that came with its audio'); });
+        ok(!speakReqs.some((x) => x.kind === 'answer' && /^Here is what I found\. HCPS is not/.test(x.text)), 'the first part came with the answer — never requested again: ' + JSON.stringify(speakReqs.map((x) => x.text.slice(0, 40))));
+        const sp = await page.evaluate(() => window.__spoken.slice()); const parts = VO.chunks('Here is what I found.\n\n' + V._test.BILLING_DISCLAIMER);
+        const at = sp.indexOf(parts[0]); ok(at >= 0 && parts.every((p, i) => sp[at + i] === p), 'all parts played in order: ' + JSON.stringify(sp.slice(-5)));
+        ok(speakReqs.filter((x) => x.kind === 'answer' && parts.slice(1).includes(x.text)).every((x) => /^tok-\d+-\d+$/.test(x.token)), 'each later part fetched with its own token'); });
       /* the fee schedule from Victoria's card → the existing page */
       await page.evaluate(() => document.getElementById('dvPanelHost').shadowRoot.querySelector('.card .fee').click());
       await page.waitForSelector('#view-reimb .rb-ret', { timeout: 15000 });

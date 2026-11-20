@@ -10478,7 +10478,7 @@ async function dvProbe(){
   document.body.classList.add("dv-on");
   try{ const z=window.$zoho&&window.$zoho.salesiq; const hide=()=>{ try{ window.$zoho.salesiq.floatbutton.visible("hide"); }catch(e){} };
     if(z&&z.floatbutton) hide(); else if(z){ const prev=z.ready; z.ready=function(){ if(typeof prev==="function"){try{prev();}catch(e){}} hide(); }; } }catch(e){}
-  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=5"; s.defer=true; document.head.appendChild(s);
+  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=6"; s.defer=true; document.head.appendChild(s);
 }
 /* what is on screen: the product page open (its own selected SKU / variant) and its reimbursement panel's state, ZIP,
    payer plan and date — exactly what the panel shows, read from the panel itself */

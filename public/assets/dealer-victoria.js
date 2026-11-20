@@ -41,7 +41,7 @@
     ob0.appendChild(v); v.playbackRate = 0.6; if (!document.hidden) v.play().catch(() => {});
   }
   /* the panel script is fetched once the page is usable too, so the first opening shows the greeting at once */
-  const PANEL_SRC = () => (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=5');
+  const PANEL_SRC = () => (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=6');
   let panelLoad = null;
   const loadPanel = () => panelLoad || (panelLoad = window.DealerVictoriaPanel ? Promise.resolve() : new Promise((ok, bad) => { const s = document.createElement('script'); s.src = PANEL_SRC(); s.onload = ok; s.onerror = (e) => { panelLoad = null; bad(e); }; document.head.appendChild(s); }));
   const idle = () => { motion(); loadPanel().catch(() => {}); const D = window.DV || {}; SPEECH.prefetch(D.greeting); if (D.greeting_again && D.greeting_again !== D.greeting) SPEECH.prefetch(D.greeting_again); };
@@ -65,16 +65,20 @@
     const SILENT = (function () { const n = 320, b = new Uint8Array(44 + n); const v = new DataView(b.buffer); const w = (o, s) => { for (let i = 0; i < s.length; i++) b[o + i] = s.charCodeAt(i); };
       w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true); b.fill(128, 44);
       let s = ''; b.forEach((x) => { s += String.fromCharCode(x); }); return 'data:audio/wav;base64,' + btoa(s); })();
-    let gen = 0, watch = 0, silent = false, reached = 0; const ready = new Map(), pending = new Map();
+    let gen = 0, watch = 0, silent = false, reached = 0, seq = null; const ready = new Map(), pending = new Map();
     const ev = (e, x) => { L.log.push(Object.assign({ e, t: Math.round(performance.now()) }, x || {})); if (L.log.length > 200) L.log.shift(); };
     const report = (e) => { try { const d = DVx(); if (d.api) d.api({ action: 'playback', event: e }).catch(() => {}); } catch (er) {} };
     const set = (st, why) => { ob0.dataset.s = st === 'speaking' ? 'speaking' : 'idle'; if (L.onstate) try { L.onstate(st, why); } catch (e) {} };
     const fail = (my, why, kind) => { if (my !== gen) return; clearTimeout(watch); ev(kind || 'blocked', { why }); report(kind || 'blocked'); set('blocked', why); };
     audio.addEventListener('playing', () => { if (silent) return; clearTimeout(watch); reached = 0;
+      if (seq && seq.my === gen && seq.i > 0) { ev('part_playing', { part: seq.i }); return; }   // only the first part counts as "started" 
       const last = (e) => [...L.log].reverse().find((x) => x.e === e); const rq = last('requested'), sh = last('answer_shown'), now = Math.round(performance.now());
       ev('playing', { src: 'deepgram', kind: rq ? rq.kind : null, after_request_ms: rq ? now - rq.t : null, after_text_ms: rq && rq.kind === 'answer' && sh ? now - sh.t : null }); report('playing'); set('speaking'); });
     audio.addEventListener('timeupdate', () => { if (!silent) reached = Math.max(reached, audio.currentTime || 0); });
-    audio.addEventListener('ended', () => { if (silent) return; ev('ended', { played_s: Math.round(reached * 10) / 10, duration_s: Math.round((audio.duration || 0) * 10) / 10 }); report('ended'); set('idle'); });
+    audio.addEventListener('ended', () => { if (silent) return;
+      /* an answer in parts: the next part starts as soon as this one ends (the element is already allowed to play) */
+      if (seq && seq.my === gen && seq.i < seq.parts.length - 1) { ev('part_ended', { part: seq.i }); seq.i++; playPart(gen, seq.i); return; }
+      ev('ended', { played_s: Math.round(reached * 10) / 10, duration_s: Math.round((audio.duration || 0) * 10) / 10, parts: seq && seq.my === gen ? seq.parts.length : 1 }); seq = null; report('ended'); set('idle'); });
     audio.addEventListener('error', () => { if (silent) return; fail(gen, 'media_error', 'failed'); });
     L.supported = () => typeof Audio !== 'undefined' && !(DVx().voice && DVx().voice.available === false);
     L.voice = () => (DVx().voice || null);
@@ -106,9 +110,30 @@
       const p = audio.play(); if (p && p.catch) p.catch((err) => fail(my, (err && err.name) || 'blocked'));
       clearTimeout(watch); watch = setTimeout(() => { if (my === gen && audio.paused) fail(my, 'no_start'); }, 4000);
     }
+    /* an answer in parts [{text, token}] — the first plays as soon as it is ready (usually it came with the answer), each next
+       part when the previous one ends; audio is fetched only one part ahead, so Voice off never pays for the rest and the
+       server's spend counter sees one request at a time */
+    function playPart(my, i) {
+      const c = seq && seq.parts[i]; if (!c || my !== gen) return; const k = 'answer|' + c.text;
+      const nx = seq.parts[i + 1]; if (nx) L.fetch(nx.text, 'answer', nx.token);   // one part ahead: no wasted audio after Voice off
+      if (ready.has(k)) { start(ready.get(k), my); return; }
+      clearTimeout(watch); watch = setTimeout(() => { if (my === gen && (silent || audio.paused)) fail(my, 'slow'); }, 9000);
+      L.fetch(c.text, 'answer', c.token).then((r) => { if (my !== gen || !seq || seq.i !== i) return; if (r.error) return fail(my, r.error, 'failed'); start(r.url, my); });
+    }
+    L.speakParts = (parts) => {
+      const list = (parts || []).filter((p) => p && p.text); if (!list.length) return false;
+      if (list.length === 1) return L.speak(list[0].text, { kind: 'answer', token: list[0].token });
+      clearTimeout(watch); const my = ++gen;
+      if (!L.supported()) { set('blocked', 'unsupported'); return false; }
+      seq = { my, parts: list, i: 0 }; ev('requested', { kind: 'answer', parts: list.length }); report('requested');
+      try { if (!audio.paused) audio.pause(); } catch (e) {}
+      list.slice(0, 2).forEach((c) => { L.fetch(c.text, 'answer', c.token); });   // the first two now; each later part one ahead
+      if (!ready.has('answer|' + list[0].text)) { silent = true; try { audio.src = SILENT; const pp = audio.play(); if (pp && pp.catch) pp.catch(() => {}); } catch (e) {} }
+      playPart(my, 0); return true;
+    };
     /* called synchronously inside the opening tap (before any await) */
     L.speak = (text, opts) => {
-      const o = opts || {}, kind = o.kind === 'answer' ? 'answer' : 'greeting'; clearTimeout(watch); const my = ++gen;
+      const o = opts || {}, kind = o.kind === 'answer' ? 'answer' : 'greeting'; clearTimeout(watch); const my = ++gen; seq = null;
       if (!text) return false;
       if (!L.supported()) { set('blocked', 'unsupported'); return false; }
       ev('requested', { kind }); report('requested');
@@ -120,7 +145,7 @@
       L.fetch(text, kind, o.token).then((r) => { if (my !== gen) return; if (r.error) return fail(my, r.error, 'failed'); start(r.url, my); });
       return true;
     };
-    L.stop = () => { clearTimeout(watch); gen++; const was = !silent && !audio.paused; try { audio.pause(); } catch (e) {} if (was) { ev('stopped'); report('stopped'); } silent = false; set('idle'); };
+    L.stop = () => { clearTimeout(watch); gen++; seq = null; const was = !silent && !audio.paused; try { audio.pause(); } catch (e) {} if (was) { ev('stopped'); report('stopped'); } silent = false; set('idle'); };
     L.audio = audio;
     return L;
   })();
