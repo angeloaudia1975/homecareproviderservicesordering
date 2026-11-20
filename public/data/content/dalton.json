@@ -68378,6 +68378,130 @@
      "status": "needs_grouping"
     }
    }
+  },
+  "cliq-cx-500-50-psi-compressor": {
+   "manufacturer": "dalton",
+   "page_key": "cliq-cx-500-50-psi-compressor",
+   "name": "Cliq CX-500 50 PSI Compressor",
+   "status": "published",
+   "tagline": "Portable piston compressor designed for extended aerosol and humidification applications.",
+   "description": "The Cliq CX-500 is a 50 PSI piston compressor designed for extended aerosol and humidification applications. It is intended to deliver humidified air or medication to the airways, and is designed for use with heated nebulizers, compatible hand-held nebulizer systems, dual-action humidifiers/nebulizers, mist tents, high-output pneumatic nebulizers and deluxe nebulizers with an oxygen diluter. It includes a U-shaped DISS connector for a single nebulizer bottle and two extra air filters.",
+   "features": [
+    "Manufacturer-rated airflow of 15–17 L/min at 50 PSI",
+    "Piston motor designed for extended aerosol and humidification applications",
+    "Portable design that is durable and easy to clean",
+    "U-shaped DISS connector for a single nebulizer bottle included",
+    "Two extra air filters included",
+    "Airflow characteristics designed for lower operating temperatures and longer life"
+   ],
+   "specs": [
+    {
+     "label": "Model",
+     "value": "CX-500"
+    },
+    {
+     "label": "Pressure rating",
+     "value": "50 PSI"
+    },
+    {
+     "label": "Flow rate",
+     "value": "15–17 L/min at 50 PSI"
+    },
+    {
+     "label": "Motor type",
+     "value": "Piston"
+    },
+    {
+     "label": "Electrical requirements",
+     "value": "100–120 V AC, 60 Hz"
+    },
+    {
+     "label": "Power consumption",
+     "value": "1.6 A / 180 W (100–120 V)"
+    },
+    {
+     "label": "Sound level",
+     "value": "Less than 49.5 dB"
+    },
+    {
+     "label": "Dimensions",
+     "value": "14.17″ L × 7.48″ W × 12.60″ H"
+    },
+    {
+     "label": "Operating conditions",
+     "value": "5–40 °C, 0–93% RH"
+    },
+    {
+     "label": "Storage conditions",
+     "value": "−25 to 70 °C, 0–93% RH"
+    },
+    {
+     "label": "Electrical protection",
+     "value": "Class II, Type BF"
+    },
+    {
+     "label": "Includes",
+     "value": "CX-500 compressor; U-shaped DISS connector for a single nebulizer bottle; 2 extra air filters"
+    }
+   ],
+   "warranty": "2 years (as listed on Dalton's CX-500 specification sheet)",
+   "category": "Respiratory",
+   "subcategory": null,
+   "options": {},
+   "skus": [
+    {
+     "sku": "CX-500",
+     "name": "Cliq CX-500 50 PSI Compressor",
+     "size": "",
+     "status": "active",
+     "disabled": false,
+     "image": "",
+     "images": [],
+     "source": ""
+    }
+   ],
+   "sku_count": 1,
+   "source_url": null,
+   "documents": [],
+   "videos": [],
+   "sizing_note": null,
+   "aliases": [],
+   "field_provenance": {
+    "description": "HCPS-written 2026-11-20 strictly from Dalton Medical sell sheet \"Cliq CX-500 Sell sheet Dalton.pdf\" (owner-supplied, 2026-11-20) — neutral wording, every claim on the sheet",
+    "features": "Dalton Medical sell sheet \"Cliq CX-500 Sell sheet Dalton.pdf\" (owner-supplied, 2026-11-20) — neutral wording",
+    "specs": "Dalton Medical sell sheet \"Cliq CX-500 Sell sheet Dalton.pdf\" (owner-supplied, 2026-11-20) — stated values only. Withheld pending Dalton's confirmation: maximum pressure (the sheet lists 90 mmHg beside the 50 PSI rating) and weight (the sheet shows \"6.8/14.9\" under a pounds header). The 220–240 V rating is not shown (US dealer portal).",
+    "warranty": "Dalton Medical sell sheet \"Cliq CX-500 Sell sheet Dalton.pdf\" (owner-supplied, 2026-11-20)",
+    "hcpcs": "The sheet lists \"HCPCS Code: E0565*\". Not displayed: the exact-model HCPCS review has not been done; the sheet's code by itself does not certify coverage, classification or payment.",
+    "category": "Owner instruction 2026-11-20 11:21 (Dalton → Respiratory)",
+    "images": "Owner-supplied brochure photos (Dalton_Respiratory_Catalog_Update.zip, images/CX-500), stored by HCPS"
+   },
+   "image": "/assets/products/dalton/gallery/d8e8fbcd73d445b0a209.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/dalton/gallery/d8e8fbcd73d445b0a209.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied brochure photo (primary)"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/58032bbc0e9b319c5318.jpg",
+     "primary": false,
+     "caption": "Front",
+     "source": "owner-supplied brochure photo"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/aa4d4ce36442ce3e70dd.jpg",
+     "primary": false,
+     "caption": "Rear",
+     "source": "owner-supplied brochure photo"
+    },
+    {
+     "url": "/assets/products/dalton/gallery/9c90299782b4e87ff305.jpg",
+     "primary": false,
+     "caption": "With the U-shaped DISS connector installed",
+     "source": "owner-supplied brochure photo"
+    }
+   ]
   }
  }
 }
