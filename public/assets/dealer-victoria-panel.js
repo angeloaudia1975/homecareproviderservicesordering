@@ -58,9 +58,16 @@
       .ask input{flex:1;min-width:0;min-height:44px;font-size:16px;padding:0 12px;border:1px solid #b9cfe0;border-radius:10px}
       .go{all:unset;min-height:44px;min-width:56px;display:grid;place-items:center;border-radius:10px;background:#ef6325;color:#fff;font-weight:800;cursor:pointer}
       .go[disabled]{opacity:.5;cursor:default}
+      .mic{all:unset;box-sizing:border-box;min-height:44px;min-width:44px;display:grid;place-items:center;border-radius:10px;border:1px solid #b9cfe0;background:#fff;cursor:pointer;font-size:18px}
+      .mic[data-s="listening"]{background:#fee2e2;border-color:#ef4444;animation:mp 1s ease-in-out infinite}
+      .mic[data-s="processing"]{background:#fef3c7;border-color:#f59e0b}
+      .mic[disabled]{opacity:.5;cursor:default}
+      @keyframes mp{50%{box-shadow:0 0 0 6px rgba(239,68,68,.25)}}
+      @media (prefers-reduced-motion:reduce){.mic{animation:none!important}}
+      .mic-st{font-size:13px;font-weight:700;padding:6px 14px 0;color:#0f5c8f}
       .src{font-size:11.5px;color:#5b6b7a;margin-top:4px}
     </style>
-    <div class="p" role="dialog" aria-label="Victoria, your HCPS assistant" hidden>
+    <div class="p" role="dialog" aria-label="Victoria, your Home Care Provider Services assistant" hidden>
       <div class="hd"><div class="orb" data-s="idle" aria-hidden="true"><img src="/assets/victoria/orb-still.webp" alt="" decoding="async" onerror="this.remove()"></div><div><div class="t">Victoria</div><div class="s">Your personal assistant · TEST preview</div></div>
         <button class="ib v x0" type="button" title="Stop Victoria speaking for the rest of this opening">🔇 Voice off</button>
         <button class="ib x" type="button" aria-label="Close Victoria">×</button></div>
@@ -68,7 +75,7 @@
         <div class="bubble hello">…</div>
         <button class="retry" type="button" hidden>🔊 Tap to hear Victoria</button>
         <div class="m vnote" hidden></div>
-        <div class="warn ai-off" hidden>Victoria can't answer just now. Contact HCPS support below — they can help right away.</div>
+        <div class="warn ai-off" hidden>Victoria can't answer just now. Contact Home Care Provider Services support below — they can help right away.</div>
         <div class="chips">
           <button class="chip" type="button" data-q="Where is my Golden order?">Where is my Golden order?<small>Opens the order and its carrier tracking</small></button>
           <button class="chip" type="button" data-q="What does Medicare allow for this product?" data-needs="product">What does Medicare allow for this product?<small>Uses this product's state, ZIP, payer and date</small></button>
@@ -76,11 +83,12 @@
         </div>
         <div class="log"></div>
       </div>
-      <div class="sup"><b>Contact HCPS support</b><div class="row">
-        <button type="button" class="chat" ${S.chat === false ? 'hidden' : ''}>💬 Chat with HCPS</button>
+      <div class="sup"><b>Contact Home Care Provider Services support</b><div class="row">
+        <button type="button" class="chat" ${S.chat === false ? 'hidden' : ''}>💬 Chat with us</button>
         <a href="tel:${esc(S.phone_tel)}">📞 ${esc(S.phone)}</a>
         <a href="mailto:${esc(S.email)}">✉️ Email</a></div></div>
-      <div class="ask"><input aria-label="Ask Victoria a question" placeholder="Ask about products, prices, quotes, orders or how to use the portal…" maxlength="600"><button class="go" type="button">Ask</button></div>
+      <div class="mic-st" role="status" aria-live="polite" hidden></div>
+      <div class="ask"><button class="mic" type="button" aria-label="Speak your question" title="Speak your question" hidden>🎤</button><input aria-label="Ask Victoria a question" placeholder="Ask about products, prices, quotes, orders or how to use the portal…" maxlength="600"><button class="go" type="button">Ask</button></div>
     </div>`;
     document.body.appendChild(host);
     const $ = (s) => sh.querySelector(s); const P = $('.p'), orb = $('.orb'), log = $('.log'), inp = $('.ask input');
@@ -102,7 +110,7 @@
     function stopSpeaking() { SP.stop(); }
     function speak(text, kind, token, parts) { lastSpoken = { text: String(text || ''), kind: kind === 'answer' ? 'answer' : 'greeting', token: token || null, parts: parts || null }; if (!voiceOn || !text) return;
       if (parts && parts.length && SP.speakParts) SP.speakParts(parts); else SP.speak(text, { kind: lastSpoken.kind, token: lastSpoken.token }); }
-    function setAi(on) { aiOn = on; $('.ai-off').hidden = on; sh.querySelectorAll('.chip').forEach((c) => { c.disabled = !on; }); inp.disabled = !on; $('.go').disabled = !on; }
+    function setAi(on) { aiOn = on; $('.ai-off').hidden = on; sh.querySelectorAll('.chip').forEach((c) => { c.disabled = !on; }); inp.disabled = !on; $('.go').disabled = !on; const m = sh.querySelector('.mic'); if (m) m.disabled = !on; }
     function refreshChips() { const hasP = !!(DV.context && DV.context().product); sh.querySelectorAll('.chip[data-needs="product"]').forEach((c) => { c.hidden = !hasP; }); }
     function place() {
       const W = innerWidth, H = innerHeight, r = orbHost.getBoundingClientRect();
@@ -126,6 +134,28 @@
     $('.chat').onclick = () => { if (DV.chat && DV.chat()) return; location.href = 'tel:' + S.phone_tel; };
     sh.querySelectorAll('.chip').forEach((c) => { c.onclick = () => ask(c.getAttribute('data-q')); });
     $('.go').onclick = () => ask(inp.value); inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') ask(inp.value); });
+    /* MICROPHONE (owner 2026-11-20): the browser's own speech recognition turns the dealer's words into the question — clear
+       "Listening…" / "Processing…" feedback. The browser's own speech service turns the speech into words (Chrome sends the audio to
+       Google for that); HCPS stores nothing until the words are asked like a typed question. Never tell dealers the audio stays local.
+       Not offered where the browser has no speech recognition. Starting the microphone stops Victoria speaking. */
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const micB = $('.mic'), micSt = $('.mic-st');
+    let rec = null, heard = '';
+    const micState = (st, msg) => { micB.dataset.s = st || ''; micSt.hidden = !msg; micSt.textContent = msg || '';
+      micB.setAttribute('aria-label', st === 'listening' ? 'Stop listening' : 'Speak your question'); if (st === 'listening') orb.dataset.s = 'thinking'; else if (orb.dataset.s === 'thinking' && !busy) orb.dataset.s = 'idle'; };
+    if (SR) {
+      micB.hidden = false;
+      micB.onclick = () => {
+        if (rec) { try { rec.stop(); } catch (e) {} return; }
+        if (busy || !aiOn) return;
+        stopSpeaking(); heard = '';
+        try { const R = window.SpeechRecognition || window.webkitSpeechRecognition || SR; rec = new R(); } catch (e) { rec = null; micState('', 'The microphone isn\'t available in this browser — type your question instead.'); return; }
+        rec.lang = 'en-US'; rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = false;
+        rec.onresult = (e) => { let t = ''; for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript; heard = t.trim(); inp.value = heard; micState('listening', 'Listening… “' + heard.slice(-80) + '”'); };
+        rec.onerror = (e) => { const why = e && e.error; micState('', why === 'not-allowed' || why === 'service-not-allowed' ? 'Microphone access is blocked. Allow the microphone for this site in your browser settings, or type your question.' : why === 'no-speech' ? 'I didn\'t hear anything — tap the microphone and try again.' : 'The microphone stopped — tap it to try again, or type your question.'); };
+        rec.onend = () => { const q = heard; rec = null; if (q) { micState('processing', 'Processing…'); ask(q).finally(() => micState('', '')); } else if (micB.dataset.s === 'listening') micState('', ''); };
+        try { rec.start(); micState('listening', 'Listening… speak now (tap the microphone to stop)'); } catch (e) { rec = null; micState('', 'The microphone couldn\'t start — type your question instead.'); }
+      };
+    }
 
     function line(cls, text) { const d = document.createElement('div'); d.className = 'bubble ' + cls; d.textContent = text; log.appendChild(d); d.scrollIntoView({ block: 'nearest' }); return d; }
     function cardEl(html) { const d = document.createElement('div'); d.className = 'card'; d.innerHTML = html; log.appendChild(d); return d; }
@@ -147,6 +177,7 @@
       const cb = el.querySelector('.calc'); if (cb) cb.onclick = () => go(() => DV.openCalc());
       el.querySelector('.fee').onclick = () => go(() => DV.openFee && DV.openFee());
     }
+    function checked(ok, text) { const d = cardEl(`<div class="m"><b style="color:${ok ? '#166534' : '#9a3412'}">${ok ? '✓' : '✗'}</b> ${esc(text)}</div>`); d.dataset.check = ok ? 'ok' : 'fail'; d.scrollIntoView({ block: 'nearest' }); return d; }
     function quoteCard(list) {
       list = Array.isArray(list) ? list : [list];
       const el = cardEl(`<h5>Draft quote opened</h5><div class="m">${list.map((a) => `${esc(a.qty)} × ${esc(a.code)}${a.variant ? ' (' + esc(a.variant) + ')' : ''}`).join(', ')} — review it in Customer Quotes. Nothing has been saved or sent.</div><button class="btn gh" type="button">Show the draft</button>`);
@@ -164,7 +195,7 @@
         const o = el.querySelector('.op'); if (o) o.onclick = () => go(() => DV.openProduct && DV.openProduct(a));
         const q = el.querySelector('.qu'); if (q) q.onclick = () => { quoteCard([a]); go(() => DV.openQuote && DV.openQuote(a)); };
       });
-      cardEl('<div class="src">Prices: HCPS pricing for your account — the same check as checkout. The cart confirms every price before you order.</div>');
+      cardEl('<div class="src">Prices: Home Care Provider Services pricing for your account — the same check as checkout. The cart confirms every price before you order.</div>');
     }
     function guideCard(c) {
       (c.items || []).slice(0, 4).forEach((g) => {
@@ -186,7 +217,7 @@
       for (const q of r.suggestions.slice(0, 4)) { const b = document.createElement('button'); b.className = 'chip'; b.type = 'button'; b.textContent = q; b.onclick = () => ask(q); b.disabled = !aiOn; box.appendChild(b); }
     }
     /* an action that changes the page: on a phone the sheet steps aside so the page is visible */
-    function go(fn) { try { fn(); } catch (e) {} if (innerWidth <= 600) api.toggle(false); setTimeout(screenChips, 1500); }
+    function go(fn) { let p; try { p = fn(); } catch (e) {} if (innerWidth <= 600) api.toggle(false); Promise.resolve(p).catch(() => {}).then(() => setTimeout(screenChips, 300)); }
 
     async function ask(q) {
       q = String(q || '').trim(); if (!q || busy || !aiOn) return;
@@ -195,7 +226,7 @@
       busy = false; orb.dataset.s = 'idle'; $('.go').disabled = !aiOn;
       if (!r || r.ok !== true) {
         const over = r && /over_budget|over_daily/.test(String(r.error));
-        line('', over ? "Victoria has reached her limit for now. Contact HCPS support below — they can help right away." : "Victoria can't answer just now. Contact HCPS support below — they can help right away.");
+        line('', over ? "Victoria has reached her limit for now. Contact Home Care Provider Services support below — they can help right away." : "Victoria can't answer just now. Contact Home Care Provider Services support below — they can help right away.");
         if (over) setAi(false); return;
       }
       const a = line('', r.answer || 'Here is what I found.');
@@ -211,11 +242,18 @@
         else if (c.type === 'guide') guideCard(c);
         else if (c.type === 'storefront') storefrontCard(c);
       }
+      /* every page / draft action is CHECKED in the portal before Victoria reports it (owner 2026-11-20): a ✓ line only when
+         the page really opened (search results counted, the quote line on the draft, the brochure dialog open), else ✗ */
       const acts = r.actions || []; const quotes = acts.filter((x) => x.type === 'open_quote');
-      if (quotes.length) { quoteCard(quotes); go(async () => { for (const x of quotes) { if (DV.openQuote) await DV.openQuote(x); } }); }
+      if (quotes.length) go(async () => { const done = [], miss = []; for (const x of quotes) { let v = null; try { v = DV.openQuote ? await DV.openQuote(x) : null; } catch (e) { v = null; } ((v && v.ok) ? done : miss).push(x); }
+        if (done.length) quoteCard(done); if (miss.length) checked(false, 'Couldn\'t add ' + miss.map((x) => x.code).join(', ') + ' to a quote. Open the product and press Add to a quote.'); });
       for (const x of acts) {
-        if (x.type === 'open_brochure') { cardEl(`<h5>Print Brochure opened</h5><div class="m">${esc(x.code)} — choose the price your customer sees, then print, save or email it. Nothing has been sent.</div>`); go(() => DV.openBrochure && DV.openBrochure(x)); }
-        else if (x.type === 'open_view') go(() => DV.openView && DV.openView(x.view));
+        if (x.type === 'open_brochure') go(async () => { let v = null; try { v = DV.openBrochure ? await DV.openBrochure(x) : null; } catch (e) { v = null; }
+          checked(!!(v && v.ok), v && v.ok ? 'Print Brochure is open for ' + x.code + ' — choose the price your customer sees, then print, save or email it. Nothing has been sent.' : 'The Print Brochure dialog for ' + x.code + ' didn\'t open. Open the product and press Print Brochure.'); });
+        else if (x.type === 'open_view') go(async () => { let v = null; try { v = DV.openView ? await DV.openView(x.view) : null; } catch (e) { v = null; }
+          checked(!!(v && v.ok), v && v.ok ? 'Opened ' + (x.label || x.view) + '.' : (x.label || x.view) + ' didn\'t open. Use the menu at the top of the page.'); });
+        else if (x.type === 'open_search') go(async () => { let v = null; try { v = DV.openSearch ? await DV.openSearch(x.query) : null; } catch (e) { v = null; }
+          checked(!!(v && v.ok), v && v.ok ? 'Shop Products: ' + v.count + ' result' + (v.count === 1 ? '' : 's') + ' for “' + x.query + '”.' : 'The search for “' + x.query + '” didn\'t open. Use the search bar at the top of the page.'); });
       }
       a.scrollIntoView({ block: 'nearest' });
       setTimeout(screenChips, 1200);   // the screen may have changed (a product or tool opened): its suggestions follow

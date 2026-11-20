@@ -2466,7 +2466,7 @@ async function mergeCatalogEdits(slug, prods){
          other unlined item, and a saved cart silently dropped them on the next sign-in. */
       const row={manufacturer:slug,code:c.code,name:c.name,category:c.category||"",base_price:c.base_price,msrp:c.msrp,
         map:(c.map==null||c.map==="")?null:c.map,
-        image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",...(c.uom?{uom:String(c.uom)}:{}),_custom:true};
+        image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",_custom:true};
       for(const k of OV_KEYS) if(k in pa && pa[k]!=null) row[k]=pa[k];
       noMsrpRule(row, pa);
       prods.push(row); });
@@ -10554,7 +10554,7 @@ async function dvProbe(){
     greeting:j.greeting||(j.first_name?"Hi, "+j.first_name+". How can I help you today?":"Hello! How can I help you today?"),
     greeting_again:j.greeting_again||(j.first_name?"Hi, "+j.first_name+". How can I help you today?":"Hello! How can I help you today?"),
     api:(b)=>api(DV_ENDPOINT,b),
-    context:dvContext, openOrder:dvOpenOrder, openQuote:dvOpenQuote, openBrochure:dvOpenBrochure, openView:dvOpenView, openProduct:(a)=>dvOpenProduct(a.manufacturer,a.code), showQuotes:()=>{ if(typeof showP360==="function") showP360("quotes"); },
+    context:dvContext, openOrder:dvOpenOrder, openQuote:dvOpenQuote, openBrochure:dvOpenBrochure, openView:dvOpenView, openSearch:dvOpenSearch, openProduct:(a)=>dvOpenProduct(a.manufacturer,a.code), showQuotes:()=>{ if(typeof showP360==="function") showP360("quotes"); },
     hasCalc:()=>!!document.querySelector("#content .pd #pdReimb .pd-reimb-calc"),
     openCalc:()=>{ const a=document.querySelector("#content .pd #pdReimb .pd-reimb-calc"); if(a) a.click(); },
     openFee:()=>{ const a=document.querySelector("#content .pd #pdReimb .pd-reimb-go:not(.pd-reimb-calc)"); if(a) a.click(); else { const r=document.getElementById("pdReimb"); if(r) r.scrollIntoView({block:"start"}); } },
@@ -10563,7 +10563,7 @@ async function dvProbe(){
   document.body.classList.add("dv-on");
   try{ const z=window.$zoho&&window.$zoho.salesiq; const hide=()=>{ try{ window.$zoho.salesiq.floatbutton.visible("hide"); }catch(e){} };
     if(z&&z.floatbutton) hide(); else if(z){ const prev=z.ready; z.ready=function(){ if(typeof prev==="function"){try{prev();}catch(e){}} hide(); }; } }catch(e){}
-  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=8"; s.defer=true; document.head.appendChild(s);
+  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=9"; s.defer=true; document.head.appendChild(s);
 }
 /* what is on screen: the product page open (its own selected SKU / variant) and its reimbursement panel's state, ZIP,
    payer plan and date — exactly what the panel shows, read from the panel itself */
@@ -10590,21 +10590,38 @@ async function dvOpenProduct(slug,code){
   if(typeof openProductDetail==="function") await openProductDetail(code);
 }
 async function dvOpenQuote(a){
+  const has=()=>(typeof QUOTE!=="undefined"&&Array.isArray(QUOTE))?QUOTE.some(k=>String(k).split("|")[1]===a.code):false;
+  const before=has();
   const pd=document.querySelector("#content .pd");
   if(!pd||pd.getAttribute("data-pd-code")!==a.code){ await dvOpenProduct(a.manufacturer,a.code); }
   const btn=document.querySelector("#content .pd [data-gquote], #content .pd [data-gb-quote], #content .pd [onclick^='pdAddQuote']");
   if(btn&&btn.getAttribute("aria-disabled")!=="true") btn.click(); else if(typeof pdAddQuote==="function") pdAddQuote(a.code);
   const q=Math.max(1,Math.min(99,Number(a.qty)||1));
   if(q>1&&window.P360Quote&&window.P360Quote.setQty) window.P360Quote.setQty(a.code,q);
+  /* checked, not assumed (owner 2026-11-20): the line is on the draft quote */
+  /* review: a line that was already there is reported as already on the quote, never as newly added */
+  const after=has();
+  return {ok:after, already:before&&after, what:a.code};
 }
 /* the product's own Print Brochure dialog — the dealer chooses the price and prints / saves / emails it */
-async function dvOpenBrochure(a){ await dvOpenProduct(a.manufacturer,a.code); if(typeof openBrochure==="function") openBrochure(a.code); }
+async function dvOpenBrochure(a){ if(typeof closeBrochure==="function") closeBrochure(); await dvOpenProduct(a.manufacturer,a.code); if(typeof openBrochure==="function") openBrochure(a.code);
+  /* review: the dialog must be THIS product's brochure, not one left open for another item */
+  return {ok:!!document.getElementById("brModal")&&typeof _brCode!=="undefined"&&_brCode===a.code, what:a.code}; }
+/* Shop Products search across every line on the account (Golden included) — the portal's own search; returns what it found */
+async function dvOpenSearch(q){
+  if(typeof showShopSearch!=="function") return {ok:false};
+  await showShopSearch(q);
+  for(let i=0;i<60;i++){ const h=document.querySelector(".sl-search .sl-shead h2"); if(h&&state.active===SHOPALL&&SL_Q===String(q||"").trim().slice(0,80)){ const n=parseInt(h.textContent,10); return {ok:true,count:isFinite(n)?n:0,query:SL_Q}; } await new Promise(r=>setTimeout(r,150)); }
+  return {ok:false,query:q};
+}
 /* one of the portal's screens (the same buttons as the top navigation) */
-function dvOpenView(v){
+async function dvOpenView(v){
   const nav={dash:()=>showP360("dash"),shop:()=>showShop(),orders:()=>showP360("orders"),reports:()=>showP360("reports"),quotes:()=>(typeof showQuotesHub==="function"?showQuotesHub():showP360("quotes")),
     showroom:()=>(typeof showShowroomStudio==="function"?showShowroomStudio():showP360("showroom")),storefront:()=>showP360("storefront"),ads:()=>showP360("ads"),account:()=>showP360("account"),
     resources:()=>showP360("resources"),help:()=>showP360("help")}[v];
-  if(nav) nav();
+  if(!nav) return {ok:false};
+  await nav(); await new Promise(r=>setTimeout(r,60)); const want=v==="shop"?null:"p360:"+v;
+  return {ok: want? state.active===want : (state.active!==""&&String(state.active||"").indexOf("p360:")!==0), view:v};
 }
 Object.assign(window,{dvProbe});
 /* THE HUB'S BUTTONS NEED THEIR FUNCTIONS ON window (2026-10-31). Everything above lives inside this IIFE, but the views
@@ -11307,7 +11324,11 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     /* Each word (or a known multi-word phrase) becomes a set of alternatives; every set must match. */
     const sets=[]; let rest=' '+n+' ';
     GS_SYN.forEach(g=>{ g.forEach(ph=>{ if(ph.indexOf(' ')>0 && rest.indexOf(' '+ph+' ')>=0){ rest=rest.replace(' '+ph+' ',' '); sets.push(g.slice()); } }); });
-    rest.trim().split(' ').filter(Boolean).forEach(w=>{ const alt=new Set([w]); GS_SYN.forEach(g=>{ if(g.includes(w)) g.forEach(x=>alt.add(x)); }); sets.push([...alt]); });
+    /* a plural finds the singular too ("wheelchairs" → "wheelchair", "batteries" → "battery", "boxes" → "box") — owner 2026-11-20 */
+    /* review: never on item numbers (a digit) or short words; 5+ letters ("ties", "plus", "lens", "this" stay as typed) */
+    const SING_KEEP=new Set(['plus','lens','this','bus','gas','yes','less','bias','atlas','canvas','chassis','series','species','axis','basis']);
+    const sing=w=>/[0-9]/.test(w)||SING_KEEP.has(w)?[]:w.length>=6&&/ies$/.test(w)?[w.slice(0,-3)+'y']:w.length>=5&&/(ss|x|ch|sh)es$/.test(w)?[w.slice(0,-2)]:w.length>=5&&/s$/.test(w)&&!/(ss|us|is)$/.test(w)?[w.slice(0,-1)]:[];
+    rest.trim().split(' ').filter(Boolean).forEach(w=>{ const alt=new Set([w,...sing(w)]); GS_SYN.forEach(g=>{ if(g.includes(w)||sing(w).some(v=>g.includes(v))) g.forEach(x=>alt.add(x)); }); sets.push([...alt]); });
     return sets.length?sets:[words];
   }
   function gsIndex(x){ const p=x.p; return gsNorm([p.name,groupDisplayName(p),p.code,p.category,p.subcategory,p.brand,x.mname].filter(Boolean).join(' ')); }

@@ -1323,7 +1323,22 @@
       ${['draft', 'awaiting_approval', 'approved', 'paused', 'failed'].includes(x.status) ? `<button type="button" class="btn gh acsm" data-pa="post_cancel" data-pid="${e(x.id)}" data-pv="${e(x.version)}">Cancel</button>` : ''}</div></div>`).join('')}`;
     return h;
   }
-  async function loadSocial() { const r = await A.api({ action: 'social_status', location_id: S.loc }); S.social = r && r.ok ? r : { platforms: [], connections: [], posts: [] }; const el = $('#adbPub'); if (el) { el.innerHTML = '<h3>Schedule &amp; publish</h3>' + pubHtml(); bindPub(); } }
+  /* The platform's sign-in returns here with ?social=<result>&platform=<p>: say what happened once, then drop it from the address
+     (owner 2026-11-20 — "refreshed" had no message). Only fixed words are shown; the parameter is never written into the page. */
+  const SOCIAL_RET = { choose: ['Signed in. Choose the account to post to below.', 'ok'], refreshed: ['Signed in again — that account\'s access was refreshed. Nothing else changed.', 'ok'],
+    none: ['Signed in, but no account you manage was found there. Check that you are an admin of the Page or company page, then try again.', 'err'],
+    cancelled: ['Sign-in was cancelled — nothing was connected.', 'err'], refused: ['That sign-in link expired or was opened in another browser. Start the connection again from this screen.', 'err'],
+    unavailable: ['Connecting this platform isn\'t available yet.', 'err'], failed: ['The connection couldn\'t be completed. Please try again.', 'err'] };
+  function socialReturnNote() {
+    let q; try { q = new URLSearchParams(location.search); } catch (e) { return null; }
+    const k = q.get('social'); if (!k) return null;
+    try { q.delete('social'); q.delete('platform'); q.delete('n'); const rest = q.toString(); history.replaceState(history.state, '', location.pathname + (rest ? '?' + rest : '') + location.hash); } catch (e) {}
+    const m = (Object.prototype.hasOwnProperty.call(SOCIAL_RET, k) && SOCIAL_RET[k]) || ['The sign-in returned an unexpected result. Please try again.', 'err'];
+    return [m[0], m[1]];
+  }
+  let _socialNote = socialReturnNote();
+  async function loadSocial() { const r = await A.api({ action: 'social_status', location_id: S.loc }); S.social = r && r.ok ? r : { platforms: [], connections: [], posts: [] };
+    if (_socialNote) { const n = _socialNote; _socialNote = null; setTimeout(() => say(n[0], n[1]), 0); } const el = $('#adbPub'); if (el) { el.innerHTML = '<h3>Schedule &amp; publish</h3>' + pubHtml(); bindPub(); } }
   function bindPub() {
     const host = $('#adbPub'); if (!host) return;
     host.querySelectorAll('[data-conn]').forEach((b) => { b.onclick = () => {
