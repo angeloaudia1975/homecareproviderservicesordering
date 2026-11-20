@@ -10,6 +10,11 @@
      note beside it, its published allowance may be opened under REF_ALLOW, NO earnings estimate; pending — "Coding verification
      pending" with the missing evidence, no code, no allowance, no estimate; none — NO_CODE. */
   const REF_NOTE = 'HCPCS reference only — model verification pending.';
+  /* Fixed disclaimer (owner 2026-11-20 10:37): wherever the Dealer Portal presents HCPCS, coding, billing or reimbursement
+     information — product reimbursement panels, the fee-schedule lookup, estimates, the printed billing reference and
+     Victoria's answers. Never shortened or reworded; product-specific notices stay as they are. */
+  const DISCLAIMER = 'HCPS is not a billing specialist and is not qualified to provide coding or billing advice. This information is for reference only. The biller is responsible for confirming that the exact product supplied meets the applicable HCPCS code requirements and for verifying the payer’s billing and coverage rules before submitting a claim.';
+  const discHtml = (cls) => `<div class="${cls}" role="note" data-billing-disclaimer>${esc(DISCLAIMER)}</div>`;
   const REF_ALLOW = 'Published allowance for this code. This product\'s classification is pending verification.';
   const PENDING = 'Coding verification pending';
   /* Medicare first: Original Medicare fee-for-service is the default payer everywhere, unless the dealer has chosen a plan in
@@ -89,6 +94,7 @@
       ${CFG.ret ? `<button type="button" class="btn gh rb-ret" data-act="ret">← Back to ${esc(CFG.ret.name || 'the product')}</button>` : ''}
       <div class="ph"><div><div class="rb-crumb"><a data-act="resources">Resources &amp; Support</a> / Reimbursement lookup</div><h1>Reimbursement lookup</h1>
         <div class="sub">Provider billing reference — Medicare and Medicaid fee schedule amounts by HCPCS code, state, plan and date of service.</div></div></div>
+      ${discHtml('rb-disc')}
       ${prod ? `<div class="card rb-prod"><div><b>${esc(prod.name || '')}</b>${prod.code ? ' · Item # ' + esc(prod.code) : ''}</div>
         ${prod.pending ? `<div class="rb-miss" role="status">${esc(PENDING)}</div>${prod.why ? `<div class="rb-small">${esc(String(prod.why).replace(/^Coding verification pending\.\s*/, ''))}</div>` : ''}`
           : prod.noCode ? `<div class="rb-miss" role="status">${esc(NO_CODE)}</div>${prod.why ? `<div class="rb-small">${esc(prod.why)}</div>` : ''}`
@@ -188,9 +194,9 @@
       a{color:#0b4f8a}a[href]:after{content:" (" attr(href) ")";font-size:9.5px;color:#555;word-break:break-all}dl{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin:8px 0}dt{font-weight:700;font-size:10.5px;color:#555}dd{margin:0}
       .rb-miss{font-weight:700;color:#9b1c1c}.rb-warn{font-weight:700;color:#8a5a00}.rb-small{font-size:11px;color:#444}.rb-amt{font-weight:700}section{page-break-inside:avoid}
       @page{size:letter;margin:.6in}</style></head><body>
-      <h1>Billing reference — HCPCS ${esc(r.context.code)}</h1><div class="note">Internal billing reference for provider staff · printed ${esc(longDate(META && META.today))} · HCPS 360 Dealer Portal. Not a claim, not an eligibility check and not for patients.</div>
+      <h1>Billing reference — HCPCS ${esc(r.context.code)}</h1><div class="note">Internal billing reference for provider staff · printed ${esc(longDate(META && META.today))} · HCPS 360 Dealer Portal. Not a claim, not an eligibility check and not for patients.</div><p class="disc"><b>${esc(DISCLAIMER)}</b></p>
       ${prod}${resultHtml(r).replace(/class="card rb-sec"/g, '')}
-      <p class="note">${esc(r.disclaimer)}</p></body></html>`;
+      <p class="note">${esc(r.disclaimer)}</p><p class="disc"><b>${esc(DISCLAIMER)}</b></p></body></html>`;
     const f = document.createElement('iframe'); f.setAttribute('aria-hidden', 'true'); f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
     document.body.appendChild(f);
     const d = f.contentWindow.document; d.open(); d.write(html); d.close();
@@ -223,7 +229,7 @@
     const estMode = (mp.informational || mp.qualified || mp.pending || !mp.codes.length) ? 'off' : mp.reference ? (st.explore ? 'explore' : 'offer') : 'on';
     if (estMode === 'off' || estMode === 'offer') { delete full.cost; delete full.cost_note; }   // no estimate: no cost is carried
     if (!mp.codes.length) {
-      el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div>${mp.pending
+      el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div>${discHtml('pd-reimb-disc')}${mp.pending
         ? `<div class="pd-reimb-miss">${esc(PENDING)}</div>${mp.why ? `<div class="pd-reimb-s">${esc(String(mp.why).replace(/^Coding verification pending\.\s*/, ''))}</div>` : ''}`
         : `<div class="pd-reimb-miss">${esc(NO_CODE)}</div>${mp.why ? `<div class="pd-reimb-s">${esc(mp.why)}</div>` : ''}`}<a class="pd-reimb-go" role="button" tabindex="0">Open reimbursement lookup →</a></div>`;
       bindGo(el, () => cfg.open({ product: full })); return;
@@ -296,7 +302,7 @@
     const stOpts = (m.states || []).map((s) => `<option value="${esc(s.id)}"${s.id === st.state ? ' selected' : ''}>${esc(s.name)}</option>`).join('');
     const zipHint = st.zip ? (st.zsrc === 'branch' ? 'Branch estimate — your account ZIP. Enter the patient\'s ZIP to confirm.' : 'Patient residence ZIP') : ZIP_MSG;
     const y = st._y != null ? st._y : window.scrollY, fk = st._fk || null; st._y = null; st._fk = null;
-    el.innerHTML = `<div class="pd-reimb pd-reimb-full"><div class="pd-reimb-h">Provider reimbursement</div>
+    el.innerHTML = `<div class="pd-reimb pd-reimb-full"><div class="pd-reimb-h">Provider reimbursement</div>${discHtml('pd-reimb-disc')}
       ${mp.codes.every((c) => c.component !== 'mechanism') && mp.why ? `<div class="pd-reimb-s">${esc(mp.reference ? String(mp.why).replace(REF_NOTE, '').trim() : mp.why)}</div>` : ''}
       <div class="pd-reimb-ctl">
         <label>State<select data-k="state"><option value="">Choose…</option>${stOpts}</select></label>
@@ -395,7 +401,7 @@
       <div><dt>Delivery / setup entered</dt><dd>${money(e.setup)}</dd></div>
       ${rental ? `<div><dt>Service cost entered</dt><dd>${money(e.service)} × ${esc(String(e.service_months))} month(s) = ${money(e.service * e.service_months)}</dd></div>` : ''}</dl>`;
     return `<section class="card rb-sec rb-calc" data-dealer-only><h3>Insurance earnings estimate — dealer only</h3>${S.product && S.product.reference ? `<div class="rb-warn">Estimate assumes this product qualifies under ${esc(r.context.code)}.</div>` : ''}
-      <div class="rb-small">Private to your signed-in account: never shown on storefronts, customer quotes, brochures, customer emails or the printed billing reference.</div>${packNote}
+      <div class="rb-small">Private to your signed-in account: never shown on storefronts, customer quotes, brochures, customer emails or the printed billing reference.</div>${discHtml('rb-disc')}${packNote}
       <div class="rb-grid">
         <label>Allowance<select data-c="idx">${items.map((i, k) => `<option value="${k}"${k === c.idx ? ' selected' : ''}>${esc(money(i.amount) + ' · ' + i.basis + (i.modifier ? ' · ' + i.modifier : ''))}</option>`).join('')}</select></label>
         <label>Your acquisition cost<input data-c="cost" inputmode="decimal" value="${esc(c.cost)}" placeholder="0.00"></label>
@@ -425,6 +431,7 @@
     .rb-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 14px}.rb-grid label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted,#556)}
     .rb-grid input,.rb-grid select{font-size:16px;min-height:44px;border:1px solid var(--line,#d5dbe3);border-radius:8px;padding:6px 10px;min-width:0;width:100%;box-sizing:border-box;background:#fff;color:inherit}
     .rb-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.rb-acts .btn{min-height:44px}.rb-err{margin-top:10px;color:#9b1c1c;font-weight:700}
+    .rb-disc{font-size:12.5px;line-height:1.45;color:#5b3a00;background:#fff8eb;border:1px solid #f4d9a8;border-radius:10px;padding:8px 10px;margin:10px 0}
     .rb-small{font-size:12px;color:var(--muted,#556);margin-top:6px}.rb-foot{margin:14px 0 24px}
     .rb-miss{font-weight:800;color:#9b1c1c;margin:4px 0}.rb-warn{font-weight:700;color:#7a4b00;background:#fff7e6;border:1px solid #f1d39b;border-radius:8px;padding:8px 10px;margin-bottom:8px}
     .rb-ctx{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 14px;margin:12px 0}.rb-ctx dt{font-size:11px;font-weight:800;color:var(--muted,#667);text-transform:uppercase;letter-spacing:.3px}.rb-ctx dd{margin:2px 0 0;font-size:13.5px}
@@ -440,5 +447,5 @@
   /* what this product card shows right now — Dealer Victoria asks with exactly these (owner 2026-11-19 22:07) */
   function cardState(el) { const st = el && CARD.get(el); if (!st) return null;
     return { product: st.prod ? Object.assign({}, st.prod) : null, state: st.state || '', zip: st.zip || '', zip_source: st.zsrc || '', dos: st.dos || '', medicaid_plan: st.mplan || '', medicaid_location: st.mploc || '' }; }
-  window.HCPSReimb = { mount, card, estimate, stateOf: cardState, NO_CODE, NO_RATE, REF_NOTE, REF_ALLOW, PENDING };
+  window.HCPSReimb = { mount, card, estimate, stateOf: cardState, NO_CODE, NO_RATE, REF_NOTE, REF_ALLOW, PENDING, DISCLAIMER };
 })();

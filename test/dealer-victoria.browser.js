@@ -32,13 +32,14 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
   try {
     for (const [w, h, label] of [[1280, 800, 'desktop'], [768, 1024, 'tablet'], [390, 844, 'phone']]) {
       const { ctx, page } = await open(b, w, h, { prices: { dalton: 109 } });
-      let first = true, aiOn = true, asks = [], panelReq = 0, chatOpened = 0, spoken = [];
+      let first = true, aiOn = true, asks = [], hellos = 0, panelReq = 0, chatOpened = 0, spoken = [];
       await page.route('**/dealer-victoria-api', async (r) => { const x = JSON.parse(r.request().postData() || '{}'); let body;
-        if (x.action === 'status') body = { ok: true, enabled: true, preview: true, ai: aiOn ? { available: true } : { available: false, reason: 'over_budget' }, support: { chat: true, phone: '(888) 626-3140', phone_tel: '+18886263140', office: '937-626-5141', office_tel: '+19376265141', email: 'info@homecareproviderservices.us' } };
-        else if (x.action === 'hello') { body = { ok: true, enabled: true, first, greeting: V._test.greeting('Ann', first), model_call: false }; first = false; }
+        if (x.action === 'status') body = { ok: true, enabled: true, preview: true, first_name: 'Ann', greeting: V._test.greeting('Ann', first), greeting_again: V._test.greeting('Ann', false), ai: aiOn ? { available: true } : { available: false, reason: 'over_budget' }, support: { chat: true, phone: '(888) 626-3140', phone_tel: '+18886263140', office: '937-626-5141', office_tel: '+19376265141', email: 'info@homecareproviderservices.us' } };
+        else if (x.action === 'hello') { hellos++; body = { ok: true, enabled: true, first, greeting: V._test.greeting('Ann', first), model_call: false }; first = false; }
         else if (x.action === 'ask') { asks.push(x); const ctx2 = { dealer_id: 'hq', bearer: 'Bearer tok', page: x.page || {} }; const q = String(x.question);
           const tool = /order/i.test(q) ? await V._test.toolGoldenOrder(ctx2, {}) : /medicare|allow/i.test(q) ? await V._test.toolReimb(ctx2) : /quote/i.test(q) ? await V._test.toolQuote(ctx2, { qty: 2 }) : { result: {} };
-          body = { ok: true, answer: 'Here is what I found.', cards: tool.card ? [tool.card] : [], actions: tool.action ? [tool.action] : [], usage: { model: 'claude-haiku-5-5', usd: 0.0004, ms: 1500 } }; }
+          const billing = tool.card && tool.card.type === 'reimbursement';
+          body = { ok: true, answer: 'Here is what I found.' + (billing ? '\n\n' + V._test.BILLING_DISCLAIMER : ''), disclaimer: billing ? V._test.BILLING_DISCLAIMER : null, cards: tool.card ? [tool.card] : [], actions: tool.action ? [tool.action] : [], usage: { model: 'claude-haiku-5-5', usd: 0.0004, ms: 1500 } }; }
         return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) }); });
       await page.route('**/assets/dealer-victoria-panel.js*', (r) => { panelReq++; return r.fallback(); });
       await page.route('**/dealer-reports-api', (r) => { const x = JSON.parse(r.request().postData() || '{}'); return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(x.action === 'golden_orders' ? GOLDEN : { ok: false }) }); });
@@ -49,15 +50,22 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       await page.evaluate(() => { const z = document.createElement('div'); z.id = 'zsiq_float'; z.style.cssText = 'position:fixed;right:10px;bottom:10px;width:55px;height:55px;border-radius:50%;background:#1681c2;z-index:2147483000'; document.body.appendChild(z);
         window.__chat = 0; window.$zoho = window.$zoho || {}; window.$zoho.salesiq = Object.assign(window.$zoho.salesiq || {}, { floatbutton: { visible: () => {} }, floatwindow: { visible: (v) => { if (v === 'show') window.__chat++; } } });
         window.__spoken = []; window.__speakState = [];
-        Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { cancel() {}, speak(u) { window.__spoken.push(u.text); if (u.onstart) u.onstart();
-          const h = document.getElementById('dvPanelHost'); window.__speakState.push(h ? h.shadowRoot.querySelector('.orb').dataset.s : null); setTimeout(() => u.onend && u.onend(), 50); } } });
+        window.__blockAudio = false; window.__cancels = 0;
+        Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speaking: false, pending: false, paused: false, resume() {},
+          cancel() { window.__cancels++; this.speaking = false; },
+          speak(u) { window.__spoken.push(u.text); if (window.__blockAudio) return;                     // a browser that blocks audio: nothing starts
+            const ss = this; ss.speaking = true; setTimeout(() => { if (u.onstart) u.onstart();
+              const o = document.getElementById('dvOrbHost'); window.__speakState.push(o ? o.shadowRoot.querySelector('button').dataset.s : null);
+              setTimeout(() => { ss.speaking = false; u.onend && u.onend(); }, 50); }, 5); } } });
         Object.defineProperty(window, 'SpeechSynthesisUtterance', { configurable: true, value: function (tx) { this.text = tx; } });
         window.__PREVIEW__ = null; window.needsAccess = () => false; });
       const zoneBefore = await page.evaluate(() => getComputedStyle(document.getElementById('zsiq_float')).display);
       await page.evaluate(() => window.dvProbe()); await page.waitForFunction(() => document.getElementById('dvOrbHost'), null, { timeout: 15000 }); await page.waitForTimeout(300);
       const closed = await page.evaluate(() => ({ chat: getComputedStyle(document.getElementById('zsiq_float')).display, orbJs: [...document.scripts].some((s) => /dealer-victoria\.js/.test(s.src)), panelLoaded: !!window.DealerVictoriaPanel, on: document.body.classList.contains('dv-on') }));
-      await t(`${label}: the orb replaces the bottom-right chat button; the closed orb loads nothing else`, () => {
-        ok(zoneBefore !== 'none' && closed.chat === 'none' && closed.on && closed.orbJs && !closed.panelLoaded && panelReq === 0, JSON.stringify(closed));
+      await t(`${label}: the globe replaces the bottom-right chat button; closed, it records nothing and calls no AI`, () => {
+        /* the panel script is fetched once the page is usable (so the first opening shows and speaks the welcome at once);
+           nothing else: no greeting recorded, no AI call */
+        ok(zoneBefore !== 'none' && closed.chat === 'none' && closed.on && closed.orbJs && hellos === 0 && asks.length === 0, JSON.stringify(closed));
       });
       /* a product page with its buy controls, and a Golden cart in progress */
       await page.evaluate(async () => { await selectManufacturer('dalton'); }); await page.waitForFunction(() => document.querySelector('#cv2Grid .card'), null, { timeout: 20000 });
@@ -99,9 +107,11 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
           search: (() => { const e = document.querySelector('.hsearch'); if (!e) return null; const q = e.getBoundingClientRect(); if (!q.width) return null; const inp = e.querySelector('input'); const y = (q.top + q.bottom) / 2, x = (q.left + q.right) / 2; const hit = document.elementFromPoint(x, y);
             return { left: q.left, top: q.top, right: q.right, bottom: q.bottom, width: q.width, tappable: !!(hit && e.contains(hit)), visible: q.top >= 0 && q.bottom <= innerHeight }; })(),
           expanded: document.getElementById('dvOrbHost').shadowRoot.querySelector('button').getAttribute('aria-expanded') }; });
-      await t(`${label}: first open — "Hello, Ann. I’m Victoria, …"; no voice until turned on; support is in the panel`, () => {
+      const v1 = await page.evaluate(() => { const b = document.getElementById('dvPanelHost').shadowRoot.querySelector('.v'); return { text: b.textContent.trim(), pressed: b.getAttribute('aria-pressed'), spoken: window.__spoken.slice() }; });
+      await t(`${label}: first open — "Hello, Ann. I’m Victoria, …" shown AND spoken from the opening tap (no AI call); the button says Voice off; support is in the panel`, () => {
         ok(g1 === 'Hello, Ann. I’m Victoria, your personal assistant in the 360 Dealer Portal. How can I help you today?', g1);
-        ok(open1.spoke === 0, 'spoken without voice on');
+        ok(v1.spoken.length === 1 && v1.spoken[0] === g1, 'spoken: ' + JSON.stringify(v1.spoken));
+        ok(/Voice off/.test(v1.text) && v1.pressed === 'true', JSON.stringify(v1)); ok(asks.length === 0, 'no AI call to greet');
         ok(open1.support.some((x) => /Chat with HCPS/.test(x)) && open1.support.some((x) => /626-3140/.test(x)) && open1.support.some((x) => /Email/.test(x)), JSON.stringify(open1.support));
         ok(open1.close[0] >= 44 && open1.close[1] >= 44, 'close ' + open1.close);
       });
@@ -121,6 +131,8 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       const kb1 = await page.evaluate(() => { const o = document.getElementById('dvOrbHost'); return { hidden: document.getElementById('dvPanelHost').shadowRoot.querySelector('.p').hidden, onOrb: document.activeElement === o && o.shadowRoot.activeElement === o.shadowRoot.querySelector('button'), exp: o.shadowRoot.querySelector('button').getAttribute('aria-expanded') }; });
       await page.keyboard.press('Enter'); await page.waitForTimeout(250);
       const kb2 = await page.evaluate(() => { const h = document.getElementById('dvPanelHost'); return { open: !h.shadowRoot.querySelector('.p').hidden, inPanel: document.activeElement === h }; });
+      const kbSpoken = await page.evaluate(() => window.__spoken.slice(-1)[0]);
+      await t(`${label}: reopening with the keyboard speaks the welcome again ("Hi, Ann. …")`, () => ok(kbSpoken === 'Hi, Ann. How can I help you today?', kbSpoken));
       await t(`${label}: keyboard — Esc closes the panel and returns focus to the orb; Enter on the orb reopens it with focus inside`, () => ok(kb1.hidden && kb1.onOrb && kb1.exp === 'false' && kb2.open && kb2.inPanel, JSON.stringify([kb1, kb2])));
       const cOpen = await checkCovered(true);
       report[label] = { viewport: `${w}×${h}`, orb: pos.orb, cart: pos.cart, panel: open1.panel, covered_when_closed: cClosed, covered_when_open: cOpen };
@@ -128,8 +140,22 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       /* chat with HCPS without AI */
       await page.evaluate(() => document.getElementById('dvPanelHost').shadowRoot.querySelector('.sup .chat').click());
       await t(`${label}: "Chat with HCPS" opens the HCPS chat window from the panel`, async () => ok((await page.evaluate(() => window.__chat)) === 1));
-      /* voice on: the greeting is not repeated, answers are spoken, the orb animates while speaking */
-      await page.evaluate(() => document.getElementById('dvPanelHost').shadowRoot.querySelector('.v').click());
+      /* open → hear greeting → Voice off → close → reopen → hear greeting again (owner 2026-11-20 10:37) */
+      const seq = await page.evaluate(async () => {
+        const o = () => document.getElementById('dvOrbHost').shadowRoot.querySelector('button'); const s = document.getElementById('dvPanelHost').shadowRoot; const W = (ms) => new Promise((r) => setTimeout(r, ms));
+        const n0 = window.__spoken.length; const c0 = window.__cancels;
+        s.querySelector('.v').click(); const off = { text: s.querySelector('.v').textContent.trim(), pressed: s.querySelector('.v').getAttribute('aria-pressed'), cancelled: window.__cancels > c0 || !window.speechSynthesis.speaking };
+        s.querySelector('.x').click(); await W(50); const closed = s.querySelector('.p').hidden;
+        o().click(); await W(120);
+        return { off, closed, reopened: !s.querySelector('.p').hidden, spokenAgain: window.__spoken.slice(n0), label: s.querySelector('.v').textContent.trim(), typing: !s.querySelector('.ask input').disabled }; });
+      await t(`${label}: Voice off stops speech for this opening; closing and reopening turns voice back on and speaks the welcome again; typing stays available`, () => {
+        ok(/Voice on/.test(seq.off.text) && seq.off.pressed === 'false' && seq.off.cancelled, 'voice off: ' + JSON.stringify(seq.off));
+        ok(seq.closed && seq.reopened && seq.spokenAgain.length === 1 && seq.spokenAgain[0] === 'Hi, Ann. How can I help you today?' && /Voice off/.test(seq.label) && seq.typing, JSON.stringify(seq)); });
+      /* muted for the rest of an opening: an answer is not spoken */
+      const muted = await page.evaluate(async () => { const s = document.getElementById('dvPanelHost').shadowRoot; s.querySelector('.v').click(); const n = window.__spoken.length;
+        s.querySelector('.ask input').value = 'Thanks for your help today'; s.querySelector('.go').click(); await new Promise((r) => setTimeout(r, 1500)); const said = window.__spoken.length - n; s.querySelector('.v').click(); return said; });
+      await t(`${label}: after Voice off, answers in that opening are not spoken`, () => ok(muted === 0, 'spoken ' + muted));
+      await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; if (s.querySelector('.p').hidden) document.getElementById('dvOrbHost').shadowRoot.querySelector('button').click(); });
       /* workflow 2 — reimbursement for the product on screen, matching its panel */
       await page.evaluate(() => [...document.getElementById('dvPanelHost').shadowRoot.querySelectorAll('.chip')].find((c) => /Medicare/.test(c.textContent)).click());
       await page.waitForFunction(() => /HCPCS reference only/.test(document.getElementById('dvPanelHost').shadowRoot.querySelector('.log').textContent), null, { timeout: 15000 });
@@ -141,12 +167,15 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
         ok(/\$54\.13/.test(rc) && /\$40\.60/.test(rc) && /\$368\.60/.test(rc) && /\$36\.86/.test(rc) && /HCPCS reference only — model verification pending\./.test(rc) && /ZIP 42101/.test(rc) && /Nov 19, 2026/.test(rc), rc.slice(0, 700));
         ok(/Per month/.test(rc) && /Per HCPCS unit as the code describes it/.test(rc) && /Kentucky Medicaid MSEA Fee Schedule 2026/.test(rc), 'billing units and source: ' + rc.slice(0, 900));
         ok(/\$54\.13/.test(panelTxt) && /HCPCS reference only — model verification pending/.test(panelTxt), 'the panel shows the same');
+        const D = 'HCPS is not a billing specialist and is not qualified to provide coding or billing advice. This information is for reference only. The biller is responsible for confirming that the exact product supplied meets the applicable HCPCS code requirements and for verifying the payer’s billing and coverage rules before submitting a claim.';
+        ok(rc.includes(D) && panelTxt.includes(D), 'the fixed disclaimer is in Victoria\'s card and the product panel');
       });
-      await t(`${label}: voice on — the answer is spoken and the orb animates while Victoria speaks`, async () => { const sp = await page.evaluate(() => [window.__spoken.slice(), window.__speakState.slice()]); ok(sp[0].includes('Here is what I found.') && sp[1].includes('speaking'), JSON.stringify(sp)); });
+      await t(`${label}: voice on — the reimbursement answer is spoken WITH the disclaimer and the globe glows while Victoria speaks`, async () => { const sp = await page.evaluate(() => [window.__spoken.slice(), window.__speakState.slice()]); const D = V._test.BILLING_DISCLAIMER; ok(sp[0].some((x) => x.startsWith('Here is what I found.') && x.endsWith(D)) && sp[1].includes('speaking'), 'the spoken reimbursement answer ends with the fixed disclaimer: ' + JSON.stringify(sp).slice(0, 600)); });
       /* the fee schedule from Victoria's card → the existing page */
       await page.evaluate(() => document.getElementById('dvPanelHost').shadowRoot.querySelector('.card .fee').click());
       await page.waitForSelector('#view-reimb .rb-ret', { timeout: 15000 });
-      await t(`${label}: "Open the fee schedule" opens the portal's own fee schedule (with ← Back to the product)`, async () => ok(/Back to K2 16/.test(await page.$eval('#view-reimb .rb-ret', (e) => e.textContent))));
+      await t(`${label}: "Open the fee schedule" opens the portal's own fee schedule (with ← Back to the product)`, async () => { ok(/Back to K2 16/.test(await page.$eval('#view-reimb .rb-ret', (e) => e.textContent)));
+        ok((await page.$eval('#view-reimb', (e) => e.textContent)).includes(V._test.BILLING_DISCLAIMER), 'the fee-schedule lookup shows the fixed disclaimer'); });
       await page.click('#view-reimb .rb-ret'); await page.waitForFunction(() => document.querySelector('#content .pd') && !document.body.classList.contains('p360on'), null, { timeout: 15000 });
       /* workflow 3 — draft quote with the SKU and variant on screen, left open for review */
       await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; if (s.querySelector('.p').hidden) document.getElementById('dvOrbHost').shadowRoot.querySelector('button').click(); });
@@ -168,6 +197,14 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       });
       await page.evaluate(() => typeof ghCloseOrder === 'function' && ghCloseOrder());
       if (SHOTS) { await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; if (s.querySelector('.p').hidden) document.getElementById('dvOrbHost').shadowRoot.querySelector('button').click(); }); await page.waitForTimeout(400); await page.screenshot({ path: path.join(SHOTS, `dv-answers-${label}.png`) }); }
+      /* a browser that blocks audio: the text stays, "Tap to hear Victoria" retries from a tap */
+      const blk = await page.evaluate(async () => { const h = document.getElementById('dvPanelHost'); const s = h.shadowRoot; const o = document.getElementById('dvOrbHost').shadowRoot.querySelector('button');
+        if (!s.querySelector('.p').hidden) s.querySelector('.x').click();
+        window.__blockAudio = true; o.click(); await new Promise((r) => setTimeout(r, 2900));
+        const st = { text: s.querySelector('.hello').textContent, retry: !s.querySelector('.retry').hidden, note: s.querySelector('.vnote').textContent };
+        window.__blockAudio = false; const n = window.__spoken.length; s.querySelector('.retry').click(); await new Promise((r) => setTimeout(r, 120));
+        return Object.assign(st, { retried: window.__spoken.slice(n), retryHidden: s.querySelector('.retry').hidden }); });
+      await t(`${label}: audio blocked — the greeting stays as text with "Tap to hear Victoria"; the retry speaks it`, () => ok(/Hi, Ann/.test(blk.text) && blk.retry && /didn.t play/.test(blk.note) && blk.retried.length === 1 && /Hi, Ann/.test(blk.retried[0]) && blk.retryHidden, JSON.stringify(blk)));
       /* a later visit: the short greeting */
       await page.evaluate(() => { const h = document.getElementById('dvPanelHost'); h.remove(); window.DealerVictoriaPanel = null; delete window.DealerVictoriaPanel; });
       const p2 = await page.evaluate(async () => { const s = document.createElement('script'); s.src = '/assets/dealer-victoria-panel.js?v=1&again'; await new Promise((ok2) => { s.onload = ok2; document.head.appendChild(s); });
@@ -186,7 +223,17 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
     const anim = await page.evaluate(() => { window.DV = { api: async () => ({ ok: true, greeting: 'Hi' }) }; const o = document.createElement('div'); o.id = 'dvOrbHost'; o.style.cssText = 'position:fixed;right:16px;bottom:16px;width:56px;height:56px'; document.body.appendChild(o);
       const api = window.DealerVictoriaPanel(o); api.toggle(true); const orb = api.shadow.querySelector('.orb'); orb.dataset.s = 'speaking'; return getComputedStyle(orb).animationName; });
     await t('phone: reduced motion — Victoria speaking does not animate', () => ok(anim === 'none', anim));
+    /* the globe launcher: the Connect 360 still at once; the looping globe video only without reduced motion */
+    const globe = async (pg) => pg.evaluate(async () => { window.DV = { greeting: 'Hi', support: {} }; delete window.__dvOrb; const old = document.getElementById('dvOrbHost'); if (old) old.remove();
+      const s = document.createElement('script'); s.src = '/assets/dealer-victoria.js?v=3&t=' + Math.random(); await new Promise((r) => { s.onload = r; document.head.appendChild(s); });
+      await new Promise((r) => setTimeout(r, 2500)); const b = document.getElementById('dvOrbHost').shadowRoot.querySelector('button'); const img = b.querySelector('img'); const v = b.querySelector('video');
+      return { still: !!(img && img.complete && img.naturalWidth === 240), video: !!v, src: v ? [...v.querySelectorAll('source')].map((x) => x.getAttribute('src')) : [], live: b.classList.contains('live') }; });
+    const gr = await globe(page);
+    await t('phone: reduced motion — the globe is the still picture only (no video)', () => ok(gr.still && !gr.video, JSON.stringify(gr)));
     await ctx.close();
+    { const { ctx: c2, page: p2 } = await open(b, 1280, 800, {}); const gm = await globe(p2);
+      await t('desktop: the launcher is the animated Victoria globe (Connect 360 still at once, the globe video after the page is usable)', () => ok(gm.still && gm.video && gm.src.join() === '/assets/victoria/orb.webm,/assets/victoria/orb.mp4', JSON.stringify(gm)));
+      await c2.close(); }
     console.log('     placement: ' + JSON.stringify(Object.fromEntries(Object.entries(report).map(([k, v]) => [k, { viewport: v.viewport, orb: [v.orb.left, v.orb.top, v.orb.w], cart: [v.cart.left, v.cart.top, v.cart.w], panel: [Math.round(v.panel.left), Math.round(v.panel.top), Math.round(v.panel.right), Math.round(v.panel.bottom)], open_covers: v.covered_when_open.filter((x) => x.by_panel).map((x) => x.control) }]))));
     if (SHOTS) fs.writeFileSync(path.join(SHOTS, 'dv-placement.json'), JSON.stringify(report, null, 1));
   } finally { await b.close(); }
