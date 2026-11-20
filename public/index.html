@@ -1321,6 +1321,11 @@ header .htop{flex-wrap:nowrap;}
 .pd-reimb-ctl1{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin:4px 0 6px}.pd-reimb-need{color:#9b1c1c;font-weight:700}.pd-reimb-est{font-weight:600;color:var(--gray)}
 .pd-reimb-busy{opacity:.65;transition:opacity .15s}.pd-reimb-busy *{cursor:progress}
 @media(max-width:820px){.pd-reimb-cols{grid-template-columns:1fr}.pd-reimb-full{padding:12px}}
+.pd-est{margin-top:8px;display:grid;gap:8px}.pd-est-sc{background:#f4f8fc;border:1px dashed #b9cde0;border-radius:8px;padding:8px 10px}.pd-est-h{font-size:11px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.3px}
+.pd-est-term,.pd-est-s{font-size:12px;color:var(--gray);margin-top:3px}.pd-est-note{font-size:12px;font-weight:700;color:#7a4b00}.pd-est-t{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px}.pd-est-t th{text-align:left;font-weight:600;color:var(--gray);padding:3px 6px 3px 0;width:46%;vertical-align:top}.pd-est-t td{padding:3px 0;vertical-align:top}.pd-est-m{font-weight:800;color:var(--navy)}
+.pd-est-in{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--gray);margin-top:6px}.pd-est-in input{font-size:16px;min-height:44px;width:90px;border:1px solid #d5dbe3;border-radius:8px;padding:4px 8px}
+.pd-est-shared{margin-top:12px;border-top:1px solid #d9e3ee;padding-top:10px}.pd-est-offer{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.pd-est-go{min-height:44px;border:1px solid #1681c2;color:#1681c2;background:#fff;border-radius:8px;padding:6px 14px;font-weight:700;cursor:pointer}
+@media print{[data-dealer-only]{display:none!important}}
 .pd-reimb-cond{background:#fff7e6;border:1px solid #f1d39b;border-radius:6px;padding:6px 8px}.pd-reimb-links{display:flex;gap:16px;flex-wrap:wrap}.pd-reimb-src{font-size:11.5px;color:var(--gray)}.pd-reimb-src a{word-break:break-word}
 .reimb-tile{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:0;margin-bottom:14px}.reimb-tile h3{margin:2px 0 4px}.reimb-tile .btn{min-height:44px;display:inline-flex;align-items:center}
 .reimb-eyebrow{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
@@ -9495,14 +9500,29 @@ async function loadResourcesView(){ await loadPricing(); renderResources(); }
    answer comes from reimbursement-api (admin site), which checks the sign-in. Opened from Resources & Support and from a
    coded model on Shop Products (openReimb with its verified HCPCS code filled in). */
 const REIMB_API=API_BASE+"/reimbursement-api"; let REIMB_JS=null, REIMB_PREFILL=null;
-function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=9"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
+function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=10"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
 async function loadReimbView(){
   const host=$("#view-reimb"); if(!host) return;
   try{ await reimbLoadJs(); }catch(e){ host.innerHTML='<div class="ph"><div><h1>Reimbursement lookup</h1></div></div><div class="card"><div class="msg">The reimbursement lookup could not be loaded — please try again.</div></div>'; return; }
   const pre=REIMB_PREFILL; REIMB_PREFILL=null;
-  window.HCPSReimb.mount(host,{ api:(b)=>api(REIMB_API,b), prefill:pre, back:()=>showP360('resources') });
+  const ret=pre&&pre.ret?Object.assign({},pre.ret,{ back:()=>reimbBackToProduct(pre.ret) }):null;
+  window.HCPSReimb.mount(host,{ api:(b)=>api(REIMB_API,b), prefill:pre, back:()=>showP360('resources'), ret });
 }
 function openReimb(prefill){ REIMB_PREFILL=prefill||null; if(typeof showP360==="function") showP360('reimb'); }
+/* "← Back to <product>" (owner 2026-11-19 20:48): the fee-schedule page returns to the SAME product page the dealer left — the
+   product page is still in the Shop view behind the Business Hub, untouched: SKU / variant, quantity, the reimbursement panel's
+   ZIP, state, payer, date and estimate inputs, and the scroll position. Its own "Back to results" history entry is kept, so it
+   still returns to the filtered catalog. If the page is gone (another product was opened meanwhile), the product is reopened. */
+async function reimbBackToProduct(r){
+  if(!r) return;
+  document.body.classList.remove('p360on','hubon','sdon','home','shopall'); const pw=document.getElementById('p360wrap'); if(pw) pw.style.display='none';
+  const pd=document.querySelector('#content .pd');
+  /* the Business Hub set state.active to its own view; the product page is still there behind it unless something replaced it */
+  if(pd&&pd.getAttribute('data-pd-code')===r.code){ state.active=r.line; if(typeof renderTabs==='function') renderTabs(); }
+  else { if(typeof selectManufacturer==='function') await selectManufacturer(r.line); if(typeof openProductDetail==='function') await openProductDetail(r.code); }
+  const y=r.y||0; requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,y)));
+}
+window.reimbBackToProduct=reimbBackToProduct;
 window.openReimb=openReimb;   /* the product detail page runs in another script scope: both are reached through window */
 /* A model's verified HCPCS code(s) are resolved on the server (reimbursement-api "product" → _reimb_map.resolve): the
    reviewed Golden / Dalton / Ovation / ABM tables, the Golden lift-chair mechanism rule, then the catalog SKU code and the
@@ -9520,7 +9540,9 @@ async function reimbCard(el,p){
   try{ (Array.isArray(p._skuSpecs)?p._skuSpecs:[]).forEach(r=>{ if(r&&isCodeRow(r.label)&&r.value!=null) spec_codes.push(String(r.value)); });
     if(p._golden&&p._goldenFamily&&typeof goldenFamilyDetail==='function'){ const j=await goldenFamilyDetail(p._goldenFamily); const rows=(j&&j.family&&j.family.specs&&j.family.specs.rows)||[];
       rows.forEach(r=>{ if(r&&isCodeRow(r.label)&&r.values&&r.values[p.code]!=null) spec_codes.push(String(r.values[p.code])); }); } }catch(e){}
-  window.HCPSReimb.card(el,{ api:(b)=>api(REIMB_API,b), product:{name:p.name,code:p.code,manufacturer:p.manufacturer,category:p.category||'',sku_code:String(p.hcpc||p.hcpcs||''),page_codes:(p._billing||[]).map(String),spec_codes:spec_codes.slice(0,6),cost,cost_note:costNote}, open:openReimb });
+  const retName=(()=>{ const h=document.querySelector('#content .pd .pd-info h1'); return (h&&h.textContent.trim())||p.name; })();
+  window.HCPSReimb.card(el,{ api:(b)=>api(REIMB_API,b), product:{name:p.name,code:p.code,manufacturer:p.manufacturer,category:p.category||'',sku_code:String(p.hcpc||p.hcpcs||''),page_codes:(p._billing||[]).map(String),spec_codes:spec_codes.slice(0,6),cost,cost_note:costNote},
+    open:(x)=>openReimb(Object.assign({},x,{ ret:{ line:state.active, code:p.code, name:retName, y:window.scrollY } })) });
 }
 window.reimbCard=reimbCard;
 function renderResources(){
@@ -10987,7 +11009,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     const specRows = G ? "" : hcpcRow + skuSpecRows + ((Array.isArray(p._specs)&&p._specs.length) ? p._specs.map(s=>`<tr><td class="k">${esc(s.label||s.name||"")}</td><td class="v">${esc(String(s.value||""))}</td></tr>`).join("") :
       (p.specs&&typeof p.specs==="object"&&!Array.isArray(p.specs)) ? Object.keys(p.specs).map(k=>`<tr><td class="k">${esc(k)}</td><td class="v">${esc(String(p.specs[k]))}</td></tr>`).join("") :
       (Array.isArray(p.attributes)?p.attributes.map(a=>`<tr><td class="k">${esc(a.label||a.name||"")}</td><td class="v">${esc(String(a.value||""))}</td></tr>`).join(""):""));
-    host.innerHTML = `<div class="pd${G?" gpd":""}">
+    host.innerHTML = `<div class="pd${G?" gpd":""}" data-pd-code="${esc(p.code)}">
       <button type="button" class="pd-back" onclick="pdBackClick()">← ${PD_RET?"Back to results":"Back to Shop Products"}</button>
       <div class="pd-crumb"><a onclick="showShop()">All manufacturers</a><span class="sep">/</span><a onclick="renderProducts()">${esc(curLineName()||'Shop')}</a><span class="sep">/</span>${p.category?`<a onclick="renderProducts()">${esc(p.category)}</a><span class="sep">/</span>`:''}<span class="cur">${esc(gname)}</span></div>
       <div class="pd-hero">
