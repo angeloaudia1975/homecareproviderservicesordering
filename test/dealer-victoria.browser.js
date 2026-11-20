@@ -107,11 +107,11 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
           search: (() => { const e = document.querySelector('.hsearch'); if (!e) return null; const q = e.getBoundingClientRect(); if (!q.width) return null; const inp = e.querySelector('input'); const y = (q.top + q.bottom) / 2, x = (q.left + q.right) / 2; const hit = document.elementFromPoint(x, y);
             return { left: q.left, top: q.top, right: q.right, bottom: q.bottom, width: q.width, tappable: !!(hit && e.contains(hit)), visible: q.top >= 0 && q.bottom <= innerHeight }; })(),
           expanded: document.getElementById('dvOrbHost').shadowRoot.querySelector('button').getAttribute('aria-expanded') }; });
-      const v1 = await page.evaluate(() => { const b = document.getElementById('dvPanelHost').shadowRoot.querySelector('.v'); return { text: b.textContent.trim(), pressed: b.getAttribute('aria-pressed'), spoken: window.__spoken.slice() }; });
+      const v1 = await page.evaluate(() => { const b = document.getElementById('dvPanelHost').shadowRoot.querySelector('.v'); return { text: b.textContent.trim(), pressed: b.dataset.voice, aria: b.getAttribute('aria-pressed'), spoken: window.__spoken.slice() }; });
       await t(`${label}: first open — "Hello, Ann. I’m Victoria, …" shown AND spoken from the opening tap (no AI call); the button says Voice off; support is in the panel`, () => {
         ok(g1 === 'Hello, Ann. I’m Victoria, your personal assistant in the 360 Dealer Portal. How can I help you today?', g1);
         ok(v1.spoken.length === 1 && v1.spoken[0] === g1, 'spoken: ' + JSON.stringify(v1.spoken));
-        ok(/Voice off/.test(v1.text) && v1.pressed === 'true', JSON.stringify(v1)); ok(asks.length === 0, 'no AI call to greet');
+        ok(/Voice off/.test(v1.text) && v1.pressed === 'on' && v1.aria === null, JSON.stringify(v1)); ok(asks.length === 0, 'no AI call to greet');
         ok(open1.support.some((x) => /Chat with HCPS/.test(x)) && open1.support.some((x) => /626-3140/.test(x)) && open1.support.some((x) => /Email/.test(x)), JSON.stringify(open1.support));
         ok(open1.close[0] >= 44 && open1.close[1] >= 44, 'close ' + open1.close);
       });
@@ -144,12 +144,12 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       const seq = await page.evaluate(async () => {
         const o = () => document.getElementById('dvOrbHost').shadowRoot.querySelector('button'); const s = document.getElementById('dvPanelHost').shadowRoot; const W = (ms) => new Promise((r) => setTimeout(r, ms));
         const n0 = window.__spoken.length; const c0 = window.__cancels;
-        s.querySelector('.v').click(); const off = { text: s.querySelector('.v').textContent.trim(), pressed: s.querySelector('.v').getAttribute('aria-pressed'), cancelled: window.__cancels > c0 || !window.speechSynthesis.speaking };
+        s.querySelector('.v').click(); const off = { text: s.querySelector('.v').textContent.trim(), pressed: s.querySelector('.v').dataset.voice, cancelled: window.__cancels > c0 || !window.speechSynthesis.speaking };
         s.querySelector('.x').click(); await W(50); const closed = s.querySelector('.p').hidden;
         o().click(); await W(120);
         return { off, closed, reopened: !s.querySelector('.p').hidden, spokenAgain: window.__spoken.slice(n0), label: s.querySelector('.v').textContent.trim(), typing: !s.querySelector('.ask input').disabled }; });
       await t(`${label}: Voice off stops speech for this opening; closing and reopening turns voice back on and speaks the welcome again; typing stays available`, () => {
-        ok(/Voice on/.test(seq.off.text) && seq.off.pressed === 'false' && seq.off.cancelled, 'voice off: ' + JSON.stringify(seq.off));
+        ok(/Voice on/.test(seq.off.text) && seq.off.pressed === 'off' && seq.off.cancelled, 'voice off: ' + JSON.stringify(seq.off));
         ok(seq.closed && seq.reopened && seq.spokenAgain.length === 1 && seq.spokenAgain[0] === 'Hi, Ann. How can I help you today?' && /Voice off/.test(seq.label) && seq.typing, JSON.stringify(seq)); });
       /* muted for the rest of an opening: an answer is not spoken */
       const muted = await page.evaluate(async () => { const s = document.getElementById('dvPanelHost').shadowRoot; s.querySelector('.v').click(); const n = window.__spoken.length;
