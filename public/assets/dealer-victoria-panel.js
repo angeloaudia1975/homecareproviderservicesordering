@@ -97,9 +97,11 @@
       if (st === 'speaking') { retry.hidden = true; vnote.hidden = true; }
       if (st === 'blocked' && voiceOn) { retry.hidden = !SP.supported(); vnote.hidden = false;
         vnote.textContent = SP.supported() ? 'Victoria\'s voice didn\'t play. The text is here — tap "Tap to hear Victoria" to try again.' : 'Victoria\'s voice isn\'t available just now. Everything she says is shown here as text.'; } };
-    retry.onclick = () => { if (!voiceOn) setVoice(true); const l = lastSpoken.text ? lastSpoken : { text: $('.hello').textContent, kind: 'greeting' }; SP.speak(l.text, { kind: l.kind, token: l.token }); };
+    retry.onclick = () => { if (!voiceOn) setVoice(true); const l = lastSpoken.text ? lastSpoken : { text: $('.hello').textContent, kind: 'greeting' };
+      if (l.parts && l.parts.length && SP.speakParts) SP.speakParts(l.parts); else SP.speak(l.text, { kind: l.kind, token: l.token }); };
     function stopSpeaking() { SP.stop(); }
-    function speak(text, kind, token) { lastSpoken = { text: String(text || ''), kind: kind === 'answer' ? 'answer' : 'greeting', token: token || null }; if (!voiceOn || !text) return; SP.speak(text, { kind: lastSpoken.kind, token: lastSpoken.token }); }
+    function speak(text, kind, token, parts) { lastSpoken = { text: String(text || ''), kind: kind === 'answer' ? 'answer' : 'greeting', token: token || null, parts: parts || null }; if (!voiceOn || !text) return;
+      if (parts && parts.length && SP.speakParts) SP.speakParts(parts); else SP.speak(text, { kind: lastSpoken.kind, token: lastSpoken.token }); }
     function setAi(on) { aiOn = on; $('.ai-off').hidden = on; sh.querySelectorAll('.chip').forEach((c) => { c.disabled = !on; }); inp.disabled = !on; $('.go').disabled = !on; }
     function refreshChips() { const hasP = !!(DV.context && DV.context().product); sh.querySelectorAll('.chip[data-needs="product"]').forEach((c) => { c.hidden = !hasP; }); }
     function place() {
@@ -164,9 +166,9 @@
       }
       const a = line('', r.answer || 'Here is what I found.');
       /* the answer's audio came back with it (made on the server right after the model) — play it as the text appears */
-      if (r.speech && r.speech.ok && r.speech.audio && SP.preload) SP.preload(r.answer, 'answer', r.speech.audio, r.speech.mime);
+      if (r.speech && r.speech.ok && r.speech.audio && SP.preload) SP.preload(r.speech.text || r.answer, 'answer', r.speech.audio, r.speech.mime);
       if (SP.mark) SP.mark('answer_shown', { audio_with_answer: !!(r.speech && r.speech.ok), tts_ms: r.speech ? r.speech.tts_ms : null, model_ms: r.timing ? r.timing.model_ms : null, total_ms: r.timing ? r.timing.total_ms : null });
-      speak(r.answer, 'answer', r.speech_token);
+      speak(r.answer, 'answer', r.speech_token, Array.isArray(r.speech_parts) ? r.speech_parts : null);
       for (const c of r.cards || []) {
         if (c.type === 'golden_orders') orderCard(c, (r.cards || []).length === 1);
         else if (c.type === 'not_found') cardEl(`<div class="m">${esc(c.text)}</div>`);
