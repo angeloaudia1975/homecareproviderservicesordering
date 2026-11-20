@@ -2466,7 +2466,7 @@ async function mergeCatalogEdits(slug, prods){
          other unlined item, and a saved cart silently dropped them on the next sign-in. */
       const row={manufacturer:slug,code:c.code,name:c.name,category:c.category||"",base_price:c.base_price,msrp:c.msrp,
         map:(c.map==null||c.map==="")?null:c.map,
-        image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",...(c.uom?{uom:String(c.uom)}:{}),_custom:true};
+        image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",_custom:true};
       for(const k of OV_KEYS) if(k in pa && pa[k]!=null) row[k]=pa[k];
       noMsrpRule(row, pa);
       prods.push(row); });
@@ -11328,7 +11328,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     /* review: never on item numbers (a digit) or short words; 5+ letters ("ties", "plus", "lens", "this" stay as typed) */
     const SING_KEEP=new Set(['plus','lens','this','bus','gas','yes','less','bias','atlas','canvas','chassis','series','species','axis','basis']);
     const sing=w=>/[0-9]/.test(w)||SING_KEEP.has(w)?[]:w.length>=6&&/ies$/.test(w)?[w.slice(0,-3)+'y']:w.length>=5&&/(ss|x|ch|sh)es$/.test(w)?[w.slice(0,-2)]:w.length>=5&&/s$/.test(w)&&!/(ss|us|is)$/.test(w)?[w.slice(0,-1)]:[];
-    rest.trim().split(' ').filter(Boolean).forEach(w=>{ const alt=new Set([w,...sing(w)]); GS_SYN.forEach(g=>{ if(g.includes(w)||sing(w).some(v=>g.includes(v))) g.forEach(x=>alt.add(x)); }); sets.push([...alt]); });
+    rest.trim().split(' ').filter(Boolean).forEach(w=>{ const alt=new Set([w,...sing(w)]); if(/[a-z]-[0-9]|[0-9]-[a-z]/.test(w)) alt.add(w.replace(/-/g,'')); /* "PR-519" also finds PR519 (owner 2026-11-20, live Golden check) */ GS_SYN.forEach(g=>{ if(g.includes(w)||sing(w).some(v=>g.includes(v))) g.forEach(x=>alt.add(x)); }); sets.push([...alt]); });
     return sets.length?sets:[words];
   }
   function gsIndex(x){ const p=x.p; return gsNorm([p.name,groupDisplayName(p),p.code,p.category,p.subcategory,p.brand,x.mname].filter(Boolean).join(' ')); }
