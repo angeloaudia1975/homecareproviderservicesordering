@@ -76,6 +76,8 @@ const SCRIPT = [   // question → tool + input (the model's choice, scripted)
       await t(`${label}: brochure_for_product opens the product's own Print Brochure dialog (nothing printed or sent)`, () => ok(br && /Product brochure/.test(br) && /AKN411AR/.test(br), String(br)));
       await page.evaluate(() => { if (typeof closeBrochure === 'function') closeBrochure(); const m = document.getElementById('brModal'); if (m) m.remove(); });
 
+      const chips3 = await S("return [...s.querySelectorAll('.chips .chip')].map(c=>c.textContent);");
+      await t(`${label}: after an answer on a product page the suggestions are the product's`, () => ok(chips3.some((q) => /my price for this product/i.test(q)), JSON.stringify(chips3)));
       await ask('Is my storefront live?');
       const c3 = await cards();
       await t(`${label}: storefront status card — live, link, lines; button opens the Storefront Website Builder`, () => ok(c3.some((x) => /TEST — Golden Sandbox/.test(x) && /Live/.test(x) && /Open the live storefront/.test(x)), JSON.stringify(c3).slice(-500)));
