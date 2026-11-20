@@ -35,7 +35,7 @@
       @media (prefers-reduced-motion:reduce){.orb{animation:none!important}}
       .t{font-weight:800}.s{font-size:12px;opacity:.85}
       .ib{all:unset;box-sizing:border-box;min-width:44px;min-height:44px;display:grid;place-items:center;cursor:pointer;border-radius:10px;font-size:13px;font-weight:700;padding:0 8px}
-      .hd .ib{color:#fff}.hd .x{font-size:22px;margin-left:auto}.v[aria-pressed="true"]{background:rgba(255,255,255,.18)}
+      .hd .ib{color:#fff}.hd .x{font-size:22px;margin-left:auto}.v[data-voice="on"]{background:rgba(255,255,255,.18)}
       .ib:focus-visible,.chip:focus-visible,.go:focus-visible,.btn:focus-visible,a:focus-visible{outline:3px solid #fcb21e;outline-offset:2px}
       .bd{padding:12px 14px;overflow:auto;flex:1;min-height:0}
       .bubble{background:#f1f7fc;border-radius:12px;padding:10px 12px;margin:0 0 10px}
@@ -59,8 +59,8 @@
       .src{font-size:11.5px;color:#5b6b7a;margin-top:4px}
     </style>
     <div class="p" role="dialog" aria-label="Victoria, your HCPS assistant" hidden>
-      <div class="hd"><div class="orb" data-s="idle" aria-hidden="true"><img src="/assets/victoria/orb-still.webp" alt="" decoding="async"></div><div><div class="t">Victoria</div><div class="s">Your personal assistant · TEST preview</div></div>
-        <button class="ib v x0" type="button" aria-pressed="true" title="Stop Victoria speaking for the rest of this opening">🔇 Voice off</button>
+      <div class="hd"><div class="orb" data-s="idle" aria-hidden="true"><img src="/assets/victoria/orb-still.webp" alt="" decoding="async" onerror="this.remove()"></div><div><div class="t">Victoria</div><div class="s">Your personal assistant · TEST preview</div></div>
+        <button class="ib v x0" type="button" title="Stop Victoria speaking for the rest of this opening">🔇 Voice off</button>
         <button class="ib x" type="button" aria-label="Close Victoria">×</button></div>
       <div class="bd" aria-live="polite">
         <div class="bubble hello">…</div>
@@ -87,7 +87,8 @@
     const SP = orbHost.__dvSpeech || { speak: () => false, stop: () => {}, supported: () => false };
     let voiceOn = true, lastSpoken = '';
     const vb = $('.v'), retry = $('.retry'), vnote = $('.vnote');
-    const setVoice = (on) => { voiceOn = !!on; vb.setAttribute('aria-pressed', String(voiceOn)); vb.textContent = voiceOn ? '🔇 Voice off' : '🔊 Voice on';
+    /* the label names the ACTION ("Voice off" while audio is on); no aria-pressed, so a screen reader hears the action */
+    const setVoice = (on) => { voiceOn = !!on; vb.dataset.voice = voiceOn ? 'on' : 'off'; vb.textContent = voiceOn ? '🔇 Voice off' : '🔊 Voice on';
       vb.title = voiceOn ? 'Stop Victoria speaking for the rest of this opening' : 'Turn voice back on for this opening'; if (!voiceOn) { SP.stop(); retry.hidden = true; } };
     vb.onclick = () => setVoice(!voiceOn);
     SP.onstate = (st, why) => { orb.dataset.s = st === 'speaking' ? 'speaking' : 'idle';

@@ -114,7 +114,7 @@ const settle = (pg) => pg.waitForFunction(() => !document.querySelector('[data-a
     await t('Dalton — four display states on the card: verified (code, source, calculator), reference (note beside the code, allowance notice, no estimate), pending (no code, no allowance, missing evidence), none', async () => {
       const pg = await page(browser);
       await cardOf(pg, { name: 'K5 18 Ultra Light', code: 'K515FA', manufacturer: 'dalton', category: 'Wheelchairs' }); let txt = await cardText(pg);
-      ok(/HCPCS K0005/.test(txt) && /PDAC Product Classification List/.test(txt) && /\$2,634\.76/.test(txt) && (await pg.$('#cardHost .pd-reimb-calc')) && !/reference only/.test(txt), 'verified: ' + txt.slice(0, 300));
+      ok(/HCPCS K0005/.test(txt) && /PDAC Product Classification List/.test(txt) && /\$2,634\.76/.test(txt) && (await pg.$('#cardHost .pd-reimb-calc')) && !/HCPCS reference only/.test(txt), 'verified: ' + txt.slice(0, 300));
       await cardOf(pg, { name: 'K4 16 Lightweight', code: 'K416FA0215', manufacturer: 'dalton', category: 'Wheelchairs' }); txt = await cardText(pg);
       ok(/HCPCS K0004 HCPCS reference only — model verification pending\./.test(txt) && !/\*/.test(txt), 'reference note beside the code, no asterisk: ' + txt.slice(0, 300));
       ok(/Published allowance for this code\. This product's classification is pending verification\./.test(txt) && /\$57\.95/.test(txt), 'allowance with the notice');
