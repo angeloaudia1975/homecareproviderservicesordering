@@ -609,7 +609,7 @@ body.shopall .controls,body.shopall #a4uBuilder,body.shopall #swBuilder,body.sho
 .pd-hero{display:grid;grid-template-columns:1.05fr 1fr;gap:28px;margin-bottom:28px;}
 /* product page layout (owner 2026-11-19 18:11): desktop — images then Provider Reimbursement on the left, name, pricing and
    purchase actions on the right; phone / tablet — images, then name, pricing and purchase actions, then reimbursement */
-.pd-hero{grid-template-areas:"gal info" "reimb info";grid-template-rows:auto 1fr}
+.pd-hero{grid-template-areas:"gal info" "reimb reimb";grid-template-rows:auto auto}
 .pd-hero>.pd-gal{grid-area:gal;min-width:0}.pd-hero>.pd-info{grid-area:info;min-width:0}.pd-hero>.pd-reimb-host{grid-area:reimb;align-self:start;min-width:0}
 .pd-hero>.pd-reimb-host:empty{display:none}
 @media(max-width:820px){.pd-hero{grid-template-columns:1fr;grid-template-areas:"gal" "info" "reimb";grid-template-rows:auto}}
@@ -1316,6 +1316,11 @@ header .htop{flex-wrap:nowrap;}
 .pd-reimb-ctl select,.pd-reimb-ctl input{font-size:16px;min-height:44px;border:1px solid #d5dbe3;border-radius:8px;padding:4px 8px;background:#fff;min-width:0;width:100%;box-sizing:border-box}
 .pd-reimb-code{font-weight:800;color:var(--navy);margin-top:8px}.pd-reimb-row{border-top:1px solid #e3eaf2;padding:8px 0 4px;margin-top:6px}.pd-reimb-p{font-size:12px;font-weight:700;color:var(--navy)}
 .pd-reimb-ref{font-size:12px;font-weight:800;color:#7a4b00;margin-left:4px}
+.pd-reimb-full{margin-top:4px;padding:14px 16px}.pd-reimb-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:10px}
+.pd-reimb-col{background:#fff;border:1px solid #d9e3ee;border-radius:10px;padding:10px 12px;min-width:0}.pd-reimb-col h4{margin:0 0 6px;font-size:14px;color:var(--navy)}
+.pd-reimb-ctl1{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin:4px 0 6px}.pd-reimb-need{color:#9b1c1c;font-weight:700}.pd-reimb-est{font-weight:600;color:var(--gray)}
+.pd-reimb-busy{opacity:.65;transition:opacity .15s}.pd-reimb-busy *{cursor:progress}
+@media(max-width:820px){.pd-reimb-cols{grid-template-columns:1fr}.pd-reimb-full{padding:12px}}
 .pd-reimb-cond{background:#fff7e6;border:1px solid #f1d39b;border-radius:6px;padding:6px 8px}.pd-reimb-links{display:flex;gap:16px;flex-wrap:wrap}.pd-reimb-src{font-size:11.5px;color:var(--gray)}.pd-reimb-src a{word-break:break-word}
 .reimb-tile{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:0;margin-bottom:14px}.reimb-tile h3{margin:2px 0 4px}.reimb-tile .btn{min-height:44px;display:inline-flex;align-items:center}
 .reimb-eyebrow{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
@@ -7729,6 +7734,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   #p360wrap .gh-open:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:4px}
   #p360wrap .gh-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   #p360wrap .gh-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .gh-st{margin:0 0 12px;padding:10px 14px;border:1px solid #cfe0ef;background:#f3f8fc;border-radius:10px;font-size:14px;line-height:1.45;color:#0b1f33}.gh-st[hidden]{display:none}.gh-st.warn{border-color:#f0c48a;background:#fff7ec}.gh-st .gh-st-warn{color:#9b1c1c}.gh-st [data-ghretry2]{min-height:44px;margin-left:6px;display:inline-flex;align-items:center}
   #p360wrap .gh-err{color:#b42318;font-weight:700;font-size:13px}
   #p360wrap #goldenHist td,#p360wrap .gh-col li{overflow-wrap:anywhere}
   @media (max-width:760px){ #p360wrap #goldenHist thead{display:none} #p360wrap #goldenHist table,#p360wrap #goldenHist tbody,#p360wrap #goldenHist tr,#p360wrap #goldenHist td{display:block;width:100%}
@@ -8244,21 +8250,22 @@ let ORD_HROWS=[];
 function ordRowsHtml(){
   /* a Golden order the portal already lists (same PO, a portal-recorded Golden order) is not listed twice — its own row opens it */
   const seen=new Set((HISTORY||[]).filter(o=>o.source==="golden"&&o.po).map(o=>String(o.po).trim().toUpperCase()));
-  const g=(GH.state==="ready"?GH.orders:[]).filter(o=>!(o.po_number&&seen.has(String(o.po_number).trim().toUpperCase()))).map(o=>({d:String(o.placed_on||"").slice(0,10),h:ghMainRow(o)}));
+  const g=(GH.state==="ready"?GH.orders:[]).filter(o=>!(o.po_number&&seen.has(String(o.po_number).trim().toUpperCase()))).map(o=>({d:String(o.placed_on||o.booked_on||"").slice(0,10),h:ghMainRow(o)}));
   return ORD_HROWS.concat(g).map((x,i)=>Object.assign({i},x)).sort((a,b)=>(a.d<b.d?1:a.d>b.d?-1:a.i-b.i)).map(x=>x.h).join("");
 }
-function ordGhSync(){ const b=$("#ordBody"); if(!b||!GH.orders.length) return; const h=ordRowsHtml(); if(h) b.innerHTML=h; }
+function ordGhSync(){ const b=$("#ordBody"); if(!b) return; const h=ordRowsHtml(); b.innerHTML=h||`<tr><td colspan="8" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`; }   /* always: rows from an earlier read never outlive it */
 function ghSos(o){ return (o.so_numbers&&o.so_numbers.length)?o.so_numbers.join(", "):""; }
 function ghMainRow(o){
   const units=(o.items||[]).reduce((s,i)=>s+(Number.isInteger(i.qty)?i.qty:0),0), sos=ghSos(o);
   const amt=GH.pv&&o.totals&&o.totals.total!=null?esc(cents(o.totals.total))+'<br><small style="color:var(--muted,#64748b)">not in the total</small>':'—';
-  return `<tr data-ghorder="${esc(o.order_ref)}"><td>${ghDay(o.placed_on)}</td><td>${srcPill("golden")}</td><td><b>Golden Technologies</b><div class="m">${sos?"Golden SO "+esc(sos):"Golden order "+esc(o.order_ref)}</div>${o.po_number?`<div class="m">PO ${esc(o.po_number)}</div>`:""}${(o.tracking||[]).length?`<div class="m">${(o.tracking||[]).length} shipment${(o.tracking||[]).length>1?"s":""} — tracking in the detail</div>`:""}</td><td>${(o.items||[]).length}</td><td class="n tnum">${units}</td><td class="n tnum">${amt}</td><td>${ghPill(o.status)}</td><td><a class="btn gh" data-ref="${esc(o.order_ref)}" onclick="ghOpenOrder(this.getAttribute('data-ref'))">View / print</a></td></tr>`;
+  const loc=(GH.locs||[]).length>1&&o.location_name?`<div class="m">Location: ${esc(o.location_name)}</div>`:"";
+  return `<tr data-ghorder="${esc(o.order_ref)}"><td>${ghDay(o.placed_on||o.booked_on)}</td><td>${srcPill("golden")}</td><td><b>Golden Technologies</b><div class="m">${sos?"Golden SO "+esc(sos):"Golden order "+esc(o.order_ref)}</div>${o.po_number?`<div class="m">PO ${esc(o.po_number)}</div>`:""}${loc}${(o.tracking||[]).length?`<div class="m">${(o.tracking||[]).length} shipment${(o.tracking||[]).length>1?"s":""} — tracking in the detail</div>`:""}</td><td>${(o.items||[]).length}</td><td class="n tnum">${units}</td><td class="n tnum">${amt}</td><td>${ghPill(o.status)}</td><td><a class="btn gh" data-ref="${esc(o.order_ref)}" onclick="ghOpenOrder(this.getAttribute('data-ref'))">View / print</a></td></tr>`;
 }
 function ghModalHtml(o){
   const sos=ghSos(o), biz=(PROFILE&&PROFILE.name)||"";
   return `<div class="mbox od-box" role="document"><div class="mhead"><h3>Golden order — ${esc(sos||o.order_ref)}</h3><a class="mx noprint" onclick="ghCloseOrder()" aria-label="Close">✕</a></div>
     <div class="od-grid od-head">
-      <div><span>Dealer</span><b>${esc(biz||"—")}</b></div><div><span>Placed</span><b>${ghDay(o.placed_on)}</b></div>
+      <div><span>Dealer</span><b>${esc(biz||"—")}</b></div><div><span>${o.placed_on?"Placed":"Booked by Golden"}</span><b>${ghDay(o.placed_on||o.booked_on)}</b></div>${o.location_name?`<div><span>Location</span><b>${esc(o.location_name)}</b></div>`:""}
       <div><span>PO</span><b>${esc(o.po_number||"—")}</b></div><div><span>Golden SO${(o.so_numbers||[]).length>1?"s":""}</span><b class="tnum">${esc(sos||"Not yet booked by Golden")}</b></div>
       <div><span>Golden order #</span><b class="tnum">${esc(o.order_ref)}</b></div><div><span>Ship to</span><b>${ghWhere(o)}</b></div>
       <div><span>Status</span><b>${esc(GH_STATUS[o.status]||o.status||"—")}</b></div><div><span>Expected</span><b>${o.expected_date?ghDay(o.expected_date):"—"}</b></div></div>
@@ -8274,7 +8281,7 @@ async function ghOpenOrder(ref){
   if(!GH.conf[ref]) ghConfLoad(o);
   const my=GH.seq; const r=await goldenCall("order",{order_ref:ref});   // Golden's latest for this order (tracking may be newer)
   if(my!==GH.seq||!r||r.available!==true||!r.order||r.order.order_ref!==ref) return;
-  GH.orders=GH.orders.map(x=>x.order_ref===ref?r.order:x); if(r.prices_visible!==true) GH.pv=false; ghModalRender(ref);
+  GH.orders=GH.orders.map(x=>x.order_ref===ref?Object.assign({},r.order,{location_id:x.location_id,location_name:x.location_name,booked_on:x.booked_on}):x); if(r.prices_visible!==true) GH.pv=false; ghModalRender(ref);
 }
 function ghCloseOrder(){ const md=$("#modal"); if(md) md.removeAttribute("data-gh"); if(typeof closeModal==="function") closeModal(); }
 /* the Golden orders behind one main-list Golden row: a portal-recorded Golden order → Golden's order with the same PO; an
@@ -8303,6 +8310,7 @@ async function loadOrders(){
     <div class="ph"><div><h1>Orders &amp; Tracking</h1><div class="sub">Consolidated history — imported sales, portal &amp; Golden · ${HISTORY.length} records</div></div>
       <div><a class="btn gh" onclick="exportHistoryCSV()">⬇ Excel</a> <a class="btn gh" onclick="printPDF()">⬇ PDF</a></div></div>
     ${typeof rptNavHtml==='function'?rptNavHtml('orders'):''}
+    <div id="ordGoldenStatus" class="gh-st" role="status" aria-live="polite" hidden></div>
     <div class="card" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th>Date</th><th>Source</th><th>Manufacturer</th><th>Items</th><th class="n">Units</th><th class="n">Amount</th><th>Status</th><th></th></tr></thead>
       <tbody id="ordBody">${rows||`<tr><td colspan="8" class="empty">No orders on file yet — place one from the portal to get started.</td></tr>`}</tbody>
       ${HISTORY.length?`<tfoot><tr><td colspan="5" style="text-align:right;font-weight:800;color:var(--navy);padding:12px">Total (incl. freight)${nRep?`<div style="font-weight:400;font-size:12px;color:var(--muted,#64748b)">${nRep} portal order${nRep>1?"s are":" is"} also in a manufacturer report — counted once</div>`:""}${nInv?`<div style="font-weight:400;font-size:12px;color:var(--muted,#64748b)">Excludes ${nInv} recorded invoice${nInv>1?"s":""} — payment status not established</div>`:""}</td><td class="n tnum" style="font-weight:800;color:var(--navy)">${cents(total)}</td><td colspan="2"></td></tr></tfoot>`:""}
@@ -8317,7 +8325,7 @@ async function loadOrders(){
    here. Shown only when Golden says this dealer is entitled AND history is on (switch golden_p360_history + Golden's
    verified link with history enabled); otherwise the section stays empty. Amounts only when Golden says prices are
    visible. Every value is escaped; tracking numbers are shown as text, never turned into a link. */
-const GH={ seq:0, openSeq:0, orders:[], next:null, pv:false, open:null, state:"idle", moreErr:false, focus:null, conf:{} };
+const GH={ seq:0, openSeq:0, orders:[], next:null, pv:false, open:null, state:"idle", moreErr:false, focus:null, conf:{}, meta:null, locs:[] };
 /* Filters + print (owner 2026-11-11): over the Golden orders already loaded — order # / PO / SKU / tracking search, status,
    placed-date range and ship-to location; nothing is sent anywhere. "Load older" brings more orders into the search. */
 const GHF={ q:"", status:"", from:"", to:"", loc:"" };
@@ -8351,10 +8359,15 @@ function ghPill(s){ const l=GH_STATUS[s]||"—"; const c=(s==="completed"||s==="
 function ghWhere(o){ const c=[o.ship_to&&o.ship_to.city,o.ship_to&&o.ship_to.state].filter(Boolean).join(", "); return c?esc(c):"—"; }
 function ghLive(t){ const lv=$("#goldenHistLive"); if(lv&&lv.textContent!==t) lv.textContent=t; }
 function ghReset(){ GH.seq++; GH.openSeq++; GH.orders=[]; GH.next=null; GH.pv=false; GH.open=null; GH.state="idle"; GH.moreErr=false; GH.focus=null; GH.conf={}; }
-async function goldenHistoryLoad(more){
+/* ORDERS & TRACKING — current Golden orders (owner 2026-11-19, Williams Brothers: the signed-in list stopped at the imported
+   August rows with no warning). Golden's history is read on HCPS's server through the SAME location-scoped read as Reports
+   (dealer-reports-api golden_orders): the locations this login may see, each order placed at the location it shipped to,
+   Golden's own detail with each order. The answer always says what loaded; a failure or a partial read is shown at the top
+   of Orders & Tracking (ghStatus), never a silent empty. Staff View as Dealer never reads it (by design). */
+async function ghLoadViaProxy(more){
   const box=$("#goldenHist"); if(!box) return;
   if(typeof goldenCall!=="function") return;
-  if(!more){ ghReset(); }
+  if(!more){ ghReset(); GH.meta=null; }
   const my=++GH.seq;
   if(typeof GOLDEN!=="undefined"&&!GOLDEN.checked&&typeof goldenInit==="function"){ try{ await goldenInit(); }catch(e){} }
   if(my!==GH.seq) return;
@@ -8378,6 +8391,46 @@ async function goldenHistoryLoad(more){
   const firstNew=fresh[0]&&fresh[0].order_ref;
   GH.pv=r.prices_visible===true; GH.orders=GH.orders.concat(fresh); GH.next=r.next_before||null; GH.state="ready";
   GH.focus=more?(firstNew?"ref:"+firstNew:"more"):GH.focus; ghRender(); ordGhSync();
+}
+async function goldenHistoryLoad(more){
+  /* staff View as Dealer keeps the Golden-proxy read (a deploy preview reads Golden's TEST environment; production preview is
+     refused there, by design); a dealer's own sign-in and Manage Dealer use the location-scoped read below */
+  if(window.__PREVIEW__&&window.__PREVIEW__.token&&!(window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__())){ await ghLoadViaProxy(more); ghStatus(); return; }
+  const box=$("#goldenHist"); if(!box) return;
+  if(more) return;   // one read brings every order of the period
+  ghReset(); const my=++GH.seq;
+  GH.meta=null; GH.state="loading"; ghRender(); ghStatus();
+  let r=null; try{ r=await api(REPORTS_ENDPOINT,{action:"golden_orders"}); }catch(e){ r=null; }
+  if(my!==GH.seq||!$("#goldenHist")) return;   // signed out, re-rendered or a newer request
+  GH.meta=(r&&r.ok===true)?r:null; GH.locs=(r&&Array.isArray(r.locations))?r.locations:[];
+  if(!r||r.ok!==true){ GH.state="retry"; GH.why="golden_unavailable"; }
+  else if(r.enabled!==true){ GH.state="off"; GH.why=r.reason||""; }
+  else if(r.available!==true){ GH.why=r.reason||""; GH.state=r.reason==="preview"?"preview":r.reason==="branch_history_not_permitted"?"branch":r.retry?"retry":"off"; }
+  else { GH.orders=(Array.isArray(r.orders)?r.orders:[]).filter(o=>o&&o.order_ref); GH.pv=r.prices_visible===true; GH.next=null; GH.state="ready"; }
+  if(GH.state==="off"){ box.innerHTML=""; ghLive(""); } else ghRender();
+  ghStatus(); ordGhSync();
+}
+/* the newest HCPS-imported Golden record on file (YYYY-MM-DD) */
+function ghImportedThrough(){ try{ const im=(HISTORY||[]).filter(o=>o.source==="imported"&&/golden/i.test(String(o.manufacturer||o.manufacturerName||""))).map(o=>String(o.date||"").slice(0,10)).filter(Boolean).sort(); return im[im.length-1]||""; }catch(e){ return ""; } }
+/* the status line at the TOP of Orders & Tracking: what current Golden history loaded, and the latest date the list covers */
+function ghStatus(){
+  const el=$("#ordGoldenStatus"); if(!el) return;
+  const imp=ghImportedThrough(), M=GH.meta||{}, n=GH.orders.length, impTxt=imp?" The Golden rows listed are HCPS imports of Golden\u2019s monthly reports, through "+dateShort(imp)+".":"";
+  let cls="gh-st", h="";
+  if(GH.state==="loading") h="Loading current Golden orders\u2026";
+  else if(GH.state==="ready"){
+    const locs=(M.locations||[]).length;
+    h="<b>Golden Technologies \u2014 "+n+" current order"+(n===1?"":"s")+" loaded live from Golden</b>"+(M.newest_day?", newest "+esc(dateShort(M.newest_day)):"")
+      +". Covers "+esc(dateShort(M.truncated&&M.oldest_day?M.oldest_day:(M.since_day||"")))+" to today"+(locs>1?" for "+locs+" locations":"")+"."
+      +(M.truncated?" Older Golden orders were not read this time"+(imp?" \u2014 earlier months show as HCPS imports":"")+".":"")
+      +((M.unread_locations||[]).length?" <span class=\"gh-st-warn\">Golden history could not be read for: "+esc(M.unread_locations.join(", "))+".</span>":"");
+  }
+  else if(GH.state==="retry"){ cls+=" warn"; h="<b>Current Golden orders could not be loaded right now.</b>"+(imp?" This list shows only HCPS-imported Golden records \u2014 they cover through "+esc(dateShort(imp))+".":"")+' <button type="button" class="btn gh" data-ghretry2>Try again</button>'; }
+  else if(GH.state==="preview") h="Live Golden orders are not shown in View as Dealer (staff preview, read-only); the dealer\u2019s own sign-in shows them."+esc(impTxt);
+  else if(GH.state==="branch"){ cls+=" warn"; h="Golden order history for this location is shown on your head-office login."+esc(impTxt); }
+  else if(GH.state==="off"&&imp){ cls+=" warn"; h="<b>Live Golden order history is not connected for this login"+(GH.why?" ("+esc(String(GH.why).replace(/_/g," "))+")":"")+".</b> The Golden rows listed are HCPS imports through "+esc(dateShort(imp))+"; HCPS can connect current Golden orders."; }
+  el.className=cls; el.innerHTML=h; el.hidden=!h;
+  const b=el.querySelector("[data-ghretry2]"); if(b) b.onclick=()=>goldenHistoryLoad(false);
 }
 function ghRender(){
   const box=$("#goldenHist"); if(!box) return;
@@ -9442,7 +9495,7 @@ async function loadResourcesView(){ await loadPricing(); renderResources(); }
    answer comes from reimbursement-api (admin site), which checks the sign-in. Opened from Resources & Support and from a
    coded model on Shop Products (openReimb with its verified HCPCS code filled in). */
 const REIMB_API=API_BASE+"/reimbursement-api"; let REIMB_JS=null, REIMB_PREFILL=null;
-function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=7"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
+function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=8"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
 async function loadReimbView(){
   const host=$("#view-reimb"); if(!host) return;
   try{ await reimbLoadJs(); }catch(e){ host.innerHTML='<div class="ph"><div><h1>Reimbursement lookup</h1></div></div><div class="card"><div class="msg">The reimbursement lookup could not be loaded — please try again.</div></div>'; return; }
