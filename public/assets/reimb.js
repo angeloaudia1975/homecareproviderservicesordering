@@ -6,6 +6,22 @@
   'use strict';
   const NO_CODE = 'No verified HCPCS code on file for this model';
   const NO_RATE = 'Rate unavailable for this plan/date';
+  /* Dalton display states (owner 2026-11-19 18:11): verified — code, source, all tools; reference — the candidate code with this
+     note beside it, its published allowance may be opened under REF_ALLOW, NO earnings estimate; pending — "Coding verification
+     pending" with the missing evidence, no code, no allowance, no estimate; none — NO_CODE. */
+  const REF_NOTE = 'HCPCS reference only — model verification pending.';
+  const REF_ALLOW = 'Published allowance for this code. This product\'s classification is pending verification.';
+  const PENDING = 'Coding verification pending';
+  /* Medicare first: Original Medicare fee-for-service is the default payer everywhere, unless the dealer has chosen a plan in
+     the lookup — that explicit choice is kept (this session) when moving between the product page and the billing details. */
+  let PREF_PLAN = ''; try { PREF_PLAN = sessionStorage.getItem('hcps_reimb_plan') || ''; } catch (e) {}
+  const setPref = (id) => { PREF_PLAN = id || ''; try { sessionStorage.setItem('hcps_reimb_plan', PREF_PLAN); } catch (e) {} };
+  /* product page and the billing details opened from it: Original Medicare first; the Resources lookup on its own keeps its
+     accepted default (the state's Medicaid fee-for-service). An explicit plan choice wins in both. */
+  const planFor = (st, medicareFirst) => { const s = stateOf(st); if (!s) return ''; if (PREF_PLAN && s.plans.some((p) => p.id === PREF_PLAN)) return PREF_PLAN;
+    const order = medicareFirst ? ['medicare', 'medicaid-ffs'] : ['medicaid-ffs', 'medicare']; return (s.plans.find((p) => p.id === order[0]) || s.plans.find((p) => p.id === order[1]) || s.plans[0]).id; };
+  const refOn = () => !!(S.product && S.product.reference && S.result && S.result.ok && (S.product.codes || []).some((c) => codeOf(c) === S.result.context.code));
+  const noCalc = () => !!(S.product && (S.product.informational || S.product.reference));
   let META = null, METAP = null;
   const S = { code: '', state: '', plan: '', location: '', zip: null, zipSrc: 'branch', dos: '', modifier: '', otherMods: [], product: null, result: null, calc: null, busy: false, err: '' };
   const codeOf = (c) => (c && typeof c === 'object' ? c.code : String(c || ''));
@@ -27,7 +43,7 @@
   const planOf = (st, id) => { const s = stateOf(st); return s && s.plans.find((p) => p.id === id); };
   function defaults(m) {
     const st = m.default_state || '';
-    const s = stateOf(st); const plan = s ? (s.plans.find((p) => p.id === 'medicaid-ffs') || s.plans[0]) : null;
+    const plan = planOf(st, planFor(st, false));
     return { state: st, plan: plan ? plan.id : '', location: plan ? plan.locations[0].id : '', dos: m.today };
   }
 
@@ -43,10 +59,10 @@
     S.state = (pre && pre.state) || S.state || d.state; S.plan = (pre && pre.plan) || S.plan || d.plan; S.location = (pre && pre.location) || S.location || d.location;
     S.dos = (pre && pre.dos) || S.dos || d.dos; S.modifier = '';
     if (pre && pre.zip != null) { S.zip = pre.zip; S.zipSrc = pre.zipSrc || 'branch'; } else if (S.zip == null) { S.zip = META.branch_zip || ''; S.zipSrc = 'branch'; } S.otherMods = []; S.result = null; S.err = '';
-    if (!planOf(S.state, S.plan)) { const s = stateOf(S.state); S.plan = s ? (s.plans.find((p) => p.id === 'medicaid-ffs') || s.plans[0]).id : ''; }
+    if (!planOf(S.state, S.plan)) S.plan = planFor(S.state, !!S.product);
     fixLocation();
     render();
-    if (S.code && S.state && S.plan && !(S.product && S.product.noCode)) run();
+    if (S.code && S.state && S.plan && !(S.product && S.product.noCode) && !(S.product && S.product.pending)) run();
   }
   function zipSrcLabel() {
     const b = META && META.branch_zip;
@@ -63,7 +79,9 @@
       <div class="ph"><div><div class="rb-crumb"><a data-act="resources">Resources &amp; Support</a> / Reimbursement lookup</div><h1>Reimbursement lookup</h1>
         <div class="sub">Provider billing reference — Medicare and Medicaid fee schedule amounts by HCPCS code, state, plan and date of service.</div></div></div>
       ${prod ? `<div class="card rb-prod"><div><b>${esc(prod.name || '')}</b>${prod.code ? ' · Item # ' + esc(prod.code) : ''}</div>
-        ${prod.noCode ? `<div class="rb-miss" role="status">${esc(NO_CODE)}</div>${prod.why ? `<div class="rb-small">${esc(prod.why)}</div>` : ''}`
+        ${prod.pending ? `<div class="rb-miss" role="status">${esc(PENDING)}</div>${prod.why ? `<div class="rb-small">${esc(String(prod.why).replace(/^Coding verification pending\.\s*/, ''))}</div>` : ''}`
+          : prod.noCode ? `<div class="rb-miss" role="status">${esc(NO_CODE)}</div>${prod.why ? `<div class="rb-small">${esc(prod.why)}</div>` : ''}`
+          : prod.reference ? `<div class="rb-small">HCPCS ${prod.codes.map((c) => esc(codeLabel(c))).join(' · ')} <span class="rb-ref">${esc(REF_NOTE)}</span></div>${prod.why ? `<div class="rb-small">${esc(String(prod.why).replace(REF_NOTE, '').trim())}</div>` : ''}`
           : `<div class="rb-small">Verified HCPCS ${prod.codes.map((c) => esc(codeLabel(c))).join(' · ')}</div>${prod.why ? `<div class="rb-small">${esc(prod.why)}</div>` : ''}`}</div>` : ''}
       <div class="card rb-form">
         <div class="rb-grid">
@@ -83,11 +101,11 @@
         ${S.err ? `<div class="rb-err" role="alert">${esc(S.err)}</div>` : ''}
       </div>
       <div id="rbOut">${S.result && S.result.ok ? resultHtml(S.result) : ''}</div>
-      <div id="rbCalc">${S.result && S.result.ok && S.result.payment && !(S.product && S.product.informational) ? calcHtml(S.result) : ''}</div>
+      <div id="rbCalc">${S.result && S.result.ok && S.result.payment && !noCalc() ? calcHtml(S.result) : ''}</div>
       <div class="rb-small rb-foot">${esc(META.disclaimer)} Patient information is not entered here.</div>`;
     const $ = (id) => host.querySelector('#' + id);
-    $('rbState').onchange = (e) => { S.otherMods = []; S.modifier = ''; S.state = e.target.value; const s = stateOf(S.state); S.plan = s ? (s.plans.find((p) => p.id === 'medicaid-ffs') || s.plans[0]).id : ''; fixLocation(); S.result = null; render(); };
-    $('rbPlan').onchange = (e) => { S.otherMods = []; S.modifier = ''; S.plan = e.target.value; fixLocation(); S.result = null; render(); };
+    $('rbState').onchange = (e) => { S.otherMods = []; S.modifier = ''; S.state = e.target.value; S.plan = planFor(S.state, !!S.product); fixLocation(); S.result = null; render(); };
+    $('rbPlan').onchange = (e) => { S.otherMods = []; S.modifier = ''; S.plan = e.target.value; setPref(S.plan); fixLocation(); S.result = null; render(); };
     if ($('rbLoc')) $('rbLoc').onchange = (e) => { S.location = e.target.value; };
     if ($('rbZip')) $('rbZip').oninput = (e) => { S.zip = e.target.value.trim(); S.zipSrc = META.branch_zip && S.zip === META.branch_zip ? 'branch' : 'patient'; const t = host.querySelector('.rb-zipsrc'); if (t) t.textContent = zipSrcLabel(); };
     $('rbDos').onchange = (e) => { S.dos = e.target.value; };
@@ -125,9 +143,10 @@
     const c = r.context, a = r.allowance, pr = r.purchase_rental, g = r.guidance;
     const ctx = `<dl class="rb-ctx"><div><dt>Payer / plan</dt><dd>${esc(c.payer)} · ${esc(c.plan_label)} · ${esc(c.state_name)}</dd></div><div><dt>${c.pricing_area ? 'Medicare pricing area' : 'Service location'}</dt><dd>${esc(c.location_label)}${c.pricing_area && c.pricing_area.ok && c.pricing_area.source === 'branch' ? '<div class="rb-small">Branch estimate — Medicare prices by the beneficiary\'s residence ZIP.</div>' : ''}</dd></div><div><dt>Date of service</dt><dd>${esc(c.dos_label)}</dd></div><div><dt>HCPCS</dt><dd>${esc(c.code)}${c.description ? ' — ' + esc(c.description) : ''}</dd></div></dl>`;
     const om = r.other_modifiers && r.other_modifiers.length ? `<div class="rb-small">Also published with modifiers: ${r.other_modifiers.map(esc).join(', ')} — choose one under Modifier to see it.</div>` : '';
+    const refWarn = refOn() ? `<div class="rb-warn rb-refnote" role="note">${esc(REF_ALLOW)}</div>` : '';
     const allow = a.status === 'ok'
-      ? `${itemsHtml(a)}${om}<div class="rb-small">Effective: ${esc(a.effective || '')}${a.note ? ' · ' + esc(a.note) : ''}</div>${r.informational ? `<div class="rb-warn">${esc(r.informational)}</div>` : ''}<div class="rb-src">Source · ${link(a.source && a.source.url, a.source && a.source.title)}${a.source && a.source.page ? ', page ' + esc(a.source.page) : ''}</div>`
-      : `<div class="rb-miss" role="status">${esc(a.message || NO_RATE)}</div><div class="rb-small">${esc(a.reason || '')}</div>${a.source ? `<div class="rb-src">Source checked · ${link(a.source.url, a.source.title)}</div>` : ''}`;
+      ? `${refWarn}${itemsHtml(a)}${om}<div class="rb-small">Effective: ${esc(a.effective || '')}${a.note ? ' · ' + esc(a.note) : ''}</div>${r.informational ? `<div class="rb-warn">${esc(r.informational)}</div>` : ''}<div class="rb-src">Source · ${link(a.source && a.source.url, a.source && a.source.title)}${a.source && a.source.page ? ', page ' + esc(a.source.page) : ''}</div>`
+      : `${refWarn}<div class="rb-miss" role="status">${esc(a.message || NO_RATE)}</div><div class="rb-small">${esc(a.reason || '')}</div>${a.source ? `<div class="rb-src">Source checked · ${link(a.source.url, a.source.title)}</div>` : ''}`;
     let prh = '';
     if (pr && pr.status === 'ok') {
       prh = (pr.lines || []).map((l) => `<div>${esc(l)}</div>`).join('');
@@ -150,7 +169,7 @@
      with every link printed as its address so the paper copy is usable too. Printed from a hidden frame (no pop-up). */
   function printRef() {
     const r = S.result; if (!r || !r.ok) return;
-    const prod = S.product && !S.product.noCode ? `<p><b>Product:</b> ${esc(S.product.name || '')}${S.product.code ? ' · Item # ' + esc(S.product.code) : ''}</p>` : '';
+    const prod = S.product && !S.product.noCode ? `<p><b>Product:</b> ${esc(S.product.name || '')}${S.product.code ? ' · Item # ' + esc(S.product.code) : ''}${refOn() ? ` — HCPCS ${esc(r.context.code)}: ${esc(REF_NOTE)}` : ''}</p>` : '';
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Billing reference ${esc(r.context.code)}</title><style>
       body{font:12px/1.45 -apple-system,Segoe UI,Arial,sans-serif;color:#111;margin:0}h1{font-size:18px;margin:0 0 2px}h3{font-size:13px;margin:14px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px}
       .note{font-size:11px;color:#444}table{border-collapse:collapse;width:100%;margin:4px 0}th,td{border:1px solid #bbb;padding:4px 6px;text-align:left;vertical-align:top}th{background:#f2f2f2}
@@ -173,7 +192,7 @@
   async function card(el, cfg) {
     if (!el) return;
     let m; try { m = await meta(cfg.api); } catch (e) { el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-s">${esc(e.message)}</div></div>`; return; }
-    const st = CARD.get(el) || { state: m.default_state || '', dos: m.today, zip: m.branch_zip || '', zsrc: 'branch', mplan: '', mploc: '' };
+    const st = CARD.get(el) || { state: m.default_state || '', dos: m.today, zip: m.branch_zip || '', zsrc: 'branch', mplan: PREF_PLAN && PREF_PLAN !== 'medicare' ? PREF_PLAN : '', mploc: '' };
     CARD.set(el, st);
     const prod = cfg.product || {};
     el.innerHTML = '<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-s">Loading…</div></div>';
@@ -181,10 +200,12 @@
       state: st.state, dos: st.dos, zip: st.zip || '', zip_source: st.zsrc, medicaid_plan: st.mplan || undefined, medicaid_location: st.mploc || undefined }); } catch (e) { r = null; }
     if (!r || !r.ok) { el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-s">${esc((r && r.error) || 'The reimbursement lookup could not be loaded — please try again.')}</div></div>`; return; }
     const mp = r.mapping || { codes: [] };
-    const full = Object.assign({}, prod, { codes: mp.codes, why: mp.why, status: mp.status, noCode: !mp.codes.length, informational: !!mp.informational });
-    if (mp.informational) { delete full.cost; delete full.cost_note; }   // lift chairs: informational only, no cost is carried anywhere
+    const full = Object.assign({}, prod, { codes: mp.codes, why: mp.why, status: mp.status, noCode: !mp.codes.length, informational: !!mp.informational, reference: !!mp.reference, pending: !!mp.pending });
+    if (mp.informational || mp.reference) { delete full.cost; delete full.cost_note; }   // informational / reference only: no cost is carried, no estimate
     if (!mp.codes.length) {
-      el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-miss">${esc(NO_CODE)}</div>${mp.why ? `<div class="pd-reimb-s">${esc(mp.why)}</div>` : ''}<a class="pd-reimb-go" role="button" tabindex="0">Open reimbursement lookup →</a></div>`;
+      el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div>${mp.pending
+        ? `<div class="pd-reimb-miss">${esc(PENDING)}</div>${mp.why ? `<div class="pd-reimb-s">${esc(String(mp.why).replace(/^Coding verification pending\.\s*/, ''))}</div>` : ''}`
+        : `<div class="pd-reimb-miss">${esc(NO_CODE)}</div>${mp.why ? `<div class="pd-reimb-s">${esc(mp.why)}</div>` : ''}`}<a class="pd-reimb-go" role="button" tabindex="0">Open reimbursement lookup →</a></div>`;
       bindGo(el, () => cfg.open({ product: full })); return;
     }
     if (r.state) { st.state = r.state; st.dos = r.dos; st.zip = r.zip || ''; st.zsrc = r.zip_source || 'branch'; st.mplan = r.medicaid_plan || ''; st.mploc = r.medicaid_location || ''; }
@@ -201,12 +222,12 @@
     const groups = mp.codes.map((c) => {
       const rows = (r.rows || []).filter((x) => x.code === c.code && !x.conditional);
       const alt = c.conditional ? (r.rows || []).filter((x) => x.code === c.conditional.code && x.conditional) : [];
-      return `<div class="pd-reimb-code">HCPCS ${esc(codeLabel(c))}</div>${c.component === 'mechanism' ? `<div class="pd-reimb-s">${esc(mp.why)}</div>` : ''}${rows.map(rowHtml).join('')}
+      return `<div class="pd-reimb-code">HCPCS ${esc(codeLabel(c))}${mp.reference ? ` <span class="pd-reimb-ref">${esc(REF_NOTE)}</span>` : ''}</div>${c.component === 'mechanism' ? `<div class="pd-reimb-s">${esc(mp.why)}</div>` : ''}${mp.reference ? `<div class="pd-reimb-s pd-reimb-cond" role="note">${esc(mp.allowance_note || REF_ALLOW)}</div>` : ''}${rows.map(rowHtml).join('')}
         ${c.conditional ? `<div class="pd-reimb-s pd-reimb-cond">${esc(c.conditional.note)}</div>${alt.map(rowHtml).join('')}` : ''}`;
     }).join('');
     const stOpts = (m.states || []).map((s) => `<option value="${esc(s.id)}"${s.id === st.state ? ' selected' : ''}>${esc(s.name)}</option>`).join('');
     el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div>
-      ${mp.codes.every((c) => c.component !== 'mechanism') && mp.why ? `<div class="pd-reimb-s">${esc(mp.why)}</div>` : ''}
+      ${mp.codes.every((c) => c.component !== 'mechanism') && mp.why ? `<div class="pd-reimb-s">${esc(mp.reference ? String(mp.why).replace(REF_NOTE, '').trim() : mp.why)}</div>` : ''}
       <div class="pd-reimb-ctl">
         <label>State<select data-k="state"><option value="">Choose…</option>${stOpts}</select></label>
         <label>Date of service<input type="date" data-k="dos" value="${esc(st.dos)}"></label>
@@ -216,9 +237,9 @@
       </div>
       ${st.state ? groups : '<div class="pd-reimb-s">Choose a state to see Original Medicare and Medicaid allowances.</div>'}
       ${mp.informational ? `<div class="pd-reimb-s pd-reimb-info">${esc(mp.informational_note || 'Informational only.')}</div>` : ''}
-      <div class="pd-reimb-links"><a class="pd-reimb-go" role="button" tabindex="0">View billing details →</a>${mp.informational ? '' : '<a class="pd-reimb-go pd-reimb-calc" role="button" tabindex="0">Insurance earnings calculator (dealer only) →</a>'}</div></div>`;
+      <div class="pd-reimb-links"><a class="pd-reimb-go" role="button" tabindex="0">${mp.reference ? 'Open the code\'s fee schedule →' : 'View billing details →'}</a>${mp.informational || mp.reference ? '' : '<a class="pd-reimb-go pd-reimb-calc" role="button" tabindex="0">Insurance earnings calculator (dealer only) →</a>'}</div>${mp.reference ? '<div class="pd-reimb-s">Insurance earnings estimates are available only for verified model codes.</div>' : ''}</div>`;
     el.querySelectorAll('[data-k]').forEach((x) => { x.onchange = () => { const k = x.getAttribute('data-k'); st[k] = String(x.value).trim(); if (k === 'zip') st.zsrc = m.branch_zip && st.zip === m.branch_zip ? 'branch' : 'patient'; if (k === 'state') { st.mplan = ''; st.mploc = ''; } if (k === 'mplan') st.mploc = ''; card(el, cfg); }; });
-    const go = () => cfg.open({ product: full, code: mp.codes[0], state: st.state, plan: 'medicare', zip: st.zip || '', zipSrc: st.zsrc, dos: st.dos });
+    const go = () => cfg.open({ product: full, code: mp.codes[0], state: st.state, plan: planFor(st.state, true) || 'medicare', zip: st.zip || '', zipSrc: st.zsrc, dos: st.dos });
     el.querySelectorAll('.pd-reimb-go').forEach((a) => bindOne(a, go));
   }
   function bindOne(a, fn) { if (!a) return; a.onclick = fn; a.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } }; }
@@ -324,7 +345,7 @@
     .rb-calc th{width:45%}.rb-calcgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:14px;align-items:start}
     .rb-asm{background:var(--soft,#f6f8fb);border:1px solid var(--line-2,#e6eaf0);border-radius:10px;padding:10px 12px}.rb-asm h4{margin:0 0 6px;font-size:13px}
     .rb-assume{margin:0;display:flex;flex-direction:column;gap:6px}.rb-assume dt{font-size:11px;font-weight:800;color:var(--muted,#667);text-transform:uppercase;letter-spacing:.3px}.rb-assume dd{margin:1px 0 0;font-size:13px}
-    .rb-zipsrc{font-weight:400;font-size:11.5px}
+    .rb-zipsrc{font-weight:400;font-size:11.5px}.rb-ref{font-weight:800;color:#7a4b00}
     @media (max-width:760px){.rb-calcgrid{grid-template-columns:1fr}.rb-grid{grid-template-columns:1fr}.rb-ctx{grid-template-columns:1fr 1fr}.rb-tab{font-size:13px}}`;
 
   window.HCPSReimb = { mount, card, estimate, NO_CODE, NO_RATE };
