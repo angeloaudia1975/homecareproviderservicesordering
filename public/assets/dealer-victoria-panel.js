@@ -1,4 +1,6 @@
 /* Dealer Victoria — the panel (owner 2026-11-19 22:07, TEST-dealer preview). Loaded only when the dealer opens the orb.
+   - Voice: Victoria's Command Center voice (Deepgram Aura-2, chosen on the server from the owner's Command Center setting) for
+     the welcome and her answers; answers are spoken only with the server's token for that exact answer.
    - Greeting: fixed text from the server for THIS person (first open vs later) — no model call. Every deliberate opening
      turns voice ON and the launcher speaks the greeting inside that tap (owner 2026-11-20 10:37); the panel shows it at once.
      "Voice off" stops the speech and mutes the rest of THIS opening; the next opening turns voice on again. Typing always
@@ -85,7 +87,7 @@
     let busy = false, aiOn = !(DV.ai && DV.ai.available === false);
     /* voice belongs to ONE opening: on when it opens, "Voice off" mutes the rest of it, the next opening turns it on again */
     const SP = orbHost.__dvSpeech || { speak: () => false, stop: () => {}, supported: () => false };
-    let voiceOn = true, lastSpoken = '';
+    let voiceOn = true, lastSpoken = { text: '', kind: 'greeting', token: null };
     const vb = $('.v'), retry = $('.retry'), vnote = $('.vnote');
     /* the label names the ACTION ("Voice off" while audio is on); no aria-pressed, so a screen reader hears the action */
     const setVoice = (on) => { voiceOn = !!on; vb.dataset.voice = voiceOn ? 'on' : 'off'; vb.textContent = voiceOn ? '🔇 Voice off' : '🔊 Voice on';
@@ -94,10 +96,10 @@
     SP.onstate = (st, why) => { orb.dataset.s = st === 'speaking' ? 'speaking' : 'idle';
       if (st === 'speaking') { retry.hidden = true; vnote.hidden = true; }
       if (st === 'blocked' && voiceOn) { retry.hidden = !SP.supported(); vnote.hidden = false;
-        vnote.textContent = SP.supported() ? 'Your browser didn\'t play Victoria\'s voice. The text is here — tap "Tap to hear Victoria" to try again.' : 'Voice isn\'t available in this browser. Everything Victoria says is shown here as text.'; } };
-    retry.onclick = () => { if (!voiceOn) setVoice(true); SP.speak(lastSpoken || $('.hello').textContent); };
+        vnote.textContent = SP.supported() ? 'Victoria\'s voice didn\'t play. The text is here — tap "Tap to hear Victoria" to try again.' : 'Victoria\'s voice isn\'t available just now. Everything she says is shown here as text.'; } };
+    retry.onclick = () => { if (!voiceOn) setVoice(true); const l = lastSpoken.text ? lastSpoken : { text: $('.hello').textContent, kind: 'greeting' }; SP.speak(l.text, { kind: l.kind, token: l.token }); };
     function stopSpeaking() { SP.stop(); }
-    function speak(text) { lastSpoken = String(text || ''); if (!voiceOn || !text) return; SP.speak(text); }
+    function speak(text, kind, token) { lastSpoken = { text: String(text || ''), kind: kind === 'answer' ? 'answer' : 'greeting', token: token || null }; if (!voiceOn || !text) return; SP.speak(text, { kind: lastSpoken.kind, token: lastSpoken.token }); }
     function setAi(on) { aiOn = on; $('.ai-off').hidden = on; sh.querySelectorAll('.chip').forEach((c) => { c.disabled = !on; }); inp.disabled = !on; $('.go').disabled = !on; }
     function refreshChips() { const hasP = !!(DV.context && DV.context().product); sh.querySelectorAll('.chip[data-needs="product"]').forEach((c) => { c.hidden = !hasP; }); }
     function place() {
@@ -160,7 +162,7 @@
         line('', over ? "Victoria has reached her limit for now. Contact HCPS support below — they can help right away." : "Victoria can't answer just now. Contact HCPS support below — they can help right away.");
         if (over) setAi(false); return;
       }
-      const a = line('', r.answer || 'Here is what I found.'); speak(r.answer);
+      const a = line('', r.answer || 'Here is what I found.'); speak(r.answer, 'answer', r.speech_token);
       for (const c of r.cards || []) {
         if (c.type === 'golden_orders') orderCard(c, (r.cards || []).length === 1);
         else if (c.type === 'not_found') cardEl(`<div class="m">${esc(c.text)}</div>`);
@@ -172,14 +174,14 @@
     /* records this opening on the server (first welcome vs later, per person) — the text was already shown and spoken */
     async function hello(shown) {
       let r = null; try { r = await DV.api({ action: 'hello' }); } catch (e) { r = null; }
-      if (!shown) { const text = (r && r.ok && r.greeting) || 'Hello! How can I help you today?'; $('.hello').textContent = text; speak(text); }
+      if (!shown) { const text = (r && r.ok && r.greeting) || 'Hello! How can I help you today?'; $('.hello').textContent = text; speak(text, 'greeting'); }
     }
     const api = {
       /* opts.greeting: the welcome the launcher already started speaking inside the opening tap */
       toggle(on, opts) { const show = on == null ? P.hidden : on; P.hidden = !show;
         if (show) {
           setVoice(true); retry.hidden = true; vnote.hidden = true;                 // every opening: voice on
-          const g = opts && opts.greeting; if (g) { $('.hello').textContent = g; lastSpoken = g; }
+          const g = opts && opts.greeting; if (g) { $('.hello').textContent = g; lastSpoken = { text: g, kind: 'greeting', token: null }; }
           refreshChips(); place(); hello(!!g); setAi(aiOn);
           const f = sh.querySelector('.chip:not([hidden])') || inp; try { f.focus(); } catch (e) {}
         } else { stopSpeaking(); if (on === false && orbHost.__dvFocus) orbHost.__dvFocus(); }   // closing gives focus back to the orb

@@ -5,7 +5,8 @@
    prefers-reduced-motion, and pauses while the tab is hidden. The panel (greeting, support contact, voice) loads when the
    dealer first opens it.
    Voice on every opening: every deliberate tap that OPENS Victoria turns voice on and speaks the welcome for this person
-   inside that same tap (browsers only play speech started by a deliberate interaction) — no AI call, no waiting.
+   inside that same tap (browsers only play audio started by a deliberate interaction) — no AI call; the welcome audio, in
+   Victoria's Command Center voice (Deepgram), was fetched ahead of the tap.
    Place: lower right, where the HCPS chat button was (the chat now opens from "Contact HCPS support" in the panel); it
    stays clear of other bottom-right fixed elements and lifts above a page control (Add to cart, quantity …) when the
    dealer stops scrolling with one beneath it. If the panel cannot load, a small support card still opens. */
@@ -40,39 +41,80 @@
     ob0.appendChild(v); v.playbackRate = 0.6; if (!document.hidden) v.play().catch(() => {});
   }
   /* the panel script is fetched once the page is usable too, so the first opening shows the greeting at once */
-  const PANEL_SRC = () => (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=3');
+  const PANEL_SRC = () => (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=4');
   let panelLoad = null;
   const loadPanel = () => panelLoad || (panelLoad = window.DealerVictoriaPanel ? Promise.resolve() : new Promise((ok, bad) => { const s = document.createElement('script'); s.src = PANEL_SRC(); s.onload = ok; s.onerror = (e) => { panelLoad = null; bad(e); }; document.head.appendChild(s); }));
-  const idle = () => { motion(); loadPanel().catch(() => {}); };
+  const idle = () => { motion(); loadPanel().catch(() => {}); const D = window.DV || {}; SPEECH.prefetch(D.greeting); if (D.greeting_again && D.greeting_again !== D.greeting) SPEECH.prefetch(D.greeting_again); };
   const goMotion = () => (window.requestIdleCallback ? requestIdleCallback(idle, { timeout: 1500 }) : setTimeout(idle, 300));
   if (document.readyState === 'complete') goMotion(); else addEventListener('load', goMotion, { once: true });
   if (RM.addEventListener) RM.addEventListener('change', () => { if (RM.matches) { const v = ob0.querySelector('video'); if (v) v.remove(); ob0.classList.remove('live'); } else goMotion(); });
   document.addEventListener('visibilitychange', () => { const v = ob0.querySelector('video'); if (v) { if (document.hidden) v.pause(); else v.play().catch(() => {}); } });
 
-  /* ---- voice: one speech helper for the launcher and the panel ----
-     speak() is called synchronously inside the opening tap. Chrome can drop an utterance queued in the same tick as
-     cancel(), so cancel only when something is actually playing. If nothing starts within 2.5 s (a browser that blocks
-     audio, or no speech engine) the panel shows the text and a "Tap to hear Victoria" retry. */
+  /* ---- voice: one speech helper for the launcher and the panel (owner 2026-11-20 11:21: Victoria's Command Center voice) ----
+     Victoria speaks with the Deepgram Aura-2 voice saved in the owner's Command Center settings (the server picks it; the
+     portal never chooses a voice). The welcome audio is fetched ahead of the tap once the page is usable — and kept in the
+     browser's Cache Storage by voice + text — so the opening tap only has to press play. If the audio is not ready yet, the
+     tap starts a short silent clip on the SAME audio element (that is what lets a phone play the real audio a moment later).
+     Every event is logged (host.__dvSpeech.log) and counted on the server as a browser REPORT (requested / playing / ended /
+     stopped / blocked / failed) — playback events, not proof that a person heard it. If nothing starts, the panel keeps the
+     text and offers "Tap to hear Victoria". */
   const SPEECH = (function () {
-    const ok = () => !!(window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined');
-    let cur = null, watch = 0; const L = { onstate: null };
+    const L = { onstate: null, log: [] }; const DVx = () => window.DV || {};
+    const audio = new Audio(); audio.preload = 'auto'; audio.setAttribute('playsinline', ''); audio.setAttribute('aria-hidden', 'true');
+    /* a 40 ms silent WAV made here (no file to load) — played inside the tap when the real audio is not ready yet */
+    const SILENT = (function () { const n = 320, b = new Uint8Array(44 + n); const v = new DataView(b.buffer); const w = (o, s) => { for (let i = 0; i < s.length; i++) b[o + i] = s.charCodeAt(i); };
+      w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true); b.fill(128, 44);
+      let s = ''; b.forEach((x) => { s += String.fromCharCode(x); }); return 'data:audio/wav;base64,' + btoa(s); })();
+    let gen = 0, watch = 0, silent = false, reached = 0; const ready = new Map(), pending = new Map();
+    const ev = (e, x) => { L.log.push(Object.assign({ e, t: Math.round(performance.now()) }, x || {})); if (L.log.length > 200) L.log.shift(); };
+    const report = (e) => { try { const d = DVx(); if (d.api) d.api({ action: 'playback', event: e }).catch(() => {}); } catch (er) {} };
     const set = (st, why) => { ob0.dataset.s = st === 'speaking' ? 'speaking' : 'idle'; if (L.onstate) try { L.onstate(st, why); } catch (e) {} };
-    L.supported = ok;
-    L.speak = (text) => {
-      clearTimeout(watch); if (!text) return false;
-      if (!ok()) { set('blocked', 'unsupported'); return false; }
-      try {
-        const ss = window.speechSynthesis; if (ss.speaking || ss.pending) ss.cancel();
-        const u = new SpeechSynthesisUtterance(String(text).slice(0, 1600)); u.lang = 'en-US'; cur = u; let started = false;
-        u.onstart = () => { if (cur !== u) return; started = true; clearTimeout(watch); set('speaking'); };
-        u.onend = () => { if (cur === u) { cur = null; set('idle'); } };
-        u.onerror = (e) => { if (cur !== u) return; cur = null; clearTimeout(watch); const er = e && e.error; set(er === 'interrupted' || er === 'canceled' ? 'idle' : 'blocked', er || 'error'); };
-        ss.speak(u); if (ss.paused) ss.resume();
-        watch = setTimeout(() => { if (cur === u && !started && !ss.speaking) { cur = null; try { ss.cancel(); } catch (e) {} set('blocked', 'no_start'); } }, 2500);
-        return true;
-      } catch (e) { set('blocked', 'error'); return false; }
+    const fail = (my, why, kind) => { if (my !== gen) return; clearTimeout(watch); ev(kind || 'blocked', { why }); report(kind || 'blocked'); set('blocked', why); };
+    audio.addEventListener('playing', () => { if (silent) return; clearTimeout(watch); reached = 0; ev('playing', { src: 'deepgram' }); report('playing'); set('speaking'); });
+    audio.addEventListener('timeupdate', () => { if (!silent) reached = Math.max(reached, audio.currentTime || 0); });
+    audio.addEventListener('ended', () => { if (silent) return; ev('ended', { played_s: Math.round(reached * 10) / 10, duration_s: Math.round((audio.duration || 0) * 10) / 10 }); report('ended'); set('idle'); });
+    audio.addEventListener('error', () => { if (silent) return; fail(gen, 'media_error', 'failed'); });
+    L.supported = () => typeof Audio !== 'undefined' && !(DVx().voice && DVx().voice.available === false);
+    L.voice = () => (DVx().voice || null);
+    const fnv = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
+    const store = (key) => (window.caches ? caches.open('dv-voice-v1').then((c) => c) : Promise.reject(new Error('no cache')));
+    /* the audio for a text → object URL; greetings are kept in Cache Storage (by voice + text), answers only for this page */
+    L.fetch = (text, kind, token) => {
+      const k = kind + '|' + text; if (ready.has(k)) return Promise.resolve({ url: ready.get(k) }); if (pending.has(k)) return pending.get(k);
+      const vid = (DVx().voice || {}).id || 'voice'; const ck = kind === 'greeting' ? '/__dv-voice/' + encodeURIComponent(vid) + '/' + fnv(text) : null;
+      const p = (async () => {
+        if (ck) { try { const c = await store(); const hit = await c.match(ck); if (hit) { const u = URL.createObjectURL(await hit.blob()); ready.set(k, u); return { url: u, cached: true }; } } catch (e) {} }
+        let r = null; try { r = await DVx().api({ action: 'speak', kind, text, token }); } catch (e) { r = null; }
+        if (!r || r.ok !== true || !r.audio) return { error: (r && r.error) || 'voice_failed' };
+        const bin = atob(r.audio), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+        const blob = new Blob([u8], { type: r.mime || 'audio/mpeg' });
+        if (ck) { try { const c = await store(); await c.put(ck, new Response(blob, { headers: { 'content-type': blob.type } })); } catch (e) {} }
+        const u = URL.createObjectURL(blob); ready.set(k, u); return { url: u, voice: r.voice };
+      })().finally(() => pending.delete(k));
+      pending.set(k, p); return p;
     };
-    L.stop = () => { clearTimeout(watch); cur = null; try { if (ok() && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) window.speechSynthesis.cancel(); } catch (e) {} set('idle'); };
+    L.prefetch = (text) => (text && L.supported() ? L.fetch(text, 'greeting').then((r) => { ev('prefetched', { ok: !r.error, cached: !!r.cached }); return r; }) : Promise.resolve(null));
+    function start(url, my) {
+      silent = false; audio.src = url; try { audio.currentTime = 0; } catch (e) {}
+      const p = audio.play(); if (p && p.catch) p.catch((err) => fail(my, (err && err.name) || 'blocked'));
+      clearTimeout(watch); watch = setTimeout(() => { if (my === gen && audio.paused) fail(my, 'no_start'); }, 4000);
+    }
+    /* called synchronously inside the opening tap (before any await) */
+    L.speak = (text, opts) => {
+      const o = opts || {}, kind = o.kind === 'answer' ? 'answer' : 'greeting'; clearTimeout(watch); const my = ++gen;
+      if (!text) return false;
+      if (!L.supported()) { set('blocked', 'unsupported'); return false; }
+      ev('requested', { kind }); report('requested');
+      try { if (!audio.paused) audio.pause(); } catch (e) {}
+      const k = kind + '|' + text;
+      if (ready.has(k)) { start(ready.get(k), my); return true; }
+      silent = true; try { audio.src = SILENT; const pp = audio.play(); if (pp && pp.catch) pp.catch(() => {}); } catch (e) {}
+      watch = setTimeout(() => { if (my === gen && (silent || audio.paused)) fail(my, 'slow'); }, 9000);
+      L.fetch(text, kind, o.token).then((r) => { if (my !== gen) return; if (r.error) return fail(my, r.error, 'failed'); start(r.url, my); });
+      return true;
+    };
+    L.stop = () => { clearTimeout(watch); gen++; const was = !silent && !audio.paused; try { audio.pause(); } catch (e) {} if (was) { ev('stopped'); report('stopped'); } silent = false; set('idle'); };
+    L.audio = audio;
     return L;
   })();
   host.__dvSpeech = SPEECH;
@@ -127,7 +169,7 @@
     if (opening) {                                                    // speak FIRST, inside this tap — before any await
       greet = DV.greeting || 'Hello! How can I help you today?';
       DV.greeting = DV.greeting_again || DV.greeting;                // a later opening on this page gets the short welcome
-      SPEECH.speak(greet);
+      SPEECH.speak(greet, { kind: 'greeting' });
     }
     if (!panel) {                                                     // normally already fetched while the page was idle
       try { await loadPanel(); panel = window.DealerVictoriaPanel && window.DealerVictoriaPanel(host); } catch (e) { panel = null; }

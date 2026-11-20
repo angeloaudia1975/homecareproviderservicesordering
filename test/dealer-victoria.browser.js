@@ -32,14 +32,18 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
   try {
     for (const [w, h, label] of [[1280, 800, 'desktop'], [768, 1024, 'tablet'], [390, 844, 'phone']]) {
       const { ctx, page } = await open(b, w, h, { prices: { dalton: 109 } });
-      let first = true, aiOn = true, asks = [], hellos = 0, panelReq = 0, chatOpened = 0, spoken = [];
+      let first = true, aiOn = true, asks = [], hellos = 0, panelReq = 0, chatOpened = 0, spoken = [], speakReqs = [], playbacks = [];
       await page.route('**/dealer-victoria-api', async (r) => { const x = JSON.parse(r.request().postData() || '{}'); let body;
-        if (x.action === 'status') body = { ok: true, enabled: true, preview: true, first_name: 'Ann', greeting: V._test.greeting('Ann', first), greeting_again: V._test.greeting('Ann', false), ai: aiOn ? { available: true } : { available: false, reason: 'over_budget' }, support: { chat: true, phone: '(888) 626-3140', phone_tel: '+18886263140', office: '937-626-5141', office_tel: '+19376265141', email: 'info@homecareproviderservices.us' } };
+        if (x.action === 'speak') { speakReqs.push({ kind: x.kind, text: x.text, token: x.token || null });
+          const fake = Buffer.concat([Buffer.from('FAKEMP3:' + x.text), Buffer.alloc(64)]).toString('base64');
+          body = { ok: true, kind: x.kind, voice: 'aura-2-thalia-en', mime: 'audio/mpeg', audio: fake, chars: x.text.length, usd: 0 }; }
+        else if (x.action === 'playback') { playbacks.push(x.event); body = { ok: true }; }
+        else if (x.action === 'status') body = { ok: true, enabled: true, preview: true, first_name: 'Ann', voice: { id: 'aura-2-thalia-en', label: 'Thalia — clear, energetic (female, US)', source: 'command_center_owner_setting', available: true, provider: 'deepgram' }, greeting: V._test.greeting('Ann', first), greeting_again: V._test.greeting('Ann', false), ai: aiOn ? { available: true } : { available: false, reason: 'over_budget' }, support: { chat: true, phone: '(888) 626-3140', phone_tel: '+18886263140', office: '937-626-5141', office_tel: '+19376265141', email: 'info@homecareproviderservices.us' } };
         else if (x.action === 'hello') { hellos++; body = { ok: true, enabled: true, first, greeting: V._test.greeting('Ann', first), model_call: false }; first = false; }
         else if (x.action === 'ask') { asks.push(x); const ctx2 = { dealer_id: 'hq', bearer: 'Bearer tok', page: x.page || {} }; const q = String(x.question);
           const tool = /order/i.test(q) ? await V._test.toolGoldenOrder(ctx2, {}) : /medicare|allow/i.test(q) ? await V._test.toolReimb(ctx2) : /quote/i.test(q) ? await V._test.toolQuote(ctx2, { qty: 2 }) : { result: {} };
           const billing = tool.card && tool.card.type === 'reimbursement';
-          body = { ok: true, answer: 'Here is what I found.' + (billing ? '\n\n' + V._test.BILLING_DISCLAIMER : ''), disclaimer: billing ? V._test.BILLING_DISCLAIMER : null, cards: tool.card ? [tool.card] : [], actions: tool.action ? [tool.action] : [], usage: { model: 'claude-haiku-5-5', usd: 0.0004, ms: 1500 } }; }
+          body = { ok: true, speech_token: 'tok-' + asks.length, answer: 'Here is what I found.' + (billing ? '\n\n' + V._test.BILLING_DISCLAIMER : ''), disclaimer: billing ? V._test.BILLING_DISCLAIMER : null, cards: tool.card ? [tool.card] : [], actions: tool.action ? [tool.action] : [], usage: { model: 'claude-haiku-5-5', usd: 0.0004, ms: 1500 } }; }
         return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) }); });
       await page.route('**/assets/dealer-victoria-panel.js*', (r) => { panelReq++; return r.fallback(); });
       await page.route('**/dealer-reports-api', (r) => { const x = JSON.parse(r.request().postData() || '{}'); return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(x.action === 'golden_orders' ? GOLDEN : { ok: false }) }); });
@@ -49,15 +53,24 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       /* the live chat widget, as Zoho draws it (55 × 55, 10 px from the right and bottom) + its API */
       await page.evaluate(() => { const z = document.createElement('div'); z.id = 'zsiq_float'; z.style.cssText = 'position:fixed;right:10px;bottom:10px;width:55px;height:55px;border-radius:50%;background:#1681c2;z-index:2147483000'; document.body.appendChild(z);
         window.__chat = 0; window.$zoho = window.$zoho || {}; window.$zoho.salesiq = Object.assign(window.$zoho.salesiq || {}, { floatbutton: { visible: () => {} }, floatwindow: { visible: (v) => { if (v === 'show') window.__chat++; } } });
-        window.__spoken = []; window.__speakState = [];
-        window.__blockAudio = false; window.__cancels = 0;
-        Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speaking: false, pending: false, paused: false, resume() {},
-          cancel() { window.__cancels++; this.speaking = false; },
-          speak(u) { window.__spoken.push(u.text); if (window.__blockAudio) return;                     // a browser that blocks audio: nothing starts
-            const ss = this; ss.speaking = true; setTimeout(() => { if (u.onstart) u.onstart();
-              const o = document.getElementById('dvOrbHost'); window.__speakState.push(o ? o.shadowRoot.querySelector('button').dataset.s : null);
-              setTimeout(() => { ss.speaking = false; u.onend && u.onend(); }, 50); }, 5); } } });
-        Object.defineProperty(window, 'SpeechSynthesisUtterance', { configurable: true, value: function (tx) { this.text = tx; } });
+        /* Victoria's voice is Deepgram audio played through ONE <audio> element (owner 2026-11-20 11:21). The stub: each fake
+           mp3 carries its own text, so __spoken lists what was PLAYED, in order; __blockAudio makes play() refuse as a browser
+           that blocks audio does; 'playing' then 'ended' fire like a real element. */
+        window.__plays = []; window.__speakState = []; window.__blobText = new Map(); window.__blockAudio = false; window.__cancels = 0; window.__silentPlays = 0;
+        const oc = URL.createObjectURL.bind(URL); URL.createObjectURL = (b) => { const u = oc(b); if (b && b.text) b.text().then((t) => window.__blobText.set(u, t)); return u; };
+        Object.defineProperty(window, '__spoken', { configurable: true, get: () => window.__plays.map((u) => String(window.__blobText.get(u) || '?').replace(/^FAKEMP3:/, '').replace(/\u0000+$/, '')) });
+        const M = HTMLMediaElement.prototype;
+        Object.defineProperty(M, 'paused', { configurable: true, get() { return this.__p !== false; } });
+        Object.defineProperty(M, 'src', { configurable: true, get() { return this.__src || ''; }, set(v) { this.__src = String(v); } });   // no real decoding of the fake mp3
+        M.pause = function () { if (this.__p === false) window.__cancels++; this.__p = true; clearTimeout(this.__end); };
+        const vplay = M.play; M.play = function () { const el = this, src = el.src || ''; if (el.tagName !== 'AUDIO') { el.__p = false; return Promise.resolve(); }   // the globe video is not speech
+          if (window.__blockAudio) return Promise.reject(new DOMException('blocked', 'NotAllowedError'));
+          if (/^data:audio\/wav/.test(src)) { window.__silentPlays++; el.__p = false; el.__end = setTimeout(() => { el.__p = true; }, 40); return Promise.resolve(); }
+          window.__plays.push(src); el.__p = false;
+          setTimeout(() => { if (el.__p !== false || el.src !== src) return; el.dispatchEvent(new Event('playing'));
+            const o = document.getElementById('dvOrbHost'); window.__speakState.push(o ? o.shadowRoot.querySelector('button').dataset.s : null);
+            el.__end = setTimeout(() => { if (el.src !== src) return; el.__p = true; el.dispatchEvent(new Event('ended')); }, 60); }, 5);
+          return Promise.resolve(); };
         window.__PREVIEW__ = null; window.needsAccess = () => false; });
       const zoneBefore = await page.evaluate(() => getComputedStyle(document.getElementById('zsiq_float')).display);
       await page.evaluate(() => window.dvProbe()); await page.waitForFunction(() => document.getElementById('dvOrbHost'), null, { timeout: 15000 }); await page.waitForTimeout(300);
@@ -93,10 +106,15 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
         ok(cClosed.length >= 2 && cClosed.every((x) => !x.by_orb), 'orb covers: ' + JSON.stringify(cClosed));
         ok(pos.sw <= pos.vw + 1, 'scroll ' + pos.sw);
       });
+      await t(`${label}: the welcome audio (Command Center voice, Deepgram) is fetched ahead of the tap — both welcomes, greeting kind only, no AI call`, async () => {
+        await page.waitForFunction(() => (document.getElementById('dvOrbHost').__dvSpeech.log || []).filter((x) => x.e === 'prefetched').length >= 2, null, { timeout: 10000 });
+        const kinds = speakReqs.map((x) => x.kind + ':' + x.text);
+        ok(kinds.includes('greeting:' + V._test.greeting('Ann', true)) && kinds.includes('greeting:' + V._test.greeting('Ann', false)) && asks.length === 0 && hellos === 0, JSON.stringify(kinds)); });
       if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `dv-closed-${label}.png`) });
       const searchClosed = await R('.hsearch');
       /* open: the panel loads now; first open greets by name */
-      await page.evaluate(() => document.getElementById('dvOrbHost').shadowRoot.querySelector('button').click());
+      const inTap = await page.evaluate(() => { const n = window.__plays.length; document.getElementById('dvOrbHost').shadowRoot.querySelector('button').click(); return { played_in_tap: window.__plays.length - n }; });
+      await t(`${label}: the opening tap starts the prefetched welcome audio synchronously, inside the tap (no network wait)`, () => ok(inTap.played_in_tap === 1, JSON.stringify(inTap)));
       await page.waitForFunction(() => { const h = document.getElementById('dvPanelHost'); return h && /Hello|Hi/.test(h.shadowRoot.querySelector('.hello').textContent); }, null, { timeout: 10000 });
       const g1 = await page.evaluate(() => document.getElementById('dvPanelHost').shadowRoot.querySelector('.hello').textContent);
       const open1 = await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; const r = s.querySelector('.p').getBoundingClientRect(); const o = document.getElementById('dvOrbHost').getBoundingClientRect(); const c = document.getElementById('gcartPill').getBoundingClientRect();
@@ -144,7 +162,7 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       const seq = await page.evaluate(async () => {
         const o = () => document.getElementById('dvOrbHost').shadowRoot.querySelector('button'); const s = document.getElementById('dvPanelHost').shadowRoot; const W = (ms) => new Promise((r) => setTimeout(r, ms));
         const n0 = window.__spoken.length; const c0 = window.__cancels;
-        s.querySelector('.v').click(); const off = { text: s.querySelector('.v').textContent.trim(), pressed: s.querySelector('.v').dataset.voice, cancelled: window.__cancels > c0 || !window.speechSynthesis.speaking };
+        s.querySelector('.v').click(); const off = { text: s.querySelector('.v').textContent.trim(), pressed: s.querySelector('.v').dataset.voice, cancelled: window.__cancels > c0 || document.getElementById('dvOrbHost').__dvSpeech.audio.paused };
         s.querySelector('.x').click(); await W(50); const closed = s.querySelector('.p').hidden;
         o().click(); await W(120);
         return { off, closed, reopened: !s.querySelector('.p').hidden, spokenAgain: window.__spoken.slice(n0), label: s.querySelector('.v').textContent.trim(), typing: !s.querySelector('.ask input').disabled }; });
@@ -170,6 +188,7 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
         const D = 'HCPS is not a billing specialist and is not qualified to provide coding or billing advice. This information is for reference only. The biller is responsible for confirming that the exact product supplied meets the applicable HCPCS code requirements and for verifying the payer’s billing and coverage rules before submitting a claim.';
         ok(rc.includes(D) && panelTxt.includes(D), 'the fixed disclaimer is in Victoria\'s card and the product panel');
       });
+      await page.waitForTimeout(250);
       await t(`${label}: voice on — the reimbursement answer is spoken WITH the disclaimer and the globe glows while Victoria speaks`, async () => { const sp = await page.evaluate(() => [window.__spoken.slice(), window.__speakState.slice()]); const D = V._test.BILLING_DISCLAIMER; ok(sp[0].some((x) => x.startsWith('Here is what I found.') && x.endsWith(D)) && sp[1].includes('speaking'), 'the spoken reimbursement answer ends with the fixed disclaimer: ' + JSON.stringify(sp).slice(0, 600)); });
       /* the fee schedule from Victoria's card → the existing page */
       await page.evaluate(() => document.getElementById('dvPanelHost').shadowRoot.querySelector('.card .fee').click());
@@ -200,11 +219,22 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       /* a browser that blocks audio: the text stays, "Tap to hear Victoria" retries from a tap */
       const blk = await page.evaluate(async () => { const h = document.getElementById('dvPanelHost'); const s = h.shadowRoot; const o = document.getElementById('dvOrbHost').shadowRoot.querySelector('button');
         if (!s.querySelector('.p').hidden) s.querySelector('.x').click();
-        window.__blockAudio = true; o.click(); await new Promise((r) => setTimeout(r, 2900));
+        window.__blockAudio = true; o.click(); await new Promise((r) => setTimeout(r, 600));
         const st = { text: s.querySelector('.hello').textContent, retry: !s.querySelector('.retry').hidden, note: s.querySelector('.vnote').textContent };
-        window.__blockAudio = false; const n = window.__spoken.length; s.querySelector('.retry').click(); await new Promise((r) => setTimeout(r, 120));
+        window.__blockAudio = false; const n = window.__spoken.length; s.querySelector('.retry').click(); await new Promise((r) => setTimeout(r, 200));
         return Object.assign(st, { retried: window.__spoken.slice(n), retryHidden: s.querySelector('.retry').hidden }); });
       await t(`${label}: audio blocked — the greeting stays as text with "Tap to hear Victoria"; the retry speaks it`, () => ok(/Hi, Ann/.test(blk.text) && blk.retry && /didn.t play/.test(blk.note) && blk.retried.length === 1 && /Hi, Ann/.test(blk.retried[0]) && blk.retryHidden, JSON.stringify(blk)));
+      /* audio not fetched yet: the tap unlocks the element with a silent clip, the real audio plays when it arrives */
+      const nr = await page.evaluate(async () => { const S = document.getElementById('dvOrbHost').__dvSpeech; const sp0 = window.__silentPlays, n = window.__plays.length;
+        S.speak('An answer that was not fetched yet.', { kind: 'answer', token: 'tok-x' }); const silentInTap = window.__silentPlays - sp0;
+        await new Promise((r) => setTimeout(r, 400)); const played = window.__spoken.slice(n);
+        S.speak('An answer that was not fetched yet.', { kind: 'answer', token: 'tok-x' }); await new Promise((r) => setTimeout(r, 25)); const playingBeforeStop = !S.audio.paused; S.stop();
+        return { silentInTap, played, playingBeforeStop, stoppedLogged: S.log.some((x) => x.e === 'stopped') }; });
+      await t(`${label}: audio not ready at the tap — a silent clip unlocks the element in the tap, then Victoria's audio plays`, () => ok(nr.silentInTap === 1 && nr.played.length === 1 && nr.played[0] === 'An answer that was not fetched yet.' && nr.playingBeforeStop && nr.stoppedLogged, JSON.stringify(nr)));
+      await page.waitForTimeout(300);
+      await t(`${label}: answers are spoken only with the server's token for that answer; playback is REPORTED as browser events (requested / playing / ended / stopped / blocked), not as "heard"`, () => {
+        const ans = speakReqs.filter((x) => x.kind === 'answer'); ok(ans.length >= 1 && ans.every((x) => /^tok-/.test(x.token || '')), JSON.stringify(ans).slice(0, 400));
+        for (const e of ['requested', 'playing', 'ended', 'stopped', 'blocked']) ok(playbacks.includes(e), 'missing playback event ' + e + ': ' + JSON.stringify(playbacks)); });
       /* a later visit: the short greeting */
       await page.evaluate(() => { const h = document.getElementById('dvPanelHost'); h.remove(); window.DealerVictoriaPanel = null; delete window.DealerVictoriaPanel; });
       const p2 = await page.evaluate(async () => { const s = document.createElement('script'); s.src = '/assets/dealer-victoria-panel.js?v=1&again'; await new Promise((ok2) => { s.onload = ok2; document.head.appendChild(s); });
