@@ -189,13 +189,16 @@
      The server resolves the model's verified code(s) (_reimb_map) and looks both payers up; one payer without a rate keeps the
      other visible. The dealer can change the state, date, Medicare location and Medicaid plan right here. */
   const CARD = new WeakMap();
-  async function card(el, cfg) {
+  async function card(el, cfg, update) {
     if (!el) return;
     let m; try { m = await meta(cfg.api); } catch (e) { el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-s">${esc(e.message)}</div></div>`; return; }
     const st = CARD.get(el) || { state: m.default_state || '', dos: m.today, zip: m.branch_zip || '', zsrc: 'branch', mplan: PREF_PLAN && PREF_PLAN !== 'medicare' ? PREF_PLAN : '', mploc: '' };
     CARD.set(el, st);
     const prod = cfg.product || {};
-    el.innerHTML = '<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-s">Loading…</div></div>';
+    /* an update keeps the panel on screen (busy) instead of collapsing it to "Loading…" — the page never jumps */
+    const box0 = update && el.querySelector('.pd-reimb');
+    if (box0) { box0.classList.add('pd-reimb-busy'); box0.setAttribute('aria-busy', 'true'); el.querySelectorAll('[data-k]').forEach((x) => { x.disabled = true; }); }
+    else el.innerHTML = '<div class="pd-reimb pd-reimb-full"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-s">Loading…</div></div>';
     let r; try { r = await cfg.api({ action: 'product', manufacturer: prod.manufacturer, sku: prod.code, category: prod.category, sku_code: prod.sku_code, page_codes: prod.page_codes,
       state: st.state, dos: st.dos, zip: st.zip || '', zip_source: st.zsrc, medicaid_plan: st.mplan || undefined, medicaid_location: st.mploc || undefined }); } catch (e) { r = null; }
     if (!r || !r.ok) { el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div><div class="pd-reimb-s">${esc((r && r.error) || 'The reimbursement lookup could not be loaded — please try again.')}</div></div>`; return; }
@@ -209,36 +212,56 @@
       bindGo(el, () => cfg.open({ product: full })); return;
     }
     if (r.state) { st.state = r.state; st.dos = r.dos; st.zip = r.zip || ''; st.zsrc = r.zip_source || 'branch'; st.mplan = r.medicaid_plan || ''; st.mploc = r.medicaid_location || ''; }
+    /* FULL-WIDTH PANEL (owner 2026-11-19 19:25): one Provider Reimbursement panel under the whole product area; Original Medicare
+       on the left, the state's Medicaid on the right (stacked on a phone, Medicare first). Each payer has its own control —
+       the Medicare ZIP in the Medicare column, the Medicaid plan in the Medicaid column — and its own result: one payer
+       without a rate never hides the other. A reference-only code shows its published amount with both notices. */
     const plans = r.plans || []; const mPlans = plans.filter((p) => p.id !== 'medicare'); const mPlan = mPlans.find((p) => p.id === st.mplan);
+    const ZIP_MSG = 'Enter patient ZIP to see Medicare allowance';
     const rowHtml = (x) => {
-      const res = x.result || {}; const c = res.context || {}; const a = res.allowance || {};
-      const head = `${x.payer === 'medicare' ? 'Original Medicare fee-for-service' : esc(c.plan_label || 'Medicaid')} · ${esc(c.state_name || '')} · ${esc(c.location_label || '')} · ${esc(c.dos_label || '')}`;
+      const res = x.result || {}; const c = res.context || {}; const a = res.allowance || {}; const med = x.payer === 'medicare';
+      const head = `${med ? 'Original Medicare fee-for-service' : esc(c.plan_label || 'Medicaid')} · ${esc(c.state_name || '')} · ${esc(c.location_label || '')} · ${esc(c.dos_label || '')}`;
       const body = a.status === 'ok'
         ? a.items.map((i) => `<div class="pd-reimb-amt">${money(i.amount)}<span>${esc(i.basis)}${i.modifier ? ' · ' + esc(i.modifier) : ''} · ${esc(i.unit || '')}</span></div>`).join('') +
+          (a.effective ? `<div class="pd-reimb-s">${esc(a.effective)}</div>` : '') +
           `<div class="pd-reimb-src">Source · ${link(a.source && a.source.url, a.source && a.source.title)}${a.source && a.source.page ? ', page ' + esc(a.source.page) : ''}</div>`
-        : `<div class="pd-reimb-miss">${esc(NO_RATE)}</div>${a.reason ? `<div class="pd-reimb-s">${esc(a.reason)}</div>` : ''}`;
+        : (med && !st.zip ? `<div class="pd-reimb-miss">${esc(ZIP_MSG)}</div><div class="pd-reimb-s">${esc(NO_RATE)} until a ZIP is entered — Medicare prices by the patient\'s residence ZIP.</div>`
+          : `<div class="pd-reimb-miss">${esc(NO_RATE)}</div>${a.reason ? `<div class="pd-reimb-s">${esc(a.reason)}</div>` : ''}`);
       return `<div class="pd-reimb-row"><div class="pd-reimb-p">${head}</div>${body}</div>`;
     };
-    const groups = mp.codes.map((c) => {
-      const rows = (r.rows || []).filter((x) => x.code === c.code && !x.conditional);
-      const alt = c.conditional ? (r.rows || []).filter((x) => x.code === c.conditional.code && x.conditional) : [];
-      return `<div class="pd-reimb-code">HCPCS ${esc(codeLabel(c))}${mp.reference ? ` <span class="pd-reimb-ref">${esc(REF_NOTE)}</span>` : ''}</div>${c.component === 'mechanism' ? `<div class="pd-reimb-s">${esc(mp.why)}</div>` : ''}${mp.reference ? `<div class="pd-reimb-s pd-reimb-cond" role="note">${esc(mp.allowance_note || REF_ALLOW)}</div>` : ''}${rows.map(rowHtml).join('')}
+    const codeHead = (c) => `<div class="pd-reimb-code">HCPCS ${esc(codeLabel(c))}${mp.reference ? ` <span class="pd-reimb-ref">${esc(REF_NOTE)}</span>` : ''}</div>`;
+    const colFor = (payer) => mp.codes.map((c) => {
+      const isMed = (x) => (payer === 'medicare') === (x.payer === 'medicare');
+      const rows = (r.rows || []).filter((x) => x.code === c.code && !x.conditional && isMed(x));
+      const alt = c.conditional ? (r.rows || []).filter((x) => x.code === c.conditional.code && x.conditional && isMed(x)) : [];
+      return `${codeHead(c)}${c.component === 'mechanism' ? `<div class="pd-reimb-s">${esc(mp.why)}</div>` : ''}${rows.map(rowHtml).join('') || `<div class="pd-reimb-miss">${esc(NO_RATE)}</div>`}
         ${c.conditional ? `<div class="pd-reimb-s pd-reimb-cond">${esc(c.conditional.note)}</div>${alt.map(rowHtml).join('')}` : ''}`;
     }).join('');
+    const stName = ((m.states || []).find((s) => s.id === st.state) || {}).name || '';
     const stOpts = (m.states || []).map((s) => `<option value="${esc(s.id)}"${s.id === st.state ? ' selected' : ''}>${esc(s.name)}</option>`).join('');
-    el.innerHTML = `<div class="pd-reimb"><div class="pd-reimb-h">Provider reimbursement</div>
+    const zipHint = st.zip ? (st.zsrc === 'branch' ? 'Branch estimate — your account ZIP. Enter the patient\'s ZIP to confirm.' : 'Patient residence ZIP') : ZIP_MSG;
+    const y = st._y != null ? st._y : window.scrollY, fk = st._fk || null; st._y = null; st._fk = null;
+    el.innerHTML = `<div class="pd-reimb pd-reimb-full"><div class="pd-reimb-h">Provider reimbursement</div>
       ${mp.codes.every((c) => c.component !== 'mechanism') && mp.why ? `<div class="pd-reimb-s">${esc(mp.reference ? String(mp.why).replace(REF_NOTE, '').trim() : mp.why)}</div>` : ''}
       <div class="pd-reimb-ctl">
         <label>State<select data-k="state"><option value="">Choose…</option>${stOpts}</select></label>
         <label>Date of service<input type="date" data-k="dos" value="${esc(st.dos)}"></label>
-        <label>Medicare ZIP<input data-k="zip" value="${esc(st.zip || '')}" maxlength="10" inputmode="numeric" placeholder="Patient residence ZIP"><span class="pd-reimb-s">${st.zip ? (st.zsrc === 'branch' ? 'Branch estimate — enter the patient\'s ZIP to confirm' : 'Patient residence ZIP') : 'Enter the patient\'s ZIP'}</span></label>
-        ${mPlans.length ? `<label>Medicaid plan<select data-k="mplan">${mPlans.map((p) => `<option value="${esc(p.id)}"${p.id === st.mplan ? ' selected' : ''}>${esc(p.label)}</option>`).join('')}</select></label>` : ''}
-        ${mPlan && mPlan.locations.length > 1 ? `<label>Medicaid location<select data-k="mploc">${mPlan.locations.map((l) => `<option value="${esc(l.id)}"${l.id === st.mploc ? ' selected' : ''}>${esc(l.label)}</option>`).join('')}</select></label>` : ''}
       </div>
-      ${st.state ? groups : '<div class="pd-reimb-s">Choose a state to see Original Medicare and Medicaid allowances.</div>'}
+      ${mp.reference && st.state ? `<div class="pd-reimb-s pd-reimb-cond" role="note">${esc(mp.allowance_note || REF_ALLOW)}</div>` : ''}
+      ${st.state ? `<div class="pd-reimb-cols">
+        <section class="pd-reimb-col" aria-label="Original Medicare"><h4>Original Medicare fee-for-service</h4>
+          <div class="pd-reimb-ctl pd-reimb-ctl1"><label>Medicare ZIP<input data-k="zip" value="${esc(st.zip || '')}" maxlength="10" inputmode="numeric" placeholder="Patient residence ZIP" aria-describedby="pdZipHint"><span id="pdZipHint" class="pd-reimb-s${st.zip ? '' : ' pd-reimb-need'}">${esc(zipHint)}</span></label></div>
+          ${colFor('medicare')}</section>
+        <section class="pd-reimb-col" aria-label="${esc(stName)} Medicaid"><h4>${esc(stName)} Medicaid</h4>
+          ${mPlans.length ? `<div class="pd-reimb-ctl pd-reimb-ctl1"><label>Medicaid plan<select data-k="mplan">${mPlans.map((p) => `<option value="${esc(p.id)}"${p.id === st.mplan ? ' selected' : ''}>${esc(p.label)}</option>`).join('')}</select></label>
+            ${mPlan && mPlan.locations.length > 1 ? `<label>Medicaid location<select data-k="mploc">${mPlan.locations.map((l) => `<option value="${esc(l.id)}"${l.id === st.mploc ? ' selected' : ''}>${esc(l.label)}</option>`).join('')}</select></label>` : ''}</div>` : ''}
+          ${mPlans.length ? colFor('medicaid') : `<div class="pd-reimb-miss">${esc(NO_RATE)}</div><div class="pd-reimb-s">No Medicaid plan is on file for this state.</div>`}</section>
+      </div>` : '<div class="pd-reimb-s">Choose a state to see Original Medicare and Medicaid allowances.</div>'}
       ${mp.informational ? `<div class="pd-reimb-s pd-reimb-info">${esc(mp.informational_note || 'Informational only.')}</div>` : ''}
       <div class="pd-reimb-links"><a class="pd-reimb-go" role="button" tabindex="0">${mp.reference ? 'Open the code\'s fee schedule →' : 'View billing details →'}</a>${mp.informational || mp.reference ? '' : '<a class="pd-reimb-go pd-reimb-calc" role="button" tabindex="0">Insurance earnings calculator (dealer only) →</a>'}</div>${mp.reference ? '<div class="pd-reimb-s">Insurance earnings estimates are available only for verified model codes.</div>' : ''}</div>`;
-    el.querySelectorAll('[data-k]').forEach((x) => { x.onchange = () => { const k = x.getAttribute('data-k'); st[k] = String(x.value).trim(); if (k === 'zip') st.zsrc = m.branch_zip && st.zip === m.branch_zip ? 'branch' : 'patient'; if (k === 'state') { st.mplan = ''; st.mploc = ''; } if (k === 'mplan') st.mploc = ''; card(el, cfg); }; });
+    if (Math.abs(window.scrollY - y) > 1) window.scrollTo(0, y);   // the page stays where the dealer was
+    if (fk) { const f = el.querySelector(`[data-k="${fk}"]`); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }
+    el.querySelectorAll('[data-k]').forEach((x) => { x.onchange = () => { const k = x.getAttribute('data-k'); st[k] = String(x.value).trim(); if (k === 'zip') st.zsrc = m.branch_zip && st.zip === m.branch_zip ? 'branch' : 'patient'; if (k === 'state') { st.mplan = ''; st.mploc = ''; } if (k === 'mplan') st.mploc = ''; st._fk = k; st._y = window.scrollY; card(el, cfg, true); }; });
     const go = () => cfg.open({ product: full, code: mp.codes[0], state: st.state, plan: planFor(st.state, true) || 'medicare', zip: st.zip || '', zipSrc: st.zsrc, dos: st.dos });
     el.querySelectorAll('.pd-reimb-go').forEach((a) => bindOne(a, go));
   }

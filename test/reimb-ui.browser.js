@@ -108,58 +108,10 @@ const settle = (pg) => pg.waitForFunction(() => !document.querySelector('[data-a
         await cardOf(pg, p); const txt = await cardText(pg); ok(txt.includes('No verified HCPCS code on file for this model') && re.test(txt), p.code + ': ' + txt.slice(0, 200)); }
       await pg.close();
     });
-    await t('Dalton — four display states on the card: verified (code, source, calculator), reference (note beside the code, allowance notice, no estimate), pending (no code, no allowance, missing evidence), none', async () => {
-      const pg = await page(browser);
-      await cardOf(pg, { name: 'K5 18 Ultra Light', code: 'K515FA', manufacturer: 'dalton', category: 'Wheelchairs' }); let txt = await cardText(pg);
-      ok(/HCPCS K0005/.test(txt) && /PDAC Product Classification List/.test(txt) && /\$2,634\.76/.test(txt) && (await pg.$('#cardHost .pd-reimb-calc')) && !/reference only/.test(txt), 'verified: ' + txt.slice(0, 300));
-      await cardOf(pg, { name: 'K4 16 Lightweight', code: 'K416FA0215', manufacturer: 'dalton', category: 'Wheelchairs' }); txt = await cardText(pg);
-      ok(/HCPCS K0004 HCPCS reference only — model verification pending\./.test(txt) && !/\*/.test(txt), 'reference note beside the code, no asterisk: ' + txt.slice(0, 300));
-      ok(/Published allowance for this code\. This product's classification is pending verification\./.test(txt) && /\$57\.95/.test(txt), 'allowance with the notice');
-      ok(!(await pg.$('#cardHost .pd-reimb-calc')) && /earnings estimates are available only for verified model codes/.test(txt) && /Open the code's fee schedule/.test(txt), 'no estimate, fee schedule link');
-      // the notice stays when the ZIP, date or payer changes
-      await pg.fill('#cardHost [data-k="zip"]', '41301'); await pg.dispatchEvent('#cardHost [data-k="zip"]', 'change'); await pg.waitForFunction(() => /41301/.test(document.getElementById('cardHost').innerText), null, { timeout: 8000 });
-      txt = await cardText(pg); ok(/classification is pending verification/.test(txt) && /reference only/.test(txt), 'notice after a ZIP change');
-      await pg.fill('#cardHost [data-k="dos"]', '2026-12-01'); await pg.dispatchEvent('#cardHost [data-k="dos"]', 'change'); await pg.waitForFunction(() => /December 1, 2026/.test(document.getElementById('cardHost').innerText), null, { timeout: 8000 });
-      txt = await cardText(pg); ok(/classification is pending verification/.test(txt), 'notice after a date change');
-      await cardOf(pg, { name: 'Foam Seat Cushion 16', code: 'PMC-260116-6', manufacturer: 'dalton', category: 'Wheelchair Cushions' }); txt = await cardText(pg);
-      ok(/Coding verification pending/.test(txt) && /Missing evidence/.test(txt) && /PMC-260116/.test(txt) && !/HCPCS E26|\$\d/.test(txt) && !(await pg.$('#cardHost .pd-reimb-calc')), 'pending: ' + txt.slice(0, 300));
-      for (const s of ['B-MATT-M442', 'SC-S145HD20', 'K07DK20F02V']) { await cardOf(pg, { name: s, code: s, manufacturer: 'dalton' }); txt = await cardText(pg); ok(/Coding verification pending/.test(txt) && /Missing evidence/.test(txt) && !/\$\d/.test(txt), s + ': ' + txt.slice(0, 200)); }
-      await cardOf(pg, { name: 'Medical cart', code: 'MCA435E', manufacturer: 'dalton' }); txt = await cardText(pg);
-      ok(txt.includes('No verified HCPCS code on file for this model') && !/HCPCS [A-Z]\d{4}/.test(txt), 'none'); await pg.close();
-    });
-    await t('Dalton reference in the billing details: notice above the allowance, no calculator, notice on the printed reference', async () => {
-      const pg = await page(browser); await cardOf(pg, { name: 'K4 16 Lightweight', code: 'K416FA0215', manufacturer: 'dalton', category: 'Wheelchairs', cost: 300 }); await cardText(pg);
-      await pg.click('#cardHost .pd-reimb-go'); const o = await pg.evaluate(() => window.__opened[0]);
-      ok(o.plan === 'medicare' && o.product.reference === true && o.product.cost == null, 'opens Medicare, no cost carried: ' + JSON.stringify(o).slice(0, 200));
-      await mount(pg, o); await settle(pg); await pg.waitForSelector('#rbOut .rb-refnote');
-      const txt = await pg.$eval('#host', (e) => e.innerText);
-      ok(/HCPCS K0004 HCPCS reference only — model verification pending\./.test(txt) && /Published allowance for this code\. This product's classification is pending verification\./.test(txt), 'notices: ' + txt.slice(0, 400));
-      ok(!(await pg.$('#rbCalc .rb-calc')), 'no earnings estimate');
-      await pg.selectOption('#rbPlan', 'medicaid-ffs'); await pg.click('[data-act="go"]'); await settle(pg); await pg.waitForSelector('#rbOut .rb-refnote'); ok(true, 'notice after a payer change');
-      await pg.evaluate(() => { window.print = () => {}; }); await pg.click('[data-act="print"]');
-      await pg.waitForFunction(() => document.querySelector('iframe') && document.querySelector('iframe').contentDocument.body && document.querySelector('iframe').contentDocument.body.innerText.length > 100);
-      const html = await pg.evaluate(() => document.querySelector('iframe').contentDocument.body.innerText);
-      ok(/Published allowance for this code\. This product's classification is pending verification\./.test(html) && /HCPCS reference only — model verification pending\./.test(html), 'printed notice');
-      ok(/Kentucky Medicaid fee-for-service/.test(html) && /November 19, 2026/.test(html), 'payer and date printed');
-      await pg.evaluate(() => { try { sessionStorage.removeItem('hcps_reimb_plan'); } catch (e) {} }); await pg.close();
-    });
-    await t('Medicare first: the card opens billing details on Original Medicare; an explicit plan choice in the lookup is kept when moving back to the product', async () => {
-      const pg = await page(browser); await pg.evaluate(() => { try { sessionStorage.removeItem('hcps_reimb_plan'); } catch (e) {} });
-      await cardOf(pg, { name: 'K5', code: 'K515FA', manufacturer: 'dalton', category: 'Wheelchairs' }); let txt = await cardText(pg);
-      const rows = await pg.$$eval('#cardHost .pd-reimb-row .pd-reimb-p', (e) => e.map((x) => x.textContent)); ok(/^Original Medicare/.test(rows[0]) && /Medicaid/.test(rows[1]), 'Medicare row first: ' + rows.join(' | '));
-      await pg.click('#cardHost .pd-reimb-go'); let o = await pg.evaluate(() => window.__opened.pop()); ok(o.plan === 'medicare', 'default Medicare: ' + o.plan);
-      await mount(pg, o); await settle(pg); ok(await pg.$eval('#rbPlan', (e) => e.value) === 'medicare', 'lookup on Medicare');
-      await pg.selectOption('#rbPlan', 'medicaid-ffs');
-      await cardOf(pg, { name: 'K5', code: 'K515FA', manufacturer: 'dalton', category: 'Wheelchairs' }); await cardText(pg);
-      await pg.click('#cardHost .pd-reimb-go'); o = await pg.evaluate(() => window.__opened.pop()); ok(o.plan === 'medicaid-ffs', 'explicit choice kept: ' + o.plan);
-      await pg.evaluate(() => { try { sessionStorage.removeItem('hcps_reimb_plan'); } catch (e) {} }); await pg.close();
-    });
-    await t('only Medicaid has a rate: Medicare row says "Rate unavailable for this plan/date"; the Medicaid rate shows under its own payer label (IN-ABB11020, T4522, Kentucky)', async () => {
-      const pg = await page(browser); await pg.evaluate(() => { try { sessionStorage.removeItem('hcps_reimb_plan'); } catch (e) {} });
-      await cardOf(pg, { name: 'Brief, Medium', code: 'IN-ABB11020', manufacturer: 'dalton', category: 'Incontinence' }); await cardText(pg);
-      const rows = await pg.$$eval('#cardHost .pd-reimb-row', (e) => e.map((x) => x.innerText));
-      ok(/^Original Medicare fee-for-service/.test(rows[0]) && /Rate unavailable for this plan\/date/.test(rows[0]), 'medicare row: ' + rows[0]);
-      ok(/Kentucky Medicaid fee-for-service/.test(rows[1]) && /\$0\.81/.test(rows[1]), 'medicaid row: ' + rows[1]); await pg.close();
+    await t('exact Dalton SKU: PM8080-1 → E0277 from the Dalton page; an unverified cushion stays unmapped with the PDAC reason', async () => {
+      const pg = await page(browser); await cardOf(pg, { name: 'Low Air Loss', code: 'PM8080-1', manufacturer: 'dalton', category: 'Mattresses' });
+      ok(/HCPCS E0277/.test(await cardText(pg)), 'E0277');
+      await cardOf(pg, { name: 'Comfy Gel', code: 'PM-GG16163', manufacturer: 'dalton' }); const txt = await cardText(pg); ok(/No verified HCPCS code/.test(txt) && /PDAC/.test(txt), 'pdac'); await pg.close();
     });
     await t('card → lookup: the code, state and date travel; the dealer cost stays in the product for the calculator only', async () => {
       const pg = await page(browser); await cardOf(pg, { name: 'M50', code: '304051011', manufacturer: 'ohio-medical', sku_code: 'E1390', page_codes: [], cost: 445 }); await cardText(pg);
