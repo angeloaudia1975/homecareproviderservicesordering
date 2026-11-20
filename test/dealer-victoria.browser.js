@@ -43,7 +43,11 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
         else if (x.action === 'ask') { asks.push(x); const ctx2 = { dealer_id: 'hq', bearer: 'Bearer tok', page: x.page || {} }; const q = String(x.question);
           const tool = /order/i.test(q) ? await V._test.toolGoldenOrder(ctx2, {}) : /medicare|allow/i.test(q) ? await V._test.toolReimb(ctx2) : /quote/i.test(q) ? await V._test.toolQuote(ctx2, { qty: 2 }) : { result: {} };
           const billing = tool.card && tool.card.type === 'reimbursement';
-          body = { ok: true, speech_token: 'tok-' + asks.length, answer: 'Here is what I found.' + (billing ? '\n\n' + V._test.BILLING_DISCLAIMER : ''), disclaimer: billing ? V._test.BILLING_DISCLAIMER : null, cards: tool.card ? [tool.card] : [], actions: tool.action ? [tool.action] : [], usage: { model: 'claude-haiku-5-5', usd: 0.0004, ms: 1500 } }; }
+          const ansText = 'Here is what I found.' + (billing ? '\n\n' + V._test.BILLING_DISCLAIMER : '');
+          /* voice on → the answer audio comes back WITH the answer (made on the server right after the model); not on the
+             "Thanks" question, so the speak fallback (token) path is exercised too */
+          const withAudio = x.voice === true && !/Thanks/.test(q) && !/^Where is my/.test(q);
+          body = { ok: true, speech_token: 'tok-' + asks.length, answer: ansText, speech: withAudio ? { ok: true, voice: 'aura-2-thalia-en', mime: 'audio/mpeg', audio: Buffer.concat([Buffer.from('FAKEMP3:' + ansText), Buffer.alloc(64)]).toString('base64'), tts_ms: 700 } : undefined, timing: { model_ms: 1500, total_ms: 2300 }, disclaimer: billing ? V._test.BILLING_DISCLAIMER : null, cards: tool.card ? [tool.card] : [], actions: tool.action ? [tool.action] : [], usage: { model: 'claude-haiku-5-5', usd: 0.0004, ms: 1500 } }; }
         return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) }); });
       await page.route('**/assets/dealer-victoria-panel.js*', (r) => { panelReq++; return r.fallback(); });
       await page.route('**/dealer-reports-api', (r) => { const x = JSON.parse(r.request().postData() || '{}'); return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(x.action === 'golden_orders' ? GOLDEN : { ok: false }) }); });
@@ -190,6 +194,11 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       });
       await page.waitForTimeout(250);
       await t(`${label}: voice on — the reimbursement answer is spoken WITH the disclaimer and the globe glows while Victoria speaks`, async () => { const sp = await page.evaluate(() => [window.__spoken.slice(), window.__speakState.slice()]); const D = V._test.BILLING_DISCLAIMER; ok(sp[0].some((x) => x.startsWith('Here is what I found.') && x.endsWith(D)) && sp[1].includes('speaking'), 'the spoken reimbursement answer ends with the fixed disclaimer: ' + JSON.stringify(sp).slice(0, 600)); });
+      await t(`${label}: the reimbursement answer's audio came WITH the answer — no separate speak request; it starts as the text appears`, async () => {
+        const L = await page.evaluate(() => document.getElementById('dvOrbHost').__dvSpeech.log.slice());
+        const sh = L.filter((x) => x.e === 'answer_shown' && x.audio_with_answer); ok(sh.length >= 1, 'answer_shown with audio: ' + JSON.stringify(L.slice(-8)));
+        const pl = L.filter((x) => x.e === 'playing' && x.kind === 'answer' && x.after_text_ms != null); ok(pl.length && pl[pl.length - 1].after_text_ms < 300, 'text-to-audio ' + JSON.stringify(pl.slice(-2)));
+        ok(!speakReqs.some((x) => x.kind === 'answer' && x.text.endsWith(V._test.BILLING_DISCLAIMER)), 'no speak request for an answer that came with its audio'); });
       /* the fee schedule from Victoria's card → the existing page */
       await page.evaluate(() => document.getElementById('dvPanelHost').shadowRoot.querySelector('.card .fee').click());
       await page.waitForSelector('#view-reimb .rb-ret', { timeout: 15000 });

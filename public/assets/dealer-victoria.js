@@ -41,7 +41,7 @@
     ob0.appendChild(v); v.playbackRate = 0.6; if (!document.hidden) v.play().catch(() => {});
   }
   /* the panel script is fetched once the page is usable too, so the first opening shows the greeting at once */
-  const PANEL_SRC = () => (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=4');
+  const PANEL_SRC = () => (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=5');
   let panelLoad = null;
   const loadPanel = () => panelLoad || (panelLoad = window.DealerVictoriaPanel ? Promise.resolve() : new Promise((ok, bad) => { const s = document.createElement('script'); s.src = PANEL_SRC(); s.onload = ok; s.onerror = (e) => { panelLoad = null; bad(e); }; document.head.appendChild(s); }));
   const idle = () => { motion(); loadPanel().catch(() => {}); const D = window.DV || {}; SPEECH.prefetch(D.greeting); if (D.greeting_again && D.greeting_again !== D.greeting) SPEECH.prefetch(D.greeting_again); };
@@ -70,7 +70,9 @@
     const report = (e) => { try { const d = DVx(); if (d.api) d.api({ action: 'playback', event: e }).catch(() => {}); } catch (er) {} };
     const set = (st, why) => { ob0.dataset.s = st === 'speaking' ? 'speaking' : 'idle'; if (L.onstate) try { L.onstate(st, why); } catch (e) {} };
     const fail = (my, why, kind) => { if (my !== gen) return; clearTimeout(watch); ev(kind || 'blocked', { why }); report(kind || 'blocked'); set('blocked', why); };
-    audio.addEventListener('playing', () => { if (silent) return; clearTimeout(watch); reached = 0; ev('playing', { src: 'deepgram' }); report('playing'); set('speaking'); });
+    audio.addEventListener('playing', () => { if (silent) return; clearTimeout(watch); reached = 0;
+      const last = (e) => [...L.log].reverse().find((x) => x.e === e); const rq = last('requested'), sh = last('answer_shown'), now = Math.round(performance.now());
+      ev('playing', { src: 'deepgram', kind: rq ? rq.kind : null, after_request_ms: rq ? now - rq.t : null, after_text_ms: rq && rq.kind === 'answer' && sh ? now - sh.t : null }); report('playing'); set('speaking'); });
     audio.addEventListener('timeupdate', () => { if (!silent) reached = Math.max(reached, audio.currentTime || 0); });
     audio.addEventListener('ended', () => { if (silent) return; ev('ended', { played_s: Math.round(reached * 10) / 10, duration_s: Math.round((audio.duration || 0) * 10) / 10 }); report('ended'); set('idle'); });
     audio.addEventListener('error', () => { if (silent) return; fail(gen, 'media_error', 'failed'); });
@@ -93,6 +95,11 @@
       })().finally(() => pending.delete(k));
       pending.set(k, p); return p;
     };
+    /* audio the server already made with the answer (ask voice:true) — kept so speak() plays it at once */
+    L.preload = (text, kind, b64, mime) => { try { const k = (kind === 'answer' ? 'answer' : 'greeting') + '|' + text; if (ready.has(k) || !b64) return false;
+      const bin = atob(b64), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      ready.set(k, URL.createObjectURL(new Blob([u8], { type: mime || 'audio/mpeg' }))); return true; } catch (e) { return false; } };
+    L.mark = (e, x) => ev(e, x);
     L.prefetch = (text) => (text && L.supported() ? L.fetch(text, 'greeting').then((r) => { ev('prefetched', { ok: !r.error, cached: !!r.cached }); return r; }) : Promise.resolve(null));
     function start(url, my) {
       silent = false; audio.src = url; try { audio.currentTime = 0; } catch (e) {}

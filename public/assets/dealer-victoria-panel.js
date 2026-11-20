@@ -155,14 +155,18 @@
     async function ask(q) {
       q = String(q || '').trim(); if (!q || busy || !aiOn) return;
       busy = true; inp.value = ''; line('me', q); orb.dataset.s = 'thinking'; $('.go').disabled = true;
-      let r = null; try { r = await DV.api({ action: 'ask', question: q, page: DV.context ? DV.context() : {} }); } catch (e) { r = null; }
+      let r = null; try { r = await DV.api({ action: 'ask', question: q, page: DV.context ? DV.context() : {}, voice: voiceOn && SP.supported() }); } catch (e) { r = null; }
       busy = false; orb.dataset.s = 'idle'; $('.go').disabled = !aiOn;
       if (!r || r.ok !== true) {
         const over = r && /over_budget|over_daily/.test(String(r.error));
         line('', over ? "Victoria has reached her limit for now. Contact HCPS support below — they can help right away." : "Victoria can't answer just now. Contact HCPS support below — they can help right away.");
         if (over) setAi(false); return;
       }
-      const a = line('', r.answer || 'Here is what I found.'); speak(r.answer, 'answer', r.speech_token);
+      const a = line('', r.answer || 'Here is what I found.');
+      /* the answer's audio came back with it (made on the server right after the model) — play it as the text appears */
+      if (r.speech && r.speech.ok && r.speech.audio && SP.preload) SP.preload(r.answer, 'answer', r.speech.audio, r.speech.mime);
+      if (SP.mark) SP.mark('answer_shown', { audio_with_answer: !!(r.speech && r.speech.ok), tts_ms: r.speech ? r.speech.tts_ms : null, model_ms: r.timing ? r.timing.model_ms : null, total_ms: r.timing ? r.timing.total_ms : null });
+      speak(r.answer, 'answer', r.speech_token);
       for (const c of r.cards || []) {
         if (c.type === 'golden_orders') orderCard(c, (r.cards || []).length === 1);
         else if (c.type === 'not_found') cardEl(`<div class="m">${esc(c.text)}</div>`);
