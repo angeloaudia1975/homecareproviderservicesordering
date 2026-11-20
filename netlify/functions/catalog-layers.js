@@ -46,7 +46,7 @@ const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
 /* The exact columns the storefront always read with the public key — kept identical so the
    merged products are the same as before (test/p0parity.test.js). */
 const LAYER_SELECT = {
-  custom_products: "code,name,category,base_price,msrp,map,image,description,active,tiers,price_note",
+  custom_products: "code,name,category,base_price,msrp,map,image,description,active,tiers,price_note,uom",
   product_overrides: "code,patch",
 };
 /* Every stored version of the line — the right one is picked by identity below (never by position). */

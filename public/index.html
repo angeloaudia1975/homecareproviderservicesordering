@@ -2466,7 +2466,7 @@ async function mergeCatalogEdits(slug, prods){
          other unlined item, and a saved cart silently dropped them on the next sign-in. */
       const row={manufacturer:slug,code:c.code,name:c.name,category:c.category||"",base_price:c.base_price,msrp:c.msrp,
         map:(c.map==null||c.map==="")?null:c.map,
-        image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",_custom:true};
+        image:c.image||"",description:c.description||"",tiers:c.tiers||null,price_note:c.price_note||"",...(c.uom?{uom:String(c.uom)}:{}),_custom:true};
       for(const k of OV_KEYS) if(k in pa && pa[k]!=null) row[k]=pa[k];
       noMsrpRule(row, pa);
       prods.push(row); });
