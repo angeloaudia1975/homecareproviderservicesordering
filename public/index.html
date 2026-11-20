@@ -10554,7 +10554,7 @@ async function dvProbe(){
     greeting:j.greeting||(j.first_name?"Hi, "+j.first_name+". How can I help you today?":"Hello! How can I help you today?"),
     greeting_again:j.greeting_again||(j.first_name?"Hi, "+j.first_name+". How can I help you today?":"Hello! How can I help you today?"),
     api:(b)=>api(DV_ENDPOINT,b),
-    context:dvContext, openOrder:dvOpenOrder, openQuote:dvOpenQuote, showQuotes:()=>{ if(typeof showP360==="function") showP360("quotes"); },
+    context:dvContext, openOrder:dvOpenOrder, openQuote:dvOpenQuote, openBrochure:dvOpenBrochure, openView:dvOpenView, openProduct:(a)=>dvOpenProduct(a.manufacturer,a.code), showQuotes:()=>{ if(typeof showP360==="function") showP360("quotes"); },
     hasCalc:()=>!!document.querySelector("#content .pd #pdReimb .pd-reimb-calc"),
     openCalc:()=>{ const a=document.querySelector("#content .pd #pdReimb .pd-reimb-calc"); if(a) a.click(); },
     openFee:()=>{ const a=document.querySelector("#content .pd #pdReimb .pd-reimb-go:not(.pd-reimb-calc)"); if(a) a.click(); else { const r=document.getElementById("pdReimb"); if(r) r.scrollIntoView({block:"start"}); } },
@@ -10563,7 +10563,7 @@ async function dvProbe(){
   document.body.classList.add("dv-on");
   try{ const z=window.$zoho&&window.$zoho.salesiq; const hide=()=>{ try{ window.$zoho.salesiq.floatbutton.visible("hide"); }catch(e){} };
     if(z&&z.floatbutton) hide(); else if(z){ const prev=z.ready; z.ready=function(){ if(typeof prev==="function"){try{prev();}catch(e){}} hide(); }; } }catch(e){}
-  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=7"; s.defer=true; document.head.appendChild(s);
+  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=8"; s.defer=true; document.head.appendChild(s);
 }
 /* what is on screen: the product page open (its own selected SKU / variant) and its reimbursement panel's state, ZIP,
    payer plan and date — exactly what the panel shows, read from the panel itself */
@@ -10583,13 +10583,28 @@ async function dvOpenOrder(ref){
   if(typeof GH!=="undefined"&&GH&&Array.isArray(GH.orders)&&GH.orders.some(o=>o.order_ref===ref)) ghOpenOrder(ref);
   else toast("That order is listed in Orders & Tracking.");
 }
+/* open a product's page (any line on the account): the line first when it isn't the one on screen */
+async function dvOpenProduct(slug,code){
+  const pd=document.querySelector("#content .pd"); if(pd&&pd.getAttribute("data-pd-code")===code) return;
+  if(slug&&state.active!==slug&&typeof selectManufacturer==="function") await selectManufacturer(slug);
+  if(typeof openProductDetail==="function") await openProductDetail(code);
+}
 async function dvOpenQuote(a){
   const pd=document.querySelector("#content .pd");
-  if(!pd||pd.getAttribute("data-pd-code")!==a.code){ if(typeof openProductDetail==="function") await openProductDetail(a.code); }
+  if(!pd||pd.getAttribute("data-pd-code")!==a.code){ await dvOpenProduct(a.manufacturer,a.code); }
   const btn=document.querySelector("#content .pd [data-gquote], #content .pd [data-gb-quote], #content .pd [onclick^='pdAddQuote']");
   if(btn&&btn.getAttribute("aria-disabled")!=="true") btn.click(); else if(typeof pdAddQuote==="function") pdAddQuote(a.code);
   const q=Math.max(1,Math.min(99,Number(a.qty)||1));
   if(q>1&&window.P360Quote&&window.P360Quote.setQty) window.P360Quote.setQty(a.code,q);
+}
+/* the product's own Print Brochure dialog — the dealer chooses the price and prints / saves / emails it */
+async function dvOpenBrochure(a){ await dvOpenProduct(a.manufacturer,a.code); if(typeof openBrochure==="function") openBrochure(a.code); }
+/* one of the portal's screens (the same buttons as the top navigation) */
+function dvOpenView(v){
+  const nav={dash:()=>showP360("dash"),shop:()=>showShop(),orders:()=>showP360("orders"),reports:()=>showP360("reports"),quotes:()=>(typeof showQuotesHub==="function"?showQuotesHub():showP360("quotes")),
+    showroom:()=>(typeof showShowroomStudio==="function"?showShowroomStudio():showP360("showroom")),storefront:()=>showP360("storefront"),ads:()=>showP360("ads"),account:()=>showP360("account"),
+    resources:()=>showP360("resources"),help:()=>showP360("help")}[v];
+  if(nav) nav();
 }
 Object.assign(window,{dvProbe});
 /* THE HUB'S BUTTONS NEED THEIR FUNCTIONS ON window (2026-10-31). Everything above lives inside this IIFE, but the views

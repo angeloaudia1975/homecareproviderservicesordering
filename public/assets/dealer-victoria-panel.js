@@ -80,7 +80,7 @@
         <button type="button" class="chat" ${S.chat === false ? 'hidden' : ''}>💬 Chat with HCPS</button>
         <a href="tel:${esc(S.phone_tel)}">📞 ${esc(S.phone)}</a>
         <a href="mailto:${esc(S.email)}">✉️ Email</a></div></div>
-      <div class="ask"><input aria-label="Ask Victoria a question" placeholder="Ask about an order, a product's reimbursement or a quote…" maxlength="600"><button class="go" type="button">Ask</button></div>
+      <div class="ask"><input aria-label="Ask Victoria a question" placeholder="Ask about products, prices, quotes, orders or how to use the portal…" maxlength="600"><button class="go" type="button">Ask</button></div>
     </div>`;
     document.body.appendChild(host);
     const $ = (s) => sh.querySelector(s); const P = $('.p'), orb = $('.orb'), log = $('.log'), inp = $('.ask input');
@@ -147,12 +147,46 @@
       const cb = el.querySelector('.calc'); if (cb) cb.onclick = () => go(() => DV.openCalc());
       el.querySelector('.fee').onclick = () => go(() => DV.openFee && DV.openFee());
     }
-    function quoteCard(a) {
-      const el = cardEl(`<h5>Draft quote opened</h5><div class="m">${esc(a.qty)} × ${esc(a.code)}${a.variant ? ' (' + esc(a.variant) + ')' : ''} — review it in Customer Quotes. Nothing has been sent.</div><button class="btn gh" type="button">Show the draft</button>`);
+    function quoteCard(list) {
+      list = Array.isArray(list) ? list : [list];
+      const el = cardEl(`<h5>Draft quote opened</h5><div class="m">${list.map((a) => `${esc(a.qty)} × ${esc(a.code)}${a.variant ? ' (' + esc(a.variant) + ')' : ''}`).join(', ')} — review it in Customer Quotes. Nothing has been saved or sent.</div><button class="btn gh" type="button">Show the draft</button>`);
       el.querySelector('.btn').onclick = () => go(() => DV.showQuotes && DV.showQuotes());
     }
+    /* products with THIS account's price (from the server's checkout price check); a line not on the account shows no price */
+    function productsCard(c) {
+      const unit = (p) => p.units_per_order_unit > 1 ? ' per ' + esc(String(p.order_unit || 'case').toLowerCase()) + ' of ' + esc(p.units_per_order_unit) : (p.order_unit && String(p.order_unit).toLowerCase() !== 'each' ? ' per ' + esc(String(p.order_unit).toLowerCase()) : ' each');
+      const why = { not_on_your_account: 'Not on your account — no price shown', discontinued: 'Discontinued', not_orderable: 'Not orderable', pricing_unavailable: 'Price could not be checked just now' };
+      (c.products || []).forEach((p) => {
+        const el = cardEl(`<h5>${esc(p.name || p.code)}</h5><div class="m">${esc(p.manufacturer)} · ${esc(p.code)}${p.category ? ' · ' + esc(p.category) : ''}</div>
+          ${p.your_price != null ? `<table><tr><td>Your price${p.contract_price ? ' (your contract price)' : ''}</td><td>${money(p.your_price)}${unit(p)}</td></tr>${p.msrp != null ? `<tr><td>MSRP</td><td>${money(p.msrp)}</td></tr>` : ''}${p.map != null ? `<tr><td>MAP</td><td>${money(p.map)}</td></tr>` : ''}</table>` : `<div class="m">${esc(why[p.price_unavailable] || 'No price')}</div>`}
+          ${p.your_price != null ? '<button class="btn gh op" type="button">Open the product</button><button class="btn gh qu" type="button">Add to a quote</button>' : ''}`);
+        const a = { manufacturer: p.manufacturer_slug, code: p.code, name: p.name, qty: 1 };
+        const o = el.querySelector('.op'); if (o) o.onclick = () => go(() => DV.openProduct && DV.openProduct(a));
+        const q = el.querySelector('.qu'); if (q) q.onclick = () => { quoteCard([a]); go(() => DV.openQuote && DV.openQuote(a)); };
+      });
+      cardEl('<div class="src">Prices: HCPS pricing for your account — the same check as checkout. The cart confirms every price before you order.</div>');
+    }
+    function guideCard(c) {
+      (c.items || []).slice(0, 4).forEach((g) => {
+        const el = cardEl(`<h5>${esc(g.title)}${g.help ? ' · Help Center' : ''}</h5><div class="m">${esc(g.text || '')}</div>${(g.steps || []).length ? `<ol style="margin:6px 0 0 18px;padding:0">${g.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}${g.view ? '<button class="btn gh" type="button">Open it</button>' : ''}`);
+        const b = el.querySelector('.btn'); if (b) b.onclick = () => go(() => DV.openView && DV.openView(g.view));
+      });
+    }
+    function storefrontCard(c) {
+      (c.locations || []).forEach((l) => {
+        const el = cardEl(`<h5>${esc(l.location)}</h5><div class="m">${l.has_storefront ? (l.live ? 'Live' : 'Not published') : 'No storefront yet'}${l.unpublished_changes ? ' · unpublished changes' : ''}${l.blocked_by_hcps ? ' · paused by HCPS' : ''} · ${esc(l.lines_it_may_show)} line(s) it may show</div>${l.link ? `<a href="${esc(l.link)}" target="_blank" rel="noopener">Open the live storefront</a>` : ''}<div><button class="btn gh" type="button">Open the Storefront Website Builder</button></div>`);
+        el.querySelector('.btn').onclick = () => go(() => DV.openView && DV.openView('storefront'));
+      });
+    }
+    /* buttons for the screen on view, from the server (no AI call) */
+    async function screenChips() {
+      let r = null; try { r = await DV.api({ action: 'suggest', page: DV.context ? DV.context() : {} }); } catch (e) { r = null; }
+      if (!r || !r.ok || !Array.isArray(r.suggestions) || !r.suggestions.length) return;
+      const box = $('.chips'); box.textContent = '';
+      for (const q of r.suggestions.slice(0, 4)) { const b = document.createElement('button'); b.className = 'chip'; b.type = 'button'; b.textContent = q; b.onclick = () => ask(q); b.disabled = !aiOn; box.appendChild(b); }
+    }
     /* an action that changes the page: on a phone the sheet steps aside so the page is visible */
-    function go(fn) { try { fn(); } catch (e) {} if (innerWidth <= 600) api.toggle(false); }
+    function go(fn) { try { fn(); } catch (e) {} if (innerWidth <= 600) api.toggle(false); setTimeout(screenChips, 1500); }
 
     async function ask(q) {
       q = String(q || '').trim(); if (!q || busy || !aiOn) return;
@@ -173,9 +207,18 @@
         if (c.type === 'golden_orders') orderCard(c, (r.cards || []).length === 1);
         else if (c.type === 'not_found') cardEl(`<div class="m">${esc(c.text)}</div>`);
         else if (c.type === 'reimbursement') reimbCard(c);
+        else if (c.type === 'products') productsCard(c);
+        else if (c.type === 'guide') guideCard(c);
+        else if (c.type === 'storefront') storefrontCard(c);
       }
-      for (const x of r.actions || []) if (x.type === 'open_quote') { quoteCard(x); go(() => DV.openQuote && DV.openQuote(x)); }
+      const acts = r.actions || []; const quotes = acts.filter((x) => x.type === 'open_quote');
+      if (quotes.length) { quoteCard(quotes); go(async () => { for (const x of quotes) { if (DV.openQuote) await DV.openQuote(x); } }); }
+      for (const x of acts) {
+        if (x.type === 'open_brochure') { cardEl(`<h5>Print Brochure opened</h5><div class="m">${esc(x.code)} — choose the price your customer sees, then print, save or email it. Nothing has been sent.</div>`); go(() => DV.openBrochure && DV.openBrochure(x)); }
+        else if (x.type === 'open_view') go(() => DV.openView && DV.openView(x.view));
+      }
       a.scrollIntoView({ block: 'nearest' });
+      setTimeout(screenChips, 1200);   // the screen may have changed (a product or tool opened): its suggestions follow
     }
     /* records this opening on the server (first welcome vs later, per person) — the text was already shown and spoken */
     async function hello(shown) {
@@ -188,7 +231,7 @@
         if (show) {
           setVoice(true); retry.hidden = true; vnote.hidden = true;                 // every opening: voice on
           const g = opts && opts.greeting; if (g) { $('.hello').textContent = g; lastSpoken = { text: g, kind: 'greeting', token: null }; }
-          refreshChips(); place(); hello(!!g); setAi(aiOn);
+          refreshChips(); place(); hello(!!g); setAi(aiOn); screenChips();
           const f = sh.querySelector('.chip:not([hidden])') || inp; try { f.focus(); } catch (e) {}
         } else { stopSpeaking(); if (on === false && orbHost.__dvFocus) orbHost.__dvFocus(); }   // closing gives focus back to the orb
         if (orbHost.__dvExpanded) orbHost.__dvExpanded(show); },
