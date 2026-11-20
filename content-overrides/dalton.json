@@ -20717,9 +20717,15 @@
    "reason": "Owner retirement decision in the Dalton photo review: remove from platform",
    "decided": "2026-11-05",
    "ref": "Dalton photo review export 2026-11-05 (dalton-photo-fixes.json)"
+  },
+  "ASP-HD": {
+   "reason": "Owner decision 2026-11-20: replaced by the Cliq VC-701 Aspirator (VC-701) at $149 each — retired from new sales; order and sales history keep ASP-HD",
+   "decided": "2026-11-20",
+   "ref": "Owner directive 2026-11-20 16:48 CT"
   }
  },
  "_notes": {
-  "cliq-cx-500-50-psi-compressor": "Added 2026-11-20 (owner 11:21 CT) as an HCPS 'added product' (custom_products, $ from Product Catalog). The page lives in public/data/content/dalton.json; catalog-enrich.js plans pages only from the catalog file, so keep this page if the line is regenerated."
+  "cliq-cx-500-50-psi-compressor": "Added 2026-11-20 (owner 11:21 CT) as an HCPS 'added product' (custom_products, $ from Product Catalog). The page lives in public/data/content/dalton.json; catalog-enrich.js plans pages only from the catalog file, so keep this page if the line is regenerated.",
+  "cliq-vc-701-aspirator": "Added 2026-11-20 (owner 16:48 CT) as an HCPS 'added product' (custom_products, $ from Product Catalog) replacing ASP-HD. The page lives in public/data/content/dalton.json; catalog-enrich.js plans pages only from the catalog file, so keep this page if the line is regenerated."
  }
 }
