@@ -5675,7 +5675,7 @@ function goldenCartGroupWire(host){
      - a line that is no longer offered must be removed before the order can go. */
 const CHECKOUT_PROMO = { code: "", quote: null, stamp: "", error: "", busy: false };
 function promoStamp(){
-  const dealer = window.__MANAGE__?.location?.id || AUTH.session?.user?.id || "";
+  const dealer = window.__MANAGE__?.location?.id || AUTH.dealer?.id || AUTH.session?.user?.id || "";
   const dalton = [...CART].filter(([,line])=>line.p.manufacturer==="dalton");
   return JSON.stringify([dealer, dalton.map(([key,line])=>[key,line.qty])]);
 }
@@ -5788,7 +5788,7 @@ function applyServerPrices(res){
       if(AUTH.prices){ if(it.contract!=null) AUTH.prices[ck]=Number(it.contract); else delete AUTH.prices[ck]; }
       /* The dealer's line discount travels back the same way (owner policy 2026-10-27). */
       if("rate" in it){ if(!AUTH.rates||typeof AUTH.rates!=="object") AUTH.rates={}; if(it.rate!=null) AUTH.rates[o.manufacturer_slug]=it.rate==="list"?"list":Number(it.rate); else delete AUTH.rates[o.manufacturer_slug]; }
-      if(it.changed && it.client_unit!=null && Math.abs(Number(it.client_unit)-Number(it.unit))>=0.005){
+      if(!o.promo_code && it.changed && it.client_unit!=null && Math.abs(Number(it.client_unit)-Number(it.unit))>=0.005){
         const prev=PRICE_NOTES.get(k);
         PRICE_NOTES.set(k,{old:(prev&&prev.old!=null)?prev.old:Number(it.client_unit), now:Number(it.unit)}); n++;
       }
@@ -5824,7 +5824,7 @@ async function stagingSubmit(payload,btn){
   try{
     const r=await stagingCall("preview_order",payload);
     const j=r&&r.body;
-    if(r&&r.status===409&&j&&j.status==="prices_changed"){ applyServerPrices(j); updateCart(); toast("Prices changed — review the cart, then try again"); return; }
+    if(r&&r.status===409&&j&&j.status==="prices_changed"){ if(CHECKOUT_PROMO.code) savePromoQuote(j); applyServerPrices(j); updateCart(); toast("Prices changed — review the cart, then try again"); return; }
     if(!j||!j.ok){ toast((j&&(j.error||j.status))||"The preview order could not be priced."); return; }
     showPreviewOrder(j);
   } finally { btn.disabled=false; btn.textContent="Place order →"; }
@@ -5936,7 +5936,7 @@ async function submitOrder(){
     if(reviewedPromoCode!==CHECKOUT_PROMO.code || (reviewedPromoStamp && reviewedPromoStamp!==promoStamp())){
       toast("Your promotion or cart changed — review the prices before placing the order."); return;
     }
-    if(!chk?.ok){ 
+    if(!chk?.ok){
       if(chk?.status==="promo_rejected"){ CHECKOUT_PROMO.quote=null; CHECKOUT_PROMO.error=chk.error; updateCart(); }
       toast(chk?.error || "Pricing could not be confirmed right now — nothing was submitted. Please try again."); return;
     }
