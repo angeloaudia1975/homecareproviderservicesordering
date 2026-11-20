@@ -57,7 +57,7 @@ function applyServerPrices(orders, recorded) {
     const items = (o.items || []).map((it) => {
       const r = (units[keyOf(it)] || []).shift();
       if (!r) throw new Error("recorded order is missing " + it.code);
-      return Object.assign({}, it, { qty: r.qty, unit: r.unit, name: r.name || it.name });
+      return Object.assign({}, it, { qty: r.qty, unit: r.unit, name: r.name || it.name, ...(r.unit_label ? {uom:r.unit_label,case_qty:undefined} : {}) });
     });
     const sub = r2(rec.subtotal);
     /* Freight is the server's too when it worked it out (2026-10-09): the HCPS email carries the
@@ -72,7 +72,7 @@ function applyServerPrices(orders, recorded) {
     const svc = Array.isArray(rec.services) ? { services: rec.services.filter((x) => x && x.selected), services_fee: r2(rec.services_fee || 0), services_offered: rec.services.length > 0 } : { services: [], services_fee: 0 };
     if (rec.manufacturer_account) svc.manufacturer_account = String(rec.manufacturer_account);
     if (rec.status) svc.status = String(rec.status);
-    return Object.assign({}, o, extra, notice, svc, { items, items_subtotal: sub, estimated_total: r2(sub + fee + svc.services_fee), order_id: rec.order_id });
+    return Object.assign({}, o, extra, notice, svc, { items, manufacturer_name:o.manufacturer_name+(rec.promo_code?" · Promo "+rec.promo_code:""), items_subtotal: sub, estimated_total: r2(sub + fee + svc.services_fee), order_id: rec.order_id });
   });
 }
 
@@ -478,6 +478,7 @@ exports.handler = async (event) => {
       ? { confirm: raw.on_behalf.confirm === true, location_id: String(raw.on_behalf.location_id || "").slice(0, 40) } : undefined;
     const res = await callApi(Object.assign({ action: "create", orders, dealer }, key ? { submission_key: key } : {}, onBehalf ? { on_behalf: onBehalf } : {}));
     rec = await res.json().catch(() => null);
+    if (res.status === 422 && rec && rec.status === "promo_rejected") return json(422, { ok:false, recorded:false, status:rec.status, error:rec.error });
     if (res.status === 409 && rec && rec.status === "prices_changed")
       return json(409, { ok: false, recorded: false, status: "prices_changed", orders: rec.orders || [] });
     if (res.status === 428 && rec && rec.status === "confirm_required") return json(428, { ok: false, recorded: false, status: "confirm_required", error: rec.error });

@@ -5492,7 +5492,7 @@ function servicesBoxHtml(slug,sv){
       <button type="button" class="svcbtn" data-svcv="no" aria-pressed="${x.answered&&!x.selected}" style="${svcBtnCss(x.answered&&!x.selected)}">${x.answered&&!x.selected?"✓ ":""}No</button></div>
     ${x.asked&&!x.answered?`<div style="font-size:12px;color:#8a5a00;margin-top:6px">Required before you place the order.</div>`:""}</div>`).join("");
 }
-function grandTotal(){let t=0;for(const[slug,lines]of groupCart()){const f=computeFreight(slug,lines);t+=f.itemsTotal+f.fee+deliveryServicesFor(slug,lines).fee;}return t;}
+function grandTotal(){let t=0;for(const[slug,lines]of groupCart()){const f=computeFreight(slug,lines);t+=(slug==="dalton"?(promoQuote()?.subtotal??f.itemsTotal):f.itemsTotal)+f.fee+deliveryServicesFor(slug,lines).fee;}return t;}
 
 function freightRowsHtml(f){
   let h="";
@@ -5516,11 +5516,13 @@ function renderCart(){
   if(!groups.size&&!gHtml){host.innerHTML='<div class="fineprint" style="margin-top:12px;">Your cart is empty.</div>';return;}
   let html=priceBannerHtml();
   for(const[slug,lines]of groups){
-    const info=mfrInfo(slug), f=computeFreight(slug,lines), sv=deliveryServicesFor(slug,lines), tot=f.itemsTotal+f.fee+sv.fee;
+    const info=mfrInfo(slug), f=computeFreight(slug,lines), sv=deliveryServicesFor(slug,lines);
+    const subtotal=slug==="dalton" ? (promoQuote()?.subtotal ?? f.itemsTotal) : f.itemsTotal;
+    const tot=subtotal+f.fee+sv.fee;
     const cnt=lines.reduce((n,{qty})=>n+qty,0);
     const hasActual=f.rows.some(r=>r.status==="actual");
     const items=lines.map(({p,qty})=>{
-      const u=unitPrice(p,qty);
+      const u=checkoutUnit(p,qty);
       const fam=familyQty(p);
       const volNote=(Array.isArray(p.tiers)&&p.tiers.length>1&&p.group&&fam>1&&u<Number(p.base_price||0)-0.005)
         ? `<div class="s volnote">Volume tier — ${fam} of “${esc((p.group.split("::")[1]||p.name))}” across sizes</div>` : "";
@@ -5539,6 +5541,7 @@ function renderCart(){
       <div class="mghead"><span>${esc(info.name)}</span><span class="cnt">${cnt} item${cnt===1?"":"s"}</span></div>
       <div class="mgbody">
         ${acctSetupNoticeHtml(slug,info.name)}
+        ${slug==="dalton"?promoBox():""}
         ${items}
         ${f.rows.length?`<div class="freightbox">${freightRowsHtml(f)}</div>`:""}
         ${servicesBoxHtml(slug,sv)}
@@ -5547,7 +5550,7 @@ function renderCart(){
           <textarea class="notes" rows="2" placeholder="Notes for ${esc(info.name)} (optional)">${esc(fields.notes)}</textarea>
         </div>
         <div class="mgtot">
-          <div class="r"><span>Subtotal</span><span>${money(f.itemsTotal)}</span></div>
+          <div class="r"><span>Subtotal</span><span>${money(subtotal)}</span></div>
           ${sv.services.filter(x=>x.selected).map(x=>`<div class="r"><span>${esc(x.label)}</span><span>${money(x.fee)}</span></div>`).join("")}
           <div class="r"><span>Freight</span><span>${f.fee>0?money(f.fee):(hasActual?"actual":"—")}</span></div>
           <div class="r tot"><span>${esc(info.name)} total</span><span>${money(tot)}${hasActual?"+":""}</span></div>
@@ -5555,6 +5558,14 @@ function renderCart(){
       </div></div>`;
   }
   host.innerHTML=html+gHtml;
+  const promoInput=host.querySelector("#dalton-promo");
+  if(promoInput){
+    const apply=()=>applyPromo(promoInput.value);
+    host.querySelector("#dalton-promo-apply").onclick=apply;
+    promoInput.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault(); apply();}};
+    const remove=host.querySelector("#dalton-promo-remove");
+    if(remove) remove.onclick=()=>{clearPromo(); updateCart();};
+  }
   goldenCartGroupWire(host);
   host.querySelectorAll(".mgroup:not(.gmgroup) .citem").forEach(row=>{
     const k=row.getAttribute("data-k");
@@ -5582,6 +5593,7 @@ function acctSetupNoticeHtml(slug,name){
     <div style="margin-top:8px"><a class="btn gh acsm" style="cursor:pointer" onclick="showP360('apply')">Open the ${esc(name)} application</a> <span style="color:#8a6a3a">— saved as you go; you can finish it later</span></div></div>`;
 }
 function updateCart(){
+  if(CHECKOUT_PROMO.code && !groupCart().has("dalton")) clearPromo();
   renderCart();
   cartBadgeRefresh();
   scheduleCartSave();   // persist to the server so it survives logout/login (and admin can see it)
@@ -5661,12 +5673,68 @@ function goldenCartGroupWire(host){
        looked, nothing is submitted, the new prices are shown, and the dealer submits again
        once they have reviewed them;
      - a line that is no longer offered must be removed before the order can go. */
+const CHECKOUT_PROMO = { code: "", quote: null, stamp: "", error: "", busy: false };
+function promoStamp(){
+  const dealer = window.__MANAGE__?.location?.id || AUTH.dealer?.id || AUTH.session?.user?.id || "";
+  const dalton = [...CART].filter(([,line])=>line.p.manufacturer==="dalton");
+  return JSON.stringify([dealer, dalton.map(([key,line])=>[key,line.qty])]);
+}
+function promoQuote(){
+  return CHECKOUT_PROMO.quote && CHECKOUT_PROMO.stamp===promoStamp() ? CHECKOUT_PROMO.quote : null;
+}
+function checkoutUnit(p, qty){
+  const quote=p.manufacturer==="dalton" && promoQuote();
+  const item=quote && quote.items.find(it=>it.code===p.code && (it.family||"")===(p.family||"") && (it.upgrade||"")===(p._upgrade||"") && it.qty===qty);
+  return item ? item.unit : unitPrice(p,qty);
+}
+function promoBox(){
+  const q=promoQuote();
+  const msg=CHECKOUT_PROMO.error || (q ? q.promo_code+" applied to eligible items. Review the updated prices below." :
+    CHECKOUT_PROMO.code ? "Your cart changed. Apply the code again to confirm the new prices." : "");
+  return `<div class="mgfields">
+    <div role="group" aria-label="Dalton promotion">
+      <label for="dalton-promo">Dalton promo code</label>
+      <input id="dalton-promo" maxlength="20" autocomplete="off" value="${esc(CHECKOUT_PROMO.code)}">
+      <button type="button" id="dalton-promo-apply"${CHECKOUT_PROMO.busy?" disabled":""}>Apply</button>
+      ${CHECKOUT_PROMO.code?`<button type="button" id="dalton-promo-remove"${CHECKOUT_PROMO.busy?" disabled":""}>Remove</button>`:""}
+      <div role="status">${esc(msg)}</div>
+    </div></div>`;
+}
+function savePromoQuote(res){
+  const order = res?.orders?.find(o=>o.manufacturer_slug==="dalton" && o.promo_code===CHECKOUT_PROMO.code);
+  CHECKOUT_PROMO.quote = order || null;
+  CHECKOUT_PROMO.stamp = order ? promoStamp() : "";
+  return !!order;
+}
+function clearPromo(){
+  Object.assign(CHECKOUT_PROMO,{ code:"", quote:null, stamp:"", error:"", busy:false });
+}
+async function applyPromo(raw){
+  if(CHECKOUT_PROMO.busy) return;
+  clearPromo();
+  CHECKOUT_PROMO.code=raw.trim().toUpperCase();
+  if(!CHECKOUT_PROMO.code){ updateCart(); return; }
+  const stamp=promoStamp();
+  CHECKOUT_PROMO.busy=true;
+  updateCart();
+  const r=await serverPriceCheck();
+  CHECKOUT_PROMO.busy=false;
+  if(stamp!==promoStamp()){
+    CHECKOUT_PROMO.error="Your cart changed. Apply the code again.";
+  } else if(!r?.ok || !savePromoQuote(r)){
+    CHECKOUT_PROMO.error=r?.error || "The promotion could not be confirmed. Try again or remove the code.";
+  } else {
+    applyServerPrices(r);
+  }
+  updateCart();
+}
 const PRICE_NOTES=new Map();   // cartKey -> {old, now, gone}
 function hcpsCartOrders(){
   const out=[];
   for(const[slug,lines]of groupCart()){
     if(isGoldenSlug(slug)) continue;
-    out.push({manufacturer_slug:slug, items:lines.map(({p,qty})=>({code:p.code, family:p.family==null?undefined:p.family, upgrade:p._upgrade||undefined, qty, unit:unitPrice(p,qty)}))});
+    out.push({manufacturer_slug:slug, ...(slug==="dalton"&&CHECKOUT_PROMO.code?{promo_code:CHECKOUT_PROMO.code}:{}),
+      items:lines.map(({p,qty})=>({code:p.code, family:p.family==null?undefined:p.family, upgrade:p._upgrade||undefined, qty, unit:checkoutUnit(p,qty)}))});
   }
   return out;
 }
@@ -5683,6 +5751,7 @@ async function serverPriceCheck(){
       headers:{"Content-Type":"application/json",authorization:"Bearer "+(mg||AUTH.session.access_token)},
       body:JSON.stringify({action:"price_check",orders})});
     const j=await r.json().catch(()=>null);
+    if(j?.status==="promo_rejected") return j;
     return (r.ok&&j&&j.ok)?j:null;
   }catch(e){ return null; }
 }
@@ -5700,6 +5769,7 @@ async function stagingCall(action,body){
     /* the staff preview session ended (4 hours): say so instead of showing an empty catalog */
     if(r.status===401&&window.__PREVIEW__&&window.__PREVIEW__.token){ showPreviewError("This preview session has ended. Open it again from Connect 360 → Commerce → Catalog Preview."); return null; }
     if(action==="preview_order") return {status:r.status,body:j};
+    if(j?.status==="promo_rejected") return j;
     return (r.ok&&j&&j.ok)?j:null;
   }catch(e){ return null; }
 }
@@ -5718,7 +5788,7 @@ function applyServerPrices(res){
       if(AUTH.prices){ if(it.contract!=null) AUTH.prices[ck]=Number(it.contract); else delete AUTH.prices[ck]; }
       /* The dealer's line discount travels back the same way (owner policy 2026-10-27). */
       if("rate" in it){ if(!AUTH.rates||typeof AUTH.rates!=="object") AUTH.rates={}; if(it.rate!=null) AUTH.rates[o.manufacturer_slug]=it.rate==="list"?"list":Number(it.rate); else delete AUTH.rates[o.manufacturer_slug]; }
-      if(it.changed && it.client_unit!=null && Math.abs(Number(it.client_unit)-Number(it.unit))>=0.005){
+      if(!o.promo_code && it.changed && it.client_unit!=null && Math.abs(Number(it.client_unit)-Number(it.unit))>=0.005){
         const prev=PRICE_NOTES.get(k);
         PRICE_NOTES.set(k,{old:(prev&&prev.old!=null)?prev.old:Number(it.client_unit), now:Number(it.unit)}); n++;
       }
@@ -5740,7 +5810,7 @@ function priceBannerHtml(){
 async function repriceSavedCart(){
   if(!CART.size) return;
   const res=await serverPriceCheck();
-  if(!res){ return; }        // checked again at submission; nothing is submitted unconfirmed
+  if(!res?.ok){ return; }    // checked again at submission; nothing is submitted unconfirmed
   if(applyServerPrices(res)){ updateCart(); toast("Some prices in your saved cart have changed — see your cart"); }
   else if(res.orders&&res.orders.length) updateCart();
 }
@@ -5754,7 +5824,7 @@ async function stagingSubmit(payload,btn){
   try{
     const r=await stagingCall("preview_order",payload);
     const j=r&&r.body;
-    if(r&&r.status===409&&j&&j.status==="prices_changed"){ applyServerPrices(j); updateCart(); toast("Prices changed — review the cart, then try again"); return; }
+    if(r&&r.status===409&&j&&j.status==="prices_changed"){ if(CHECKOUT_PROMO.code) savePromoQuote(j); applyServerPrices(j); updateCart(); toast("Prices changed — review the cart, then try again"); return; }
     if(!j||!j.ok){ toast((j&&(j.error||j.status))||"The preview order could not be priced."); return; }
     showPreviewOrder(j);
   } finally { btn.disabled=false; btn.textContent="Place order →"; }
@@ -5763,7 +5833,7 @@ function showPreviewOrder(j){
   let m=document.getElementById("pvOrder"); if(m) m.remove();
   m=document.createElement("div"); m.id="pvOrder"; m.className="pvorder";
   const tabs=[["dealer","Dealer's acknowledgment"]].concat((j.hcps_emails||[]).map((e,i)=>["hcps"+i,"HCPS intake — "+(mfrInfo(e.slug).name||e.slug)]),[["sheet","Order sheet (admin)"]]);
-  const sheet=(j.summaries||[]).map(s=>`<h3>${esc(s.line)} · PO ${esc(s.po||"—")}</h3><table><tr><th>Item #</th><th>Description</th><th>Qty</th><th>Unit</th><th>Line</th></tr>${(s.items||[]).map(it=>`<tr><td>${esc(it.code)}</td><td>${esc(it.name)}${it.unit_label?` <i>(${esc(it.unit_label)})</i>`:""}</td><td>${it.qty}</td><td>${money(it.unit_price)}</td><td>${money(it.line_total)}</td></tr>`).join("")}</table><p>Merchandise ${money(s.subtotal)}${Number(s.freight_fee)>0?` · Freight ${money(s.freight_fee)} · Total ${money(s.estimated_total)}`:((s.freight_lines||[]).some(x=>x.status==="actual")?" · Freight pending (actual, from the manufacturer's confirmation)":(s.freight_lines||[]).length?" · Freight: free":"")}</p><p>Status in Order Review: <b>Received by HCPS</b> → Placed with manufacturer → Confirmed by manufacturer</p>`).join("");
+  const sheet=(j.summaries||[]).map(s=>`<h3>${esc(s.line)}${s.promo_code?" · Promo "+esc(s.promo_code):""} · PO ${esc(s.po||"—")}</h3><table><tr><th>Item #</th><th>Description</th><th>Qty</th><th>Unit</th><th>Line</th></tr>${(s.items||[]).map(it=>`<tr><td>${esc(it.code)}</td><td>${esc(it.name)}${it.unit_label?` <i>(${esc(it.unit_label)})</i>`:""}</td><td>${it.qty}</td><td>${money(it.unit_price)}</td><td>${money(it.line_total)}</td></tr>`).join("")}</table><p>Merchandise ${money(s.subtotal)}${Number(s.freight_fee)>0?` · Freight ${money(s.freight_fee)} · Total ${money(s.estimated_total)}`:((s.freight_lines||[]).some(x=>x.status==="actual")?" · Freight pending (actual, from the manufacturer's confirmation)":(s.freight_lines||[]).length?" · Freight: free":"")}</p><p>Status in Order Review: <b>Received by HCPS</b> → Placed with manufacturer → Confirmed by manufacturer</p>`).join("");
   const docs={dealer:(j.dealer_email&&j.dealer_email.html)||"",sheet:`<html><body style="font:13px Arial;color:#10263f;padding:14px">${sheet}<style>table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ddd;padding:5px;text-align:left}</style></body></html>`};
   (j.hcps_emails||[]).forEach((e,i)=>{ docs["hcps"+i]=e.html; });
   m.innerHTML=`<div class="pvbox" role="dialog" aria-label="Preview order"><div class="pvhead"><b>Preview order — NOT recorded, NOT sent</b><button onclick="document.getElementById('pvOrder').remove()" aria-label="Close">✕</button></div>
@@ -5854,11 +5924,23 @@ async function submitOrder(){
   { const noAcc=[...groups.keys()].filter(sl=>!isGoldenSlug(sl)&&needsAccess(sl));
     if(noAcc.length){ toast(`Ordering access for ${noAcc.map(sl=>mfrInfo(sl).name).join(", ")} isn't set up yet — use Request access on that catalog (if HCPS has just turned it on, reload the page). Nothing was submitted.`); return; } }
   if(typeof cartRuleProblems==="function"){ const rp=cartRuleProblems(); if(rp.length){ toast(rp[0].msg); return; } }
+  if(CHECKOUT_PROMO.busy || (CHECKOUT_PROMO.code && !promoQuote())){
+    toast("Apply or remove the Dalton promo code and review your prices before placing your order."); return;
+  }
+  const reviewedPromoStamp=CHECKOUT_PROMO.code ? promoStamp() : "";
+  const reviewedPromoCode=CHECKOUT_PROMO.code;
   const btn=$("#submitOrder"); btn.disabled=true; btn.textContent="Checking prices…";
   try{
     /* The server checks the price of every line before anything is submitted. */
     const chk=await serverPriceCheck();
-    if(!chk){ toast("Pricing could not be confirmed right now — nothing was submitted. Please try again."); return; }
+    if(reviewedPromoCode!==CHECKOUT_PROMO.code || (reviewedPromoStamp && reviewedPromoStamp!==promoStamp())){
+      toast("Your promotion or cart changed — review the prices before placing the order."); return;
+    }
+    if(!chk?.ok){
+      if(chk?.status==="promo_rejected"){ CHECKOUT_PROMO.quote=null; CHECKOUT_PROMO.error=chk.error; updateCart(); }
+      toast(chk?.error || "Pricing could not be confirmed right now — nothing was submitted. Please try again."); return;
+    }
+    if(CHECKOUT_PROMO.code && !savePromoQuote(chk)){ updateCart(); toast("Apply the promo code again before placing the order."); return; }
     if(chk.changed){ applyServerPrices(chk); updateCart(); toast("Prices changed since you last reviewed your cart — review the updated totals, then place your order again"); return; }
   } finally { btn.disabled=false; btn.textContent="Place order →"; }
   const orders=[];
@@ -5866,14 +5948,15 @@ async function submitOrder(){
     const f=computeFreight(slug,lines), info=mfrInfo(slug);
     orders.push({
       manufacturer_slug:slug, manufacturer_name:info.name,
+      ...(slug==="dalton"&&promoQuote()?{promo_code:CHECKOUT_PROMO.code}:{}),
       po:((MFR[slug]&&MFR[slug].po)||"").trim(), notes:((MFR[slug]&&MFR[slug].notes)||"").trim(),
-      items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,upgrade:p._upgrade||undefined,name:p.name,brand:p.brand||"",uom:p.uom||"",case_qty:(packOf(p)?packOf(p).n:undefined),qty,unit:unitPrice(p,qty)})),
+      items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,upgrade:p._upgrade||undefined,name:p.name,brand:p.brand||"",uom:p.uom||"",case_qty:(packOf(p)?packOf(p).n:undefined),qty,unit:checkoutUnit(p,qty)})),
       items_count:lines.reduce((n,{qty})=>n+qty,0),
-      items_subtotal:Number(f.itemsTotal.toFixed(2)),
+      items_subtotal:Number((slug==="dalton"?(promoQuote()?.subtotal??f.itemsTotal):f.itemsTotal).toFixed(2)),
       freight_fee:Number(f.fee.toFixed(2)),
       freight_lines:f.rows, freight_note:f.actualNote||"",
       service_choices:Object.assign({},(MFR[slug]&&MFR[slug].svc)||{}),   // the dealer's Yes / No; the fee is the server's
-      estimated_total:Number((f.itemsTotal+f.fee+deliveryServicesFor(slug,lines).fee).toFixed(2))
+      estimated_total:Number(((slug==="dalton"?(promoQuote()?.subtotal??f.itemsTotal):f.itemsTotal)+f.fee+deliveryServicesFor(slug,lines).fee).toFixed(2))
     });
   }
   // Golden lines are never submitted from the 360 Dealer Portal in this release (blueprint v1.3.0): they stay in the cart,
@@ -5900,7 +5983,9 @@ async function submitOrder(){
         body:JSON.stringify(payload)});
       if(onBehalf&&res.status===401){ const e=await res.clone().json().catch(()=>({})); manageEnded((e&&e.error)||"Your Manage Dealer session has ended — nothing was submitted."); return; }
       const j=await res.json().catch(()=>({}));
+      if(j.status==="promo_rejected"){ CHECKOUT_PROMO.quote=null; CHECKOUT_PROMO.error=j.error; updateCart(); toast(j.error); return; }
       if(res.status===409 && j.status==="prices_changed"){
+        if(CHECKOUT_PROMO.code) savePromoQuote(j);
         applyServerPrices(j); updateCart();
         toast("Prices changed while you were checking out — review the updated totals, then place your order again");
         return;
