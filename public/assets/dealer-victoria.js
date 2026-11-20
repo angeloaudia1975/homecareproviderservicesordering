@@ -62,9 +62,12 @@
   setTimeout(place, 0); setTimeout(place, 1500); setTimeout(place, 4000);
 
   let panel = null;
+  const ob = sh.querySelector('button'); ob.setAttribute('aria-expanded', 'false');
+  host.__dvFocus = () => { try { ob.focus(); } catch (e) {} };
+  host.__dvExpanded = (on) => ob.setAttribute('aria-expanded', on ? 'true' : 'false');
   sh.querySelector('button').addEventListener('click', async () => {
     if (!panel) {                                                     // panel + animation load only now
-      const src = (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=1');
+      const src = (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=2');
       try { if (!window.DealerVictoriaPanel) await new Promise((ok, bad) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); });
         panel = window.DealerVictoriaPanel && window.DealerVictoriaPanel(host); } catch (e) { panel = null; }
     }
