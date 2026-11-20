@@ -8089,6 +8089,7 @@ async function boot(){
     const dn=$("#dealerName"); if(dn)dn.textContent=(PROFILE&&PROFILE.name)||"Dealer";
     try{ await loadBranding(); applyBranding(); }catch(e){}
     await loadDash();
+    dvProbe();   /* Dealer Victoria: only a Manage Dealer session on a TEST dealership (View as Dealer alone never) */
     return;
   }
   SESSION=loadSession();
