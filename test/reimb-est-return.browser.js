@@ -28,11 +28,15 @@ const SHOTS = process.env.SHOTS || '';
 (async () => {
   const b = await chromium.launch();
   try {
-    for (const [w, h, label] of [[1280, 900, 'desktop'], [390, 844, 'phone']]) {
+    for (const [w, h, label] of [[1280, 900, 'desktop'], [768, 1024, 'tablet'], [390, 844, 'phone']]) {
       const { ctx, page } = await open(b, w, h, { prices: { dalton: 109 } });
+      let weird = false;
       await page.route('**/reimbursement-api', async (r) => { const body = JSON.parse(r.request().postData() || '{}');
         const res = await RF.handler({ httpMethod: 'POST', headers: { authorization: 'Bearer tok' }, body: JSON.stringify(Object.assign({ dos: '2026-11-19' }, body)) });
-        r.fulfill({ status: res.statusCode, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: res.body }); });
+        let out = res.body;
+        /* a plan id carrying quotes, brackets and a backslash: the panel must keep refreshing (no CSS selector is ever built from it) */
+        if (weird && body.action === 'product') { try { const j = JSON.parse(out); (j.rows || []).forEach((x) => { if (x.payer && x.payer !== 'medicare') x.payer = 'ky "medicaid" [ffs]\\\'x'; }); out = JSON.stringify(j); } catch (e) {} }
+        r.fulfill({ status: res.statusCode, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: out }); });
       await page.evaluate(async () => { window.needsAccess = () => false; await selectManufacturer('dalton'); });
       await page.waitForFunction(() => document.querySelector('#cv2Grid .card'), null, { timeout: 20000 });
       await page.evaluate(() => { const s = document.getElementById('search'); s.value = 'K2'; CUI.sort = 'name'; CUI.page = 1; renderProducts(); });
@@ -46,6 +50,10 @@ const SHOTS = process.env.SHOTS || '';
         const txt = await page.$eval('#pdReimb', (e) => e.innerText);
         ok(/Explore a K0002 estimate/.test(txt) && /Estimate assumes this product qualifies under K0002\./.test(txt) && !(await page.$('#pdReimb .pd-est-sc')), txt.slice(0, 600));
         const bh = await page.$eval('#pdReimb [data-explore]', (e) => e.getBoundingClientRect().height); ok(bh >= 44, 'touch ' + bh);
+      });
+      await t(`${label}: the "Explore a K0002 estimate" offer is hidden in print`, async () => {
+        await page.emulateMedia({ media: 'print' }); const v = await page.$$eval('#pdReimb [data-explore], #pdReimb .pd-est-offer, #pdReimb .pd-reimb-calc', (e) => e.filter((x) => x.offsetParent !== null).length); await page.emulateMedia({ media: 'screen' });
+        ok(v === 0, 'visible in print: ' + v);
       });
       await page.click('#pdReimb [data-explore]'); await page.waitForSelector('#pdReimb .pd-est-sc', { timeout: 10000 });
       const cols = () => page.$$eval('#pdReimb .pd-reimb-col', (e) => e.map((x) => x.innerText.replace(/\s+/g, ' ')));
@@ -107,6 +115,43 @@ const SHOTS = process.env.SHOTS || '';
         const l = await page.evaluate(() => ({ q: cvQuery(), sort: CUI.sort, y: Math.round(window.scrollY) })); ok(l.q === list0.q && l.sort === list0.sort && Math.abs(l.y - list0.y) < 40, JSON.stringify([list0, l]));
       });
       if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `return-3-results-${label}.png`) });
+      /* a quick switch: the dealer opens K2DK16F and straight away K2DK18F — the button names, and returns to, the product whose card opened the fee schedule */
+      await page.evaluate(() => { openProductDetail('K2DK16F'); openProductDetail('K2DK18F'); });
+      await page.waitForFunction(() => { const pd = document.querySelector('#content .pd'); return pd && pd.getAttribute('data-pd-code') === 'K2DK18F' && document.querySelector('#pdReimb .pd-reimb-cols'); }, null, { timeout: 20000 });
+      await page.waitForTimeout(600);
+      await page.evaluate(() => document.querySelector('#pdReimb .pd-reimb-go:not(.pd-reimb-calc)').click()); await page.waitForSelector('#view-reimb .rb-ret', { timeout: 15000 });
+      const rb = await page.$eval('#view-reimb .rb-ret', (e) => e.textContent.trim());
+      await page.click('#view-reimb .rb-ret'); await page.waitForFunction(() => document.querySelector('#content .pd') && !document.body.classList.contains('p360on'), null, { timeout: 15000 });
+      const back = await page.evaluate(() => document.querySelector('#content .pd').getAttribute('data-pd-code'));
+      /* the race itself, made deterministic: K2DK16F's card finishes mounting while the page already shows K2DK18F */
+      await page.evaluate(() => { document.getElementById('lateCard') && document.getElementById('lateCard').remove();
+        const d = document.createElement('div'); d.id = 'lateCard'; d.className = 'pd'; d.setAttribute('data-pd-code', 'K2DK16F');
+        d.innerHTML = '<div class="pd-info"><h1>K2 16\u2033 Wheelchair W/Footrest</h1></div><div id="lateReimb"></div>'; document.body.appendChild(d);
+        return window.reimbCard(document.getElementById('lateReimb'), state.products.find((x) => x.code === 'K2DK16F')); });
+      await page.waitForSelector('#lateReimb .pd-reimb-go', { timeout: 15000 });
+      await page.evaluate(() => document.querySelector('#lateReimb .pd-reimb-go:not(.pd-reimb-calc)').click()); await page.waitForSelector('#view-reimb .rb-ret', { timeout: 15000 });
+      const rbLate = await page.$eval('#view-reimb .rb-ret', (e) => e.textContent.trim());
+      await page.evaluate(() => document.getElementById('lateCard').remove());
+      await page.click('#view-reimb .rb-ret'); await page.waitForFunction(() => document.querySelector('#content .pd') && !document.body.classList.contains('p360on'), null, { timeout: 15000 });
+      const backLate = await page.evaluate(() => document.querySelector('#content .pd').getAttribute('data-pd-code'));
+      await t(`${label}: a card that finishes after the page moved on names and returns to its own product (K2DK16F)`, () => ok(/^← Back to K2 16/.test(rbLate) && backLate === 'K2DK16F', JSON.stringify({ rbLate, backLate })));
+      await t(`${label}: after a quick product switch, the label and the destination are both K2DK18F`, () => ok(/^← Back to K2 18/.test(rb) && !/16/.test(rb) && back === 'K2DK18F', JSON.stringify({ rb, back })));
+      /* a plan id with quotes / brackets / a backslash: each change still refreshes the panel and keeps focus */
+      weird = true;
+      await page.evaluate(() => { openProductDetail('K2DK16F'); });
+      await page.waitForFunction(() => { const pd = document.querySelector('#content .pd'); return pd && pd.getAttribute('data-pd-code') === 'K2DK16F' && document.querySelector('#pdReimb .pd-reimb-cols'); }, null, { timeout: 20000 });
+      await page.waitForFunction(() => { const x = document.querySelector('#pdReimb [data-explore]'); if (x) x.click(); return !!document.querySelector('#pdReimb .pd-est-sc'); }, null, { timeout: 15000, polling: 500 }).catch(() => {});
+      await page.waitForSelector('#pdReimb .pd-est-sc', { timeout: 1000 }).catch(async (e) => { console.log('     debug: ' + (await page.$eval('#pdReimb', (x) => x.innerText.replace(/\s+/g, ' ').slice(0, 900)))); throw e; });
+      const mSel = '#pdReimb [data-e="m"]:not([data-key^="medicare"])';
+      const setM = async (v) => { await page.evaluate(([sel, v]) => { const i = document.querySelector(sel); i.value = v; i.dispatchEvent(new Event('change')); }, [mSel, v]); await page.waitForTimeout(300);
+        return page.evaluate((sel) => ({ txt: document.querySelectorAll('#pdReimb .pd-reimb-col')[1].textContent.replace(/\s+/g, ' '), focus: document.activeElement === document.querySelector(sel), key: document.querySelector(sel).getAttribute('data-key') }), mSel); };
+      const r6 = await setM('6'), r3 = await setM('3');
+      await t(`${label}: a plan id with quotes, brackets and a backslash — every change refreshes the panel and keeps focus`, () => {
+        ok(/"medicaid" \[ffs\]/.test(r6.key), r6.key);
+        ok(/Months 1–6 \$36\.86/.test(r6.txt) && r6.focus, JSON.stringify({ t: r6.txt.slice(-300), f: r6.focus }));
+        ok(/Months 1–3 \$36\.86/.test(r3.txt) && r3.focus, JSON.stringify({ t: r3.txt.slice(-300), f: r3.focus }));
+      });
+      weird = false;
       await ctx.close();
     }
   } finally { await b.close(); }

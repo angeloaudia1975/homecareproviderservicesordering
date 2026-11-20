@@ -9500,7 +9500,7 @@ async function loadResourcesView(){ await loadPricing(); renderResources(); }
    answer comes from reimbursement-api (admin site), which checks the sign-in. Opened from Resources & Support and from a
    coded model on Shop Products (openReimb with its verified HCPCS code filled in). */
 const REIMB_API=API_BASE+"/reimbursement-api"; let REIMB_JS=null, REIMB_PREFILL=null;
-function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=10"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
+function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=11"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
 async function loadReimbView(){
   const host=$("#view-reimb"); if(!host) return;
   try{ await reimbLoadJs(); }catch(e){ host.innerHTML='<div class="ph"><div><h1>Reimbursement lookup</h1></div></div><div class="card"><div class="msg">The reimbursement lookup could not be loaded — please try again.</div></div>'; return; }
@@ -9540,9 +9540,11 @@ async function reimbCard(el,p){
   try{ (Array.isArray(p._skuSpecs)?p._skuSpecs:[]).forEach(r=>{ if(r&&isCodeRow(r.label)&&r.value!=null) spec_codes.push(String(r.value)); });
     if(p._golden&&p._goldenFamily&&typeof goldenFamilyDetail==='function'){ const j=await goldenFamilyDetail(p._goldenFamily); const rows=(j&&j.family&&j.family.specs&&j.family.specs.rows)||[];
       rows.forEach(r=>{ if(r&&isCodeRow(r.label)&&r.values&&r.values[p.code]!=null) spec_codes.push(String(r.values[p.code])); }); } }catch(e){}
-  const retName=(()=>{ const h=document.querySelector('#content .pd .pd-info h1'); return (h&&h.textContent.trim())||p.name; })();
+  /* "← Back to <product>" names the product whose card opened the fee schedule — read from THAT card's own product page when
+     the button is clicked (never a page-wide lookup after an await: a quick switch to another product would lend its name) */
+  const retNameOf=()=>{ try{ const pd=el.closest('.pd'); const h=pd&&pd.getAttribute('data-pd-code')===p.code?pd.querySelector('.pd-info h1'):null; return (h&&h.textContent.trim())||p.name||p.code; }catch(e){ return p.name||p.code; } };
   window.HCPSReimb.card(el,{ api:(b)=>api(REIMB_API,b), product:{name:p.name,code:p.code,manufacturer:p.manufacturer,category:p.category||'',sku_code:String(p.hcpc||p.hcpcs||''),page_codes:(p._billing||[]).map(String),spec_codes:spec_codes.slice(0,6),cost,cost_note:costNote},
-    open:(x)=>openReimb(Object.assign({},x,{ ret:{ line:state.active, code:p.code, name:retName, y:window.scrollY } })) });
+    open:(x)=>openReimb(Object.assign({},x,{ ret:{ line:state.active, code:p.code, name:retNameOf(), y:window.scrollY } })) });
 }
 window.reimbCard=reimbCard;
 function renderResources(){

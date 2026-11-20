@@ -271,7 +271,7 @@
           <label>Service cost per rental month<input data-e="service" inputmode="decimal" value="${esc(E.service)}"></label>
           <label>Medicare coinsurance collected (%)<input data-e="coins" inputmode="numeric" value="${esc(E.coins)}"></label>
         </div>${prod.cost_note ? `<div class="pd-est-s">${esc(prod.cost_note)}</div>` : ''}</div>`
-      : estMode === 'offer' ? `<div class="pd-est-offer"><button type="button" class="pd-est-go" data-explore>Explore a ${esc(refCode)} estimate</button><span class="pd-reimb-s">Dealer only. Estimate assumes this product qualifies under ${esc(refCode)}.</span></div>` : '';
+      : estMode === 'offer' ? `<div class="pd-est-offer" data-dealer-only><button type="button" class="pd-est-go" data-explore>Explore a ${esc(refCode)} estimate</button><span class="pd-reimb-s">Dealer only. Estimate assumes this product qualifies under ${esc(refCode)}.</span></div>` : '';
     const rowHtml = (x) => {
       const res = x.result || {}; const c = res.context || {}; const a = res.allowance || {}; const med = x.payer === 'medicare';
       const head = `${med ? 'Original Medicare fee-for-service' : esc(c.plan_label || 'Medicaid')} · ${esc(c.state_name || '')} · ${esc(c.location_label || '')} · ${esc(c.dos_label || '')}`;
@@ -313,13 +313,16 @@
       </div>` : '<div class="pd-reimb-s">Choose a state to see Original Medicare and Medicaid allowances.</div>'}
       ${st.state ? estInputs : ''}
       ${mp.informational ? `<div class="pd-reimb-s pd-reimb-info">${esc(mp.informational_note || 'Informational only.')}</div>` : ''}
-      <div class="pd-reimb-links"><a class="pd-reimb-go" role="button" tabindex="0">${mp.reference || mp.qualified ? 'Open the code\'s fee schedule →' : 'View billing details →'}</a>${estOn ? '<a class="pd-reimb-go pd-reimb-calc" role="button" tabindex="0">Insurance earnings calculator (dealer only) →</a>' : ''}</div>${mp.qualified ? '<div class="pd-reimb-s">No earnings estimate while the manufacturer\'s code is pending.</div>' : ''}</div>`;
+      <div class="pd-reimb-links"><a class="pd-reimb-go" role="button" tabindex="0">${mp.reference || mp.qualified ? 'Open the code\'s fee schedule →' : 'View billing details →'}</a>${estOn ? '<a class="pd-reimb-go pd-reimb-calc" role="button" tabindex="0" data-dealer-only>Insurance earnings calculator (dealer only) →</a>' : ''}</div>${mp.qualified ? '<div class="pd-reimb-s">No earnings estimate while the manufacturer\'s code is pending.</div>' : ''}</div>`;
     if (Math.abs(window.scrollY - y) > 1) window.scrollTo(0, y);   // the page stays where the dealer was
     if (fk) { const f = el.querySelector(`[data-k="${fk}"]`); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }
     el.querySelectorAll('[data-k]').forEach((x) => { x.onchange = () => { const k = x.getAttribute('data-k'); st[k] = String(x.value).trim(); if (k === 'zip') st.zsrc = m.branch_zip && st.zip === m.branch_zip ? 'branch' : 'patient'; if (k === 'state') { st.mplan = ''; st.mploc = ''; } if (k === 'mplan') st.mploc = ''; st._fk = k; st._y = window.scrollY; card(el, cfg, true); }; });
-    const fe = st._fe || null; st._fe = null; if (fe) { const f = el.querySelector(fe); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }
+    /* focus goes back to the input the dealer just changed — found by comparing attributes, never by building a CSS selector
+       from a plan id or code (a quote, bracket or backslash in one would throw and leave the panel unresponsive) */
+    const fe = st._fe || null; st._fe = null;
+    if (fe) { try { const f = [...el.querySelectorAll('[data-e]')].find((x) => x.getAttribute('data-e') === fe.e && (fe.key == null || x.getAttribute('data-key') === fe.key)); if (f) f.focus({ preventScroll: true }); } catch (e) {} }
     el.querySelectorAll('[data-e]').forEach((x) => { x.onchange = () => { const k = x.getAttribute('data-e'); if (k === 'm') E.m[x.getAttribute('data-key')] = String(x.value).trim(); else E[k] = String(x.value).trim();
-      st._fe = k === 'm' ? `[data-e="m"][data-key="${x.getAttribute('data-key')}"]` : `[data-e="${k}"]`; st._y = window.scrollY; card(el, cfg, true, true); }; });
+      st._fe = { e: k, key: k === 'm' ? x.getAttribute('data-key') : null }; st._y = window.scrollY; card(el, cfg, true, true); }; });
     const ex = el.querySelector('[data-explore]'); if (ex) ex.onclick = () => { st.explore = true; st._y = window.scrollY; card(el, cfg, true, true); };
     const go = () => cfg.open({ product: Object.assign({}, full, estOn ? { cost: E.cost === '' ? null : Number(E.cost), est: Object.assign({}, E) } : {}), code: mp.codes[0], state: st.state, plan: planFor(st.state, true) || 'medicare', zip: st.zip || '', zipSrc: st.zsrc, dos: st.dos });
     el.querySelectorAll('.pd-reimb-go').forEach((a) => bindOne(a, go));
@@ -390,7 +393,7 @@
       <div><dt>Dealer cost entered</dt><dd>${e.cost == null ? 'Not entered' : money(e.cost)}</dd></div>
       <div><dt>Delivery / setup entered</dt><dd>${money(e.setup)}</dd></div>
       ${rental ? `<div><dt>Service cost entered</dt><dd>${money(e.service)} × ${esc(String(e.service_months))} month(s) = ${money(e.service * e.service_months)}</dd></div>` : ''}</dl>`;
-    return `<section class="card rb-sec rb-calc"><h3>Insurance earnings estimate — dealer only</h3>${S.product && S.product.reference ? `<div class="rb-warn">Estimate assumes this product qualifies under ${esc(r.context.code)}.</div>` : ''}
+    return `<section class="card rb-sec rb-calc" data-dealer-only><h3>Insurance earnings estimate — dealer only</h3>${S.product && S.product.reference ? `<div class="rb-warn">Estimate assumes this product qualifies under ${esc(r.context.code)}.</div>` : ''}
       <div class="rb-small">Private to your signed-in account: never shown on storefronts, customer quotes, brochures, customer emails or the printed billing reference.</div>${packNote}
       <div class="rb-grid">
         <label>Allowance<select data-c="idx">${items.map((i, k) => `<option value="${k}"${k === c.idx ? ' selected' : ''}>${esc(money(i.amount) + ' · ' + i.basis + (i.modifier ? ' · ' + i.modifier : ''))}</option>`).join('')}</select></label>
