@@ -41,7 +41,7 @@
     ob0.appendChild(v); v.playbackRate = 0.6; if (!document.hidden) v.play().catch(() => {});
   }
   /* the panel script is fetched once the page is usable too, so the first opening shows the greeting at once */
-  const PANEL_SRC = () => (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=6');
+  const PANEL_SRC = () => (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=7');
   let panelLoad = null;
   const loadPanel = () => panelLoad || (panelLoad = window.DealerVictoriaPanel ? Promise.resolve() : new Promise((ok, bad) => { const s = document.createElement('script'); s.src = PANEL_SRC(); s.onload = ok; s.onerror = (e) => { panelLoad = null; bad(e); }; document.head.appendChild(s); }));
   const idle = () => { motion(); loadPanel().catch(() => {}); const D = window.DV || {}; SPEECH.prefetch(D.greeting); if (D.greeting_again && D.greeting_again !== D.greeting) SPEECH.prefetch(D.greeting_again); };
@@ -90,7 +90,8 @@
       const vid = (DVx().voice || {}).id || 'voice'; const ck = kind === 'greeting' ? '/__dv-voice/' + encodeURIComponent(vid) + '/' + fnv(text) : null;
       const p = (async () => {
         if (ck) { try { const c = await store(); const hit = await c.match(ck); if (hit) { const u = URL.createObjectURL(await hit.blob()); ready.set(k, u); return { url: u, cached: true }; } } catch (e) {} }
-        let r = null; try { r = await DVx().api({ action: 'speak', kind, text, token }); } catch (e) { r = null; }
+        let r = null; const tq = performance.now(); try { r = await DVx().api({ action: 'speak', kind, text, token }); } catch (e) { r = null; }
+        ev('fetched', { kind, ok: !!(r && r.ok), wall_ms: Math.round(performance.now() - tq), server_ms: r && r.server_ms, deepgram_ms: r && r.deepgram_ms, error: r && !r.ok ? r.error : undefined });
         if (!r || r.ok !== true || !r.audio) return { error: (r && r.error) || 'voice_failed' };
         const bin = atob(r.audio), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
         const blob = new Blob([u8], { type: r.mime || 'audio/mpeg' });
@@ -117,8 +118,12 @@
       const c = seq && seq.parts[i]; if (!c || my !== gen) return; const k = 'answer|' + c.text;
       const nx = seq.parts[i + 1]; if (nx) L.fetch(nx.text, 'answer', nx.token);   // one part ahead: no wasted audio after Voice off
       if (ready.has(k)) { start(ready.get(k), my); return; }
-      clearTimeout(watch); watch = setTimeout(() => { if (my === gen && (silent || audio.paused)) fail(my, 'slow'); }, 9000);
-      L.fetch(c.text, 'answer', c.token).then((r) => { if (my !== gen || !seq || seq.i !== i) return; if (r.error) return fail(my, r.error, 'failed'); start(r.url, my); });
+      clearTimeout(watch); watch = setTimeout(() => { if (my === gen && (silent || audio.paused)) fail(my, 'slow'); }, 15000);   // a part may be asked for twice (up to 6 s each)
+      /* a part that could not be made is asked for once more before the panel offers "Tap to hear Victoria" */
+      const go = (again) => L.fetch(c.text, 'answer', c.token).then((r) => { if (my !== gen || !seq || seq.i !== i) return;
+        if (r.error && !again) { ev('part_retry', { part: i, why: r.error }); return go(true); }
+        if (r.error) return fail(my, r.error, 'failed'); start(r.url, my); });
+      go(false);
     }
     L.speakParts = (parts) => {
       const list = (parts || []).filter((p) => p && p.text); if (!list.length) return false;

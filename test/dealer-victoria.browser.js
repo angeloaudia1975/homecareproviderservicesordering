@@ -33,8 +33,10 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
   try {
     for (const [w, h, label] of [[1280, 800, 'desktop'], [768, 1024, 'tablet'], [390, 844, 'phone']]) {
       const { ctx, page } = await open(b, w, h, { prices: { dalton: 109 } });
-      let first = true, aiOn = true, asks = [], hellos = 0, panelReq = 0, chatOpened = 0, spoken = [], speakReqs = [], playbacks = [];
+      let first = true, aiOn = true, asks = [], hellos = 0, panelReq = 0, chatOpened = 0, spoken = [], speakReqs = [], playbacks = [], failedOnce = false;
       await page.route('**/dealer-victoria-api', async (r) => { const x = JSON.parse(r.request().postData() || '{}'); let body;
+        if (x.action === 'speak' && /^This information/.test(x.text) && !failedOnce) { failedOnce = true; speakReqs.push({ kind: x.kind, text: x.text, token: x.token || null, failed: true });
+          return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ ok: false, error: 'voice_timeout' }) }); }
         if (x.action === 'speak') { speakReqs.push({ kind: x.kind, text: x.text, token: x.token || null });
           const fake = Buffer.concat([Buffer.from('FAKEMP3:' + x.text), Buffer.alloc(64)]).toString('base64');
           body = { ok: true, kind: x.kind, voice: 'aura-2-thalia-en', mime: 'audio/mpeg', audio: fake, chars: x.text.length, usd: 0 }; }
@@ -205,7 +207,8 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
         ok(!speakReqs.some((x) => x.kind === 'answer' && /^Here is what I found\. HCPS is not/.test(x.text)), 'the first part came with the answer — never requested again: ' + JSON.stringify(speakReqs.map((x) => x.text.slice(0, 40))));
         const sp = await page.evaluate(() => window.__spoken.slice()); const parts = VO.chunks('Here is what I found.\n\n' + V._test.BILLING_DISCLAIMER);
         const at = sp.indexOf(parts[0]); ok(at >= 0 && parts.every((p, i) => sp[at + i] === p), 'all parts played in order: ' + JSON.stringify(sp.slice(-5)));
-        ok(speakReqs.filter((x) => x.kind === 'answer' && parts.slice(1).includes(x.text)).every((x) => /^tok-\d+-\d+$/.test(x.token)), 'each later part fetched with its own token'); });
+        ok(speakReqs.filter((x) => x.kind === 'answer' && parts.slice(1).includes(x.text)).every((x) => /^tok-\d+-\d+$/.test(x.token)), 'each later part fetched with its own token');
+        const L2 = await page.evaluate(() => document.getElementById('dvOrbHost').__dvSpeech.log.slice()); ok(failedOnce && L2.filter((x) => x.e === 'fetched' && x.ok === false).length >= 1, 'a part whose audio failed once was asked for again and then played (all parts played in order above)'); });
       /* the fee schedule from Victoria's card → the existing page */
       await page.evaluate(() => document.getElementById('dvPanelHost').shadowRoot.querySelector('.card .fee').click());
       await page.waitForSelector('#view-reimb .rb-ret', { timeout: 15000 });
