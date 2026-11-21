@@ -18,6 +18,7 @@ const ROWS = [['1000000003', 'Rivera', 'Internal Medicine', 18, 103], ['10000000
     specialty: sp, hcpcs: 'E0260', hcpcs_desc: 'Hospital bed, semi-electric (head and foot adjustment), with any type side rails, with mattress', rental: 'Y', suppliers: 2, benes, claims, services: claims }));
 function referralApi(b, o) {
   if (o.disabled) return { ok: true, enabled: false };
+  if (b.action === 'meta' && o.hqNoZip) return Object.assign(referralApi(b, {}), { location: { id: 'd-hq', name: 'TEST HQ', city: '', state: 'KY', zip: '' } });
   if (b.action === 'meta') return { ok: true, enabled: true, source: { url: 'https://data.cms.gov/x' }, release: { data_year: 2024, version: 'v10', file_name: 'mup_dme_ry26_p05_v10_dy24_rfrhpr.csv', rows: 177000, live_since: '2026-11-21T07:00:00Z', label: 'Original Medicare ordering activity · claims year 2024' },
     last_check: { at: '2026-11-21T12:40:00Z', outcome: 'unchanged' }, location: { id: 'd-test', name: 'TEST Bowling Green', city: 'Bowling Green', state: 'KY', zip: '42101' },
     locations: [{ id: 'd-test', name: 'TEST Bowling Green', city: 'Bowling Green', state: 'KY', zip: '42101' }, { id: 'd-test2', name: 'TEST Somerset', city: 'Somerset', state: 'KY', zip: '42503' }] };
@@ -120,6 +121,11 @@ const waitRows = (page) => page.waitForFunction(() => { const v = document.query
       await page.evaluate(() => showP360('reports')); await page.waitForTimeout(1500);
       const rep = await page.evaluate(() => !!document.querySelector('#rptRef'));
       await t('an account outside the pilot sees no referral buttons anywhere', () => ok(hidden && !rep, JSON.stringify({ hidden, rep })));
+      await ctx.close(); }
+    { const { ctx, page } = await setup(browser, 1280, 900, { hqNoZip: true });
+      await page.evaluate(() => openReferrals({ hcpcs: 'E0260' })); await page.waitForSelector('#rfZips', { timeout: 20000 }); await page.waitForTimeout(800);
+      const z = await page.evaluate(() => ({ zips: document.querySelector('#rfZips').value, loc: document.querySelector('#rfLoc').value }));
+      await t('a head office with no ZIP on file starts on the first listed location (live Sandbox 2026-11-21)', () => ok(z.zips === '42101' && z.loc === '42101', JSON.stringify(z)));
       await ctx.close(); }
   } finally { await browser.close(); }
   console.log(`\nreferral sources: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
