@@ -135,12 +135,11 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
           search: (() => { const e = document.querySelector('.hsearch'); if (!e) return null; const q = e.getBoundingClientRect(); if (!q.width) return null; const inp = e.querySelector('input'); const y = (q.top + q.bottom) / 2, x = (q.left + q.right) / 2; const hit = document.elementFromPoint(x, y);
             return { left: q.left, top: q.top, right: q.right, bottom: q.bottom, width: q.width, tappable: !!(hit && e.contains(hit)), visible: q.top >= 0 && q.bottom <= innerHeight }; })(),
           expanded: document.getElementById('dvOrbHost').shadowRoot.querySelector('button').getAttribute('aria-expanded') }; });
-      const v1 = await page.evaluate(() => { const b = document.getElementById('dvPanelHost').shadowRoot.querySelector('.v'); return { text: b.textContent.trim(), pressed: b.dataset.voice, aria: b.getAttribute('aria-pressed'), spoken: window.__spoken.slice() }; });
-      await t(`${label}: first open — "Hello, Ann. I’m Victoria, …" shown AND spoken from the opening tap (no AI call); the button says Voice off; support is in the panel`, () => {
+      const v1 = await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; return { spoken: window.__spoken.slice(), typing: !s.querySelector('.ask').hidden, status: s.querySelector('.st span').textContent, warn: (s.querySelector('.warn') || {}).textContent || '', learn: s.querySelector('.learn').textContent, mic: !!s.querySelector('.mic,.chip,.v,.retry') }; });
+      await t(`${label}: no spoken conversation offered (status has none) — first open greets "Hello, Ann. …" shown AND spoken from the tap, explains it, and offers typing (no AI call, no mic / chip buttons)`, () => {
         ok(g1 === 'Hello, Ann. I’m Victoria, your personal assistant in the 360 Dealer Portal. How can I help you today?', g1);
         ok(v1.spoken.length === 1 && v1.spoken[0] === g1, 'spoken: ' + JSON.stringify(v1.spoken));
-        ok(/Voice off/.test(v1.text) && v1.pressed === 'on' && v1.aria === null, JSON.stringify(v1)); ok(asks.length === 0, 'no AI call to greet');
-        ok(open1.support.some((x) => /Chat with us/.test(x)) && !open1.support.some((x) => /HCPS/.test(x)) && open1.support.some((x) => /626-3140/.test(x)) && open1.support.some((x) => /Email/.test(x)), JSON.stringify(open1.support));
+        ok(v1.typing && /unavailable/i.test(v1.status) && /Type your question/.test(v1.warn) && /Learn what Victoria can do for you/.test(v1.learn) && !v1.mic, JSON.stringify(v1)); ok(asks.length === 0, 'no AI call to greet');
         ok(open1.close[0] >= 44 && open1.close[1] >= 44, 'close ' + open1.close);
       });
       await t(`${label}: open — the orb and the Golden cart stay visible and tappable; the panel never sits on either`, () => {
@@ -165,27 +164,16 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       const cOpen = await checkCovered(true);
       report[label] = { viewport: `${w}×${h}`, orb: pos.orb, cart: pos.cart, panel: open1.panel, covered_when_closed: cClosed, covered_when_open: cOpen };
       if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `dv-open-${label}.png`) });
-      /* chat with HCPS without AI */
-      await page.evaluate(() => document.getElementById('dvPanelHost').shadowRoot.querySelector('.sup .chat').click());
-      await t(`${label}: "Chat with HCPS" opens the HCPS chat window from the panel`, async () => ok((await page.evaluate(() => window.__chat)) === 1));
-      /* open → hear greeting → Voice off → close → reopen → hear greeting again (owner 2026-11-20 10:37) */
+      /* close → reopen → the welcome is spoken again; typing stays available */
       const seq = await page.evaluate(async () => {
         const o = () => document.getElementById('dvOrbHost').shadowRoot.querySelector('button'); const s = document.getElementById('dvPanelHost').shadowRoot; const W = (ms) => new Promise((r) => setTimeout(r, ms));
-        const n0 = window.__spoken.length; const c0 = window.__cancels;
-        s.querySelector('.v').click(); const off = { text: s.querySelector('.v').textContent.trim(), pressed: s.querySelector('.v').dataset.voice, cancelled: window.__cancels > c0 || document.getElementById('dvOrbHost').__dvSpeech.audio.paused };
-        s.querySelector('.x').click(); await W(50); const closed = s.querySelector('.p').hidden;
+        const n0 = window.__spoken.length; s.querySelector('.x').click(); await W(50); const closed = s.querySelector('.p').hidden;
         o().click(); await W(120);
-        return { off, closed, reopened: !s.querySelector('.p').hidden, spokenAgain: window.__spoken.slice(n0), label: s.querySelector('.v').textContent.trim(), typing: !s.querySelector('.ask input').disabled }; });
-      await t(`${label}: Voice off stops speech for this opening; closing and reopening turns voice back on and speaks the welcome again; typing stays available`, () => {
-        ok(/Voice on/.test(seq.off.text) && seq.off.pressed === 'off' && seq.off.cancelled, 'voice off: ' + JSON.stringify(seq.off));
-        ok(seq.closed && seq.reopened && seq.spokenAgain.length === 1 && seq.spokenAgain[0] === 'Hi, Ann. How can I help you today?' && /Voice off/.test(seq.label) && seq.typing, JSON.stringify(seq)); });
-      /* muted for the rest of an opening: an answer is not spoken */
-      const muted = await page.evaluate(async () => { const s = document.getElementById('dvPanelHost').shadowRoot; s.querySelector('.v').click(); const n = window.__spoken.length;
-        s.querySelector('.ask input').value = 'Thanks for your help today'; s.querySelector('.go').click(); await new Promise((r) => setTimeout(r, 1500)); const said = window.__spoken.length - n; s.querySelector('.v').click(); return said; });
-      await t(`${label}: after Voice off, answers in that opening are not spoken`, () => ok(muted === 0, 'spoken ' + muted));
+        return { closed, reopened: !s.querySelector('.p').hidden, spokenAgain: window.__spoken.slice(n0), typing: !s.querySelector('.ask input').disabled && !s.querySelector('.ask').hidden }; });
+      await t(`${label}: closing and reopening speaks the welcome again; typing stays available`, () => ok(seq.closed && seq.reopened && seq.spokenAgain.length === 1 && seq.spokenAgain[0] === 'Hi, Ann. How can I help you today?' && seq.typing, JSON.stringify(seq)));
       await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; if (s.querySelector('.p').hidden) document.getElementById('dvOrbHost').shadowRoot.querySelector('button').click(); });
       /* workflow 2 — reimbursement for the product on screen, matching its panel */
-      await page.evaluate(() => [...document.getElementById('dvPanelHost').shadowRoot.querySelectorAll('.chip')].find((c) => /Medicare/.test(c.textContent)).click());
+      await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; s.querySelector('.ask input').value = 'What does Medicare allow for this product?'; s.querySelector('.go').click(); });
       await page.waitForFunction(() => /HCPCS reference only/.test(document.getElementById('dvPanelHost').shadowRoot.querySelector('.log').textContent), null, { timeout: 15000 });
       const rc = await page.evaluate(() => document.getElementById('dvPanelHost').shadowRoot.querySelector('.log').textContent.replace(/\s+/g, ' '));
       const panelTxt = await page.evaluate(() => document.querySelector('#pdReimb').textContent.replace(/\s+/g, ' '));
@@ -218,7 +206,7 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       /* workflow 3 — draft quote with the SKU and variant on screen, left open for review */
       await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; if (s.querySelector('.p').hidden) document.getElementById('dvOrbHost').shadowRoot.querySelector('button').click(); });
       await page.waitForTimeout(300);
-      await page.evaluate(() => [...document.getElementById('dvPanelHost').shadowRoot.querySelectorAll('.chip')].find((c) => /quote/i.test(c.textContent)).click());
+      await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; s.querySelector('.ask input').value = 'Help me quote this product.'; s.querySelector('.go').click(); });
       await page.waitForFunction(() => window.P360Quote && window.P360Quote.picked().some((r) => r.sku === 'K2DK16F'), null, { timeout: 15000 }).catch(async (e) => {
         console.log('     debug: ' + JSON.stringify(await page.evaluate(() => ({ Q: typeof QUOTE !== 'undefined' ? QUOTE : null, log: document.getElementById('dvPanelHost').shadowRoot.querySelector('.log').textContent.slice(-300), pd: (document.querySelector('#content .pd') || {}).getAttribute && document.querySelector('#content .pd').getAttribute('data-pd-code'), btn: !!document.querySelector("#content .pd [onclick^='pdAddQuote']"), held: typeof isHeldSlug === 'function' && isHeldSlug('dalton'), act: state.active })))); throw e; });
       const q = await page.evaluate(() => { const r = window.P360Quote.picked().find((x) => x.sku === 'K2DK16F'); const inp = [...document.querySelectorAll('input[aria-label^="Quantity for"]')].find((i) => /K2 16/.test(i.getAttribute('aria-label'))); return { qty: inp ? Number(inp.value) : null, found: !!r, view: document.body.classList.contains('p360on'), active: state.active }; });
@@ -226,7 +214,7 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       /* workflow 1 — Golden order + carrier tracking, through Orders & Tracking's own View / print */
       await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; if (s.querySelector('.p').hidden) document.getElementById('dvOrbHost').shadowRoot.querySelector('button').click(); });
       await page.waitForTimeout(300);
-      await page.evaluate(() => [...document.getElementById('dvPanelHost').shadowRoot.querySelectorAll('.chip')].find((c) => /Golden order/.test(c.textContent)).click());
+      await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; s.querySelector('.ask input').value = 'Where is my Golden order?'; s.querySelector('.go').click(); });
       await page.waitForFunction(() => /PR510-MED/.test((document.getElementById('modal') || {}).innerText || ''), null, { timeout: 20000 });
       const oc = await page.evaluate(() => ({ card: document.getElementById('dvPanelHost').shadowRoot.querySelector('.log').innerHTML, modal: document.getElementById('modal').innerHTML }));
       await t(`${label}: order — the order opens in Orders & Tracking's View / print with the official R&L tracking link; delivery never claimed`, () => {
@@ -235,14 +223,12 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       });
       await page.evaluate(() => typeof ghCloseOrder === 'function' && ghCloseOrder());
       if (SHOTS) { await page.evaluate(() => { const s = document.getElementById('dvPanelHost').shadowRoot; if (s.querySelector('.p').hidden) document.getElementById('dvOrbHost').shadowRoot.querySelector('button').click(); }); await page.waitForTimeout(400); await page.screenshot({ path: path.join(SHOTS, `dv-answers-${label}.png`) }); }
-      /* a browser that blocks audio: the text stays, "Tap to hear Victoria" retries from a tap */
+      /* a browser that blocks audio: the text stays and the panel says so */
       const blk = await page.evaluate(async () => { const h = document.getElementById('dvPanelHost'); const s = h.shadowRoot; const o = document.getElementById('dvOrbHost').shadowRoot.querySelector('button');
         if (!s.querySelector('.p').hidden) s.querySelector('.x').click();
         window.__blockAudio = true; o.click(); await new Promise((r) => setTimeout(r, 600));
-        const st = { text: s.querySelector('.hello').textContent, retry: !s.querySelector('.retry').hidden, note: s.querySelector('.vnote').textContent };
-        window.__blockAudio = false; const n = window.__spoken.length; s.querySelector('.retry').click(); await new Promise((r) => setTimeout(r, 200));
-        return Object.assign(st, { retried: window.__spoken.slice(n), retryHidden: s.querySelector('.retry').hidden }); });
-      await t(`${label}: audio blocked — the greeting stays as text with "Tap to hear Victoria"; the retry speaks it`, () => ok(/Hi, Ann/.test(blk.text) && blk.retry && /didn.t play/.test(blk.note) && blk.retried.length === 1 && /Hi, Ann/.test(blk.retried[0]) && blk.retryHidden, JSON.stringify(blk)));
+        const st = { text: s.querySelector('.hello').textContent, note: [...s.querySelectorAll('.warn')].map((w) => w.textContent).join(' | ') }; window.__blockAudio = false; return st; });
+      await t(`${label}: audio blocked — the greeting stays as text and the panel explains the voice didn't play`, () => ok(/Hi, Ann/.test(blk.text) && /didn.t play/.test(blk.note), JSON.stringify(blk)));
       /* audio not fetched yet: the tap unlocks the element with a silent clip, the real audio plays when it arrives */
       const nr = await page.evaluate(async () => { const S = document.getElementById('dvOrbHost').__dvSpeech; const sp0 = window.__silentPlays, n = window.__plays.length;
         S.speak('An answer that was not fetched yet.', { kind: 'answer', token: 'tok-x' }); const silentInTap = window.__silentPlays - sp0;
@@ -262,8 +248,8 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
       /* AI unavailable (cap reached): support still works; questions are disabled */
       aiOn = false; await page.evaluate(() => { window.DV.ai = { available: false, reason: 'over_budget' }; const h = document.getElementById('dvPanelHost'); if (h) h.remove(); });
       const off = await page.evaluate(async () => { const api = window.DealerVictoriaPanel(document.getElementById('dvOrbHost')); api.toggle(true); await new Promise((r2) => setTimeout(r2, 400)); const s = api.shadow;
-        return { warn: !s.querySelector('.ai-off').hidden, chips: [...s.querySelectorAll('.chip')].every((c) => c.disabled), input: s.querySelector('.ask input').disabled, sup: [...s.querySelectorAll('.sup a')].map((a) => a.getAttribute('href')) }; });
-      await t(`${label}: over the cap — a plain message, questions off, phone and email support still there`, () => ok(off.warn && off.chips && off.input && off.sup.includes('tel:+18886263140') && off.sup.includes('mailto:info@homecareproviderservices.us'), JSON.stringify(off)));
+        return { warn: [...s.querySelectorAll('.warn')].some((w) => /can't answer/.test(w.textContent)), input: s.querySelector('.ask input').disabled, sup: [...s.querySelectorAll('.warn a')].map((a) => a.getAttribute('href')) }; });
+      await t(`${label}: over the cap — a plain message, questions off, phone and email support links`, () => ok(off.warn && off.input && off.sup.includes('tel:+18886263140') && off.sup.includes('mailto:info@homecareproviderservices.us'), JSON.stringify(off)));
       await ctx.close();
     }
     /* reduced motion: no animation while speaking */

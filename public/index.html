@@ -7102,7 +7102,7 @@ async function previewMe(token){
   }catch(e){ PREVIEW=null; window.__PREVIEW__=null; AUTH.status='anon'; return {ok:false,message:'Could not start the dealer preview.'}; }
 }
 // Leave preview: close the tab (it was opened from the admin) or fall back to the portal root.
-function exitPreview(){ try{ window.close(); }catch(e){} setTimeout(()=>{ try{ location.href='/'; }catch(e){} },120); }
+function exitPreview(){ try{ window.__dvVoiceStop&&window.__dvVoiceStop(); }catch(e){} try{ window.close(); }catch(e){} setTimeout(()=>{ try{ location.href='/'; }catch(e){} },120); }
 /* MANAGE DEALER (owner 2026-11-13). Opened from Dealer 360 by the President: the read-only preview above PLUS a staff
    session whose token arrives in the URL fragment (never sent to a server log; removed from the address bar at once).
    The server decides everything (switch, role, this location, each action) and records every change under the staff
@@ -7131,7 +7131,7 @@ async function startManage(){
 }
 function manageEnded(msg){   /* a top-level function: also window.manageEnded for the folded-in Hub script */ MANAGE=null; window.__MANAGE__=null; try{ sessionStorage.removeItem('hcps_manage'); }catch(e){} const b=document.getElementById('previewbar'); if(b) b.remove(); ensurePreviewBar(); if(msg) toast(msg); }
 async function manageToView(){ if(!MANAGE) return; if(!confirm('Switch to View as Dealer? Your Manage Dealer session ends; open it again from Dealer 360 to make changes.')) return; await manageCall('manage_end','view'); manageEnded('View as Dealer — read-only.'); }
-async function manageExit(){ if(MANAGE) await manageCall('manage_end','exit'); try{ sessionStorage.removeItem('hcps_manage'); }catch(e){} exitPreview(); }
+async function manageExit(){ try{ window.__dvVoiceStop&&window.__dvVoiceStop(); }catch(e){} if(MANAGE) await manageCall('manage_end','exit'); try{ sessionStorage.removeItem('hcps_manage'); }catch(e){} exitPreview(); }
 function ensurePreviewBar(){
   if(document.getElementById('previewbar')) return;
   const dn=(PREVIEW&&PREVIEW.dealer&&PREVIEW.dealer.name)||'this dealer';
@@ -7439,6 +7439,7 @@ async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg
    back (no stored session + the pageshow guard below). Staff in a dealer preview / Manage Dealer never sign anyone out:
    that button EXITS the dealer view instead (manageExit / exitPreview, unchanged). */
 function signOut(){
+  try{ window.__dvVoiceStop&&window.__dvVoiceStop(); }catch(e){}   // Victoria's conversation: microphone, speech and pending work stop first
   if(typeof PREVIEW!=='undefined'&&PREVIEW){ if(typeof MANAGE!=='undefined'&&MANAGE&&typeof manageExit==='function') return manageExit(); return exitPreview(); }
   const tok=AUTH.session&&AUTH.session.access_token;
   try{ document.querySelectorAll('audio,video').forEach(m=>{ try{ m.pause(); m.removeAttribute('src'); m.load(); }catch(e){} }); }catch(e){}
@@ -10570,6 +10571,8 @@ async function dvProbe(){
   window.DV={ support:j.support||null, ai:j.ai||{available:true},
     /* Victoria's voice = the Deepgram voice saved in the owner's Command Center settings (chosen by the server) */
     voice:j.voice||null,
+    /* continuous spoken conversation (owner 2026-11-20 20:11): the Deepgram Voice Agent, through dealer-victoria-api */
+    conversation:j.conversation||{available:false},
     /* the welcome for the NEXT opening (owner 2026-11-20 10:37): shown and spoken inside the opening tap, no AI call */
     greeting:j.greeting||(j.first_name?"Hi, "+j.first_name+". How can I help you today?":"Hello! How can I help you today?"),
     greeting_again:j.greeting_again||(j.first_name?"Hi, "+j.first_name+". How can I help you today?":"Hello! How can I help you today?"),
@@ -10583,7 +10586,8 @@ async function dvProbe(){
   document.body.classList.add("dv-on");
   try{ const z=window.$zoho&&window.$zoho.salesiq; const hide=()=>{ try{ window.$zoho.salesiq.floatbutton.visible("hide"); }catch(e){} };
     if(z&&z.floatbutton) hide(); else if(z){ const prev=z.ready; z.ready=function(){ if(typeof prev==="function"){try{prev();}catch(e){}} hide(); }; } }catch(e){}
-  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=10"; s.defer=true; document.head.appendChild(s);
+  const v=document.createElement("script"); v.src="/assets/dv-voice.js?v=1"; v.defer=true; document.head.appendChild(v);
+  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=11"; s.defer=true; document.head.appendChild(s);
 }
 /* what is on screen: the product page open (its own selected SKU / variant) and its reimbursement panel's state, ZIP,
    payer plan and date — exactly what the panel shows, read from the panel itself */

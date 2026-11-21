@@ -24,10 +24,12 @@
     button video{opacity:0;transition:opacity .6s}button.live video{opacity:1}
     button[data-s="speaking"]{box-shadow:0 0 26px rgba(80,185,255,.85),0 0 60px rgba(110,90,255,.45),0 4px 14px rgba(11,31,51,.35)}
     button:focus-visible{outline:3px solid #fcb21e;outline-offset:3px}
+    /* a conversation still going while the panel steps aside (phone): a green ring, and the button says so */
+    button[data-convo="on"]{box-shadow:0 0 0 4px #22c55e,0 0 22px rgba(34,197,94,.6),0 4px 14px rgba(11,31,51,.35)}
     .lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
     .fb{position:absolute;right:0;bottom:66px;width:240px;padding:12px;background:#fff;color:#0b1f33;border-radius:12px;box-shadow:0 10px 30px rgba(11,31,51,.3);font:14px/1.4 system-ui,sans-serif}
     .fb b{display:block;margin-bottom:6px}.fb a{display:block;min-height:44px;line-height:44px;color:#0f5c8f;font-weight:700}
-  </style><button type="button" aria-label="Ask Victoria — your HCPS assistant" aria-haspopup="dialog"><img src="/assets/victoria/orb-still.webp" alt="" decoding="async" draggable="false"><span class="lbl">Ask Victoria</span></button>`;
+  </style><button type="button" aria-label="Ask Victoria — your Home Care Provider Services assistant" aria-haspopup="dialog"><img src="/assets/victoria/orb-still.webp" alt="" decoding="async" draggable="false"><span class="lbl">Ask Victoria</span></button>`;
   document.body.appendChild(host);
   /* the globe: still now (a failed still leaves the gradient — never a broken image); motion once the page is usable */
   const ob0 = sh.querySelector('button'); const still = ob0.querySelector('img'); still.onerror = () => still.remove();
@@ -41,7 +43,7 @@
     ob0.appendChild(v); v.playbackRate = 0.6; if (!document.hidden) v.play().catch(() => {});
   }
   /* the panel script is fetched once the page is usable too, so the first opening shows the greeting at once */
-  const PANEL_SRC = () => (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=10');
+  const PANEL_SRC = () => (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=11');
   let panelLoad = null;
   const loadPanel = () => panelLoad || (panelLoad = window.DealerVictoriaPanel ? Promise.resolve() : new Promise((ok, bad) => { const s = document.createElement('script'); s.src = PANEL_SRC(); s.onload = ok; s.onerror = (e) => { panelLoad = null; bad(e); }; document.head.appendChild(s); }));
   const idle = () => { motion(); loadPanel().catch(() => {}); const D = window.DV || {}; SPEECH.prefetch(D.greeting); if (D.greeting_again && D.greeting_again !== D.greeting) SPEECH.prefetch(D.greeting_again); };
@@ -199,14 +201,18 @@
   const ob = sh.querySelector('button'); ob.setAttribute('aria-expanded', 'false');
   host.__dvFocus = () => { try { ob.focus(); } catch (e) {} };
   host.__dvExpanded = (on) => ob.setAttribute('aria-expanded', on ? 'true' : 'false');
+  host.__dvLive = (on) => { if (on) { ob.dataset.convo = 'on'; ob.setAttribute('aria-label', 'Victoria is still listening — open the conversation'); } else { delete ob.dataset.convo; ob.setAttribute('aria-label', 'Ask Victoria — your Home Care Provider Services assistant'); } };
   sh.querySelector('button').addEventListener('click', async () => {
     const DV = window.DV || {};
     const opening = !(panel && panel.isOpen());
     let greet = null;
-    if (opening) {                                                    // speak FIRST, inside this tap — before any await
+    if (opening) {
       greet = DV.greeting || 'Hello! How can I help you today?';
       DV.greeting = DV.greeting_again || DV.greeting;                // a later opening on this page gets the short welcome
-      SPEECH.speak(greet, { kind: 'greeting' });
+      /* a spoken conversation greets through the Voice Agent (the panel starts it in this tap); without one the greeting is
+         spoken here, inside the tap, before any await */
+      const convo = !!(DV.conversation && DV.conversation.available && window.DVVoice && window.DVVoice.supported() && !(DV.ai && DV.ai.available === false));
+      if (!convo) SPEECH.speak(greet, { kind: 'greeting' });
     }
     if (!panel) {                                                     // normally already fetched while the page was idle
       try { await loadPanel(); panel = window.DealerVictoriaPanel && window.DealerVictoriaPanel(host); } catch (e) { panel = null; }
@@ -217,8 +223,8 @@
   function fallback() {
     let f = sh.querySelector('.fb'); if (f) { f.hidden = !f.hidden; return; }
     const S = (window.DV && window.DV.support) || { phone: '(888) 626-3140', phone_tel: '+18886263140', email: 'info@homecareproviderservices.us' };
-    f = document.createElement('div'); f.className = 'fb'; f.setAttribute('role', 'dialog'); f.setAttribute('aria-label', 'Contact HCPS support');
-    f.innerHTML = '<b>Contact HCPS support</b><a href="tel:' + S.phone_tel + '">Call ' + S.phone + '</a><a href="mailto:' + S.email + '">Email ' + S.email + '</a>';
+    f = document.createElement('div'); f.className = 'fb'; f.setAttribute('role', 'dialog'); f.setAttribute('aria-label', 'Contact Home Care Provider Services support');
+    f.innerHTML = '<b>Contact Home Care Provider Services support</b><a href="tel:' + S.phone_tel + '">Call ' + S.phone + '</a><a href="mailto:' + S.email + '">Email ' + S.email + '</a>';
     sh.appendChild(f);
   }
   window.__dvPlace = place;
