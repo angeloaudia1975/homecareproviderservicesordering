@@ -9648,7 +9648,7 @@ function openReimb(prefill){ REIMB_PREFILL=prefill||null; if(typeof showP360==="
    reimbursement panel, the reimbursement lookup and Reports & Growth Ideas. Shown only where referral-sources-api says this
    account is in the pilot (TEST dealerships + the locations the owner lists). Back returns to the caller with its state. */
 const REF_API=API_BASE+"/referral-sources-api"; let REF_JS=null, REF_PREFILL=null, REF_ON=null;
-function refLoadJs(){ if(!REF_JS) REF_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/referral-sources.js?v=1"; sc.onload=res; sc.onerror=()=>{ REF_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REF_JS; }
+function refLoadJs(){ if(!REF_JS) REF_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/referral-sources.js?v=2"; sc.onload=res; sc.onerror=()=>{ REF_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REF_JS; }
 async function refEnabled(){ if(REF_ON!==null) return REF_ON; try{ const r=await api(REF_API,{action:"meta"}); REF_ON=!!(r&&r.ok&&r.enabled); }catch(e){ REF_ON=false; } return REF_ON; }
 window.refEnabled=refEnabled;
 async function loadReferralsView(){
