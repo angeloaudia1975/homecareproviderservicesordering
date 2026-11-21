@@ -115,7 +115,7 @@
         </div>
         ${plan && plan.note ? `<div class="rb-small">${esc(plan.note)}</div>` : ''}
         <div class="rb-acts"><button class="btn pri" data-act="go"${S.busy ? ' disabled' : ''}>${S.busy ? 'Looking up…' : 'Look up'}</button>
-          ${S.result && S.result.ok ? '<button class="btn gh" data-act="print">Print billing reference</button>' : ''}</div>
+          ${S.result && S.result.ok ? '<button class="btn gh" data-act="print">Print billing reference</button>' : ''}${S.result && S.result.ok && CFG.referrals ? '<button class="btn gh" data-act="refs" hidden>Find local referral sources →</button>' : ''}</div>
         ${S.err ? `<div class="rb-err" role="alert">${esc(S.err)}</div>` : ''}
       </div>
       <div id="rbOut">${S.result && S.result.ok ? resultHtml(S.result) : ''}</div>
@@ -131,7 +131,8 @@
     $('rbCode').oninput = (e) => { S.code = e.target.value.toUpperCase(); S.otherMods = []; };
     $('rbCode').onkeydown = (e) => { if (e.key === 'Enter') run(); };
     bindCalc(host);
-    host.querySelectorAll('[data-act]').forEach((el) => { el.onclick = () => { const a = el.getAttribute('data-act'); if (a === 'go') run(); else if (a === 'print') printRef(); else if (a === 'resources' && CFG.back) CFG.back(); else if (a === 'ret' && CFG.ret && CFG.ret.back) CFG.ret.back(); }; });
+    const rb = host.querySelector('[data-act="refs"]'); if (rb && CFG.refEnabled) Promise.resolve(CFG.refEnabled()).then((on) => { if (on) rb.hidden = false; }).catch(() => {});
+    host.querySelectorAll('[data-act]').forEach((el) => { el.onclick = () => { const a = el.getAttribute('data-act'); if (a === 'refs' && CFG.referrals) { CFG.referrals({ hcpcs: S.code, rate: { state: S.state, plan: S.plan, zip: S.zip || '', dos: S.dos } }); return; } if (a === 'go') run(); else if (a === 'print') printRef(); else if (a === 'resources' && CFG.back) CFG.back(); else if (a === 'ret' && CFG.ret && CFG.ret.back) CFG.ret.back(); }; });
   }
 
   async function run() {
@@ -295,7 +296,10 @@
       const isMed = (x) => (payer === 'medicare') === (x.payer === 'medicare');
       const rows = (r.rows || []).filter((x) => x.code === c.code && !x.conditional && isMed(x));
       const alt = c.conditional ? (r.rows || []).filter((x) => x.code === c.conditional.code && x.conditional && isMed(x)) : [];
-      return `${codeHead(c)}${c.component === 'mechanism' ? `<div class="pd-reimb-s">${esc(mp.why)}</div>` : ''}${rows.map(rowHtml).join('') || `<div class="pd-reimb-miss">${esc(NO_RATE)}</div>`}
+      /* "Find local referral sources" beside each eligible code (pilot, owner 2026-11-21) — Medicare column, shown once the
+         portal confirms this account is in the pilot */
+      const refBtn = payer === 'medicare' && cfg.referrals ? `<button type="button" class="pd-ref-go" data-ref-code="${esc(c.code)}" hidden>Find local referral sources for ${esc(c.code)} →</button>` : '';
+      return `${codeHead(c)}${refBtn}${c.component === 'mechanism' ? `<div class="pd-reimb-s">${esc(mp.why)}</div>` : ''}${rows.map(rowHtml).join('') || `<div class="pd-reimb-miss">${esc(NO_RATE)}</div>`}
         ${c.conditional ? `<div class="pd-reimb-s pd-reimb-cond">${esc(c.conditional.note)}</div>${alt.map(rowHtml).join('')}` : ''}`;
     }).join('');
     const stName = ((m.states || []).find((s) => s.id === st.state) || {}).name || '';
@@ -333,6 +337,10 @@
     const ex = el.querySelector('[data-explore]'); if (ex) ex.onclick = () => { st.explore = true; st._y = window.scrollY; card(el, cfg, true, true); };
     const go = () => cfg.open({ product: Object.assign({}, full, estOn ? { cost: E.cost === '' ? null : Number(E.cost), est: Object.assign({}, E) } : {}), code: mp.codes[0], state: st.state, plan: planFor(st.state, true) || 'medicare', zip: st.zip || '', zipSrc: st.zsrc, dos: st.dos });
     el.querySelectorAll('.pd-reimb-go').forEach((a) => bindOne(a, go));
+    const refs = el.querySelectorAll('.pd-ref-go');
+    if (refs.length && cfg.refEnabled) Promise.resolve(cfg.refEnabled()).then((on) => { if (!on) return; refs.forEach((b) => { b.hidden = false;
+      b.onclick = () => cfg.referrals({ hcpcs: b.getAttribute('data-ref-code'), product: { name: full.name, code: full.code },
+        rate: { state: st.state, zip: st.zip || '', dos: st.dos, mplan: st.mplan || '', plan: 'medicare' } }); }); }).catch(() => {});
   }
   function bindOne(a, fn) { if (!a) return; a.onclick = fn; a.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } }; }
 
