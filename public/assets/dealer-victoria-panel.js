@@ -1,17 +1,16 @@
-/* Dealer Victoria — the panel (owner 2026-11-19 22:07, TEST-dealer preview). Loaded only when the dealer opens the orb.
-   - Voice: Victoria's Command Center voice (Deepgram Aura-2, chosen on the server from the owner's Command Center setting) for
-     the welcome and her answers; answers are spoken only with the server's token for that exact answer.
-   - Greeting: fixed text from the server for THIS person (first open vs later) — no model call. Every deliberate opening
-     turns voice ON and the launcher speaks the greeting inside that tap (owner 2026-11-20 10:37); the panel shows it at once.
-     "Voice off" stops the speech and mutes the rest of THIS opening; the next opening turns voice on again. Typing always
-     works. If the browser blocks audio, the text stays and "Tap to hear Victoria" retries (a tap is allowed to start audio).
-   - Every reimbursement answer carries HCPS's fixed billing disclaimer, in the text, the card and what is spoken.
-   - Three workflows (Claude Haiku 5.5 on the server, under the dealer's own sign-in): Golden order + carrier tracking,
-     the reimbursement for the product on screen (same state / ZIP / payer / date / notice as its panel), a draft quote
-     for the product and variant on screen (left open for the dealer to review).
-   - Every figure, notice and tracking number shown comes from the record the server returns (cards), never the model's text.
-   - "Contact HCPS support" is always in the panel and works without AI (chat with HCPS, phone, email).
-   - Motion only while thinking / speaking; none with prefers-reduced-motion. Text is placed as text (no HTML from answers). */
+/* Dealer Victoria — the panel (TEST-dealer preview). Loaded when the dealer opens the globe.
+   CONVERSATION (owner 2026-11-20 20:11): opening the globe starts a continuous spoken conversation — Victoria greets the
+   person in the Command Center Deepgram voice, the browser asks for the microphone when it needs to, and she listens,
+   answers aloud, carries out permitted actions and listens again with no button between turns (dv-voice.js, the dealer copy
+   of Command Center's Voice Agent client). The dealer can talk over her (barge-in); echo cancellation keeps her own voice
+   out of what is heard. Status shows Connecting · Listening · Thinking · Speaking; permission, connection and service
+   problems are explained, never a silent wait. Close (or signing out) stops listening and speech at once and drops any
+   answer still on its way; the next opening starts the conversation again.
+   "Type instead" turns this opening into typing: no listening, no spoken replies. On a browser or device that can't hold a
+   voice conversation the panel explains why and offers typing; the greeting is still spoken (the earlier, approved path).
+   Every answer comes from the server's answer pipeline under the dealer's own sign-in; a page / draft action is performed
+   and CHECKED by the portal before Victoria says it is done (✓ / ✗). Reimbursement answers carry the fixed billing
+   disclaimer. Text is placed as text (no HTML from answers). */
 (function () {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const money = (n) => (n == null || !isFinite(Number(n)) ? '—' : '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -25,25 +24,29 @@
       :host{all:initial}
       [hidden]{display:none!important}
       .p{position:fixed;z-index:2147482001;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#0b1f33;background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(11,31,51,.28);display:flex;flex-direction:column;overflow:hidden}
-      .hd{display:flex;align-items:center;gap:10px;padding:12px 10px 12px 14px;background:#0b1f33;color:#fff}
+      .hd{display:flex;align-items:center;gap:10px;padding:10px 8px 10px 12px;background:#0b1f33;color:#fff}
       .orb{width:40px;height:40px;border-radius:50%;flex:none;overflow:hidden;background:radial-gradient(circle at 38% 32%,#e9f7ff 0,#7fd3ff 18%,#1681c2 55%,#0b1f33 100%)}
       .orb img{width:100%;height:100%;object-fit:cover;display:block}
-      .retry{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;min-height:44px;padding:0 12px;margin:0 0 10px;border-radius:10px;background:#eef5fb;color:#0f5c8f;font-weight:700;cursor:pointer}
-      .vnote{font-size:12.5px;color:#4a5b6b;margin:0 0 10px}
-      .disc{font-size:11.5px;color:#4a5b6b;border-top:1px solid #e3edf5;margin-top:8px;padding-top:6px}
       .orb[data-s="speaking"]{animation:sp .55s ease-in-out infinite alternate;box-shadow:0 0 18px rgba(127,211,255,.9)}
+      .orb[data-s="listening"]{box-shadow:0 0 0 3px rgba(34,197,94,.85)}
       .orb[data-s="thinking"]{animation:th 1.6s linear infinite}
       @keyframes sp{from{transform:scale(1)}to{transform:scale(1.12)}} @keyframes th{to{filter:hue-rotate(360deg)}}
-      @media (prefers-reduced-motion:reduce){.orb{animation:none!important}}
-      .t{font-weight:800}.s{font-size:12px;opacity:.85}
+      .t{font-weight:800}
+      .st{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;margin-top:2px}
+      .st i{width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block}
+      .st[data-s="listening"] i{background:#22c55e;animation:pl 1.2s ease-in-out infinite}
+      .st[data-s="thinking"] i{background:#f59e0b}.st[data-s="speaking"] i{background:#7fd3ff}.st[data-s="connecting"] i{background:#cbd5e1;animation:pl .8s infinite}
+      @keyframes pl{50%{opacity:.35}}
+      @media (prefers-reduced-motion:reduce){.orb,.st i{animation:none!important}}
       .ib{all:unset;box-sizing:border-box;min-width:44px;min-height:44px;display:grid;place-items:center;cursor:pointer;border-radius:10px;font-size:13px;font-weight:700;padding:0 8px}
-      .hd .ib{color:#fff}.hd .x{font-size:22px;margin-left:auto}.v[data-voice="on"]{background:rgba(255,255,255,.18)}
-      .ib:focus-visible,.chip:focus-visible,.go:focus-visible,.btn:focus-visible,a:focus-visible{outline:3px solid #fcb21e;outline-offset:2px}
+      .hd .ib{color:#fff}.hd .x{font-size:22px;margin-left:auto}
+      .ib:focus-visible,.go:focus-visible,.btn:focus-visible,.learn:focus-visible,.tb:focus-visible,a:focus-visible{outline:3px solid #fcb21e;outline-offset:2px}
       .bd{padding:12px 14px;overflow:auto;flex:1;min-height:0}
+      .learn{all:unset;box-sizing:border-box;display:block;width:100%;min-height:52px;padding:12px 14px;margin:0 0 10px;border-radius:12px;cursor:pointer;font-weight:800;color:#fff;background:linear-gradient(135deg,#0f5c8f,#1681c2);box-shadow:0 4px 14px rgba(22,129,194,.3)}
+      .learn.small{min-height:44px;padding:8px 12px;font-weight:700;background:#eef5fb;color:#0f5c8f;box-shadow:none}
+      .learn small{display:block;font-weight:500;opacity:.9;margin-top:2px}
       .bubble{background:#f1f7fc;border-radius:12px;padding:10px 12px;margin:0 0 10px}
       .me{background:#0f5c8f;color:#fff;margin-left:auto;max-width:85%;width:fit-content}
-      .chip{all:unset;box-sizing:border-box;display:block;width:100%;min-height:44px;padding:10px 12px;margin:0 0 8px;border:1px solid #cfe3f2;border-radius:12px;cursor:pointer;font-weight:700;color:#0f5c8f;background:#fff}
-      .chip small{display:block;font-weight:400;color:#4a5b6b}.chip[disabled]{opacity:.5;cursor:default}
       .card{border:1px solid #d6e4ef;border-radius:12px;padding:10px 12px;margin:0 0 10px;background:#fff}
       .card h5{margin:0 0 4px;font-size:13px}.card .m{font-size:12.5px;color:#4a5b6b}.card .n{font-weight:800;color:#7a4b00;margin:4px 0}
       .card table{border-collapse:collapse;width:100%;font-size:13px;margin:6px 0}.card td{padding:3px 0;vertical-align:top}.card td:last-child{text-align:right;font-weight:700;white-space:nowrap;padding-left:8px}
@@ -51,112 +54,63 @@
       .btn.gh{background:#eef5fb;color:#0f5c8f}
       a{color:#0f5c8f;font-weight:700}
       .warn{background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;border-radius:10px;padding:8px 10px;margin:0 0 10px}
-      .sup{border-top:1px solid #e3edf5;padding:10px 14px}
-      .sup b{display:block;margin-bottom:4px}.sup .row{display:flex;flex-wrap:wrap;gap:6px}
-      .sup a,.sup button{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;min-height:44px;padding:0 10px;border:1px solid #cfe3f2;border-radius:10px;color:#0f5c8f;font-weight:700;cursor:pointer;font-size:13px}
-      .ask{display:flex;gap:8px;padding:10px 14px 14px;border-top:1px solid #e3edf5}
+      .warn a{display:inline-flex;align-items:center;min-height:44px;margin-right:10px}
+      .ft{border-top:1px solid #e3edf5;padding:8px 14px 12px}
+      .tb{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid #cfe3f2;border-radius:10px;color:#0f5c8f;font-weight:700;cursor:pointer;font-size:13px}
+      .ask{display:flex;gap:8px;margin-top:8px}
       .ask input{flex:1;min-width:0;min-height:44px;font-size:16px;padding:0 12px;border:1px solid #b9cfe0;border-radius:10px}
       .go{all:unset;min-height:44px;min-width:56px;display:grid;place-items:center;border-radius:10px;background:#ef6325;color:#fff;font-weight:800;cursor:pointer}
       .go[disabled]{opacity:.5;cursor:default}
-      .mic{all:unset;box-sizing:border-box;min-height:44px;min-width:44px;display:grid;place-items:center;border-radius:10px;border:1px solid #b9cfe0;background:#fff;cursor:pointer;font-size:18px}
-      .mic[data-s="listening"]{background:#fee2e2;border-color:#ef4444;animation:mp 1s ease-in-out infinite}
-      .mic[data-s="processing"]{background:#fef3c7;border-color:#f59e0b}
-      .mic[disabled]{opacity:.5;cursor:default}
-      @keyframes mp{50%{box-shadow:0 0 0 6px rgba(239,68,68,.25)}}
-      @media (prefers-reduced-motion:reduce){.mic{animation:none!important}}
-      .mic-st{font-size:13px;font-weight:700;padding:6px 14px 0;color:#0f5c8f}
       .src{font-size:11.5px;color:#5b6b7a;margin-top:4px}
+      .disc{font-size:11.5px;color:#4a5b6b;border-top:1px solid #e3edf5;margin-top:8px;padding-top:6px}
     </style>
     <div class="p" role="dialog" aria-label="Victoria, your Home Care Provider Services assistant" hidden>
-      <div class="hd"><div class="orb" data-s="idle" aria-hidden="true"><img src="/assets/victoria/orb-still.webp" alt="" decoding="async" onerror="this.remove()"></div><div><div class="t">Victoria</div><div class="s">Your personal assistant · TEST preview</div></div>
-        <button class="ib v x0" type="button" title="Stop Victoria speaking for the rest of this opening">🔇 Voice off</button>
+      <div class="hd"><div class="orb" data-s="idle" aria-hidden="true"><img src="/assets/victoria/orb-still.webp" alt="" decoding="async" onerror="this.remove()"></div>
+        <div><div class="t">Victoria</div><div class="st" data-s="idle" role="status" aria-live="polite"><i></i><span>Ready</span></div></div>
         <button class="ib x" type="button" aria-label="Close Victoria">×</button></div>
       <div class="bd" aria-live="polite">
+        <button class="learn" type="button">Learn what Victoria can do for you<small>A short introduction — then just ask</small></button>
         <div class="bubble hello">…</div>
-        <button class="retry" type="button" hidden>🔊 Tap to hear Victoria</button>
-        <div class="m vnote" hidden></div>
-        <div class="warn ai-off" hidden>Victoria can't answer just now. Contact Home Care Provider Services support below — they can help right away.</div>
-        <div class="chips">
-          <button class="chip" type="button" data-q="Where is my Golden order?">Where is my Golden order?<small>Opens the order and its carrier tracking</small></button>
-          <button class="chip" type="button" data-q="What does Medicare allow for this product?" data-needs="product">What does Medicare allow for this product?<small>Uses this product's state, ZIP, payer and date</small></button>
-          <button class="chip" type="button" data-q="Help me quote this product." data-needs="product">Help me quote this product<small>Opens a draft quote for you to review</small></button>
-        </div>
         <div class="log"></div>
       </div>
-      <div class="sup"><b>Contact Home Care Provider Services support</b><div class="row">
-        <button type="button" class="chat" ${S.chat === false ? 'hidden' : ''}>💬 Chat with us</button>
-        <a href="tel:${esc(S.phone_tel)}">📞 ${esc(S.phone)}</a>
-        <a href="mailto:${esc(S.email)}">✉️ Email</a></div></div>
-      <div class="mic-st" role="status" aria-live="polite" hidden></div>
-      <div class="ask"><button class="mic" type="button" aria-label="Speak your question" title="Speak your question" hidden>🎤</button><input aria-label="Ask Victoria a question" placeholder="Ask about products, prices, quotes, orders or how to use the portal…" maxlength="600"><button class="go" type="button">Ask</button></div>
+      <div class="ft">
+        <button class="tb type" type="button">⌨️ Type instead</button>
+        <button class="tb again" type="button" hidden>🎙️ Talk to Victoria</button>
+        <div class="ask" hidden><input aria-label="Type your question for Victoria" placeholder="Ask about products, prices, quotes, orders or the portal…" maxlength="600"><button class="go" type="button">Ask</button></div>
+      </div>
     </div>`;
     document.body.appendChild(host);
-    const $ = (s) => sh.querySelector(s); const P = $('.p'), orb = $('.orb'), log = $('.log'), inp = $('.ask input');
-    let busy = false, aiOn = !(DV.ai && DV.ai.available === false);
-    /* voice belongs to ONE opening: on when it opens, "Voice off" mutes the rest of it, the next opening turns it on again */
+    const $ = (s) => sh.querySelector(s); const P = $('.p'), orb = $('.orb'), log = $('.log'), inp = $('.ask input'), stEl = $('.st'), learn = $('.learn');
+    const typeB = $('.type'), againB = $('.again'), askBar = $('.ask');
+    let aiOn = !(DV.ai && DV.ai.available === false), busy = false;
+    /* legacy speech (greeting / answers as separate audio) — used only where a voice conversation isn't possible */
     const SP = orbHost.__dvSpeech || { speak: () => false, stop: () => {}, supported: () => false };
-    let voiceOn = true, lastSpoken = { text: '', kind: 'greeting', token: null };
-    const vb = $('.v'), retry = $('.retry'), vnote = $('.vnote');
-    /* the label names the ACTION ("Voice off" while audio is on); no aria-pressed, so a screen reader hears the action */
-    const setVoice = (on) => { voiceOn = !!on; vb.dataset.voice = voiceOn ? 'on' : 'off'; vb.textContent = voiceOn ? '🔇 Voice off' : '🔊 Voice on';
-      vb.title = voiceOn ? 'Stop Victoria speaking for the rest of this opening' : 'Turn voice back on for this opening'; if (!voiceOn) { SP.stop(); retry.hidden = true; } };
-    vb.onclick = () => setVoice(!voiceOn);
-    SP.onstate = (st, why) => { orb.dataset.s = st === 'speaking' ? 'speaking' : 'idle';
-      if (st === 'speaking') { retry.hidden = true; vnote.hidden = true; }
-      if (st === 'blocked' && voiceOn) { retry.hidden = !SP.supported(); vnote.hidden = false;
-        vnote.textContent = SP.supported() ? 'Victoria\'s voice didn\'t play. The text is here — tap "Tap to hear Victoria" to try again.' : 'Victoria\'s voice isn\'t available just now. Everything she says is shown here as text.'; } };
-    retry.onclick = () => { if (!voiceOn) setVoice(true); const l = lastSpoken.text ? lastSpoken : { text: $('.hello').textContent, kind: 'greeting' };
-      if (l.parts && l.parts.length && SP.speakParts) SP.speakParts(l.parts); else SP.speak(l.text, { kind: l.kind, token: l.token }); };
-    function stopSpeaking() { SP.stop(); }
-    function speak(text, kind, token, parts) { lastSpoken = { text: String(text || ''), kind: kind === 'answer' ? 'answer' : 'greeting', token: token || null, parts: parts || null }; if (!voiceOn || !text) return;
-      if (parts && parts.length && SP.speakParts) SP.speakParts(parts); else SP.speak(text, { kind: lastSpoken.kind, token: lastSpoken.token }); }
-    function setAi(on) { aiOn = on; $('.ai-off').hidden = on; sh.querySelectorAll('.chip').forEach((c) => { c.disabled = !on; }); inp.disabled = !on; $('.go').disabled = !on; const m = sh.querySelector('.mic'); if (m) m.disabled = !on; }
-    function refreshChips() { const hasP = !!(DV.context && DV.context().product); sh.querySelectorAll('.chip[data-needs="product"]').forEach((c) => { c.hidden = !hasP; }); }
+    const convoOK = () => !!(DV.conversation && DV.conversation.available && window.DVVoice && window.DVVoice.supported());
+    let voice = null, mode = 'voice', speakTyped = false, hist = [], echo = [];
+    const STATUS = { idle: 'Ready', connecting: 'Connecting…', listening: 'Listening', thinking: 'Thinking…', speaking: 'Speaking', typing: 'Typing — voice is off for this opening', blocked: 'Voice unavailable' };
+    function status(st) { stEl.dataset.s = st; stEl.querySelector('span').textContent = STATUS[st] || st; orb.dataset.s = st === 'speaking' || st === 'thinking' || st === 'listening' ? st : 'idle'; }
+    const supportLinks = () => `<a href="tel:${esc(S.phone_tel)}">📞 ${esc(S.phone)}</a><a href="mailto:${esc(S.email)}">✉️ Email support</a>`;
+    function warn(text, withSupport) { const d = document.createElement('div'); d.className = 'warn'; d.textContent = text; if (withSupport) { const s = document.createElement('div'); s.innerHTML = supportLinks(); d.appendChild(s); } log.appendChild(d); d.scrollIntoView({ block: 'nearest' }); return d; }
     function place() {
       const W = innerWidth, H = innerHeight, r = orbHost.getBoundingClientRect();
-      /* the top search bar stays exactly where it is and stays usable while the panel is open (owner 2026-11-20) */
+      /* the top search bar stays where it is and stays usable while the panel is open (owner 2026-11-20) */
       const hs = document.querySelector('.hsearch'); const hr = hs ? hs.getBoundingClientRect() : null;
       const seen = !!(hr && hr.bottom > 0 && hr.width > 0 && hr.top < H);
-      /* phone: a sheet between the search bar and the bottom strip, so the search bar (top), the orb (right) and the Golden
-         cart button (left) all stay visible and tappable while it is open; the sheet scrolls inside itself */
       if (W <= 600) { const top = seen ? Math.round(hr.bottom + 8) : 8;
         Object.assign(P.style, { left: '8px', right: '8px', bottom: '84px', top: top + 'px', width: 'auto', maxHeight: Math.max(160, H - 84 - top) + 'px' }); }
-      else {
-        /* desktop / tablet: a card above the orb that never reaches the top search bar */
-        const topLimit = seen ? Math.round(hr.bottom + 12) : 12;
-        Object.assign(P.style, { right: '16px', left: 'auto', width: '400px', bottom: Math.round(H - r.top + 12) + 'px', top: 'auto', maxHeight: Math.max(280, Math.round(r.top - 12 - topLimit)) + 'px' });
-      }
+      else { const topLimit = seen ? Math.round(hr.bottom + 12) : 12;
+        Object.assign(P.style, { right: '16px', left: 'auto', width: '400px', bottom: Math.round(H - r.top + 12) + 'px', top: 'auto', maxHeight: Math.max(280, Math.round(r.top - 12 - topLimit)) + 'px' }); }
     }
     addEventListener('resize', () => { if (!P.hidden) place(); });
     addEventListener('scroll', () => { if (!P.hidden) place(); }, { passive: true });
-    $('.x').onclick = () => api.toggle(false);
+    $('.x').onclick = (e) => { e.stopPropagation(); api.toggle(false); };
     P.addEventListener('keydown', (e) => { if (e.key === 'Escape') api.toggle(false); });
-    $('.chat').onclick = () => { if (DV.chat && DV.chat()) return; location.href = 'tel:' + S.phone_tel; };
-    sh.querySelectorAll('.chip').forEach((c) => { c.onclick = () => ask(c.getAttribute('data-q')); });
     $('.go').onclick = () => ask(inp.value); inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') ask(inp.value); });
-    /* MICROPHONE (owner 2026-11-20): the browser's own speech recognition turns the dealer's words into the question — clear
-       "Listening…" / "Processing…" feedback. The browser's own speech service turns the speech into words (Chrome sends the audio to
-       Google for that); HCPS stores nothing until the words are asked like a typed question. Never tell dealers the audio stays local.
-       Not offered where the browser has no speech recognition. Starting the microphone stops Victoria speaking. */
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const micB = $('.mic'), micSt = $('.mic-st');
-    let rec = null, heard = '';
-    const micState = (st, msg) => { micB.dataset.s = st || ''; micSt.hidden = !msg; micSt.textContent = msg || '';
-      micB.setAttribute('aria-label', st === 'listening' ? 'Stop listening' : 'Speak your question'); if (st === 'listening') orb.dataset.s = 'thinking'; else if (orb.dataset.s === 'thinking' && !busy) orb.dataset.s = 'idle'; };
-    if (SR) {
-      micB.hidden = false;
-      micB.onclick = () => {
-        if (rec) { try { rec.stop(); } catch (e) {} return; }
-        if (busy || !aiOn) return;
-        stopSpeaking(); heard = '';
-        try { const R = window.SpeechRecognition || window.webkitSpeechRecognition || SR; rec = new R(); } catch (e) { rec = null; micState('', 'The microphone isn\'t available in this browser — type your question instead.'); return; }
-        rec.lang = 'en-US'; rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = false;
-        rec.onresult = (e) => { let t = ''; for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript; heard = t.trim(); inp.value = heard; micState('listening', 'Listening… “' + heard.slice(-80) + '”'); };
-        rec.onerror = (e) => { const why = e && e.error; micState('', why === 'not-allowed' || why === 'service-not-allowed' ? 'Microphone access is blocked. Allow the microphone for this site in your browser settings, or type your question.' : why === 'no-speech' ? 'I didn\'t hear anything — tap the microphone and try again.' : 'The microphone stopped — tap it to try again, or type your question.'); };
-        rec.onend = () => { const q = heard; rec = null; if (q) { micState('processing', 'Processing…'); ask(q).finally(() => micState('', '')); } else if (micB.dataset.s === 'listening') micState('', ''); };
-        try { rec.start(); micState('listening', 'Listening… speak now (tap the microphone to stop)'); } catch (e) { rec = null; micState('', 'The microphone couldn\'t start — type your question instead.'); }
-      };
-    }
-
+    /* on a phone, when Victoria opens something on the page the panel steps aside so the page is visible; a spoken
+       conversation keeps going (the globe shows a green ring and says so) and tapping the globe brings the panel back */
+    function go(fn) { let p; try { p = fn(); } catch (e) {}
+      if (innerWidth <= 600 && !P.hidden) { P.hidden = true; if (orbHost.__dvExpanded) orbHost.__dvExpanded(false); if (voice && voice.active && orbHost.__dvLive) orbHost.__dvLive(true); }
+      return Promise.resolve(p).catch(() => {}); }
     function line(cls, text) { const d = document.createElement('div'); d.className = 'bubble ' + cls; d.textContent = text; log.appendChild(d); d.scrollIntoView({ block: 'nearest' }); return d; }
     function cardEl(html) { const d = document.createElement('div'); d.className = 'card'; d.innerHTML = html; log.appendChild(d); return d; }
     function orderCard(c, autoOpen) {
@@ -205,35 +159,33 @@
     }
     function storefrontCard(c) {
       (c.locations || []).forEach((l) => {
-        const el = cardEl(`<h5>${esc(l.location)}</h5><div class="m">${l.has_storefront ? (l.live ? 'Live' : 'Not published') : 'No storefront yet'}${l.unpublished_changes ? ' · unpublished changes' : ''}${l.blocked_by_hcps ? ' · paused by HCPS' : ''} · ${esc(l.lines_it_may_show)} line(s) it may show</div>${l.link ? `<a href="${esc(l.link)}" target="_blank" rel="noopener">Open the live storefront</a>` : ''}<div><button class="btn gh" type="button">Open the Storefront Website Builder</button></div>`);
+        const el = cardEl(`<h5>${esc(l.location)}</h5><div class="m">${l.has_storefront ? (l.live ? 'Live' : 'Not published') : 'No storefront yet'}${l.unpublished_changes ? ' · unpublished changes' : ''}${l.blocked_by_hcps ? ' · paused by Home Care Provider Services' : ''} · ${esc(l.lines_it_may_show)} line(s) it may show</div>${l.link ? `<a href="${esc(l.link)}" target="_blank" rel="noopener">Open the live storefront</a>` : ''}<div><button class="btn gh" type="button">Open the Storefront Website Builder</button></div>`);
         el.querySelector('.btn').onclick = () => go(() => DV.openView && DV.openView('storefront'));
       });
     }
     /* buttons for the screen on view, from the server (no AI call) */
-    async function screenChips() {
-      let r = null; try { r = await DV.api({ action: 'suggest', page: DV.context ? DV.context() : {} }); } catch (e) { r = null; }
-      if (!r || !r.ok || !Array.isArray(r.suggestions) || !r.suggestions.length) return;
-      const box = $('.chips'); box.textContent = '';
-      for (const q of r.suggestions.slice(0, 4)) { const b = document.createElement('button'); b.className = 'chip'; b.type = 'button'; b.textContent = q; b.onclick = () => ask(q); b.disabled = !aiOn; box.appendChild(b); }
-    }
-    /* an action that changes the page: on a phone the sheet steps aside so the page is visible */
-    function go(fn) { let p; try { p = fn(); } catch (e) {} if (innerWidth <= 600) api.toggle(false); Promise.resolve(p).catch(() => {}).then(() => setTimeout(screenChips, 300)); }
 
-    async function ask(q) {
-      q = String(q || '').trim(); if (!q || busy || !aiOn) return;
-      busy = true; inp.value = ''; line('me', q); orb.dataset.s = 'thinking'; $('.go').disabled = true;
-      let r = null; try { r = await DV.api({ action: 'ask', question: q, page: DV.context ? DV.context() : {}, voice: voiceOn && SP.supported() }); } catch (e) { r = null; }
-      busy = false; orb.dataset.s = 'idle'; $('.go').disabled = !aiOn;
-      if (!r || r.ok !== true) {
-        const over = r && /over_budget|over_daily/.test(String(r.error));
-        line('', over ? "Victoria has reached her limit for now. Contact Home Care Provider Services support below — they can help right away." : "Victoria can't answer just now. Contact Home Care Provider Services support below — they can help right away.");
-        if (over) setAi(false); return;
+    /* every page / draft action is performed and CHECKED in the portal before Victoria reports it (✓ / ✗); the confirmed
+       sentences go back to the voice agent so she only says what the portal shows */
+    async function perform(r) {
+      const said = []; const acts = r.actions || [];
+      const quotes = acts.filter((x) => x.type === 'open_quote');
+      if (quotes.length) await go(async () => { const done = [], miss = []; for (const x of quotes) { let v = null; try { v = DV.openQuote ? await DV.openQuote(x) : null; } catch (e) { v = null; } ((v && v.ok) ? done : miss).push(x); }
+        if (done.length) { quoteCard(done); said.push('The portal shows a draft quote with ' + done.map((x) => x.qty + ' × ' + x.code).join(', ') + '. Nothing has been saved or sent.'); }
+        if (miss.length) { const t = 'Couldn\'t add ' + miss.map((x) => x.code).join(', ') + ' to a quote. Open the product and press Add to a quote.'; checked(false, t); said.push(t); } });
+      for (const x of acts) {
+        if (x.type === 'open_brochure') await go(async () => { let v = null; try { v = DV.openBrochure ? await DV.openBrochure(x) : null; } catch (e) { v = null; }
+          const t = v && v.ok ? 'Print Brochure is open for ' + x.code + ' — choose the price your customer sees, then print, save or email it. Nothing has been sent.' : 'The Print Brochure dialog for ' + x.code + ' didn\'t open. Open the product and press Print Brochure.'; checked(!!(v && v.ok), t); said.push(t); });
+        else if (x.type === 'open_view') await go(async () => { let v = null; try { v = DV.openView ? await DV.openView(x.view) : null; } catch (e) { v = null; }
+          const t = v && v.ok ? (x.label || x.view) + ' is open on the page.' : (x.label || x.view) + ' didn\'t open. Use the menu at the top of the page.'; checked(!!(v && v.ok), t); said.push(t); });
+        else if (x.type === 'open_search') await go(async () => { let v = null; try { v = DV.openSearch ? await DV.openSearch(x.query) : null; } catch (e) { v = null; }
+          const t = v && v.ok ? 'Shop Products shows ' + v.count + ' result' + (v.count === 1 ? '' : 's') + ' for “' + x.query + '”.' : 'The search for “' + x.query + '” didn\'t open. Use the search bar at the top of the page.'; checked(!!(v && v.ok), t); said.push(t); });
+        else if (x.type === 'open_product') await go(async () => { let v = null; try { v = DV.openProduct ? await DV.openProduct(x) : null; } catch (e) { v = null; }
+          const t = v && v.ok !== false ? 'The product page for ' + (x.code || x.name) + ' is open.' : 'The product ' + (x.code || x.name) + ' didn\'t open.'; checked(!!(v && v.ok !== false), t); said.push(t); });
       }
-      const a = line('', r.answer || 'Here is what I found.');
-      /* the answer's audio came back with it (made on the server right after the model) — play it as the text appears */
-      if (r.speech && r.speech.ok && r.speech.audio && SP.preload) SP.preload(r.speech.text || r.answer, 'answer', r.speech.audio, r.speech.mime);
-      if (SP.mark) SP.mark('answer_shown', { audio_with_answer: !!(r.speech && r.speech.ok), tts_ms: r.speech ? r.speech.tts_ms : null, model_ms: r.timing ? r.timing.model_ms : null, total_ms: r.timing ? r.timing.total_ms : null });
-      speak(r.answer, 'answer', r.speech_token, Array.isArray(r.speech_parts) ? r.speech_parts : null);
+      return said;
+    }
+    function cards(r) {
       for (const c of r.cards || []) {
         if (c.type === 'golden_orders') orderCard(c, (r.cards || []).length === 1);
         else if (c.type === 'not_found') cardEl(`<div class="m">${esc(c.text)}</div>`);
@@ -242,39 +194,118 @@
         else if (c.type === 'guide') guideCard(c);
         else if (c.type === 'storefront') storefrontCard(c);
       }
-      /* every page / draft action is CHECKED in the portal before Victoria reports it (owner 2026-11-20): a ✓ line only when
-         the page really opened (search results counted, the quote line on the draft, the brochure dialog open), else ✗ */
-      const acts = r.actions || []; const quotes = acts.filter((x) => x.type === 'open_quote');
-      if (quotes.length) go(async () => { const done = [], miss = []; for (const x of quotes) { let v = null; try { v = DV.openQuote ? await DV.openQuote(x) : null; } catch (e) { v = null; } ((v && v.ok) ? done : miss).push(x); }
-        if (done.length) quoteCard(done); if (miss.length) checked(false, 'Couldn\'t add ' + miss.map((x) => x.code).join(', ') + ' to a quote. Open the product and press Add to a quote.'); });
-      for (const x of acts) {
-        if (x.type === 'open_brochure') go(async () => { let v = null; try { v = DV.openBrochure ? await DV.openBrochure(x) : null; } catch (e) { v = null; }
-          checked(!!(v && v.ok), v && v.ok ? 'Print Brochure is open for ' + x.code + ' — choose the price your customer sees, then print, save or email it. Nothing has been sent.' : 'The Print Brochure dialog for ' + x.code + ' didn\'t open. Open the product and press Print Brochure.'); });
-        else if (x.type === 'open_view') go(async () => { let v = null; try { v = DV.openView ? await DV.openView(x.view) : null; } catch (e) { v = null; }
-          checked(!!(v && v.ok), v && v.ok ? 'Opened ' + (x.label || x.view) + '.' : (x.label || x.view) + ' didn\'t open. Use the menu at the top of the page.'); });
-        else if (x.type === 'open_search') go(async () => { let v = null; try { v = DV.openSearch ? await DV.openSearch(x.query) : null; } catch (e) { v = null; }
-          checked(!!(v && v.ok), v && v.ok ? 'Shop Products: ' + v.count + ' result' + (v.count === 1 ? '' : 's') + ' for “' + x.query + '”.' : 'The search for “' + x.query + '” didn\'t open. Use the search bar at the top of the page.'); });
-      }
-      a.scrollIntoView({ block: 'nearest' });
-      setTimeout(screenChips, 1200);   // the screen may have changed (a product or tool opened): its suggestions follow
     }
-    /* records this opening on the server (first welcome vs later, per person) — the text was already shown and spoken */
+    const failText = (r) => { const over = r && /over_budget|over_daily|over_monthly|limit/.test(String(r.error));
+      return over ? 'Victoria has reached her limit for now. Home Care Provider Services support can help right away.' : 'Victoria can\'t answer just now. Home Care Provider Services support can help right away.'; };
+    const page = () => (DV.context ? DV.context() : {});
+
+    /* TYPED question (typing mode, or a browser without a voice conversation) */
+    async function ask(q) {
+      q = String(q || '').trim(); if (!q || busy || !aiOn) return;
+      busy = true; inp.value = ''; line('me', q); status('thinking'); $('.go').disabled = true;
+      let r = null; try { r = await DV.api({ action: 'ask', question: q, page: page(), history: hist.slice(-3), voice: speakTyped && SP.supported() }); } catch (e) { r = null; }
+      busy = false; $('.go').disabled = !aiOn; status(mode === 'typing' ? 'typing' : 'blocked');
+      if (!r || r.ok !== true) { warn(failText(r), true); if (r && /over_/.test(String(r.error))) setAi(false); return; }
+      const a = line('', r.answer || 'Here is what I found.');
+      if (SP.mark) SP.mark('answer_shown', { audio_with_answer: !!(speakTyped && r.speech && r.speech.ok), tts_ms: r.speech ? r.speech.tts_ms : null, model_ms: r.timing ? r.timing.model_ms : null, total_ms: r.timing ? r.timing.total_ms : null });
+      if (speakTyped) { if (r.speech && r.speech.ok && r.speech.audio && SP.preload) SP.preload(r.speech.text || r.answer, 'answer', r.speech.audio, r.speech.mime);
+        if (Array.isArray(r.speech_parts) && r.speech_parts.length && SP.speakParts) SP.speakParts(r.speech_parts); else SP.speak(r.answer, { kind: 'answer', token: r.speech_token }); }
+      hist.push({ q, a: r.answer || '' }); cards(r); await perform(r); a.scrollIntoView({ block: 'nearest' });
+    }
+
+    /* SPOKEN question: the voice agent calls ask_victoria → the same server pipeline (voice_tool), under the dealer's sign-in,
+       with the last turns as context; the page performs and checks the actions, THEN the agent is told what to say */
+    async function runTool(x) {
+      const q = String((x.args && x.args.question) || '').trim();
+      let r = null; try { r = await DV.api({ action: 'voice_tool', session_id: x.session_id, name: x.name, args: x.args || {}, history: hist.slice(-3), page: page() }); } catch (e) { r = null; }
+      if (!voice || !voice.active) return JSON.stringify({ say: '' });                 // closed meanwhile: nothing more happens
+      if (!r || r.ok !== true) { const t = (r && r.content) ? null : failText(r); if (t) warn(t, true); return r && r.content ? r.content : JSON.stringify({ say: t }); }
+      cards(r);
+      if (r.disclaimer) { const d = document.createElement('div'); d.className = 'disc'; d.textContent = r.disclaimer; log.appendChild(d); }
+      const confirmed = await perform(r);
+      if (!voice || !voice.active) return JSON.stringify({ say: '' });
+      hist.push({ q, a: r.answer || r.say || '' });
+      const say = [r.say || r.answer || '', ...confirmed].filter(Boolean).join(' ');
+      return JSON.stringify({ say });
+    }
+
+    function voiceEvent(type, d) {
+      if (type === 'state') { if (d.state === 'idle' && orbHost.__dvLive && !(voice && voice.active)) orbHost.__dvLive(false); if (mode === 'voice') status(d.state === 'idle' ? (voice && voice.active ? 'connecting' : 'idle') : d.state); return; }
+      if (type === 'permission') { if (d.asking) note('Your browser may ask to use the microphone — choose Allow to talk with Victoria.'); else clearNote(); return; }
+      if (type === 'session') { if (d.greeting) { $('.hello').textContent = d.greeting; echo.push(d.greeting); } return; }
+      if (type === 'ready') { clearNote(); if (pendingSay) { const s = pendingSay; pendingSay = null; voice.say(s); } return; }
+      if (type === 'text') { const c = String(d.content || '').trim(); if (!c) return;
+        if (d.role === 'assistant') { const i = echo.findIndex((e) => e === c || c.startsWith(e.slice(0, 60))); if (i >= 0) { echo.splice(i, 1); return; } line('', c); }
+        else line('me', c); return; }
+      if (type === 'interrupted') return;
+      if (type === 'error') { clearNote(); warn(d.message || 'Victoria\'s voice stopped. You can type instead.', d.kind !== 'microphone'); toTyping(false, true); return; }
+      if (type === 'idle') { status('idle'); note('Victoria stopped listening after two quiet minutes.'); againB.hidden = false; return; }
+      if (type === 'limit') { status('idle'); note('This conversation reached its ' + (d.minutes || 10) + '-minute limit. Tap “Talk to Victoria” to start again.'); againB.hidden = false; return; }
+    }
+    let noteEl = null, pendingSay = null;
+    function note(text) { if (!noteEl) { noteEl = document.createElement('div'); noteEl.className = 'warn vnote'; log.appendChild(noteEl); } noteEl.textContent = text; noteEl.scrollIntoView({ block: 'nearest' }); }
+    function clearNote() { if (noteEl) { noteEl.remove(); noteEl = null; } }
+
+    function startVoice() {
+      mode = 'voice'; askBar.hidden = true; typeB.hidden = false; againB.hidden = true; status('connecting');
+      if (!voice) voice = window.DVVoice.create({ api: DV.api, runTool, onEvent: voiceEvent });
+      voice.start();                       // its audio contexts are made right here, inside the tap that opened Victoria
+    }
+    /* typing: this opening stops listening and speaking; the next opening talks again */
+    function toTyping(byChoice, failed) {
+      mode = 'typing'; speakTyped = !byChoice && !convoOK(); if (voice) voice.stop(byChoice ? 'typing' : 'failed'); SP.stop();
+      askBar.hidden = false; typeB.hidden = true; againB.hidden = !(convoOK() && failed !== 'unsupported'); status(byChoice ? 'typing' : 'blocked');
+      try { inp.focus(); } catch (e) {}
+    }
+    typeB.onclick = () => toTyping(true);
+    againB.onclick = () => { clearNote(); if (convoOK()) startVoice(); };
+
+    /* "Learn what Victoria can do for you": a short spoken + shown introduction (only what she can really do), then she
+       listens. Shown in full once per browser; afterwards the card is a small link so it doesn't replay on every opening. */
+    const LEARNED = 'dv_learned_v1'; const learned = () => { try { return localStorage.getItem(LEARNED) === '1'; } catch (e) { return false; } };
+    function learnLook() { if (learned()) { learn.classList.add('small'); learn.innerHTML = 'Learn what Victoria can do for you'; } }
+    learn.onclick = async () => {
+      let r = null; try { r = await DV.api({ action: 'intro' }); } catch (e) { r = null; }
+      const text = (r && r.ok && r.text) || 'I\'m Victoria, the personal assistant from Home Care Provider Services in your 360 Dealer Portal.';
+      line('', text);
+      if (mode === 'voice' && voice && voice.active) { echo.push(text); if (!voice.say(text)) pendingSay = text; }
+      else if (speakTyped) SP.speak(text, { kind: 'answer' });
+      try { localStorage.setItem(LEARNED, '1'); } catch (e) {} learnLook();
+    };
+
+    function setAi(on) { aiOn = on; inp.disabled = !on; $('.go').disabled = !on; if (!on) { warn('Victoria can\'t answer just now. Home Care Provider Services support can help right away.', true); if (voice) voice.stop('ai_off'); } }
+    /* records this opening on the server (first welcome vs later, per person) — only when no voice session does it */
     async function hello(shown) {
       let r = null; try { r = await DV.api({ action: 'hello' }); } catch (e) { r = null; }
-      if (!shown) { const text = (r && r.ok && r.greeting) || 'Hello! How can I help you today?'; $('.hello').textContent = text; speak(text, 'greeting'); }
+      if (!shown) { const text = (r && r.ok && r.greeting) || 'Hello! How can I help you today?'; $('.hello').textContent = text; if (speakTyped) SP.speak(text, { kind: 'greeting' }); }
     }
+    /* the separate-audio path (no conversation): the globe glows while she speaks; a blocked or failed voice is explained */
+    SP.onstate = (st) => { if (mode === 'voice') return; orb.dataset.s = st === 'speaking' ? 'speaking' : 'idle';
+      if (st === 'blocked' && speakTyped) note(SP.supported() ? 'Victoria\'s voice didn\'t play in this browser. Everything she says is shown here.' : 'Victoria\'s voice isn\'t available just now. Everything she says is shown here.'); };
+    function stopAll(reason) { if (voice) voice.stop(reason || 'closed'); SP.stop(); busy = false; }
+    window.__dvVoiceStop = () => stopAll('signed_out');
+    addEventListener('pagehide', () => stopAll('page_closed'));
+
     const api = {
-      /* opts.greeting: the welcome the launcher already started speaking inside the opening tap */
+      /* opts.greeting: the welcome to show at once (the launcher has spoken it already when there is no conversation) */
       toggle(on, opts) { const show = on == null ? P.hidden : on; P.hidden = !show;
-        if (show) {
-          setVoice(true); retry.hidden = true; vnote.hidden = true;                 // every opening: voice on
-          const g = opts && opts.greeting; if (g) { $('.hello').textContent = g; lastSpoken = { text: g, kind: 'greeting', token: null }; }
-          refreshChips(); place(); hello(!!g); setAi(aiOn); screenChips();
-          const f = sh.querySelector('.chip:not([hidden])') || inp; try { f.focus(); } catch (e) {}
-        } else { stopSpeaking(); if (on === false && orbHost.__dvFocus) orbHost.__dvFocus(); }   // closing gives focus back to the orb
+        if (show && voice && voice.active && mode === 'voice') {        // a conversation still going (the panel had stepped aside): just show it
+          if (orbHost.__dvLive) orbHost.__dvLive(false); place(); try { $('.x').focus(); } catch (e) {}
+        } else if (show) {
+          clearNote(); echo = []; pendingSay = null; learnLook();
+          const g = (opts && opts.greeting) || DV.greeting || 'Hello! How can I help you today?'; $('.hello').textContent = g;
+          place();
+          if (!aiOn) { setAi(false); toTyping(false, 'unsupported'); hello(true); }
+          else if (convoOK()) { speakTyped = false; startVoice(); }      // the voice session records the opening and speaks the greeting
+          else { mode = 'typing'; speakTyped = true; askBar.hidden = false; typeB.hidden = true; againB.hidden = true; status('blocked');
+            warn(DV.conversation && DV.conversation.available ? 'This browser can\'t hold a spoken conversation (it needs microphone access over a secure connection). Victoria will answer what you type, and read her answers aloud.' : 'Spoken conversation isn\'t available just now. Type your question — Victoria will read her answers aloud.');
+            hello(!!(opts && opts.greeting)); }
+          try { (mode === 'typing' ? inp : $('.x')).focus(); } catch (e) {}
+        } else { stopAll('closed'); if (orbHost.__dvLive) orbHost.__dvLive(false); if (on === false && orbHost.__dvFocus) orbHost.__dvFocus(); }
         if (orbHost.__dvExpanded) orbHost.__dvExpanded(show); },
       isOpen: () => !P.hidden,
-      el: P, shadow: sh, ask, setAi,
+      el: P, shadow: sh, ask, setAi, runTool, voiceEvent,
+      get voice() { return voice; },
     };
     return api;
   };

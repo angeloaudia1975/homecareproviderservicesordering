@@ -258,7 +258,7 @@ const ghText = page => page.evaluate(() => (document.getElementById('goldenHist'
       const whyTxt = await ghText(page);
       await page.click('[data-ghretry]');
       await page.waitForFunction(() => /PO-78/.test((document.getElementById('goldenHist') || {}).innerText || ''), null, { timeout: 15000 });
-      await t(`${label}: history withheld / Golden unreachable → an honest message + "Try again" (≥ 44px) loads the history`, () => { ok(rh >= 44, 'height ' + rh); ok(/Current Golden order history is unavailable right now/.test(whyTxt), whyTxt.slice(0, 300)); });
+      await t(`${label}: history withheld / Golden unreachable → an honest message + "Try again" (≥ 44px) loads the history`, () => { ok(rh >= 44, 'height ' + rh); ok(/still being matched to their Golden sales orders/.test(whyTxt), whyTxt.slice(0, 300)); });
 
       // 10 — Golden's confirmation PDFs (Priority 3): never asked for in a staff "view as dealer"; a signed-in dealer sees
       //      the SO's confirmations (latest + earlier version) and can open / print or download the original
