@@ -11409,7 +11409,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
      of its name (before "with", a comma or a bracket) names a part — rail, trapeze, table, boards, cart… — or is "X for Y" —
      unless the dealer asked for that part ("bed rails" ranks rails first). Then: every word in the NAME, as whole words, before
      a match found only in the category or manufacturer. */
-  const GS_ACC=/\b(rails?|trapeze|tables?|boards?|carts?|transporters?|cabinets?|stands?|bars?|storage|mattress(?:es)?|pads?|covers?|kits?|accessor(?:y|ies)|replacements?|parts?|brackets?|straps?|cables?|batter(?:y|ies)|chargers?|holders?|bags?|baskets?|trays?|cushions?|overlays?|pendants?|handsets?|tips?|filters?|tubing|cannulas?|masks?|bumpers?|sections?|pouch(?:es)?|caps?|wheels?|casters?|brakes?|armrests?|footrests?|legrests?|seat belts?|belts?|locks?)\b/g;
+  const GS_ACC=/\b(rails?|trapeze|tables?|boards?|carts?|transporters?|cabinets?|stands?|bars?|storage|mattress(?:es)?|pads?|covers?|kits?|accessor(?:y|ies)|replacements?|parts?|brackets?|straps?|cables?|batter(?:y|ies)|chargers?|holders?|bags?|baskets?|trays?|cushions?|overlays?|pendants?|handsets?|tips?|filters?|tubing|cannulas?|masks?|bumpers?|boosters?|sections?|pouch(?:es)?|caps?|wheels?|casters?|brakes?|armrests?|footrests?|legrests?|seat belts?|belts?|locks?)\b/g;
   function gsHead(name){ return gsDehyphen(gsNorm(String(name||'').split(/\s(?:with|without|includes?|incl\.?)\s|\sw\/o?\s?|[(,]/i)[0])); }
   function gsAccessory(name,qw){
     const h=gsHead(name); const ask=w=>qw.has(w)||qw.has(gsSing(w)[0]||w);
