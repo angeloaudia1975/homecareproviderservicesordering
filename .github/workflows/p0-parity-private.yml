@@ -1,0 +1,45 @@
+# G3 — frozen-line pricing parity on LIVE layer rows (test/p0parity.test.js, the half that needs real rows).
+# Secure by design:
+#  - runs ONLY when started by hand (workflow_dispatch) by someone with write access, and only from main (job `if`
+#    below + the environment's "Deployment branches: main" rule); never on a push, a pull request or a fork;
+#  - the key lives only in the GitHub Environment "pricing-parity" (secret SUPABASE_SERVICE_ROLE). The environment has
+#    the owner as required reviewer, so every run waits for his approval before the job can read the secret;
+#  - the only step that receives the key is the fetch step; it makes GET requests only (scripts/p0-fetch-fixtures.js),
+#    writes nothing to Supabase and prints only row counts / HTTP statuses;
+#  - the fetched rows (real prices) stay in test/fixtures-private/ on the throw-away runner: never uploaded (no artifact
+#    or cache step), never printed, deleted at the end. The test prints only counts, part numbers, field NAMES and sha
+#    fingerprints; it reads git history and the fetched files and makes no network call;
+#  - third-party actions are pinned to full commit SHAs; no package is installed (no npm step).
+name: Pricing parity (private, on demand)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pricing-parity
+  cancel-in-progress: false
+jobs:
+  parity:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: pricing-parity
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0          # the test reads the P0 base commit (4b1bad3) from git history
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+      - name: Fetch live layer rows (read-only, kept on the runner)
+        env:
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+        run: |
+          test -n "$SUPABASE_SERVICE_ROLE" || { echo "Secret SUPABASE_SERVICE_ROLE is not set in the pricing-parity environment."; exit 1; }
+          node scripts/p0-fetch-fixtures.js
+      - name: Frozen-line parity (both modes)
+        run: node test/p0parity.test.js
+      - name: Remove the fetched rows
+        if: always()
+        run: rm -rf test/fixtures-private
