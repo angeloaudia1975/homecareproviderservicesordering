@@ -193,6 +193,9 @@
     /* one spoken answer: the server's words, then what the portal confirmed — a sentence is never said twice */
     function joinSaid(a, confirmed) {
       const seen = new Set(), out = [];
+      /* the portal's own "Nothing has been saved or sent." covers the model's variants of it — said once */
+      const NOTHING = /\bnothing (?:is|has been|was|will be|gets)\b[^.!?]*\b(?:saved|sent|placed)\b/i;
+      if ((confirmed || []).some((x) => NOTHING.test(x))) a = String(a || '').split(/(?<=[.!?])\s+/).filter((x) => !NOTHING.test(x) || /\$\s?\d|\b(not on your account|could ?n[o']t|can ?n[o']t|no match|not found|isn['’]t|aren['’]t|discontinued|unavailable|pending|order(?:ed|s)?|shipped|delivered|tracking)\b/i.test(x)).join(' ');   // a sentence carrying a price or fact is kept
       for (const x of [String(a || '')].concat(confirmed || []).join(' ').split(/(?<=[.!?])\s+/)) { const t = String(x || '').trim(); const k = t.toLowerCase().replace(/[^a-z0-9$]+/g, ' ').trim(); if (!t || seen.has(k)) continue; seen.add(k); out.push(t); }
       return out.join(' ');
     }

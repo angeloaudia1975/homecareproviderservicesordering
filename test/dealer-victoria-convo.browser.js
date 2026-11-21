@@ -53,7 +53,7 @@ const GREET = 'Hello, Ann. I’m Victoria, your personal assistant in the 360 De
           const q = x.action === 'ask' ? x.question : (x.args || {}).question; toolReqs.push({ action: x.action, q, history: x.history || [], session: x.session_id });
           if (holdTool) await holdTool;
           const s = SCRIPT.find(([re]) => re.test(q)); const out = s ? await VT.RUN[s[1]]({ dealer_id: 'd1', bearer: 'Bearer tok', page: x.page || {} }, deps, s[2]) : { result: {} };
-          const say = s && s[1] === 'find_products' ? 'Your price for the K3 is shown in the card.' : s && s[1] === 'quote_products' ? 'Nothing has been saved or sent.' : 'Here is what I found.';
+          const say = s && s[1] === 'find_products' ? 'Your price for the K3 is shown in the card.' : s && s[1] === 'quote_products' ? 'Nothing is saved or sent until you review it.' : 'Here is what I found.';
           body = { ok: true, say, answer: say, cards: out.card ? [out.card] : [], actions: [].concat(out.actions || [], out.action ? [out.action] : []) }; }
         return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) }); });
       /* the Deepgram Voice Agent stand-in */
@@ -113,7 +113,7 @@ const GREET = 'Hello, Ann. I’m Victoria, your personal assistant in the 360 De
         ok(tq2.action === 'voice_tool' && tq2.history.length >= 1 && /K3 wheelchairs/.test(tq2.history[0].q), JSON.stringify(tq2));
         ok(r2.at.card.some((c) => /K3DK16FTADJ/.test(c) && /\$512\.50/.test(c)) && /Your price/.test(r2.say), JSON.stringify(r2)); });
       const r3 = await say('Help me prepare a quote for one of those');
-      await t(`${label}: quote help — the draft quote holds K3DK16FTADJ before she says so; spoken short (no item number), "nothing saved or sent" said once`, () => ok(r3.at.quote && r3.at.quote.includes('K3DK16FTADJ') && /draft quote is open with 1 item/.test(r3.say) && (r3.say.match(/Nothing has been saved or sent/g) || []).length === 1 && !/K3DK16FTADJ/.test(r3.say) && r3.at.card.some((c) => /1 × K3DK16FTADJ/.test(c)), JSON.stringify(r3)));
+      await t(`${label}: quote help — the draft quote holds K3DK16FTADJ before she says so; spoken short (no item number), "nothing saved or sent" said once`, () => ok(r3.at.quote && r3.at.quote.includes('K3DK16FTADJ') && /draft quote is open with 1 item/.test(r3.say) && (r3.say.match(/Nothing has been saved or sent/g) || []).length === 1 && !/Nothing is saved/.test(r3.say) && !/K3DK16FTADJ/.test(r3.say) && r3.at.card.some((c) => /1 × K3DK16FTADJ/.test(c)), JSON.stringify(r3)));
       const r4 = await say('Open my reports');
       await t(`${label}: "Open my reports" — Reports is on screen before she says it is open`, () => ok(r4.at.active === 'p360:reports' && /is open on the page/.test(r4.say), JSON.stringify(r4)));
       const turns = await page.evaluate(() => ({ socks: window.__dg.sockets.length, audioIn: window.__dg.audioIn }));
