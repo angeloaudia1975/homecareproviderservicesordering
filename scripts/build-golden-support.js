@@ -84,8 +84,11 @@ css += `
   /* Phone + small tablet (acceptance 2026-11-16): every button a technician taps is at least 44px — video filters,
      parts "+ Add", "+ Add Another Part", remove-row, cart remove and cart close, cart and order-form buttons */
   @container gsv (max-width: 700px) {
-    .filter-btn, .add-to-cart-btn, .add-row-btn, .btn-clear-cart, .btn-view-cart, .btn-gold, .btn-outline { min-height: 44px; }
+    .filter-btn, .add-to-cart-btn, .add-row-btn, .btn-clear-cart, .btn-view-cart, .btn-gold, .btn-outline, .submit-btn, .tab-btn { min-height: 44px; }
     .remove-row-btn, .cart-remove-btn, .cart-close-btn { min-height: 44px; min-width: 44px; }
+    /* E3 (2026-11-20): every field a technician types in or picks from — the Training Videos search included */
+    input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, textarea { min-height: 44px; box-sizing: border-box; }
+    label:has(> input[type=radio]), label:has(> input[type=checkbox]) { min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
   }
 `;
 

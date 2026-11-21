@@ -52,7 +52,10 @@ async function openSupport(browser, w, h) {
           const R = document.querySelector('#gsvHost').shadowRoot;
           const btn = [...R.querySelectorAll('button,a,[role=tab]')].find((x) => (x.getAttribute('onclick') || x.getAttribute('data-tab') || x.getAttribute('href') || '').includes(tab)); btn.click();
           const p = R.getElementById('tab-' + tab);
-          const small = [...p.querySelectorAll('button,a.btn,a.btn-gold,select,input:not([type=hidden]),[role=button]')].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 && b.height < 44; }).map((e) => (e.textContent || e.name || e.tagName).trim().slice(0, 30));
+          const small = [...p.querySelectorAll('button,a.btn,a.btn-gold,select,input:not([type=hidden]),[role=button]')].filter((e) => { const b = e.getBoundingClientRect(); if (!(b.width > 0 && b.height > 0)) return false;
+            /* a radio / checkbox is tapped through its label: the label is the target */
+            if (/^(radio|checkbox)$/.test(e.type || '')) { const l = e.closest('label'); return !l || l.getBoundingClientRect().height < 44; }
+            return b.height < 44; }).map((e) => (e.textContent || e.name || e.tagName).trim().slice(0, 30));
           return { over: document.documentElement.scrollWidth - window.innerWidth, small };
         }, tab);
         ok(r.over <= 1, `${tab}: page overflows ${r.over}px`);
