@@ -140,7 +140,7 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
         ok(g1 === 'Hello, Ann. I’m Victoria, your personal assistant in the 360 Dealer Portal. How can I help you today?', g1);
         ok(v1.spoken.length === 1 && v1.spoken[0] === g1, 'spoken: ' + JSON.stringify(v1.spoken));
         ok(/Voice off/.test(v1.text) && v1.pressed === 'on' && v1.aria === null, JSON.stringify(v1)); ok(asks.length === 0, 'no AI call to greet');
-        ok(open1.support.some((x) => /Chat with HCPS/.test(x)) && open1.support.some((x) => /626-3140/.test(x)) && open1.support.some((x) => /Email/.test(x)), JSON.stringify(open1.support));
+        ok(open1.support.some((x) => /Chat with us/.test(x)) && !open1.support.some((x) => /HCPS/.test(x)) && open1.support.some((x) => /626-3140/.test(x)) && open1.support.some((x) => /Email/.test(x)), JSON.stringify(open1.support));
         ok(open1.close[0] >= 44 && open1.close[1] >= 44, 'close ' + open1.close);
       });
       await t(`${label}: open — the orb and the Golden cart stay visible and tappable; the panel never sits on either`, () => {
@@ -195,7 +195,7 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
         ok(/\$54\.13/.test(rc) && /\$40\.60/.test(rc) && /\$368\.60/.test(rc) && /\$36\.86/.test(rc) && /HCPCS reference only — model verification pending\./.test(rc) && /ZIP 42101/.test(rc) && /Nov 19, 2026/.test(rc), rc.slice(0, 700));
         ok(/Per month/.test(rc) && /Per HCPCS unit as the code describes it/.test(rc) && /Kentucky Medicaid MSEA Fee Schedule 2026/.test(rc), 'billing units and source: ' + rc.slice(0, 900));
         ok(/\$54\.13/.test(panelTxt) && /HCPCS reference only — model verification pending/.test(panelTxt), 'the panel shows the same');
-        const D = 'HCPS is not a billing specialist and is not qualified to provide coding or billing advice. This information is for reference only. The biller is responsible for confirming that the exact product supplied meets the applicable HCPCS code requirements and for verifying the payer’s billing and coverage rules before submitting a claim.';
+        const D = 'Home Care Provider Services is not a billing specialist and is not qualified to provide coding or billing advice. This information is for reference only. The biller is responsible for confirming that the exact product supplied meets the applicable HCPCS code requirements and for verifying the payer’s billing and coverage rules before submitting a claim.';
         ok(rc.includes(D) && panelTxt.includes(D), 'the fixed disclaimer is in Victoria\'s card and the product panel');
       });
       await page.waitForTimeout(250);
