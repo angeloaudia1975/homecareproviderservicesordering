@@ -195,6 +195,13 @@ const GREET = 'Hello, Ann. I’m Victoria, your personal assistant in the 360 De
       await P("s.querySelector('.again').click();"); await until(() => window.__dg.sockets.length === 4 && document.getElementById('dvPanelHost').shadowRoot.querySelector('.st').dataset.s === 'listening', null, 15000);
       await t(`${label}: "Talk to Victoria" starts talking again`, () => ok(true));
 
+      /* KeepAlive flows for the whole conversation; Deepgram's "no audio received" error is explained as a microphone problem */
+      await page.waitForTimeout(5600);
+      const ka = await page.evaluate(() => window.__dg.sent.filter((m) => m.type === 'KeepAlive').length);
+      await page.evaluate(() => window.__dg.cur.msg({ type: 'Error', code: 'CLIENT_MESSAGE_TIMEOUT', description: 'We did not receive audio within our timeout.' })); await page.waitForTimeout(200);
+      const cmt = await P("return { warn: [...s.querySelectorAll('.warn')].map(w=>w.textContent).join(' | '), ask: !s.querySelector('.ask').hidden, again: !s.querySelector('.again').hidden };");
+      await t(`${label}: KeepAlive is sent while listening; "no audio received" from the service is explained as a microphone problem with Talk to Victoria offered`, () => ok(ka >= 1 && /couldn.t hear your microphone/.test(cmt.warn) && cmt.ask && cmt.again, JSON.stringify({ ka, cmt })));
+      await P("s.querySelector('.again').click();"); await until(() => document.getElementById('dvPanelHost').shadowRoot.querySelector('.st').dataset.s === 'listening', null, 15000);
       /* 9 — microphone refused */
       await P("s.querySelector('.x').click();"); await page.evaluate(() => { window.__denyMic = true; }); await orbClick(); await page.waitForTimeout(500);
       const mic = await P("return { warn: [...s.querySelectorAll('.warn')].map(w=>w.textContent).join(' | '), ask: !s.querySelector('.ask').hidden, st: s.querySelector('.st span').textContent };");

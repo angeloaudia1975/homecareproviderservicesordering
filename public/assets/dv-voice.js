@@ -69,7 +69,7 @@
         case 'FunctionCallRequest': for (const fn of (m.functions || [])) if (fn.client_side !== false) onFunction(fn); break;
         case 'InjectionRefused': emit('warning', { message: 'refused' }); break;
         case 'Warning': emit('warning', { message: m.description || m.message || '' }); break;
-        case 'Error': emit('error', { message: 'Victoria\'s voice service reported a problem. You can type instead.' }); stop('service_error', true); break;
+        case 'Error': emit('error', { kind: m.code === 'CLIENT_MESSAGE_TIMEOUT' ? 'microphone' : 'service', reason: m.code || '', message: m.code === 'CLIENT_MESSAGE_TIMEOUT' ? 'Victoria couldn\'t hear your microphone. Check that it isn\'t muted or used by another app, then tap “Talk to Victoria” — or type instead.' : 'Victoria\'s voice service reported a problem. You can type instead.' }); stop('service_error', true); break;
         default: break;
       }
     }
@@ -107,7 +107,9 @@
       emit('session', { greeting: r.greeting, max_minutes: r.max_minutes });
       let ws; try { ws = new WebSocket(r.url, ['bearer', r.token]); } catch (e) { emit('error', { kind: 'connection', message: 'Victoria\'s voice couldn\'t connect. You can type instead.' }); await stop('connect', true); return false; }
       ws.binaryType = 'arraybuffer'; S.ws = ws;
-      ws.onopen = () => { send(settings); };   // the microphone streams continuously, so no KeepAlive is needed (as Command Center)
+      /* KeepAlive every 5 s for the whole conversation (live 2026-11-20: when the browser held the audio back — a suspended
+         audio context — Deepgram closed with CLIENT_MESSAGE_TIMEOUT); harmless while audio flows */
+      ws.onopen = () => { send(settings); clearInterval(S.alive); S.alive = setInterval(() => { send({ type: 'KeepAlive' }); try { if (S.inCtx && S.inCtx.state === 'suspended') S.inCtx.resume().catch(() => {}); } catch (e) {} }, 5000); };
       ws.onmessage = (ev) => { if (typeof ev.data === 'string') { let m = null; try { m = JSON.parse(ev.data); } catch (e) {} if (m) onMessage(m); } else play(ev.data); };
       /* an unexpected close (network, service) is explained once — never a silent wait */
       ws.onerror = () => {};
@@ -151,7 +153,7 @@
 
     function cleanup() {
       document.removeEventListener('visibilitychange', onVis); S.paused = false;
-      clearInterval(S.keep); clearInterval(S.idleTimer); clearTimeout(S.maxTimer); clearTimeout(S.hideTimer);
+      clearInterval(S.keep); clearInterval(S.alive); clearInterval(S.idleTimer); clearTimeout(S.maxTimer); clearTimeout(S.hideTimer);
       try { S.proc && S.proc.disconnect(); S.src && S.src.disconnect(); } catch (e) {}
       if (S.proc) S.proc.onaudioprocess = null;
       S.proc = S.src = null; stopPlayback(); S.agentSpeaking = false;
