@@ -137,9 +137,10 @@
       try { [m, rm] = await Promise.all([cfg.api({ action: "meta" }), cfg.reimbApi({ action: "meta" }).catch(() => null)]); } catch (e) { m = null; }
       if (!m || m.enabled === false) { host.querySelector(".rf").innerHTML = `<h1>Find local referral sources</h1><div class="msg">${m && m.enabled === false ? "Find local referral sources isn't available for this account yet." : "Referral data is temporarily unavailable — please try again shortly."}</div>`; return; }
       S.meta = m; S.rmeta = rm && rm.ok ? rm : null;
-      if (!S.zips) S.zips = (m.location && m.location.zip) || "";
+      /* a head office with no ZIP on file (TEST Sandbox, live 2026-11-21) starts on the first listed location, the one the Branch list shows */
+      if (!S.zips) S.zips = (m.location && m.location.zip) || ((m.locations || [])[0] || {}).zip || "";
       if (!S.rate.state && rm && rm.default_state) S.rate.state = rm.default_state;
-      if (!S.rate.zip) S.rate.zip = (rm && rm.branch_zip) || (m.location && m.location.zip) || "";
+      if (!S.rate.zip) S.rate.zip = (rm && rm.branch_zip) || (m.location && m.location.zip) || ((m.locations || [])[0] || {}).zip || "";
       if (!S.rate.dos) S.rate.dos = (rm && rm.today) || new Date().toISOString().slice(0, 10);
       if (pf.rate && pf.rate.plan) S.rate.plan = pf.rate.plan;
       render();
