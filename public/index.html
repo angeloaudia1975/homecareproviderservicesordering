@@ -7440,6 +7440,7 @@ async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg
    that button EXITS the dealer view instead (manageExit / exitPreview, unchanged). */
 function signOut(){
   try{ window.__dvVoiceStop&&window.__dvVoiceStop(); }catch(e){}   // Victoria's conversation: microphone, speech and pending work stop first
+  try{ Object.keys(localStorage).filter(k=>k.indexOf('hcps_adb_gen_v1:')===0).forEach(k=>localStorage.removeItem(k)); }catch(e){}   // unsaved Social Studio designs leave with the dealer (review 2026-11-20)
   if(typeof PREVIEW!=='undefined'&&PREVIEW){ if(typeof MANAGE!=='undefined'&&MANAGE&&typeof manageExit==='function') return manageExit(); return exitPreview(); }
   const tok=AUTH.session&&AUTH.session.access_token;
   try{ document.querySelectorAll('audio,video').forEach(m=>{ try{ m.pause(); m.removeAttribute('src'); m.load(); }catch(e){} }); }catch(e){}
@@ -10472,7 +10473,7 @@ window.showView=showView;
 const ADS_API=API_BASE+"/dealer-ads-api"; let ADS_JS=null;
 async function loadAdsView(){
   const host=$("#view-ads"); if(!host) return;
-  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=5"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
+  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=6"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
   try{ await ADS_JS; }catch(e){ host.innerHTML='<div class="ph"><div><h1>Social Ads</h1></div></div><div class="card"><div class="msg">The ad builder could not be loaded — please try again.</div></div>'; return; }
   window.HCPSAdBuilder.mount(host,{ api:(b)=>api(ADS_API,b), esc });
 }
@@ -10588,17 +10589,40 @@ async function dvProbe(){
   try{ const z=window.$zoho&&window.$zoho.salesiq; const hide=()=>{ try{ window.$zoho.salesiq.floatbutton.visible("hide"); }catch(e){} };
     if(z&&z.floatbutton) hide(); else if(z){ const prev=z.ready; z.ready=function(){ if(typeof prev==="function"){try{prev();}catch(e){}} hide(); }; } }catch(e){}
   const v=document.createElement("script"); v.src="/assets/dv-voice.js?v=4"; v.defer=true; document.head.appendChild(v);
-  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=13"; s.defer=true; document.head.appendChild(s);
+  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=14"; s.defer=true; document.head.appendChild(s);
 }
 /* what is on screen: the product page open (its own selected SKU / variant) and its reimbursement panel's state, ZIP,
    payer plan and date — exactly what the panel shows, read from the panel itself */
+/* what the dealer sees, for Victoria (owner 2026-11-20 23:31): the screen, the manufacturer, the catalog filters, the search
+   results on screen (first 8, numbered as shown) and the result the dealer picked (keyboard focus or pointer, last 2 minutes) */
+let DV_SEL=null;
+(function(){ const pick=e=>{ const r=e.target&&e.target.closest&&e.target.closest(".sl-search .gsr2"); if(r) DV_SEL={slug:r.getAttribute("data-slug"),code:r.getAttribute("data-code"),at:Date.now()}; };
+  document.addEventListener("focusin",pick); document.addEventListener("mouseover",pick); })();
+function dvScreen(){
+  const out={};
+  const a=String(state.active||"");
+  if(a&&a!==SHOPALL&&a.indexOf("p360:")!==0){ const m=(state.manufacturers||[]).find(x=>x&&x.slug===a); out.manufacturer={slug:a,name:(m&&m.name)||a};
+    const f={}; try{ const q=cvQuery(), c=cvCat(), b=(typeof cvBrand==="function"?cvBrand():""); if(q) f.search=q.slice(0,60); if(c) f.category=String(c).slice(0,60); if(b) f.brand=String(b).slice(0,60); }catch(e){}
+    if(Object.keys(f).length) out.filters=f; }
+  const box=document.querySelector("#content .sl-search");
+  if(a===SHOPALL&&box){ const rows=[...box.querySelectorAll(".gsr2")]; const h=box.querySelector(".sl-shead h2");
+    out.search={query:String(SL_Q||"").slice(0,80), count:h?(parseInt(h.textContent,10)||0):rows.length, searched:"every line on the account",
+      results:rows.slice(0,8).map((r,i)=>{ const b=r.querySelector(".gst b"); const line=(r.querySelector(".gst span")||{}).textContent||"";
+        return {n:i+1, slug:r.getAttribute("data-slug"), code:r.getAttribute("data-code"), name:(b?b.textContent:"").slice(0,90), manufacturer:line.split(" · ")[0].slice(0,60)}; })};
+    const act=document.activeElement&&document.activeElement.closest&&document.activeElement.closest(".sl-search .gsr2");
+    const sel=act?{slug:act.getAttribute("data-slug"),code:act.getAttribute("data-code")}:(DV_SEL&&Date.now()-DV_SEL.at<120000?DV_SEL:null);
+    if(sel){ const i=rows.findIndex(r=>r.getAttribute("data-code")===sel.code&&r.getAttribute("data-slug")===sel.slug); if(i>=0) out.search.selected=out.search.results[i]||{n:i+1,slug:sel.slug,code:sel.code}; } }
+  return out;
+}
 function dvContext(){
-  const pd=document.querySelector("#content .pd"); const view=document.body.classList.contains("p360on")?(state.active||"").replace(/^p360:/,""):(pd?"product":"catalog");
-  if(!pd) return {view};
+  const pd=document.querySelector("#content .pd"); const view=document.body.classList.contains("p360on")?(state.active||"").replace(/^p360:/,""):(pd?"product":(state.active===SHOPALL?(document.querySelector("#content .sl-search")?"shop_search":"shop"):"catalog"));
+  const scr=pd?{}:dvScreen();
+  if(!pd) return Object.assign({view},scr);
   const code=pd.getAttribute("data-pd-code"); const p=(state.products||[]).find(x=>x&&String(x.code)===String(code)); if(!p) return {view};
   const el=document.getElementById("pdReimb"); const rs=(window.HCPSReimb&&window.HCPSReimb.stateOf&&el)?window.HCPSReimb.stateOf(el):null;
   const prod=(rs&&rs.product)||{};
-  return {view:"product", product:{ code:p.code, name:p.name||p.code, variant:(typeof quoteOptionText==="function"?quoteOptionText(p):"")||"", manufacturer:prod.manufacturer||p.manufacturer||"",
+  const mf=(state.manufacturers||[]).find(x=>x&&x.slug===state.active);
+  return {view:"product", product:{ code:p.code, name:p.name||p.code, line:state.active||"", line_name:(mf&&mf.name)||"", variant:(typeof quoteOptionText==="function"?quoteOptionText(p):"")||"", manufacturer:prod.manufacturer||p.manufacturer||"",
     category:prod.category||p.category||"", sku_code:prod.sku_code||String(p.hcpc||p.hcpcs||""), page_codes:prod.page_codes||(p._billing||[]).map(String), spec_codes:prod.spec_codes||[],
     state:rs?rs.state:"", zip:rs?rs.zip:"", zip_source:rs?rs.zip_source:"", dos:rs?rs.dos:"", medicaid_plan:rs?rs.medicaid_plan:"", medicaid_location:rs?rs.medicaid_location:"" }};
 }
@@ -10609,10 +10633,18 @@ async function dvOpenOrder(ref){
   else toast("That order is listed in Orders & Tracking.");
 }
 /* open a product's page (any line on the account): the line first when it isn't the one on screen */
+/* checked, not assumed (owner 2026-11-20 23:31): reports ok only once the product's own page is on screen */
 async function dvOpenProduct(slug,code){
-  const pd=document.querySelector("#content .pd"); if(pd&&pd.getAttribute("data-pd-code")===code) return;
+  const on=()=>{ const pd=document.querySelector("#content .pd"); return pd&&pd.getAttribute("data-pd-code")===String(code)?pd:null; };
+  const done=()=>{ const p=(state.products||[]).find(x=>x&&String(x.code)===String(code)); return {ok:true, code, name:p?(groupDisplayName(p)||p.name||code):code}; };
+  if(on()) return done();
+  if(!code) return {ok:false};
+  if(state.active===SHOPALL&&typeof window.pdFromSearch==="function") window.pdFromSearch();   // Back returns to the results
   if(slug&&state.active!==slug&&typeof selectManufacturer==="function") await selectManufacturer(slug);
+  if(!(state.products||[]).some(x=>x&&String(x.code)===String(code))) return {ok:false, code, reason:"not_on_this_line"};
   if(typeof openProductDetail==="function") await openProductDetail(code);
+  for(let i=0;i<40&&!on();i++) await new Promise(r=>setTimeout(r,125));
+  return on()?done():{ok:false, code};
 }
 async function dvOpenQuote(a){
   const has=()=>(typeof QUOTE!=="undefined"&&Array.isArray(QUOTE))?QUOTE.some(k=>String(k).split("|")[1]===a.code):false;
@@ -10633,10 +10665,18 @@ async function dvOpenBrochure(a){ if(typeof closeBrochure==="function") closeBro
   /* review: the dialog must be THIS product's brochure, not one left open for another item */
   return {ok:!!document.getElementById("brModal")&&typeof _brCode!=="undefined"&&_brCode===a.code, what:a.code}; }
 /* Shop Products search across every line on the account (Golden included) — the portal's own search; returns what it found */
+/* one clear match (a single product, or an exact item number) opens its product page; several open the results with their
+   first names, so Victoria can ask one short question (owner 2026-11-20 23:31) */
 async function dvOpenSearch(q){
   if(typeof showShopSearch!=="function") return {ok:false};
+  q=String(q||"").trim().slice(0,80);
+  let hits=[]; try{ hits=(typeof window.gsSearchAll==="function")?await window.gsSearchAll(q):[]; }catch(e){ hits=[]; }
+  const one=hits.length===1||(hits.length>1&&hits[0].score===0&&hits[1].score>0);
+  if(one){ const x=hits[0].x; const r=await dvOpenProduct(x.slug,x.p.code); if(r&&r.ok) return {ok:true,count:hits.length,query:q,opened:r}; }
   await showShopSearch(q);
-  for(let i=0;i<60;i++){ const h=document.querySelector(".sl-search .sl-shead h2"); if(h&&state.active===SHOPALL&&SL_Q===String(q||"").trim().slice(0,80)){ const n=parseInt(h.textContent,10); return {ok:true,count:isFinite(n)?n:0,query:SL_Q}; } await new Promise(r=>setTimeout(r,150)); }
+  for(let i=0;i<60;i++){ const h=document.querySelector(".sl-search .sl-shead h2"); if(h&&state.active===SHOPALL&&SL_Q===q){ const n=parseInt(h.textContent,10);
+      const names=[...document.querySelectorAll(".sl-search .gsr2 .gst b")].slice(0,3).map(b=>b.textContent.trim());
+      return {ok:true,count:isFinite(n)?n:0,query:SL_Q,top:names}; } await new Promise(r=>setTimeout(r,150)); }
   return {ok:false,query:q};
 }
 /* one of the portal's screens (the same buttons as the top navigation) */
@@ -11343,20 +11383,41 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     ['thermometer','temp'],['knee','knee brace'],['wrist','wrist brace','carpal'],['ankle','ankle brace'],['back','lumbar','back brace']
   ];
   const gsNorm=s=>String(s==null?'':s).toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[®™©]/g,'').replace(/[^a-z0-9.+\/-]+/g,' ').trim();
+  /* "semi-electric" = "semi electric" (owner 2026-11-20 23:31: Victoria's hospital-bed search) — a hyphen between two letters
+     is a space, in what the dealer types AND in the catalog text (the index keeps both forms). An item number's exact /
+     prefix rank uses the query as typed, so "A-WA6106W300-4" still ranks first; only its word matching sees "a wa6106w300-4". */
+  const gsDehyphen=n=>n.replace(/([a-z])-(?=[a-z])/g,'$1 ');
+  /* a plural finds the singular too ("wheelchairs" → "wheelchair", "batteries" → "battery", "boxes" → "box", "beds" → "bed") —
+     owner 2026-11-20; never on item numbers (a digit) or 3-letter words; listed words stay as typed */
+  const SING_KEEP=new Set(['plus','lens','this','bus','gas','yes','less','bias','atlas','canvas','chassis','series','species','axis','basis','does','goes','news','was','has','his','its','ours','yours','always','perhaps']);
+  const gsSing=w=>/[0-9]/.test(w)||SING_KEEP.has(w)?[]:w.length>=6&&/ies$/.test(w)?[w.slice(0,-3)+'y']:w.length>=5&&/(ss|x|ch|sh)es$/.test(w)?[w.slice(0,-2)]:w.length>=4&&/s$/.test(w)&&!/(ss|us|is)$/.test(w)?[w.slice(0,-1)]:[];
+  const GS_FILLER=new Set(['show','me','find','search','look','looking','for','the','a','an','my','some','any','all','just','only','ones','one','please','i','want','need','do','you','have','carry','see','get','open','what','which','are','is','there','of','to','that','those','these','them']);
   function gsTerms(q){
-    const n=gsNorm(q); if(!n) return [];
-    const words=n.split(' ').filter(Boolean);
-    /* Each word (or a known multi-word phrase) becomes a set of alternatives; every set must match. */
-    const sets=[]; let rest=' '+n+' ';
+    const n=gsDehyphen(gsNorm(q)); if(!n) return [];
+    /* spoken / typed filler ("show me the semi-electric ones") is left out when other words remain */
+    const all=n.split(' ').filter(Boolean), real=all.filter(w=>!GS_FILLER.has(w)), words=real.length?real:all;
+    /* Each word (or a known multi-word phrase) becomes a set of alternatives; every set must match. Phrases are found on
+       the singular words too ("hospital beds" is the phrase "hospital bed"). */
+    const sets=[]; let rest=' '+words.map(w=>gsSing(w)[0]||w).join(' ')+' ';
     GS_SYN.forEach(g=>{ g.forEach(ph=>{ if(ph.indexOf(' ')>0 && rest.indexOf(' '+ph+' ')>=0){ rest=rest.replace(' '+ph+' ',' '); sets.push(g.slice()); } }); });
-    /* a plural finds the singular too ("wheelchairs" → "wheelchair", "batteries" → "battery", "boxes" → "box") — owner 2026-11-20 */
-    /* review: never on item numbers (a digit) or short words; 5+ letters ("ties", "plus", "lens", "this" stay as typed) */
-    const SING_KEEP=new Set(['plus','lens','this','bus','gas','yes','less','bias','atlas','canvas','chassis','series','species','axis','basis']);
-    const sing=w=>/[0-9]/.test(w)||SING_KEEP.has(w)?[]:w.length>=6&&/ies$/.test(w)?[w.slice(0,-3)+'y']:w.length>=5&&/(ss|x|ch|sh)es$/.test(w)?[w.slice(0,-2)]:w.length>=5&&/s$/.test(w)&&!/(ss|us|is)$/.test(w)?[w.slice(0,-1)]:[];
+    const sing=gsSing;
     rest.trim().split(' ').filter(Boolean).forEach(w=>{ const alt=new Set([w,...sing(w)]); if(/[a-z]-[0-9]|[0-9]-[a-z]/.test(w)) alt.add(w.replace(/-/g,'')); /* "PR-519" also finds PR519 (owner 2026-11-20, live Golden check) */ GS_SYN.forEach(g=>{ if(g.includes(w)||sing(w).some(v=>g.includes(v))) g.forEach(x=>alt.add(x)); }); sets.push([...alt]); });
     return sets.length?sets:[words];
   }
-  function gsIndex(x){ const p=x.p; return gsNorm([p.name,groupDisplayName(p),p.code,p.category,p.subcategory,p.brand,x.mname].filter(Boolean).join(' ')); }
+  function gsIndex(x){ const p=x.p; const n=gsNorm([p.name,groupDisplayName(p),p.code,p.category,p.subcategory,p.brand,x.mname].filter(Boolean).join(' ')); const d=gsDehyphen(n); return d===n?n:n+' | '+d; }
+  /* RANKING (owner 2026-11-20 23:31): complete products before rails and accessories. A product is an accessory when the head
+     of its name (before "with", a comma or a bracket) names a part — rail, trapeze, table, boards, cart… — or is "X for Y" —
+     unless the dealer asked for that part ("bed rails" ranks rails first). Then: every word in the NAME, as whole words, before
+     a match found only in the category or manufacturer. */
+  const GS_ACC=/\b(rails?|trapeze|tables?|boards?|carts?|transporters?|cabinets?|stands?|bars?|storage|mattress(?:es)?|pads?|covers?|kits?|accessor(?:y|ies)|replacements?|parts?|brackets?|straps?|cables?|batter(?:y|ies)|chargers?|holders?|bags?|baskets?|trays?|cushions?|overlays?|pendants?|handsets?|tips?|filters?|tubing|cannulas?|masks?|bumpers?|sections?|pouch(?:es)?|caps?|wheels?|casters?|brakes?|armrests?|footrests?|legrests?|seat belts?|belts?|locks?)\b/g;
+  function gsHead(name){ return gsDehyphen(gsNorm(String(name||'').split(/\s(?:with|without|includes?|incl\.?)\s|\sw\/o?\s?|[(,]/i)[0])); }
+  function gsAccessory(name,qw){
+    const h=gsHead(name); const ask=w=>qw.has(w)||qw.has(gsSing(w)[0]||w);
+    const parts=(h.match(GS_ACC)||[]).filter(w=>!ask(w)); if(parts.length) return true;
+    const i=h.search(/\bfor\b/); if(i>0){ const before=h.slice(0,i).split(' ').filter(Boolean); if(!before.some(ask)) return true; }
+    return false;
+  }
+  const gsWord=(t,a)=>new RegExp('(^|[^a-z0-9])'+a.replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&')+'(s|es)?($|[^a-z0-9])').test(t);
   function gsPrice(x){
     const p=x.p;
     try{
@@ -11393,18 +11454,21 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
   function gsSearch(q){
     const sets=gsTerms(q); if(!sets.length||!_gsAll||_gsKey!==gsAuthKey()) return [];
     const nq=gsNorm(q), seen=new Set(), out=[];
+    const qw=new Set(); sets.forEach(alts=>alts.forEach(a=>a.split(' ').forEach(w=>{ if(w){ qw.add(w); (gsSing(w)||[]).forEach(v=>qw.add(v)); } })));
     const allowed=new Set(gsLines().map(m=>m.slug)); let gOk=false; try{ gOk=goldenEntitled(); }catch(e){}
     _gsAll.forEach(x=>{
       if(!allowed.has(x.slug)||(isGoldenSlug(x.slug)&&!gOk)) return;
       if(!sets.every(alts=>alts.some(a=>x.ix.indexOf(a)>=0))) return;
-      const code=gsNorm(x.p.code), name=gsNorm(groupDisplayName(x.p)||x.p.name);
-      const score=(code===nq?0:code.indexOf(nq)===0?1:name.indexOf(nq)===0?2:name.indexOf(nq)>=0?3:gsNorm(x.p.name).indexOf(nq)>=0?4:5);
+      const code=gsNorm(x.p.code), name=gsNorm(groupDisplayName(x.p)||x.p.name), nm=gsDehyphen(name)+' '+gsDehyphen(gsNorm(x.p.name));
+      let score=(code===nq?0:code.indexOf(nq)===0?1:name.indexOf(nq)===0?2:name.indexOf(nq)>=0?3:gsNorm(x.p.name).indexOf(nq)>=0?4
+        :sets.every(alts=>alts.some(a=>gsWord(nm,a)))?5:sets.every(alts=>alts.some(a=>nm.indexOf(a)>=0))?6:7);
+      if(score>1&&gsAccessory(groupDisplayName(x.p)||x.p.name,qw)) score+=10;
       out.push({x,score,key:x.slug+'\u0001'+groupKeyOf(x.p)});
     });
     out.sort((a,b)=>a.score-b.score||String(a.x.p.name||'').localeCompare(String(b.x.p.name||'')));
     const res=[]; const items={};
     out.forEach(o=>{ (items[o.key]=items[o.key]||[]).push(o.x); });
-    out.forEach(o=>{ if(seen.has(o.key)) return; seen.add(o.key); res.push({x:o.x,n:items[o.key].length,items:items[o.key]}); });
+    out.forEach(o=>{ if(seen.has(o.key)) return; seen.add(o.key); res.push({x:o.x,n:items[o.key].length,items:items[o.key],score:o.score}); });
     return res;
   }
   window.gsSearchAll=function(q){ return gsEnsure().then(()=>gsSearch(q)); };
