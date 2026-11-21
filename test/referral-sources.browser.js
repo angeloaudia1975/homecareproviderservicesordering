@@ -90,7 +90,7 @@ const waitRows = (page) => page.waitForFunction(() => { const v = document.query
       // 5 — from Reports & Growth Ideas, search by words
       await page.evaluate(() => showP360('reports')); await page.waitForSelector('#rptRef', { timeout: 20000 }).catch(() => {});
       const hasRep = await page.evaluate(() => !!document.querySelector('#rptRef'));
-      if (hasRep) { await page.click('#rptRef'); await page.waitForSelector('#rfQ', { timeout: 10000 }); }
+      let y0 = 0; if (hasRep) { y0 = await page.evaluate(() => { document.querySelector('#rptRef').scrollIntoView({ block: 'center' }); return window.scrollY; }); await page.click('#rptRef'); await page.waitForSelector('#rfQ', { timeout: 10000 }); }
       else await page.evaluate(() => openReferrals({ ret: { kind: 'reports' } }));
       await page.waitForSelector('#rfQ', { timeout: 10000 }); await page.fill('#rfQ', 'semi-electric hospital bed'); await page.press('#rfQ', 'Enter');
       await page.waitForSelector('[data-code="E0260"]', { timeout: 10000 }); await page.click('[data-code="E0260"]'); await page.click('[data-a="search"]'); await waitRows(page); await page.waitForTimeout(300);
@@ -101,6 +101,9 @@ const waitRows = (page) => page.waitForFunction(() => { const v = document.query
       await page.fill('#rfZips', '99999'); await page.click('[data-a="search"]'); await page.waitForTimeout(500);
       const v6 = await view(page);
       await t(`${label}: no published matches is said plainly — not proof of no demand; offers nearby ZIPs / another code`, () => ok(/No published matches/.test(v6.text) && /not proof of no local demand/.test(v6.text), v6.text.slice(0, 300)));
+      if (hasRep) { await page.evaluate(() => [...document.querySelectorAll('#view-referrals button, #view-referrals a')].find((x) => /Back to Reports/.test(x.textContent)).click()); await page.waitForTimeout(1500);
+        const rb = await page.evaluate(() => { const b = document.querySelector('#rptRef'); const r = b && b.getBoundingClientRect(); return { y: window.scrollY, inView: !!(r && r.top >= 0 && r.bottom <= window.innerHeight), reports: state.active }; });
+        await t(`${label}: Back from the referral screen returns to the local-market section where the dealer pressed the button (not the top of Reports)`, () => ok(rb.reports === "p360:reports" && rb.inView && (y0 === 0 || rb.y > 0), JSON.stringify({ y0, rb }))); }
       // 7 — from the standalone reimbursement lookup
       await page.evaluate(() => openReimb({ code: 'E0260', state: 'KY', plan: 'medicare', zip: '42101', dos: '2026-11-20' }));
       await page.waitForSelector('#rbCode', { timeout: 15000 }); await page.fill('#rbCode', 'E0260'); await page.click('[data-act="go"]');
