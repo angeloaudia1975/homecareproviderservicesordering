@@ -140,7 +140,7 @@ V._test.deps.reports = () => async () => ({ statusCode: 200, body: JSON.stringif
         ok(g1 === 'Hello, Ann. I’m Victoria, your personal assistant in the 360 Dealer Portal. How can I help you today?', g1);
         ok(v1.spoken.length === 1 && v1.spoken[0] === g1, 'spoken: ' + JSON.stringify(v1.spoken));
         ok(/Voice off/.test(v1.text) && v1.pressed === 'on' && v1.aria === null, JSON.stringify(v1)); ok(asks.length === 0, 'no AI call to greet');
-        ok(open1.support.some((x) => /Chat with HCPS/.test(x)) && open1.support.some((x) => /626-3140/.test(x)) && open1.support.some((x) => /Email/.test(x)), JSON.stringify(open1.support));
+        ok(open1.support.some((x) => /Chat with us/.test(x)) && !open1.support.some((x) => /HCPS/.test(x)) && open1.support.some((x) => /626-3140/.test(x)) && open1.support.some((x) => /Email/.test(x)), JSON.stringify(open1.support));
         ok(open1.close[0] >= 44 && open1.close[1] >= 44, 'close ' + open1.close);
       });
       await t(`${label}: open — the orb and the Golden cart stay visible and tappable; the panel never sits on either`, () => {
