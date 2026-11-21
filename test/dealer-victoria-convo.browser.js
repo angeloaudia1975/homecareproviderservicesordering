@@ -53,7 +53,7 @@ const GREET = 'Hello, Ann. I’m Victoria, your personal assistant in the 360 De
           const q = x.action === 'ask' ? x.question : (x.args || {}).question; toolReqs.push({ action: x.action, q, history: x.history || [], session: x.session_id });
           if (holdTool) await holdTool;
           const s = SCRIPT.find(([re]) => re.test(q)); const out = s ? await VT.RUN[s[1]]({ dealer_id: 'd1', bearer: 'Bearer tok', page: x.page || {} }, deps, s[2]) : { result: {} };
-          const say = s && s[1] === 'find_products' ? 'Your price for the K3 is shown in the card.' : 'Here is what I found.';
+          const say = s && s[1] === 'find_products' ? 'Your price for the K3 is shown in the card.' : s && s[1] === 'quote_products' ? 'Nothing has been saved or sent.' : 'Here is what I found.';
           body = { ok: true, say, answer: say, cards: out.card ? [out.card] : [], actions: [].concat(out.actions || [], out.action ? [out.action] : []) }; }
         return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) }); });
       /* the Deepgram Voice Agent stand-in */
@@ -80,7 +80,7 @@ const GREET = 'Hello, Ann. I’m Victoria, your personal assistant in the 360 De
         FakeWS.OPEN = 1; window.WebSocket = FakeWS;
         /* every microphone track handed out, so the test can see it stop */
         const gum = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); window.__tracks = []; window.__denyMic = false;
-        navigator.mediaDevices.getUserMedia = async (c) => { if (window.__denyMic) throw new DOMException('denied', 'NotAllowedError'); const s = await gum(c); s.getTracks().forEach((tr) => window.__tracks.push(tr)); return s; };
+        navigator.mediaDevices.getUserMedia = async (c) => { if (window.__denyMic) throw new DOMException('denied', 'NotAllowedError'); if (window.__gumDelay) await new Promise((r) => setTimeout(r, window.__gumDelay)); const s = await gum(c); s.getTracks().forEach((tr) => window.__tracks.push(tr)); return s; };
       });
       await page.evaluate(() => window.dvProbe()); await page.waitForFunction(() => document.getElementById('dvOrbHost') && window.DVVoice, null, { timeout: 15000 });
       const P = (f, a) => page.evaluate(([fn, x]) => (new Function('s', 'x', fn))(document.getElementById('dvPanelHost') && document.getElementById('dvPanelHost').shadowRoot, x), [f, a]);
@@ -103,8 +103,8 @@ const GREET = 'Hello, Ann. I’m Victoria, your personal assistant in the 360 De
       });
       /* 2 — K3 → price → quote → reports, by voice only */
       const r1 = await say('Find Dalton K3 wheelchairs');
-      await t(`${label}: "Find Dalton K3 wheelchairs" — the results are on screen BEFORE the agent is told what to say, and she says the counted number`, () =>
-        ok(/for “Dalton K3 wheelchairs”/.test(r1.at.h) && r1.at.rows > 0 && new RegExp('Shop Products shows ' + r1.at.rows + ' results? for “Dalton K3 wheelchairs”').test(r1.say), JSON.stringify(r1)));
+      await t(`${label}: "Find Dalton K3 wheelchairs" — the results are on screen BEFORE the agent is told what to say, and she says the counted number (spoken short, details on screen)`, () =>
+        ok(/for “Dalton K3 wheelchairs”/.test(r1.at.h) && r1.at.rows > 0 && new RegExp('Shop Products shows ' + r1.at.rows + ' results?\\.').test(r1.say) && !/Dalton K3 wheelchairs/.test(r1.say), JSON.stringify(r1)));
       if (label === 'phone') { const ph = await page.evaluate(() => ({ hidden: document.getElementById('dvPanelHost').shadowRoot.querySelector('.p').hidden, ring: document.getElementById('dvOrbHost').shadowRoot.querySelector('button').dataset.convo, aria: document.getElementById('dvOrbHost').shadowRoot.querySelector('button').getAttribute('aria-label'), live: window.__dg.cur.readyState }));
         await t('phone: the panel steps aside so the results are visible; the conversation keeps going and the globe shows a green ring saying Victoria is still listening', () => ok(ph.hidden && ph.ring === 'on' && /still listening/.test(ph.aria) && ph.live === 1, JSON.stringify(ph))); }
       const r2 = await say('What is my price on that one?');
@@ -113,7 +113,7 @@ const GREET = 'Hello, Ann. I’m Victoria, your personal assistant in the 360 De
         ok(tq2.action === 'voice_tool' && tq2.history.length >= 1 && /K3 wheelchairs/.test(tq2.history[0].q), JSON.stringify(tq2));
         ok(r2.at.card.some((c) => /K3DK16FTADJ/.test(c) && /\$512\.50/.test(c)) && /Your price/.test(r2.say), JSON.stringify(r2)); });
       const r3 = await say('Help me prepare a quote for one of those');
-      await t(`${label}: quote help — the draft quote holds K3DK16FTADJ before she says so; nothing saved or sent`, () => ok(r3.at.quote && r3.at.quote.includes('K3DK16FTADJ') && /draft quote with 1 × K3DK16FTADJ/.test(r3.say) && /Nothing has been saved or sent/.test(r3.say), JSON.stringify(r3)));
+      await t(`${label}: quote help — the draft quote holds K3DK16FTADJ before she says so; spoken short (no item number), "nothing saved or sent" said once`, () => ok(r3.at.quote && r3.at.quote.includes('K3DK16FTADJ') && /draft quote is open with 1 item/.test(r3.say) && (r3.say.match(/Nothing has been saved or sent/g) || []).length === 1 && !/K3DK16FTADJ/.test(r3.say) && r3.at.card.some((c) => /1 × K3DK16FTADJ/.test(c)), JSON.stringify(r3)));
       const r4 = await say('Open my reports');
       await t(`${label}: "Open my reports" — Reports is on screen before she says it is open`, () => ok(r4.at.active === 'p360:reports' && /is open on the page/.test(r4.say), JSON.stringify(r4)));
       const turns = await page.evaluate(() => ({ socks: window.__dg.sockets.length, audioIn: window.__dg.audioIn }));
@@ -124,6 +124,29 @@ const GREET = 'Hello, Ann. I’m Victoria, your personal assistant in the 360 De
       const log = await P("return [...s.querySelectorAll('.log .bubble')].map(b=>[b.classList.contains('me')?'me':'v', b.textContent]);");
       await t(`${label}: the conversation is written out — the dealer's words and Victoria's, in order`, () => ok(log.filter((x) => x[0] === 'me').map((x) => x[1]).join('|') === 'Find Dalton K3 wheelchairs|What is my price on that one?|Help me prepare a quote for one of those|Open my reports' && log.filter((x) => x[0] === 'v').length === 4, JSON.stringify(log)));
 
+      /* tab hidden → capture stops (tracks ended, KeepAlive), "Paused"; visible again → listening on a new track; away > 2 min ends */
+      const vis = await page.evaluate(async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); let hidden = false; Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden }); Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => hidden ? 'hidden' : 'visible' });
+        const s = document.getElementById('dvPanelHost').shadowRoot; const D = window.__dg; const tr0 = window.__tracks.slice(-1)[0]; const a0 = D.audioIn;
+        hidden = true; document.dispatchEvent(new Event('visibilitychange')); await W(300);
+        const p = { st: s.querySelector('.st').dataset.s, text: s.querySelector('.st span').textContent, track: tr0.readyState }; const a1 = D.audioIn; await W(600); p.audioWhileHidden = D.audioIn - a1;
+        hidden = false; document.dispatchEvent(new Event('visibilitychange')); await W(800);
+        const r = { st: s.querySelector('.st').dataset.s, newTrack: window.__tracks.slice(-1)[0] !== tr0 && window.__tracks.slice(-1)[0].readyState === 'live', socket: D.cur.readyState, socks: D.sockets.length, audioAfter: D.audioIn > a1 };
+        return { p, r }; });
+      await t(`${label}: tab hidden — microphone capture stops (track ended, no audio sent) and the status says Paused; back on the tab she listens again on the same conversation`, () => {
+        ok(vis.p.st === 'paused' && /Paused/.test(vis.p.text) && vis.p.track === 'ended' && vis.p.audioWhileHidden === 0, JSON.stringify(vis.p));
+        ok(vis.r.st === 'listening' && vis.r.newTrack && vis.r.socket === 1 && vis.r.audioAfter, JSON.stringify(vis.r)); });
+      /* quick hide / show / hide / show while the microphone is still being granted: one resume at a time, no stream left
+         capturing — after Close every microphone track this page ever got is ended */
+      const race = await page.evaluate(async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); let hidden = false;
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden }); const fire = (h) => { hidden = h; document.dispatchEvent(new Event('visibilitychange')); };
+        const n0 = window.__tracks.length; window.__gumDelay = 400; fire(true); await W(50); fire(false); await W(50); fire(true); await W(50); fire(false); await W(1200); window.__gumDelay = 0;
+        const s = document.getElementById('dvPanelHost').shadowRoot; const mid = { st: s.querySelector('.st').dataset.s, live: window.__tracks.filter((t) => t.readyState === 'live').length, got: window.__tracks.length - n0 };
+        fire(true); await W(50); fire(false); await W(80); fire(true); await W(600);   // hidden while a grant is pending: stays paused, nothing live
+        const hiddenAfter = { st: s.querySelector('.st').dataset.s, live: window.__tracks.filter((t) => t.readyState === 'live').length };
+        fire(false); await W(800); return { mid, hiddenAfter, back: s.querySelector('.st').dataset.s }; });
+      await t(`${label}: quick hide/show while the microphone is being granted — one resume at a time; hidden again during a grant stays paused with nothing capturing`, () => {
+        ok(race.mid.st === 'listening' && race.mid.live === 1 && race.mid.got === 1, 'one live track after the double resume: ' + JSON.stringify(race.mid));
+        ok(race.hiddenAfter.st === 'paused' && race.hiddenAfter.live === 0 && race.back === 'listening', JSON.stringify(race)); });
       /* 3 — interruption */
       const intr = await page.evaluate(async () => { const D = window.__dg; D.cur.speak('A long answer that keeps going for a while.', 3); await new Promise((r) => setTimeout(r, 120));
         const before = document.getElementById('dvPanelHost').shadowRoot.querySelector('.st').dataset.s; D.cur.msg({ type: 'UserStartedSpeaking' }); await new Promise((r) => setTimeout(r, 60));

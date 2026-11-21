@@ -12,10 +12,10 @@
      performs and CHECKS any page action, and only then answers the agent (so Victoria never says it's open before it is).
    - stop(): closes the connection, stops the microphone and playback at once, drops any answer still on its way and
      records the minutes (voice_end). Nothing is recorded or stored by the page.
-   States: connecting · listening · thinking · speaking · idle. Errors are explained (onEvent 'error'), never silent. */
+   States: connecting · listening · thinking · speaking · paused (tab hidden) · idle. Errors are explained (onEvent 'error'), never silent. */
 "use strict";
 (function () {
-  const IDLE_MS = 120000;
+  const IDLE_MS = 120000, HIDDEN_MS = 120000;
   function f32ToI16(f) { const o = new Int16Array(f.length); for (let i = 0; i < f.length; i++) { const s = Math.max(-1, Math.min(1, f[i])); o[i] = s < 0 ? s * 0x8000 : s * 0x7fff; } return o; }
   const MIC_MSG = {
     NotAllowedError: 'Microphone access is blocked for this site. Allow the microphone in your browser\'s site settings to talk with Victoria — or type instead.',
@@ -27,7 +27,7 @@
   function create(opts) {
     const api = opts.api, emit = (type, data) => { try { opts.onEvent && opts.onEvent(type, data || {}); } catch (e) {} };
     const S = { state: 'idle', sid: null, ws: null, stream: null, inCtx: null, outCtx: null, proc: null, src: null, playing: [], playAt: 0,
-      ana: null, lvl: null, started: 0, lastActivity: 0, idleTimer: null, maxTimer: null, keep: null, turns: 0, interruptions: 0, ended: true, gen: 0, agentSpeaking: false };
+      ana: null, lvl: null, started: 0, lastActivity: 0, idleTimer: null, maxTimer: null, keep: null, hideTimer: null, paused: false, resuming: null, streams: new Set(), turns: 0, interruptions: 0, ended: true, gen: 0, agentSpeaking: false };
     const set = (st) => { if (S.state === st) return; S.state = st; emit('state', { state: st }); };
     const touch = () => { S.lastActivity = Date.now(); };
     const send = (o) => { if (S.ws && S.ws.readyState === 1) S.ws.send(typeof o === 'string' || o instanceof ArrayBuffer ? o : JSON.stringify(o)); };
@@ -40,15 +40,15 @@
       const b = S.outCtx.createBuffer(1, f.length, S.outCtx.sampleRate); b.copyToChannel(f, 0);
       const n = S.outCtx.createBufferSource(); n.buffer = b; n.connect(S.ana || S.outCtx.destination);
       const t = Math.max(S.outCtx.currentTime + 0.02, S.playAt); n.start(t); S.playAt = t + b.duration;
-      if (S.state === 'listening' || S.state === 'thinking') set('speaking');
-      S.playing.push(n); n.onended = () => { S.playing = S.playing.filter((x) => x !== n); if (!S.playing.length && !S.agentSpeaking && S.state === 'speaking') set('listening'); };
+      if (!S.paused && (S.state === 'listening' || S.state === 'thinking')) set('speaking');
+      S.playing.push(n); n.onended = () => { S.playing = S.playing.filter((x) => x !== n); if (!S.playing.length && !S.agentSpeaking && S.state === 'speaking') set(S.paused ? 'paused' : 'listening'); };
       touch();
     }
 
     async function onFunction(fn) {
       const my = S.gen; let args = {};
       try { args = typeof fn.arguments === 'string' ? JSON.parse(fn.arguments || '{}') : (fn.arguments || {}); } catch (e) { args = {}; }
-      set('thinking'); touch();
+      if (!S.paused) set('thinking'); touch();
       let content;
       try { content = await opts.runTool({ name: fn.name, args, session_id: S.sid }); }
       catch (e) { content = JSON.stringify({ error: 'tool_failed', message: 'I couldn\'t do that just now. You can try again or type it.' }); }
@@ -60,11 +60,11 @@
     function onMessage(m) {
       switch (m.type) {
         case 'Welcome': break;
-        case 'SettingsApplied': startMic(); set('listening'); emit('ready'); break;
+        case 'SettingsApplied': if (document.hidden) { emit('ready'); pause(); } else { startMic(); set('listening'); emit('ready'); } break;
         case 'UserStartedSpeaking': if (S.agentSpeaking || S.playing.length) { S.interruptions++; emit('interrupted'); } stopPlayback(); S.agentSpeaking = false; set('listening'); touch(); break;
         case 'AgentThinking': set('thinking'); touch(); break;
         case 'AgentStartedSpeaking': S.agentSpeaking = true; set('speaking'); touch(); break;
-        case 'AgentAudioDone': S.agentSpeaking = false; if (!S.playing.length && S.state === 'speaking') set('listening'); break;
+        case 'AgentAudioDone': S.agentSpeaking = false; if (!S.playing.length && S.state === 'speaking') set(S.paused ? 'paused' : 'listening'); break;
         case 'ConversationText': { const content = String(m.content || ''); if (m.role === 'user') S.turns++; emit('text', { role: m.role === 'user' ? 'user' : 'assistant', content }); touch(); break; }
         case 'FunctionCallRequest': for (const fn of (m.functions || [])) if (fn.client_side !== false) onFunction(fn); break;
         case 'InjectionRefused': emit('warning', { message: 'refused' }); break;
@@ -93,6 +93,7 @@
       emit('permission', { asking: true });
       try { S.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } }); }
       catch (e) { const why = (e && e.name) || ''; S.ended = true; cleanup(); set('idle'); emit('error', { kind: 'microphone', reason: why, message: MIC_MSG[why] || 'The microphone could not start. You can type instead.' }); return false; }
+      if (S.stream) S.streams.add(S.stream);
       if (my !== S.gen || S.ended) { cleanup(); return false; }
       emit('permission', { asking: false, granted: true });
       let r; try { r = await api({ action: 'voice_session' }); } catch (e) { r = null; }
@@ -114,16 +115,47 @@
         emit('error', { kind: 'connection', message: early ? 'Victoria\'s voice couldn\'t connect just now. Tap “Talk to Victoria” to try again, or type instead.' : 'The voice connection closed. Tap “Talk to Victoria” to keep talking, or type instead.' });
         stop('closed', early); };
       S.idleTimer = setInterval(() => { if (Date.now() - S.lastActivity > IDLE_MS && !S.playing.length && S.state === 'listening') { emit('idle'); stop('idle'); } }, 5000);
+      document.addEventListener('visibilitychange', onVis);
       S.maxTimer = setTimeout(() => { emit('limit', { minutes: r.max_minutes }); stop('limit'); }, Math.max(1, Number(r.max_minutes) || 10) * 60000);
       return true;
     }
 
+    /* TAB HIDDEN (owner 2026-11-20 21:52): microphone capture stops while the tab is hidden (the tracks are ended, so the
+       browser's recording indicator goes off) and the connection is kept open with KeepAlive; when the dealer comes back
+       and Victoria is still open the microphone is asked for again (no prompt where permission was granted) and she
+       listens. Away longer than two minutes ends the conversation so nothing is held open. */
+    function stopTracks() { try { S.proc && S.proc.disconnect(); S.src && S.src.disconnect(); } catch (e) {} if (S.proc) S.proc.onaudioprocess = null; S.proc = S.src = null;
+      if (S.stream) S.stream.getTracks().forEach((t) => t.stop()); S.stream = null; stopAllStreams(); }
+    /* every microphone stream this conversation ever got is stopped — none can be left capturing (review 2026-11-20) */
+    function stopAllStreams() { for (const st of S.streams) { try { st.getTracks().forEach((t) => t.stop()); } catch (e) {} } S.streams.clear(); }
+    function pause() {
+      if (S.ended || S.paused || !S.ws) return;
+      S.paused = true; stopTracks(); set('paused'); emit('paused');
+      clearInterval(S.keep); S.keep = setInterval(() => send({ type: 'KeepAlive' }), 5000);
+      awayTimer();
+    }
+    const awayTimer = () => { clearTimeout(S.hideTimer); S.hideTimer = setTimeout(() => { emit('away'); stop('hidden'); }, HIDDEN_MS); };
+    function resume() { if (S.ended || !S.paused) return Promise.resolve(); if (!S.resuming) S.resuming = doResume().finally(() => { S.resuming = null; }); return S.resuming; }
+    async function doResume() {
+      clearTimeout(S.hideTimer); S.hideTimer = null; const my = S.gen;
+      let st; try { st = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } }); }
+      catch (e) { if (my !== S.gen || S.ended) return; const why = (e && e.name) || ''; emit('error', { kind: 'microphone', reason: why, message: MIC_MSG[why] || 'The microphone could not start again. Tap “Talk to Victoria” or type instead.' }); stop('resume_failed', true); return; }
+      if (my !== S.gen || S.ended || !S.paused) { st.getTracks().forEach((t) => t.stop()); return; }
+      if (document.hidden) { st.getTracks().forEach((t) => t.stop()); awayTimer(); return; }   // hidden again meanwhile: still paused, the away limit runs again
+      S.streams.add(st);
+      clearInterval(S.keep); S.keep = null; S.stream = st; S.paused = false;
+      try { S.inCtx && S.inCtx.resume && S.inCtx.resume(); S.outCtx && S.outCtx.resume && S.outCtx.resume(); } catch (e) {}
+      startMic(); touch(); set(S.playing.length ? 'speaking' : 'listening'); emit('resumed');
+    }
+    const onVis = () => { if (document.hidden) pause(); else resume(); };
+
     function cleanup() {
-      clearInterval(S.keep); clearInterval(S.idleTimer); clearTimeout(S.maxTimer);
+      document.removeEventListener('visibilitychange', onVis); S.paused = false;
+      clearInterval(S.keep); clearInterval(S.idleTimer); clearTimeout(S.maxTimer); clearTimeout(S.hideTimer);
       try { S.proc && S.proc.disconnect(); S.src && S.src.disconnect(); } catch (e) {}
       if (S.proc) S.proc.onaudioprocess = null;
       S.proc = S.src = null; stopPlayback(); S.agentSpeaking = false;
-      if (S.stream) S.stream.getTracks().forEach((t) => t.stop()); S.stream = null;
+      if (S.stream) S.stream.getTracks().forEach((t) => t.stop()); S.stream = null; stopAllStreams();
       for (const c of [S.inCtx, S.outCtx]) { try { c && c.close(); } catch (e) {} } S.inCtx = S.outCtx = null; S.ana = null;
     }
     /* immediate: the microphone, playback and any pending answer stop before anything is awaited */

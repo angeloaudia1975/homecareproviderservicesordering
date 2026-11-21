@@ -10573,6 +10573,7 @@ async function dvProbe(){
     voice:j.voice||null,
     /* continuous spoken conversation (owner 2026-11-20 20:11): the Deepgram Voice Agent, through dealer-victoria-api */
     conversation:j.conversation||{available:false},
+    warmSearch:()=>{ try{ if(typeof window.gsWarm==='function') window.gsWarm(); }catch(e){} },
     /* the welcome for the NEXT opening (owner 2026-11-20 10:37): shown and spoken inside the opening tap, no AI call */
     greeting:j.greeting||(j.first_name?"Hi, "+j.first_name+". How can I help you today?":"Hello! How can I help you today?"),
     greeting_again:j.greeting_again||(j.first_name?"Hi, "+j.first_name+". How can I help you today?":"Hello! How can I help you today?"),
@@ -10586,8 +10587,8 @@ async function dvProbe(){
   document.body.classList.add("dv-on");
   try{ const z=window.$zoho&&window.$zoho.salesiq; const hide=()=>{ try{ window.$zoho.salesiq.floatbutton.visible("hide"); }catch(e){} };
     if(z&&z.floatbutton) hide(); else if(z){ const prev=z.ready; z.ready=function(){ if(typeof prev==="function"){try{prev();}catch(e){}} hide(); }; } }catch(e){}
-  const v=document.createElement("script"); v.src="/assets/dv-voice.js?v=1"; v.defer=true; document.head.appendChild(v);
-  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=11"; s.defer=true; document.head.appendChild(s);
+  const v=document.createElement("script"); v.src="/assets/dv-voice.js?v=2"; v.defer=true; document.head.appendChild(v);
+  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=12"; s.defer=true; document.head.appendChild(s);
 }
 /* what is on screen: the product page open (its own selected SKU / variant) and its reimbursement panel's state, ZIP,
    payer plan and date — exactly what the panel shows, read from the panel itself */
@@ -11388,6 +11389,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     return run;
   }
   window.gsReset=function(){ _gsAll=null; _gsLoading=null; _gsKey=''; _gsListeners=new Set(); };
+  window.gsWarm=function(){ try{ return gsEnsure(); }catch(e){ return null; } };   // Victoria opening: the product index loads before she is asked to search
   function gsSearch(q){
     const sets=gsTerms(q); if(!sets.length||!_gsAll||_gsKey!==gsAuthKey()) return [];
     const nq=gsNorm(q), seen=new Set(), out=[];

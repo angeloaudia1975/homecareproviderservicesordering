@@ -35,7 +35,7 @@
       .st{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;margin-top:2px}
       .st i{width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block}
       .st[data-s="listening"] i{background:#22c55e;animation:pl 1.2s ease-in-out infinite}
-      .st[data-s="thinking"] i{background:#f59e0b}.st[data-s="speaking"] i{background:#7fd3ff}.st[data-s="connecting"] i{background:#cbd5e1;animation:pl .8s infinite}
+      .st[data-s="paused"] i{background:#94a3b8}.st[data-s="thinking"] i{background:#f59e0b}.st[data-s="speaking"] i{background:#7fd3ff}.st[data-s="connecting"] i{background:#cbd5e1;animation:pl .8s infinite}
       @keyframes pl{50%{opacity:.35}}
       @media (prefers-reduced-motion:reduce){.orb,.st i{animation:none!important}}
       .ib{all:unset;box-sizing:border-box;min-width:44px;min-height:44px;display:grid;place-items:center;cursor:pointer;border-radius:10px;font-size:13px;font-weight:700;padding:0 8px}
@@ -87,7 +87,7 @@
     const SP = orbHost.__dvSpeech || { speak: () => false, stop: () => {}, supported: () => false };
     const convoOK = () => !!(DV.conversation && DV.conversation.available && window.DVVoice && window.DVVoice.supported());
     let voice = null, mode = 'voice', speakTyped = false, hist = [], echo = [];
-    const STATUS = { idle: 'Ready', connecting: 'Connecting…', listening: 'Listening', thinking: 'Thinking…', speaking: 'Speaking', typing: 'Typing — voice is off for this opening', blocked: 'Voice unavailable' };
+    const STATUS = { idle: 'Ready', connecting: 'Connecting…', listening: 'Listening', thinking: 'Thinking…', speaking: 'Speaking', paused: 'Paused — not listening while this tab is hidden', typing: 'Typing — voice is off for this opening', blocked: 'Voice unavailable' };
     function status(st) { stEl.dataset.s = st; stEl.querySelector('span').textContent = STATUS[st] || st; orb.dataset.s = st === 'speaking' || st === 'thinking' || st === 'listening' ? st : 'idle'; }
     const supportLinks = () => `<a href="tel:${esc(S.phone_tel)}">📞 ${esc(S.phone)}</a><a href="mailto:${esc(S.email)}">✉️ Email support</a>`;
     function warn(text, withSupport) { const d = document.createElement('div'); d.className = 'warn'; d.textContent = text; if (withSupport) { const s = document.createElement('div'); s.innerHTML = supportLinks(); d.appendChild(s); } log.appendChild(d); d.scrollIntoView({ block: 'nearest' }); return d; }
@@ -168,22 +168,33 @@
     /* every page / draft action is performed and CHECKED in the portal before Victoria reports it (✓ / ✗); the confirmed
        sentences go back to the voice agent so she only says what the portal shows */
     async function perform(r) {
+      /* `said` = what Victoria speaks: short, no item numbers (the ✓ card on screen carries the details) */
       const said = []; const acts = r.actions || [];
+      const n = (k) => k + ' item' + (k === 1 ? '' : 's');
       const quotes = acts.filter((x) => x.type === 'open_quote');
       if (quotes.length) await go(async () => { const done = [], miss = []; for (const x of quotes) { let v = null; try { v = DV.openQuote ? await DV.openQuote(x) : null; } catch (e) { v = null; } ((v && v.ok) ? done : miss).push(x); }
-        if (done.length) { quoteCard(done); said.push('The portal shows a draft quote with ' + done.map((x) => x.qty + ' × ' + x.code).join(', ') + '. Nothing has been saved or sent.'); }
-        if (miss.length) { const t = 'Couldn\'t add ' + miss.map((x) => x.code).join(', ') + ' to a quote. Open the product and press Add to a quote.'; checked(false, t); said.push(t); } });
+        if (done.length) { quoteCard(done); said.push('The draft quote is open with ' + n(done.length) + '. Nothing has been saved or sent.'); }
+        if (miss.length) { checked(false, 'Couldn\'t add ' + miss.map((x) => x.code).join(', ') + ' to a quote. Open the product and press Add to a quote.'); said.push('I couldn\'t add ' + (miss.length === 1 ? 'that item' : n(miss.length)) + ' to a quote. Open the product and press Add to a quote.'); } });
       for (const x of acts) {
         if (x.type === 'open_brochure') await go(async () => { let v = null; try { v = DV.openBrochure ? await DV.openBrochure(x) : null; } catch (e) { v = null; }
-          const t = v && v.ok ? 'Print Brochure is open for ' + x.code + ' — choose the price your customer sees, then print, save or email it. Nothing has been sent.' : 'The Print Brochure dialog for ' + x.code + ' didn\'t open. Open the product and press Print Brochure.'; checked(!!(v && v.ok), t); said.push(t); });
+          checked(!!(v && v.ok), v && v.ok ? 'Print Brochure is open for ' + x.code + ' — choose the price your customer sees, then print, save or email it. Nothing has been sent.' : 'The Print Brochure dialog for ' + x.code + ' didn\'t open. Open the product and press Print Brochure.');
+          said.push(v && v.ok ? 'Print Brochure is open — choose the price your customer sees. Nothing has been sent.' : 'The brochure didn\'t open. Open the product and press Print Brochure.'); });
         else if (x.type === 'open_view') await go(async () => { let v = null; try { v = DV.openView ? await DV.openView(x.view) : null; } catch (e) { v = null; }
           const t = v && v.ok ? (x.label || x.view) + ' is open on the page.' : (x.label || x.view) + ' didn\'t open. Use the menu at the top of the page.'; checked(!!(v && v.ok), t); said.push(t); });
         else if (x.type === 'open_search') await go(async () => { let v = null; try { v = DV.openSearch ? await DV.openSearch(x.query) : null; } catch (e) { v = null; }
-          const t = v && v.ok ? 'Shop Products shows ' + v.count + ' result' + (v.count === 1 ? '' : 's') + ' for “' + x.query + '”.' : 'The search for “' + x.query + '” didn\'t open. Use the search bar at the top of the page.'; checked(!!(v && v.ok), t); said.push(t); });
+          checked(!!(v && v.ok), v && v.ok ? 'Shop Products shows ' + v.count + ' result' + (v.count === 1 ? '' : 's') + ' for “' + x.query + '”.' : 'The search for “' + x.query + '” didn\'t open. Use the search bar at the top of the page.');
+          said.push(v && v.ok ? 'Shop Products shows ' + v.count + ' result' + (v.count === 1 ? '' : 's') + '.' : 'The search didn\'t open. Use the search bar at the top of the page.'); });
         else if (x.type === 'open_product') await go(async () => { let v = null; try { v = DV.openProduct ? await DV.openProduct(x) : null; } catch (e) { v = null; }
-          const t = v && v.ok !== false ? 'The product page for ' + (x.code || x.name) + ' is open.' : 'The product ' + (x.code || x.name) + ' didn\'t open.'; checked(!!(v && v.ok !== false), t); said.push(t); });
+          const ok2 = !!(v && v.ok !== false); checked(ok2, ok2 ? 'The product page for ' + (x.code || x.name) + ' is open.' : 'The product ' + (x.code || x.name) + ' didn\'t open.');
+          said.push(ok2 ? 'The product page is open.' : 'The product page didn\'t open.'); });
       }
       return said;
+    }
+    /* one spoken answer: the server's words, then what the portal confirmed — a sentence is never said twice */
+    function joinSaid(a, confirmed) {
+      const seen = new Set(), out = [];
+      for (const x of [String(a || '')].concat(confirmed || []).join(' ').split(/(?<=[.!?])\s+/)) { const t = String(x || '').trim(); const k = t.toLowerCase().replace(/[^a-z0-9$]+/g, ' ').trim(); if (!t || seen.has(k)) continue; seen.add(k); out.push(t); }
+      return out.join(' ');
     }
     function cards(r) {
       for (const c of r.cards || []) {
@@ -217,15 +228,16 @@
        with the last turns as context; the page performs and checks the actions, THEN the agent is told what to say */
     async function runTool(x) {
       const q = String((x.args && x.args.question) || '').trim();
-      let r = null; try { r = await DV.api({ action: 'voice_tool', session_id: x.session_id, name: x.name, args: x.args || {}, history: hist.slice(-3), page: page() }); } catch (e) { r = null; }
+      const tReq = Date.now(); let r = null; try { r = await DV.api({ action: 'voice_tool', session_id: x.session_id, name: x.name, args: x.args || {}, history: hist.slice(-3), page: page() }); } catch (e) { r = null; }
       if (!voice || !voice.active) return JSON.stringify({ say: '' });                 // closed meanwhile: nothing more happens
       if (!r || r.ok !== true) { const t = (r && r.content) ? null : failText(r); if (t) warn(t, true); return r && r.content ? r.content : JSON.stringify({ say: t }); }
       cards(r);
       if (r.disclaimer) { const d = document.createElement('div'); d.className = 'disc'; d.textContent = r.disclaimer; log.appendChild(d); }
-      const confirmed = await perform(r);
+      const tPage = Date.now(); const confirmed = await perform(r);
       if (!voice || !voice.active) return JSON.stringify({ say: '' });
       hist.push({ q, a: r.answer || r.say || '' });
-      const say = [r.say || r.answer || '', ...confirmed].filter(Boolean).join(' ');
+      const say = joinSaid(r.say != null ? r.say : r.answer, confirmed);
+      timings.push({ q: q.slice(0, 60), server_ms: r.timing ? r.timing.server_ms : null, model_ms: r.timing ? r.timing.model_ms : null, request_ms: tPage - tReq, page_ms: Date.now() - tPage, spoken_words: say.split(/\s+/).filter(Boolean).length });
       return JSON.stringify({ say });
     }
 
@@ -237,12 +249,13 @@
       if (type === 'text') { const c = String(d.content || '').trim(); if (!c) return;
         if (d.role === 'assistant') { const i = echo.findIndex((e) => e === c || c.startsWith(e.slice(0, 60))); if (i >= 0) { echo.splice(i, 1); return; } line('', c); }
         else line('me', c); return; }
-      if (type === 'interrupted') return;
+      if (type === 'interrupted' || type === 'paused' || type === 'resumed') return;
+      if (type === 'away') { status('idle'); note('Victoria stopped listening because this tab was hidden for more than two minutes. Tap “Talk to Victoria” to start again.'); againB.hidden = false; return; }
       if (type === 'error') { clearNote(); warn(d.message || 'Victoria\'s voice stopped. You can type instead.', d.kind !== 'microphone'); toTyping(false, true); return; }
       if (type === 'idle') { status('idle'); note('Victoria stopped listening after two quiet minutes.'); againB.hidden = false; return; }
       if (type === 'limit') { status('idle'); note('This conversation reached its ' + (d.minutes || 10) + '-minute limit. Tap “Talk to Victoria” to start again.'); againB.hidden = false; return; }
     }
-    let noteEl = null, pendingSay = null;
+    let noteEl = null, pendingSay = null; const timings = [];   // per spoken question: server, page and spoken length (for timing checks; nothing is sent)
     function note(text) { if (!noteEl) { noteEl = document.createElement('div'); noteEl.className = 'warn vnote'; log.appendChild(noteEl); } noteEl.textContent = text; noteEl.scrollIntoView({ block: 'nearest' }); }
     function clearNote() { if (noteEl) { noteEl.remove(); noteEl = null; } }
 
@@ -295,8 +308,10 @@
           clearNote(); echo = []; pendingSay = null; learnLook();
           const g = (opts && opts.greeting) || DV.greeting || 'Hello! How can I help you today?'; $('.hello').textContent = g;
           place();
+          if (DV.warmSearch) setTimeout(DV.warmSearch, 0);              // the product index loads while she greets
           if (!aiOn) { setAi(false); toTyping(false, 'unsupported'); hello(true); }
-          else if (convoOK()) { speakTyped = false; startVoice(); }      // the voice session records the opening and speaks the greeting
+          else if (convoOK()) { speakTyped = false; startVoice(); }
+          // (the voice session records the opening and speaks the greeting)
           else { mode = 'typing'; speakTyped = true; askBar.hidden = false; typeB.hidden = true; againB.hidden = true; status('blocked');
             warn(DV.conversation && DV.conversation.available ? 'This browser can\'t hold a spoken conversation (it needs microphone access over a secure connection). Victoria will answer what you type, and read her answers aloud.' : 'Spoken conversation isn\'t available just now. Type your question — Victoria will read her answers aloud.');
             hello(!!(opts && opts.greeting)); }
@@ -304,7 +319,7 @@
         } else { stopAll('closed'); if (orbHost.__dvLive) orbHost.__dvLive(false); if (on === false && orbHost.__dvFocus) orbHost.__dvFocus(); }
         if (orbHost.__dvExpanded) orbHost.__dvExpanded(show); },
       isOpen: () => !P.hidden,
-      el: P, shadow: sh, ask, setAi, runTool, voiceEvent,
+      el: P, shadow: sh, ask, setAi, runTool, voiceEvent, timings,
       get voice() { return voice; },
     };
     return api;
