@@ -171,7 +171,9 @@ const GREET = 'Hello, Ann. I’m Victoria, your personal assistant in the 360 De
       const after = await page.evaluate(() => window.__dg.responses.length);
       await t(`${label}: Close while Victoria is thinking — the connection closes and every microphone track stops at once; the late answer is dropped (never sent to be spoken); minutes recorded`, () => {
         ok(thinking === 'thinking' && cl.hidden && cl.closed && cl.tracks.length && cl.tracks.every((x) => x === 'ended'), JSON.stringify({ thinking, cl }));
-        ok(after === nResp, 'a response was sent after Close'); ok(ends.some((e) => e.session_id === 's1' && e.reason === 'closed' && e.turns >= 4 && e.interruptions >= 1), JSON.stringify(ends)); });
+        ok(after === nResp, 'a response was sent after Close'); ok(ends.some((e) => e.session_id === 's1' && e.reason === 'closed' && e.turns >= 4 && e.interruptions >= 1), JSON.stringify(ends));
+        const e1 = ends.find((e) => e.session_id === 's1'); const full = (e1.turn_ms || []).filter((x) => x.heard != null && x.request != null && x.answer != null && x.audio != null);
+        ok(e1.ua && full.length >= 4 && full.every((x) => x.heard <= x.request && x.request <= x.answer && x.answer <= x.audio) && !/K3|wheelchair|quote|reports/i.test(JSON.stringify(e1.turn_ms)), 'walkthrough record (browser, per-turn ms, no words): ' + JSON.stringify({ ua: e1.ua, turn_ms: e1.turn_ms, errors: e1.errors, paused: e1.paused })); });
 
       /* 6 — reopen: talking again */
       await orbClick(); await until(() => { const s = document.getElementById('dvPanelHost').shadowRoot; return s.querySelector('.st').dataset.s === 'listening' && window.__dg.sockets.length === 2; }, null, 15000);

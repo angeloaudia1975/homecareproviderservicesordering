@@ -24,8 +24,17 @@
     NotReadableError: 'Another app is using the microphone. Close it and open Victoria again — or type instead.',
   };
 
+  /* the browser and device, as the browser names them (for the walkthrough record) */
+  function uaOf() { try { const d = navigator.userAgentData; if (d && d.brands) { const b = d.brands.filter((x) => !/Not.?A.?Brand|Chromium/i.test(x.brand)).map((x) => x.brand + ' ' + x.version).join(', '); return (b || 'Chromium') + ' · ' + (d.platform || '') + (d.mobile ? ' · mobile' : ''); } } catch (e) {} return String(navigator.userAgent || '').slice(0, 160); }
   function create(opts) {
-    const api = opts.api, emit = (type, data) => { try { opts.onEvent && opts.onEvent(type, data || {}); } catch (e) {} };
+    const api = opts.api, emit0 = (type, data) => { try { opts.onEvent && opts.onEvent(type, data || {}); } catch (e) {} };
+    /* walkthrough record (owner 2026-11-20 22:45): per spoken turn, ms from the dealer starting to speak to — the words
+       recognised (end of turn detected), the request to the portal, the answer sent back, Victoria's first audio; plus error
+       codes and pauses. Numbers and codes only — never words or audio. Sent with voice_end. */
+    const D = { turns: [], errors: [], paused: 0, cur: null };
+    const mark = (k) => { if (D.cur && D.cur[k] == null) D.cur[k] = Date.now() - D.cur.s; };
+    const closeTurn = () => { if (D.cur) { const t = Object.assign({}, D.cur); delete t.s; if (D.turns.length < 20) D.turns.push(t); } D.cur = null; };
+    const emit = (type, data) => { if (type === 'error' && D.errors.length < 10) D.errors.push(String((data && (data.reason || data.kind)) || 'error').slice(0, 40)); if (type === 'paused') D.paused++; emit0(type, data); };
     const S = { state: 'idle', sid: null, ws: null, stream: null, inCtx: null, outCtx: null, proc: null, src: null, playing: [], playAt: 0,
       ana: null, lvl: null, started: 0, lastActivity: 0, idleTimer: null, maxTimer: null, keep: null, hideTimer: null, paused: false, resuming: null, streams: new Set(), turns: 0, interruptions: 0, ended: true, gen: 0, agentSpeaking: false };
     const set = (st) => { if (S.state === st) return; S.state = st; emit('state', { state: st }); };
@@ -35,6 +44,7 @@
     function stopPlayback() { for (const n of S.playing) { try { n.stop(); } catch (e) {} } S.playing = []; S.playAt = 0; }
     function play(buf) {
       if (!S.outCtx || S.ended) return;
+      if (D.cur && D.cur.answer != null) mark('audio');
       const i16 = new Int16Array(buf), f = new Float32Array(i16.length);
       for (let i = 0; i < i16.length; i++) f[i] = i16[i] / 0x8000;
       const b = S.outCtx.createBuffer(1, f.length, S.outCtx.sampleRate); b.copyToChannel(f, 0);
@@ -53,7 +63,7 @@
       try { content = await opts.runTool({ name: fn.name, args, session_id: S.sid }); }
       catch (e) { content = JSON.stringify({ error: 'tool_failed', message: 'I couldn\'t do that just now. You can try again or type it.' }); }
       if (my !== S.gen || S.ended) return;                                 // closed meanwhile: the late answer is dropped, never spoken
-      send({ type: 'FunctionCallResponse', id: fn.id, name: fn.name, content: String(content || '{}') });
+      send({ type: 'FunctionCallResponse', id: fn.id, name: fn.name, content: String(content || '{}') }); mark('answer');
       touch();
     }
 
@@ -61,12 +71,12 @@
       switch (m.type) {
         case 'Welcome': break;
         case 'SettingsApplied': if (document.hidden) { emit('ready'); pause(); } else { startMic(); set('listening'); emit('ready'); } break;
-        case 'UserStartedSpeaking': if (S.agentSpeaking || S.playing.length) { S.interruptions++; emit('interrupted'); } stopPlayback(); S.agentSpeaking = false; set('listening'); touch(); break;
+        case 'UserStartedSpeaking': closeTurn(); D.cur = { s: Date.now() }; if (S.agentSpeaking || S.playing.length) { S.interruptions++; emit('interrupted'); } stopPlayback(); S.agentSpeaking = false; set('listening'); touch(); break;
         case 'AgentThinking': set('thinking'); touch(); break;
         case 'AgentStartedSpeaking': S.agentSpeaking = true; set('speaking'); touch(); break;
         case 'AgentAudioDone': S.agentSpeaking = false; if (!S.playing.length && S.state === 'speaking') set(S.paused ? 'paused' : 'listening'); break;
-        case 'ConversationText': { const content = String(m.content || ''); if (m.role === 'user') S.turns++; emit('text', { role: m.role === 'user' ? 'user' : 'assistant', content }); touch(); break; }
-        case 'FunctionCallRequest': for (const fn of (m.functions || [])) if (fn.client_side !== false) onFunction(fn); break;
+        case 'ConversationText': { const content = String(m.content || ''); if (m.role === 'user') { S.turns++; mark('heard'); } emit('text', { role: m.role === 'user' ? 'user' : 'assistant', content }); touch(); break; }
+        case 'FunctionCallRequest': mark('request'); for (const fn of (m.functions || [])) if (fn.client_side !== false) onFunction(fn); break;
         case 'InjectionRefused': emit('warning', { message: 'refused' }); break;
         case 'Warning': emit('warning', { message: m.description || m.message || '' }); break;
         case 'Error': emit('error', { kind: m.code === 'CLIENT_MESSAGE_TIMEOUT' ? 'microphone' : 'service', reason: m.code || '', message: m.code === 'CLIENT_MESSAGE_TIMEOUT' ? 'Victoria couldn\'t hear your microphone. Check that it isn\'t muted or used by another app, then tap “Talk to Victoria” — or type instead.' : 'Victoria\'s voice service reported a problem. You can type instead.' }); stop('service_error', true); break;
@@ -85,7 +95,7 @@
 
     async function start() {
       if (!S.ended) return;
-      S.ended = false; const my = ++S.gen; S.turns = S.interruptions = 0; set('connecting');
+      S.ended = false; const my = ++S.gen; S.turns = S.interruptions = 0; D.turns = []; D.errors = []; D.paused = 0; D.cur = null; set('connecting');
       const AC = window.AudioContext || window.webkitAudioContext;
       try { S.inCtx = new AC({ sampleRate: 16000 }); } catch (e) { S.inCtx = new AC(); }
       try { S.outCtx = new AC({ sampleRate: 24000 }); } catch (e) { S.outCtx = new AC(); }
@@ -169,6 +179,7 @@
       const sid = S.sid; S.sid = null; set('idle');
       if (!sid) return;
       const stats = { seconds: Math.round((Date.now() - S.started) / 1000), turns: S.turns, interruptions: S.interruptions, reason: reason || 'closed', failed: !!failed };
+      closeTurn(); Object.assign(stats, { ua: uaOf(), turn_ms: D.turns.slice(), errors: D.errors.slice(), paused: D.paused });
       emit('ended', stats);
       try { await api(Object.assign({ action: 'voice_end', session_id: sid }, stats)); } catch (e) {}
     }
