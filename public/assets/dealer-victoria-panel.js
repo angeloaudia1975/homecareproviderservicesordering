@@ -182,11 +182,18 @@
         else if (x.type === 'open_view') await go(async () => { let v = null; try { v = DV.openView ? await DV.openView(x.view) : null; } catch (e) { v = null; }
           const t = v && v.ok ? (x.label || x.view) + ' is open on the page.' : (x.label || x.view) + ' didn\'t open. Use the menu at the top of the page.'; checked(!!(v && v.ok), t); said.push(t); });
         else if (x.type === 'open_search') await go(async () => { let v = null; try { v = DV.openSearch ? await DV.openSearch(x.query) : null; } catch (e) { v = null; }
-          checked(!!(v && v.ok), v && v.ok ? 'Shop Products shows ' + v.count + ' result' + (v.count === 1 ? '' : 's') + ' for “' + x.query + '”.' : 'The search for “' + x.query + '” didn\'t open. Use the search bar at the top of the page.');
-          said.push(v && v.ok ? 'Shop Products shows ' + v.count + ' result' + (v.count === 1 ? '' : 's') + '.' : 'The search didn\'t open. Use the search bar at the top of the page.'); });
+          /* one clear match: its product page is open (confirmed once it is on screen); several: the results are on screen and
+             Victoria asks one short question (owner 2026-11-20 23:31) */
+          const ok = !!(v && v.ok); const n = ok ? v.count : 0;           checked(ok, !ok ? 'The search for “' + x.query + '” didn\'t open. Use the search bar at the top of the page.'
+            : v.opened ? 'The product page for ' + v.opened.name + ' is open.' : 'Shop Products shows ' + n + ' result' + (n === 1 ? '' : 's') + ' for “' + x.query + '” (every line on your account).');
+          said.push(!ok ? 'The search didn\'t open. Use the search bar at the top of the page.'
+            : v.opened ? 'The ' + v.opened.name + ' page is open.'
+            : !n ? 'Shop Products found nothing for that on your lines.'
+            : 'Shop Products shows ' + n + ' result' + (n === 1 ? '' : 's') + '.' + (n > 1 ? ' Which one would you like?' : '')); });   // names stay on screen, not read aloud
         else if (x.type === 'open_product') await go(async () => { let v = null; try { v = DV.openProduct ? await DV.openProduct(x) : null; } catch (e) { v = null; }
-          const ok2 = !!(v && v.ok !== false); checked(ok2, ok2 ? 'The product page for ' + (x.code || x.name) + ' is open.' : 'The product ' + (x.code || x.name) + ' didn\'t open.');
-          said.push(ok2 ? 'The product page is open.' : 'The product page didn\'t open.'); });
+          const ok2 = !!(v && v.ok); const nm = (v && v.name) || x.name || x.code;
+          checked(ok2, ok2 ? 'The product page for ' + nm + ' is open.' : 'The product ' + nm + ' didn\'t open — choose it in the results.');
+          said.push(ok2 ? 'The ' + nm + ' page is open.' : 'That product page didn\'t open — choose it in the results.'); });
       }
       return said;
     }
@@ -246,7 +253,7 @@
 
     function voiceEvent(type, d) {
       if (type === 'state') { if (d.state === 'idle' && orbHost.__dvLive && !(voice && voice.active)) orbHost.__dvLive(false); if (mode === 'voice') status(d.state === 'idle' ? (voice && voice.active ? 'connecting' : 'idle') : d.state); return; }
-      if (type === 'permission') { if (d.asking) note('Your browser may ask to use the microphone — choose Allow to talk with Victoria.'); else clearNote(); return; }
+      if (type === 'permission') { if (d.asking) note('Allow microphone access to talk with Victoria.'); else clearNote(); return; }
       if (type === 'session') { if (d.greeting) { $('.hello').textContent = d.greeting; echo.push(d.greeting); } return; }
       if (type === 'ready') { clearNote(); if (pendingSay) { const s = pendingSay; pendingSay = null; voice.say(s); } return; }
       if (type === 'text') { const c = String(d.content || '').trim(); if (!c) return;

@@ -813,6 +813,7 @@
       ${c.preview ? '<div class="card"><div class="msg">HCPS read-only preview — designs can be made and downloaded but not saved.</div></div>' : ''}
       ${c.blocked ? '<div class="card"><div class="msg">HCPS has paused public marketing for this location — please contact HCPS.</div></div>' : ''}
       <div id="adbLib"></div>
+      <div id="adbGen"></div>
       <div id="adbList"></div>
       <div class="sms-wrap">
         <nav class="sms-rail" aria-label="Studio tools">${TABS.map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${ED.tab === k}">${svg(k)}${e(l)}</button>`).join('')}</nav>
@@ -824,7 +825,12 @@
             <button type="button" class="btn gh" id="adbPng">⬇ PNG</button><button type="button" class="btn gh" id="adbJpg">⬇ JPEG</button><button type="button" class="btn gh" id="adbCopy">Copy caption</button>
             <div class="adb-msg" id="adbMsg" role="status" style="flex-basis:100%"></div></div></div></div></div>`;
     A.host.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => { ED.tab = b.getAttribute('data-tab'); A.host.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); form(); }; });
-    $('#adbNew').onclick = () => { S.libLocked = false; S.cur = blank(); applyBrand(S.cur); S.row = null; S.problems = []; S.suggestions = null; S.aiResult = null; S.history = []; S.campaign = null; ED.sel = null; ED.hist = []; ED.fut = []; form(); redraw(); say(''); };
+    /* owner 2026-11-20 23:31: "+ New design" did nothing visible after Create 3 designs — the three-design picker stayed open
+       and the page didn't move. Now: a blank design, the picker closed (the designs stay under "Your last generated designs"
+       until the dealer saves or replaces them), the canvas scrolled into view and a line saying so. */
+    $('#adbNew').onclick = () => { S.libLocked = false; S.cur = blank(); applyBrand(S.cur); S.row = null; S.problems = []; S.suggestions = null; S.aiResult = null; S.history = []; S.campaign = null; S.cd = null; ED.sel = null; ED.hist = []; ED.fut = []; ED.tab = 'prod';
+      A.host.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-pressed', String(x.getAttribute('data-tab') === ED.tab)));
+      form(); redraw(); genList(); const w = A.host.querySelector('.sms-wrap'); if (w && w.scrollIntoView) w.scrollIntoView({ block: 'start', behavior: 'smooth' }); say('New design — pick a product and a template to start.', 'ok'); };
     $('#adbSave').onclick = () => save(false); $('#adbDup').onclick = () => save(true);
     $('#adbPng').onclick = () => download('png'); $('#adbJpg').onclick = () => download('jpeg');
     $('#adbCopy').onclick = async () => { if (!(await freshCheck())) return; const t = captionText(); try { await navigator.clipboard.writeText(t); say('Caption copied.', 'ok'); } catch (x) { say('Copy did not work in this browser — select the caption text instead.', 'err'); } };
@@ -1129,8 +1135,10 @@
     host.innerHTML = mine.length ? `<h3 style="margin:4px 0 8px">Your saved designs</h3><div class="adb-list">${mine.map((a) => `<div class="adb-card"><b>${e(a.title || a.headline || 'Untitled ad')}</b>
       <span>${e((S.ctx.templates[a.template] || {}).label || a.template)} · ${e((S.ctx.formats[a.format] || {}).label || a.format).split('—')[0]}</span>
       ${a.campaign ? `<span>Campaign: ${e(a.campaign.name || '')}</span>` : ''}${a.ai ? '<span>✨ Written with AI</span>' : ''}<span>Updated ${e(new Date(a.updated_at).toLocaleDateString())}</span>
-      <div class="r"><button type="button" class="btn gh acsm" data-open="${e(a.id)}">Open</button><button type="button" class="btn gh acsm" data-dup="${e(a.id)}">Duplicate</button>${S.ctx.can_edit ? `<button type="button" class="btn gh acsm" data-arch="${e(a.id)}">Archive</button>` : ''}</div></div>`).join('')}</div>` : '';
+      <div class="r"><button type="button" class="btn gh acsm" data-open="${e(a.id)}">Open</button><button type="button" class="btn gh acsm" data-sdl="${e(a.id)}">⬇ PNG</button><button type="button" class="btn gh acsm" data-dup="${e(a.id)}">Duplicate</button>${S.ctx.can_edit ? `<button type="button" class="btn gh acsm" data-arch="${e(a.id)}">Archive</button>` : ''}</div></div>`).join('')}</div>` : '';
     host.querySelectorAll('[data-open]').forEach((b) => { b.onclick = () => open(b.getAttribute('data-open')); });
+    /* download a saved design straight from the list (opened, then drawn from the prices the server just confirmed) */
+    host.querySelectorAll('[data-sdl]').forEach((b) => { b.onclick = async () => { await open(b.getAttribute('data-sdl')); if (S.row && S.row.id === b.getAttribute('data-sdl')) await download('png'); }; });
     host.querySelectorAll('[data-dup]').forEach((b) => { b.onclick = async () => { const r = await A.api({ action: 'ads_duplicate', id: b.getAttribute('data-dup') }); if (r && r.ok) { await refreshList(); open(r.row.id); say(r.dropped ? `Copied. ${r.dropped} product(s) no longer authorized were left out.` : 'Copied.', 'ok'); } else say((r && r.error) || 'Could not copy.', 'err'); }; });
     host.querySelectorAll('[data-arch]').forEach((b) => { b.onclick = async () => { if (!window.confirm('Archive this ad? It leaves your list.')) return; const r = await A.api({ action: 'ads_archive', id: b.getAttribute('data-arch') }); if (r && r.ok) { if (S.row && S.row.id === b.getAttribute('data-arch')) { S.row = null; } await refreshList(); } else say((r && r.error) || 'Could not archive.', 'err'); }; });
   }
@@ -1201,8 +1209,9 @@
       ${R ? `<div class="adb-why"><b>Why this ad works</b><ul>${(R.why || []).map((w) => `<li>${e(w)}</li>`).join('')}</ul>
         ${(R.alt_headlines || []).length ? `<div style="margin-top:8px"><b>Other headlines</b> — tap to use:</div><div class="adb-alts">${R.alt_headlines.map((h, i) => `<button type="button" data-alt="${i}">${e(h)}</button>`).join('')}</div>` : ''}
         <div style="margin-top:8px;color:#5b6773;font-size:12px">Written by AI from your catalog's facts and checked by HCPS's ad rules. Review it before posting — results are never guaranteed.</div></div>` : ''}
-      ${S.cd ? `<div class="adb-why"><b>Three designs — pick the one you like</b><div class="sms-cd">${S.cd.cands.map((x, i) => `<div class="${(S.cd.pick || 0) === i ? 'on' : ''}"><canvas data-cdv="${i}" aria-label="Design ${i + 1}"></canvas><div><b>${e((S.ctx.templates[x.template] || {}).label || '')}</b><button type="button" class="btn ${(S.cd.pick || 0) === i ? 'pri' : 'gh'}" data-cduse="${i}" aria-pressed="${(S.cd.pick || 0) === i}">${(S.cd.pick || 0) === i ? '✓ On the canvas' : 'Use this design'}</button></div></div>`).join('')}</div>
-        <div style="font-size:12px;color:#5b6773;margin-top:6px">Every design uses the same checked words and your catalog prices. Not quite right? Create 3 designs again for new layouts.</div></div>` : ''}
+      ${S.cd ? `<div class="adb-why"><b>Three designs — pick the one you like</b><div class="sms-cd">${S.cd.cands.map((x, i) => `<div class="${(S.cd.pick || 0) === i ? 'on' : ''}"><canvas data-cdv="${i}" aria-label="Design ${i + 1}"></canvas><div><b>${e((S.ctx.templates[x.template] || {}).label || '')}</b><button type="button" class="btn ${(S.cd.pick || 0) === i ? 'pri' : 'gh'}" data-cduse="${i}" aria-pressed="${(S.cd.pick || 0) === i}">${(S.cd.pick || 0) === i ? '✓ On the canvas' : 'Use this design'}</button><button type="button" class="btn gh acsm" data-cddl="${i}">⬇ PNG</button></div></div>`).join('')}</div>
+        ${S.ctx.can_edit && !S.ctx.preview ? `<div class="go" style="margin-top:6px"><button type="button" class="btn gh" id="adbCdSaveAll">Save all ${S.cd.cands.length} designs</button></div>` : ''}
+        <div style="font-size:12px;color:#5b6773;margin-top:6px">Every design uses the same checked words and your catalog prices. Not saved yet — Save, or Save all ${S.cd.cands.length}, keeps them in Your saved designs. Not quite right? Create 3 designs again for new layouts.</div></div>` : ''}
       ${S.campaign ? campHtml() : ''}</div>`;
   }
   /* AI Creative Director: one AI-written ad (the server's checked words) laid out three ways — different templates, colors and headlines */
@@ -1221,6 +1230,31 @@
     const heads = [ad.headline].concat((S.aiResult && S.aiResult.alt_headlines) || []);
     return tpls.map((t, i) => Object.assign(blank(), deep(ad), { template: t, layouts: null, colors: pals[i], headline: heads[i] || ad.headline }));
   }
+  /* the last "Create 3 designs" result is kept in THIS browser for this location until the dealer saves or replaces it
+     (owner 2026-11-20 23:31: three StrongBack designs were made but never saved, so they were gone). A per-browser
+     convenience only — saved designs live on the server under "Your saved designs". */
+  const GEN_KEY = () => 'hcps_adb_gen_v1:' + (S.loc || '');
+  function genRemember() { try { if (S.cd && S.cd.cands && S.cd.cands.length) localStorage.setItem(GEN_KEY(), JSON.stringify({ at: Date.now(), cands: S.cd.cands })); } catch (x) {} }
+  function genRecall() { try { const j = JSON.parse(localStorage.getItem(GEN_KEY()) || 'null'); if (!j || !Array.isArray(j.cands) || !j.cands.length || Date.now() - j.at > 30 * 864e5) return null;
+      const c = j.cands.map((x) => Object.assign(blank(), x)).filter((x) => (x.products || []).every((p) => productBy(p))); return c.length ? { at: j.at, cands: c } : null; } catch (x) { return null; } }
+  function genForget() { try { localStorage.removeItem(GEN_KEY()); } catch (x) {} }
+  function genList() {
+    const host = $('#adbGen'); if (!host) return; const g = S.cd ? null : genRecall();
+    host.innerHTML = g ? `<div class="adb-sec"><h3 style="margin:4px 0 6px">Your last generated designs <span style="font-size:12px;font-weight:600;color:#8a5a00">not saved yet</span></h3>
+      <div style="font-size:12.5px;color:#5b6773;margin:0 0 8px">Made ${e(new Date(g.at).toLocaleString())} in this browser. Open them to pick one, save them all, or download.</div>
+      <div class="go"><button type="button" class="btn pri acsm" id="adbGenOpen">Open these designs</button>${S.ctx.can_edit && !S.ctx.preview ? '<button type="button" class="btn gh acsm" id="adbGenSave">Save all ' + g.cands.length + '</button>' : ''}<button type="button" class="btn gh acsm" id="adbGenDrop">Remove</button></div></div>` : '';
+    const o = host.querySelector('#adbGenOpen'); if (o) o.onclick = () => { S.cd = { cands: g.cands }; S.cur = deep(g.cands[0]); S.row = null; ED.sel = null; ED.tab = 'ai'; form(); redraw(); genList(); const w = A.host.querySelector('.sms-wrap'); if (w && w.scrollIntoView) w.scrollIntoView({ block: 'start' }); say('Your generated designs are open — pick one, save or download.', 'ok'); };
+    const sv = host.querySelector('#adbGenSave'); if (sv) sv.onclick = () => saveAllCands(g.cands);
+    const dr = host.querySelector('#adbGenDrop'); if (dr) dr.onclick = () => { genForget(); genList(); };
+  }
+  async function saveAllCands(cands) {
+    if (S.busy) return; S.busy = true; say('Saving ' + cands.length + ' designs…'); let n = 0, err = '';
+    try { for (let i = 0; i < cands.length; i++) { const ad = deep(cands[i]); compactFeatures(ad); ad.title = ((ad.title || ad.headline || 'Ad').slice(0, 64)) + ' — design ' + (i + 1);
+        const r = await A.api({ action: 'ads_save', location_id: S.loc, ad }); if (r && r.ok) n++; else { err = (r && r.error) || 'Could not save just now.'; break; } }
+      if (n === cands.length) genForget(); await refreshList(); genList();
+      say(n === cands.length ? `Saved all ${n} designs — they are in Your saved designs, ready to open or download.` : `Saved ${n} of ${cands.length}. ${err}`, n === cands.length ? 'ok' : 'err');
+    } finally { S.busy = false; } }
+  async function downloadAd(ad, kind) { const keep = S.cur; S.cur = Object.assign(blank(), deep(ad)); try { await download(kind || 'png'); } finally { S.cur = keep; redraw(); } }
   async function drawCandidates() { if (!S.cd) return; for (let i = 0; i < S.cd.cands.length; i++) { const cv = A.host.querySelector(`[data-cdv="${i}"]`); if (!cv) continue; const x = S.cd.cands[i]; x.layouts = { [x.format]: buildLayout(x.template, x.format, x.products.length, x.products) }; try { await drawStudio(cv, x, 0.3); } catch (er) {} } }
   function campHtml() { const C = S.campaign; return `<div class="adb-why"><b>Campaign: ${e(C.campaign.name)}</b> — ${C.ads.length} sizes. ${C.saved ? 'Saved — each size is in your saved ads.' : 'Not saved yet.'}
     <div class="adb-camp">${C.ads.map((a, i) => `<div><canvas data-cv="${i}" aria-label="${e(a.format)} preview"></canvas><b>${e((S.ctx.formats[a.format] || {}).label ? S.ctx.formats[a.format].label.split('—')[0] : a.format)}</b><br>${e(a.headline)}
@@ -1241,6 +1275,8 @@
       try { const r = await A.api({ action: 'ads_campaign_save', location_id: S.loc, campaign: S.campaign.campaign, ads: S.campaign.ads }); if (r && r.ok) { S.campaign.saved = true; await refreshList(); form(); say(`Saved ${r.rows.length} ads as one campaign.`, 'ok'); } else say((r && r.error) || 'Could not save the campaign.', 'err'); } finally { S.busy = false; } };
     host.querySelectorAll('[data-cdv]').forEach((cv) => { cv.onclick = () => { const bb = host.querySelector(`[data-cduse="${cv.getAttribute('data-cdv')}"]`); if (bb) bb.click(); }; });
     host.querySelectorAll('[data-cduse]').forEach((b) => { b.onclick = () => { const x = S.cd.cands[Number(b.getAttribute('data-cduse'))]; S.cd.pick = Number(b.getAttribute('data-cduse')); snap(); S.cur = deep(x); S.row = null; ED.sel = null; form(); redraw(); say('Design chosen — click anything on the canvas to change it, then save.', 'ok'); }; });
+    host.querySelectorAll('[data-cddl]').forEach((b) => { b.onclick = () => { const x = S.cd.cands[Number(b.getAttribute('data-cddl'))]; if (x) downloadAd(x, 'png'); }; });
+    const sa = host.querySelector('#adbCdSaveAll'); if (sa) sa.onclick = () => saveAllCands(S.cd.cands);
     if (S.cd) drawCandidates();
     const cc = host.querySelector('#adbCampClose'); if (cc) cc.onclick = () => { S.campaign = null; form(); };
     if (S.campaign) drawCampaign();
@@ -1260,7 +1296,7 @@
       S.aiResult = { why: r.why, alt_headlines: r.alt_headlines };
       if (campaign) { const ads = r.ads.map((a) => Object.assign({}, a, { template: LEGACY_MAP[a.template] || a.template, layouts: null }));
         S.campaign = { campaign: r.campaign, ads, saved: false }; S.cur = Object.assign(blank(), deep(ads[0])); S.cd = null; }
-      else { const keepFmt = S.cur.format; const ad = Object.assign(blank(), r.ad, { format: keepFmt }); S.cd = { cands: creativeSet(ad, ED.cdRun = (ED.cdRun == null ? 0 : ED.cdRun + 1)) }; S.cur = deep(S.cd.cands[0]); S.campaign = null; }
+      else { const keepFmt = S.cur.format; const ad = Object.assign(blank(), r.ad, { format: keepFmt }); S.cd = { cands: creativeSet(ad, ED.cdRun = (ED.cdRun == null ? 0 : ED.cdRun + 1)) }; S.cur = deep(S.cd.cands[0]); S.campaign = null; genRemember(); }
       S.row = null; ED.sel = null; ED.tab = 'ai'; form(); redraw();
       say((campaign ? 'Campaign ready — four sizes below. Edit any size, download, or save the campaign.' : 'Three designs are ready — the first is on the canvas. Pick the one you like, then change anything.') + (r.captions_source === 'rules' ? ' The AI captions didn\'t pass HCPS\'s checks this time, so HCPS\'s standard captions are filled in — regenerate for AI captions.' : ''), 'ok');
     } finally { S.busy = false; const b2 = $(campaign ? '#adbAiCamp' : '#adbAiGo'); if (b2) { b2.disabled = false; b2.textContent = campaign ? '✨ Generate Complete Campaign' : '✨ Create 3 designs'; } }
@@ -1412,7 +1448,7 @@
     S.ctx = r; S.loc = r.location_id; S.images = new Map(); S.logo = null;
     if (!keep || !S.cur) { S.cur = blank(); applyBrand(S.cur); S.row = null; ED.sel = null; ED.hist = []; ED.fut = []; S.cd = null; }
     S.cur.products = (S.cur.products || []).filter((p) => productBy(p));
-    S.social = null; shell(); list(); form(); redraw(); loadSocial(); library(); return true;
+    S.social = null; shell(); list(); form(); redraw(); genList(); loadSocial(); library(); return true;
   }
   window.HCPSAdBuilder = {
     async mount(host, deps) {

@@ -90,8 +90,16 @@ const GREET = 'Hello, Ann. I’m Victoria, your personal assistant in the 360 De
         await until((k) => window.__dg.responses.length > k, n, 20000); await page.waitForTimeout(400); return page.evaluate(() => window.__dg.responses[window.__dg.responses.length - 1]); };
       const st = () => P("return s.querySelector('.st').dataset.s;");
 
-      /* 1 — opening starts the conversation; no button press */
+      /* 0 — while the browser asks for the microphone: "Allow microphone access to talk with Victoria", Type instead on screen;
+         once allowed, the same tap carries on into the conversation (owner 2026-11-20 23:31) */
+      await page.evaluate(() => { const md = navigator.mediaDevices; const real = md.getUserMedia.bind(md);
+        md.getUserMedia = (c) => new Promise((res) => { window.__micGo = () => res(real(c)); }); window.__micRestore = () => { md.getUserMedia = real; }; });
       await orbClick();
+      await until(() => typeof window.__micGo === 'function', null, 8000); await page.waitForTimeout(150);
+      const wait = await P("const n = s.querySelector('.vnote'); return { note: n ? n.textContent : '', type: !s.querySelector('.type').hidden && !!s.querySelector('.type').offsetParent };");
+      await t(`${label}: waiting for microphone access — "Allow microphone access to talk with Victoria" with Type instead available`, () => ok(wait.note === 'Allow microphone access to talk with Victoria.' && wait.type, JSON.stringify(wait)));
+      await page.evaluate(() => { window.__micGo(); window.__micRestore(); });
+      /* 1 — opening starts the conversation; no button press */
       await until(() => { const hh = document.getElementById('dvPanelHost'); return hh && hh.shadowRoot.querySelector('.st').dataset.s === 'listening' && window.__dg.audioIn > 5; }, null, 15000);
       const o1 = await P("return { askHidden: s.querySelector('.ask').hidden, buttons: [...s.querySelectorAll('button')].filter(b=>!b.hidden && b.offsetParent).map(b=>b.textContent.trim()), hello: s.querySelector('.hello').textContent, bubbles: [...s.querySelectorAll('.log .bubble')].map(b=>b.textContent), status: s.querySelector('.st span').textContent };");
       const settings = await page.evaluate(() => window.__dg.sent.find((m) => m.type === 'Settings'));
@@ -104,7 +112,7 @@ const GREET = 'Hello, Ann. I’m Victoria, your personal assistant in the 360 De
       /* 2 — K3 → price → quote → reports, by voice only */
       const r1 = await say('Find Dalton K3 wheelchairs');
       await t(`${label}: "Find Dalton K3 wheelchairs" — the results are on screen BEFORE the agent is told what to say, and she says the counted number (spoken short, details on screen)`, () =>
-        ok(/for “Dalton K3 wheelchairs”/.test(r1.at.h) && r1.at.rows > 0 && new RegExp('Shop Products shows ' + r1.at.rows + ' results?\\.').test(r1.say) && !/Dalton K3 wheelchairs/.test(r1.say), JSON.stringify(r1)));
+        ok(/for “Dalton K3 wheelchairs”/.test(r1.at.h) && r1.at.rows > 0 && new RegExp('Shop Products shows ' + r1.at.rows + ' results?\\.' + (r1.at.rows > 1 ? ' Which one would you like\\?' : '')).test(r1.say) && !/Dalton K3 wheelchairs/.test(r1.say), JSON.stringify(r1)));
       if (label === 'phone') { const ph = await page.evaluate(() => ({ hidden: document.getElementById('dvPanelHost').shadowRoot.querySelector('.p').hidden, ring: document.getElementById('dvOrbHost').shadowRoot.querySelector('button').dataset.convo, aria: document.getElementById('dvOrbHost').shadowRoot.querySelector('button').getAttribute('aria-label'), live: window.__dg.cur.readyState }));
         await t('phone: the panel steps aside so the results are visible; the conversation keeps going and the globe shows a green ring saying Victoria is still listening', () => ok(ph.hidden && ph.ring === 'on' && /still listening/.test(ph.aria) && ph.live === 1, JSON.stringify(ph))); }
       const r2 = await say('What is my price on that one?');
