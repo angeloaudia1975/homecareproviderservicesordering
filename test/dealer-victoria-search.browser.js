@@ -17,7 +17,7 @@ const ACC = /\b(rails?|trapeze|tables?|boards?|carts?|transporter|cabinets?|stan
   try {
     for (const [w, h, label] of [[1280, 900, 'desktop'], [390, 844, 'phone']]) {
       const { ctx, page } = await open(browser, w, h, { access: { your_accounts: ['dalton', 'access4u'], available: ['bemis'], request_access: [], golden: 'None' },
-        html: (src) => src.replace('Object.assign(window,{dvProbe});', 'Object.assign(window,{dvProbe,dvOpenSearch,dvOpenProduct,dvContext,dvOpenView});') });   // probe: the panel's own functions
+        html: (src) => src.replace('Object.assign(window,{dvProbe});', 'Object.assign(window,{dvProbe,dvOpenSearch,dvOpenProduct,dvContext,dvOpenView,dvOpenReimb});') });   // probe: the panel's own functions
       const S = (q) => page.evaluate((q) => window.gsSearchAll(q).then((r) => r.map((x) => ({ code: x.x.p.code, name: x.x.p.name, slug: x.x.slug, score: x.score }))), q);
       const beds = await S('hospital beds');
       await t(`${label}: "hospital beds" finds the beds (it found nothing before), complete beds before rails / tables / trapezes`, () => {
@@ -59,6 +59,17 @@ const ACC = /\b(rails?|trapeze|tables?|boards?|carts?|transporter|cabinets?|stan
       const o3 = await page.evaluate((r) => dvOpenProduct(r.slug, r.code), c3.search.selected);
       const pd3 = await page.evaluate(() => document.querySelector('#content .pd') && document.querySelector('#content .pd').getAttribute('data-pd-code'));
       await t(`${label}: it opens, and dvOpenProduct reports ok only with that product's page on screen`, () => ok(o3.ok && o3.code === c3.search.selected.code && pd3 === o3.code, JSON.stringify(o3) + ' ' + pd3));
+      // "take me there" → the reimbursement panel; "what am I looking at" is read fresh (scrolling / navigating away is seen)
+      await page.evaluate(() => window.scrollTo(0, 0));
+      const top = await page.evaluate(() => dvContext().product.section_in_view);
+      const rb = await page.evaluate(() => dvOpenReimb());
+      const at = await page.evaluate(() => dvContext().product);
+      await t(`${label}: "take me there" scrolls the product's reimbursement panel into view, and Victoria then sees it on screen`, () => ok(top === 'product details' && rb.ok && at.section_in_view === 'reimbursement panel' && at.reimbursement_panel && at.reimbursement_panel.in_view === true, JSON.stringify({ top, rb, at: at.reimbursement_panel })));
+      await page.evaluate(() => showP360('dash')); await page.waitForTimeout(300);
+      const away = await page.evaluate(() => dvContext());
+      await t(`${label}: after navigating away by hand the old product is gone from what Victoria sees`, () => ok(away.view === 'dash' && !away.product, JSON.stringify(away)));
+      const none = await page.evaluate(() => dvOpenReimb());
+      await t(`${label}: with no product page, the reimbursement panel is never reported open`, () => ok(none.ok === false, JSON.stringify(none)));
       const bad = await page.evaluate(() => dvOpenProduct('dalton', 'NO-SUCH-ITEM'));
       await t(`${label}: an item that is not there is never reported open`, () => ok(bad.ok === false, JSON.stringify(bad)));
       const ord = await page.evaluate(() => dvOpenView('orders'));

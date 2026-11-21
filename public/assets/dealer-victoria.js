@@ -43,7 +43,7 @@
     ob0.appendChild(v); v.playbackRate = 0.6; if (!document.hidden) v.play().catch(() => {});
   }
   /* the panel script is fetched once the page is usable too, so the first opening shows the greeting at once */
-  const PANEL_SRC = () => (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=14');
+  const PANEL_SRC = () => (window.DV_PANEL_SRC || '/assets/dealer-victoria-panel.js?v=15');
   let panelLoad = null;
   const loadPanel = () => panelLoad || (panelLoad = window.DealerVictoriaPanel ? Promise.resolve() : new Promise((ok, bad) => { const s = document.createElement('script'); s.src = PANEL_SRC(); s.onload = ok; s.onerror = (e) => { panelLoad = null; bad(e); }; document.head.appendChild(s); }));
   const idle = () => { motion(); loadPanel().catch(() => {}); const D = window.DV || {}; SPEECH.prefetch(D.greeting); if (D.greeting_again && D.greeting_again !== D.greeting) SPEECH.prefetch(D.greeting_again); };

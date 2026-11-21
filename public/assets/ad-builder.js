@@ -1132,7 +1132,7 @@
   function list() {
     const host = $('#adbList'); if (!host) return;
     const mine = S.ads.filter((a) => a.dealer_id === S.loc);
-    host.innerHTML = mine.length ? `<h3 style="margin:4px 0 8px">Your saved designs</h3><div class="adb-list">${mine.map((a) => `<div class="adb-card"><b>${e(a.title || a.headline || 'Untitled ad')}</b>
+    host.innerHTML = mine.length ? `<h3 style="margin:4px 0 8px">Your saved designs <span style="font-size:12px;font-weight:600;color:#5b6773">your Creative Library · private to your dealership</span></h3><div class="adb-list">${mine.map((a) => `<div class="adb-card"><b>${e(a.title || a.headline || 'Untitled ad')}</b>
       <span>${e((S.ctx.templates[a.template] || {}).label || a.template)} · ${e((S.ctx.formats[a.format] || {}).label || a.format).split('—')[0]}</span>
       ${a.campaign ? `<span>Campaign: ${e(a.campaign.name || '')}</span>` : ''}${a.ai ? '<span>✨ Written with AI</span>' : ''}<span>Updated ${e(new Date(a.updated_at).toLocaleDateString())}</span>
       <div class="r"><button type="button" class="btn gh acsm" data-open="${e(a.id)}">Open</button><button type="button" class="btn gh acsm" data-sdl="${e(a.id)}">⬇ PNG</button><button type="button" class="btn gh acsm" data-dup="${e(a.id)}">Duplicate</button>${S.ctx.can_edit ? `<button type="button" class="btn gh acsm" data-arch="${e(a.id)}">Archive</button>` : ''}</div></div>`).join('')}</div>` : '';
@@ -1209,9 +1209,9 @@
       ${R ? `<div class="adb-why"><b>Why this ad works</b><ul>${(R.why || []).map((w) => `<li>${e(w)}</li>`).join('')}</ul>
         ${(R.alt_headlines || []).length ? `<div style="margin-top:8px"><b>Other headlines</b> — tap to use:</div><div class="adb-alts">${R.alt_headlines.map((h, i) => `<button type="button" data-alt="${i}">${e(h)}</button>`).join('')}</div>` : ''}
         <div style="margin-top:8px;color:#5b6773;font-size:12px">Written by AI from your catalog's facts and checked by HCPS's ad rules. Review it before posting — results are never guaranteed.</div></div>` : ''}
-      ${S.cd ? `<div class="adb-why"><b>Three designs — pick the one you like</b><div class="sms-cd">${S.cd.cands.map((x, i) => `<div class="${(S.cd.pick || 0) === i ? 'on' : ''}"><canvas data-cdv="${i}" aria-label="Design ${i + 1}"></canvas><div><b>${e((S.ctx.templates[x.template] || {}).label || '')}</b><button type="button" class="btn ${(S.cd.pick || 0) === i ? 'pri' : 'gh'}" data-cduse="${i}" aria-pressed="${(S.cd.pick || 0) === i}">${(S.cd.pick || 0) === i ? '✓ On the canvas' : 'Use this design'}</button><button type="button" class="btn gh acsm" data-cddl="${i}">⬇ PNG</button></div></div>`).join('')}</div>
-        ${S.ctx.can_edit && !S.ctx.preview ? `<div class="go" style="margin-top:6px"><button type="button" class="btn gh" id="adbCdSaveAll">Save all ${S.cd.cands.length} designs</button></div>` : ''}
-        <div style="font-size:12px;color:#5b6773;margin-top:6px">Every design uses the same checked words and your catalog prices. Not saved yet — Save, or Save all ${S.cd.cands.length}, keeps them in Your saved designs. Not quite right? Create 3 designs again for new layouts.</div></div>` : ''}
+      ${S.cd ? `<div class="adb-why"><b>Three designs — pick the one you like</b><div class="sms-cd">${S.cd.cands.map((x, i) => `<div class="${(S.cd.pick || 0) === i ? 'on' : ''}"><canvas data-cdv="${i}" aria-label="Design ${i + 1}"></canvas><div><b>${e((S.ctx.templates[x.template] || {}).label || '')}</b><button type="button" class="btn ${(S.cd.pick || 0) === i ? 'pri' : 'gh'}" data-cduse="${i}" aria-pressed="${(S.cd.pick || 0) === i}">${(S.cd.pick || 0) === i ? '✓ On the canvas' : 'Use this design'}</button><button type="button" class="btn gh acsm" data-cddl="${i}">⬇ PNG</button><span class="adb-cds" style="font-size:12px;${(S.cd.saved || [])[i] ? 'color:#2f6b4f' : 'color:#8a5a00'}">${(S.cd.saved || [])[i] ? '✓ Saved to your library' : S.cd.saving ? 'Saving…' : canSave() ? 'Not saved yet' : ''}</span></div></div>`).join('')}</div>
+        ${canSave() && !S.cd.saving && S.cd.cands.some((_, i) => !(S.cd.saved || [])[i]) ? `<div class="go" style="margin-top:6px"><button type="button" class="btn pri" id="adbCdRetry">Retry saving</button></div>` : ''}
+        <div style="font-size:12px;color:#5b6773;margin-top:6px">Every design uses the same checked words and your catalog prices. Each design and its caption is saved automatically as a private draft in your Creative Library (Your saved designs). Not quite right? Create 3 designs again for new layouts.</div></div>` : ''}
       ${S.campaign ? campHtml() : ''}</div>`;
   }
   /* AI Creative Director: one AI-written ad (the server's checked words) laid out three ways — different templates, colors and headlines */
@@ -1247,6 +1247,33 @@
     const sv = host.querySelector('#adbGenSave'); if (sv) sv.onclick = () => saveAllCands(g.cands);
     const dr = host.querySelector('#adbGenDrop'); if (dr) dr.onclick = () => { genForget(); genList(); };
   }
+  /* AUTO-SAVE (owner 2026-11-21): every generated design and its caption is saved at once as a private draft in this
+     dealership's library ("Your Creative Library"), so it can be reopened after signing out — independent of Facebook. If a
+     save fails the design stays on screen and in this browser, downloadable, with a Retry. Staff previews never save. */
+  const canSave = () => !!(S.ctx && S.ctx.can_edit && !S.ctx.preview);
+  async function saveCand(i) {
+    const x = S.cd && S.cd.cands[i]; if (!x) return false; S.cd.saved = S.cd.saved || []; if (S.cd.saved[i]) return true;
+    const ad = deep(x); compactFeatures(ad); ad.title = ((ad.headline || ad.title || 'Ad').slice(0, 60)) + ' — AI design ' + (i + 1);
+    let r = null; try { r = await A.api({ action: 'ads_save', location_id: S.loc, ad }); } catch (e) { r = null; }
+    if (r && r.ok && r.row) { S.cd.saved[i] = { id: r.row.id, version: r.row.version }; x.title = ad.title; return true; }
+    S.cd.err = (r && r.error) || 'The library could not be reached just now.'; return false;
+  }
+  async function autoSaveCands() {
+    if (!S.cd || !canSave()) { if (S.cd && S.ctx && S.ctx.preview) say('HCPS read-only preview — these designs can be downloaded but are not saved.', 'ok'); return; }
+    const cd = S.cd; S.cd.err = null; S.cd.saving = true; form();
+    let ok = 0; for (let i = 0; i < cd.cands.length; i++) { if (S.cd !== cd) return; if (await saveCand(i)) ok++; }
+    if (S.cd !== cd) return; S.cd.saving = false;
+    const pick = S.cd.pick || 0; if (S.cd.saved[pick] && !S.row) S.row = Object.assign({}, S.cd.saved[pick], { dealer_id: S.loc });
+    if (ok === cd.cands.length) genForget(); else genRemember();
+    await refreshList(); form(); redraw();
+    say(ok === cd.cands.length ? `Saved all ${ok} designs and their captions to your Creative Library as private drafts — reopen them any time from Your saved designs.` : `Saved ${ok} of ${cd.cands.length} designs. ${S.cd.err} The others are still here to download — press Retry to save them.`, ok === cd.cands.length ? 'ok' : 'err');
+  }
+  async function autoSaveCampaign() {
+    if (!S.campaign || S.campaign.saved || !canSave()) return;
+    let r = null; try { r = await A.api({ action: 'ads_campaign_save', location_id: S.loc, campaign: S.campaign.campaign, ads: S.campaign.ads }); } catch (e) { r = null; }
+    if (r && r.ok) { S.campaign.saved = true; await refreshList(); form(); say(`Campaign saved to your Creative Library (${r.rows.length} sizes) as private drafts.`, 'ok'); }
+    else { S.campaign.err = (r && r.error) || 'The library could not be reached just now.'; form(); say('The campaign is not saved yet: ' + S.campaign.err + ' Download any size, or press Save campaign to retry.', 'err'); }
+  }
   async function saveAllCands(cands) {
     if (S.busy) return; S.busy = true; say('Saving ' + cands.length + ' designs…'); let n = 0, err = '';
     try { for (let i = 0; i < cands.length; i++) { const ad = deep(cands[i]); compactFeatures(ad); ad.title = ((ad.title || ad.headline || 'Ad').slice(0, 64)) + ' — design ' + (i + 1);
@@ -1274,23 +1301,24 @@
     const cs = host.querySelector('#adbCampSave'); if (cs) cs.onclick = async () => { if (S.busy) return; S.busy = true; say('Saving the campaign…');
       try { const r = await A.api({ action: 'ads_campaign_save', location_id: S.loc, campaign: S.campaign.campaign, ads: S.campaign.ads }); if (r && r.ok) { S.campaign.saved = true; await refreshList(); form(); say(`Saved ${r.rows.length} ads as one campaign.`, 'ok'); } else say((r && r.error) || 'Could not save the campaign.', 'err'); } finally { S.busy = false; } };
     host.querySelectorAll('[data-cdv]').forEach((cv) => { cv.onclick = () => { const bb = host.querySelector(`[data-cduse="${cv.getAttribute('data-cdv')}"]`); if (bb) bb.click(); }; });
-    host.querySelectorAll('[data-cduse]').forEach((b) => { b.onclick = () => { const x = S.cd.cands[Number(b.getAttribute('data-cduse'))]; S.cd.pick = Number(b.getAttribute('data-cduse')); snap(); S.cur = deep(x); S.row = null; ED.sel = null; form(); redraw(); say('Design chosen — click anything on the canvas to change it, then save.', 'ok'); }; });
+    host.querySelectorAll('[data-cduse]').forEach((b) => { b.onclick = () => { const x = S.cd.cands[Number(b.getAttribute('data-cduse'))]; S.cd.pick = Number(b.getAttribute('data-cduse')); snap(); S.cur = deep(x); const sv = (S.cd.saved || [])[S.cd.pick]; S.row = sv ? Object.assign({}, sv, { dealer_id: S.loc }) : null; ED.sel = null; form(); redraw(); say('Design chosen — click anything on the canvas to change it, then save.', 'ok'); }; });
     host.querySelectorAll('[data-cddl]').forEach((b) => { b.onclick = () => { const x = S.cd.cands[Number(b.getAttribute('data-cddl'))]; if (x) downloadAd(x, 'png'); }; });
-    const sa = host.querySelector('#adbCdSaveAll'); if (sa) sa.onclick = () => saveAllCands(S.cd.cands);
+    const rt = host.querySelector('#adbCdRetry'); if (rt) rt.onclick = () => autoSaveCands();
     if (S.cd) drawCandidates();
     const cc = host.querySelector('#adbCampClose'); if (cc) cc.onclick = () => { S.campaign = null; form(); };
     if (S.campaign) drawCampaign();
   }
-  async function aiBuild(campaign) {
-    if (S.busy) return; const kind = T().kind;
-    if (kind !== 'general' && !S.cur.products.length) { say('Pick a product first (or choose the "Store message" template).', 'err'); return; }
+  async function aiBuild(campaign) { const made = await aiBuild0(campaign); if (made) await (campaign ? autoSaveCampaign() : autoSaveCands()); }
+  async function aiBuild0(campaign) {
+    if (S.busy) return false; const kind = T().kind;
+    if (kind !== 'general' && !S.cur.products.length) { say('Pick a product first (or choose the "Store message" template).', 'err'); return false; }
     S.busy = true; const btn = $(campaign ? '#adbAiCamp' : '#adbAiGo'); if (btn) { btn.disabled = true; btn.textContent = '✨ Designing…'; }
     say(campaign ? 'Writing a complete campaign from your product facts… (about 10–20 seconds)' : 'Writing your ad from the product facts… (about 10–20 seconds)');
     try {
       const avoid = [S.cur.headline, ...((S.aiResult && S.aiResult.alt_headlines) || [])].filter(Boolean);
       const body = Object.assign({ action: campaign ? 'ads_campaign' : 'ads_ai', location_id: S.loc, products: S.cur.products.map((r) => ({ manufacturer: r.manufacturer, code: r.code })), format: S.cur.format, avoid, variant: S.history.length % 10 }, S.ai);
       const r = await A.api(body);
-      if (!r || !r.ok) { say(((r && r.error) || 'The AI could not write an ad just now.') + ' Your current ad is unchanged.', 'err'); return; }
+      if (!r || !r.ok) { say(((r && r.error) || 'The AI could not write an ad just now.') + ' Your current ad is unchanged.', 'err'); return false; }
       if (S.cur.headline || S.cur.products.length) S.history.push({ cur: JSON.parse(JSON.stringify(S.cur)), ai: S.aiResult });   // regenerate never loses the previous version
       for (const p of r.products || []) { const i = S.ctx.products.findIndex((x) => keyOf(x) === keyOf(p)); if (i >= 0) S.ctx.products[i] = Object.assign({}, S.ctx.products[i], p); }
       S.aiResult = { why: r.why, alt_headlines: r.alt_headlines };
@@ -1299,6 +1327,7 @@
       else { const keepFmt = S.cur.format; const ad = Object.assign(blank(), r.ad, { format: keepFmt }); S.cd = { cands: creativeSet(ad, ED.cdRun = (ED.cdRun == null ? 0 : ED.cdRun + 1)) }; S.cur = deep(S.cd.cands[0]); S.campaign = null; genRemember(); }
       S.row = null; ED.sel = null; ED.tab = 'ai'; form(); redraw();
       say((campaign ? 'Campaign ready — four sizes below. Edit any size, download, or save the campaign.' : 'Three designs are ready — the first is on the canvas. Pick the one you like, then change anything.') + (r.captions_source === 'rules' ? ' The AI captions didn\'t pass HCPS\'s checks this time, so HCPS\'s standard captions are filled in — regenerate for AI captions.' : ''), 'ok');
+      return true;
     } finally { S.busy = false; const b2 = $(campaign ? '#adbAiCamp' : '#adbAiGo'); if (b2) { b2.disabled = false; b2.textContent = campaign ? '✨ Generate Complete Campaign' : '✨ Create 3 designs'; } }
   }
 
