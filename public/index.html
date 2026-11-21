@@ -7433,13 +7433,31 @@ async function doForgot(){const email=$("#si_email").value.trim(),msg=$("#si_msg
     msg.innerHTML=esc(j.message||'If that email has a dealer account, a reset link is on its way.')
       +'<br><span style="opacity:.75">Nothing after a few minutes? Check spam, then call (888) 626-3140.</span>';   /* the message above names the sender (password-reset reads HCPS_AUTH_FROM) */
   }catch(e){ msg.textContent='Could not reach the sign-in service. Check your connection and try again.'; }}
-function signOut(){clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];AUTH.prices={};AUTH.rates={};state.dealer=null;
+/* SIGN OUT (owner 2026-11-20: "signing out leaves me on the portal"). A dealer sign-out ENDS the session and replaces the
+   page: the token is revoked at Supabase, nothing protected stays on screen or in memory, Victoria stops speaking and
+   listening, pending requests die with the page, and the fresh page opens on the login. Back/refresh cannot bring anything
+   back (no stored session + the pageshow guard below). Staff in a dealer preview / Manage Dealer never sign anyone out:
+   that button EXITS the dealer view instead (manageExit / exitPreview, unchanged). */
+function signOut(){
+  if(typeof PREVIEW!=='undefined'&&PREVIEW){ if(typeof MANAGE!=='undefined'&&MANAGE&&typeof manageExit==='function') return manageExit(); return exitPreview(); }
+  const tok=AUTH.session&&AUTH.session.access_token;
+  try{ document.querySelectorAll('audio,video').forEach(m=>{ try{ m.pause(); m.removeAttribute('src'); m.load(); }catch(e){} }); }catch(e){}
+  try{ ['dvPanelHost','dvOrbHost'].forEach(id=>{ const h=document.getElementById(id); if(h){ try{ (h.shadowRoot?h.shadowRoot.querySelectorAll('audio,video'):[]).forEach(m=>{ try{ m.pause(); m.removeAttribute('src'); }catch(e){} }); }catch(e){} h.remove(); } }); }catch(e){}
+  try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
+  clearSession();AUTH.status='anon';AUTH.dealer=null;AUTH.lines=[];AUTH.prices={};AUTH.rates={};state.dealer=null;
   SESSION_ID=null; if(_hbT){clearInterval(_hbT);_hbT=null;}                 // stop the activity heartbeat
   CART.clear(); for(const k in MFR) delete MFR[k];                          // local cart clears; the saved cart stays in the system
   if(window.HCPSChat) HCPSChat.reset();                                     // clear chat identity so a shared machine doesn't leak
   if(typeof gckReset==='function') gckReset();                              // the Golden cart and its review belong to the dealer who signed out
   DASH.lineCache={}; DASH.featured=null; if(typeof window.gsReset==='function') window.gsReset();   // C3-07: no catalog or search index survives into the next dealer's session
-  applyAuth();updateCart();toast('Signed out');}
+  try{ sessionStorage.removeItem('hcps_manage'); }catch(e){}
+  /* nothing protected stays on screen while the page is replaced */
+  try{ document.body.className='guest'; document.body.innerHTML='<div role="status" style="font:600 16px system-ui,sans-serif;color:#12253c;text-align:center;padding:80px 20px">Signing out…</div>'; }catch(e){}
+  if(tok){ try{ fetch(`${CONFIG.SUPABASE_URL}/auth/v1/logout?scope=local`,{method:'POST',keepalive:true,headers:{apikey:CONFIG.SUPABASE_ANON,Authorization:'Bearer '+tok}}).catch(()=>{}); }catch(e){} }
+  location.replace('/?signedout=1');
+}
+/* Back / forward from the browser's page cache must never show a signed-out dealer's page again. */
+window.addEventListener('pageshow',e=>{ try{ if(e.persisted&&!loadStoredSession()&&!new URLSearchParams(location.search).get('preview')&&!/manage=/.test(location.hash)) location.reload(); }catch(_){} });
 /* ---------- dealer self-service: edit account (submitted to HCPS for approval) ---------- */
 function closeAccountEditor(){const m=$("#acctModal");if(m)m.remove();}
 function openAccountEditor(){
@@ -7615,7 +7633,7 @@ function applyAuth(){
   const _ini=(_dn.trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('')||'WB').toUpperCase();
   const _acct=(AUTH.dealer&&AUTH.dealer.hcps_account)||'';
   $("#whoami").innerHTML = provisioned
-    ? `<button class="avatarchip" id="acctBtn" title="My account"><span class="av">${esc(_ini)}</span><span class="avmeta"><b>${esc(_dn)}</b><span>HCPS dealer</span></span></button><button class="signout" id="outBtn">Sign out</button>`
+    ? `<button class="avatarchip" id="acctBtn" title="My account"><span class="av">${esc(_ini)}</span><span class="avmeta"><b>${esc(_dn)}</b><span>HCPS dealer</span></span></button><button class="signout" id="outBtn">${PREVIEW?'Exit dealer view':'Sign out'}</button>`
     : (awaiting ? `<span class="who">Signed in — ${approved?'account being set up':'application under review'}</span><button class="signout" id="outBtn">Sign out</button>` : '');
   if(provisioned){const ob=$("#outBtn");if(ob)ob.onclick=signOut;const ab=$("#acctBtn");if(ab)ab.onclick=openAccountEditor;prefillDealer();sessionStart();}
   else if(awaiting){const ob=$("#outBtn");if(ob)ob.onclick=signOut;}
@@ -7710,11 +7728,13 @@ $("#brandFilter").addEventListener("change",renderProducts);
        Without holding it, a dealer who had to register would land on the portal home
        having lost the very product the email was about. */
     capturePendingProduct(); capturePendingOrder();
+    let _signedOut=false; try{ const q=new URLSearchParams(location.search); if(q.get('signedout')==='1'){ _signedOut=true; q.delete('signedout'); const qs=q.toString(); history.replaceState(null,'',location.pathname+(qs?'?'+qs:'')+location.hash); } }catch(e){}
     AUTH.session=loadStoredSession();
     await authMe();          // restore any signed-in dealer (refreshes the token if needed)
     if(AUTH.status==='approved'){ try{ await goldenInit(); }catch(e){} }   // Golden decides whether its line shows (B2)
     applyAuth();             // gate: locked landing for guests, entitled lines for approved dealers
     updateCart();
+    if(_signedOut&&AUTH.status!=='approved'){ try{ openLogin('signin'); toast("You're signed out."); }catch(e){} }
     // keep the session alive so dealers stay signed in instead of dropping after ~1 hour
     setInterval(()=>{ if(AUTH.session&&AUTH.session.refresh_token) ensureFreshSession(); }, 20*60*1000);
   }catch(e){console.error(e);const _bc=document.getElementById('bootcover');if(_bc)_bc.remove();$("#content").innerHTML=`<div class="empty"><h3>Could not load data</h3><p>Confirm data/manufacturers.json is deployed.</p></div>`;}
@@ -9607,7 +9627,7 @@ async function loadResourcesView(){ await loadPricing(); renderResources(); }
    answer comes from reimbursement-api (admin site), which checks the sign-in. Opened from Resources & Support and from a
    coded model on Shop Products (openReimb with its verified HCPCS code filled in). */
 const REIMB_API=API_BASE+"/reimbursement-api"; let REIMB_JS=null, REIMB_PREFILL=null;
-function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=13"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
+function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=14"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
 async function loadReimbView(){
   const host=$("#view-reimb"); if(!host) return;
   try{ await reimbLoadJs(); }catch(e){ host.innerHTML='<div class="ph"><div><h1>Reimbursement lookup</h1></div></div><div class="card"><div class="msg">The reimbursement lookup could not be loaded — please try again.</div></div>'; return; }
@@ -10563,7 +10583,7 @@ async function dvProbe(){
   document.body.classList.add("dv-on");
   try{ const z=window.$zoho&&window.$zoho.salesiq; const hide=()=>{ try{ window.$zoho.salesiq.floatbutton.visible("hide"); }catch(e){} };
     if(z&&z.floatbutton) hide(); else if(z){ const prev=z.ready; z.ready=function(){ if(typeof prev==="function"){try{prev();}catch(e){}} hide(); }; } }catch(e){}
-  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=9"; s.defer=true; document.head.appendChild(s);
+  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=10"; s.defer=true; document.head.appendChild(s);
 }
 /* what is on screen: the product page open (its own selected SKU / variant) and its reimbursement panel's state, ZIP,
    payer plan and date — exactly what the panel shows, read from the panel itself */

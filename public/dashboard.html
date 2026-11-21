@@ -195,6 +195,7 @@ const dateShort=d=>{if(!d)return"—";const t=String(d);if(/^\d{4}-\d{2}/.test(t
 
 /* ---- session (reads the portal's stored login; same origin) ---- */
 let SESSION=null, PROFILE=null;
+window.addEventListener("pageshow",e=>{ try{ if(e.persisted&&!localStorage.getItem("hcps_session")) location.replace("/?signedout=1"); }catch(_){} });
 function loadSession(){try{return JSON.parse(localStorage.getItem("hcps_session")||"null");}catch(e){return null;}}
 function saveSession(s){SESSION=s;try{localStorage.setItem("hcps_session",JSON.stringify(s));}catch(e){}}
 async function refreshIfNeeded(){
@@ -229,7 +230,11 @@ async function boot(){
   PROFILE=me.dealer; LINES=(me.lines||[]); ACCESS=me.access||null;
   ME_PRICES=(me.prices&&typeof me.prices==='object')?me.prices:{}; ME_RATES=(me.rates&&typeof me.rates==='object')?me.rates:{};
   $("#dealerChip").style.display="";$("#dealerName").textContent=PROFILE.name||"Dealer";
-  $("#signout").style.display="";$("#signout").onclick=()=>{try{localStorage.removeItem("hcps_session");}catch(e){}location.href="/";};
+  $("#signout").style.display="";$("#signout").onclick=()=>{ /* owner 2026-11-20: a sign-out revokes the token, leaves nothing on screen and Back can't return */
+    const tok=(SESSION&&SESSION.access_token)||((loadSession()||{}).access_token);
+    try{localStorage.removeItem("hcps_session");}catch(e){} try{document.body.innerHTML='<div role="status" style="font:600 16px system-ui,sans-serif;text-align:center;padding:80px 20px">Signing out…</div>';}catch(e){}
+    if(tok){ try{ fetch(`${SUPABASE_URL}/auth/v1/logout?scope=local`,{method:"POST",keepalive:true,headers:{apikey:SUPABASE_ANON,Authorization:"Bearer "+tok}}).catch(()=>{}); }catch(e){} }
+    location.replace("/?signedout=1"); };
   await loadBranding(); applyBranding();
   loadDash();
   academyEntry();

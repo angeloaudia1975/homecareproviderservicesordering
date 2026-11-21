@@ -13,7 +13,7 @@
   /* Fixed disclaimer (owner 2026-11-20 10:37): wherever the Dealer Portal presents HCPCS, coding, billing or reimbursement
      information — product reimbursement panels, the fee-schedule lookup, estimates, the printed billing reference and
      Victoria's answers. Never shortened or reworded; product-specific notices stay as they are. */
-  const DISCLAIMER = 'HCPS is not a billing specialist and is not qualified to provide coding or billing advice. This information is for reference only. The biller is responsible for confirming that the exact product supplied meets the applicable HCPCS code requirements and for verifying the payer’s billing and coverage rules before submitting a claim.';
+  const DISCLAIMER = 'Home Care Provider Services is not a billing specialist and is not qualified to provide coding or billing advice. This information is for reference only. The biller is responsible for confirming that the exact product supplied meets the applicable HCPCS code requirements and for verifying the payer’s billing and coverage rules before submitting a claim.';
   const discHtml = (cls) => `<div class="${cls}" role="note" data-billing-disclaimer>${esc(DISCLAIMER)}</div>`;
   const REF_ALLOW = 'Published allowance for this code. This product\'s classification is pending verification.';
   const PENDING = 'Coding verification pending';
