@@ -190,6 +190,8 @@
             : v.opened ? 'The ' + v.opened.name + ' page is open.'
             : !n ? 'Shop Products found nothing for that on your lines.'
             : 'Shop Products shows ' + n + ' result' + (n === 1 ? '' : 's') + '.' + (n > 1 ? ' Which one would you like?' : '')); });   // names stay on screen, not read aloud
+        else if (x.type === 'open_reimb') await go(async () => { let v = null; try { v = DV.openReimb ? await DV.openReimb() : null; } catch (e) { v = null; }
+          const ok3 = !!(v && v.ok); const t = ok3 ? 'The reimbursement panel is on screen.' : 'The reimbursement panel didn\'t open — open a product first, then scroll to Provider reimbursement.'; checked(ok3, t); said.push(t); });
         else if (x.type === 'open_product') await go(async () => { let v = null; try { v = DV.openProduct ? await DV.openProduct(x) : null; } catch (e) { v = null; }
           const ok2 = !!(v && v.ok); const nm = (v && v.name) || x.name || x.code;
           checked(ok2, ok2 ? 'The product page for ' + nm + ' is open.' : 'The product ' + nm + ' didn\'t open — choose it in the results.');

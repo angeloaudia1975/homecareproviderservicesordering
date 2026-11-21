@@ -33,6 +33,7 @@ async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } ca
     const api = async (b) => { window.__calls.push(b.action);
       if (b.action === 'ads_context') return CTX;
       if (b.action === 'ads_list') return { ok: true, ads: window.__saved.map((x) => ({ id: x.id, dealer_id: 'L1', title: x.ad.title, template: x.ad.template, format: x.ad.format, updated_at: new Date().toISOString() })) };
+      if (b.action === 'ads_save' && window.__failSaves > 0) { window.__failSaves--; return { ok: false, error: 'The library could not be reached just now.' }; }
       if (b.action === 'ads_save') { const id = 'a' + (window.__saved.length + 1); window.__saved.push({ id, ad: b.ad }); return { ok: true, row: { id, version: 1, dealer_id: 'L1' } }; }
       if (b.action === 'ads_get') { const x = window.__saved.find((y) => y.id === b.id); return x ? { ok: true, row: { id: x.id, version: 1, dealer_id: 'L1' }, ad: x.ad, problems: [] } : { ok: false, error: 'nf' }; }
       if (b.action === 'ads_check') return { ok: true, products: [P] };
@@ -45,32 +46,37 @@ async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } ca
     window.HCPSAdBuilder._state.cur.products = [{ manufacturer: P.manufacturer, code: P.code, show_price: true }];
   });
   try {
+    await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} window.__failSaves = 0; });
+    await mount();
+    const make = async () => { await page.click('[data-tab="ai"]'); await page.click('#adbAiGo');
+      await page.waitForFunction(() => { const S = window.HCPSAdBuilder._state; return S.cd && S.cd.cands && !S.cd.saving && document.querySelectorAll('[data-cddl]').length === 3 && /Saved|not saved yet|Retry/i.test(document.querySelector('#adbMsg').textContent); }, null, { timeout: 15000 }); };
+    await make();
+    const a = await page.evaluate(() => ({ saved: window.__saved.map((x) => ({ title: x.ad.title, caption: x.ad.caption, tags: x.ad.hashtags, head: x.ad.headline })), marks: [...document.querySelectorAll('.adb-cds')].map((x) => x.textContent), msg: document.querySelector('#adbMsg').textContent, list: document.querySelectorAll('[data-sdl]').length, ls: localStorage.getItem('hcps_adb_gen_v1:L1'), row: window.HCPSAdBuilder._state.row }));
+    await t('every generated design and its caption is saved at once as a private library draft; each says "✓ Saved to your library"; nothing left only in the browser', () => ok(a.saved.length === 3 && a.saved.every((x, i) => new RegExp('AI design ' + (i + 1) + '$').test(x.title) && x.head) && a.marks.every((m) => /Saved to your library/.test(m)) && /Saved all 3 designs and their captions/.test(a.msg) && a.list === 3 && !a.ls && a.row && a.row.id === 'a1', JSON.stringify(a)));
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 15000 }), page.click('[data-cddl="1"]')]);
+    await t('⬇ PNG on a design still makes an image file', () => ok(/\.png$/.test(dl.suggestedFilename()), dl.suggestedFilename()));
+    // a save that fails: the designs stay, downloadable, with Retry; the unsaved one is kept in this browser
+    await page.evaluate(() => { window.__failSaves = 1; });
+    await make();
+    const f = await page.evaluate(() => ({ marks: [...document.querySelectorAll('.adb-cds')].map((x) => x.textContent), retry: !!document.querySelector('#adbCdRetry'), dl: document.querySelectorAll('[data-cddl]').length, msg: document.querySelector('#adbMsg').textContent, ls: !!localStorage.getItem('hcps_adb_gen_v1:L1'), n: window.__saved.length }));
+    await t('a failed save keeps the designs on screen with ⬇ PNG and a Retry, says which were saved, and keeps them in this browser', () => ok(f.retry && f.dl === 3 && f.marks.filter((m) => /Not saved yet/.test(m)).length === 1 && /Saved 2 of 3/.test(f.msg) && f.ls && f.n === 5, JSON.stringify(f)));
+    await page.click('#adbCdRetry'); await page.waitForFunction(() => /Saved all 3/.test(document.querySelector('#adbMsg').textContent), null, { timeout: 10000 });
+    const rt = await page.evaluate(() => ({ n: window.__saved.length, retry: !!document.querySelector('#adbCdRetry'), ls: localStorage.getItem('hcps_adb_gen_v1:L1') }));
+    await t('Retry saves the missing design only (no duplicates) and clears the browser copy', () => ok(rt.n === 6 && !rt.retry && !rt.ls, JSON.stringify(rt)));
+    // "sign out and back in": a fresh mount with no browser storage — the designs come from the library
     await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
     await mount();
-    await page.click('[data-tab="ai"]'); await page.click('#adbAiGo');
-    await page.waitForFunction(() => { const S = window.HCPSAdBuilder._state; return S.cd && S.cd.cands && document.querySelectorAll('[data-cddl]').length === 3; }, null, { timeout: 15000 });
-    const pick = await page.evaluate(() => ({ dl: document.querySelectorAll('[data-cddl]').length, all: !!document.querySelector('#adbCdSaveAll'), note: /Not saved yet/.test(document.querySelector('.adb-ai').innerText), remembered: !!localStorage.getItem('hcps_adb_gen_v1:L1') }));
-    await t('the three designs each have ⬇ PNG and "Save all 3", say they are not saved yet, and are remembered in this browser', () => ok(pick.dl === 3 && pick.all && pick.note && pick.remembered, JSON.stringify(pick)));
-    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 15000 }), page.click('[data-cddl="1"]')]);
-    await t('⬇ PNG on design 2 makes an image file', () => ok(/\.png$/.test(dl.suggestedFilename()), dl.suggestedFilename()));
-    // leave the studio without saving and come back
-    await mount();
-    const back = await page.evaluate(() => ({ gen: (document.querySelector('#adbGen') || {}).innerText || '', saved: window.__saved.length }));
-    await t('after leaving the studio, "Your last generated designs — not saved yet" is offered (nothing was saved on the server)', () => ok(/Your last generated designs/.test(back.gen) && /not saved yet/.test(back.gen) && back.saved === 0, JSON.stringify(back)));
-    await page.click('#adbGenOpen');
-    const re = await page.evaluate(() => ({ cands: (window.HCPSAdBuilder._state.cd || { cands: [] }).cands.length, head: window.HCPSAdBuilder._state.cur.headline }));
-    await t('"Open these designs" brings the three designs back into the picker', () => ok(re.cands === 3 && re.head === 'Light to Lift, Built to Last.', JSON.stringify(re)));
-    // + New design
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await page.click('#adbNew'); await page.waitForTimeout(300);
-    const nw = await page.evaluate(() => { const S = window.HCPSAdBuilder._state; return { cd: S.cd, products: S.cur.products.length, head: S.cur.headline, msg: document.querySelector('#adbMsg').textContent, pickers: document.querySelectorAll('[data-cddl]').length, gen: /Your last generated designs/.test((document.querySelector('#adbGen') || {}).innerText || ''), y: window.scrollY }; });
-    await t('"+ New design": the picker closes, the canvas is empty, the page moves to it and says so; the unsaved designs stay offered', () => ok(nw.cd === null && nw.products === 0 && !nw.head && nw.pickers === 0 && /New design/.test(nw.msg) && nw.gen && nw.y > 0, JSON.stringify(nw)));
-    // Save all 3
-    await page.click('#adbGenSave'); await page.waitForFunction(() => /Saved all 3/.test(document.querySelector('#adbMsg').textContent), null, { timeout: 10000 });
-    const sv = await page.evaluate(() => ({ n: window.__saved.length, titles: window.__saved.map((x) => x.ad.title), list: document.querySelectorAll('[data-sdl]').length, gen: (document.querySelector('#adbGen') || {}).innerText || '', ls: localStorage.getItem('hcps_adb_gen_v1:L1') }));
-    await t('"Save all 3" saves three designs (titled design 1–3), lists them with ⬇ PNG, and stops offering the unsaved set', () => ok(sv.n === 3 && sv.titles.every((x, i) => new RegExp('design ' + (i + 1) + '$').test(x)) && sv.list === 3 && !sv.gen && !sv.ls, JSON.stringify(sv)));
-    const [dl2] = await Promise.all([page.waitForEvent('download', { timeout: 15000 }), page.click('[data-sdl="a2"]')]);
+    const back = await page.evaluate(() => ({ list: [...document.querySelectorAll('#adbList .adb-card b')].map((b) => b.textContent), gen: (document.querySelector('#adbGen') || {}).innerText || '' }));
+    await t('after signing out and back in (nothing left in the browser) all six designs are in Your saved designs', () => ok(back.list.length === 6 && back.list.every((x) => /AI design \d$/.test(x)) && !back.gen, JSON.stringify(back)));
+    await page.click('[data-open="a2"]'); await page.waitForTimeout(400);
+    const op = await page.evaluate(() => { const S = window.HCPSAdBuilder._state; const sv = window.__saved.find((x) => x.id === 'a2').ad; return { head: S.cur.headline, want: sv.headline, row: S.row && S.row.id, caps: JSON.stringify(S.cur.captions) === JSON.stringify(sv.captions || {}) && JSON.stringify(S.cur.hashtags) === JSON.stringify(sv.hashtags || []) }; });
+    await t('a saved design reopens with its own words and caption, ready to edit and re-save', () => ok(op.head && op.head === op.want && op.row === 'a2' && op.caps, JSON.stringify(op)));
+    const [dl2] = await Promise.all([page.waitForEvent('download', { timeout: 15000 }), page.click('[data-sdl="a3"]')]);
     await t('a saved design downloads straight from Your saved designs (opened and re-checked first)', async () => { const c = await page.evaluate(() => window.__calls.slice(-6)); ok(/\.png$/.test(dl2.suggestedFilename()) && c.includes('ads_get') && c.includes('ads_check'), dl2.suggestedFilename() + ' ' + c.join(',')); });
+    // + New design
+    await page.evaluate(() => window.scrollTo(0, 0)); await page.click('#adbNew'); await page.waitForTimeout(300);
+    const nw = await page.evaluate(() => { const S = window.HCPSAdBuilder._state; return { cd: S.cd, products: S.cur.products.length, head: S.cur.headline, msg: document.querySelector('#adbMsg').textContent, y: window.scrollY }; });
+    await t('"+ New design": the picker closes, the canvas is empty, the page moves to it and says so', () => ok(nw.cd === null && nw.products === 0 && !nw.head && /New design/.test(nw.msg) && nw.y > 0, JSON.stringify(nw)));
   } finally { await browser.close(); }
   console.log(`\nad generated designs: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
 })();
