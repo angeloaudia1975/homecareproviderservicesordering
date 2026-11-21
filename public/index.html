@@ -8930,8 +8930,8 @@ async function loadReports(){
   RPT_AI=null; RPT_LM=null;
   const d=await api(REPORTS_ENDPOINT,{action:'report',scope:RPT_SCOPE||undefined,year:REPORT_YEAR||undefined});
   if(!d||!d.ok){ RPT_SCOPE=null; REPORT_YEAR=null;   /* a location or year the account no longer allows is never resent by Try again */
-    if(REF_ON===null) refEnabled().then(on=>{ if(on&&!RPT){ const c=$("#view-reports .card"); if(c&&!c.querySelector('#rptRef')) c.insertAdjacentHTML('beforeend',' <a class="btn" id="rptRef" onclick="openReferrals({ret:{kind:\'reports\'}})">Find local referral sources</a>'); } });
-    $("#view-reports").innerHTML=`<div class="ph"><div><h1>Reports</h1></div></div><div class="card"><div class="msg">${esc((d&&d.error)||'Your report could not be loaded just now — please try again.')}</div>${REF_ON?`<a class="btn" id="rptRef" onclick="openReferrals({ret:{kind:'reports'}})">Find local referral sources</a> `:''}<a class="btn pri" onclick="loadReports()">Try again</a></div>`; return; }
+    if(REF_ON===null) refEnabled().then(on=>{ if(on&&!RPT){ const c=$("#view-reports .card"); if(c&&!c.querySelector('#rptRef')) c.insertAdjacentHTML('beforeend',' <a class="btn" id="rptRef" onclick="openReferrals({ret:{kind:\'reports\',y:window.scrollY}})">Find local referral sources</a>'); } });
+    $("#view-reports").innerHTML=`<div class="ph"><div><h1>Reports</h1></div></div><div class="card"><div class="msg">${esc((d&&d.error)||'Your report could not be loaded just now — please try again.')}</div>${REF_ON?`<a class="btn" id="rptRef" onclick="openReferrals({ret:{kind:'reports',y:window.scrollY}})">Find local referral sources</a> `:''}<a class="btn pri" onclick="loadReports()">Try again</a></div>`; return; }
   RPT=d; RPT_SCOPE=d.scope; renderReports();
 }
 const m2=n=>n==null?'—':(n<0?'-':'')+'$'+Math.abs(Number(n)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -9077,7 +9077,7 @@ function lmHtml(){
   const pv=typeof PREVIEW!=='undefined'&&PREVIEW&&!mgBearer();
   /* "Find local referral sources" from Reports & Growth Ideas (pilot, owner 2026-11-21): shown once the portal confirms the pilot */
   if(REF_ON===null) refEnabled().then(on=>{ if(on&&typeof renderReports==='function') renderReports(); });
-  const refBtn=REF_ON?`<a class="btn" id="rptRef" onclick="openReferrals({ret:{kind:'reports'}})">Find local referral sources</a>`:'';
+  const refBtn=REF_ON?`<a class="btn" id="rptRef" onclick="openReferrals({ret:{kind:'reports',y:window.scrollY}})">Find local referral sources</a>`:'';
   const head=`<div class="rpt-aih lm-h"><h3 style="font-size:15px">Your local market <span class="rpt-s">· 25 miles · U.S. Census</span></h3><span style="display:flex;gap:8px;flex-wrap:wrap">${refBtn}${pv?'':`<a class="btn" id="rptLm" onclick="rptLocal()">${RPT_LM&&!RPT_LM.error?'Refresh':'Show my local market'}</a>`}</span></div>`;
   if(!RPT_LM) return `<div class="lm" id="rptLmBox">${head}<div class="rpt-sub">Population, ages, households and incomes within 25 miles of ${RPT_SCOPE==='company'?'your head office':'this location'}, with nearby ZIP areas on a map and three practical suggestions — from U.S. Census estimates.</div></div>`;
   if(RPT_LM.error) return `<div class="lm" id="rptLmBox">${head}<div class="msg">${esc(RPT_LM.error)}</div></div>`;
@@ -9658,7 +9658,9 @@ async function loadReferralsView(){
   let ret=null;
   if(pre&&pre.ret&&pre.ret.kind==="product") ret={label:pre.ret.name||"the product", back:()=>reimbBackToProduct(pre.ret)};
   else if(pre&&pre.ret&&pre.ret.kind==="reimb") ret={label:"the reimbursement lookup", back:()=>showP360('reimb')};
-  else if(pre&&pre.ret&&pre.ret.kind==="reports") ret={label:"Reports & Growth Ideas", back:()=>showP360('reports')};
+  /* Back returns to where the dealer pressed the button — the "Your local market" section, not the top (live 2026-11-21) */
+  else if(pre&&pre.ret&&pre.ret.kind==="reports") ret={label:"Reports & Growth Ideas", back:()=>{ showP360('reports'); const y=Number(pre.ret.y)||0; let n=0;
+    const go=()=>{ const b=document.getElementById('rptRef'); if(b&&b.offsetParent){ window.scrollTo(0, y || Math.max(0, b.getBoundingClientRect().top+window.scrollY-120)); } else if(n++<40) setTimeout(go,150); }; setTimeout(go,50); }};
   window.HCPSReferrals.mount(host,{ api:(b)=>api(REF_API,b), reimbApi:(b)=>api(REIMB_API,b), prefill:pre, ret });
 }
 function openReferrals(prefill){ REF_PREFILL=prefill||null; if(typeof showP360==="function") showP360('referrals'); }
