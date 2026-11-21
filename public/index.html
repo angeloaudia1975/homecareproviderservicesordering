@@ -8118,6 +8118,7 @@ $("#brandFilter").addEventListener("change",renderProducts);
   <div class="view" id="view-showroom"><div class="msg">Loading…</div></div>
   <div class="view" id="view-resources"><div class="msg">Loading…</div></div>
   <div class="view" id="view-reimb"><div class="msg">Loading…</div></div>
+  <div class="view" id="view-referrals"><div class="msg">Loading…</div></div>
   <div class="view" id="view-account"><div class="msg">Loading…</div></div>
   <div class="view" id="view-ads"><div class="msg">Loading…</div></div>
   <div class="foot" id="foot"></div>
@@ -8929,7 +8930,8 @@ async function loadReports(){
   RPT_AI=null; RPT_LM=null;
   const d=await api(REPORTS_ENDPOINT,{action:'report',scope:RPT_SCOPE||undefined,year:REPORT_YEAR||undefined});
   if(!d||!d.ok){ RPT_SCOPE=null; REPORT_YEAR=null;   /* a location or year the account no longer allows is never resent by Try again */
-    $("#view-reports").innerHTML=`<div class="ph"><div><h1>Reports</h1></div></div><div class="card"><div class="msg">${esc((d&&d.error)||'Your report could not be loaded just now — please try again.')}</div><a class="btn pri" onclick="loadReports()">Try again</a></div>`; return; }
+    if(REF_ON===null) refEnabled().then(on=>{ if(on&&!RPT){ const c=$("#view-reports .card"); if(c&&!c.querySelector('#rptRef')) c.insertAdjacentHTML('beforeend',' <a class="btn" id="rptRef" onclick="openReferrals({ret:{kind:\'reports\'}})">Find local referral sources</a>'); } });
+    $("#view-reports").innerHTML=`<div class="ph"><div><h1>Reports</h1></div></div><div class="card"><div class="msg">${esc((d&&d.error)||'Your report could not be loaded just now — please try again.')}</div>${REF_ON?`<a class="btn" id="rptRef" onclick="openReferrals({ret:{kind:'reports'}})">Find local referral sources</a> `:''}<a class="btn pri" onclick="loadReports()">Try again</a></div>`; return; }
   RPT=d; RPT_SCOPE=d.scope; renderReports();
 }
 const m2=n=>n==null?'—':(n<0?'-':'')+'$'+Math.abs(Number(n)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -9073,7 +9075,10 @@ function lmMap(m){
 }
 function lmHtml(){
   const pv=typeof PREVIEW!=='undefined'&&PREVIEW&&!mgBearer();
-  const head=`<div class="rpt-aih lm-h"><h3 style="font-size:15px">Your local market <span class="rpt-s">· 25 miles · U.S. Census</span></h3>${pv?'':`<a class="btn" id="rptLm" onclick="rptLocal()">${RPT_LM&&!RPT_LM.error?'Refresh':'Show my local market'}</a>`}</div>`;
+  /* "Find local referral sources" from Reports & Growth Ideas (pilot, owner 2026-11-21): shown once the portal confirms the pilot */
+  if(REF_ON===null) refEnabled().then(on=>{ if(on&&typeof renderReports==='function') renderReports(); });
+  const refBtn=REF_ON?`<a class="btn" id="rptRef" onclick="openReferrals({ret:{kind:'reports'}})">Find local referral sources</a>`:'';
+  const head=`<div class="rpt-aih lm-h"><h3 style="font-size:15px">Your local market <span class="rpt-s">· 25 miles · U.S. Census</span></h3><span style="display:flex;gap:8px;flex-wrap:wrap">${refBtn}${pv?'':`<a class="btn" id="rptLm" onclick="rptLocal()">${RPT_LM&&!RPT_LM.error?'Refresh':'Show my local market'}</a>`}</span></div>`;
   if(!RPT_LM) return `<div class="lm" id="rptLmBox">${head}<div class="rpt-sub">Population, ages, households and incomes within 25 miles of ${RPT_SCOPE==='company'?'your head office':'this location'}, with nearby ZIP areas on a map and three practical suggestions — from U.S. Census estimates.</div></div>`;
   if(RPT_LM.error) return `<div class="lm" id="rptLmBox">${head}<div class="msg">${esc(RPT_LM.error)}</div></div>`;
   const m=RPT_LM.m, n=x=>x==null?'—':Number(x).toLocaleString('en-US'), pm=o=>o&&o.moe?` <span class="rpt-s">±${n(o.moe)}</span>`:'';
@@ -9629,15 +9634,35 @@ async function loadResourcesView(){ await loadPricing(); renderResources(); }
    answer comes from reimbursement-api (admin site), which checks the sign-in. Opened from Resources & Support and from a
    coded model on Shop Products (openReimb with its verified HCPCS code filled in). */
 const REIMB_API=API_BASE+"/reimbursement-api"; let REIMB_JS=null, REIMB_PREFILL=null;
-function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=14"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
+function reimbLoadJs(){ if(!REIMB_JS) REIMB_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/reimb.js?v=15"; sc.onload=res; sc.onerror=()=>{ REIMB_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REIMB_JS; }
 async function loadReimbView(){
   const host=$("#view-reimb"); if(!host) return;
   try{ await reimbLoadJs(); }catch(e){ host.innerHTML='<div class="ph"><div><h1>Reimbursement lookup</h1></div></div><div class="card"><div class="msg">The reimbursement lookup could not be loaded — please try again.</div></div>'; return; }
   const pre=REIMB_PREFILL; REIMB_PREFILL=null;
   const ret=pre&&pre.ret?Object.assign({},pre.ret,{ back:()=>reimbBackToProduct(pre.ret) }):null;
-  window.HCPSReimb.mount(host,{ api:(b)=>api(REIMB_API,b), prefill:pre, back:()=>showP360('resources'), ret });
+  window.HCPSReimb.mount(host,{ api:(b)=>api(REIMB_API,b), prefill:pre, back:()=>showP360('resources'), ret,
+    refEnabled:refEnabled, referrals:(x)=>openReferrals(Object.assign({},x,{ ret:{ kind:'reimb' } })) });
 }
 function openReimb(prefill){ REIMB_PREFILL=prefill||null; if(typeof showP360==="function") showP360('reimb'); }
+/* FIND LOCAL REFERRAL SOURCES (pilot, owner 2026-11-21): one results view (assets/referral-sources.js) reached from a product's
+   reimbursement panel, the reimbursement lookup and Reports & Growth Ideas. Shown only where referral-sources-api says this
+   account is in the pilot (TEST dealerships + the locations the owner lists). Back returns to the caller with its state. */
+const REF_API=API_BASE+"/referral-sources-api"; let REF_JS=null, REF_PREFILL=null, REF_ON=null;
+function refLoadJs(){ if(!REF_JS) REF_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/referral-sources.js?v=1"; sc.onload=res; sc.onerror=()=>{ REF_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REF_JS; }
+async function refEnabled(){ if(REF_ON!==null) return REF_ON; try{ const r=await api(REF_API,{action:"meta"}); REF_ON=!!(r&&r.ok&&r.enabled); }catch(e){ REF_ON=false; } return REF_ON; }
+window.refEnabled=refEnabled;
+async function loadReferralsView(){
+  const host=$("#view-referrals"); if(!host) return;
+  try{ await Promise.all([refLoadJs(), reimbLoadJs()]); }catch(e){ host.innerHTML='<div class="card"><div class="msg">Find local referral sources could not be loaded — please try again.</div></div>'; return; }
+  const pre=REF_PREFILL; REF_PREFILL=null;
+  let ret=null;
+  if(pre&&pre.ret&&pre.ret.kind==="product") ret={label:pre.ret.name||"the product", back:()=>reimbBackToProduct(pre.ret)};
+  else if(pre&&pre.ret&&pre.ret.kind==="reimb") ret={label:"the reimbursement lookup", back:()=>showP360('reimb')};
+  else if(pre&&pre.ret&&pre.ret.kind==="reports") ret={label:"Reports & Growth Ideas", back:()=>showP360('reports')};
+  window.HCPSReferrals.mount(host,{ api:(b)=>api(REF_API,b), reimbApi:(b)=>api(REIMB_API,b), prefill:pre, ret });
+}
+function openReferrals(prefill){ REF_PREFILL=prefill||null; if(typeof showP360==="function") showP360('referrals'); }
+window.openReferrals=openReferrals;
 /* "← Back to <product>" (owner 2026-11-19 20:48): the fee-schedule page returns to the SAME product page the dealer left — the
    product page is still in the Shop view behind the Business Hub, untouched: SKU / variant, quantity, the reimbursement panel's
    ZIP, state, payer, date and estimate inputs, and the scroll position. Its own "Back to results" history entry is kept, so it
@@ -9673,7 +9698,8 @@ async function reimbCard(el,p){
      the button is clicked (never a page-wide lookup after an await: a quick switch to another product would lend its name) */
   const retNameOf=()=>{ try{ const pd=el.closest('.pd'); const h=pd&&pd.getAttribute('data-pd-code')===p.code?pd.querySelector('.pd-info h1'):null; return (h&&h.textContent.trim())||p.name||p.code; }catch(e){ return p.name||p.code; } };
   window.HCPSReimb.card(el,{ api:(b)=>api(REIMB_API,b), product:{name:p.name,code:p.code,manufacturer:p.manufacturer,category:p.category||'',sku_code:String(p.hcpc||p.hcpcs||''),page_codes:(p._billing||[]).map(String),spec_codes:spec_codes.slice(0,6),cost,cost_note:costNote},
-    open:(x)=>openReimb(Object.assign({},x,{ ret:{ line:state.active, code:p.code, name:retNameOf(), y:window.scrollY } })) });
+    open:(x)=>openReimb(Object.assign({},x,{ ret:{ line:state.active, code:p.code, name:retNameOf(), y:window.scrollY } })),
+    refEnabled:refEnabled, referrals:(x)=>openReferrals(Object.assign({},x,{ ret:{ kind:'product', line:state.active, code:p.code, name:retNameOf(), y:window.scrollY } })) });
 }
 window.reimbCard=reimbCard;
 function renderResources(){
@@ -10449,7 +10475,7 @@ function showView(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
   $("#view-"+v).classList.add("on");
   document.querySelectorAll("#nav a").forEach(a=>a.classList.remove("on"));
-  const idx={dash:0,orders:2,showroom:3,reports:4,quotes:5,ads:6,resources:8,reimb:8,account:9,victoria:10}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
+  const idx={dash:0,orders:2,showroom:3,reports:4,quotes:5,ads:6,resources:8,reimb:8,referrals:4,account:9,victoria:10}[v]; const links=document.querySelectorAll("#nav a"); if(idx!=null&&links[idx])links[idx].classList.add("on");
   window.scrollTo({top:0});
   if(v==="orders")loadOrders();
   if(v==="reports")loadReports();
@@ -10461,6 +10487,7 @@ function showView(v){
   if(v==="showroom")loadShowroom();
   if(v==="resources")loadResourcesView();
   if(v==="reimb")loadReimbView();
+  if(v==="referrals")loadReferralsView();
   if(v==="account")loadAccountView();
   if(v==="ads")loadAdsView();
   if(v==="goldsvc")loadGoldSvc();
