@@ -1,0 +1,15 @@
+{
+  "review_id": "8174dca0a58e",
+  "sandbox": "HCPS catalog review sandbox — private preview, not production",
+  "built_at": "2026-11-21T07:21:55Z",
+  "main": "867ab329e255b630a9ca9382b69c85e4ad09e15d",
+  "included": [],
+  "skipped": [
+    {
+      "pr": 84,
+      "title": "Add Dalton NOV26 checkout review and confirmation",
+      "branch": "codex/dalton-nov26-checkout",
+      "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
+    }
+  ]
+}
