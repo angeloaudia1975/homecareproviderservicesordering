@@ -34,7 +34,11 @@ async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } ca
       if (b.action === 'ads_context') return CTX;
       if (b.action === 'ads_list') return { ok: true, ads: window.__saved.map((x) => ({ id: x.id, dealer_id: 'L1', title: x.ad.title, template: x.ad.template, format: x.ad.format, updated_at: new Date().toISOString() })) };
       if (b.action === 'ads_save' && window.__failSaves > 0) { window.__failSaves--; return { ok: false, error: 'The library could not be reached just now.' }; }
-      if (b.action === 'ads_save') { const id = 'a' + (window.__saved.length + 1); window.__saved.push({ id, ad: b.ad }); return { ok: true, row: { id, version: 1, dealer_id: 'L1' } }; }
+      if (b.action === 'ads_save') { window.__keys = window.__keys || [];
+        const had = b.save_key && window.__saved.find((y) => y.key === b.save_key); if (had) { window.__keys.push(b.save_key); return { ok: true, row: { id: had.id, version: 1, dealer_id: 'L1' }, existing: true }; }
+        const id = 'a' + (window.__saved.length + 1); window.__saved.push({ id, ad: b.ad, key: b.save_key }); window.__keys.push(b.save_key);
+        if (window.__loseSaves > 0) { window.__loseSaves--; throw new Error('network'); }   // saved on the server, but the answer never arrives
+        return { ok: true, row: { id, version: 1, dealer_id: 'L1' } }; }
       if (b.action === 'ads_get') { const x = window.__saved.find((y) => y.id === b.id); return x ? { ok: true, row: { id: x.id, version: 1, dealer_id: 'L1' }, ad: x.ad, problems: [] } : { ok: false, error: 'nf' }; }
       if (b.action === 'ads_check') return { ok: true, products: [P] };
       if (b.action === 'ad_image' || b.action === 'ad_cutout') return { ok: true, status: 'removed', data_url: photo };
@@ -77,6 +81,18 @@ async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } ca
     await page.evaluate(() => window.scrollTo(0, 0)); await page.click('#adbNew'); await page.waitForTimeout(300);
     const nw = await page.evaluate(() => { const S = window.HCPSAdBuilder._state; return { cd: S.cd, products: S.cur.products.length, head: S.cur.headline, msg: document.querySelector('#adbMsg').textContent, y: window.scrollY }; });
     await t('"+ New design": the picker closes, the canvas is empty, the page moves to it and says so', () => ok(nw.cd === null && nw.products === 0 && !nw.head && /New design/.test(nw.msg) && nw.y > 0, JSON.stringify(nw)));
+    // lost save response (owner 2026-11-21): the server made the draft but the answer never arrived — Retry returns that draft
+    await page.evaluate(() => { window.__loseSaves = 1; window.__keys = []; });
+    await mount();
+    const n0 = await page.evaluate(() => window.__saved.length);
+    await make();
+    const lost = await page.evaluate(() => ({ n: window.__saved.length, retry: !!document.querySelector('#adbCdRetry'), keys: window.__keys.slice(), ad: window.__saved[window.__saved.length - 1].ad.save_key }));
+    await page.click('#adbCdRetry'); await page.waitForFunction(() => /Saved all 3/.test(document.querySelector('#adbMsg').textContent), null, { timeout: 10000 });
+    const lr = await page.evaluate(() => ({ n: window.__saved.length, keys: window.__keys.slice() }));
+    await t('a lost save response: Retry sends the same key and gets the existing draft — no duplicate (3 drafts, not 4)', () => ok(lost.n === n0 + 3 && lost.retry && lr.n === n0 + 3 && lr.keys.length === 4 && lr.keys[3] === lr.keys[0] && new Set(lr.keys.slice(0, 3)).size === 3 && lost.ad === undefined, JSON.stringify({ n0, lost, lr })));
+    await make();
+    const again = await page.evaluate(() => ({ n: window.__saved.length, keys: window.__keys.slice(-3) }));
+    await t('a deliberate new "Create 3 designs" still makes three NEW drafts (new keys)', () => ok(again.n === n0 + 6 && again.keys.every((k) => !lr.keys.includes(k)), JSON.stringify({ again, lr })));
   } finally { await browser.close(); }
   console.log(`\nad generated designs: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
 })();

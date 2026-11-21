@@ -1234,6 +1234,9 @@
      (owner 2026-11-20 23:31: three StrongBack designs were made but never saved, so they were gone). A per-browser
      convenience only — saved designs live on the server under "Your saved designs". */
   const GEN_KEY = () => 'hcps_adb_gen_v1:' + (S.loc || '');
+  /* one id per generated design: a retry after a lost save response gets the draft the first try made (owner 2026-11-21);
+     a new "Create 3 designs" makes new designs, so new keys and new drafts */
+  function saveKey(x) { if (!x.save_key) { let k = ''; try { k = crypto.randomUUID(); } catch (er) { k = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2); } x.save_key = 'g-' + k; } return x.save_key; }
   function genRemember() { try { if (S.cd && S.cd.cands && S.cd.cands.length) localStorage.setItem(GEN_KEY(), JSON.stringify({ at: Date.now(), cands: S.cd.cands })); } catch (x) {} }
   function genRecall() { try { const j = JSON.parse(localStorage.getItem(GEN_KEY()) || 'null'); if (!j || !Array.isArray(j.cands) || !j.cands.length || Date.now() - j.at > 30 * 864e5) return null;
       const c = j.cands.map((x) => Object.assign(blank(), x)).filter((x) => (x.products || []).every((p) => productBy(p))); return c.length ? { at: j.at, cands: c } : null; } catch (x) { return null; } }
@@ -1253,8 +1256,8 @@
   const canSave = () => !!(S.ctx && S.ctx.can_edit && !S.ctx.preview);
   async function saveCand(i) {
     const x = S.cd && S.cd.cands[i]; if (!x) return false; S.cd.saved = S.cd.saved || []; if (S.cd.saved[i]) return true;
-    const ad = deep(x); compactFeatures(ad); ad.title = ((ad.headline || ad.title || 'Ad').slice(0, 60)) + ' — AI design ' + (i + 1);
-    let r = null; try { r = await A.api({ action: 'ads_save', location_id: S.loc, ad }); } catch (e) { r = null; }
+    const key = saveKey(x); const ad = deep(x); delete ad.save_key; compactFeatures(ad); ad.title = ((ad.headline || ad.title || 'Ad').slice(0, 60)) + ' — AI design ' + (i + 1);
+    let r = null; try { r = await A.api({ action: 'ads_save', location_id: S.loc, ad, save_key: key }); } catch (e) { r = null; }
     if (r && r.ok && r.row) { S.cd.saved[i] = { id: r.row.id, version: r.row.version }; x.title = ad.title; return true; }
     S.cd.err = (r && r.error) || 'The library could not be reached just now.'; return false;
   }
@@ -1276,8 +1279,8 @@
   }
   async function saveAllCands(cands) {
     if (S.busy) return; S.busy = true; say('Saving ' + cands.length + ' designs…'); let n = 0, err = '';
-    try { for (let i = 0; i < cands.length; i++) { const ad = deep(cands[i]); compactFeatures(ad); ad.title = ((ad.title || ad.headline || 'Ad').slice(0, 64)) + ' — design ' + (i + 1);
-        const r = await A.api({ action: 'ads_save', location_id: S.loc, ad }); if (r && r.ok) n++; else { err = (r && r.error) || 'Could not save just now.'; break; } }
+    try { for (let i = 0; i < cands.length; i++) { const key = saveKey(cands[i]); const ad = deep(cands[i]); delete ad.save_key; compactFeatures(ad); ad.title = ((ad.title || ad.headline || 'Ad').slice(0, 64)) + ' — design ' + (i + 1);
+        const r = await A.api({ action: 'ads_save', location_id: S.loc, ad, save_key: key }); if (r && r.ok) n++; else { err = (r && r.error) || 'Could not save just now.'; break; } }
       if (n === cands.length) genForget(); await refreshList(); genList();
       say(n === cands.length ? `Saved all ${n} designs — they are in Your saved designs, ready to open or download.` : `Saved ${n} of ${cands.length}. ${err}`, n === cands.length ? 'ok' : 'err');
     } finally { S.busy = false; } }
@@ -1324,7 +1327,7 @@
       S.aiResult = { why: r.why, alt_headlines: r.alt_headlines };
       if (campaign) { const ads = r.ads.map((a) => Object.assign({}, a, { template: LEGACY_MAP[a.template] || a.template, layouts: null }));
         S.campaign = { campaign: r.campaign, ads, saved: false }; S.cur = Object.assign(blank(), deep(ads[0])); S.cd = null; }
-      else { const keepFmt = S.cur.format; const ad = Object.assign(blank(), r.ad, { format: keepFmt }); S.cd = { cands: creativeSet(ad, ED.cdRun = (ED.cdRun == null ? 0 : ED.cdRun + 1)) }; S.cur = deep(S.cd.cands[0]); S.campaign = null; genRemember(); }
+      else { const keepFmt = S.cur.format; const ad = Object.assign(blank(), r.ad, { format: keepFmt }); S.cd = { cands: creativeSet(ad, ED.cdRun = (ED.cdRun == null ? 0 : ED.cdRun + 1)) }; S.cd.cands.forEach((x) => { delete x.save_key; saveKey(x); }); S.cur = deep(S.cd.cands[0]); delete S.cur.save_key; S.campaign = null; genRemember(); }
       S.row = null; ED.sel = null; ED.tab = 'ai'; form(); redraw();
       say((campaign ? 'Campaign ready — four sizes below. Edit any size, download, or save the campaign.' : 'Three designs are ready — the first is on the canvas. Pick the one you like, then change anything.') + (r.captions_source === 'rules' ? ' The AI captions didn\'t pass HCPS\'s checks this time, so HCPS\'s standard captions are filled in — regenerate for AI captions.' : ''), 'ok');
       return true;
