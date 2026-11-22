@@ -8190,7 +8190,7 @@ async function api(endpoint,body){
   /* Manage Dealer: the writes a staff session may make go with the manage token; every read stays on the preview token */
   /* Manage Dealer (owner 2026-11-14): EVERY dealer tool runs in the staff session — the server decides each action (reads as
      in View as Dealer, writes only those the role allows, recorded); no client-side preview flag blocks a valid action */
-  const mgAll=window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__()&&(endpoint===TOOLS_ENDPOINT||/\/dealer-(storefront|ads|tools|reports|victoria)-api$/.test(String(endpoint)));
+  const mgAll=window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__()&&(endpoint===TOOLS_ENDPOINT||/\/dealer-(storefront|ads|tools|reports|victoria|support)-api$/.test(String(endpoint)));
   if(mgAll&&body&&body.action==='sf_save'&&(body.mode==='publish'||body.mode==='unpublish')){
     const loc=(window.__MANAGE__&&window.__MANAGE__.location&&window.__MANAGE__.location.name)||'this dealer';
     if(!confirm((body.mode==='publish'?'PUBLISH':'UNPUBLISH')+' the public storefront for '+loc+'?\n\n'+(body.mode==='publish'?'Customers will be able to see it at its public address.':'Customers will no longer see it.')+' This is recorded under your name.')) return {ok:false,error:'Nothing was '+body.mode+'ed.'};
@@ -9658,6 +9658,7 @@ async function loadReferralsView(){
   let ret=null;
   if(pre&&pre.ret&&pre.ret.kind==="product") ret={label:pre.ret.name||"the product", back:()=>reimbBackToProduct(pre.ret)};
   else if(pre&&pre.ret&&pre.ret.kind==="reimb") ret={label:"the reimbursement lookup", back:()=>showP360('reimb')};
+  else if(pre&&pre.ret&&pre.ret.kind==="resources") ret={label:"Resources & Support", back:()=>showP360('resources')};
   /* Back returns to where the dealer pressed the button — the "Your local market" section, not the top (live 2026-11-21) */
   else if(pre&&pre.ret&&pre.ret.kind==="reports") ret={label:"Reports & Growth Ideas", back:()=>{ showP360('reports'); const y=Number(pre.ret.y)||0; let n=0;
     const go=()=>{ const b=document.getElementById('rptRef'); if(b&&b.offsetParent){ window.scrollTo(0, y || Math.max(0, b.getBoundingClientRect().top+window.scrollY-120)); } else if(n++<40) setTimeout(go,150); }; setTimeout(go,50); }};
@@ -9704,28 +9705,153 @@ async function reimbCard(el,p){
     refEnabled:refEnabled, referrals:(x)=>openReferrals(Object.assign({},x,{ ret:{ kind:'product', line:state.active, code:p.code, name:retNameOf(), y:window.scrollY } })) });
 }
 window.reimbCard=reimbCard;
-function renderResources(){
-  const lines=(LINES&&LINES.length)?LINES.map(l=>({slug:l.slug,name:mfrNameOf(l.slug)})):(MFRLIST||[]);
+/* ===== RESOURCES & SUPPORT — entirely inside Dealer 360 (owner milestone 2026-11-22 §2). Four destinations in a left menu on
+   desktop and full-width task screens with Back on phones: Document Library (the admin-managed catalog the website's Resource
+   Library reads — /data/dealer-documents.json, public items only), Training & In-Service (the Dealer Hub scheduler's own
+   appointments: Booked when a slot is confirmed, Requested when HCPS coordinates), Manufacturer Service, Parts & Warranty
+   (Golden keeps its own case integration; every other line opens a case with the fields that request needs — a case number
+   and status), and My Requests & Appointments. Every answer comes from dealer-support-api with the dealer's own sign-in. ===== */
+const SUPPORT_API=API_BASE+"/dealer-support-api";
+const rsMg=()=>!!(window.__MANAGE_TOKEN__&&window.__MANAGE_TOKEN__());
+const DOCS_URL="https://www.homecareproviderservices.org/data/dealer-documents.json";
+let RS={tab:null,home:null,docs:null,docQ:"",docMfr:"",docType:"",train:{format:"zoom",slots:null,sel:null},svc:{line:"",type:""},reqs:null,busy:false,key:null};
+const RS_TABS=[["docs","Document Library","Manuals, parts diagrams, warranties, catalogs & training"],["training","Training & In-Service","Book or request training for your team"],["service","Service, Parts & Warranty","Parts, warranty, repair and returns — with a case number"],["requests","My Requests & Appointments","Everything you've sent HCPS and its status"]];
+const rsPhone=()=>window.matchMedia("(max-width:760px)").matches;
+function rsTab(t){ RS.tab=t; if(t==="requests") RS.reqs=null; renderResources(); if(rsPhone()) window.scrollTo({top:0}); }
+function rsBack(){ RS.tab=null; renderResources(); window.scrollTo({top:0}); }
+async function rsHome(force){ if(RS.home&&!force) return RS.home; const r=await api(SUPPORT_API,{action:"support_home"}).catch(()=>null); RS.home=(r&&r.ok)?r:{error:(r&&r.error)||"Support options could not be loaded just now."}; if(RS.tab==="training"||RS.tab==="service") renderResources(); return RS.home; }
+async function rsDocs(){ if(RS.docs) return; try{ const r=await fetch(DOCS_URL,{cache:"no-cache"}); RS.docs=r.ok?await r.json():{error:true}; }catch(e){ RS.docs={error:true}; } if(RS.tab==="docs") renderResources(); }
+let RS_REQ_N=0;
+async function rsReqs(){ const n=++RS_REQ_N; RS.reqs=RS.reqs||null; const r=await api(SUPPORT_API,{action:"my_requests"}).catch(()=>null); if(n!==RS_REQ_N) return; RS.reqs=(r&&r.ok)?r:{error:(r&&r.error)||"Your requests could not be loaded just now."}; if(RS.tab==="requests") renderResources(); }
+function rsDocsHtml(){
+  const D=RS.docs; if(!D) return '<div class="msg">Loading documents…</div>'; if(D.error) return '<div class="msg">The document library could not be loaded just now — please try again.</div><a class="btn gh" onclick="RS.docs=null;rsDocs()">Try again</a>';
+  const T=Object.fromEntries((D.types||[]).map(t=>[t.id,t.label])), q=RS.docQ.trim().toLowerCase();
+  const items=D.items.filter(d=>(!RS.docMfr||d.manufacturer===RS.docMfr)&&(!RS.docType||d.type===RS.docType)&&(!q||[d.title,d.description,(d.models||[]).join(" "),d.keywords,mfrNameOf(d.manufacturer),T[d.type]||""].join(" ").toLowerCase().includes(q)))
+    .sort((a,b)=>(b.featured-a.featured)||(b.sortPriority-a.sortPriority)||a.title.localeCompare(b.title));
+  const mfrs=[...new Set(D.items.map(d=>d.manufacturer))].sort((a,b)=>mfrNameOf(a).localeCompare(mfrNameOf(b)));
+  return `<div class="rs-filt"><div class="fld2" style="flex:2;min-width:200px"><label>Search</label><input type="search" id="rsDocQ" value="${esc(RS.docQ)}" placeholder="Model, SKU, manual, warranty…" oninput="rsDocSet('q',this.value)"></div>
+    <div class="fld2"><label>Manufacturer</label><select onchange="rsDocSet('m',this.value)"><option value="">All</option>${mfrs.map(m=>`<option value="${esc(m)}"${m===RS.docMfr?" selected":""}>${esc(mfrNameOf(m))}</option>`).join("")}</select></div>
+    <div class="fld2"><label>Document type</label><select onchange="rsDocSet('t',this.value)"><option value="">All</option>${(D.types||[]).filter(t=>D.items.some(d=>d.type===t.id)).map(t=>`<option value="${esc(t.id)}"${t.id===RS.docType?" selected":""}>${esc(t.label)}</option>`).join("")}</select></div></div>
+    <div class="rs-count">${items.length} document${items.length===1?"":"s"}</div>
+    <div id="rsDocList">${items.length?items.map(d=>`<div class="rs-doc"><div class="b"><div class="n">${esc(d.title)}</div><div class="m">${esc(mfrNameOf(d.manufacturer))} · ${esc(T[d.type]||d.type)}${d.models&&d.models.length?" · "+esc(d.models.slice(0,4).join(", ")):""}${d.year?" · "+esc(d.year):""}</div>${d.description?`<div class="m">${esc(d.description)}</div>`:""}</div><a class="btn gh" href="${esc(d.url)}" target="_blank" rel="noopener">${d.format==="video"?"Watch":"View / download"}</a></div>`).join(""):'<div class="empty">No documents match. Try another word or clear a filter.</div>'}</div>
+    <div class="card" style="margin-top:14px"><h3>Need printed literature?</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Choose a line, materials &amp; quantities, and HCPS sends the request.</div>${rsLitHtml()}</div>`;
+}
+function rsDocSet(k,v){ if(k==="q"){ RS.docQ=v; const L=$("#rsDocList"); if(L){ const h=document.createElement("div"); h.innerHTML=rsDocsHtml(); const nl=h.querySelector("#rsDocList"), c=h.querySelector(".rs-count"); L.innerHTML=nl.innerHTML; const oc=document.querySelector("#view-resources .rs-count"); if(oc&&c) oc.textContent=c.textContent; } return; } if(k==="m") RS.docMfr=v; if(k==="t") RS.docType=v; renderResources(); }
+function rsLitHtml(){ const lines=(LINES&&LINES.length)?LINES.map(l=>({slug:l.slug,name:mfrNameOf(l.slug)})):(MFRLIST||[]);
   const mats=["Product catalog","Line brochure","Showroom / point-of-sale materials","Spec sheets","Warranty & care cards"];
-  $("#view-resources").innerHTML=`<div class="ph"><div><h1>Resources</h1><div class="sub">Literature request center &amp; dealer support</div></div></div>
-   <div class="card reimb-tile"><div><div class="reimb-eyebrow">Billing resource</div><h3>HCPCS reimbursement lookup</h3><div style="font-size:12.5px;color:var(--muted)">Look up a Medicare or Medicaid fee schedule amount by code, state, plan and date of service — with purchase or rental terms, coverage &amp; billing guidance and the payer's source.</div></div><a class="btn pri" onclick="openReimb()">Open reimbursement lookup →</a></div>
-   <div class="grid2"><div>
-     <div class="card" style="margin-top:0"><h3>Manufacturer Literature Request Center</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Select a line, choose materials &amp; quantities, and submit through HCPS.</div>
-       <div class="fld2"><label>Manufacturer</label><select id="litMfr">${lines.map(m=>`<option value="${esc(m.slug)}">${esc(m.name)}</option>`).join("")}</select></div>
-       <div class="fld2"><label>Ship to</label><input id="litShip" value="${esc((PROFILE&&PROFILE.name)||"")} — main showroom"></div>
-       <div style="font-size:11px;color:var(--muted);margin:6px 0 4px;font-weight:800;text-transform:uppercase;letter-spacing:.4px">Materials</div>
-       ${mats.map(m=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line-2);font-size:13.5px"><input type="checkbox" class="litChk" data-m="${esc(m)}"> ${esc(m)} <input type="number" class="litQty" min="1" value="1" style="margin-left:auto;width:66px;border:1px solid var(--line);border-radius:7px;padding:5px 8px"></label>`).join("")}
-       <div class="fld2" style="margin-top:8px"><label>Note (optional)</label><textarea id="litNote" rows="2"></textarea></div>
-       <a class="btn pri" onclick="submitLit()">Submit request</a></div>
-    </div>
-    <div><div class="card" style="margin-top:0"><h3>Dealer support</h3><div class="rowlist">
-       <div class="rl"><div class="b"><div class="n">Resource library</div><div class="m">Catalogs, guides &amp; pricing</div></div><a class="btn gh" href="/">Open</a></div>
-       <div class="rl"><div class="b"><div class="n">Request in-service / training</div><div class="m">Schedule with your rep</div></div><a class="btn gh" onclick="alert('Opens the in-service scheduler')">Book</a></div>
-       <div class="rl"><div class="b"><div class="n">Technical support</div><div class="m">Product &amp; warranty help</div></div><a class="btn gh" onclick="alert('Opens technical support')">Contact</a></div>
-       <div id="gsvcRow"></div>
-     </div></div></div>
-   </div>`;
-  gsvcProbe();
+  return `<div class="fld2"><label>Manufacturer</label><select id="litMfr">${lines.map(m=>`<option value="${esc(m.slug)}">${esc(m.name)}</option>`).join("")}</select></div>
+   <div class="fld2"><label>Ship to</label><input id="litShip" value="${esc((PROFILE&&PROFILE.name)||"")} — main showroom"></div>
+   ${mats.map(m=>`<label class="rs-chk"><input type="checkbox" class="litChk" data-m="${esc(m)}"> ${esc(m)} <input type="number" class="litQty" min="1" value="1" aria-label="Quantity"></label>`).join("")}
+   <div class="fld2" style="margin-top:8px"><label>Note (optional)</label><textarea id="litNote" rows="2"></textarea></div><a class="btn pri" onclick="submitLit()">Submit request</a>`; }
+function rsContactHtml(c){ c=c||{}; return `<div class="rs-row3"><div class="fld2"><label>Contact name</label><input id="rsCName" value="${esc(c.name||"")}" autocomplete="name"></div><div class="fld2"><label>Email</label><input id="rsCEmail" type="email" value="${esc(c.email||"")}" autocomplete="email"></div><div class="fld2"><label>Phone</label><input id="rsCPhone" type="tel" value="${esc(c.phone||"")}" autocomplete="tel"></div></div>`; }
+const rsContact=()=>({name:($("#rsCName")||{}).value||"",email:($("#rsCEmail")||{}).value||"",phone:($("#rsCPhone")||{}).value||""});
+function rsHomeWait(){ const H=RS.home; if(!H) return '<div class="msg">Loading…</div>'; if(H.error) return `<div class="msg">${esc(H.error)}</div><a class="btn gh" onclick="rsHome(true)">Try again</a>`; return null; }
+function rsTrainingHtml(){ const w=rsHomeWait(); if(w) return w; const H=RS.home, T=RS.train;
+  const slots=T.slots, pv=!!window.__PREVIEW__&&!rsMg();
+  return `<div class="rs-who">For <b>${esc(H.location.name)}</b>${H.location.city?" · "+esc(H.location.city+", "+H.location.state):""}</div>
+   <div class="fld2"><label>What would you like to learn?</label><input id="rsTTopic" maxlength="300" placeholder="e.g. Lift chair features and selling, BongoRx fitting, new staff orientation"></div>
+   <div class="fld2"><label>Product lines or models (optional)</label><div class="rs-lines">${H.lines.map(l=>`<label class="rs-pill"><input type="checkbox" class="rsTLine" value="${esc(l.name)}"> ${esc(l.name)}</label>`).join("")||'<span class="m">No lines on this location yet.</span>'}</div></div>
+   <div class="fld2"><label>Format</label><div class="rs-seg"><a class="btn ${T.format==="zoom"?"nv":"gh"}" onclick="rsTFormat('zoom')">Zoom</a><a class="btn ${T.format==="in_store"?"nv":"gh"}" onclick="rsTFormat('in_store')">In-store</a></div></div>
+   ${rsContactHtml(H.contact)}
+   <div class="fld2"><label>Notes (optional)</label><textarea id="rsTNotes" rows="2" maxlength="1500"></textarea></div>
+   <h3 style="margin:14px 0 6px">Pick an open appointment</h3>
+   ${slots===null?'<div class="msg">Loading open times…</div>':slots.error?`<div class="msg">${esc(slots.error)}</div>`:!slots.days.length?'<div class="msg">No open times in the next three weeks — send a request below and HCPS will coordinate.</div>':
+     `<div class="m" style="margin-bottom:6px">${esc(slots.duration_min)}-minute ${T.format==="zoom"?"Zoom":"in-store"} session with ${esc(slots.with)} · times in ${esc(slots.tz_abbr||"")}</div><div class="rs-days">${slots.days.slice(0,10).map(d=>`<div class="rs-day"><div class="n">${esc(d.dayname)} ${esc(d.date.slice(5).replace("-","/"))}</div>${d.slots.map(x=>`<a class="btn ${T.sel===x.start_utc?"nv":"gh"} rs-slot" onclick="rsTSel('${esc(x.start_utc)}')">${esc(x.label)}</a>`).join("")}</div>`).join("")}</div>`}
+   <div class="rs-act">${pv?'<div class="msg">View as Dealer is read-only — use Manage Dealer to send a request.</div>':`<a class="btn pri" onclick="rsTSend('book')"${!T.sel||rsMg()?' style="display:none"':""}>Book this time</a><a class="btn ${T.sel&&!rsMg()?"gh":"pri"}" onclick="rsTSend('request')">Send as a request — HCPS coordinates</a>`}<div id="rsTMsg" class="m"></div></div>
+   ${rsMg()?'<div class="m">In Manage Dealer you can send a request; the dealer books an open time themselves.</div>':""}`; }
+async function rsTFormat(f){ RS.train.format=f; RS.train.slots=null; RS.train.sel=null; renderResources(); rsTSlots(); }
+async function rsTSlots(){ const f=RS.train.format; const r=await api(SUPPORT_API,{action:"training_slots",format:f,tz:Intl.DateTimeFormat().resolvedOptions().timeZone}).catch(()=>null); if(RS.train.format!==f) return; RS.train.slots=(r&&r.ok)?r:{error:(r&&r.error)||"Open times could not be loaded just now.",days:[]}; if(RS.tab==="training") rsKeepRender(); }
+function rsTSel(t){ RS.train.sel=RS.train.sel===t?null:t; rsKeepRender(); }
+/* re-render the task without losing what the dealer typed */
+function rsKeepRender(){ const keep={}; document.querySelectorAll("#view-resources input:not([type=checkbox]),#view-resources textarea").forEach(e=>{ if(e.id) keep[e.id]=e.value; }); const chk=[...document.querySelectorAll("#view-resources input[type=checkbox]")].map(e=>e.checked); renderResources(); for(const k in keep){ const e=document.getElementById(k); if(e) e.value=keep[k]; } document.querySelectorAll("#view-resources input[type=checkbox]").forEach((e,i)=>{ if(i<chk.length) e.checked=chk[i]; }); }
+async function rsTSend(kind){ if(RS.busy) return; const m=$("#rsTMsg");
+  const body={action:kind==="book"?"training_book":"training_request",format:RS.train.format,topics:($("#rsTTopic")||{}).value||"",lines:[...document.querySelectorAll(".rsTLine:checked")].map(e=>e.value),notes:($("#rsTNotes")||{}).value||"",contact:rsContact(),tz:Intl.DateTimeFormat().resolvedOptions().timeZone,start_utc:kind==="book"?RS.train.sel:undefined};
+  RS.busy=true; if(m) m.textContent="Sending…"; let r=null; try{ r=await api(SUPPORT_API,body); }catch(e){} RS.busy=false;
+  if(!r||!r.ok){ if(m) m.textContent=(r&&r.error)||"Not sent — please try again."; if(r&&/taken|no longer open/i.test(r.error||"")) rsTSlots(); return; }
+  RS.reqs=null; const host=$("#rsTask"); if(host) host.innerHTML=`<div class="rs-done"><div class="rs-badge ${r.status==="Booked"?"ok":"req"}">${esc(r.status)}</div><h3>${r.status==="Booked"?"You're booked":"Request sent"}</h3><p>${esc(r.message||"")}</p><a class="btn gh" onclick="rsTab('requests')">See My Requests &amp; Appointments</a></div>`; }
+function rsServiceHtml(){ const w=rsHomeWait(); if(w) return '<div id="gsvcRow"></div>'+w; const H=RS.home, S=RS.svc;
+  const lines=H.lines, gold=lines.find(l=>l.mode==="golden");
+  const line=lines.find(l=>l.slug===S.line), type=line&&line.types.find(t=>t.key===S.type);
+  const pv=!!window.__PREVIEW__&&!rsMg();
+  let h=`<div class="rs-who">For <b>${esc(H.location.name)}</b></div><div id="gsvcRow"></div>`;
+  if(!lines.filter(l=>l.mode!=="golden").length) return h+'<div class="msg">No other manufacturer lines are on this location yet.</div>';
+  h+=`<div class="fld2"><label>Manufacturer</label><select onchange="rsSvc('line',this.value)"><option value="">Choose a line…</option>${lines.filter(l=>l.mode!=="golden").map(l=>`<option value="${esc(l.slug)}"${l.slug===S.line?" selected":""}>${esc(l.name)}</option>`).join("")}</select></div>`;
+  if(line&&line.note) h+=`<div class="m" style="margin:-4px 0 8px">${esc(line.note)}</div>`;
+  if(line) h+=`<div class="fld2"><label>What do you need?</label><div class="rs-types">${line.types.map(t=>`<a class="rs-type ${t.key===S.type?"on":""}" onclick="rsSvc('type','${esc(t.key)}')"><b>${esc(t.label)}</b><span>${esc(t.blurb)}</span></a>`).join("")}</div></div>`;
+  if(type){
+    h+=type.fields.map(f=>{ const id="rsF_"+f.key, lab=esc(f.label)+(f.required?"":" <span class='m'>(optional)</span>");
+      if(f.kind==="text") return `<div class="fld2"><label for="${id}">${lab}</label><textarea id="${id}" rows="3" maxlength="${f.max}"></textarea></div>`;
+      if(f.kind==="choice") return `<div class="fld2"><label for="${id}">${lab}</label><select id="${id}"><option value="">Choose…</option>${f.choices.map(c=>`<option>${esc(c)}</option>`).join("")}</select></div>`;
+      return `<div class="fld2"><label for="${id}">${lab}</label><input id="${id}" ${f.kind==="date"?'type="date"':f.kind==="int"?'type="number" min="1" inputmode="numeric"':''} maxlength="${f.max}"></div>`; }).join("");
+    h+=`<div class="fld2"><label>Photos or documents ${type.attachments==="recommended"?"(recommended — label, damage, serial plate)":"(optional)"}</label><input id="rsFiles" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf"><div class="m">Up to 3 files · JPEG, PNG, WebP or PDF · 3 MB each, 4 MB together</div></div>`;
+    if(type.ship_to) h+=`<div class="fld2"><label for="rsShip">Ship to</label><input id="rsShip" value="${esc(H.ship_to||"")}"></div>`;
+    h+=rsContactHtml(H.contact);
+    h+=`<div class="rs-act">${pv?'<div class="msg">View as Dealer is read-only — use Manage Dealer to open a case.</div>':'<a class="btn pri" id="rsSvcGo" onclick="rsSvcSend()">Submit</a>'}<div id="rsSMsg" class="m"></div></div>`;
+  }
+  return h; }
+function rsSvc(k,v){ if(k==="line"){ RS.svc.line=v; RS.svc.type=""; } else RS.svc.type=v; RS.key=null; renderResources(); if(rsPhone()){ const t=$("#rsTask"); if(t) t.scrollIntoView({block:"start"}); } }
+const rsB64=(f)=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).replace(/^data:[^,]*,/,"")); r.onerror=()=>rej(new Error("read")); r.readAsDataURL(f); });
+async function rsSvcSend(){ if(RS.busy) return; RS.busy=true; try{ await rsSvcSend2(); } finally { RS.busy=false; const b=$("#rsSvcGo"); if(b){ b.removeAttribute("aria-disabled"); b.style.opacity=""; } } }
+async function rsSvcSend2(){ const m=$("#rsSMsg"), H=RS.home, line=H.lines.find(l=>l.slug===RS.svc.line), type=line&&line.types.find(t=>t.key===RS.svc.type); if(!type) return;
+  const fields={}; for(const f of type.fields){ const e=document.getElementById("rsF_"+f.key); if(e&&e.value.trim()) fields[f.key]=e.value.trim(); else if(f.required){ if(m) m.textContent=f.label+" is required."; if(e) e.focus(); return; } }
+  const fl=[...(($("#rsFiles")||{}).files||[])]; if(fl.length>3){ if(m) m.textContent="Attach at most 3 files."; return; }
+  if(fl.some(f=>f.size>3*1024*1024)||fl.reduce((a,f)=>a+f.size,0)>4*1024*1024){ if(m) m.textContent="Attachments must be 3 MB each and 4 MB together."; return; }
+  let att=[]; try{ att=await Promise.all(fl.map(async f=>({name:f.name,data:await rsB64(f)}))); }catch(e){ if(m) m.textContent="An attachment could not be read."; return; }
+  RS.key=RS.key||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2,12));
+  const btn=$("#rsSvcGo"); if(btn){ btn.setAttribute("aria-disabled","true"); btn.style.opacity=".6"; } if(m) m.textContent="Sending…";
+  let r=null; try{ r=await api(SUPPORT_API,{action:"case_submit",manufacturer:line.slug,type:type.key,fields,contact:rsContact(),ship_to:($("#rsShip")||{}).value||"",attachments:att,request_key:RS.key}); }catch(e){}
+  if(!r||!r.ok){ if(m) m.textContent=(r&&r.error)||"Not sent — please try again (your case won't be doubled)."; return; }
+  if(!r.notified&&!r.duplicate){ if(m) m.textContent=r.message; return; }
+  RS.key=null; RS.reqs=null;
+  const host=$("#rsTask"); if(host) host.innerHTML=`<div class="rs-done"><div class="rs-badge ok">${esc(r.status||"Submitted")}</div><h3>Case ${esc(r.case_no)}</h3><p>${esc(r.message||"")}</p><a class="btn gh" onclick="rsTab('requests')">See My Requests &amp; Appointments</a> <a class="btn gh" onclick="RS.svc={line:'',type:''};renderResources()">Open another case</a></div>`; }
+function rsReqsHtml(){ const R=RS.reqs; if(!R) return '<div class="msg">Loading your requests…</div>'; if(R.error) return `<div class="msg">${esc(R.error)}</div><a class="btn gh" onclick="rsReqs()">Try again</a>`;
+  const K={case:"Service case",appointment:"Training / appointment",literature:"Literature",pricing:"Pricing",tracking:"Tracking"};
+  return `${R.unavailable&&R.unavailable.length?`<div class="msg">Could not load: ${esc(R.unavailable.join(", "))}. Shown below is what loaded.</div>`:""}
+   ${R.items.length?R.items.map(x=>`<div class="rs-req"><div class="b"><div class="n">${esc(x.title)}</div><div class="m">${esc(K[x.kind]||x.kind)} · ${esc(x.ref)} · ${esc(String(x.at||"").slice(0,10))}${x.location?" · "+esc(x.location):""}${x.detail?" · "+esc(x.detail):""}</div></div><span class="rs-badge ${/Booked|Resolved|Completed|Sent to manufacturer/.test(x.status)?"ok":/Waiting/.test(x.status)?"warn":"req"}">${esc(x.status)}</span></div>`).join(""):'<div class="empty">Nothing yet. Requests you send from Dealer 360 appear here with their status.</div>'}
+   <div class="m" style="margin-top:8px">Golden service cases are in Golden Service &amp; Support → My Requests.</div>`; }
+function renderResources(){
+  const host=$("#view-resources"); if(!host) return;
+  const ph=rsPhone(); if(!ph&&!RS.tab) RS.tab="docs";
+  const tabs=RS_TABS.map(([k,n,d])=>`<a class="rs-nav ${RS.tab===k?"on":""}" onclick="rsTab('${k}')"><b>${esc(n)}</b><span>${esc(d)}</span></a>`).join("");
+  const extra=`<a class="rs-nav" onclick="openReimb()"><b>HCPCS reimbursement lookup</b><span>Medicare / Medicaid fee schedules</span></a><div id="rsRef"></div>`;
+  const cur=RS_TABS.find(t=>t[0]===RS.tab);
+  const body=RS.tab==="docs"?rsDocsHtml():RS.tab==="training"?rsTrainingHtml():RS.tab==="service"?rsServiceHtml():RS.tab==="requests"?rsReqsHtml():"";
+  host.innerHTML=`<style>
+   #view-resources .rs-wrap{display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px;align-items:start}
+   #view-resources .rs-menu{display:flex;flex-direction:column;gap:6px;position:sticky;top:12px}
+   #view-resources .rs-nav{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;min-height:44px;text-decoration:none;color:inherit}
+   #view-resources .rs-nav span{font-size:12px;color:var(--muted)} #view-resources .rs-nav.on{border-color:#072b5a;box-shadow:inset 3px 0 0 #f6830f;background:#f5f8fc}
+   #view-resources .rs-filt,#view-resources .rs-row3{display:flex;flex-wrap:wrap;gap:10px} #view-resources .rs-row3>.fld2{flex:1;min-width:180px}
+   #view-resources .rs-count{font-size:12px;color:var(--muted);margin:4px 0 8px}
+   #view-resources .rs-doc,#view-resources .rs-req{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line-2)}
+   #view-resources .rs-doc .b,#view-resources .rs-req .b{min-width:0} #view-resources .rs-doc .n,#view-resources .rs-req .n{font-weight:700}
+   #view-resources .rs-doc .m,#view-resources .rs-req .m,#view-resources .m{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+   #view-resources .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+   #view-resources .rs-chk{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line-2);font-size:13.5px}
+   #view-resources .rs-chk .litQty{margin-left:auto;width:70px} #view-resources .rs-lines{display:flex;flex-wrap:wrap;gap:6px}
+   #view-resources .rs-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:8px 12px;min-height:44px;font-size:13px}
+   #view-resources .rs-seg{display:flex;gap:6px} #view-resources .rs-days{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+   #view-resources .rs-day .n{font-weight:700;font-size:13px;margin-bottom:4px} #view-resources .rs-slot{width:100%;margin-bottom:4px}
+   #view-resources .rs-types{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+   #view-resources .rs-type{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;min-height:44px}
+   #view-resources .rs-type span{font-size:12px;color:var(--muted)} #view-resources .rs-type.on{border-color:#072b5a;background:#f5f8fc}
+   #view-resources .rs-act{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+   #view-resources .rs-badge{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800;white-space:nowrap}
+   #view-resources .rs-badge.ok{background:#e9f7ef;color:#1f7a44} #view-resources .rs-badge.req{background:#eef3fa;color:#123a6b} #view-resources .rs-badge.warn{background:#fff4e5;color:#8a5300}
+   #view-resources .rs-done{text-align:center;padding:24px 10px} #view-resources .rs-who{font-size:13px;margin-bottom:10px}
+   #view-resources input,#view-resources select,#view-resources textarea{max-width:100%}
+   @media(max-width:760px){ #view-resources .rs-wrap{display:block} #view-resources .rs-menu{position:static} #view-resources input,#view-resources select,#view-resources textarea{font-size:16px} #view-resources input:not([type=checkbox]):not([type=file]),#view-resources select{min-height:44px} }
+  </style>
+  <div class="ph"><div><h1>Resources &amp; Support</h1><div class="sub">Documents, training, manufacturer service and your requests — all here in Dealer 360</div></div></div>
+  ${ph&&!RS.tab?`<div class="rs-menu">${tabs}${extra}</div>`:
+   ph?`<a class="btn gh" onclick="rsBack()">← Resources &amp; Support</a><div class="card" style="margin-top:10px"><h2 style="margin-top:0">${esc(cur[1])}</h2><div id="rsTask">${body}</div></div>`:
+   `<div class="rs-wrap"><nav class="rs-menu" aria-label="Resources & Support">${tabs}${extra}</nav><div class="card" style="margin-top:0"><h2 style="margin-top:0">${esc(cur[1])}</h2><div class="m" style="margin:-6px 0 10px">${esc(cur[2])}</div><div id="rsTask">${body}</div></div></div>`}`;
+  if(RS.tab==="service") gsvcProbe();
+  if(RS.tab==="docs"&&!RS.docs) rsDocs();
+  if((RS.tab==="training"||RS.tab==="service")&&!RS.home) rsHome();
+  if(RS.tab==="requests"&&!RS.reqs) rsReqs();
+  if(RS.tab==="training"&&RS.home&&!RS.home.error&&RS.train.slots===null) rsTSlots();
+  if(typeof refEnabled==="function") refEnabled().then(on=>{ const r=$("#rsRef"); if(on&&r) r.innerHTML='<a class="rs-nav" onclick="openReferrals({ret:{kind:\'resources\'}})"><b>Find local referral sources</b><span>Clinicians ordering in your area</span></a>'; }).catch(()=>{});
 }
 /* ===== Golden Service & Support 360 — Stage 2 (owner 2026-11-13). Native, signed-in view of Golden's service resources:
    golden-proxy "service_catalog" → Golden /v1/service/catalog (signed delegation; the dealer is decided on the server).
@@ -9798,7 +9924,7 @@ function gsvVisibleRows(){ const q=GSVQ.trim().toLowerCase(); let rows=[]; gsvGr
 const GSV_STATUS={sent:"Sent to Golden",send_failed:"Not sent — retry",received:"Saved — sending",sending:"Sending"};
 function gsvcLoad(){ if(!GSVCP) GSVCP=goldenCall("service_catalog").then(j=>{ GSVC=(j&&j.enabled===true&&j.available===true)?j:{off:true,reason:(j&&j.reason)||"unavailable"}; return GSVC; }); return GSVCP; }
 async function gsvcProbe(){ const g=await gsvcLoad(); const row=$("#gsvcRow"); if(!row||!g||g.off) return;
-  row.innerHTML='<div class="rl"><div class="b"><div class="n">Golden Service &amp; Support</div><div class="m">Parts lookup, technical publications, training videos &amp; service requests</div></div><a class="btn pri" onclick="showView(\'goldsvc\')">Open</a></div>'; }
+  row.innerHTML='<div class="rl" style="display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px"><div class="b"><div class="n">Golden Service &amp; Support</div><div class="m">Parts lookup, technical publications, training videos &amp; service requests</div></div><a class="btn pri" onclick="showView(\'goldsvc\')">Open</a></div>'; }
 const GSV_LINES={lift_chair:"Lift chairs & recliners",scooter:"Scooters",power_chair:"Power chairs"};
 function gsvLink(u,label,cls){ return u?`<a class="btn ${cls||"gh"}" href="${esc(u)}" target="_blank" rel="noopener">${esc(label)}</a>`:""; }
 /* ===== ORIGINAL PORTAL PARITY (owner 2026-11-14). Dealer 360 shows the owner's approved Golden Dealer Service & Support
@@ -10793,6 +10919,13 @@ async function dvOpenView(v){
     const ok=await until(()=>vis(document.querySelector("#view-referrals .rf")),10000);
     return ok?{ok:true, view:v, confirm:"Find local referral sources is open."}:{ok:false, view:v};
   }
+  if(v==="docs"||v==="training"||v==="service"||v==="requests"){
+    const T={docs:"Document Library",training:"Training & In-Service",service:"Service, Parts & Warranty",requests:"My Requests & Appointments"}[v];
+    showP360("resources"); await until(()=>state.active==="p360:resources"&&document.querySelector("#view-resources .rs-nav"),8000);
+    rsTab(v);
+    const ok=await until(()=>{ const h=document.querySelector("#view-resources .card h2"); return h&&vis(h)&&h.textContent.trim()===T&&document.getElementById("rsTask"); },8000);
+    return ok?{ok:true, view:v, confirm:T+" is open in Resources & Support."}:{ok:false, view:v};
+  }
   if(v==="reimb"){
     if(typeof openReimb!=="function") return {ok:false, view:v, reason:"not_available"};
     openReimb(null);
@@ -11210,7 +11343,7 @@ async function sfSave(mode){
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
 Object.assign(window,{openOrderDetail,orderPrint,ghOpenOrder,ghCloseOrder,trkCopy,qScPick,qScSet,qSetMarkup,sfpMarkupPreview,sfpMarkupApply,sfpMarkupCancel,sfpUseMap,sfpFixBelow,acSalesAdd,acSalesRemove,salesContactsApi:(b)=>api(TOOLS_ENDPOINT,b)});
-Object.assign(window,{apTradeRef,gsvAdd,gsvQty,gsvForm,gsvSend,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{RS,renderResources,rsTab,rsBack,rsDocs,rsDocSet,rsTFormat,rsTSel,rsTSend,rsSvc,rsSvcSend,rsReqs,rsHome,apTradeRef,gsvAdd,gsvQty,gsvForm,gsvSend,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};

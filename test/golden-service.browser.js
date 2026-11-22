@@ -42,7 +42,7 @@ const txt = (page) => page.evaluate(() => document.querySelector('#view-goldsvc'
   const browser = await chromium.launch();
   try {
     { const st = { calls: [], off: true }; const { ctx, page } = await open(browser, 1280, 900, {}); await fake(page, st);
-      await page.evaluate(() => showP360('resources')); await page.waitForTimeout(1200);
+      await page.evaluate(() => { showP360('resources'); setTimeout(() => window.rsTab && rsTab('service'), 300); }); await page.waitForTimeout(1200);
       await t('switch off: no Golden Service row on Resources; the view says not available', async () => {
         ok(!(await page.$('#gsvcRow .rl')), 'row shown while off'); ok(st.calls.includes('service_catalog'), 'asked once');
         await page.evaluate(() => showView('goldsvc')); await page.waitForTimeout(300); ok(/not available for your account/.test(await txt(page)), 'off message');
@@ -50,7 +50,7 @@ const txt = (page) => page.evaluate(() => document.querySelector('#view-goldsvc'
       await ctx.close(); }
     for (const [w, h, label] of [[390, 844, 'iphone'], [768, 1024, 'tablet'], [1280, 900, 'desktop']]) {
       const st = { calls: [], pv: true }; const { ctx, page } = await open(browser, w, h, {}); await fake(page, st);
-      await page.evaluate(() => showP360('resources'));
+      await page.evaluate(() => { showP360('resources'); setTimeout(() => window.rsTab && rsTab('service'), 300); });
       await page.waitForSelector('#gsvcRow .rl', { timeout: 15000 });
       await t(label + ': Resources shows Golden Service & Support; it opens the original portal (six areas + My Requests) inside Dealer 360 — no iframe, no redirect', async () => {
         await page.click('#gsvcRow .btn');
