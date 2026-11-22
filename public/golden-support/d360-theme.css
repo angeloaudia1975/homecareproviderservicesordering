@@ -1,0 +1,97 @@
+/* Dealer 360 theme for Golden Service & Support (owner 2026-11-15 styling request; built 2026-11-22).
+   HAND-WRITTEN — NOT generated. scripts/build-golden-support.js regenerates gsv.css / gsv.html / gsv.js from Golden's portal
+   and never writes this file, so the Dealer 360 look survives every regeneration. Dealer 360 loads it into the same shadow
+   root AFTER gsv.css (index.html loadGoldSvc), so these rules win without touching Golden's markup or scripts.
+
+   Kept from Golden on purpose: the Golden Technologies name, its round gold "G" logo, the Tech Support number, and every
+   diagnostic colour (green / red / amber LED dots, beep-code severity, case status). Everything else follows Dealer 360:
+   Inter + Archivo type, navy / orange / blue, white cards on the paper background, 9 px buttons, 44 px controls. */
+:host {
+  --gold: #ef6325;  --gold-light: #fcb21e;  --gold-dark: #d96f14;          /* accents → Dealer 360 orange */
+  --black: #152332; --charcoal: #12253c;    --slate: #41546a;               /* text → Dealer 360 ink / navy */
+  --mist: #eef1f5;  --border: #e0e6ee;      --radius: 14px;
+  --blue: #1681c2;  --blue-bg: #e8f3fb;
+  --shadow: 0 4px 14px rgba(16,38,63,.07);  --shadow-lg: 0 18px 40px -20px rgba(11,13,15,.28);
+  --d360-navy: #12253c; --d360-muted: #6b7d90; --d360-golden: #C9973A;
+}
+.gsv-body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; font-size: 15px; background: transparent; color: var(--black); }
+h1, h2, h3, h4, .header-title, .card-title, .section-header h2 { font-family: 'Archivo', 'Inter', system-ui, sans-serif; }
+
+/* ── Golden header → a white Dealer 360 card header (Golden name, logo and support number kept) ── */
+.site-header { z-index: auto; background: #fff; border: 1px solid var(--border); border-bottom: 0; border-radius: 14px 14px 0 0; padding: 12px 20px; height: auto; min-height: 64px; flex-wrap: wrap; gap: 12px; }
+.header-logo { background: var(--d360-golden); color: #1A1A1A; }                         /* Golden's own logo colour */
+.header-title { color: var(--d360-navy); font-weight: 800; font-size: 16px; }
+.header-title span { color: var(--d360-muted); }
+.header-subtitle { color: var(--d360-muted); font-weight: 700; }
+.header-badge { background: #f6f9fc; color: var(--slate); border: 1px solid var(--border); }
+.header-support { background: var(--d360-navy); color: #fff; border-radius: 9px; min-height: 44px; }
+.header-support:hover { background: #2B4071; }
+
+/* ── Tabs → Dealer 360 section navigation: every section visible and reachable, no sideways scrolling ── */
+.tab-nav { z-index: auto; background: #fff; border: 1px solid var(--border); border-top: 1px solid #eef2f7; border-radius: 0 0 14px 14px; padding: 6px 10px;
+  flex-wrap: wrap; overflow: visible; gap: 4px; box-shadow: 0 4px 14px rgba(16,38,63,.07); }
+.tab-btn { color: var(--slate); font-weight: 700; font-size: 13.5px; padding: 10px 14px; min-height: 44px; border-radius: 9px; border-bottom: 0; }
+.tab-btn:hover { color: var(--d360-navy); background: #f6f9fc; }
+.tab-btn.active { color: var(--d360-navy); background: #fff3ec; box-shadow: inset 0 -3px 0 var(--gold); }
+.main { padding: 20px 0 8px; max-width: none; }
+
+/* ── Banners → white Dealer 360 cards with the orange accent edge ── */
+.page-hero { background: linear-gradient(120deg, #fff, #fffaf3); border: 1px solid var(--border); border-left: 4px solid var(--gold); box-shadow: var(--shadow); padding: 22px 24px; flex-wrap: wrap; }
+.hero-text h1 { color: var(--d360-navy); font-weight: 800; font-size: 24px; }
+.hero-text h1 span { color: var(--gold-dark); }
+.hero-text p { color: var(--slate); }
+.hero-stat .num { color: var(--d360-navy); font-family: 'Archivo', 'Inter', sans-serif; }
+.hero-stat .lbl { color: var(--d360-muted); font-weight: 700; }
+.section-header h2 { color: var(--d360-navy); font-weight: 800; }
+.section-pill { background: #f6f9fc; color: var(--slate); border: 1px solid var(--border); }
+.playlist-link-box { border-radius: 12px; }
+
+/* ── Cards ── */
+.card { border-radius: 14px; box-shadow: var(--shadow); padding: 18px 20px; }
+.card-title { color: var(--d360-navy); font-weight: 800; }
+.card-title .icon { background: #fff3ec; color: var(--gold-dark); border-radius: 8px; }
+.led-point .led-num { background: var(--d360-navy); color: #fff; }
+.diag-step { border-left-color: var(--gold); border-radius: 0 9px 9px 0; }
+.cal-box { border-radius: 12px; }
+
+/* ── Buttons → Dealer 360 buttons ── */
+.btn-gold, .submit-btn, .add-to-cart-btn, .btn-view-cart, .doc-download-btn { background: var(--gold); color: #fff; border: 0; border-radius: 9px; font-weight: 800; min-height: 44px; }
+.btn-gold:hover, .submit-btn:hover, .add-to-cart-btn:hover, .btn-view-cart:hover, .doc-download-btn:hover { background: var(--gold-dark); color: #fff; }
+.add-to-cart-btn.added { background: #2d7d46; }
+.btn-outline, .filter-btn, .add-row-btn, .btn-clear-cart { background: #fff; color: var(--slate); border: 1px solid var(--border); border-radius: 9px; font-weight: 700; min-height: 44px; }
+.btn-outline:hover, .filter-btn:hover, .add-row-btn:hover, .btn-clear-cart:hover { border-color: var(--d360-navy); color: var(--d360-navy); background: #f6f9fc; }
+.filter-btn.active { background: var(--d360-navy); border-color: var(--d360-navy); color: #fff; }
+
+/* ── Form controls → Dealer 360 inputs ── */
+input, select, textarea { font-family: inherit; }
+.form-group input, .form-group select, .form-group textarea, .parts-controls input, .parts-controls select, .video-search-bar input,
+#servicePartSearch, .part-row input, .qty-input-inline, .cart-notes-input, .cart-qty-cell input {
+  border: 1px solid #cbd8e4; border-radius: 9px; background: #fff; color: var(--black); min-height: 44px; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus, .parts-controls input:focus, .parts-controls select:focus,
+.video-search-bar input:focus, #servicePartSearch:focus, .part-row input:focus, .qty-input-inline:focus, .cart-notes-input:focus {
+  border-color: var(--blue); box-shadow: 0 0 0 3px rgba(22,129,194,.16); outline: none; }
+.form-group label { color: var(--slate); font-weight: 700; font-size: 12.5px; }
+.form-section-title { color: var(--d360-navy); font-family: 'Archivo', 'Inter', sans-serif; font-weight: 800; border-bottom-color: var(--border); }
+
+/* ── Tables ── */
+.parts-table-wrap, .beep-table, .cart-items-table { border-radius: 12px; }
+.parts-table th, .beep-table th, .cart-items-table th, .case-table th { background: #f6f9fc; color: var(--d360-muted); font-weight: 800; }
+.parts-table .part-num { color: var(--d360-navy); }
+.parts-table .cat-badge { background: #f6f9fc; color: var(--slate); border: 1px solid var(--border); }
+.cart-bar { background: var(--d360-navy); border-radius: 12px; }
+.cart-panel-header { background: var(--d360-navy); }
+.doc-card, .video-card { border-radius: 14px; }
+.contact-bar { background: #fff; border: 1px solid var(--border); border-radius: 14px; color: var(--black); }
+.contact-bar .ct-label { color: var(--d360-muted); }
+.contact-bar .ct-val, .contact-bar .ct-val a { color: var(--d360-navy); }
+.gsv-d360-note { border-radius: 12px; }
+
+/* ── Tablet / phone: sections become a two-column grid of large buttons, never a sideways scroller ── */
+@container gsv (max-width: 700px) {
+  .site-header { border-radius: 14px 14px 0 0; padding: 10px 12px; }
+  .tab-nav { display: grid; grid-template-columns: 1fr 1fr; padding: 8px; }
+  .tab-btn { justify-content: flex-start; white-space: normal; text-align: left; line-height: 1.25; padding: 10px; }
+  .page-hero { padding: 16px; }
+  .hero-stats { gap: 18px; }
+  .main { padding-top: 14px; }
+}

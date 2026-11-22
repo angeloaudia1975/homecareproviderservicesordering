@@ -49,6 +49,10 @@ async function openD360(browser, w, h, st) {
   const { ctx, page } = await open(browser, w, h, {});
   st.dialogs = []; page.on('dialog', (d) => { st.dialogs.push(d.message()); d.dismiss().catch(() => {}); });
   await page.route(/img\.youtube\.com/, (r) => r.abort());
+  /* documented difference 4 (owner 2026-11-21, Dealer 360 restyle): the hand-written skin d360-theme.css recolours the
+     module on purpose. Parity measures the GENERATED module (gsv.*) against the original, so the skin is left out here;
+     test/golden-service-theme.browser.js covers the skinned look, tabs, forms and preserved Golden marks. */
+  await page.route(/golden-support\/d360-theme\.css/, (r) => r.fulfill({ status: 404, body: '' }));
   await page.route(/send-parts|goldentech\.com|resend\.com/, (r) => { st.leak = (st.leak || []).concat(r.request().url()); return r.abort(); });
   await page.route('**/functions/golden-proxy', async (route) => {
     const b = JSON.parse(route.request().postData() || '{}'); (st.calls = st.calls || []).push(b.action);
