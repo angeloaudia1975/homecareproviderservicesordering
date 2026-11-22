@@ -400,13 +400,13 @@
     var pd=box.closest('.pdp'); var key=pd?pd.getAttribute('data-k'):'', code=pd?pd.getAttribute('data-c'):''; var f=BYKEY[key]; var p=f?(f.ps.filter(function(x){return x.code===code;})[0]||f.ps[0]):null; if(!p) return;
     var k=p.manufacturer+'|'+p.code, h=CV.hist[k]||(CV.hist[k]=[]);
     box.innerHTML='<div class="cv"><div class="cv-h"><span class="cv-orb" aria-hidden="true"></span><b>Ask Victoria about this product</b>'+(PREVIEW?' <small>(test — inside the builder)</small>':'')+'</div>'+
-      '<div class="cv-log" id="cvlog" aria-live="polite">'+h.map(function(m,i){ return m.role==='user'?'<p class="cv-q">'+esc(m.text)+'</p>':'<p class="cv-a">'+esc(m.text)+(m.speak?' <button class="btn ghost cv-say" type="button" data-cvsay="'+i+'">🔊 Listen</button>':'')+'</p>'; }).join('')+'</div>'+
+      '<div class="cv-log" id="cvlog" aria-live="polite">'+h.map(function(m,i){ return m.role==='user'?'<p class="cv-q">'+esc(m.text)+'</p>':'<p class="cv-a">'+esc(m.text)+(m.speak?' <button class="btn ghost cv-say" type="button" data-cvsay="'+i+'">🔊 Listen</button>':'')+(m.q&&!PREVIEW?' <button class="btn ghost cv-fb" type="button" data-cvfb="'+i+'">'+(m.fb?esc(m.fb):'That didn&#8217;t answer my question')+'</button>':'')+'</p>'; }).join('')+'</div>'+
       '<form class="cv-f" id="cvf"><label class="sr" for="cvq">Your question</label><input id="cvq" maxlength="300" placeholder="e.g. How much does it weigh?" autocomplete="off"><button class="btn pri" type="submit">Ask</button></form>'+
       '<div class="note">Victoria answers only from this product page. For availability, delivery or anything else, call '+esc(D.dealer.name)+(D.dealer.phone?' at <a href="tel:'+esc(tel(D.dealer.phone))+'">'+esc(D.dealer.phone)+'</a>':'')+'.</div></div>';
     $('cvf').addEventListener('submit',function(ev){ ev.preventDefault(); var q=$('cvq').value.trim(); if(q.length<2) return; var btn=ev.target.querySelector('button'); btn.disabled=true;
       var hist=h.slice(-4).map(function(m){return {role:m.role,text:m.text};}); h.push({role:'user',text:q}); cvRender(); var b2=$('cvf')&&$('cvf').querySelector('button'); if(b2) b2.disabled=true;
       cvCall({action:'cv_ask',d:k,q:q,history:hist},function(j){
-        if(j&&j.ok) h.push({role:'assistant',text:j.answer,speak:j.speak||null});
+        if(j&&j.ok) h.push({role:'assistant',text:j.answer,speak:j.speak||null,q:q});
         else if(j&&j.off){ CV.on=false; h.push({role:'assistant',text:'Victoria isn\'t available right now. '+(D.dealer.phone?'Please call '+D.dealer.name+' at '+D.dealer.phone+'.':'Please send a request below.')}); }
         else h.push({role:'assistant',text:(j&&j.error)||'Victoria can\'t answer just now — please call the store.'});
         var keepOn=CV.on; CV.on=true; cvRender(); CV.on=keepOn; var q2=$('cvq'); if(q2) q2.focus(); });
@@ -422,6 +422,7 @@
   }
   document.addEventListener('click',function(e){ var t=e.target&&e.target.closest?e.target:null; if(!t) return;
     var sy=t.closest('[data-cvsay]'); if(sy){ cvSay(+sy.getAttribute('data-cvsay'),sy); return; }
+    var fbk=t.closest('[data-cvfb]'); if(fbk){ var bx=$('cvbox'), pd=bx&&bx.closest('.pdp'), f=pd&&BYKEY[pd.getAttribute('data-k')], p=f&&(f.ps.filter(function(x){return x.code===pd.getAttribute('data-c');})[0]||f.ps[0]); var m=p&&(CV.hist[p.manufacturer+'|'+p.code]||[])[+fbk.getAttribute('data-cvfb')]; if(!m||m.fb) return; m.fb='Thanks — this helps improve Victoria.'; fbk.disabled=true; fbk.textContent=m.fb; cvPost({action:'cv_feedback',q:m.q}).catch(function(){}); return; }
     var a=t.closest('a[href]'); if(!a) return; var hr=a.getAttribute('href')||'';
     if(/^tel:/i.test(hr)) cvEv('call_tap'); else if(/google\.com\/maps/i.test(hr)) cvEv('directions_tap'); },true);
 
