@@ -1077,7 +1077,7 @@
         <label class="l" for="adbCap">Caption</label><textarea id="adbCap" maxlength="${c.limits.caption}">${e(cur.caption)}</textarea><div class="warn" id="wCap"></div>
         <label class="l" for="adbTags">Hashtags</label><input type="text" id="adbTags" value="${e(cur.hashtags.map((h) => '#' + h).join(' '))}">
         <div class="adb-acts"><button type="button" class="btn gh" id="adbSug">Suggest captions</button></div><div id="adbSugs">${(S.suggestions && S.suggestions.captions || []).map((t, i) => `<div class="adb-cap" tabindex="0" data-cap="${i}">${e(t)}</div>`).join('')}</div></div>
-        <div class="adb-sec adb-pub" id="adbPub"><h3>Schedule &amp; publish</h3>${pubHtml()}</div>`;
+        ${shopperHtml()}<div class="adb-sec adb-pub" id="adbPub"><h3>Schedule &amp; publish</h3>${pubHtml()}</div>`;
     }
     host.innerHTML = insp + body;
     bindInsp(host);
@@ -1117,7 +1117,7 @@
     host.querySelectorAll('[data-ldn]').forEach((b) => { b.onclick = () => { ED.sel = b.getAttribute('data-ldn'); zMove(-1); }; });
     host.querySelectorAll('[data-lhide]').forEach((b) => { b.onclick = () => { const x = els().find((y) => y.id === b.getAttribute('data-lhide')); if (!x) return; snap(); x.hidden = !x.hidden; form(); redraw(); }; });
     if (ED.tab === 'ai') bindAi(host);
-    if (ED.tab === 'post') bindPub();
+    if (ED.tab === 'post') { bindPub(); bindShopper(host); }
     if (ED.tab === 'tpl') drawThumbs(host);
     const ro = !S.ctx.can_edit || S.ctx.preview; ['#adbSave', '#adbDup'].forEach((id) => { const b = $(id); if (b) b.style.display = ro ? 'none' : ''; });
     toolbar(); overlay();
@@ -1318,6 +1318,25 @@
     if (S.cd) drawCandidates();
     const cc = host.querySelector('#adbCampClose'); if (cc) cc.onclick = () => { S.campaign = null; form(); };
     if (S.campaign) drawCampaign();
+  }
+  /* Consumer Victoria pilot (owner 2026-11-22): the copyable campaign link — it opens THIS product on the location's published
+     storefront, where shoppers can ask Victoria; visits from it are counted as ad visits. "Try as a shopper" opens the storefront
+     inside the builder on this product (requests not sent). Nothing is posted, paid for or scheduled here. */
+  function shopperHtml() {
+    const sh = S.ctx && S.ctx.shopper; if (!sh || !sh.offered) return '';
+    const p = S.cur.products && S.cur.products[0]; const link = p && sh.links ? sh.links[p.manufacturer + '|' + p.code] : null;
+    return `<div class="adb-sec" id="adbShop"><h3>Shopper link · Ask Victoria</h3>${!sh.live ? '<div class="msg">Publish your storefront first — the link opens a product on your public storefront.</div>'
+      : !p ? '<div class="msg">Pick a product — the link opens that product on your storefront.</div>'
+      : !link ? '<div class="msg">This product is not shown on your published storefront, so it has no shopper link.</div>'
+      : `<label class="l" for="adbShopLink">Campaign link for this ad</label><div class="adb-acts" style="flex-wrap:nowrap"><input type="text" id="adbShopLink" readonly value="${e(link)}" style="flex:1;min-width:0"><button type="button" class="btn gh" id="adbShopCopy">Copy link</button></div>
+         <div class="hint">Put it in your post. It opens this product on your storefront, where shoppers can ask Victoria, call you, get directions or send a request.</div>`}
+      <div class="adb-acts"><button type="button" class="btn gh" id="adbShopTry"${p ? '' : ' disabled'}>Try as a shopper</button></div></div>`;
+  }
+  function bindShopper(host) {
+    const cp = host.querySelector('#adbShopCopy'); if (cp) cp.onclick = async () => { const i = host.querySelector('#adbShopLink'); let ok = false;
+      try { await Promise.race([navigator.clipboard.writeText(i.value), new Promise((_, r) => setTimeout(r, 1500))]); ok = true; } catch (x) { try { i.focus(); i.select(); ok = document.execCommand('copy'); } catch (y) { ok = false; } }
+      say(ok ? 'Link copied.' : 'Select the link and copy it (Ctrl+C, or press and hold).', ok ? 'ok' : 'err'); if (!ok) { i.focus(); i.select(); } };
+    const tr = host.querySelector('#adbShopTry'); if (tr) tr.onclick = () => { const p = S.cur.products && S.cur.products[0]; if (window.shopperTry) window.shopperTry(S.loc, null, p ? { manufacturer: p.manufacturer, code: p.code } : null); };
   }
   async function aiBuild(campaign) { const made = await aiBuild0(campaign); if (made) await (campaign ? autoSaveCampaign() : autoSaveCands()); }
   async function aiBuild0(campaign) {
