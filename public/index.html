@@ -10620,7 +10620,7 @@ async function dvProbe(){
   try{ const z=window.$zoho&&window.$zoho.salesiq; const hide=()=>{ try{ window.$zoho.salesiq.floatbutton.visible("hide"); }catch(e){} };
     if(z&&z.floatbutton) hide(); else if(z){ const prev=z.ready; z.ready=function(){ if(typeof prev==="function"){try{prev();}catch(e){}} hide(); }; } }catch(e){}
   const v=document.createElement("script"); v.src="/assets/dv-voice.js?v=4"; v.defer=true; document.head.appendChild(v);
-  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=15"; s.defer=true; document.head.appendChild(s);
+  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=16"; s.defer=true; document.head.appendChild(s);
 }
 /* what is on screen: the product page open (its own selected SKU / variant) and its reimbursement panel's state, ZIP,
    payer plan and date — exactly what the panel shows, read from the panel itself */
@@ -10649,6 +10649,11 @@ function dvContext(){
   /* a product page left behind a portal screen is NOT on screen (live 2026-11-21: Dealer Overview still reported the bed) */
   const pd=document.body.classList.contains("p360on")?null:document.querySelector("#content .pd"); const view=document.body.classList.contains("p360on")?(state.active||"").replace(/^p360:/,""):(pd?"product":(state.active===SHOPALL?(document.querySelector("#content .sl-search")?"shop_search":"shop"):"catalog"));
   const scr=pd?{}:dvScreen();
+  /* the location the dealer selected on screen (Reports' location picker, the Storefront builder's location) — Victoria's
+     growth, market and purchase answers use it (owner 2026-11-22) */
+  /* read from the picker the dealer sees (its value and label), so it is always what is on screen */
+  try{ const sel=view==="reports"?document.querySelector('#view-reports select[aria-label="Company or location"]'):view==="storefront"?document.querySelector('#view-storefront select[onchange^="sfLoc"]'):null;
+    if(sel&&sel.value&&sel.value!=="company"&&/^[0-9a-f-]{36}$/i.test(sel.value)&&sel.selectedIndex>=0) scr.location={id:sel.value,name:String(sel.options[sel.selectedIndex].text||"").trim().slice(0,120)}; }catch(e){}
   if(!pd) return Object.assign({view},scr);
   const code=pd.getAttribute("data-pd-code"); const p=(state.products||[]).find(x=>x&&String(x.code)===String(code)); if(!p) return {view};
   const el=document.getElementById("pdReimb"); const rs=(window.HCPSReimb&&window.HCPSReimb.stateOf&&el)?window.HCPSReimb.stateOf(el):null;
@@ -10733,6 +10738,30 @@ async function dvOpenView(v){
   const nav={dash:()=>showP360("dash"),shop:()=>showShop(),orders:()=>showP360("orders"),reports:()=>showP360("reports"),quotes:()=>(typeof showQuotesHub==="function"?showQuotesHub():showP360("quotes")),
     showroom:()=>(typeof showShowroomStudio==="function"?showShowroomStudio():showP360("showroom")),storefront:()=>showP360("storefront"),ads:()=>showP360("ads"),account:()=>showP360("account"),
     resources:()=>showP360("resources"),help:()=>showP360("help")}[v];
+  /* nested destinations (owner 2026-11-22): opened the way the dealer reaches them and confirmed only once the destination
+     itself is on screen; one this account can't use says so (never a dead screen) */
+  const vis=(e)=>{ if(!e) return false; const r=e.getBoundingClientRect(); return r.width>0&&r.height>0; };
+  const until=async(fn,ms)=>{ const t=Date.now(); while(Date.now()-t<ms){ const x=fn(); if(x) return x; await new Promise(r=>setTimeout(r,150)); } return fn(); };
+  if(v==="goldsvc"){
+    let g=(typeof gsvcLoad==="function")?await gsvcLoad().catch(()=>null):null;
+    if(!g||g.off){ GSVCP=null; g=(typeof gsvcLoad==="function")?await gsvcLoad().catch(()=>null):null; }   /* re-check once: an earlier answer may have been a passing failure */
+    if(!g||g.off) return {ok:false, view:v, reason:"not_available"};
+    showP360("goldsvc");
+    const ok=await until(()=>{ const h=document.getElementById("gsvHost"); const R=h&&h.shadowRoot; return R&&vis(R.getElementById("tab-troubleshoot")); },12000);
+    return ok?{ok:true, view:v, confirm:"Golden Service & Support is open on Troubleshoot."}:{ok:false, view:v};
+  }
+  if(v==="referrals"){
+    const on=(typeof refEnabled==="function")?await refEnabled():false; if(!on) return {ok:false, view:v, reason:"not_available"};
+    openReferrals({ret:{kind:"reports",y:0}});
+    const ok=await until(()=>vis(document.querySelector("#view-referrals .rf")),10000);
+    return ok?{ok:true, view:v, confirm:"Find local referral sources is open."}:{ok:false, view:v};
+  }
+  if(v==="reimb"){
+    if(typeof openReimb!=="function") return {ok:false, view:v, reason:"not_available"};
+    openReimb(null);
+    const ok=await until(()=>state.active==="p360:reimb"&&vis(document.getElementById("view-reimb")),8000);
+    return ok?{ok:true, view:v}:{ok:false, view:v};
+  }
   if(!nav) return {ok:false};
   await nav(); await new Promise(r=>setTimeout(r,60)); const want=v==="shop"?null:"p360:"+v;
   return {ok: want? state.active===want : (state.active!==""&&String(state.active||"").indexOf("p360:")!==0), view:v};

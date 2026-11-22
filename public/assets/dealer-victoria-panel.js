@@ -163,6 +163,29 @@
         el.querySelector('.btn').onclick = () => go(() => DV.openView && DV.openView('storefront'));
       });
     }
+    /* Growth Advisor, local market and recent purchases (owner 2026-11-22): the location, period and source are always shown */
+    const scopeM = (c) => `<div class="m">${esc(c.location || '')}${c.period ? ' · ' + esc(c.period) : ''}${c.company_figures ? ' · includes company-wide figures' : ''}</div>`;
+    function growthCard(c) {
+      (c.recommendations || []).slice(0, 4).forEach((r, i) => {
+        cardEl(`<h5>${esc(r.title)}</h5>${i === 0 ? scopeM(c) : ''}<div class="m">${esc(r.detail)}</div>${(r.facts || []).length ? `<ul style="margin:6px 0 0 18px;padding:0">${r.facts.map((f) => `<li class="m">${esc(f)}</li>`).join('')}</ul>` : ''}`); });
+      if (c.source) cardEl(`<div class="src">Source: ${esc(c.source)}</div>`);
+    }
+    function marketCard(c) {
+      const p = c.profile || {}; const n = (x) => (x == null ? '—' : Number(x).toLocaleString('en-US'));
+      cardEl(`<h5>Local market · ${esc(p.branch || c.location || '')}</h5><table><tr><td>Population (${esc(p.radius_miles || 25)} mi)</td><td>${n(p.population)}</td></tr><tr><td>Households</td><td>${n(p.households)}</td></tr>${p.age_65_plus ? `<tr><td>Age 65+</td><td>${n(p.age_65_plus.estimate)}${p.age_65_plus.share ? ' (' + esc(p.age_65_plus.share) + ')' : ''}</td></tr>` : ''}${p.median_household_income_estimate ? `<tr><td>Median household income (HCPS estimate)</td><td>${money(p.median_household_income_estimate)}</td></tr>` : ''}</table>
+        <div class="src">${esc(p.census_source || '')}</div>`);
+      (c.recommendations || []).slice(0, 3).forEach((r) => cardEl(`<h5>${esc(r.title)}</h5><div class="m">${esc(r.detail || '')}</div>`));
+    }
+    function purchasesCard(c) {
+      const list = (rows, title) => rows && rows.length ? cardEl(`<h5>${esc(title)}</h5><table>${rows.slice(0, 20).map((x) => `<tr><td>${esc(x.manufacturer)} · ${esc(x.code)}<div class="m">${esc(x.name || '')}${(x.dates || []).length ? ' · ' + esc(x.dates.join(', ')) : ''}</div></td><td>${esc(x.qty)}</td></tr>`).join('')}</table>`) : null;
+      cardEl(`<h5>Purchases ${esc(day(c.from))} – ${esc(day(c.to))}</h5><div class="m">${esc(c.location || '')}</div>`);
+      list(c.portal_orders, 'Ordered in the portal');
+      list(c.manufacturer_reported, 'Reported by manufacturers');
+      if (!(c.portal_orders || []).length && !(c.manufacturer_reported || []).length) cardEl('<div class="m">No purchases on file for these dates.</div>');
+      if ((c.coverage_gaps || []).length) cardEl(`<div class="m"><b>Not reported yet:</b> ${c.coverage_gaps.map((g) => esc(g.manufacturer + (g.reported_through ? ' (through ' + g.reported_through + ')' : ''))).join('; ')}</div>`);
+      if ((c.opportunities || []).length) cardEl(`<h5>Could interest your customers</h5>${c.opportunities.map((o) => `<div class="m">${esc(o.name)} · ${esc(o.manufacturer)}${o.category ? ' · ' + esc(o.category) : ''}</div>`).join('')}<div class="src">Bought by other Home Care Provider Services dealers in the past 12 months on lines you already buy — not local data.</div>`);
+      cardEl('<div class="src">Portal orders and manufacturer-reported purchases are listed separately and never added together.</div>');
+    }
     /* buttons for the screen on view, from the server (no AI call) */
 
     /* every page / draft action is performed and CHECKED in the portal before Victoria reports it (✓ / ✗); the confirmed
@@ -180,7 +203,8 @@
           checked(!!(v && v.ok), v && v.ok ? 'Print Brochure is open for ' + x.code + ' — choose the price your customer sees, then print, save or email it. Nothing has been sent.' : 'The Print Brochure dialog for ' + x.code + ' didn\'t open. Open the product and press Print Brochure.');
           said.push(v && v.ok ? 'Print Brochure is open — choose the price your customer sees. Nothing has been sent.' : 'The brochure didn\'t open. Open the product and press Print Brochure.'); });
         else if (x.type === 'open_view') await go(async () => { let v = null; try { v = DV.openView ? await DV.openView(x.view) : null; } catch (e) { v = null; }
-          const t = v && v.ok ? (x.label || x.view) + ' is open on the page.' : (x.label || x.view) + ' didn\'t open. Use the menu at the top of the page.'; checked(!!(v && v.ok), t); said.push(t); });
+          /* nested destinations confirm with their own sentence (Golden: once Troubleshoot is on screen) — said once */
+          const t = v && v.ok ? (v.confirm || (x.label || x.view) + ' is open on the page.') : v && v.reason === 'not_available' ? (x.label || x.view) + ' isn\'t available for your account.' : (x.label || x.view) + ' didn\'t open. Use the menu at the top of the page.'; checked(!!(v && v.ok), t); said.push(t); });
         else if (x.type === 'open_search') await go(async () => { let v = null; try { v = DV.openSearch ? await DV.openSearch(x.query) : null; } catch (e) { v = null; }
           /* one clear match: its product page is open (confirmed once it is on screen); several: the results are on screen and
              Victoria asks one short question (owner 2026-11-20 23:31) */
@@ -216,6 +240,9 @@
         else if (c.type === 'products') productsCard(c);
         else if (c.type === 'guide') guideCard(c);
         else if (c.type === 'storefront') storefrontCard(c);
+        else if (c.type === 'growth') growthCard(c);
+        else if (c.type === 'market') marketCard(c);
+        else if (c.type === 'purchases') purchasesCard(c);
       }
     }
     const failText = (r) => { const over = r && /over_budget|over_daily|over_monthly|limit/.test(String(r.error));
