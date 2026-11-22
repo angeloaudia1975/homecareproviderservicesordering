@@ -13,6 +13,12 @@
           "text": "Resources & Support now works entirely inside Dealer 360: a Document Library you can search by manufacturer, model or document type; Training & In-Service with open appointment times (Booked) or a request HCPS coordinates (Requested); manufacturer Service, Parts & Warranty cases with a case number; and My Requests & Appointments with each request's status.",
           "dealer_facing": true,
           "help": "resources-support"
+        },
+        {
+          "area": "ordering",
+          "text": "Featured this month: four products HCPS features each month on Dealer Overview and the first Shop Products screen, at your own prices.",
+          "dealer_facing": true,
+          "help": "featured-month"
         }
       ]
     },

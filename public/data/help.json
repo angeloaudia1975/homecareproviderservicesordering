@@ -318,6 +318,26 @@
         "Book this time",
         "Send as a request — HCPS coordinates"
       ]
+    },
+    {
+      "id": "featured-month",
+      "area": "ordering",
+      "title": "Featured this month",
+      "updated": "2026-11-22",
+      "open": "dash",
+      "summary": "Four products HCPS features each month, on Dealer Overview and the first Shop Products screen. They change on the 1st of the month.",
+      "steps": [
+        "Look for Featured this month on Dealer Overview or when you open Shop Products.",
+        "Each card shows the product with your own price for lines you can order. Tap a card to open that product in its catalog."
+      ],
+      "notes": [
+        "You see only products on lines your account can browse; when a featured product isn't on your account, another featured product takes its place."
+      ],
+      "ui_checks": [
+        "Featured this month",
+        "ftmDash",
+        "ftmShop"
+      ]
     }
   ]
 }
