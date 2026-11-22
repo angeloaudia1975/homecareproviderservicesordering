@@ -66,6 +66,8 @@ const SLOTS = { ok: true, format: 'zoom', tz_abbr: 'CST', duration_min: 30, with
         await page.fill('#rsDocQ', ''); await page.waitForTimeout(100);
         await page.selectOption('#view-resources .rs-filt select >> nth=1', 'training'); await page.waitForTimeout(150);
         n = await page.$$eval('#view-resources .rs-doc', (e) => e.map((x) => x.innerText)); ok(n.length === 1 && /Twilight/.test(n[0]) && /Watch/.test(n[0]) && /Golden Technologies/.test(n[0]) && !/golden-technologies/.test(n[0]), JSON.stringify(n));
+        const lit = await page.$$eval('#litMfr option', (o) => o.map((x) => x.textContent)); ok(lit.length && !lit.some((x) => /^[a-z0-9-]+$/.test(x)), 'literature names: ' + JSON.stringify(lit));
+        ok(await page.$$eval('#view-resources select', (a) => a.every((x) => x.getAttribute('aria-label') || (x.labels && x.labels.length))), 'unlabelled select');
         const a = await page.$eval('#view-resources .rs-doc a', (x) => ({ href: x.href, tgt: x.target })); ok(a.tgt === '_blank' && /vimeo/.test(a.href), JSON.stringify(a));
         await page.selectOption('#view-resources .rs-filt select >> nth=1', ''); });
       await page.evaluate(() => rsTab('training'));
