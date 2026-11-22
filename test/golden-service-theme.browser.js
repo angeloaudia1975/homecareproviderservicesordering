@@ -66,6 +66,10 @@ const R = (page, fn, arg) => page.evaluate(([f, a]) => (new Function('root', 'a'
           /* every control and button inside the module's width — the page hides sideways overflow, which once hid the part rows' description and qty on phones (found live 2026-11-22) */
           const clip = await R(page, `const p=root.querySelector('.tab-panel.active'); const hw=document.querySelector('#gsvHost').getBoundingClientRect().right; return [...p.querySelectorAll('input,select,textarea,button')].filter(e=>{const b=e.getBoundingClientRect();return b.width>0&&b.right>hw+1}).map(e=>e.name||e.className).slice(0,6)`);
           ok(!clip.length, 'outside the module: ' + clip);
+          const clipAll = await R(page, `const hw=document.querySelector('#gsvHost').getBoundingClientRect().right; const out=[]; for(const b of root.querySelectorAll('.tab-btn')){ b.click(); const id=(b.getAttribute('onclick')||'').match(/'([a-z]+)'/)[1]; const p=root.getElementById('tab-'+id);
+            for(const e of p.querySelectorAll('input,select,textarea,button')){ const r=e.getBoundingClientRect(); if(!r.width||r.right<=hw+1) continue; let a=e.parentElement, sc=false; while(a&&a!==p){ const o=getComputedStyle(a).overflowX; if(o==='auto'||o==='scroll'){sc=true;break;} a=a.parentElement; } if(!sc) out.push(id+':'+(e.name||e.id||e.className)); } }
+            [...root.querySelectorAll('.tab-btn')].find(b=>/'request'/.test(b.getAttribute('onclick')||'')).click(); return out.slice(0,8);`);
+          ok(!clipAll.length, 'outside the module on some tab: ' + clipAll);
           ok(r.n >= 5, 'fields ' + r.n); ok(!r.low.length, 'short ' + r.low); if (w < 980) ok(!r.tiny, 'tiny ' + r.tiny); ok(r.btn >= 1, 'submit button');
           const ov = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); ok(ov <= 1, 'overflow ' + ov); ok(!st.submits.length, 'submitted');
         });
