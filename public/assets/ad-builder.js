@@ -1489,5 +1489,36 @@
       if (await openLocation(null)) await refreshList();
     },
     _draw: draw, _state: S, _ed: ED, _templates: STUDIO_TPL, _build: buildLayout,
+    /* Dealer Victoria (owner 2026-11-22): the Studio's OWN "Create 3 designs" for one product, run as if the dealer picked the
+       product and pressed the button — same checks, same auto-save to the private Creative Library. Reports what really saved.
+       Nothing is posted or scheduled. */
+    victoria: {
+      ready: () => !!(S.ctx && A),
+      async create(o) {
+        if (!S.ctx || !A) return { ok: false, reason: 'not_ready' };
+        if (S.busy) return { ok: false, reason: 'busy' };
+        if (o.location_id && String(o.location_id) !== String(S.loc)) { if (!(await openLocation(String(o.location_id)))) return { ok: false, reason: 'location' }; }
+        const want = String(o.code || '').toUpperCase();
+        const p = (S.ctx.products || []).find((x) => String(x.code).toUpperCase() === want && (!o.manufacturer || x.manufacturer === o.manufacturer));
+        if (!p) return { ok: false, reason: 'not_listed' };
+        if (S.ctx.preview || !S.ctx.can_edit) return { ok: false, reason: 'read_only' };
+        S.cur = blank(); applyBrand(S.cur); S.row = null; S.cd = null; S.campaign = null; S.aiResult = null; ED.sel = null;
+        S.cur.products = [{ manufacturer: p.manufacturer, code: p.code, show_price: true }];
+        if (o.platform && AI_OPTS.platform.some(([v]) => v === o.platform)) S.ai.platform = o.platform;
+        ED.tab = 'ai'; form(); redraw();
+        await aiBuild(false);
+        const msg = ($('#adbMsg') || {}).textContent || '';
+        if (!S.cd || !S.cd.cands || !S.cd.cands.length) return { ok: false, reason: 'not_made', message: msg };
+        const c0 = S.cd.cands[0] || {};
+        return { ok: true, made: S.cd.cands.length, saved: (S.cd.saved || []).filter(Boolean).length, name: p.name, code: p.code,
+          headlines: S.cd.cands.map((x) => x.headline || ''), caption: (c0.captions && c0.captions.facebook) || c0.caption || '', message: msg };
+      },
+      pick(i) {
+        if (!S.cd || !S.cd.cands || !S.cd.cands[i]) return { ok: false, reason: 'no_designs' };
+        const b = A.host.querySelector(`[data-cduse="${i}"]`); if (!b) return { ok: false, reason: 'no_designs' };
+        b.click(); const w = A.host.querySelector('.sms-wrap'); if (w && w.scrollIntoView) try { w.scrollIntoView({ block: 'start' }); } catch (x) {}
+        return { ok: (S.cd.pick || 0) === i, n: i + 1, saved: !!(S.cd.saved || [])[i], headline: S.cur.headline || '' };
+      },
+    },
   };
 })();

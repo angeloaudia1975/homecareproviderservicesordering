@@ -176,6 +176,19 @@
         <div class="src">${esc(p.census_source || '')}</div>`);
       (c.recommendations || []).slice(0, 3).forEach((r) => cardEl(`<h5>${esc(r.title)}</h5><div class="m">${esc(r.detail || '')}</div>`));
     }
+    /* storefront plan (owner 2026-11-22): what "use that" applies is exactly the last plan shown here */
+    let lastPlan = null;
+    function storefrontPlanCard(c) {
+      lastPlan = c;
+      const tp = (c.top_products || []).slice(0, 8);
+      cardEl(`<h5>Storefront plan · ${esc(c.location || '')}</h5><div class="m">From your purchases ${esc(c.from || '')} – ${esc(c.to || '')}${c.live ? ' · storefront is live (changes stay a draft until you publish)' : ''}</div>
+        ${(c.lines || []).length ? `<div class="m"><b>Lines first:</b> ${(c.lines || []).map((l) => esc(l.name)).join(', ')}</div>` : '<div class="m">No purchases on lines this storefront can show.</div>'}
+        ${(c.categories || []).length ? `<div class="m"><b>Categories first:</b> ${c.categories.map(esc).join(', ')}</div>` : ''}
+        ${tp.length ? `<table>${tp.map((x) => `<tr><td>${esc(x.manufacturer)} · ${esc(x.code)}<div class="m">${esc(x.name || '')}${x.category ? ' · ' + esc(x.category) : ''} · ${esc((x.sources || []).join(' / '))}</div></td><td>${esc(x.qty)}</td></tr>`).join('')}</table>` : ''}
+        ${(c.excluded || []).length ? `<div class="m">Not shown: ${(c.excluded || []).map((x) => esc(x.manufacturer) + ' — ' + esc(x.reason)).join('; ')}</div>` : ''}`);
+      cardEl(`<h5>Headline</h5><div class="m">${esc(c.headline || '')}</div><h5 style="margin-top:6px">Introduction</h5><div class="m">${esc(c.about || '')}</div>
+        <div class="src">${c.can_edit ? 'Nothing is saved. Say “use that” to put this into your Storefront builder — you save or publish it.' : 'Only your head office can change this location\'s storefront.'}</div>`);
+    }
     function purchasesCard(c) {
       const list = (rows, title) => rows && rows.length ? cardEl(`<h5>${esc(title)}</h5><table>${rows.slice(0, 20).map((x) => `<tr><td>${esc(x.manufacturer)} · ${esc(x.code)}<div class="m">${esc(x.name || '')}${(x.dates || []).length ? ' · ' + esc(x.dates.join(', ')) : ''}</div></td><td>${esc(x.qty)}</td></tr>`).join('')}</table>`) : null;
       cardEl(`<h5>Purchases ${esc(day(c.from))} – ${esc(day(c.to))}</h5><div class="m">${esc(c.location || '')}</div>`);
@@ -214,6 +227,27 @@
             : v.opened ? 'The ' + v.opened.name + ' page is open.'
             : !n ? 'Shop Products found nothing for that on your lines.'
             : 'Shop Products shows ' + n + ' result' + (n === 1 ? '' : 's') + '.' + (n > 1 ? ' Which one would you like?' : '')); });   // names stay on screen, not read aloud
+        else if (x.type === 'storefront_apply') await go(async () => {
+          if (!lastPlan) { const t = 'Ask me for a storefront plan first — then say “use that”.'; checked(false, t); said.push(t); return; }
+          const plan = Object.assign({}, lastPlan); if (x.headline) plan.headline = x.headline; if (x.about) plan.about = x.about;
+          let v = null; try { v = DV.storefrontApply ? await DV.storefrontApply(plan) : null; } catch (e) { v = null; }
+          const ok = !!(v && v.ok); const t = ok ? (v.confirm || 'The plan is in your Storefront builder.') + ' Nothing is saved or published until you press Save or Publish.' : (v && v.message) || 'The plan couldn\'t be put into the Storefront builder.';
+          checked(ok, t); said.push(t); });
+        else if (x.type === 'ad_create') await go(async () => {
+          let v = null; try { v = DV.adCreate ? await DV.adCreate(x) : null; } catch (e) { v = null; }
+          const nm = (v && v.name) || x.name || x.code;
+          const why = { not_listed: x.code + ' isn\'t one of the products this location can advertise.', read_only: 'Only your head office can make ads for this location.', busy: 'The Studio is busy — try again in a moment.' };
+          const ok = !!(v && v.ok && v.saved > 0);
+          const t = !v || !v.ok ? (why[v && v.reason] || (v && v.message) || 'The designs couldn\'t be made just now — open Social Media Advertising and try Create 3 designs.')
+            : v.saved === v.made ? v.made + ' Facebook designs for ' + nm + ' are in the Social Marketing Studio, each with its caption, and all ' + v.saved + ' are saved as private drafts in your Creative Library. Nothing is posted or scheduled.'
+            : v.saved ? v.made + ' designs for ' + nm + ' are on screen; ' + v.saved + ' of ' + v.made + ' are saved to your Creative Library — press Retry saving for the rest. Nothing is posted.'
+            : v.made + ' designs for ' + nm + ' are on screen but none are saved yet — download them, or press Retry saving. Nothing is posted.';
+          checked(ok, t); said.push(t); });
+        else if (x.type === 'ad_pick') await go(async () => {
+          let v = null; try { v = DV.adPick ? await DV.adPick(x.n) : null; } catch (e) { v = null; }
+          const ok = !!(v && v.ok);
+          const t = ok ? 'Design ' + v.n + ' is open in the editor' + (v.saved ? ' (already saved in your Creative Library)' : '') + ' — change anything, then save or download. Nothing is posted.' : 'There are no generated designs on screen to choose from — ask me to create the ad first.';
+          checked(ok, t); said.push(t); });
         else if (x.type === 'open_reimb') await go(async () => { let v = null; try { v = DV.openReimb ? await DV.openReimb() : null; } catch (e) { v = null; }
           const ok3 = !!(v && v.ok); const t = ok3 ? 'The reimbursement panel is on screen.' : 'The reimbursement panel didn\'t open — open a product first, then scroll to Provider reimbursement.'; checked(ok3, t); said.push(t); });
         else if (x.type === 'open_product') await go(async () => { let v = null; try { v = DV.openProduct ? await DV.openProduct(x) : null; } catch (e) { v = null; }
@@ -243,6 +277,7 @@
         else if (c.type === 'growth') growthCard(c);
         else if (c.type === 'market') marketCard(c);
         else if (c.type === 'purchases') purchasesCard(c);
+        else if (c.type === 'storefront_plan') storefrontPlanCard(c);
       }
     }
     const failText = (r) => { const over = r && /over_budget|over_daily|over_monthly|limit/.test(String(r.error));
