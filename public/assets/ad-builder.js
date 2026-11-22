@@ -1180,12 +1180,20 @@
       try { await draw(cv, libCur(c), 0.24); } catch (x) {} await new Promise((r) => setTimeout(r, 0)); } }
   /* preview a library creative in the editor (not saved); its product words are locked */
   function libOpen(c, quiet) { if (!c) return; S.cur = libCur(c); S.row = null; S.problems = []; S.aiResult = null; S.campaign = null; S.cd = null; S.libLocked = true; ED.sel = null; ED.hist = []; ED.fut = [];
-    form(); redraw(); if (!quiet) window.scrollTo({ top: 0 }); say(`Preview of “${c.title}”. Choose Personalize to make your own copy with your logo and contact details — the product words stay as HCPS approved them.`, 'ok'); }
+    form(); redraw(); if (!quiet) toEditor(); say(`Preview of “${c.title}”. Choose Personalize to make your own copy with your logo and contact details — the product words stay as HCPS approved them.`, 'ok'); }
   async function libPersonalize(c) { if (!c || S.busy) return; S.busy = true; say('Making your copy…');
     try { const r = await A.api({ action: 'library_personalize', location_id: S.loc, creative_id: c.id, format: S.cur && S.cur.format });
       if (r && r.ok) { await refreshList(); await open(r.row.id); say('Your copy is saved. Change the size, colours, call to action or caption; download it when ready. The product words stay locked.', 'ok'); }
       else say((r && r.error) || 'That creative could not be personalized just now.', 'err'); } finally { S.busy = false; } }
   async function refreshList() { const r = await A.api({ action: 'ads_list' }); S.ads = r && r.ok ? r.ads : []; list(); if (r && !r.ok && r.error) say(r.error, 'err'); }
+  /* bring the editor itself on screen (below the sticky portal header): "Open" used to scroll to the top of the Studio, where
+     the library is, so nothing visible changed (owner acceptance 2026-11-22) */
+  function toEditor() {
+    const w = A.host.querySelector('.sms-wrap'); if (!w) { window.scrollTo({ top: 0 }); return; }
+    const h = document.querySelector('header.top, .topbar, #p360top, header'); let off = 0;
+    try { if (h && /sticky|fixed/.test(getComputedStyle(h).position)) off = Math.max(0, h.getBoundingClientRect().bottom); } catch (x) {}
+    window.scrollTo({ top: Math.max(0, w.getBoundingClientRect().top + window.scrollY - off - 12) });
+  }
   async function open(id) {
     const r = await A.api({ action: 'ads_get', id }); if (!r || !r.ok) { say((r && r.error) || 'That ad could not be opened.', 'err'); return; }
     if (r.row.dealer_id !== S.loc) await openLocation(r.row.dealer_id, true);
@@ -1193,7 +1201,7 @@
     S.problems = r.problems || []; S.cur.products = S.cur.products.filter((p) => productBy(p)); S.cur.layouts = r.ad.layouts || null; S.cd = null;
     ED.sel = null; ED.hist = []; ED.fut = [];
     form(); redraw(); say(S.problems.length ? S.problems.map((p) => `${p.code ? p.code + ': ' : ''}${p.problem}`).join(' ') : 'Opened.', S.problems.length ? 'err' : 'ok');
-    window.scrollTo({ top: 0 });
+    toEditor();
   }
 
   /* ---------------- AI Build My Ad / Generate Complete Campaign ---------------- */

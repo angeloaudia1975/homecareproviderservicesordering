@@ -72,7 +72,9 @@ async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } ca
     await mount();
     const back = await page.evaluate(() => ({ list: [...document.querySelectorAll('#adbList .adb-card b')].map((b) => b.textContent), gen: (document.querySelector('#adbGen') || {}).innerText || '' }));
     await t('after signing out and back in (nothing left in the browser) all six designs are in Your saved designs', () => ok(back.list.length === 6 && back.list.every((x) => /AI design \d$/.test(x)) && !back.gen, JSON.stringify(back)));
-    await page.click('[data-open="a2"]'); await page.waitForTimeout(400);
+    await page.evaluate(() => window.scrollTo(0, 0)); await page.click('[data-open="a2"]'); await page.waitForTimeout(400);
+    const vis = await page.evaluate(() => { const r = document.querySelector('.sms-wrap').getBoundingClientRect(); return { top: Math.round(r.top), y: Math.round(scrollY), h: innerHeight }; });
+    await t('Open brings the editor itself to the top of the screen (not the top of the Studio, above the library)', () => ok(vis.top >= 0 && vis.top <= 200 && vis.y > 0, JSON.stringify(vis)));
     const op = await page.evaluate(() => { const S = window.HCPSAdBuilder._state; const sv = window.__saved.find((x) => x.id === 'a2').ad; return { head: S.cur.headline, want: sv.headline, row: S.row && S.row.id, caps: JSON.stringify(S.cur.captions) === JSON.stringify(sv.captions || {}) && JSON.stringify(S.cur.hashtags) === JSON.stringify(sv.hashtags || []) }; });
     await t('a saved design reopens with its own words and caption, ready to edit and re-save', () => ok(op.head && op.head === op.want && op.row === 'a2' && op.caps, JSON.stringify(op)));
     const [dl2] = await Promise.all([page.waitForEvent('download', { timeout: 15000 }), page.click('[data-sdl="a3"]')]);

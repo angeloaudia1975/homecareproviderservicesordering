@@ -9951,7 +9951,7 @@ function renderHelp(){
 /* START HERE (owner milestone 2026-11-22 §3): Dealer Overview card + Help & Training "Start here" tab. The tour video,
    transcript and walkthroughs live in /assets/start-here.js (loaded on first use); the one-page guide is a static page. */
 let SH_JS=null;
-function shLoad(){ if(!SH_JS) SH_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/start-here.js?v=1"; sc.onload=()=>{ window.HCPSStart.init({ showP360:(v)=>showP360(v), refEnabled:()=>(typeof refEnabled==="function"?refEnabled():Promise.resolve(false)),
+function shLoad(){ if(!SH_JS) SH_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/start-here.js?v=2"; sc.onload=()=>{ window.HCPSStart.init({ showP360:(v)=>showP360(v), refEnabled:()=>(typeof refEnabled==="function"?refEnabled():Promise.resolve(false)),
     openFirstLine:async()=>{ const L=entitledManufacturers().filter(m=>m.slug!=="golden-technologies"); if(L.length) await selectManufacturer(L[0].slug); else showShop(); } }); res(); }; sc.onerror=()=>{ SH_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return SH_JS; }
 async function shOpen(k){
   if(k==="guide"){ window.open("/start-here/guide.html","_blank","noopener"); return {ok:true}; }
@@ -10721,7 +10721,7 @@ window.showView=showView;
 const ADS_API=API_BASE+"/dealer-ads-api"; let ADS_JS=null;
 async function loadAdsView(){
   const host=$("#view-ads"); if(!host) return;
-  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=9"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
+  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=10"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
   try{ await ADS_JS; }catch(e){ host.innerHTML='<div class="ph"><div><h1>Social Ads</h1></div></div><div class="card"><div class="msg">The ad builder could not be loaded — please try again.</div></div>'; return; }
   window.HCPSAdBuilder.mount(host,{ api:(b)=>api(ADS_API,b), esc });
 }
