@@ -1,7 +1,7 @@
 {
   "review_id": "fb5ae35793dc",
   "sandbox": "HCPS catalog review sandbox — private preview, not production",
-  "built_at": "2026-11-21T20:05:03Z",
+  "built_at": "2026-11-22T05:17:39Z",
   "main": "6234999a0814bc4d276aefde8d433860888f1139",
   "included": [],
   "skipped": [
@@ -9,6 +9,12 @@
       "pr": 84,
       "title": "Add Dalton NOV26 checkout review and confirmation",
       "branch": "codex/dalton-nov26-checkout",
+      "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
+    },
+    {
+      "pr": 85,
+      "title": "Design batch 1 (preview only): Golden Service & Support restyle + full-width referral list",
+      "branch": "design/d360-batch-1",
       "reason": "draft (work in progress) — label it owner-review when it is ready for owner review"
     }
   ]
