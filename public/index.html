@@ -9648,7 +9648,7 @@ function openReimb(prefill){ REIMB_PREFILL=prefill||null; if(typeof showP360==="
    reimbursement panel, the reimbursement lookup and Reports & Growth Ideas. Shown only where referral-sources-api says this
    account is in the pilot (TEST dealerships + the locations the owner lists). Back returns to the caller with its state. */
 const REF_API=API_BASE+"/referral-sources-api"; let REF_JS=null, REF_PREFILL=null, REF_ON=null;
-function refLoadJs(){ if(!REF_JS) REF_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/referral-sources.js?v=2"; sc.onload=res; sc.onerror=()=>{ REF_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REF_JS; }
+function refLoadJs(){ if(!REF_JS) REF_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/referral-sources.js?v=3"; sc.onload=res; sc.onerror=()=>{ REF_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return REF_JS; }
 async function refEnabled(){ if(REF_ON!==null) return REF_ON; try{ const r=await api(REF_API,{action:"meta"}); REF_ON=!!(r&&r.ok&&r.enabled); }catch(e){ REF_ON=false; } return REF_ON; }
 window.refEnabled=refEnabled;
 async function loadReferralsView(){
@@ -9812,8 +9812,10 @@ function gsvLoadScript(src){ return new Promise((res,rej)=>{ if(window.GSV_MOUNT
 async function gsvAssets(){
   if(GSVMOD) return GSVMOD;
   const get=u=>fetch(u,{cache:"no-cache"}).then(r=>{ if(!r.ok) throw new Error(u); return r.text(); });
-  const [css,html]=await Promise.all([get("/golden-support/gsv.css"),get("/golden-support/gsv.html"),gsvLoadScript("/golden-support/gsv.js")]);
-  GSVMOD={css,html}; return GSVMOD;
+  /* the Dealer 360 theme (owner 2026-11-15 request, built 2026-11-22) is a hand-written layer the build never touches, so it
+     survives regeneration; a missing theme never blocks the support tools — they load in Golden's own look */
+  const [css,html,theme]=await Promise.all([get("/golden-support/gsv.css"),get("/golden-support/gsv.html"),get("/golden-support/d360-theme.css").catch(()=>""),gsvLoadScript("/golden-support/gsv.js")]);
+  GSVMOD={css,html,theme}; return GSVMOD;
 }
 /* Golden's catalog answer → the original portal's PARTS_DATA shape. No price from Golden = 0 ("Call"). */
 function gsvPartsData(g){
@@ -9879,7 +9881,7 @@ async function loadGoldSvc(){
   const pv=g.prices_visible===true, send=GSVS===true;
   host.innerHTML=`<div class="ph"><div><h1>Golden Service &amp; Support</h1><div class="sub">${MEMBER?esc("Golden service information for "+(MEMBER.dealer_name||"your dealership")+".")+(MEMBER.role==="technician_service"?(send?" Service and parts requests go straight to Golden under your dealer's account — you get a case number.":" To send a request now, call Golden Tech Support."):""):(pv?"Your Golden dealer prices, as Golden shows them for your account.":"Golden shows parts prices only to authorized Golden dealers with a verified account.")+" "+(send?"Requests go straight to Golden under your verified Golden account — you get a case number.":"Requests: use Golden's support site or call Golden Tech Support until sending from Dealer 360 is switched on.")}</div></div><div><a class="btn gh" style="min-height:44px;display:inline-flex;align-items:center" onclick="showView('resources')">← Resources</a></div></div><div id="gsvHost"></div>`;
   const root=$("#gsvHost").attachShadow({mode:"open"}); GSVROOT=root;
-  root.innerHTML=`<style>${A.css}</style>${A.html}`;
+  root.innerHTML=`<style>${A.css}</style><style data-d360-theme>${A.theme||""}</style>${A.html}`;
   try{ window.GSV_MOUNT(root,{parts:gsvPartsData(g)},{send:gsvSendCase}); }catch(e){ console.error("[gsv mount]",e); }
   if(MEMBER){ const st=document.createElement("style"); st.textContent='.tab-btn[onclick*="\'labor\'"],#tab-labor{display:none!important}'
       /* a technician never sees a price (the server sends none): Golden's price columns, totals and "$0.00 estimated total" are hidden */

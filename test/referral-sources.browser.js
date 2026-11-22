@@ -57,7 +57,7 @@ async function setup(browser, w, h, o) {
   return { ctx, page, calls };
 }
 const view = (page) => page.evaluate(() => { const v = document.querySelector('#view-referrals'); const rows = [...v.querySelectorAll('tbody tr')].map((tr) => [...tr.querySelectorAll('td')].map((td) => td.innerText.trim()));
-  return { on: v.classList.contains('on'), text: v.innerText, rows, amt: [...v.querySelectorAll('.amt')].map((x) => x.textContent), rate: (v.querySelector('#rfRate') || {}).textContent, rateZip: (v.querySelector('#rrZip') || {}).value, rateState: (v.querySelector('#rrState') || {}).value, rateDos: (v.querySelector('#rrDos') || {}).value,
+  return { on: v.classList.contains('on'), text: v.innerText, rows, amt: [...v.querySelectorAll('.amt')].map((x) => x.textContent), rate: (v.querySelector('#rfRate') || {}).textContent, ...(() => { const rs = ((v.querySelector('[data-rs]') || { getAttribute: () => '' }).getAttribute('data-rs') || '').split('|'); return { rateState: rs[0], rateZip: rs[1], rateDos: rs[2] }; })(),
     zips: (v.querySelector('#rfZips') || {}).value, center: (v.querySelector('#rfCenter') || {}).value, mode: (v.querySelector('#rfMode') || {}).value, broken: [...v.querySelectorAll('img')].filter((i) => i.complete && !i.naturalWidth).length, sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }; });
 const waitRows = (page) => page.waitForFunction(() => { const v = document.querySelector('#view-referrals'); return v && v.classList.contains('on') && (v.querySelectorAll('tbody tr').length || /No published matches|unavailable/.test(v.innerText)) && v.querySelector('.amt, #rfRate .msg'); }, null, { timeout: 20000 });
 
@@ -72,25 +72,26 @@ const waitRows = (page) => page.waitForFunction(() => { const v = document.query
       const btn = await page.evaluate(() => document.querySelector('#pdReimb .pd-ref-go').textContent);
       await page.evaluate(() => { const s = document.querySelector('#pdReimb select[data-k="state"]'); return s && s.value; });
       await page.click('#pdReimb .pd-ref-go'); await waitRows(page); await page.waitForFunction(() => /Months 4–13/.test((document.querySelector('#rfRate') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => {}); await page.waitForTimeout(300);
-      const v1 = await view(page);
+      await page.click('[data-a="ratetog"]'); await page.waitForSelector('#rrZip'); const rateDetails = await page.evaluate(() => document.querySelector('#rfRate').textContent); await page.click('[data-a="ratetog"]');
+      const v1 = Object.assign(await view(page), { rateDetails });
       const radiusCall = calls.filter((c) => c.action === 'radius').pop();
       await t(`${label}: from a product's reimbursement panel "${btn.trim()}" opens DIRECTLY on the 25-mile search around the branch ZIP's center — every published row, nearest first, with distance, office address, specialty and claims year`, () => {
         ok(/E0260/.test(btn) && v1.on && v1.mode === 'radius' && v1.center === '42101' && radiusCall && radiusCall.center_zip === '42101' && radiusCall.hcpcs === 'E0260', JSON.stringify({ btn, on: v1.on, mode: v1.mode, center: v1.center, radiusCall }));
-        ok(v1.rows.length === 7 && v1.rows[0][0] === '0.3 mi' && /≈ 24 mi/.test(v1.rows[6][0]) && /ZIP-based estimate/.test(v1.rows[6][0]) && v1.rows.every((r) => r[7] === '2024') && /Synthetic Way/.test(v1.rows[0][3]), JSON.stringify(v1.rows));
+        ok(v1.rows.length === 7 && v1.rows[0][2] === '0.3 mi' && /≈ 24 mi/.test(v1.rows[6][2]) && /ZIP-based estimate/.test(v1.rows[6][2]) && /Claims year 2024/.test(v1.text) && /Synthetic Way/.test(v1.rows[0][1]) && /NPI \d{10}/.test(v1.rows[0][0]) && v1.rows.every((r) => /Copy office details/.test(r[r.length - 1])), JSON.stringify(v1.rows));
         ok(/within 25 straight-line miles of ZIP 42101/.test(v1.text) && /nearest first/.test(v1.text) && /1 published row in ZIP areas crossing the 25-mile line could not be placed/.test(v1.text) && !/Partial coverage/.test(v1.text), v1.text.slice(0, 700));
       });
       // 1b — exact office ZIP comparison (the acceptance case): five rows, 161 claims, four withheld
       await page.selectOption('#rfMode', 'zips'); await waitRows(page); await page.waitForTimeout(400);
       const v1b = await view(page);
-      const claims = v1b.rows.reduce((a, r) => a + Number((r[5] || '').replace(/\D/g, '')), 0);
+      const claims = v1b.rows.reduce((a, r) => a + Number((r[4] || '').replace(/\D/g, '')), 0);
       await t(`${label}: "Exact office ZIPs only" keeps the comparison — ZIP 42101: five published rental rows, 161 supplier claims, four beneficiary counts withheld (never 0)`, () => {
-        ok(v1b.zips === '42101' && v1b.rows.length === 5 && claims === 161 && v1b.rows.filter((r) => /withheld by CMS/.test(r[4])).length === 4 && !v1b.rows.some((r) => /^0$/.test(r[4])), JSON.stringify(v1b.rows));
-        ok(/claims year 2024/.test(v1b.text) && /never added together/.test(v1b.text) && /Original Medicare fee-for-service Part B claims only/.test(v1b.text), v1b.text.slice(0, 400));
+        ok(v1b.zips === '42101' && v1b.rows.length === 5 && claims === 161 && v1b.rows.filter((r) => /withheld by CMS/.test(r[3])).length === 4 && !v1b.rows.some((r) => /^0$/.test(r[3])), JSON.stringify(v1b.rows));
+        ok(/Claims year 2024/.test(v1b.text) && /never added together/.test(v1b.text) && /Original Medicare fee-for-service Part B claims only/.test(v1b.text), v1b.text.slice(0, 400));
       });
       await t(`${label}: the allowance beside it equals the reimbursement lookup — Kentucky, Original Medicare, rate ZIP 42101, Nov 20 2026: $78.16 a month (months 1–3), $58.62 (months 4–13), with the billing disclaimer`, () => {
-        ok(v1.amt.includes('$78.16') && /Months 1–3: \$78\.16 per month/.test(v1.rate) && /Months 4–13: \$58\.62 per month/.test(v1.rate), JSON.stringify(v1.amt) + ' RATE: ' + v1.rate);
+        ok(v1.amt.includes('$78.16') && /months 1–3: \$78\.16/i.test(v1.rate) && /months 4–13: \$58\.62/i.test(v1.rate) && /Rate ZIP 42101/.test(v1.rate) && /Original Medicare/.test(v1.rate), JSON.stringify(v1.amt) + ' RATE: ' + v1.rate);
         ok(v1.rateState === 'KY' && v1.rateZip === '42101' && v1.rateDos === '2026-11-20', JSON.stringify(v1));
-        ok(/HCPCS|billing|coding/i.test(v1.rate || ''), 'disclaimer');
+        ok(/HCPCS|billing|coding/i.test(v1.rateDetails || ''), 'disclaimer under View rate details: ' + v1.rateDetails);
       });
       // 1c — moving the 25-mile center keeps the reimbursement ZIP and allowance
       await page.selectOption('#rfMode', 'radius'); await waitRows(page); await page.fill('#rfCenter', '42134'); await page.click('[data-a="search"]'); await waitRows(page); await page.waitForTimeout(400);
@@ -104,9 +105,10 @@ const waitRows = (page) => page.waitForFunction(() => { const v = document.query
       const last = calls.filter((c) => c.action === 'search').pop();
       await t(`${label}: the search sends only the code and office ZIPs (text, five digits)`, () => ok(last.hcpcs === 'E0260' && JSON.stringify(last.zips) === '["42101","42103"]', JSON.stringify(last)));
       // 3 — the rate panel alone: changing the payer re-reads only the allowance
+      if (!(await page.$('#rrZip'))) await page.click('[data-a="ratetog"]');
       await page.fill('#rrZip', '42101'); await page.selectOption('#rrPlan', 'medicaid-ffs'); await page.click('[data-a="rate"]'); await page.waitForTimeout(500);
       const v3 = await view(page);
-      await t(`${label}: switching the payer to Kentucky Medicaid changes only the allowance panel — the referral rows stay, still "Original Medicare ordering activity"`, () => ok(v3.rows.length === 5 && /Original Medicare ordering activity · claims year 2024/.test(v3.text) && !/Months 1–3: \$78\.16/.test(v3.text), v3.text.slice(-500)));
+      await t(`${label}: switching the payer to Kentucky Medicaid changes only the allowance panel — the referral rows stay, still "Original Medicare ordering activity"`, () => ok(v3.rows.length === 5 && /Original Medicare ordering activity · claims year 2024/.test(v3.text) && !/months 1–3: \$78\.16/i.test(v3.text), v3.text.slice(-500)));
       // 4 — Back to the product, still on its page
       await page.click('[data-a="back"]'); await page.waitForTimeout(800);
       const back = await page.evaluate(() => ({ p360: document.body.classList.contains('p360on'), pd: (document.querySelector('#content .pd') || { getAttribute: () => null }).getAttribute('data-pd-code') }));
