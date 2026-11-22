@@ -60,8 +60,9 @@
 
     function sourceLine() {
       const m = S.meta; if (!m || !m.release) return "Referral data hasn't been loaded yet.";
-      const r = m.release; const lc = m.last_check ? ` · last checked ${new Date(m.last_check.at).toLocaleString()}` : "";
-      return `${r.label} · CMS file ${r.file_name} · live in the portal since ${new Date(r.live_since).toLocaleDateString()}${lc}`;
+      const r = m.release; const lcd = m.last_check && m.last_check.at ? new Date(m.last_check.at) : null; const lc = lcd && !isNaN(lcd) ? ` · last checked ${lcd.toLocaleString()}` : "";
+      const d = r.live_since ? new Date(r.live_since) : null; const since = d && !isNaN(d) ? ` · live in the portal since ${d.toLocaleDateString()}` : "";   /* a missing field is left out, never "undefined" / "Invalid Date" */
+      return `${r.label || "CMS referral data"}${r.file_name ? ` · CMS file ${r.file_name}` : ""}${since}${lc}`;
     }
     function render() {
       const m = S.meta || {}; const locs = m.locations || [];
