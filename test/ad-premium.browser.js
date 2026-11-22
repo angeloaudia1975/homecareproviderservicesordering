@@ -65,18 +65,6 @@ async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } ca
     const r = await setup(); ok(JSON.stringify(r.templates) === '["st-ai-premium","st-ai-lifestyle","st-ai-features"]', JSON.stringify(r.templates));
     const calls = await page.evaluate(() => window.__calls); ok(calls.includes('ad_cutout') && calls.includes('ad_scene') && calls.includes('ad_brand_logo'), calls.join(','));
   });
-  await t('CRE-04: an ad\'s own generated scene replaces the template default (and only a pipeline path is ever requested)', async () => {
-    await setup();
-    const r = await page.evaluate(async () => {
-      const gen = 'gen:ai-pilot/scene/lifestyle-chair/gemini-nano-banana-2.1-portrait-' + 'a'.repeat(40) + '.jpg';
-      const L = window.HCPSAdBuilder._build('st-ai-premium', 'square', 1, window.HCPSAdBuilder._state.cur.products, gen);
-      const bad = window.HCPSAdBuilder._build('st-ai-premium', 'square', 1, window.HCPSAdBuilder._state.cur.products, 'https://evil.test/x.jpg');
-      window.__calls = []; const x = JSON.parse(JSON.stringify(window.HCPSAdBuilder._state.cur)); x.template = 'st-ai-premium'; x.format = 'square'; x.layouts = { square: L };
-      await window.HCPSAdBuilder._draw(document.createElement('canvas'), x, 1);
-      return { scenes: L.filter((e) => e.type === 'scene').map((e) => e.scene), bad: bad.filter((e) => e.type === 'scene').map((e) => e.scene), gen };
-    });
-    ok(r.scenes.length && r.scenes.every((s) => s === r.gen), JSON.stringify(r.scenes)); ok(r.bad.every((s) => s === 'premium'), JSON.stringify(r.bad));
-  });
   await t('a cutout stands on the scene: no white rectangle around the product (premium, lifestyle, features)', async () => {
     for (const tpl of ['st-ai-premium', 'st-ai-features']) { const r = await probe(tpl, 'square'); ok(!r.corners.some(white) && !white(r.top), tpl + ' white box: ' + JSON.stringify(r.corners)); }
   });

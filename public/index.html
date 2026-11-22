@@ -10721,7 +10721,7 @@ window.showView=showView;
 const ADS_API=API_BASE+"/dealer-ads-api"; let ADS_JS=null;
 async function loadAdsView(){
   const host=$("#view-ads"); if(!host) return;
-  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=10"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
+  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=11"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
   try{ await ADS_JS; }catch(e){ host.innerHTML='<div class="ph"><div><h1>Social Ads</h1></div></div><div class="card"><div class="msg">The ad builder could not be loaded — please try again.</div></div>'; return; }
   window.HCPSAdBuilder.mount(host,{ api:(b)=>api(ADS_API,b), esc });
 }
@@ -11118,6 +11118,7 @@ function sfStudio(L,s,ed,dis,status,lines){
     <div class="sf-note">${drafts?'Your storefront is switched on. <b>Save draft</b> keeps your changes private; customers see them only when you press <b>Publish changes</b>.':live?'Your storefront is live — <b>Save changes</b> publishes them.':'Nothing is public until you press <b>Publish storefront</b>.'}</div>
     <div class="sf-acts">${ed?(drafts?`<a class="btn gh" id="sfSave" onclick="sfSave('draft')">Save draft</a><a class="btn pri" id="sfPublish" onclick="sfSave('publish')">Publish changes</a>${draft?`<a class="btn gh" onclick="sfSave('discard')">Discard draft</a>`:''}`:live?`<a class="btn pri" id="sfSave" onclick="sfSave('publish')">Save changes</a>`:`<a class="btn gh" id="sfSave" onclick="sfSave('save')">Save without publishing</a><a class="btn pri" id="sfPublish" onclick="sfSave('publish')">Publish storefront</a>`):''}
      <a class="btn gh" onclick="sfPreview()">Preview as customers see it</a>
+     <a class="btn gh" onclick="shopperTry(SFLOC,sfSettings())" title="Open the storefront as a shopper would, inside the builder — unpublished products included; requests are not sent">Try as a shopper</a>
      ${ed&&live?`<a class="btn gh" onclick="sfSave('unpublish')">Unpublish</a>`:''}</div>
     <span id="sfMsg" class="sf-msg" role="status"></span>`;
   return `<div class="sfx">
@@ -11309,6 +11310,34 @@ function sfPromo(k){
 function sfUseAccount(){ const L=SFD&&SFD.locations.find(l=>l.id===SFLOC); if(!L) return; const p=document.getElementById('sfPhone'), e=document.getElementById('sfEmail'); if(p&&L.default_phone) p.value=L.default_phone; if(e&&L.default_email) e.value=L.default_email; }
 /* PREVIEW — the public page inside the portal, fed the exact public answer for the settings on screen (saved or not).
    The page counts nothing and can't send requests in preview. */
+/* "Try as a shopper" (owner 2026-11-22) — the storefront exactly as a shopper sees it, INSIDE the builder: the settings on
+   screen (unpublished products included), requests never sent. On the Consumer Victoria pilot location Victoria answers here
+   too (dealer-storefront-api sf_cv: charged to the pilot's own record as TEST spend, never counted as shopper activity).
+   Used by the Storefront Builder and the Social Ad Builder (which opens it on the ad's product). */
+async function shopperTry(loc,settings,product){
+  if(!loc) return; let ov=document.getElementById('shopOv'); if(ov) ov.remove();
+  ov=document.createElement('div'); ov.id='shopOv'; ov.className='sf-prev-ov'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label','Try as a shopper');
+  ov.innerHTML='<div class="sf-prev-box"><div class="sf-prev-bar"><b>Try as a shopper — inside the builder (requests are not sent)</b><button type="button" class="btn gh" id="shopOvClose">Close</button></div><div class="sf-prev-load msg">Loading the storefront…</div><iframe title="Try as a shopper" src="/store.html#preview"></iframe></div>';
+  document.body.appendChild(ov); const fr=ov.querySelector('iframe'); fr.dataset.loc=loc; fr.dataset.settings=settings?JSON.stringify(settings):'';
+  const close=()=>{ window.removeEventListener('message',onMsg); ov.remove(); };
+  ov.querySelector('#shopOvClose').onclick=close; ov.querySelector('#shopOvClose').focus();
+  const data=api(SF_API,Object.assign({action:'sf_preview',location_id:loc},settings?{settings}:{}));
+  const cvOn=api(SF_API,Object.assign({action:'sf_cv',kind:'status',location_id:loc},settings?{settings}:{})).catch(()=>null);
+  async function onMsg(e){ if(e.origin!==location.origin||e.source!==fr.contentWindow||!e.data||e.data.type!=='hcps-storefront-preview-ready') return;
+    const d=await data; const ld=ov.querySelector('.sf-prev-load'); if(ld) ld.remove(); fr.contentWindow.postMessage({type:'hcps-storefront-preview',data:d},location.origin);
+    const c=await cvOn; if(c&&c.ok&&c.on) fr.contentWindow.postMessage({type:'hcps-storefront-cv-on',on:true},location.origin);
+    if(product&&d&&d.ok){ const p=(d.products||[]).find(x=>x.manufacturer===product.manufacturer&&String(x.code).toUpperCase()===String(product.code).toUpperCase());
+      if(p) fr.contentWindow.postMessage({type:'hcps-storefront-go',hash:'#product/'+encodeURIComponent(p.manufacturer+'|'+(p.family||p.code)+'//'+p.code)},location.origin); } }
+  window.addEventListener('message',onMsg);
+}
+/* Victoria's answers inside the builders' previews: only our own /store.html frames; the location is the frame's own */
+window.addEventListener('message',async e=>{ if(e.origin!==location.origin||!e.data||e.data.type!=='hcps-storefront-cv-req') return;
+  const fr=[document.querySelector('#shopOv iframe'),document.getElementById('sfPvF'),document.querySelector('#sfPrevOv iframe')].filter(Boolean).find(f=>f.contentWindow===e.source); if(!fr) return;
+  const loc=fr.dataset.loc||SFLOC; let settings=null; try{ settings=fr.dataset.settings?JSON.parse(fr.dataset.settings):(fr.id==='sfPvF'||fr.closest('#sfPrevOv')?sfSettings():null); }catch(x){ settings=null; }
+  const kind=e.data.action==='cv_speak'?'speak':'ask';
+  const body=Object.assign({action:'sf_cv',kind,location_id:loc},settings?{settings}:{}, kind==='speak'?{text:String(e.data.text||'').slice(0,2000),speak:String(e.data.speak||'')}:{d:String(e.data.d||'').slice(0,140),q:String(e.data.q||'').slice(0,300),history:Array.isArray(e.data.history)?e.data.history.slice(-4):[]});
+  let d; try{ d=await api(SF_API,body); }catch(x){ d={ok:false,error:'Victoria can\'t answer just now.'}; }
+  try{ e.source.postMessage({type:'hcps-storefront-cv',id:Number(e.data.id)||0,data:d},location.origin); }catch(x){} });
 async function sfPreview(){
   const L=SFD&&SFD.locations.find(l=>l.id===SFLOC); if(!L) return;
   let ov=document.getElementById('sfPrevOv'); if(ov) ov.remove();
@@ -11449,7 +11478,7 @@ async function sfSave(mode){
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
 Object.assign(window,{openOrderDetail,orderPrint,ghOpenOrder,ghCloseOrder,trkCopy,qScPick,qScSet,qSetMarkup,sfpMarkupPreview,sfpMarkupApply,sfpMarkupCancel,sfpUseMap,sfpFixBelow,acSalesAdd,acSalesRemove,salesContactsApi:(b)=>api(TOOLS_ENDPOINT,b)});
-Object.assign(window,{shOpen,shHide,shRender,RS,renderResources,rsTab,rsBack,rsDocs,rsDocSet,rsTFormat,rsTSel,rsTSend,rsSvc,rsSvcSend,rsReqs,rsHome,apTradeRef,gsvAdd,gsvQty,gsvForm,gsvSend,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{shopperTry,shOpen,shHide,shRender,RS,renderResources,rsTab,rsBack,rsDocs,rsDocSet,rsTFormat,rsTSel,rsTSend,rsSvc,rsSvcSend,rsReqs,rsHome,apTradeRef,gsvAdd,gsvQty,gsvForm,gsvSend,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};

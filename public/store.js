@@ -62,7 +62,7 @@
     if(!/^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])$/.test(slug)) return fail('This storefront isn\'t available.');
     fetch(API+'?s='+encodeURIComponent(slug)).then(function(r){return r.json().then(function(j){return {s:r.status,j:j};});}).then(function(x){
       if(!x.j||!x.j.ok) return fail((x.j&&x.j.error)||'This storefront isn\'t available.');
-      D=x.j; prepare(); applyDesign(); route();
+      D=x.j; prepare(); applyDesign(); route(); cvStatus();
     }).catch(function(){fail('This storefront can\'t be shown just now — please try again shortly.');});
   }
 
@@ -274,14 +274,14 @@
       (f.ps.length>1?'<div style="margin-top:12px;font-weight:700">'+(f.ps.every(function(x){return x.attributes&&x.attributes.Size;})?'Size':'Options')+'</div><div class="optrow" role="group" aria-label="Options">'+f.ps.map(function(x){return '<button type="button" data-opt="'+esc(x.code)+'" aria-pressed="'+(x===p)+'">'+esc(optLabel(f,x))+'</button>';}).join('')+'</div>':'')+
       (p.description?'<p class="lead">'+esc(p.description)+'</p>':'')+
       '<div class="acts" style="margin-top:14px">'+(d.phone?'<a class="btn" href="tel:'+esc(tel(d.phone))+'">📞 Call '+esc(d.phone)+'</a>':'')+'<button class="btn pri" type="button" data-ask="'+p._i+'">Request information</button></div>'+
-      '<div class="stocknote">Ask '+esc(d.name)+' about availability and delivery — products are ordered for you through the dealer.</div></div></div>'+
+      '<div id="cvbox"></div><div class="stocknote">Ask '+esc(d.name)+' about availability and delivery — products are ordered for you through the dealer.</div></div></div>'+
       '<div id="pdx">'+(feats.length?'<h3>What it does for you</h3><ul class="feats">'+feats.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'')+
       (at.length?'<h3>Specifications</h3><table class="attrs">'+at.map(function(k){return '<tr><td>'+esc(k)+'</td><td>'+esc(p.attributes[k])+'</td></tr>';}).join('')+'</table>':'')+
       ((p.documents||[]).length?'<h3>Product documents</h3><div class="docs">'+p.documents.map(function(x){return '<a href="'+esc(x.url)+'" target="_blank" rel="noopener">📄 '+esc(x.title)+'</a>';}).join('<br>')+'</div>':'')+'<div class="pd-loading" id="pdload">Loading full product details…</div></div>'+
       '<div class="contact"><b>'+esc(d.name)+'</b>'+(where?'<br>'+esc(where):'')+(d.phone?'<br><a href="tel:'+esc(tel(d.phone))+'">'+esc(d.phone)+'</a>':'')+(d.hours?'<br>'+esc(hoursLines(d.hours).join(' · ')):'')+'</div></article>'+
       (rel.length?'<h3>More in '+esc(f.cat)+'</h3><div class="related grid">'+rel.map(card).join('')+'</div>':'')+'<div class="note">'+esc(D.price_note)+'</div>';
     document.title=f.name+' — '+d.name; window.scrollTo(0,0);
-    loadDetail(p,f,key,gal);
+    loadDetail(p,f,key,gal); cvRender(); cvEv('product_view');
     var h=$('main').querySelector('h2'); if(h){ h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); }
   }
 
@@ -376,6 +376,55 @@
   }
   if(!PREVIEW) window.addEventListener('hashchange',route);
 
+  /* ---------- Consumer Victoria (owner 2026-11-22): a shopper asks Victoria about THIS product. Pilot storefront only — the
+     server decides (cv_status); off, over budget or expired, nothing shows and calling, directions and requests stay as they are.
+     Answers come only from this storefront's published product page and public price. Counts only: ad vs organic visits,
+     questions, listens, call and directions taps, requests — nothing about the visitor. In the builders' "Try as a shopper"
+     the parent portal answers (staff/dealer sign-in, test spend) and nothing is counted or sent. ---------- */
+  var CV={offered:false,on:false,src:'organic',hist:Object.create(null),audio:null,seq:0,req:Object.create(null)};
+  (function(){ try{ var u=new URLSearchParams(location.search); var s=String(u.get('utm_source')||''), m=String(u.get('utm_medium')||'').toLowerCase(); if(s||/^(social|paid|cpc|ad|ads)$/.test(m)) CV.src='ad'; }catch(x){} })();
+  function cvPost(body){ return fetch(API,{method:'POST',headers:{'content-type':'text/plain'},body:JSON.stringify(Object.assign({s:slug,src:CV.src},body))}).then(function(r){return r.json();}); }
+  function cvEv(ev){ if(PREVIEW||!CV.offered) return; try{ fetch(API,{method:'POST',keepalive:true,headers:{'content-type':'text/plain'},body:JSON.stringify({action:'cv_event',s:slug,src:CV.src,ev:ev})}).catch(function(){}); }catch(x){} }
+  function cvStatus(){ if(PREVIEW) return;
+    cvPost({action:'cv_status'}).then(function(j){ CV.offered=!!(j&&j.ok); CV.on=!!(j&&j.ok&&j.on); if(CV.offered){ cvEv('visit'); if(document.querySelector('.pdp')) cvEv('product_view'); cvRender(); } }).catch(function(){}); }
+  if(PREVIEW) window.addEventListener('message',function(e){ if(e.origin!==location.origin||e.source!==window.parent||!e.data) return;
+    if(e.data.type==='hcps-storefront-cv-on'){ CV.offered=CV.on=!!e.data.on; cvRender(); return; }
+    if(e.data.type==='hcps-storefront-go'&&D&&typeof e.data.hash==='string'){ setHash(e.data.hash); return; }
+    if(e.data.type!=='hcps-storefront-cv') return; var cb=CV.req[e.data.id]; if(!cb) return; delete CV.req[e.data.id]; cb(e.data.data||{ok:false}); });
+  function cvCall(body,cb){
+    if(PREVIEW){ var id=++CV.seq; CV.req[id]=cb; setTimeout(function(){ if(CV.req[id]){ delete CV.req[id]; cb({ok:false,error:'No answer just now.'}); } },30000);
+      window.parent.postMessage(Object.assign({type:'hcps-storefront-cv-req',id:id},body),location.origin); return; }
+    cvPost(body).then(cb).catch(function(){ cb({ok:false,error:'Victoria can\'t answer just now.'}); });
+  }
+  function cvRender(){ var box=$('cvbox'); if(!box) return; if(!CV.on){ box.innerHTML=''; return; }
+    var pd=box.closest('.pdp'); var key=pd?pd.getAttribute('data-k'):'', code=pd?pd.getAttribute('data-c'):''; var f=BYKEY[key]; var p=f?(f.ps.filter(function(x){return x.code===code;})[0]||f.ps[0]):null; if(!p) return;
+    var k=p.manufacturer+'|'+p.code, h=CV.hist[k]||(CV.hist[k]=[]);
+    box.innerHTML='<div class="cv"><div class="cv-h"><span class="cv-orb" aria-hidden="true"></span><b>Ask Victoria about this product</b>'+(PREVIEW?' <small>(test — inside the builder)</small>':'')+'</div>'+
+      '<div class="cv-log" id="cvlog" aria-live="polite">'+h.map(function(m,i){ return m.role==='user'?'<p class="cv-q">'+esc(m.text)+'</p>':'<p class="cv-a">'+esc(m.text)+(m.speak?' <button class="btn ghost cv-say" type="button" data-cvsay="'+i+'">🔊 Listen</button>':'')+'</p>'; }).join('')+'</div>'+
+      '<form class="cv-f" id="cvf"><label class="sr" for="cvq">Your question</label><input id="cvq" maxlength="300" placeholder="e.g. How much does it weigh?" autocomplete="off"><button class="btn pri" type="submit">Ask</button></form>'+
+      '<div class="note">Victoria answers only from this product page. For availability, delivery or anything else, call '+esc(D.dealer.name)+(D.dealer.phone?' at <a href="tel:'+esc(tel(D.dealer.phone))+'">'+esc(D.dealer.phone)+'</a>':'')+'.</div></div>';
+    $('cvf').addEventListener('submit',function(ev){ ev.preventDefault(); var q=$('cvq').value.trim(); if(q.length<2) return; var btn=ev.target.querySelector('button'); btn.disabled=true;
+      var hist=h.slice(-4).map(function(m){return {role:m.role,text:m.text};}); h.push({role:'user',text:q}); cvRender(); var b2=$('cvf')&&$('cvf').querySelector('button'); if(b2) b2.disabled=true;
+      cvCall({action:'cv_ask',d:k,q:q,history:hist},function(j){
+        if(j&&j.ok) h.push({role:'assistant',text:j.answer,speak:j.speak||null});
+        else if(j&&j.off){ CV.on=false; h.push({role:'assistant',text:'Victoria isn\'t available right now. '+(D.dealer.phone?'Please call '+D.dealer.name+' at '+D.dealer.phone+'.':'Please send a request below.')}); }
+        else h.push({role:'assistant',text:(j&&j.error)||'Victoria can\'t answer just now — please call the store.'});
+        var keepOn=CV.on; CV.on=true; cvRender(); CV.on=keepOn; var q2=$('cvq'); if(q2) q2.focus(); });
+    });
+  }
+  function cvSay(i,btn){ var box=$('cvbox'); var pd=box&&box.closest('.pdp'); if(!pd) return; var f=BYKEY[pd.getAttribute('data-k')]; var p=f&&(f.ps.filter(function(x){return x.code===pd.getAttribute('data-c');})[0]||f.ps[0]); if(!p) return;
+    var m=(CV.hist[p.manufacturer+'|'+p.code]||[])[i]; if(!m||!m.speak) return; if(CV.audio){ try{ CV.audio.pause(); }catch(x){} }
+    btn.disabled=true; btn.textContent='… preparing';
+    cvCall({action:'cv_speak',text:m.text,speak:m.speak},function(j){ btn.disabled=false;
+      if(!j||!j.ok||!j.audio){ btn.textContent='🔊 Listen'; btn.title=(j&&j.error)||'Victoria\'s voice isn\'t available just now.'; return; }
+      CV.audio=new Audio('data:'+(j.mime||'audio/mpeg')+';base64,'+j.audio); btn.textContent='🔊 Playing…'; CV.audio.onended=function(){ btn.textContent='🔊 Listen'; };
+      var pl=CV.audio.play(); if(pl&&pl.catch) pl.catch(function(){ btn.textContent='🔊 Tap to hear'; }); });
+  }
+  document.addEventListener('click',function(e){ var t=e.target&&e.target.closest?e.target:null; if(!t) return;
+    var sy=t.closest('[data-cvsay]'); if(sy){ cvSay(+sy.getAttribute('data-cvsay'),sy); return; }
+    var a=t.closest('a[href]'); if(!a) return; var hr=a.getAttribute('href')||'';
+    if(/^tel:/i.test(hr)) cvEv('call_tap'); else if(/google\.com\/maps/i.test(hr)) cvEv('directions_tap'); },true);
+
   /* ---------- analytics (anonymous) ---------- */
   function view(p){ if(PREVIEW) return; var k=p.manufacturer+'|'+p.code; if(SEEN[k]) return; SEEN[k]=1; VIEWQ.push({manufacturer:p.manufacturer,code:p.code}); if(VIEWQ.length>=10) flush(); }
   function flush(){ if(!VIEWQ.length) return; var items=VIEWQ.splice(0,40);
@@ -391,7 +440,7 @@
   function close(){ if(!$('ov').classList.contains('on')) return; $('ov').classList.remove('on'); $('dlg').innerHTML=''; if(RETURN&&RETURN.focus&&document.contains(RETURN)) RETURN.focus(); RETURN=null; }
   /* p = the exact SKU (product page, or a one-option card) · about = a family name when no option was chosen: the request
      then names no SKU (review #70: never a size the visitor did not pick) and the message starts with the product's name */
-  function ask(p,about){
+  function ask(p,about){ cvEv('inquiry_open');
     open('<h2 style="margin:0 0 4px">Request information</h2><div style="color:var(--ink2)">'+(p?'About: <b>'+esc(p.name)+'</b>'+(p.code?' (#'+esc(p.code)+')':''):about?'About: <b>'+esc(about)+'</b>':'Send a message to '+esc(D.dealer.name))+'</div>'+
       '<form id="f" novalidate><label>Your name<input name="name" maxlength="120" autocomplete="name" required></label><label>Email<input name="email" type="email" maxlength="200" autocomplete="email"></label>'+
       '<label>Phone<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label><label>Message<textarea name="message" rows="4" maxlength="2000">'+(about?esc('I would like information about the '+about+'.'):'')+'</textarea></label>'+
@@ -405,7 +454,7 @@
       if(Date.now()-LOADED<2500){ $('ferr').textContent='Please take a moment to fill in the form.'; return; }
       b.disabled=true; $('ferr').textContent='';
       fetch(API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(j){
-        if(j&&j.ok){ $('dlg').innerHTML='<button class="x" type="button" aria-label="Close" data-close="1">×</button><h2>Thank you</h2><p class="ok">Your request was sent to '+esc(D.dealer.name)+'.</p><p>They will contact you soon.'+(D.dealer.phone?' To talk now, call <a href="tel:'+esc(tel(D.dealer.phone))+'">'+esc(D.dealer.phone)+'</a>.':'')+'</p>'; return; }
+        if(j&&j.ok){ cvEv('inquiry_sent'); $('dlg').innerHTML='<button class="x" type="button" aria-label="Close" data-close="1">×</button><h2>Thank you</h2><p class="ok">Your request was sent to '+esc(D.dealer.name)+'.</p><p>They will contact you soon.'+(D.dealer.phone?' To talk now, call <a href="tel:'+esc(tel(D.dealer.phone))+'">'+esc(D.dealer.phone)+'</a>.':'')+'</p>'; return; }
         b.disabled=false; $('ferr').textContent=(j&&j.error)||'Your request could not be sent — please call the dealer.';
       }).catch(function(){ b.disabled=false; $('ferr').textContent='Your request could not be sent — please call the dealer.'; });
     });
