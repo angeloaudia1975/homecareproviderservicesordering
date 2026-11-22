@@ -24,7 +24,7 @@ async function fake(page, st, noTheme) {
   if (noTheme) await page.route('**/golden-support/d360-theme.css', (r) => r.fulfill({ status: 404, body: '' }));
 }
 async function openSvc(page) {
-  await page.evaluate(() => showP360('resources')); await page.waitForSelector('#gsvcRow .rl', { timeout: 15000 }); await page.click('#gsvcRow .btn');
+  await page.evaluate(() => { showP360('resources'); setTimeout(() => window.rsTab && rsTab('service'), 300); }); await page.waitForSelector('#gsvcRow .rl', { timeout: 15000 }); await page.click('#gsvcRow .btn');
   await page.waitForFunction(() => { const x = document.querySelector('#gsvHost'); return x && x.shadowRoot && x.shadowRoot.querySelectorAll('.tab-btn').length === 7; }, null, { timeout: 15000 });
   await page.waitForTimeout(400);
 }

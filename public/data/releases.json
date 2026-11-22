@@ -1,137 +1,150 @@
 {
-  "schema": 1,
-  "product": "Dealer 360",
-  "rule": "The version is the newest release below. A release email to dealers is only ever sent after the President approves that release's email in Connect 360 — a deploy never sends one.",
-  "releases": [
+ "schema": 1,
+ "product": "Dealer 360",
+ "rule": "The version is the newest release below. A release email to dealers is only ever sent after the President approves that release's email in Connect 360 — a deploy never sends one.",
+ "releases": [
+  {
+   "version": "2026.11.22",
+   "date": "2026-11-22",
+   "title": "Resources & Support inside Dealer 360",
+   "items": [
     {
-      "version": "2026.11.15",
-      "date": "2026-11-15",
-      "title": "Shipment details, emailed brochure photos, more product details",
-      "items": [
-        {
-          "area": "tracking",
-          "text": "Orders & Tracking shows what each shipment contained: \"Partially shipped\" with the units sent so far, \"Shipped in full\", and any backordered items with the date HCPS recorded them.",
-          "dealer_facing": true,
-          "help": "shipment-tracking"
-        },
-        {
-          "area": "brochures",
-          "text": "Emailed brochures now include the product photos, the same as the printed brochure.",
-          "dealer_facing": true,
-          "help": "brochures"
-        },
-        {
-          "area": "catalog",
-          "text": "More manufacturer product details: feature bullets on PediFix products, Access4U ramp features and assembly instructions, Ohio Medical / GCE Zen-O Lite and M50 specifications, and Dalton's referenced HCPCS codes with a payer-coverage note.",
-          "dealer_facing": true,
-          "help": "product-details"
-        }
-      ]
-    },
-    {
-      "version": "2026.11.14",
-      "date": "2026-11-14",
-      "title": "Golden Service & Support portal, dealer-branded brochures",
-      "items": [
-        {
-          "area": "golden-service",
-          "text": "Golden Service & Support now shows the full Golden Dealer Service & Support Portal inside Dealer 360 — troubleshooting guides, the training video library, parts lookup with cart, parts & service requests, service documents and labor rate claims — with your Golden account filled in.",
-          "dealer_facing": true,
-          "help": "golden-service",
-          "switch": "golden_service_v2"
-        },
-        {
-          "area": "brochures",
-          "text": "Product brochures always show your dealership as the seller — your logo, name, address and phone (a branch uses its head office's logo, phone, email or website when it has none of its own).",
-          "dealer_facing": true,
-          "help": "brochures"
-        },
-        {
-          "area": "staff",
-          "text": "HCPS Manage Dealer works in every dealer tool, including Brand & Logo Studio, favorites, reports and requests to HCPS.",
-          "dealer_facing": false
-        },
-        {
-          "area": "catalog",
-          "text": "Ohio Medical: photos for the Zen-O and Zen-O Lite car chargers and the external battery charger; HCPCS codes on the Zen-O Lite (E1392) and M50 (E1390). Yuwell: full product descriptions.",
-          "dealer_facing": false
-        }
-      ]
-    },
-    {
-      "version": "2026.11.13",
-      "date": "2026-11-13",
-      "title": "Golden Service & Support, shipment details and a Help Center",
-      "items": [
-        {
-          "area": "golden-service",
-          "text": "Golden Service & Support: parts lookup, Golden publications, training videos and service requests in one place (where available for your account).",
-          "dealer_facing": true,
-          "help": "golden-service",
-          "switch": "golden_service_v2"
-        },
-        {
-          "area": "tracking",
-          "text": "Orders & Tracking can list several shipments per order, with carrier tracking links and confirmed dates.",
-          "dealer_facing": true,
-          "help": "shipment-tracking"
-        },
-        {
-          "area": "help",
-          "text": "New Help & Training Center and What's New.",
-          "dealer_facing": true,
-          "help": "ordering-basics"
-        },
-        {
-          "area": "accounts",
-          "text": "Account Center shows three separate facts per manufacturer: account number on file, verified by HCPS, and authorized to order — with applications and holds shown apart.",
-          "dealer_facing": true,
-          "help": "manufacturer-accounts"
-        },
-        {
-          "area": "reports",
-          "text": "AI growth suggestions in Reports now also point to Dealer 360 tools you are not using yet — lines you can already order, your storefront, Social Ads and training.",
-          "dealer_facing": true,
-          "help": "reports-overview"
-        },
-        {
-          "area": "brochures",
-          "text": "Brochures print the manufacturer's verified MSRP for every line that publishes one, say plainly when there is none, and label the advertised price as MAP.",
-          "dealer_facing": true,
-          "help": "brochures"
-        },
-        {
-          "area": "accounts",
-          "text": "A line approved before your account number is on file now reads “Opening order only — held until the account is open”.",
-          "dealer_facing": true,
-          "help": "manufacturer-accounts"
-        }
-      ]
-    },
-    {
-      "version": "2026.11.12",
-      "date": "2026-11-12",
-      "title": "Reports navigation and clickable tracking",
-      "items": [
-        {
-          "area": "reports",
-          "text": "Reports keeps its tabs (Overview, Total Sales, Orders & Tracking) while you move between them.",
-          "dealer_facing": true,
-          "help": "reports-overview"
-        },
-        {
-          "area": "tracking",
-          "text": "UPS tracking numbers open the carrier's tracking page.",
-          "dealer_facing": true,
-          "help": "shipment-tracking"
-        },
-        {
-          "area": "quotes",
-          "text": "Quotes and brochures show the manufacturer's reference price and never allow a price below a minimum advertised price.",
-          "dealer_facing": true,
-          "help": "customer-quotes"
-        }
-      ]
+     "area": "resources",
+     "text": "Resources & Support now works entirely inside Dealer 360: a Document Library you can search by manufacturer, model or document type; Training & In-Service with open appointment times (Booked) or a request HCPS coordinates (Requested); manufacturer Service, Parts & Warranty cases with a case number; and My Requests & Appointments with each request's status.",
+     "dealer_facing": true,
+     "help": "resources-support"
     }
-  ]
+   ]
+  },
+  {
+   "version": "2026.11.15",
+   "date": "2026-11-15",
+   "title": "Shipment details, emailed brochure photos, more product details",
+   "items": [
+    {
+     "area": "tracking",
+     "text": "Orders & Tracking shows what each shipment contained: \"Partially shipped\" with the units sent so far, \"Shipped in full\", and any backordered items with the date HCPS recorded them.",
+     "dealer_facing": true,
+     "help": "shipment-tracking"
+    },
+    {
+     "area": "brochures",
+     "text": "Emailed brochures now include the product photos, the same as the printed brochure.",
+     "dealer_facing": true,
+     "help": "brochures"
+    },
+    {
+     "area": "catalog",
+     "text": "More manufacturer product details: feature bullets on PediFix products, Access4U ramp features and assembly instructions, Ohio Medical / GCE Zen-O Lite and M50 specifications, and Dalton's referenced HCPCS codes with a payer-coverage note.",
+     "dealer_facing": true,
+     "help": "product-details"
+    }
+   ]
+  },
+  {
+   "version": "2026.11.14",
+   "date": "2026-11-14",
+   "title": "Golden Service & Support portal, dealer-branded brochures",
+   "items": [
+    {
+     "area": "golden-service",
+     "text": "Golden Service & Support now shows the full Golden Dealer Service & Support Portal inside Dealer 360 — troubleshooting guides, the training video library, parts lookup with cart, parts & service requests, service documents and labor rate claims — with your Golden account filled in.",
+     "dealer_facing": true,
+     "help": "golden-service",
+     "switch": "golden_service_v2"
+    },
+    {
+     "area": "brochures",
+     "text": "Product brochures always show your dealership as the seller — your logo, name, address and phone (a branch uses its head office's logo, phone, email or website when it has none of its own).",
+     "dealer_facing": true,
+     "help": "brochures"
+    },
+    {
+     "area": "staff",
+     "text": "HCPS Manage Dealer works in every dealer tool, including Brand & Logo Studio, favorites, reports and requests to HCPS.",
+     "dealer_facing": false
+    },
+    {
+     "area": "catalog",
+     "text": "Ohio Medical: photos for the Zen-O and Zen-O Lite car chargers and the external battery charger; HCPCS codes on the Zen-O Lite (E1392) and M50 (E1390). Yuwell: full product descriptions.",
+     "dealer_facing": false
+    }
+   ]
+  },
+  {
+   "version": "2026.11.13",
+   "date": "2026-11-13",
+   "title": "Golden Service & Support, shipment details and a Help Center",
+   "items": [
+    {
+     "area": "golden-service",
+     "text": "Golden Service & Support: parts lookup, Golden publications, training videos and service requests in one place (where available for your account).",
+     "dealer_facing": true,
+     "help": "golden-service",
+     "switch": "golden_service_v2"
+    },
+    {
+     "area": "tracking",
+     "text": "Orders & Tracking can list several shipments per order, with carrier tracking links and confirmed dates.",
+     "dealer_facing": true,
+     "help": "shipment-tracking"
+    },
+    {
+     "area": "help",
+     "text": "New Help & Training Center and What's New.",
+     "dealer_facing": true,
+     "help": "ordering-basics"
+    },
+    {
+     "area": "accounts",
+     "text": "Account Center shows three separate facts per manufacturer: account number on file, verified by HCPS, and authorized to order — with applications and holds shown apart.",
+     "dealer_facing": true,
+     "help": "manufacturer-accounts"
+    },
+    {
+     "area": "reports",
+     "text": "AI growth suggestions in Reports now also point to Dealer 360 tools you are not using yet — lines you can already order, your storefront, Social Ads and training.",
+     "dealer_facing": true,
+     "help": "reports-overview"
+    },
+    {
+     "area": "brochures",
+     "text": "Brochures print the manufacturer's verified MSRP for every line that publishes one, say plainly when there is none, and label the advertised price as MAP.",
+     "dealer_facing": true,
+     "help": "brochures"
+    },
+    {
+     "area": "accounts",
+     "text": "A line approved before your account number is on file now reads “Opening order only — held until the account is open”.",
+     "dealer_facing": true,
+     "help": "manufacturer-accounts"
+    }
+   ]
+  },
+  {
+   "version": "2026.11.12",
+   "date": "2026-11-12",
+   "title": "Reports navigation and clickable tracking",
+   "items": [
+    {
+     "area": "reports",
+     "text": "Reports keeps its tabs (Overview, Total Sales, Orders & Tracking) while you move between them.",
+     "dealer_facing": true,
+     "help": "reports-overview"
+    },
+    {
+     "area": "tracking",
+     "text": "UPS tracking numbers open the carrier's tracking page.",
+     "dealer_facing": true,
+     "help": "shipment-tracking"
+    },
+    {
+     "area": "quotes",
+     "text": "Quotes and brochures show the manufacturer's reference price and never allow a price below a minimum advertised price.",
+     "dealer_facing": true,
+     "help": "customer-quotes"
+    }
+   ]
+  }
+ ]
 }
