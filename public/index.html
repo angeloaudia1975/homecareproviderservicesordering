@@ -409,6 +409,8 @@ body.shopall .controls,body.shopall #a4uBuilder,body.shopall #swBuilder,body.sho
 .oppbtn.primary{background:var(--orange);color:#fff;}.oppbtn.primary:hover{background:var(--orange-d);}
 .oppbtn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--navy);}.oppbtn.ghost:hover{background:var(--light);}
 .featstrip{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;}
+.ftm{margin:4px 0 14px}.ftm-h h3{margin:0 0 8px;font-size:16px}.ftm-h h3 span{font-weight:500;color:var(--gray)}
+.ftm-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}@media(max-width:980px){.ftm-g{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:420px){.ftm-g{grid-template-columns:1fr}}
 .fcard{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:transform .12s,box-shadow .12s;}
 .fcard:hover{transform:translateY(-2px);box-shadow:var(--shadow);}
 .fcard .fi{height:140px;background:linear-gradient(135deg,#eef2f7,#e2e8f0);display:flex;align-items:center;justify-content:center;position:relative;}
@@ -4169,8 +4171,10 @@ async function renderShopLanding(){
     <section class="sl-main" aria-label="Manufacturer partners">
       <div class="sl-titlerow"><span class="sl-count" id="slCount">${list.length} manufacturers</span>
         <button class="sl-drawerbtn" type="button" data-sld="open" aria-controls="slSide" aria-expanded="false">☰ Manufacturers</button></div>
+      <div id="ftmShop"></div>
       <div class="sl-grid">${list.map(shopTileHtml).join("")}</div>
     </section></div>`;
+  ftmRender(document.getElementById("ftmShop"),"shop");
 }
 /* Sidebar row: an orderable line opens its catalog; any other line jumps to its card (Request access / Ask HCPS live there). */
 function slSideItem(t){
@@ -4227,6 +4231,55 @@ async function loadFeatured(){
     DASH.featured = r.ok ? (await r.json()) : [];
   }catch(e){ DASH.featured=[]; }
   return DASH.featured;
+}
+/* ===== FEATURED THIS MONTH (owner milestone 2026-11-22 §4). Four products a month, chosen in Admin 360 (featured-month-api;
+   the month rotates on the 1st, Central time). Shown on Dealer Overview and the first Shop Products screen with the
+   existing featured cards. Each dealer sees only products on lines its catalog access allows (entitledManufacturers),
+   at its own prices (loadLine — the same merge and pricing as the catalog); a product it can't see is replaced, in order,
+   by the month's alternates. Card views and product opens are tracked by placement (featured_view / featured_open). ===== */
+const FTM_URL="https://homecareproviderservices.netlify.app/.netlify/functions/featured-month-api?current=1";
+const _ftmSeen=new Set();
+async function loadFeaturedMonth(){
+  if(DASH.ftm!==undefined&&DASH.ftm!==null) return DASH.ftm;
+  try{ const r=await fetch(FTM_URL,{cache:"no-cache"}); const j=r.ok?await r.json():null; DASH.ftm=(j&&j.ok)?j:{items:[],alternates:[],month:""}; }
+  catch(e){ return {items:[],alternates:[],month:""}; }   /* not cached: a brief outage must not hide the month */
+  return DASH.ftm;
+}
+const ftmMatch=(prods,code)=>{ const c=String(code||"").toUpperCase(); return (prods||[]).find(p=>p&&!p._discontinued&&(String(p.code).toUpperCase()===c||String(p.family||"").toUpperCase()===c||String(p.model||"").toUpperCase()===c)); };
+async function ftmList(){
+  const F=await loadFeaturedMonth(); if(!F||!(F.items||[]).length) return {month:F&&F.month||"",list:[]};
+  const allowed=new Set(entitledManufacturers().map(m=>m.slug));
+  const can=(slug)=>allowed.has(slug)&&(!(typeof isGoldenSlug==='function'&&isGoldenSlug(slug))||goldenEntitled());
+  const cand=[...(F.items||[]).map((f,i)=>Object.assign({slot:i+1},f)),...(F.alternates||[]).map((f,i)=>Object.assign({slot:"alt"+(i+1)},f))].filter(f=>can(f.manufacturer));
+  await Promise.all([...new Set(cand.map(f=>f.manufacturer))].map(s=>loadLine(s).catch(()=>[])));
+  const list=[]; for(const f of cand){ if(list.length>=4) break; const p=ftmMatch(DASH.lineCache[f.manufacturer],f.code); if(p) list.push({f,p}); }
+  return {month:F.month,list};
+}
+function ftmCardHtml(x,placement){
+  const f=x.f, prod=x.p, mfr=state.manufacturers.find(m=>m.slug===f.manufacturer)||{};
+  const img=prod.image?`<img src="${esc(prod.image)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:'No image'}))">`:`<span class="ph">No image</span>`;
+  const price=(prod.base_price!=null)?`<div class="fpr">${money(unitPrice(prod,1))}</div>`:'';
+  const msrp=(prod.msrp!=null&&Number(prod.msrp)>Number(prod.base_price))?`<div class="fmsrp">MSRP ${money(prod.msrp)}</div>`:'';
+  return `<div class="fcard" role="button" tabindex="0" data-ftm-slug="${esc(f.manufacturer)}" data-ftm-code="${esc(prod.code)}" data-ftm-pl="${esc(placement)}" data-ftm-slot="${esc(f.slot)}">
+    <div class="fi"><span class="star">★ Featured this month</span>${img}</div>
+    <div class="fb"><div class="fmfr">${esc(mfr.name||f.manufacturer)}</div><div class="fnm">${esc(prod.name||f.name||prod.code)}</div>${price}${msrp}</div></div>`;
+}
+/* fills host with the month's cards; nothing (no heading) when the dealer can see none */
+async function ftmRender(host,placement){
+  if(!host) return; let r; try{ r=await ftmList(); }catch(e){ return; }
+  if(!host.isConnected||!r.list.length){ host.innerHTML=""; return; }
+  const mon=r.month?new Date(r.month+"-15T12:00:00Z").toLocaleDateString("en-US",{month:"long",timeZone:"UTC"}):"";
+  host.innerHTML=`<div class="ftm"><div class="ftm-h"><h3>Featured this month${mon?` <span>· ${esc(mon)}</span>`:""}</h3></div><div class="ftm-g">${r.list.map(x=>ftmCardHtml(x,placement)).join("")}</div></div>`;
+  host.querySelectorAll(".fcard[data-ftm-code]").forEach(el=>{ const go=()=>ftmOpen(el.dataset.ftmSlug,el.dataset.ftmCode,el.dataset.ftmPl,el.dataset.ftmSlot,r.month);
+    el.addEventListener("click",go); el.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } }); });
+  const k=placement+"|"+r.month;   /* one view per placement per page visit */
+  if(!_ftmSeen.has(k)){ _ftmSeen.add(k); r.list.forEach(x=>track('featured_view',x.f.manufacturer,x.p.code,{placement,month:r.month,slot:String(x.f.slot)})); }
+}
+async function ftmOpen(slug,code,placement,slot,month){
+  track('featured_open',slug,code,{placement,month,slot:String(slot)});
+  await selectManufacturer(slug);
+  if((state.products||[]).some(p=>String(p.code)===String(code))&&typeof openProductDetail==="function") await openProductDetail(code);
+  else await gotoProduct(slug,code);
 }
 // Load a line's products (with image overrides + MSRP fill), cached, without disturbing state.products.
 /* One request per line at a time: a caller arriving while the same line is already loading (the
@@ -7451,7 +7504,7 @@ function signOut(){
   CART.clear(); for(const k in MFR) delete MFR[k];                          // local cart clears; the saved cart stays in the system
   if(window.HCPSChat) HCPSChat.reset();                                     // clear chat identity so a shared machine doesn't leak
   if(typeof gckReset==='function') gckReset();                              // the Golden cart and its review belong to the dealer who signed out
-  DASH.lineCache={}; DASH.featured=null; if(typeof window.gsReset==='function') window.gsReset();   // C3-07: no catalog or search index survives into the next dealer's session
+  DASH.lineCache={}; DASH.featured=null; DASH.ftm=null; if(typeof _ftmSeen!=="undefined") _ftmSeen.clear(); if(typeof window.gsReset==='function') window.gsReset();   // C3-07: no catalog or search index survives into the next dealer's session
   try{ sessionStorage.removeItem('hcps_manage'); }catch(e){}
   /* nothing protected stays on screen while the page is replaced */
   try{ document.body.className='guest'; document.body.innerHTML='<div role="status" style="font:600 16px system-ui,sans-serif;color:#12253c;text-align:center;padding:80px 20px">Signing out…</div>'; }catch(e){}
@@ -8261,6 +8314,7 @@ async function loadDash(){
       <div class="kpi"><div class="kl">Orders — YTD</div><div class="kv tnum">${y.orders}</div><div class="ks">across all lines</div></div>
       <div class="kpi"><div class="kl">Lines with activity</div><div class="kv tnum">${lines.length}</div><div class="ks">manufacturers purchased</div></div>
     </div>
+    <div id="ftmDash"></div>
     <div class="grid2">
       <div class="card"><div class="chead"><h3>Recent orders</h3><a class="seelink" onclick="showView('orders')">All orders →</a></div><div class="rowlist">${recentHtml}</div></div>
       <div>
@@ -8277,6 +8331,7 @@ async function loadDash(){
         </div></div>
     </div>
     <div id="dashOpps"></div>`;
+  ftmRender(document.getElementById("ftmDash"),"overview");   /* Featured This Month (owner 2026-11-22 §4) */
   showView("dash");
   ensureCatalogFav().then(loadDashExtras);
 }
@@ -9723,17 +9778,19 @@ async function rsHome(force){ if(RS.home&&!force) return RS.home; const r=await 
 async function rsDocs(){ if(RS.docs) return; try{ const r=await fetch(DOCS_URL,{cache:"no-cache"}); RS.docs=r.ok?await r.json():{error:true}; }catch(e){ RS.docs={error:true}; } if(RS.tab==="docs") renderResources(); }
 let RS_REQ_N=0;
 async function rsReqs(){ const n=++RS_REQ_N; RS.reqs=RS.reqs||null; const r=await api(SUPPORT_API,{action:"my_requests"}).catch(()=>null); if(n!==RS_REQ_N) return; RS.reqs=(r&&r.ok)?r:{error:(r&&r.error)||"Your requests could not be loaded just now."}; if(RS.tab==="requests") renderResources(); }
+/* a document's manufacturer name: the roster's name, else a readable form of the slug (live 2026-11-22: "golden-technologies") */
+const rsMfrName=(slug)=>{ const m=(MFRLIST||[]).find(x=>x.slug===slug)||((typeof state!=="undefined"&&state.manufacturers)||[]).find(x=>x.slug===slug); return m&&m.name?m.name:(slug==="golden-technologies"?"Golden Technologies":String(slug||"").replace(/-/g," ").replace(/\b\w/g,c=>c.toUpperCase())); };
 function rsDocsHtml(){
   const D=RS.docs; if(!D) return '<div class="msg">Loading documents…</div>'; if(D.error) return '<div class="msg">The document library could not be loaded just now — please try again.</div><a class="btn gh" onclick="RS.docs=null;rsDocs()">Try again</a>';
   const T=Object.fromEntries((D.types||[]).map(t=>[t.id,t.label])), q=RS.docQ.trim().toLowerCase();
-  const items=D.items.filter(d=>(!RS.docMfr||d.manufacturer===RS.docMfr)&&(!RS.docType||d.type===RS.docType)&&(!q||[d.title,d.description,(d.models||[]).join(" "),d.keywords,mfrNameOf(d.manufacturer),T[d.type]||""].join(" ").toLowerCase().includes(q)))
+  const items=D.items.filter(d=>(!RS.docMfr||d.manufacturer===RS.docMfr)&&(!RS.docType||d.type===RS.docType)&&(!q||[d.title,d.description,(d.models||[]).join(" "),d.keywords,rsMfrName(d.manufacturer),T[d.type]||""].join(" ").toLowerCase().includes(q)))
     .sort((a,b)=>(b.featured-a.featured)||(b.sortPriority-a.sortPriority)||a.title.localeCompare(b.title));
-  const mfrs=[...new Set(D.items.map(d=>d.manufacturer))].sort((a,b)=>mfrNameOf(a).localeCompare(mfrNameOf(b)));
+  const mfrs=[...new Set(D.items.map(d=>d.manufacturer))].sort((a,b)=>rsMfrName(a).localeCompare(rsMfrName(b)));
   return `<div class="rs-filt"><div class="fld2" style="flex:2;min-width:200px"><label>Search</label><input type="search" id="rsDocQ" value="${esc(RS.docQ)}" placeholder="Model, SKU, manual, warranty…" oninput="rsDocSet('q',this.value)"></div>
-    <div class="fld2"><label>Manufacturer</label><select onchange="rsDocSet('m',this.value)"><option value="">All</option>${mfrs.map(m=>`<option value="${esc(m)}"${m===RS.docMfr?" selected":""}>${esc(mfrNameOf(m))}</option>`).join("")}</select></div>
+    <div class="fld2"><label>Manufacturer</label><select onchange="rsDocSet('m',this.value)"><option value="">All</option>${mfrs.map(m=>`<option value="${esc(m)}"${m===RS.docMfr?" selected":""}>${esc(rsMfrName(m))}</option>`).join("")}</select></div>
     <div class="fld2"><label>Document type</label><select onchange="rsDocSet('t',this.value)"><option value="">All</option>${(D.types||[]).filter(t=>D.items.some(d=>d.type===t.id)).map(t=>`<option value="${esc(t.id)}"${t.id===RS.docType?" selected":""}>${esc(t.label)}</option>`).join("")}</select></div></div>
     <div class="rs-count">${items.length} document${items.length===1?"":"s"}</div>
-    <div id="rsDocList">${items.length?items.map(d=>`<div class="rs-doc"><div class="b"><div class="n">${esc(d.title)}</div><div class="m">${esc(mfrNameOf(d.manufacturer))} · ${esc(T[d.type]||d.type)}${d.models&&d.models.length?" · "+esc(d.models.slice(0,4).join(", ")):""}${d.year?" · "+esc(d.year):""}</div>${d.description?`<div class="m">${esc(d.description)}</div>`:""}</div><a class="btn gh" href="${esc(d.url)}" target="_blank" rel="noopener">${d.format==="video"?"Watch":"View / download"}</a></div>`).join(""):'<div class="empty">No documents match. Try another word or clear a filter.</div>'}</div>
+    <div id="rsDocList">${items.length?items.map(d=>`<div class="rs-doc"><div class="b"><div class="n">${esc(d.title)}</div><div class="m">${esc(rsMfrName(d.manufacturer))} · ${esc(T[d.type]||d.type)}${d.models&&d.models.length?" · "+esc(d.models.slice(0,4).join(", ")):""}${d.year?" · "+esc(d.year):""}</div>${d.description?`<div class="m">${esc(d.description)}</div>`:""}</div>${/^https:\/\//i.test(String(d.url||""))?`<a class="btn gh" href="${esc(d.url)}" target="_blank" rel="noopener">${d.format==="video"?"Watch":"View / download"}</a>`:'<span class="m">Link unavailable</span>'}</div>`).join(""):'<div class="empty">No documents match. Try another word or clear a filter.</div>'}</div>
     <div class="card" style="margin-top:14px"><h3>Need printed literature?</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Choose a line, materials &amp; quantities, and HCPS sends the request.</div>${rsLitHtml()}</div>`;
 }
 function rsDocSet(k,v){ if(k==="q"){ RS.docQ=v; const L=$("#rsDocList"); if(L){ const h=document.createElement("div"); h.innerHTML=rsDocsHtml(); const nl=h.querySelector("#rsDocList"), c=h.querySelector(".rs-count"); L.innerHTML=nl.innerHTML; const oc=document.querySelector("#view-resources .rs-count"); if(oc&&c) oc.textContent=c.textContent; } return; } if(k==="m") RS.docMfr=v; if(k==="t") RS.docType=v; renderResources(); }
@@ -9756,7 +9813,7 @@ function rsTrainingHtml(){ const w=rsHomeWait(); if(w) return w; const H=RS.home
    <div class="fld2"><label>Notes (optional)</label><textarea id="rsTNotes" rows="2" maxlength="1500"></textarea></div>
    <h3 style="margin:14px 0 6px">Pick an open appointment</h3>
    ${slots===null?'<div class="msg">Loading open times…</div>':slots.error?`<div class="msg">${esc(slots.error)}</div>`:!slots.days.length?'<div class="msg">No open times in the next three weeks — send a request below and HCPS will coordinate.</div>':
-     `<div class="m" style="margin-bottom:6px">${esc(slots.duration_min)}-minute ${T.format==="zoom"?"Zoom":"in-store"} session with ${esc(slots.with)} · times in ${esc(slots.tz_abbr||"")}</div><div class="rs-days">${slots.days.slice(0,10).map(d=>`<div class="rs-day"><div class="n">${esc(d.dayname)} ${esc(d.date.slice(5).replace("-","/"))}</div>${d.slots.map(x=>`<a class="btn ${T.sel===x.start_utc?"nv":"gh"} rs-slot" onclick="rsTSel('${esc(x.start_utc)}')">${esc(x.label)}</a>`).join("")}</div>`).join("")}</div>`}
+     `<div class="m" style="margin-bottom:6px">${esc(slots.duration_min)}-minute ${T.format==="zoom"?"Zoom":"in-store"} session with ${esc(slots.with)} · times in ${esc(slots.tz_abbr||"")}</div><div class="rs-days">${slots.days.slice(0,10).map(d=>`<div class="rs-day"><div class="n">${esc(d.dayname)} ${esc(d.date.slice(5).replace("-","/"))}</div>${d.slots.map(x=>`<a class="btn ${T.sel===x.start_utc?"nv":"gh"} rs-slot" data-t="${esc(x.start_utc)}" onclick="rsTSel(this.dataset.t)">${esc(x.label)}</a>`).join("")}</div>`).join("")}</div>`}
    <div class="rs-act">${pv?'<div class="msg">View as Dealer is read-only — use Manage Dealer to send a request.</div>':`<a class="btn pri" onclick="rsTSend('book')"${!T.sel||rsMg()?' style="display:none"':""}>Book this time</a><a class="btn ${T.sel&&!rsMg()?"gh":"pri"}" onclick="rsTSend('request')">Send as a request — HCPS coordinates</a>`}<div id="rsTMsg" class="m"></div></div>
    ${rsMg()?'<div class="m">In Manage Dealer you can send a request; the dealer books an open time themselves.</div>':""}`; }
 async function rsTFormat(f){ RS.train.format=f; RS.train.slots=null; RS.train.sel=null; renderResources(); rsTSlots(); }
@@ -9777,7 +9834,7 @@ function rsServiceHtml(){ const w=rsHomeWait(); if(w) return '<div id="gsvcRow">
   if(!lines.filter(l=>l.mode!=="golden").length) return h+'<div class="msg">No other manufacturer lines are on this location yet.</div>';
   h+=`<div class="fld2"><label>Manufacturer</label><select onchange="rsSvc('line',this.value)"><option value="">Choose a line…</option>${lines.filter(l=>l.mode!=="golden").map(l=>`<option value="${esc(l.slug)}"${l.slug===S.line?" selected":""}>${esc(l.name)}</option>`).join("")}</select></div>`;
   if(line&&line.note) h+=`<div class="m" style="margin:-4px 0 8px">${esc(line.note)}</div>`;
-  if(line) h+=`<div class="fld2"><label>What do you need?</label><div class="rs-types">${line.types.map(t=>`<a class="rs-type ${t.key===S.type?"on":""}" onclick="rsSvc('type','${esc(t.key)}')"><b>${esc(t.label)}</b><span>${esc(t.blurb)}</span></a>`).join("")}</div></div>`;
+  if(line) h+=`<div class="fld2"><label>What do you need?</label><div class="rs-types">${line.types.map(t=>`<a class="rs-type ${t.key===S.type?"on":""}" data-k="${esc(t.key)}" onclick="rsSvc('type',this.dataset.k)"><b>${esc(t.label)}</b><span>${esc(t.blurb)}</span></a>`).join("")}</div></div>`;
   if(type){
     h+=type.fields.map(f=>{ const id="rsF_"+f.key, lab=esc(f.label)+(f.required?"":" <span class='m'>(optional)</span>");
       if(f.kind==="text") return `<div class="fld2"><label for="${id}">${lab}</label><textarea id="${id}" rows="3" maxlength="${f.max}"></textarea></div>`;
@@ -10616,6 +10673,7 @@ function showView(v){
   if(v==="favorites")loadFavView();
   if(v==="showroom")loadShowroom();
   if(v==="resources")loadResourcesView();
+  if(v==="dash"&&document.getElementById("ftmDash")) ftmRender(document.getElementById("ftmDash"),"overview");   /* Featured This Month: current on every visit */
   if(v==="reimb")loadReimbView();
   if(v==="referrals")loadReferralsView();
   if(v==="account")loadAccountView();

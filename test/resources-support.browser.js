@@ -65,7 +65,7 @@ const SLOTS = { ok: true, format: 'zoom', tz_abbr: 'CST', duration_min: 30, with
         let n = await page.$$eval('#view-resources .rs-doc', (e) => e.map((x) => x.innerText)); ok(n.length === 1 && /Strongback Warranty/.test(n[0]), JSON.stringify(n));
         await page.fill('#rsDocQ', ''); await page.waitForTimeout(100);
         await page.selectOption('#view-resources .rs-filt select >> nth=1', 'training'); await page.waitForTimeout(150);
-        n = await page.$$eval('#view-resources .rs-doc', (e) => e.map((x) => x.innerText)); ok(n.length === 1 && /Twilight/.test(n[0]) && /Watch/.test(n[0]), JSON.stringify(n));
+        n = await page.$$eval('#view-resources .rs-doc', (e) => e.map((x) => x.innerText)); ok(n.length === 1 && /Twilight/.test(n[0]) && /Watch/.test(n[0]) && /Golden Technologies/.test(n[0]) && !/golden-technologies/.test(n[0]), JSON.stringify(n));
         const a = await page.$eval('#view-resources .rs-doc a', (x) => ({ href: x.href, tgt: x.target })); ok(a.tgt === '_blank' && /vimeo/.test(a.href), JSON.stringify(a));
         await page.selectOption('#view-resources .rs-filt select >> nth=1', ''); });
       await page.evaluate(() => rsTab('training'));
