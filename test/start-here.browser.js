@@ -26,7 +26,11 @@ const SUMMARY = { ok: true, ytd: { spend: 100, units: 1, orders: 1, year: 2026 }
         await page.route('**/featured-month-api*', (r) => J(r, { ok: true, month: '2026-11', items: [], alternates: [] }));
         await page.route('**/referral-sources-api', (r) => { const x = JSON.parse(r.request().postData() || '{}');
           if (x.action === 'meta') return J(r, refOn ? { ok: true, enabled: true, release: { data_year: 2024, label: 'claims year 2024' }, location: { id: 'L', name: 'X', zip: '42101', state: 'KY' }, locations: [{ id: 'L', name: 'X', zip: '42101', state: 'KY' }] } : { ok: true, enabled: false });
-          if (x.action === 'codes') return J(r, { ok: true, enabled: true, codes: [] }); return J(r, { ok: true }); });
+          if (x.action === 'codes') return J(r, { ok: true, enabled: true, codes: /E0260/i.test(x.q || '') ? [{ hcpcs: 'E0260', hcpcs_desc: 'Hospital bed, semi-electric', rows: 900 }, { hcpcs: 'E0261', hcpcs_desc: 'Hospital bed, semi-electric, without mattress', rows: 50 }] : [] });
+          if (x.action === 'radius') { const rows = [1, 2, 3].map((i) => ({ npi: '100000000' + i, last_org: 'Synthetic' + i, first_name: 'Sam', entity: 'I', credentials: 'MD', street1: i + ' Example Way', city: 'Bowling Green', state: 'KY', zip5: '42101', specialty: 'Internal Medicine', hcpcs: x.hcpcs, rental: 'Y', benes: i === 2 ? null : 14, claims: 20 + i, miles: i, distance_basis: 'office' }));
+            return J(r, { ok: true, enabled: true, mode: 'radius', release: { data_year: 2024, label: 'claims year 2024', states: ['KY'] }, hcpcs: x.hcpcs, center: { zip: x.center_zip }, radius_miles: 25, zip_areas: 3, total: rows.length, rows, unsettled: 0, geocoder: 'ok',
+              placed_by: { office: 3, zip: 0 }, coverage: { partial: false, outside: [] }, specialties: ['Internal Medicine'], notes: { distance: 'Straight-line miles.', suppressed: 'Withheld by CMS', coverage: 'Original Medicare only.', location: 'Office location.' } }); }
+          return J(r, { ok: false, error: 'not_stubbed' }); });
         await page.route('**/dealer-quotes-api', (r) => { const x = JSON.parse(r.request().postData() || '{}'); if (/save|email|delete/.test(x.action || '')) writes.push(x.action); return J(r, { ok: true, quotes: [], rows: [] }); });
         await page.route('**/dealer-support-api', (r) => J(r, { ok: true, location: { id: 'L', name: 'X' }, locations: [], lines: [], contact: {} }));
         /* reload so the boot-time reads (referral switch, dashboard) come from the answers above, not the harness defaults */
@@ -70,13 +74,23 @@ const SUMMARY = { ok: true, ytd: { spend: 100, units: 1, orders: 1, year: 2026 }
           const small = w < 768 ? await page.$$eval('#wtCoach button', (a) => a.filter((x) => x.getBoundingClientRect().height < 44).length) : 0; ok(!small, 'small coach buttons');
           ok((await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)) <= 1, 'overflow');
           await page.click('#wtCoach button.pri'); ok(!(await page.$('#wtCoach')) && !(await page.$('.wt-hl')), 'coach not finished'); ok(!writes.length, 'wrote: ' + writes); });
-        await t(`${tag}: walkthrough "find local referral sources" walks to the referral screen`, async () => {
+        await t(`${tag}: walkthrough "find local referral sources" goes from choosing a code to populated results and back to Resources & Support`, async () => {
           await page.evaluate(() => { showP360('dash'); }); await page.waitForSelector('#shCard [data-sh=referrals]', { timeout: 10000 });
           await page.click('#shCard [data-sh=referrals]'); await page.waitForSelector('#wtCoach'); await page.click('#wtCoach button:text-is("Show me")');
           await page.waitForFunction(() => document.querySelector('#rsRef a'), null, { timeout: 15000 }); await page.waitForTimeout(700); await page.click('#wtCoach button.pri');
           await page.click('#wtCoach button:text-is("Show me")'); await page.waitForSelector('#view-referrals .rf', { timeout: 15000 }); await page.waitForTimeout(700);
           await page.click('#wtCoach button.pri'); ok(/Pick the product code/.test(await page.$eval('#wtCoach h3', (e) => e.textContent)));
-          await page.click('#wtCoach button:text-is("End walkthrough")'); ok(!(await page.$('#wtCoach')), 'not ended'); });
+          await page.click('#wtCoach button.pri'); await page.waitForTimeout(150); ok(/Do this step first/.test(await page.innerText('#wtCoach')), 'Next allowed before a code was chosen');
+          await page.click('#wtCoach button:text-is("Show me")'); await page.waitForSelector('#view-referrals [data-code="E0260"][aria-pressed="true"]', { timeout: 15000 });
+          await page.click('#wtCoach button.pri'); ok(/Set the search area/.test(await page.$eval('#wtCoach h3', (e) => e.textContent)));
+          await page.click('#wtCoach button.pri'); ok(/Find referral sources/.test(await page.$eval('#wtCoach h3', (e) => e.textContent)));
+          await page.click('#wtCoach button:text-is("Show me")'); await page.waitForSelector('#view-referrals #rfOut .rfl tbody tr', { timeout: 15000 });
+          const rows = await page.$$eval('#view-referrals #rfOut .rfl tbody tr', (a) => a.length); ok(rows === 3, 'rows ' + rows);
+          ok(/withheld by CMS/.test(await page.innerText('#view-referrals #rfOut')), 'withheld wording');
+          await page.click('#wtCoach button.pri'); ok(/Read the results/.test(await page.$eval('#wtCoach h3', (e) => e.textContent)));
+          await page.click('#wtCoach button.pri'); ok(/Go back/.test(await page.$eval('#wtCoach h3', (e) => e.textContent)));
+          await page.click('#wtCoach button:text-is("Show me")'); await page.waitForFunction(() => { const e = document.querySelector('#view-resources .rs-nav'); return e && e.getBoundingClientRect().height > 0; }, null, { timeout: 15000 });
+          await page.click('#wtCoach button.pri'); ok(!(await page.$('#wtCoach')) && !(await page.$('.wt-hl')), 'not finished'); });
         await t(`${tag}: Hide keeps Start here only in Help & Training, where it can be shown again`, async () => {
           await page.evaluate(() => showP360('dash')); await page.waitForSelector('#shCard'); await page.$eval('#shCard .seelink', (e) => e.click()); await page.waitForTimeout(200);
           ok(!(await page.$('#shCard')), 'still shown');

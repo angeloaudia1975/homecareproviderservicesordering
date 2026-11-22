@@ -18,8 +18,11 @@ async function t(n, f) { try { await f(); pass++; console.log('ok   ' + n); } ca
 
 async function page(browser, w) {
   const pg = await browser.newPage({ viewport: { width: w || 1280, height: 900 } });
+  /* the fixtures are dated 2026-11-19 (the rate data's service date); pin the page clock so "today" — the lookup's default date —
+     is that day, not the machine's (the 5 baseline failures since 2026-11-20 were this clock, not the page) */
+  await pg.clock.setFixedTime(new Date('2026-11-19T17:00:00Z'));
   await pg.exposeFunction('__reimbApi', (b) => {
-    if (b.action === 'meta' || b.action === 'lookup' || b.action === 'product') return H({ httpMethod: 'POST', headers: { authorization: 'Bearer tok' }, body: JSON.stringify(Object.assign({ dos: '2026-11-19' }, b)) }).then((r) => JSON.parse(r.body));
+    if (b.action === 'meta' || b.action === 'lookup' || b.action === 'product') return H({ httpMethod: 'POST', headers: { authorization: 'Bearer tok' }, body: JSON.stringify(Object.assign({ dos: '2026-11-19' }, b)) }).then((r) => { const j = JSON.parse(r.body); if (j && j.today) j.today = '2026-11-19'; return j; });
     return { ok: false, error: 'unknown' };
   });
   await pg.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font-family:Arial}.card{border:1px solid #ddd;padding:12px;margin:10px}.btn{min-height:44px}</style></head>

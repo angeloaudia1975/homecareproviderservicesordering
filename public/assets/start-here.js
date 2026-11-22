@@ -101,12 +101,23 @@
         sel: "#rsRef a, #view-resources .rs-nav", show: () => CTX.showP360("resources"), done: () => !!firstVis("#rsRef a") },
       { t: "Open Find local referral sources", d: "It lists clinicians near you who ordered a product code from Original Medicare, from CMS's published data.",
         sel: "#rsRef a", show: () => { const a = firstVis("#rsRef a"); if (a) a.click(); }, done: () => !!firstVis("#view-referrals .rf") },
-      { t: "Pick the product code", d: "Type a HCPCS code or product words — for example a hospital bed or oxygen — and choose the code. The published allowance for that code shows at the top.",
-        sel: "#view-referrals #rfQ, #view-referrals #rfCodes", done: () => true },
+      { t: "Pick the product code", d: "Type a HCPCS code or product words — for example E0260 or a hospital bed — and choose the code. Show me types E0260 (semi-electric hospital bed) and chooses it. The published allowance for that code shows at the top.",
+        sel: "#view-referrals #rfQ, #view-referrals #rfCodes", show: async () => {
+          const q = firstVis("#view-referrals #rfQ"); if (!q) return; q.focus(); q.value = "E0260"; q.dispatchEvent(new Event("input", { bubbles: true }));
+          q.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+          for (let i = 0; i < 40 && !firstVis('#view-referrals [data-code][aria-pressed="true"]'); i++) {
+            const b = firstVis('#view-referrals [data-code="E0260"]'); if (b) { b.click(); break; } await new Promise((r) => setTimeout(r, 250)); } },
+        done: () => !!firstVis('#view-referrals [data-code][aria-pressed="true"]') },
       { t: "Set the search area", d: "By default it looks within 25 miles (straight line) of your branch ZIP. You can change the center ZIP or search exact office ZIPs.",
         sel: "#view-referrals #rfMode, #view-referrals #rfCenter", done: () => true },
-      { t: "Read the results", d: "Clinicians are listed nearest first with their office and how often they ordered this code. \"Withheld by CMS\" means fewer than 11 — never zero. Copy office details to plan your visits.",
-        sel: "#view-referrals #rfOut", done: () => true } ] },
+      { t: "Find referral sources", d: "Press Find referral sources. The clinicians appear below, nearest first.",
+        sel: '#view-referrals [data-a="search"]', show: () => { const b = firstVis('#view-referrals [data-a="search"]'); if (b) b.click(); },
+        done: () => { const o = $("#view-referrals #rfOut"); return !!(o && (o.querySelector(".rfl tbody tr") || o.querySelector(".msg"))); } },
+      { t: "Read the results", d: "Each row is one clinician's office and how often they ordered this code. \"Withheld by CMS\" means fewer than 11 — never zero. Copy office details to plan your visits.",
+        sel: "#view-referrals #rfOut", done: () => true },
+      { t: "Go back", d: "← Back returns you to where you started — here, Resources & Support.",
+        sel: '#view-referrals [data-a="back"]', show: () => { const b = firstVis('#view-referrals [data-a="back"]'); if (b) b.click(); },
+        done: () => !!firstVis("#view-resources .rs-nav") } ] },
   };
   function clearHl() { document.querySelectorAll(".wt-hl").forEach((e) => e.classList.remove("wt-hl")); }
   function endTour() { clearInterval(POLL); POLL = null; clearHl(); const c = document.getElementById("wtCoach"); if (c) c.remove(); TOUR = null; }
