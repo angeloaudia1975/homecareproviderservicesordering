@@ -23,6 +23,7 @@
     sh.innerHTML = `<style>
       :host{all:initial}
       [hidden]{display:none!important}
+      .fbk{display:block;margin-top:6px;min-height:36px;padding:4px 10px;border:1px solid #d7dee8;border-radius:8px;background:#fff;color:#55606c;font:inherit;font-size:12.5px;cursor:pointer}.fbk:disabled{cursor:default;border-color:transparent;padding-left:0}
       .p{position:fixed;z-index:2147482001;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#0b1f33;background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(11,31,51,.28);display:flex;flex-direction:column;overflow:hidden}
       .hd{display:flex;align-items:center;gap:10px;padding:10px 8px 10px 12px;background:#0b1f33;color:#fff}
       .orb{width:40px;height:40px;border-radius:50%;flex:none;overflow:hidden;background:radial-gradient(circle at 38% 32%,#e9f7ff 0,#7fd3ff 18%,#1681c2 55%,#0b1f33 100%)}
@@ -295,6 +296,10 @@
       if (SP.mark) SP.mark('answer_shown', { audio_with_answer: !!(speakTyped && r.speech && r.speech.ok), tts_ms: r.speech ? r.speech.tts_ms : null, model_ms: r.timing ? r.timing.model_ms : null, total_ms: r.timing ? r.timing.total_ms : null });
       if (speakTyped) { if (r.speech && r.speech.ok && r.speech.audio && SP.preload) SP.preload(r.speech.text || r.answer, 'answer', r.speech.audio, r.speech.mime);
         if (Array.isArray(r.speech_parts) && r.speech_parts.length && SP.speakParts) SP.speakParts(r.speech_parts); else SP.speak(r.answer, { kind: 'answer', token: r.speech_token }); }
+      { const fb = document.createElement('button'); fb.type = 'button'; fb.className = 'fbk'; fb.textContent = 'That didn\u2019t answer my question';
+        fb.onclick = async () => { fb.disabled = true; let ok = false; try { const x = await DV.api({ action: 'feedback', question: q, page: page() }); ok = !!(x && x.ok); } catch (e) { ok = false; }
+          fb.textContent = ok ? 'Thanks — Home Care Provider Services will look at this.' : 'Thanks — it could not be recorded just now.'; };
+        a.appendChild(fb); }
       hist.push({ q, a: r.answer || '' }); cards(r); await perform(r); a.scrollIntoView({ block: 'nearest' });
     }
 
@@ -393,6 +398,12 @@
         } else { stopAll('closed'); if (orbHost.__dvLive) orbHost.__dvLive(false); if (on === false && orbHost.__dvFocus) orbHost.__dvFocus(); }
         if (orbHost.__dvExpanded) orbHost.__dvExpanded(show); },
       isOpen: () => !P.hidden,
+      /* Start Here → Meet Victoria (owner 2026-11-22): a suggested question tapped on the page is asked as TYPED (no microphone
+         is opened for it); a conversation already going switches to typing first */
+      askFromPage(q) { if (P.hidden) { P.hidden = false; clearNote(); place(); if (orbHost.__dvExpanded) orbHost.__dvExpanded(true); }
+        if (!aiOn) { setAi(false); toTyping(false, 'unsupported'); return null; }
+        if (voice && voice.active) toTyping(true); else { mode = 'typing'; speakTyped = false; askBar.hidden = false; typeB.hidden = true; status('typing'); }
+        return ask(q); },
       el: P, shadow: sh, ask, setAi, runTool, voiceEvent, timings,
       get voice() { return voice; },
     };
