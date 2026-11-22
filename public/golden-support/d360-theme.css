@@ -102,4 +102,9 @@ input, select, textarea { font-family: inherit; }
   .part-row input[name^="part_qty"] { grid-column: 2; grid-row: 1; }
   .part-row .remove-row-btn { grid-column: 3; grid-row: 1; width: 44px; min-height: 44px; }
   .part-row input[name^="part_desc"] { grid-column: 1 / -1; grid-row: 2; }
+  /* one-column forms: a long option (Labor Rate Request "repair type") made Golden's 1fr column wider than the card on
+     phones; the column may now shrink and every field stays inside the card (found live 2026-11-22) */
+  .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .form-group { min-width: 0; }
+  .form-group input, .form-group select, .form-group textarea { max-width: 100%; }
 }
