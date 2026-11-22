@@ -70,6 +70,24 @@ function reimbApi(b) {
       await page.click('#rfOut .copy'); await page.waitForTimeout(300);
       const cp = await page.evaluate(async () => ({ btn: document.querySelector('#rfOut .copy').textContent, txt: await navigator.clipboard.readText().catch(() => '') }));
       await t(`${label}: Copy office details copies name, specialty, office address and NPI`, () => ok(/Copied/.test(cp.btn) && /Featherstonehaugh-Montgomery/.test(cp.txt) && /1200 Synthetic Medical Center Parkway/.test(cp.txt) && /NPI 1000000011/.test(cp.txt), JSON.stringify(cp)));
+      /* end to end: paste into a plain-text field and compare with the office shown on that row */
+      const pasted = await page.evaluate(() => { const a = document.createElement('textarea'); a.id = 'pasteHere'; document.body.appendChild(a); a.focus(); return true; })
+        .then(() => page.keyboard.press('ControlOrMeta+V')).then(() => page.waitForTimeout(150))
+        .then(() => page.evaluate(() => { const v = document.getElementById('pasteHere').value; const tr = document.querySelector('#rfOut tbody tr');
+          const cell = (l) => { const td = [...tr.querySelectorAll('td')].find((x) => x.getAttribute('data-l') === l); return td ? td.innerText.replace(/\s+/g, ' ').trim() : ''; };
+          document.getElementById('pasteHere').remove(); return { v, office: cell('Office'), clin: cell('Clinician') }; }));
+      await t(`${label}: pasted text matches the selected row (clinician, NPI, office address)`, () => {
+        const lines = pasted.v.split('\n'); const name = pasted.clin.split(' NPI ')[0].trim();
+        ok(lines[0] === name, 'name ' + JSON.stringify([lines[0], name]));
+        ok(pasted.office.replace(/\s+/g, ' ').trim() === lines[2].replace(/\s+/g, ' ').trim(), 'office ' + JSON.stringify([lines[2], pasted.office]));
+        ok(pasted.clin.includes(lines[3].replace('NPI ', '')), 'npi ' + JSON.stringify([lines[3], pasted.clin]));
+      });
+      /* clipboard refused / never answering: a selected box with exactly the same details, copyable by hand */
+      await page.evaluate(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => new Promise(() => {}) } }); document.execCommand = () => false; });
+      const b2 = await page.$$('#rfOut .copy'); await b2[1].click(); await page.waitForTimeout(1800);
+      const man = await page.evaluate(() => { const td = document.querySelectorAll('#rfOut tbody tr')[1].querySelector('td.cp'); const box = td.querySelector('textarea.rfman'); const r = box && box.getBoundingClientRect(); const o = document.querySelector('#rfOut').getBoundingClientRect();
+        return { has: !!box, sel: box && document.activeElement === box && box.selectionStart === 0 && box.selectionEnd === box.value.length, v: box && box.value, btn: td.querySelector('.copy').textContent, hint: (td.querySelector('.rfmanh') || {}).textContent, inside: r && r.left >= o.left - 1 && r.right <= o.right + 1, sw: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
+      await t(`${label}: clipboard refused → the office details appear selected in a box to copy by hand (no sideways scroll)`, () => ok(man.has && man.sel && /NPI \d{10}/.test(man.v) && /Select and copy/.test(man.btn) && /Ctrl\+C/.test(man.hint) && man.inside && man.sw <= 1, JSON.stringify(man)));
       await page.click('[data-a="ratetog"]'); await page.waitForSelector('#rrZip');
       const D = await page.evaluate(() => ({ t: document.querySelector('#rfRate').textContent, st: document.querySelector('#rrState').value, dos: document.querySelector('#rrDos').value, zip: document.querySelector('#rrZip').value, sw: document.documentElement.scrollWidth - document.documentElement.clientWidth }));
       await t(`${label}: View rate details holds state, payer, rate ZIP, service date, the fee-schedule source and the full disclaimer`, () => ok(D.st === 'KY' && D.zip === '42101' && D.dos === TODAY && /Source: CMS DMEPOS Fee Schedule/.test(D.t) && /not a billing specialist/.test(D.t) && /Rate ZIP/.test(D.t) && D.sw <= 1, D.t.slice(0, 400)));

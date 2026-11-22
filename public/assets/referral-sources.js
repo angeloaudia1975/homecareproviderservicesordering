@@ -1,8 +1,8 @@
 /* Find local referral sources (Dealer Portal pilot, owner 2026-11-21) — ONE results view, reached from a product's
    reimbursement panel, the reimbursement lookup and Reports & Growth Ideas.
 
-   Left: clinicians' published Original Medicare ordering activity for one HCPCS code in the dealer's office-search ZIPs
-   (CMS "by Referring Provider and Service", read through referral-sources-api). Right: the published allowance for the
+   Results (full width, labeled cards when the columns don't fit): clinicians' published Original Medicare ordering activity for one HCPCS code in the dealer's office-search ZIPs
+   (CMS "by Referring Provider and Service", read through referral-sources-api). Above them, a compact summary of the published allowance for the
    payer, service date and rate ZIP the dealer chose (the existing reimbursement lookup, reimbursement-api "lookup").
    The two are separate: changing the search ZIPs never changes the rate inputs, and one failing never hides the other.
 
@@ -24,7 +24,7 @@
     .rf .src{font-size:12px;color:#4a5b6b;margin-top:6px}.rf .msg{padding:10px 12px;border-radius:8px;background:#f4f8fb;color:#3b4b5b;font-size:13.5px;margin-top:10px}.rf .msg.err{background:#fdf1ed;color:#8a3412}
     .rf .codes{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.rf .codes button{min-height:40px;border:1px solid #cbd8e4;border-radius:999px;background:#fff;padding:6px 12px;font-size:13px;cursor:pointer;text-align:left}
     .rf .codes button[aria-pressed=true]{border-color:#1681c2;background:#e8f3fb;font-weight:700}
-    .rf .wh{color:#8a5a00;font-size:12px;font-weight:600}.rf .copy{min-height:44px;font-size:13px;padding:6px 12px;white-space:nowrap}
+    .rf .wh{color:#8a5a00;font-size:12px;font-weight:600}.rf textarea.rfman{display:block;width:100%;margin-top:8px;font:13px/1.4 Inter,system-ui,sans-serif;padding:8px;border:1px solid #cbd8e4;border-radius:9px;resize:vertical;box-sizing:border-box}.rf .rfmanh{font-size:12px;color:#6b7d90;margin-top:4px}.rf .copy{min-height:44px;font-size:13px;padding:6px 12px;white-space:nowrap}
     .rf .disc{font-size:11.5px;color:#4a5b6b;border-top:1px solid #e3edf5;margin-top:10px;padding-top:8px}
     .rf .rfsum{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 18px;border-left:4px solid #ef6325;text-align:left}
     .rf .rfsum .lbl{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#6b7d90}
@@ -42,6 +42,13 @@
       .rf .rfl .num{text-align:left}.rf .rfl td.cp{grid-column:1/-1}.rf .rfl td.cp .copy{width:100%}}
     .rf .rfsum .lbl+div{margin-top:2px}@container rfres (max-width: 420px){.rf .rfl tr{grid-template-columns:1fr}}`;
 
+  /* Copy with a 1.5 s limit (a pending permission prompt can leave the clipboard promise unanswered), then the older
+     selection copy; false = the dealer copies by hand from the selected box. */
+  async function copyText(t) {
+    try { if (navigator.clipboard && window.isSecureContext) { const r = await Promise.race([navigator.clipboard.writeText(t).then(() => true), new Promise((res) => setTimeout(() => res(false), 1500))]); if (r) return true; } } catch (e) {}
+    try { const a = document.createElement("textarea"); a.value = t; a.setAttribute("readonly", ""); a.style.cssText = "position:fixed;top:0;left:0;opacity:0;width:1px;height:1px"; document.body.appendChild(a); a.select(); const ok = document.execCommand && document.execCommand("copy"); a.remove(); if (ok) return true; } catch (e) {}
+    return false;
+  }
   function mount(host, cfg) {
     const S = { meta: null, rmeta: null, code: "", desc: "", codes: [], zips: "", mode: "radius", center: "", shown: 50, rental: "", spec: "", res: null, err: "", busy: false, offset: 0,
       rate: { state: "", plan: "medicare", zip: "", dos: "", mplan: "" }, rateRes: null, rateErr: "", prefill: cfg.prefill || null };
@@ -146,7 +153,11 @@
       host.querySelectorAll("[data-a]").forEach((b) => { b.onclick = () => { const a = b.getAttribute("data-a");
         if (a === "search") search(0); else if (a === "more") { if (S.res && S.res.mode === "radius") { S.shown += 50; render(); } else search(S.offset + 50, true); } else if (a === "rate") rate(); else if (a === "ratetog") { S.rateOpen = !S.rateOpen; renderRate(); } else if (a === "back" && cfg.ret && cfg.ret.back) cfg.ret.back(); }; });
       host.querySelectorAll("[data-copy]").forEach((b) => { b.onclick = async () => { const x = S.res.rows[Number(b.getAttribute("data-copy"))]; const t = who(x) + "\n" + (x.specialty || "") + "\n" + addr(x) + "\nNPI " + x.npi;
-        try { await navigator.clipboard.writeText(t); b.textContent = "Copied ✓"; } catch (e) { b.textContent = "Select and copy"; } }; });
+        if (await copyText(t)) { b.textContent = "Copied ✓"; return; }
+        /* clipboard refused or never answered: the office details in a selected box the dealer copies by hand (owner 2026-11-22) */
+        const td = b.parentElement; let box = td.querySelector("textarea.rfman"); if (!box) { box = document.createElement("textarea"); box.className = "rfman"; box.readOnly = true; box.rows = 4; box.setAttribute("aria-label", "Office details — select and copy"); td.appendChild(box);
+          const h = document.createElement("div"); h.className = "rfmanh"; h.textContent = "Copy didn't work here — the details are selected: press Ctrl+C (Mac: ⌘C), or long-press and choose Copy."; td.appendChild(h); }
+        box.value = t; box.focus(); box.select(); b.textContent = "Select and copy below"; }; });
       const ids = { rrState: "state", rrPlan: "plan", rrZip: "zip", rrDos: "dos" };
       Object.entries(ids).forEach(([id, k]) => { const el = $("#" + id); if (!el) return; el.onchange = el.oninput = () => { S.rate[k] = el.value.trim(); if (k === "state") { const st = ((S.rmeta || {}).states || []).find((x) => x.id === S.rate.state); S.rate.plan = st && st.plans.some((p) => p.id === "medicare") ? "medicare" : (st && st.plans[0] ? st.plans[0].id : ""); renderRate(); } }; });
     }
