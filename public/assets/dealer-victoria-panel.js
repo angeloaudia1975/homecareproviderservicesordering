@@ -393,6 +393,12 @@
         } else { stopAll('closed'); if (orbHost.__dvLive) orbHost.__dvLive(false); if (on === false && orbHost.__dvFocus) orbHost.__dvFocus(); }
         if (orbHost.__dvExpanded) orbHost.__dvExpanded(show); },
       isOpen: () => !P.hidden,
+      /* Start Here → Meet Victoria (owner 2026-11-22): a suggested question tapped on the page is asked as TYPED (no microphone
+         is opened for it); a conversation already going switches to typing first */
+      askFromPage(q) { if (P.hidden) { P.hidden = false; clearNote(); place(); if (orbHost.__dvExpanded) orbHost.__dvExpanded(true); }
+        if (!aiOn) { setAi(false); toTyping(false, 'unsupported'); return null; }
+        if (voice && voice.active) toTyping(true); else { mode = 'typing'; speakTyped = false; askBar.hidden = false; typeB.hidden = true; status('typing'); }
+        return ask(q); },
       el: P, shadow: sh, ask, setAi, runTool, voiceEvent, timings,
       get voice() { return voice; },
     };
