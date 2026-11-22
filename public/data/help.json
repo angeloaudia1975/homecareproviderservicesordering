@@ -3,6 +3,10 @@
   "rule": "Every new or significantly changed dealer-facing feature has a help article here, checked against the working page (test/help-center.test.js) before the feature is called complete. Each release item marked dealer_facing names its article.",
   "areas": [
     {
+      "key": "getting-started",
+      "title": "Getting started"
+    },
+    {
       "key": "ordering",
       "title": "Ordering"
     },
@@ -36,6 +40,32 @@
     }
   ],
   "articles": [
+    {
+      "id": "start-here",
+      "area": "getting-started",
+      "title": "Start here: the portal tour and walkthroughs",
+      "updated": "2026-11-22",
+      "open": "dash",
+      "summary": "A four-minute captioned tour of the 360 Dealer Portal with chapters and a transcript, a one-page guide, and step-by-step walkthroughs that point at each control as you go.",
+      "steps": [
+        "On Dealer Overview, find Start here — new to the 360 Dealer Portal? (it is also the Start here tab in Help & Training).",
+        "Press Watch the 4-minute tour. Jump to any chapter from the list beside the video; Transcript, under the player, has every caption.",
+        "Press One-page guide for a printable summary of every tool.",
+        "Press Walkthrough: product → customer quote, or Walkthrough: find local referral sources. A card at the bottom of the screen explains each step and outlines the control to use; press Show me to have the portal do the step, then Next."
+      ],
+      "notes": [
+        "Hide removes Start here from Dealer Overview on this browser; it stays in Help & Training, where you can show it again.",
+        "The walkthroughs only open screens and point at controls — they never place an order, send a quote or change anything."
+      ],
+      "ui_checks": [
+        "Start here — new to the 360 Dealer Portal?",
+        "Watch the 4-minute tour",
+        "One-page guide",
+        "Walkthrough: product → customer quote",
+        "shCard",
+        "shStart"
+      ]
+    },
     {
       "id": "ordering-basics",
       "area": "ordering",

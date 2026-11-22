@@ -19,6 +19,11 @@
           "text": "Featured this month: four products HCPS features each month on Dealer Overview and the first Shop Products screen, at your own prices.",
           "dealer_facing": true,
           "help": "featured-month"
+        },
+        {
+          "text": "Start here: a four-minute captioned portal tour with chapters and a transcript, a one-page guide, and guided walkthroughs — find a product and make a customer quote, and find local referral sources. On Dealer Overview and in Help & Training.",
+          "dealer_facing": true,
+          "help": "start-here"
         }
       ]
     },

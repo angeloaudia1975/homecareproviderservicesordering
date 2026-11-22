@@ -4240,9 +4240,10 @@ async function loadFeatured(){
 const FTM_URL="https://homecareproviderservices.netlify.app/.netlify/functions/featured-month-api?current=1";
 const _ftmSeen=new Set();
 async function loadFeaturedMonth(){
-  if(DASH.ftm!==undefined&&DASH.ftm!==null) return DASH.ftm;
-  try{ const r=await fetch(FTM_URL,{cache:"no-cache"}); const j=r.ok?await r.json():null; DASH.ftm=(j&&j.ok)?j:{items:[],alternates:[],month:""}; }
-  catch(e){ return {items:[],alternates:[],month:""}; }   /* not cached: a brief outage must not hide the month */
+  /* kept for at most an hour, so a tab left open across the 1st moves to the new month; a failed or refused answer is never kept */
+  if(DASH.ftm&&DASH.ftmAt&&Date.now()-DASH.ftmAt<3600000) return DASH.ftm;
+  try{ const r=await fetch(FTM_URL,{cache:"no-cache"}); const j=r.ok?await r.json():null; if(!(j&&j.ok)) return {items:[],alternates:[],month:""}; DASH.ftm=j; DASH.ftmAt=Date.now(); }
+  catch(e){ return {items:[],alternates:[],month:""}; }
   return DASH.ftm;
 }
 const ftmMatch=(prods,code)=>{ const c=String(code||"").toUpperCase(); return (prods||[]).find(p=>p&&!p._discontinued&&(String(p.code).toUpperCase()===c||String(p.family||"").toUpperCase()===c||String(p.model||"").toUpperCase()===c)); };
@@ -8315,6 +8316,7 @@ async function loadDash(){
       <div class="kpi"><div class="kl">Lines with activity</div><div class="kv tnum">${lines.length}</div><div class="ks">manufacturers purchased</div></div>
     </div>
     <div id="ftmDash"></div>
+    <div id="startHere"></div>
     <div class="grid2">
       <div class="card"><div class="chead"><h3>Recent orders</h3><a class="seelink" onclick="showView('orders')">All orders →</a></div><div class="rowlist">${recentHtml}</div></div>
       <div>
@@ -8332,6 +8334,7 @@ async function loadDash(){
     </div>
     <div id="dashOpps"></div>`;
   ftmRender(document.getElementById("ftmDash"),"overview");   /* Featured This Month (owner 2026-11-22 §4) */
+  shRender();   /* Start here (owner 2026-11-22 §3) */
   showView("dash");
   ensureCatalogFav().then(loadDashExtras);
 }
@@ -9787,16 +9790,16 @@ function rsDocsHtml(){
     .sort((a,b)=>(b.featured-a.featured)||(b.sortPriority-a.sortPriority)||a.title.localeCompare(b.title));
   const mfrs=[...new Set(D.items.map(d=>d.manufacturer))].sort((a,b)=>rsMfrName(a).localeCompare(rsMfrName(b)));
   return `<div class="rs-filt"><div class="fld2" style="flex:2;min-width:200px"><label>Search</label><input type="search" id="rsDocQ" value="${esc(RS.docQ)}" placeholder="Model, SKU, manual, warranty…" oninput="rsDocSet('q',this.value)"></div>
-    <div class="fld2"><label>Manufacturer</label><select onchange="rsDocSet('m',this.value)"><option value="">All</option>${mfrs.map(m=>`<option value="${esc(m)}"${m===RS.docMfr?" selected":""}>${esc(rsMfrName(m))}</option>`).join("")}</select></div>
-    <div class="fld2"><label>Document type</label><select onchange="rsDocSet('t',this.value)"><option value="">All</option>${(D.types||[]).filter(t=>D.items.some(d=>d.type===t.id)).map(t=>`<option value="${esc(t.id)}"${t.id===RS.docType?" selected":""}>${esc(t.label)}</option>`).join("")}</select></div></div>
+    <div class="fld2"><label>Manufacturer</label><select aria-label="Manufacturer" onchange="rsDocSet('m',this.value)"><option value="">All</option>${mfrs.map(m=>`<option value="${esc(m)}"${m===RS.docMfr?" selected":""}>${esc(rsMfrName(m))}</option>`).join("")}</select></div>
+    <div class="fld2"><label>Document type</label><select aria-label="Document type" onchange="rsDocSet('t',this.value)"><option value="">All</option>${(D.types||[]).filter(t=>D.items.some(d=>d.type===t.id)).map(t=>`<option value="${esc(t.id)}"${t.id===RS.docType?" selected":""}>${esc(t.label)}</option>`).join("")}</select></div></div>
     <div class="rs-count">${items.length} document${items.length===1?"":"s"}</div>
     <div id="rsDocList">${items.length?items.map(d=>`<div class="rs-doc"><div class="b"><div class="n">${esc(d.title)}</div><div class="m">${esc(rsMfrName(d.manufacturer))} · ${esc(T[d.type]||d.type)}${d.models&&d.models.length?" · "+esc(d.models.slice(0,4).join(", ")):""}${d.year?" · "+esc(d.year):""}</div>${d.description?`<div class="m">${esc(d.description)}</div>`:""}</div>${/^https:\/\//i.test(String(d.url||""))?`<a class="btn gh" href="${esc(d.url)}" target="_blank" rel="noopener">${d.format==="video"?"Watch":"View / download"}</a>`:'<span class="m">Link unavailable</span>'}</div>`).join(""):'<div class="empty">No documents match. Try another word or clear a filter.</div>'}</div>
     <div class="card" style="margin-top:14px"><h3>Need printed literature?</h3><div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Choose a line, materials &amp; quantities, and HCPS sends the request.</div>${rsLitHtml()}</div>`;
 }
 function rsDocSet(k,v){ if(k==="q"){ RS.docQ=v; const L=$("#rsDocList"); if(L){ const h=document.createElement("div"); h.innerHTML=rsDocsHtml(); const nl=h.querySelector("#rsDocList"), c=h.querySelector(".rs-count"); L.innerHTML=nl.innerHTML; const oc=document.querySelector("#view-resources .rs-count"); if(oc&&c) oc.textContent=c.textContent; } return; } if(k==="m") RS.docMfr=v; if(k==="t") RS.docType=v; renderResources(); }
-function rsLitHtml(){ const lines=(LINES&&LINES.length)?LINES.map(l=>({slug:l.slug,name:mfrNameOf(l.slug)})):(MFRLIST||[]);
+function rsLitHtml(){ const lines=(LINES&&LINES.length)?LINES.map(l=>({slug:l.slug,name:rsMfrName(l.slug)})):(MFRLIST||[]);
   const mats=["Product catalog","Line brochure","Showroom / point-of-sale materials","Spec sheets","Warranty & care cards"];
-  return `<div class="fld2"><label>Manufacturer</label><select id="litMfr">${lines.map(m=>`<option value="${esc(m.slug)}">${esc(m.name)}</option>`).join("")}</select></div>
+  return `<div class="fld2"><label>Manufacturer</label><select id="litMfr" aria-label="Manufacturer for printed literature">${lines.map(m=>`<option value="${esc(m.slug)}">${esc(m.name)}</option>`).join("")}</select></div>
    <div class="fld2"><label>Ship to</label><input id="litShip" value="${esc((PROFILE&&PROFILE.name)||"")} — main showroom"></div>
    ${mats.map(m=>`<label class="rs-chk"><input type="checkbox" class="litChk" data-m="${esc(m)}"> ${esc(m)} <input type="number" class="litQty" min="1" value="1" aria-label="Quantity"></label>`).join("")}
    <div class="fld2" style="margin-top:8px"><label>Note (optional)</label><textarea id="litNote" rows="2"></textarea></div><a class="btn pri" onclick="submitLit()">Submit request</a>`; }
@@ -9935,13 +9938,42 @@ function helpVersion(){ const r=HELPD&&HELPD.r&&HELPD.r.releases&&HELPD.r.releas
 function renderHelp(){
   const host=$("#view-help"), d=HELPD, tb=(k,n)=>`<a class="btn ${HELPTAB===k?"nv":"gh"}" style="min-height:44px;display:inline-flex;align-items:center" onclick="helpTab('${k}')">${n}</a>`;
   let body;
-  if(HELPTAB==="new"){
+  if(HELPTAB==="start"){
+    body=shPanelHtml(true);
+  } else if(HELPTAB==="new"){
     body=d.r.releases.map(r=>`<div class="card"><h3>${esc(r.title)}</h3><div style="color:var(--muted);font-size:12.5px;margin-bottom:6px">Version ${esc(r.version)} · ${esc(r.date)}</div><ul style="margin:0 0 0 18px;padding:0;font-size:13.5px;line-height:1.5">${r.items.filter(i=>i.dealer_facing).map(i=>`<li>${esc(i.text)}${i.help?` <a style="cursor:pointer;text-decoration:underline" onclick="helpArticle('${esc(i.help)}')">How it works</a>`:""}</li>`).join("")}</ul></div>`).join("");
   } else {
     body=`<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px"><div class="fld2" style="flex:2;min-width:200px"><label>Search help</label><input type="search" value="${esc(HELPQ)}" placeholder="e.g. tracking, quote, account" oninput="helpSearch(this.value)"></div><div class="fld2" style="flex:1;min-width:180px"><label>Topic</label><select onchange="helpArea(this.value)"><option value="">All topics</option>${d.h.areas.filter(a=>d.h.articles.some(x=>x.area===a.key)).map(a=>`<option value="${esc(a.key)}"${a.key===HELPA?" selected":""}>${esc(a.title)}</option>`).join("")}</select></div></div><div id="helpList">${helpListHtml()}</div>`;
   }
-  host.innerHTML=`<div class="ph"><div><h1>Help &amp; Training Center</h1><div class="sub">How Dealer 360 works · Dealer 360 version ${esc(helpVersion())}</div></div><div><a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px">${tb("help","Help articles")}${tb("new","What's New")}</div>${body}`;
+  host.innerHTML=`<div class="ph"><div><h1>Help &amp; Training Center</h1><div class="sub">How Dealer 360 works · Dealer 360 version ${esc(helpVersion())}</div></div><div><a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px">${tb("start","Start here")}${tb("help","Help articles")}${tb("new","What's New")}</div>${body}`;
+  if(HELPTAB==="start") shRefFill();
 }
+/* START HERE (owner milestone 2026-11-22 §3): Dealer Overview card + Help & Training "Start here" tab. The tour video,
+   transcript and walkthroughs live in /assets/start-here.js (loaded on first use); the one-page guide is a static page. */
+let SH_JS=null;
+function shLoad(){ if(!SH_JS) SH_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/start-here.js?v=1"; sc.onload=()=>{ window.HCPSStart.init({ showP360:(v)=>showP360(v), refEnabled:()=>(typeof refEnabled==="function"?refEnabled():Promise.resolve(false)),
+    openFirstLine:async()=>{ const L=entitledManufacturers().filter(m=>m.slug!=="golden-technologies"); if(L.length) await selectManufacturer(L[0].slug); else showShop(); } }); res(); }; sc.onerror=()=>{ SH_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return SH_JS; }
+async function shOpen(k){
+  if(k==="guide"){ window.open("/start-here/guide.html","_blank","noopener"); return {ok:true}; }
+  try{ await shLoad(); }catch(e){ alertBox("The tour could not be loaded just now — please try again."); return {ok:false}; }
+  if(k==="video") return window.HCPSStart.video();
+  if(k==="quote"){ showShop(); return window.HCPSStart.tour("quote"); }
+  if(k==="referrals"){ const r=await window.HCPSStart.tour("referrals"); if(!r.ok) alertBox("Find local referral sources isn't available for this account yet."); return r; }
+  return {ok:false};
+}
+function alertBox(m){ try{ if(typeof showToast==="function") return showToast(m); }catch(e){} window.alert(m); }
+function shKey(){ return "hcps_sh_hide_"+String((AUTH&&AUTH.dealer&&AUTH.dealer.id)||"x"); }
+function shHidden(){ try{ return localStorage.getItem(shKey())==="1"; }catch(e){ return false; } }
+function shHide(v){ try{ if(v) localStorage.setItem(shKey(),"1"); else localStorage.removeItem(shKey()); }catch(e){} shRender(); }
+function shPanelHtml(inHelp){
+  const b=(k,label,cls)=>`<a class="btn ${cls||"gh"}" role="button" tabindex="0" style="min-height:44px;display:inline-flex;align-items:center" data-sh="${k}" onclick="shOpen(this.dataset.sh)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();shOpen(this.dataset.sh)}">${label}</a>`;
+  return `<div class="card" id="${inHelp?"shStart":"shCard"}"><div class="chead"><h3>Start here — new to the 360 Dealer Portal?</h3>${inHelp?"":`<a class="seelink" onclick="shHide(true)">Hide</a>`}</div>
+    <div style="font-size:13.5px;color:var(--muted);margin-bottom:10px">A four-minute tour of the portal, a one-page guide, and step-by-step walkthroughs that point at each control as you go.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${b("video","▶ Watch the 4-minute tour","pri")}${b("guide","One-page guide")}${b("quote","Walkthrough: product → customer quote")}<span class="sh-ref"></span></div>
+    ${inHelp?`<div style="font-size:12.5px;color:var(--muted);margin-top:10px">The video is captioned and split into chapters; its full transcript is under the player.${shHidden()?` <a style="cursor:pointer;text-decoration:underline" onclick="shHide(false);showP360('dash')">Show Start here on Dealer Overview again</a>`:""}</div>`:""}</div>`;
+}
+function shRefFill(){ if(typeof refEnabled!=="function") return; refEnabled().then(on=>{ if(!on) return; document.querySelectorAll(".sh-ref").forEach(s=>{ if(!s.firstChild) s.innerHTML=`<a class="btn gh" role="button" tabindex="0" style="min-height:44px;display:inline-flex;align-items:center" data-sh="referrals" onclick="shOpen(this.dataset.sh)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();shOpen(this.dataset.sh)}">Walkthrough: find local referral sources</a>`; }); }); }
+function shRender(){ const h=document.getElementById("startHere"); if(!h) return; h.innerHTML=shHidden()?"":shPanelHtml(false); shRefFill(); }
 let GSVC=null, GSVCP=null, GSVT="overview", GSVLINE="lift_chair", GSVSUB="", GSVQ="";
 /* Stage 3 (owner 2026-11-13): native submissions — only when golden-proxy service_cases answers enabled (switch
    golden_service_submit + Golden's own switch). One Idempotency-Key per attempt, kept until Golden answers, so a retry or
@@ -10674,6 +10706,7 @@ function showView(v){
   if(v==="showroom")loadShowroom();
   if(v==="resources")loadResourcesView();
   if(v==="dash"&&document.getElementById("ftmDash")) ftmRender(document.getElementById("ftmDash"),"overview");   /* Featured This Month: current on every visit */
+  if(v==="dash") shRender();
   if(v==="reimb")loadReimbView();
   if(v==="referrals")loadReferralsView();
   if(v==="account")loadAccountView();
@@ -10976,6 +11009,21 @@ async function dvOpenView(v){
     openReferrals({ret:{kind:"reports",y:0}});
     const ok=await until(()=>vis(document.querySelector("#view-referrals .rf")),10000);
     return ok?{ok:true, view:v, confirm:"Find local referral sources is open."}:{ok:false, view:v};
+  }
+  /* Start here (owner milestone 2026-11-22 §3): the tab, the tour video, and the two walkthroughs — each confirmed on screen */
+  if(v==="start_here"){
+    showP360("help"); await until(()=>typeof HELPD!=="undefined"&&HELPD&&document.querySelector("#view-help .ph"),8000); helpTab("start");
+    const ok=await until(()=>vis(document.getElementById("shStart")),6000);
+    return ok?{ok:true, view:v, confirm:"Start here is open in Help & Training."}:{ok:false, view:v};
+  }
+  if(v==="tour_video"){
+    const r=await shOpen("video"); const ok=r&&r.ok&&await until(()=>vis(document.querySelector("#shModal video, #shModal .msg")),6000);
+    return ok?{ok:true, view:v, confirm:"The four-minute tour is open — press play."}:{ok:false, view:v};
+  }
+  if(v==="tour_quote"||v==="tour_referrals"){
+    const r=await shOpen(v==="tour_quote"?"quote":"referrals"); if(!r||!r.ok) return {ok:false, view:v, reason:(r&&r.reason)||"not_available"};
+    const ok=await until(()=>vis(document.getElementById("wtCoach")),6000);
+    return ok?{ok:true, view:v, confirm:"The walkthrough has started — follow the card at the bottom of the screen."}:{ok:false, view:v};
   }
   if(v==="docs"||v==="training"||v==="service"||v==="requests"){
     const T={docs:"Document Library",training:"Training & In-Service",service:"Service, Parts & Warranty",requests:"My Requests & Appointments"}[v];
@@ -11401,7 +11449,7 @@ async function sfSave(mode){
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
 Object.assign(window,{openOrderDetail,orderPrint,ghOpenOrder,ghCloseOrder,trkCopy,qScPick,qScSet,qSetMarkup,sfpMarkupPreview,sfpMarkupApply,sfpMarkupCancel,sfpUseMap,sfpFixBelow,acSalesAdd,acSalesRemove,salesContactsApi:(b)=>api(TOOLS_ENDPOINT,b)});
-Object.assign(window,{RS,renderResources,rsTab,rsBack,rsDocs,rsDocSet,rsTFormat,rsTSel,rsTSend,rsSvc,rsSvcSend,rsReqs,rsHome,apTradeRef,gsvAdd,gsvQty,gsvForm,gsvSend,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{shOpen,shHide,shRender,RS,renderResources,rsTab,rsBack,rsDocs,rsDocSet,rsTFormat,rsTSel,rsTSend,rsSvc,rsSvcSend,rsReqs,rsHome,apTradeRef,gsvAdd,gsvQty,gsvForm,gsvSend,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};
