@@ -63,6 +63,9 @@ const R = (page, fn, arg) => page.evaluate(([f, a]) => (new Function('root', 'a'
         if (!before) await t(label + ': Parts & Service Request form renders — 44 px controls, 16 px phone inputs, no page overflow; nothing submitted', async () => {
           const r = await R(page, `const p=root.querySelector('.tab-panel.active'); const vis=e=>{const b=e.getBoundingClientRect();return b.width>0&&b.height>0}; const ins=[...p.querySelectorAll('input:not([type=radio]):not([type=checkbox]):not([type=file]),select')].filter(vis);
             return { n: ins.length, low: ins.filter(e=>e.getBoundingClientRect().height<43.5).map(e=>e.id||e.name).slice(0,5), tiny: ins.filter(e=>parseFloat(getComputedStyle(e).fontSize)<16).length, btn: [...p.querySelectorAll('.submit-btn')].filter(vis).length }`);
+          /* every control and button inside the module's width — the page hides sideways overflow, which once hid the part rows' description and qty on phones (found live 2026-11-22) */
+          const clip = await R(page, `const p=root.querySelector('.tab-panel.active'); const hw=document.querySelector('#gsvHost').getBoundingClientRect().right; return [...p.querySelectorAll('input,select,textarea,button')].filter(e=>{const b=e.getBoundingClientRect();return b.width>0&&b.right>hw+1}).map(e=>e.name||e.className).slice(0,6)`);
+          ok(!clip.length, 'outside the module: ' + clip);
           ok(r.n >= 5, 'fields ' + r.n); ok(!r.low.length, 'short ' + r.low); if (w < 980) ok(!r.tiny, 'tiny ' + r.tiny); ok(r.btn >= 1, 'submit button');
           const ov = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); ok(ov <= 1, 'overflow ' + ov); ok(!st.submits.length, 'submitted');
         });

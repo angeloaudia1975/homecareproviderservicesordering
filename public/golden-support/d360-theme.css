@@ -94,4 +94,12 @@ input, select, textarea { font-family: inherit; }
   .page-hero { padding: 16px; }
   .hero-stats { gap: 18px; }
   .main { padding-top: 14px; }
+  /* the request form's part rows (part #, description, qty, remove) were wider than a phone (Golden's own grid; found live
+     2026-11-22): part # · qty · remove on one line, the description on its own line below */
+  .part-row { grid-template-columns: minmax(0,1fr) 76px 44px; }
+  .part-row > * { min-width: 0; }
+  .part-row input[name^="part_num"] { grid-column: 1; grid-row: 1; }
+  .part-row input[name^="part_qty"] { grid-column: 2; grid-row: 1; }
+  .part-row .remove-row-btn { grid-column: 3; grid-row: 1; width: 44px; min-height: 44px; }
+  .part-row input[name^="part_desc"] { grid-column: 1 / -1; grid-row: 2; }
 }
