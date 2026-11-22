@@ -382,7 +382,7 @@
      questions, listens, call and directions taps, requests — nothing about the visitor. In the builders' "Try as a shopper"
      the parent portal answers (staff/dealer sign-in, test spend) and nothing is counted or sent. ---------- */
   var CV={offered:false,on:false,src:'organic',hist:Object.create(null),audio:null,seq:0,req:Object.create(null)};
-  (function(){ try{ var u=new URLSearchParams(location.search); var s=String(u.get('utm_source')||''), m=String(u.get('utm_medium')||'').toLowerCase(); if(s||/^(social|paid|cpc|ad|ads)$/.test(m)) CV.src='ad'; }catch(x){} })();
+  (function(){ try{ var u=new URLSearchParams(location.search); var s=String(u.get('utm_source')||''), m=String(u.get('utm_medium')||'').toLowerCase(); if(s||/^(social|paid|cpc|ad|ads)$/.test(m)) CV.src='ad'; if(u.get('hcps_test')==='1') CV.src='test'; }catch(x){} })();
   function cvPost(body){ return fetch(API,{method:'POST',headers:{'content-type':'text/plain'},body:JSON.stringify(Object.assign({s:slug,src:CV.src},body))}).then(function(r){return r.json();}); }
   function cvEv(ev){ if(PREVIEW||!CV.offered) return; try{ fetch(API,{method:'POST',keepalive:true,headers:{'content-type':'text/plain'},body:JSON.stringify({action:'cv_event',s:slug,src:CV.src,ev:ev})}).catch(function(){}); }catch(x){} }
   function cvStatus(){ if(PREVIEW) return;
