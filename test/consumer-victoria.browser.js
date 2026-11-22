@@ -29,7 +29,7 @@ function server() {
   const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
   try {
     for (const [w, h, label] of [[390, 844, 'phone'], [1280, 900, 'desktop']]) {
-      for (const mode of ['pilot', 'off', 'cap']) {
+      for (const mode of ['pilot', 'off', 'cap', 'test']) {
         const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: w < 768, hasTouch: w < 1024 }); const page = await ctx.newPage();
         const posts = [], cspErr = [];
         page.on('console', (m) => { if (/Content Security Policy|Refused to/i.test(m.text())) cspErr.push(m.text()); });
@@ -42,7 +42,7 @@ function server() {
             : b.action === 'cv_speak' ? { ok: true, audio: MP3, mime: 'audio/mpeg' } : { ok: true };
           return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(j) });
         });
-        const url = BASE + '/store/jamesmedicalequipmentbowlinggreen' + (mode === 'pilot' ? '?utm_source=facebook&utm_medium=social&utm_campaign=hcps-victoria-gp309' : '') + '#product/golden-technologies%7CGP309//GP309';
+        const url = BASE + '/store/jamesmedicalequipmentbowlinggreen' + (mode === 'pilot' ? '?utm_source=facebook&utm_medium=social&utm_campaign=hcps-victoria-gp309' : mode === 'test' ? '?utm_source=facebook&hcps_test=1' : '') + '#product/golden-technologies%7CGP309//GP309';
         await page.goto(url, { waitUntil: 'networkidle' }); await page.waitForSelector('.pdp');
         if (mode === 'off') {
           await page.waitForTimeout(600);
@@ -54,7 +54,8 @@ function server() {
           await t(`${label} ${mode}: the panel is on the product page; ask → answer${mode === 'cap' ? ' says to call' : ''}`, async () => {
             await page.fill('#cvq', 'How much does it weigh?'); await page.click('#cvf button'); await page.waitForFunction(() => document.querySelectorAll('.cv-a').length > 0);
             const a = await page.textContent('.cv-a'); ok(mode === 'cap' ? /isn't available/.test(a) && /270-904-8521/.test(a) : /25\.8 lbs/.test(a), a);
-            const q = posts.find((p) => p.action === 'cv_ask'); ok(q && q.d === 'golden-technologies|GP309' && q.src === (mode === 'pilot' ? 'ad' : 'organic'), JSON.stringify(q));
+            const q = posts.find((p) => p.action === 'cv_ask'); ok(q && q.d === 'golden-technologies|GP309' && q.src === (mode === 'pilot' ? 'ad' : mode === 'test' ? 'test' : 'organic'), JSON.stringify(q));
+            if (mode === 'test') ok(posts.filter((p) => p.action === 'cv_event').every((p) => p.src === 'test'), 'a test visit was counted as a shopper');
             const tgt = await page.evaluate(() => { const r = document.querySelector('#cvf button').getBoundingClientRect(); return r.height; }); ok(tgt >= 44, 'touch target ' + tgt);
             ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), 'horizontal scroll'); });
           if (mode === 'pilot') {
