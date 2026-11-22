@@ -10504,7 +10504,7 @@ window.showView=showView;
 const ADS_API=API_BASE+"/dealer-ads-api"; let ADS_JS=null;
 async function loadAdsView(){
   const host=$("#view-ads"); if(!host) return;
-  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=8"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
+  if(!ADS_JS) ADS_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/ad-builder.js?v=9"; sc.onload=res; sc.onerror=()=>{ ADS_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); });
   try{ await ADS_JS; }catch(e){ host.innerHTML='<div class="ph"><div><h1>Social Ads</h1></div></div><div class="card"><div class="msg">The ad builder could not be loaded — please try again.</div></div>'; return; }
   window.HCPSAdBuilder.mount(host,{ api:(b)=>api(ADS_API,b), esc });
 }
@@ -10610,7 +10610,7 @@ async function dvProbe(){
     greeting:j.greeting||(j.first_name?"Hi, "+j.first_name+". How can I help you today?":"Hello! How can I help you today?"),
     greeting_again:j.greeting_again||(j.first_name?"Hi, "+j.first_name+". How can I help you today?":"Hello! How can I help you today?"),
     api:(b)=>api(DV_ENDPOINT,b),
-    context:dvContext, openOrder:dvOpenOrder, openQuote:dvOpenQuote, openBrochure:dvOpenBrochure, openView:dvOpenView, openSearch:dvOpenSearch, openProduct:(a)=>dvOpenProduct(a.manufacturer,a.code), openReimb:dvOpenReimb, showQuotes:()=>{ if(typeof showP360==="function") showP360("quotes"); },
+    context:dvContext, openOrder:dvOpenOrder, openQuote:dvOpenQuote, openBrochure:dvOpenBrochure, openView:dvOpenView, openSearch:dvOpenSearch, openProduct:(a)=>dvOpenProduct(a.manufacturer,a.code), openReimb:dvOpenReimb, storefrontApply:dvStorefrontApply, adCreate:dvAdCreate, adPick:dvAdPick, showQuotes:()=>{ if(typeof showP360==="function") showP360("quotes"); },
     hasCalc:()=>!!document.querySelector("#content .pd #pdReimb .pd-reimb-calc"),
     openCalc:()=>{ const a=document.querySelector("#content .pd #pdReimb .pd-reimb-calc"); if(a) a.click(); },
     openFee:()=>{ const a=document.querySelector("#content .pd #pdReimb .pd-reimb-go:not(.pd-reimb-calc)"); if(a) a.click(); else { const r=document.getElementById("pdReimb"); if(r) r.scrollIntoView({block:"start"}); } },
@@ -10620,7 +10620,7 @@ async function dvProbe(){
   try{ const z=window.$zoho&&window.$zoho.salesiq; const hide=()=>{ try{ window.$zoho.salesiq.floatbutton.visible("hide"); }catch(e){} };
     if(z&&z.floatbutton) hide(); else if(z){ const prev=z.ready; z.ready=function(){ if(typeof prev==="function"){try{prev();}catch(e){}} hide(); }; } }catch(e){}
   const v=document.createElement("script"); v.src="/assets/dv-voice.js?v=4"; v.defer=true; document.head.appendChild(v);
-  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=16"; s.defer=true; document.head.appendChild(s);
+  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=17"; s.defer=true; document.head.appendChild(s);
 }
 /* what is on screen: the product page open (its own selected SKU / variant) and its reimbursement panel's state, ZIP,
    payer plan and date — exactly what the panel shows, read from the panel itself */
@@ -10710,6 +10710,43 @@ async function dvOpenBrochure(a){ if(typeof closeBrochure==="function") closeBro
   return {ok:!!document.getElementById("brModal")&&typeof _brCode!=="undefined"&&_brCode===a.code, what:a.code}; }
 /* "take me there" (owner 2026-11-21): the product's reimbursement panel scrolled into view and focused — reported ok only
    when it is on screen */
+/* Victoria's storefront plan → the builder on screen (owner 2026-11-22). Only the on-screen editor changes: the headline and
+   introduction from the plan, its lines and categories moved first, its lines/categories switched on if they were hidden.
+   Everything else the dealer has (other lines, hours, contact, theme, unsaved typing) is kept. Nothing is saved or published —
+   the dealer presses Save / Save draft / Publish. Confirmed only once the builder shows the plan. */
+async function dvStorefrontApply(plan){
+  const until=async(fn,ms)=>{ const t=Date.now(); while(Date.now()-t<ms){ const x=fn(); if(x) return x; await new Promise(r=>setTimeout(r,150)); } return fn(); };
+  if(!plan||!plan.location_id) return {ok:false};
+  if(!(state.active==="p360:storefront"&&SFD)){ showP360("storefront"); if(!await until(()=>SFD&&document.getElementById("sfHead"),15000)) return {ok:false}; }
+  const L=SFD.locations.find(l=>l.id===plan.location_id);
+  if(!L) return {ok:false,message:"That location isn't in your storefront builder."};
+  if(!L.can_edit||SFD.preview) return {ok:false,message:"Only your head office can change "+(L.name||"this location")+"'s storefront."};
+  if(SFLOC!==L.id){ if(SFE&&SFE.dirty) return {ok:false,message:"You have unsaved storefront changes on another location — save or discard them first."}; sfLoc(L.id); await until(()=>document.getElementById("sfHead"),5000); }
+  sfCapture(); const E=sfInitEdit(L); E.f=E.f||{};
+  if(plan.headline) E.f.headline=String(plan.headline).slice(0,120);
+  if(plan.about) E.f.about=String(plan.about).slice(0,1500);
+  const ok=new Set((L.lines||[]).map(l=>String(l.slug))); const pl=(plan.lines||[]).map(l=>String(l.slug)).filter(x=>ok.has(x));
+  const curLines=("lines" in E.f)?E.f.lines:sfEff(L).lines;
+  if(Array.isArray(curLines)) E.f.lines=[...new Set(curLines.concat(pl))];   /* "every line" stays every line */
+  E.lorder=[...new Set(pl.concat(E.lorder||[]))];
+  const cats=(plan.categories||[]).map(String), low=new Set(cats.map(c=>c.toLowerCase()));
+  E.hidden=(E.hidden||[]).filter(h=>{ const x=String(h).toLowerCase(); if(low.has(x)) return false; const m=x.match(/^@[^/]+\/(.+)$/); return !(m&&low.has(m[1])); });
+  E.order=[...new Set(cats.concat(E.order||[]))];
+  E.dirty=true; renderStorefront(); sfDirty(1);
+  const shown=await until(()=>{ const h=document.getElementById("sfHead"), a=document.getElementById("sfAbout"); return h&&a&&(!plan.headline||h.value===E.f.headline)&&(!plan.about||a.value===E.f.about); },5000);
+  if(!shown) return {ok:false};
+  const sec=document.getElementById("sfx-intro"); if(sec) try{ sec.scrollIntoView({block:"start",behavior:"smooth"}); }catch(e){}
+  return {ok:true, confirm:"The plan is in your Storefront builder for "+(L.name||"this location")+": headline, introduction"+(pl.length?", "+pl.length+" line"+(pl.length===1?"":"s")+" first":"")+(cats.length?", "+cats.length+" categor"+(cats.length===1?"y":"ies")+" first":"")+"."};
+}
+/* Victoria's Facebook ad (owner 2026-11-22): Social Media Advertising opens, the Studio runs its own "Create 3 designs" for
+   the product, and the answer is what the Studio saved. Nothing is posted or scheduled. */
+async function dvAdStudio(){
+  const until=async(fn,ms)=>{ const t=Date.now(); while(Date.now()-t<ms){ const x=fn(); if(x) return x; await new Promise(r=>setTimeout(r,200)); } return fn(); };
+  if(state.active!=="p360:ads") showP360("ads");
+  return await until(()=>window.HCPSAdBuilder&&window.HCPSAdBuilder.victoria&&window.HCPSAdBuilder.victoria.ready()&&window.HCPSAdBuilder.victoria,20000);
+}
+async function dvAdCreate(a){ const V=await dvAdStudio(); if(!V) return {ok:false,reason:"not_ready"}; return V.create(a||{}); }
+async function dvAdPick(n){ const V=(state.active==="p360:ads"&&window.HCPSAdBuilder&&window.HCPSAdBuilder.victoria)||null; if(!V) return {ok:false,reason:"no_designs"}; return V.pick(Number(n)-1); }
 async function dvOpenReimb(){
   const el=document.body.classList.contains("p360on")?null:document.querySelector("#content .pd #pdReimb"); if(!el) return {ok:false, reason:"no_product_page"};
   /* below the sticky masthead (its height measured), not under it */
