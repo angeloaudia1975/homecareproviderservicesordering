@@ -9873,7 +9873,7 @@ function renderResources(){
   const host=$("#view-resources"); if(!host) return;
   const ph=rsPhone(); if(!ph&&!RS.tab) RS.tab="docs";
   const tabs=RS_TABS.map(([k,n,d])=>`<a class="rs-nav ${RS.tab===k?"on":""}" onclick="rsTab('${k}')"><b>${esc(n)}</b><span>${esc(d)}</span></a>`).join("");
-  const extra=`<a class="rs-nav" onclick="openReimb()"><b>HCPCS reimbursement lookup</b><span>Medicare / Medicaid fee schedules</span></a><div id="rsRef"></div>`;
+  const extra=`<a class="rs-nav" onclick="openReimb()"><b>HCPCS reimbursement lookup</b><span>Medicare / Medicaid fee schedules</span></a><div id="rsRef"></div><a class="rs-nav" href="/start-here/guide.html" target="_blank" rel="noopener"><b>The one-page written guide</b><span>Every tool in the portal, including Victoria</span></a>`;
   const cur=RS_TABS.find(t=>t[0]===RS.tab);
   const body=RS.tab==="docs"?rsDocsHtml():RS.tab==="training"?rsTrainingHtml():RS.tab==="service"?rsServiceHtml():RS.tab==="requests"?rsReqsHtml():"";
   host.innerHTML=`<style>
@@ -9946,17 +9946,18 @@ function renderHelp(){
     body=`<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px"><div class="fld2" style="flex:2;min-width:200px"><label>Search help</label><input type="search" value="${esc(HELPQ)}" placeholder="e.g. tracking, quote, account" oninput="helpSearch(this.value)"></div><div class="fld2" style="flex:1;min-width:180px"><label>Topic</label><select onchange="helpArea(this.value)"><option value="">All topics</option>${d.h.areas.filter(a=>d.h.articles.some(x=>x.area===a.key)).map(a=>`<option value="${esc(a.key)}"${a.key===HELPA?" selected":""}>${esc(a.title)}</option>`).join("")}</select></div></div><div id="helpList">${helpListHtml()}</div>`;
   }
   host.innerHTML=`<div class="ph"><div><h1>Help &amp; Training Center</h1><div class="sub">How Dealer 360 works · Dealer 360 version ${esc(helpVersion())}</div></div><div><a class="btn gh" onclick="showView('dash')">← Dashboard</a></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px">${tb("start","Start here")}${tb("help","Help articles")}${tb("new","What's New")}</div>${body}`;
-  if(HELPTAB==="start") shRefFill();
+  if(HELPTAB==="start"){ shRefFill(); shVicFill(); }
 }
 /* START HERE (owner milestone 2026-11-22 §3): Dealer Overview card + Help & Training "Start here" tab. The tour video,
    transcript and walkthroughs live in /assets/start-here.js (loaded on first use); the one-page guide is a static page. */
 let SH_JS=null;
-function shLoad(){ if(!SH_JS) SH_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/start-here.js?v=2"; sc.onload=()=>{ window.HCPSStart.init({ showP360:(v)=>showP360(v), refEnabled:()=>(typeof refEnabled==="function"?refEnabled():Promise.resolve(false)),
+function shLoad(){ if(!SH_JS) SH_JS=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="/assets/start-here.js?v=4"; sc.onload=()=>{ window.HCPSStart.init({ showP360:(v)=>showP360(v), narration:(set,i)=>api(DV_ENDPOINT,{action:"narration",set,i}), narrOn:()=>!!window.__DV_LOADED__, refEnabled:()=>(typeof refEnabled==="function"?refEnabled():Promise.resolve(false)),
     openFirstLine:async()=>{ const L=entitledManufacturers().filter(m=>m.slug!=="golden-technologies"); if(L.length) await selectManufacturer(L[0].slug); else showShop(); } }); res(); }; sc.onerror=()=>{ SH_JS=null; rej(new Error("load")); }; document.head.appendChild(sc); }); return SH_JS; }
 async function shOpen(k){
   if(k==="guide"){ window.open("/start-here/guide.html","_blank","noopener"); return {ok:true}; }
   try{ await shLoad(); }catch(e){ alertBox("The tour could not be loaded just now — please try again."); return {ok:false}; }
   if(k==="video") return window.HCPSStart.video();
+  if(k==="meet") return window.HCPSStart.meet();
   if(k==="quote"){ showShop(); return window.HCPSStart.tour("quote"); }
   if(k==="referrals"){ const r=await window.HCPSStart.tour("referrals"); if(!r.ok) alertBox("Find local referral sources isn't available for this account yet."); return r; }
   return {ok:false};
@@ -9969,11 +9970,23 @@ function shPanelHtml(inHelp){
   const b=(k,label,cls)=>`<a class="btn ${cls||"gh"}" role="button" tabindex="0" style="min-height:44px;display:inline-flex;align-items:center" data-sh="${k}" onclick="shOpen(this.dataset.sh)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();shOpen(this.dataset.sh)}">${label}</a>`;
   return `<div class="card" id="${inHelp?"shStart":"shCard"}"><div class="chead"><h3>Start here — new to the 360 Dealer Portal?</h3>${inHelp?"":`<a class="seelink" onclick="shHide(true)">Hide</a>`}</div>
     <div style="font-size:13.5px;color:var(--muted);margin-bottom:10px">A four-minute tour of the portal, a one-page guide, and step-by-step walkthroughs that point at each control as you go.</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">${b("video","▶ Watch the 4-minute tour","pri")}${b("guide","One-page guide")}${b("quote","Walkthrough: product → customer quote")}<span class="sh-ref"></span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${b("video","▶ Watch the 4-minute tour","pri")}${b("guide","One-page guide")}${b("quote","Walkthrough: product → customer quote")}<span class="sh-ref"></span></div><div class="sh-vic"></div>
     ${inHelp?`<div style="font-size:12.5px;color:var(--muted);margin-top:10px">The video is captioned and split into chapters; its full transcript is under the player.${shHidden()?` <a style="cursor:pointer;text-decoration:underline" onclick="shHide(false);showP360('dash')">Show Start here on Dealer Overview again</a>`:""}</div>`:""}</div>`;
 }
 function shRefFill(){ if(typeof refEnabled!=="function") return; refEnabled().then(on=>{ if(!on) return; document.querySelectorAll(".sh-ref").forEach(s=>{ if(!s.firstChild) s.innerHTML=`<a class="btn gh" role="button" tabindex="0" style="min-height:44px;display:inline-flex;align-items:center" data-sh="referrals" onclick="shOpen(this.dataset.sh)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();shOpen(this.dataset.sh)}">Walkthrough: find local referral sources</a>`; }); }); }
-function shRender(){ const h=document.getElementById("startHere"); if(!h) return; h.innerHTML=shHidden()?"":shPanelHtml(false); shRefFill(); }
+function shRender(){ const h=document.getElementById("startHere"); if(!h) return; h.innerHTML=shHidden()?"":shPanelHtml(false); shRefFill(); shVicFill(); }
+/* Start Here → Meet Victoria (owner 2026-11-22): her globe, Ask Victoria, three questions that fit THIS account, and the
+   one-minute guide she narrates. Shown only where Dealer Victoria is on for this sign-in (dvProbe). Questions are asked as
+   typed text (no microphone) in her panel. */
+function shVicQs(){ const L=(typeof entitledManufacturers==="function"?entitledManufacturers():[])||[]; const golden=L.some(m=>m.slug==="golden-technologies"); const other=L.filter(m=>m.slug!=="golden-technologies");
+  const q=[golden?"Where is my latest Golden order?":"Show me my recent orders"];
+  q.push(other.length?("Show me "+other[0].name+" products and my price"):(golden?"Show me Golden lift chairs and my price":"Help me find a product and my price"));
+  q.push(L.some(m=>/dalton|drive|ovation|yuwell|ohio|bongo|airavant|strongback|access4u/i.test(m.slug))?"What does Medicare allow for a semi-electric hospital bed, E0260?":"Help me make a customer quote");
+  return q; }
+function shVicFill(){ if(!window.__DV_LOADED__) return; document.querySelectorAll(".sh-vic").forEach(s=>{ if(s.firstChild) return;
+  const qs=shVicQs(); s.innerHTML=`<div class="sh-vic-box" style="display:flex;gap:12px;align-items:flex-start;margin-top:12px;padding-top:12px;border-top:1px solid var(--line,#e5e9f0)"><img src="/assets/victoria/orb-still.webp" alt="" width="56" height="56" style="border-radius:50%;flex:none" onerror="this.remove()"><div style="flex:1;min-width:0"><b>Meet Victoria</b><div style="font-size:13.5px;color:var(--muted);margin:2px 0 8px">Your assistant in the portal — ask in your own words, typed or spoken. She answers from your own account and never orders, sends or publishes on her own.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><a class="btn pri" role="button" tabindex="0" style="min-height:44px;display:inline-flex;align-items:center" onclick="window.__dvOpen&&window.__dvOpen()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.__dvOpen&&window.__dvOpen()}">Ask Victoria</a><a class="btn gh" role="button" tabindex="0" style="min-height:44px;display:inline-flex;align-items:center" data-sh="meet" onclick="shOpen('meet')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();shOpen('meet')}">▶ Meet Victoria — 1 minute</a></div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:4px">Try asking:</div><div style="display:flex;gap:6px;flex-wrap:wrap">${qs.map(q=>`<button type="button" class="btn gh" style="min-height:44px;font-size:13px" data-vq="${esc(q)}" onclick="window.__dvAsk&&window.__dvAsk(this.dataset.vq)">“${esc(q)}”</button>`).join("")}</div></div></div>`; }); }
 let GSVC=null, GSVCP=null, GSVT="overview", GSVLINE="lift_chair", GSVSUB="", GSVQ="";
 /* Stage 3 (owner 2026-11-13): native submissions — only when golden-proxy service_cases answers enabled (switch
    golden_service_submit + Golden's own switch). One Idempotency-Key per attempt, kept until Golden answers, so a retry or
@@ -10816,7 +10829,7 @@ async function dvProbe(){
   if(typeof MEMBER!=="undefined"&&MEMBER) return;
   const j=await api(DV_ENDPOINT,{action:"status"}).catch(()=>null);
   if(!(j&&j.ok&&j.enabled===true)) return;
-  window.__DV_LOADED__=true;
+  window.__DV_LOADED__=true; setTimeout(()=>{ try{ shVicFill(); }catch(e){} },0);
   window.DV={ support:j.support||null, ai:j.ai||{available:true},
     /* Victoria's voice = the Deepgram voice saved in the owner's Command Center settings (chosen by the server) */
     voice:j.voice||null,
@@ -10837,7 +10850,7 @@ async function dvProbe(){
   try{ const z=window.$zoho&&window.$zoho.salesiq; const hide=()=>{ try{ window.$zoho.salesiq.floatbutton.visible("hide"); }catch(e){} };
     if(z&&z.floatbutton) hide(); else if(z){ const prev=z.ready; z.ready=function(){ if(typeof prev==="function"){try{prev();}catch(e){}} hide(); }; } }catch(e){}
   const v=document.createElement("script"); v.src="/assets/dv-voice.js?v=4"; v.defer=true; document.head.appendChild(v);
-  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=17"; s.defer=true; document.head.appendChild(s);
+  const s=document.createElement("script"); s.src="/assets/dealer-victoria.js?v=18"; s.defer=true; document.head.appendChild(s);
 }
 /* what is on screen: the product page open (its own selected SKU / variant) and its reimbursement panel's state, ZIP,
    payer plan and date — exactly what the panel shows, read from the panel itself */
@@ -11118,7 +11131,7 @@ function sfStudio(L,s,ed,dis,status,lines){
     <div class="sf-note">${drafts?'Your storefront is switched on. <b>Save draft</b> keeps your changes private; customers see them only when you press <b>Publish changes</b>.':live?'Your storefront is live — <b>Save changes</b> publishes them.':'Nothing is public until you press <b>Publish storefront</b>.'}</div>
     <div class="sf-acts">${ed?(drafts?`<a class="btn gh" id="sfSave" onclick="sfSave('draft')">Save draft</a><a class="btn pri" id="sfPublish" onclick="sfSave('publish')">Publish changes</a>${draft?`<a class="btn gh" onclick="sfSave('discard')">Discard draft</a>`:''}`:live?`<a class="btn pri" id="sfSave" onclick="sfSave('publish')">Save changes</a>`:`<a class="btn gh" id="sfSave" onclick="sfSave('save')">Save without publishing</a><a class="btn pri" id="sfPublish" onclick="sfSave('publish')">Publish storefront</a>`):''}
      <a class="btn gh" onclick="sfPreview()">Preview as customers see it</a>
-     <a class="btn gh" onclick="shopperTry(SFLOC,sfSettings())" title="Open the storefront as a shopper would, inside the builder — unpublished products included; requests are not sent">Try as a shopper</a>
+     <a class="btn gh" onclick="sfShopper()" title="Open the storefront as a shopper would, inside the builder — unpublished products included; requests are not sent">Try as a shopper</a>
      ${ed&&live?`<a class="btn gh" onclick="sfSave('unpublish')">Unpublish</a>`:''}</div>
     <span id="sfMsg" class="sf-msg" role="status"></span>`;
   return `<div class="sfx">
@@ -11314,6 +11327,7 @@ function sfUseAccount(){ const L=SFD&&SFD.locations.find(l=>l.id===SFLOC); if(!L
    screen (unpublished products included), requests never sent. On the Consumer Victoria pilot location Victoria answers here
    too (dealer-storefront-api sf_cv: charged to the pilot's own record as TEST spend, never counted as shopper activity).
    Used by the Storefront Builder and the Social Ad Builder (which opens it on the ad's product). */
+function sfShopper(){ return shopperTry(SFLOC,sfSettings()); }   /* inline handlers only see what is exported on window */
 async function shopperTry(loc,settings,product){
   if(!loc) return; let ov=document.getElementById('shopOv'); if(ov) ov.remove();
   ov=document.createElement('div'); ov.id='shopOv'; ov.className='sf-prev-ov'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label','Try as a shopper');
@@ -11478,7 +11492,7 @@ async function sfSave(mode){
 async function sfInq(id,status){ const d=await api(SF_API,{action:'sf_inquiry_set',id,status}); if(d&&d.ok){ const x=SFINQ.find(i=>i.id===id); if(x) x.status=status; renderStorefront(); } }
 async function sfInqDel(id){ if(!confirm('Delete this request? This cannot be undone.')) return; const d=await api(SF_API,{action:'sf_inquiry_delete',id}); if(d&&d.ok){ SFINQ=SFINQ.filter(i=>i.id!==id); renderStorefront(); } }
 Object.assign(window,{openOrderDetail,orderPrint,ghOpenOrder,ghCloseOrder,trkCopy,qScPick,qScSet,qSetMarkup,sfpMarkupPreview,sfpMarkupApply,sfpMarkupCancel,sfpUseMap,sfpFixBelow,acSalesAdd,acSalesRemove,salesContactsApi:(b)=>api(TOOLS_ENDPOINT,b)});
-Object.assign(window,{shopperTry,shOpen,shHide,shRender,RS,renderResources,rsTab,rsBack,rsDocs,rsDocSet,rsTFormat,rsTSel,rsTSend,rsSvc,rsSvcSend,rsReqs,rsHome,apTradeRef,gsvAdd,gsvQty,gsvForm,gsvSend,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
+Object.assign(window,{shopperTry,sfShopper,shVicFill,shOpen,shHide,shRender,RS,renderResources,rsTab,rsBack,rsDocs,rsDocSet,rsTFormat,rsTSel,rsTSend,rsSvc,rsSvcSend,rsReqs,rsHome,apTradeRef,gsvAdd,gsvQty,gsvForm,gsvSend,helpArticle,helpTab,helpArea,helpSearch,helpOpen,loadHelp,renderHelp,gsvTab,gsvLine,gsvSub,gsvSearch,loadGoldSvc,loadStorefrontView,sfLMove,sfLDrag,sfLDrop,sfLReset,sfReqAcct,sfLoc,sfCopy,sfPreview,sfSet,sfColor,sfDev,sfHl,sfTab,sfCatToggle,sfMfrToggle,sfMove,sfDrag,sfDrop,sfCatReset,sfCatLoad,sfDirty,sfPricesLoad,sfPricesRender,sfpSet,sfpBulk,sfpSave,sfpF,sfpScope,sfUseAccount,sfPromo,sfSave,sfInq,sfInqDel,loadApplyView,apSetLoc,apStart,apOpen,apClose,apDirty,apSave,apPreview,apUpload,apGuarantee,apOffline,apSign,apLink,apRefresh,apWithdraw,p360ReportYear:rptYear,rptYear,rptScope,rptAi,rptPdf,loadReports,qCust,rpUi,rpEdit,rpSetTarget,rpBulk,rpImport,rpExport,rpSave,rpHistory,rpRefreshTable,renderRetailView,loadRetailView,qSetQty,qSetBasis,qSetCompare,qSetUnit,qSaveRetail,qSave,qNew,qOpen,qDelete,qPrint,qEmailOpen,acLocOpen,acCompanyOpen,acContactOpen,acContactRemove,acAddrOpen,acDefaultShip,acLogoUpload,lsOpen,acClaimOpen,loadAccountView,closeModal,openPriceReq,qAdd,qDel,reqTracking,saveBranding,submitCreditApp,submitLit,submitPriceReq,
   submitResale,swClearAll,swPick,swPlace,swPlaceFirst,swSave,toggleFav,p360SwClear:swClear,qFilter,qDelAt});
 
 window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get booted(){return _p360booted;}};let _p360booted=false;const _origBoot=boot;window.P360.boot=async function(){if(_p360booted)return;_p360booted=true;await _origBoot();};

@@ -5,7 +5,7 @@
 (function () {
   "use strict";
   const V = "/start-here/";
-  let CTX = null, TOUR = null, IDX = 0, POLL = null, LASTFOCUS = null;
+  let CTX = null, TOUR = null, IDX = 0, POLL = null, LASTFOCUS = null, MEET = null;
   const $ = (s, r) => (r || document).querySelector(s);
   const el = (tag, attrs, kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (k === "text") e.textContent = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v); } (kids || []).forEach((c) => c && e.appendChild(c)); return e; };
   const vis = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden"; };
@@ -27,6 +27,10 @@
   .sh-tr summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;color:#0b1f33}
   .sh-tr h4{margin:12px 0 4px;font-size:14px;color:#0b1f33}
   .sh-tr p{margin:0 0 6px;font-size:13.5px;line-height:1.5;color:#334155}
+  .sh-nbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}.sh-nar{min-height:44px}.sh-nnote{font-size:12.5px;color:#64748b}
+  .mv-stage{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:10px 6px}.mv-orb{width:120px;height:120px;border-radius:50%;object-fit:cover;box-shadow:0 0 30px rgba(22,129,194,.45)}
+  .mv-orb.talk{animation:mvp 1.2s ease-in-out infinite}@keyframes mvp{50%{transform:scale(1.06);box-shadow:0 0 44px rgba(22,129,194,.7)}}@media (prefers-reduced-motion:reduce){.mv-orb.talk{animation:none}}
+  .mv-cap{font-size:18px;line-height:1.45;color:#0b1f33;max-width:640px;min-height:3.2em}.mv-prog{font-size:12.5px;color:#64748b}.mv-b{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.mv-b button,.mv-b a{min-height:44px}
   .sh-links{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
   .sh-links a{min-height:44px;display:inline-flex;align-items:center}
   @media (max-width:760px){ .sh-body{grid-template-columns:1fr} .sh-modal{padding:0} .sh-box{max-height:100vh;height:100vh;border-radius:0} }
@@ -54,6 +58,44 @@
     return out;
   }
   const fmt = (s) => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+  /* ---------- Victoria's narration (owner 2026-11-22: her configured Deepgram voice for portal presentations) ----------
+     Each caption cue of the tour (and each part of "Meet Victoria") is a fixed text the server knows; it answers with the
+     stored audio in the owner's Command Center voice. The tour video itself has no sound: the narrator plays the cue under
+     the playhead, follows play / pause / seek / chapter jumps, the video's volume and mute, and never starts mid-sentence
+     (a jump lands on a cue's start). Without Victoria (switched off, no voice) the captioned video plays as before. */
+  const NAR = { cache: new Map(), log: [] };
+  function cueAudio(set, i) {
+    const k = set + ":" + i; if (NAR.cache.has(k)) return NAR.cache.get(k);
+    /* review M2: once the server says Victoria is off (or out of budget), no further cue is asked for on this page */
+    if (NAR.off) return Promise.resolve(null);
+    const p = (CTX && CTX.narration ? CTX.narration(set, i) : Promise.resolve(null)).then((j) => {
+      if (j && !j.ok && /victoria_off|budget|limit|cap/.test(String(j.error || ""))) NAR.off = true;
+      return j && j.ok && j.audio ? "data:" + (j.mime || "audio/mpeg") + ";base64," + j.audio : null; }).catch(() => null);
+    NAR.cache.set(k, p); p.then((u) => { if (!u) NAR.cache.delete(k); }); return p;
+  }
+  function narrator(vid, caps, toggle, note) {
+    const A = new Audio(); A.preload = "auto"; A.setAttribute("playsinline", ""); let cur = -1, on = true, gen = 0;
+    const st = { get cue() { return cur; }, get playing() { return !A.paused && !A.ended; }, get on() { return on; }, audio: A };
+    const idx = (t) => caps.findIndex((c) => t >= c.start - 0.05 && t < c.end);
+    const vol = () => { A.volume = vid.volume; A.muted = vid.muted; };
+    async function startCue(k) {
+      const my = ++gen; A.pause(); cur = k; if (k < 0 || !on) return;
+      const t = vid.currentTime; if (t - caps[k].start > 1.5) return;             // never start mid-sentence
+      const url = await cueAudio("tour", k); if (my !== gen) return;
+      if (!url) { note.textContent = "Victoria's narration isn't available just now — captions are on."; return; }
+      note.textContent = ""; A.src = url; vol();
+      A.onloadedmetadata = () => { const win = Math.max(1, caps[k].end - Math.max(vid.currentTime, caps[k].start)); A.playbackRate = Math.min(1.2, Math.max(1, (A.duration || 0) / win)); };
+      if (!vid.paused) A.play().catch(() => { note.textContent = "Tap play again to hear Victoria."; });
+      if (k + 1 < caps.length) cueAudio("tour", k + 1);                              // the next cue is ready before it is needed
+    }
+    const tick = () => { if (!on) return; const k = idx(vid.currentTime); if (k !== cur) startCue(k); else if (!vid.paused && A.paused && A.src && A.currentTime > 0 && !A.ended) A.play().catch(() => {}); };
+    vid.addEventListener("timeupdate", tick); vid.addEventListener("play", () => { cur = -1; tick(); }); vid.addEventListener("pause", () => A.pause());
+    vid.addEventListener("seeking", () => { gen++; A.pause(); cur = -1; }); vid.addEventListener("seeked", tick); vid.addEventListener("volumechange", vol);
+    vid.addEventListener("ended", () => A.pause());
+    toggle.addEventListener("click", () => { on = !on; toggle.setAttribute("aria-pressed", String(on)); toggle.textContent = on ? "🔊 Victoria narrates — on" : "🔇 Victoria narrates — off"; if (!on) { gen++; A.pause(); } else { cur = -1; tick(); } });
+    if (caps.length) cueAudio("tour", 0);
+    return st;
+  }
   async function video() {
     style(); close(); LASTFOCUS = document.activeElement;
     let chapters = [], caps = [];
@@ -63,6 +105,9 @@
       el("track", { kind: "captions", src: V + "tour.en.vtt", srclang: "en", label: "English", default: "" }),
       el("track", { kind: "chapters", src: V + "tour-chapters.vtt", srclang: "en", label: "Chapters" })]);
     vid.addEventListener("error", () => { const n = vid.parentNode; if (n) n.replaceChild(el("div", { class: "msg", text: "The video could not be played here. The transcript below covers everything it shows." }), vid); }, true);
+    const ntog = el("button", { class: "btn gh sh-nar", type: "button", "aria-pressed": "true", text: "🔊 Victoria narrates — on" });
+    const nnote = el("div", { class: "sh-nnote", role: "status" });
+    const NARR = CTX && CTX.narration && (!CTX.narrOn || CTX.narrOn()) ? narrator(vid, caps, ntog, nnote) : null; if (!NARR) ntog.hidden = true; window.__shTourNarr = NARR;
     const list = el("ol", { class: "sh-ch", "aria-label": "Chapters" });
     chapters.forEach((c, i) => list.appendChild(el("li", {}, [el("button", { type: "button", "data-ch": String(i), onclick: () => { vid.currentTime = c.start + 0.05; vid.play().catch(() => {}); } }, [document.createTextNode(c.text), el("small", { text: fmt(c.start) })])])));
     vid.addEventListener("timeupdate", () => { const t = vid.currentTime; list.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-current", String(t >= chapters[i].start && t < chapters[i].end))); });
@@ -74,13 +119,57 @@
       el("a", { class: "btn gh", href: "#", onclick: (e) => { e.preventDefault(); close(); tour("quote"); }, text: "Walk me through: product → customer quote" })]);
     const box = el("div", { class: "sh-box", role: "dialog", "aria-modal": "true", "aria-labelledby": "shTitle" }, [
       el("div", { class: "sh-head" }, [el("h2", { id: "shTitle", text: "360 Dealer Portal tour — 4 minutes" }), el("button", { class: "sh-x", type: "button", "aria-label": "Close the tour video", text: "×", onclick: close })]),
-      el("div", { class: "sh-body" }, [el("div", {}, [vid]), list, tr, links])]);
+      el("div", { class: "sh-body" }, [el("div", {}, [vid, el("div", { class: "sh-nbar" }, [ntog, nnote])]), list, tr, links])]);
     const m = el("div", { class: "sh-modal", id: "shModal", onclick: (e) => { if (e.target === m) close(); } }, [box]);
     m.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
     document.body.appendChild(m); $(".sh-x", m).focus();
-    return { ok: true, video: vid };
+    return { ok: true, video: vid, narration: NARR };
   }
-  function close() { const m = document.getElementById("shModal"); if (m) { const v = $("video", m); if (v) v.pause(); m.remove(); if (LASTFOCUS && LASTFOCUS.focus) LASTFOCUS.focus(); } }
+  /* ---------- Meet Victoria — the one-minute guide, narrated by Victoria (owner 2026-11-22) ----------
+     Six short parts; each shows its words (the captions) while Victoria says them. Play / Pause / Replay; a part can be chosen;
+     the full transcript is underneath. Ends with "Ask Victoria" (opens her exactly like a tap on the globe). */
+  const MEET_TEXT = ["Hi, I am Victoria, your assistant in the 360 Dealer Portal. Tap my blue globe at the bottom right whenever you need me.",
+    "Ask me in your own words, by typing or by talking. I answer from your own account, never from another dealer's.",
+    "I can find products and open their pages, tell you your dealer price on the lines you carry, and show what Medicare and Medicaid allow for a coded product.",
+    "I can check where an order is, open its tracking, and start a draft customer quote for you to review.",
+    "I can also draft social media ads and brochures, and take you to reports, local referral sources and training.",
+    "I never place orders, send emails or publish anything on my own. You always make the final choice. Tap Ask Victoria to try me."];
+  function meet() {
+    style(); close(); LASTFOCUS = document.activeElement;
+    const A = new Audio(); A.preload = "auto"; A.setAttribute("playsinline", "");
+    let i = 0, playing = false, gen = 0;
+    const orb = el("img", { class: "mv-orb", src: "/assets/victoria/orb-still.webp", alt: "" });
+    const cap = el("div", { class: "mv-cap", "aria-live": "polite" }); const prog = el("div", { class: "mv-prog" }); const note = el("div", { class: "sh-nnote", role: "status" });
+    const play = el("button", { class: "btn pri", type: "button", text: "▶ Play" });
+    const parts = el("ol", { class: "sh-ch", "aria-label": "Parts" });
+    MEET_TEXT.forEach((t, k) => parts.appendChild(el("li", {}, [el("button", { type: "button", "data-mv": String(k), onclick: () => go(k, true) }, [document.createTextNode((k + 1) + ". " + t.split(/[.,]/)[0])])])));
+    const tr = el("details", { class: "sh-tr" }, [el("summary", { text: "Transcript" })]); MEET_TEXT.forEach((t) => tr.appendChild(el("p", { text: t })));
+    const ask = el("button", { class: "btn gh", type: "button", text: "Ask Victoria", onclick: () => { close(); if (window.__dvOpen) window.__dvOpen(); } });
+    function show(k) { i = k; cap.textContent = MEET_TEXT[k]; prog.textContent = "Part " + (k + 1) + " of " + MEET_TEXT.length + " · about one minute";
+      parts.querySelectorAll("button").forEach((b, j) => b.setAttribute("aria-current", String(j === k))); }
+    async function go(k, start) {
+      const my = ++gen; A.pause(); show(k); if (!start) return;
+      playing = true; play.textContent = "❚❚ Pause"; orb.classList.add("talk");
+      const url = await cueAudio("meet", k); if (my !== gen) return;
+      if (k + 1 < MEET_TEXT.length) cueAudio("meet", k + 1);
+      if (!url) { note.textContent = "Victoria's voice isn't available just now — the words are shown above."; orb.classList.remove("talk"); setTimeout(() => { if (my === gen && playing) next(); }, 4500); return; }
+      note.textContent = ""; A.src = url; A.play().catch(() => { playing = false; play.textContent = "▶ Play"; orb.classList.remove("talk"); note.textContent = "Tap Play to hear Victoria."; });
+    }
+    function next() { if (i + 1 < MEET_TEXT.length) go(i + 1, true); else { playing = false; play.textContent = "↺ Replay"; orb.classList.remove("talk"); try { ask.focus(); } catch (e) {} } }
+    A.addEventListener("ended", () => { if (playing) next(); });
+    play.addEventListener("click", () => { if (playing) { gen++; A.pause(); playing = false; play.textContent = "▶ Play"; orb.classList.remove("talk"); return; }
+      if (play.textContent.indexOf("Replay") >= 0) go(0, true); else if (A.src && A.currentTime > 0 && !A.ended) { playing = true; play.textContent = "❚❚ Pause"; orb.classList.add("talk"); A.play().catch(() => {}); } else go(i, true); });
+    show(0); cueAudio("meet", 0);
+    MEET = { stop: () => { gen++; A.pause(); playing = false; }, audio: A, get part() { return i; }, get playing() { return playing; } };
+    const box = el("div", { class: "sh-box", role: "dialog", "aria-modal": "true", "aria-labelledby": "shTitle" }, [
+      el("div", { class: "sh-head" }, [el("h2", { id: "shTitle", text: "Meet Victoria — one minute" }), el("button", { class: "sh-x", type: "button", "aria-label": "Close Meet Victoria", text: "×", onclick: close })]),
+      el("div", { class: "sh-body" }, [el("div", { class: "mv-stage" }, [orb, cap, prog, el("div", { class: "mv-b" }, [play, ask, el("a", { class: "btn gh", href: V + "guide.html#victoria", target: "_blank", rel: "noopener", text: "Written guide" })]), note]), parts, tr])]);
+    const m = el("div", { class: "sh-modal", id: "shModal", onclick: (e) => { if (e.target === m) close(); } }, [box]);
+    m.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+    document.body.appendChild(m); play.focus();
+    return { ok: true, meet: MEET };
+  }
+  function close() { const m = document.getElementById("shModal"); if (m) { const v = $("video", m); if (v) v.pause(); m.querySelectorAll("audio").forEach((a) => a.pause()); if (MEET) { MEET.stop(); MEET = null; } m.remove(); if (LASTFOCUS && LASTFOCUS.focus) LASTFOCUS.focus(); } }
 
   /* ---------- guided walkthroughs ---------- */
   const TOURS = {
@@ -148,5 +237,5 @@
     const b = $("button.pri", c); if (b) b.focus({ preventScroll: true });
   }
 
-  window.HCPSStart = { init(ctx) { CTX = ctx; }, video, close, tour, endTour, TOURS, _parseVtt: parseVtt };
+  window.HCPSStart = { init(ctx) { CTX = ctx; }, video, meet, close, tour, endTour, TOURS, MEET_TEXT, _parseVtt: parseVtt, _narration: NAR };
 })();

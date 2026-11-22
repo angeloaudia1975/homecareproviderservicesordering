@@ -58,6 +58,10 @@ function server() {
             const tgt = await page.evaluate(() => { const r = document.querySelector('#cvf button').getBoundingClientRect(); return r.height; }); ok(tgt >= 44, 'touch target ' + tgt);
             ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), 'horizontal scroll'); });
           if (mode === 'pilot') {
+            await t(`${label}: "That didn't answer my question" is sent once, with the question only`, async () => {
+              await page.click('.cv-fb'); await page.waitForTimeout(300); const f = posts.filter((p) => p.action === 'cv_feedback');
+              ok(f.length === 1 && f[0].q === 'How much does it weigh?' && /improve Victoria/.test(await page.textContent('.cv-fb')), JSON.stringify(f));
+              await page.click('.cv-fb').catch(() => {}); ok(posts.filter((p) => p.action === 'cv_feedback').length === 1, 'sent twice'); });
             await t(`${label}: Listen plays Victoria's audio under the live CSP`, async () => {
               await page.click('.cv-say'); await page.waitForFunction(() => /Playing|Listen|Tap to hear/.test((document.querySelector('.cv-say') || {}).textContent || ''), null, { timeout: 8000 });
               ok(posts.some((p) => p.action === 'cv_speak' && p.speak === 'tok.x'), 'speak not requested'); ok(!cspErr.some((e) => /media/i.test(e)), cspErr.join(' | ')); });
