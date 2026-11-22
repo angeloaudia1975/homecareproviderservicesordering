@@ -4,6 +4,19 @@
   "rule": "The version is the newest release below. A release email to dealers is only ever sent after the President approves that release's email in Connect 360 — a deploy never sends one.",
   "releases": [
     {
+      "version": "2026.11.22",
+      "date": "2026-11-22",
+      "title": "Resources & Support inside Dealer 360",
+      "items": [
+        {
+          "area": "resources",
+          "text": "Resources & Support now works entirely inside Dealer 360: a Document Library you can search by manufacturer, model or document type; Training & In-Service with open appointment times (Booked) or a request HCPS coordinates (Requested); manufacturer Service, Parts & Warranty cases with a case number; and My Requests & Appointments with each request's status.",
+          "dealer_facing": true,
+          "help": "resources-support"
+        }
+      ]
+    },
+    {
       "version": "2026.11.15",
       "date": "2026-11-15",
       "title": "Shipment details, emailed brochure photos, more product details",

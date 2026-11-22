@@ -29,6 +29,10 @@
     {
       "key": "victoria",
       "title": "Ask Victoria"
+    },
+    {
+      "key": "resources",
+      "title": "Resources & Support"
     }
   ],
   "articles": [
@@ -216,7 +220,8 @@
         "When HCPS records what a shipment contained, you see it under the order: \"Partially shipped\" with how many units have shipped, or \"Shipped in full\" once every unit has gone.",
         "Items the manufacturer has backordered are listed as Backordered, with the date HCPS recorded it.",
         "The estimated ship date (from the manufacturer) and the estimated arrival (from the carrier) are shown separately, and only when they were confirmed.",
-        "When the manufacturer confirms a sales order (SO), its number is shown on the order and on each shipment it covers — an order split across several SOs shows each one with its own items and tracking.", "The order view lists the details the manufacturer has not supplied yet, such as its sales order number or a tracking number.",
+        "When the manufacturer confirms a sales order (SO), its number is shown on the order and on each shipment it covers — an order split across several SOs shows each one with its own items and tracking.",
+        "The order view lists the details the manufacturer has not supplied yet, such as its sales order number or a tracking number.",
         "No tracking yet? Use Request tracking and HCPS will ask the manufacturer."
       ],
       "notes": [
@@ -238,11 +243,11 @@
       "id": "golden-service",
       "area": "golden-service",
       "title": "Golden Service & Support",
-      "updated": "2026-11-14",
+      "updated": "2026-11-22",
       "open": "goldsvc",
       "summary": "For Golden Technologies dealers: the Golden Dealer Service & Support Portal — troubleshooting, training videos, parts lookup and ordering, parts & service requests, service documents and labor rate claims — inside Dealer 360.",
       "steps": [
-        "Open Resources and choose Golden Service & Support (shown when it is available for your account). It is the same portal as Golden's support site, with your account filled in.",
+        "Open Resources & Support → Service, Parts & Warranty and choose Golden Service & Support (shown when it is available for your account). It is the same portal as Golden's support site, with your account filled in.",
         "Troubleshoot: SmartTek LED diagnostics, lockout and calibration steps, scooter beep codes and power wheelchair checks.",
         "Training Videos: filter by Lift Chair, Scooter, Power Chair or General, or search; each video opens on Golden's YouTube channel.",
         "Parts Lookup & Order: choose the product line, then a category or model, or search; set a quantity and press + Add. Open the cart and press Proceed to order to send the order.",
@@ -284,6 +289,34 @@
         "Price a product",
         "Check price",
         "Inventory & lead times"
+      ]
+    },
+    {
+      "id": "resources-support",
+      "area": "resources",
+      "title": "Resources & Support",
+      "updated": "2026-11-22",
+      "open": "resources",
+      "summary": "Documents, training, manufacturer service and your requests — all inside Dealer 360. On a computer the four areas are in the menu on the left; on a phone, tap an area and use Back to return.",
+      "steps": [
+        "Document Library: search by manufacturer, model, item number, document type or keyword, then View / download a manual, parts diagram, warranty, catalog or training video. Need printed literature? Use the request form under the list.",
+        "Training & In-Service: say what you'd like to learn, tick the product lines, choose Zoom or In-store and check your contact details. Pick an open time and press Book this time — the status is Booked and a calendar invite follows. Or press Send as a request — HCPS coordinates; the status is Requested.",
+        "Service, Parts & Warranty: choose the manufacturer, then what you need — parts, warranty, repair or a return (RMA). Fill in the fields that request asks for (model, serial number, the problem, quantity, original PO), add up to three photos or PDFs and Submit. You get a case number right away.",
+        "My Requests & Appointments: every case, training appointment and literature, pricing or tracking request you sent from Dealer 360, with its status (Submitted, Sent to manufacturer, In progress, Waiting on you, Resolved, Booked, Requested)."
+      ],
+      "notes": [
+        "Golden Technologies service, parts and labor claims use Golden Service & Support (in Service, Parts & Warranty) — its cases are in Golden's own My Requests tab.",
+        "A case is never doubled: if Submit shows an error, press it again — HCPS keeps one case.",
+        "HCPS handles service cases for each line until the manufacturer route is confirmed; HCPS tells you when a case is sent to the manufacturer."
+      ],
+      "ui_checks": [
+        "Resources &amp; Support",
+        "Document Library",
+        "Training & In-Service",
+        "Service, Parts & Warranty",
+        "My Requests & Appointments",
+        "Book this time",
+        "Send as a request — HCPS coordinates"
       ]
     }
   ]
