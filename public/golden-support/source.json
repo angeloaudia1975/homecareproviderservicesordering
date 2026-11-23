@@ -1,6 +1,6 @@
 {
   "source": "golden-dealer-portal/repo/portals/support/index.html",
-  "sha256": "3debd7c462a3088493f4215bcf93da1c09a7c99e9ab3f7326e5d57bc77a5fc5a",
+  "sha256": "cda65a1cb9830ed5320d3c3c69be4f022521ff3f6d1b0e5cc1f57011b1d9b332",
   "handlers": [
     "addPartRow",
     "addToCart",
@@ -12,6 +12,7 @@
     "getEndpoint",
     "previewServicePhotos",
     "proceedToOrderForm",
+    "pruneCart",
     "removeFromCart",
     "removePartRow",
     "renderCartPanel",

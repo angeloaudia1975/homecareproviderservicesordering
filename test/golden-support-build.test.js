@@ -15,7 +15,7 @@ t('the committed assets are byte-for-byte the build of the current original port
 const js = read(PUB, 'gsv.js'), html = read(PUB, 'gsv.html'), css = read(PUB, 'gsv.css');
 t('no dealer price is embedded (the original\'s PARTS_DATA is not copied)', () => { ok(!/"price"\s*:/.test(js) && !/PARTS_DATA = \{/.test(js), 'prices'); ok(/let PARTS_DATA = DATA\.parts/.test(js), 'from Golden'); });
 t('nothing can reach the open send-parts endpoint; the three submissions use Dealer 360\'s case submission', () => {
-  ok(!/send-parts/.test(js.replace(/\/\*[\s\S]*?\*\//g, '').replace(/var SEND_URL = null;/, '')), 'send-parts'); ok((js.match(/CTX\.send\(data, form\)/g) || []).length === 3, 'three sends'); });
+  ok(!/send-parts/.test(js.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '').replace(/var SEND_URL = null;/, '')), 'send-parts'); ok((js.match(/CTX\.send\(data, form\)/g) || []).length === 3, 'three sends'); });
 t('every inline handler calls window.GSV (no clash with Dealer 360 globals)', () => {
   const bad = [...(html + js).matchAll(/\bon(?:click|change|input|submit)=(["'])\s*(?:return\s+)?([A-Za-z_$][\w$]*)\(/g)].filter((m) => m[2] !== 'GSV' && m[2] !== 'event');
   ok(!bad.length, bad.map((m) => m[0]).join(' ')); });
