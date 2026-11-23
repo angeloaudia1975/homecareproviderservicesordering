@@ -147,6 +147,12 @@
   {
     "slug": "bemis",
     "name": "BEMIS Assurance",
+    "unitOrdering": {
+      "mode": "unit",
+      "looseUnitFee": 10,
+      "effective": "2025-10-10",
+      "note": "Ordered by the individual unit at the unit dealer price. One handling fee per product when the quantity is not an exact multiple of the master case; case of 1 never pays."
+    },
     "accent": "#2477b3",
     "dark": "#17324d",
     "logo": "/assets/logos/bemis.jpg",
@@ -197,7 +203,7 @@
   },
   {
     "slug": "ohio-medical",
-    "name": "Ohio Medical / GCE",
+    "name": "Ohio Medical (GCE)",
     "accent": "#0e7ac0",
     "dark": "#0c2b44",
     "logo": "/assets/logos/ohio-medical.jpg",
