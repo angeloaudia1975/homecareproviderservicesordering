@@ -415,6 +415,18 @@ const layout = (page, sel) => page.evaluate((sel) => {
       });
       await ctx.close();
     }
+    await t('Featured products first, Most viewed only with data; bots/none = nothing invented', async () => {
+      const mk = (x) => Object.assign({}, PUBLIC, { dealer: Object.assign({}, PUBLIC.dealer, { design: { layout: 'professional', theme: 'blue', cat_cols: 3 } }) }, x);
+      let r = await publicPage(browser, 1280, 900, mk({ featured: ['bemis|B1', 'strongback|S1'], most_viewed: ['bemis|B1', 'bemis|B2'] }));
+      const h = await r.page.evaluate(() => [...document.querySelectorAll('.picks')].map((s) => [s.getAttribute('aria-label'), [...s.querySelectorAll('.nm')].map((a) => a.textContent)]));
+      ok(JSON.stringify(h) === JSON.stringify([['Featured products', ['Raised seat', 'Excursion chair']], ['Most viewed products', ['Grab bar']]]), 'sections ' + JSON.stringify(h) + ' (a product already featured is not repeated)');
+      const order = await r.page.evaluate(() => { const hm = document.querySelector('.home'); return [...hm.children].map((c) => c.getAttribute('aria-label') || c.className).join('|'); });
+      ok(order.indexOf('Featured products') < order.indexOf('Shop by category'), 'featured leads: ' + order);
+      await r.ctx.close();
+      r = await publicPage(browser, 1280, 900, mk({ featured: [], most_viewed: [] }));
+      ok(await r.page.evaluate(() => !document.querySelector('.picks')), 'no picks and no traffic → no sections');
+      await r.ctx.close();
+    });
   } finally { await browser.close(); }
   console.log(`\nstorefront (browser): ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

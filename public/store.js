@@ -231,6 +231,10 @@
     var so=$('sort'); if(so) so.addEventListener('change',function(){F.sort=this.value;listing();});
   }
 
+  /* Featured (dealer's own picks, first) and Most Viewed (this storefront's own 30-day views; the server sends it only when there is enough real traffic) */
+  function pickFams(keys){ var out=[], seen={}; (keys||[]).forEach(function(k){ var c=String(k).split('|'); var m=c[0], code=String(c.slice(1).join('|')).toUpperCase();
+      for(var i=0;i<FAM.length;i++){ var f=FAM[i]; if(f.mfr===m&&f.ps.some(function(p){return String(p.code).toUpperCase()===code;})){ if(!seen[f.key]){seen[f.key]=1; out.push(f);} break; } } }); return out; }
+  function pickSection(title,aria,fams){ return fams.length?'<section class="picks" aria-label="'+aria+'"><div class="secth"><h2>'+title+'</h2></div><div class="grid" style="margin-top:12px">'+fams.map(card).join('')+'</div></section>':''; }
   /* ---------- home (Professional / Modern / Classic): hero, dealership card, category grid, highlights, introduction ----------
      Only the dealer's own saved words and real catalog photos — nothing is invented about the business. */
   function heroImage(){ var L=catList(); for(var i=0;i<L.length;i++){ var c=L[i]; var f=FAM.filter(function(x){return x.cat===c.name&&x.lead.image;})[0]; if(f) return {img:f.lead.image,cat:c.name,name:f.name}; } return null; }
@@ -253,7 +257,8 @@
     var about=d.about?'<section class="aboutc" id="about" aria-label="About us"><div><h2>About '+esc(d.name)+'</h2><p>'+esc(d.about)+'</p></div><div class="acts">'+
       (d.phone?'<a class="btn brand" href="tel:'+esc(tel(d.phone))+'">'+ico('phone')+' Call '+esc(d.phone)+'</a>':'')+(d.address&&d.address.street?'<a class="btn" href="'+esc(mapsUrl())+'" target="_blank" rel="noopener">'+ico('pin')+((DS.highlights||[]).some(function(h){return h.key==='showroom';})?' Visit our showroom':' Get directions')+'</a>':'')+
       '<button class="btn pri" type="button" data-ask="">Request information</button></div></section>':'';
-    var order=DS.layout==='classic'?[hero,hls,grid,about]:DS.layout==='modern'?[hero,grid,hls,about]:['<div class="hero">'+hero+card+'</div>',grid,hls,about];
+    var feat=pickSection('Featured products','Featured products',pickFams(D.featured)), fk={}; pickFams(D.featured).forEach(function(f){fk[f.key]=1;}); var mv=pickSection('Most viewed','Most viewed products',pickFams(D.most_viewed).filter(function(f){return !fk[f.key];}));
+    var order=DS.layout==='classic'?[hero,feat,hls,grid,mv,about]:DS.layout==='modern'?[hero,feat,grid,mv,hls,about]:['<div class="hero">'+hero+card+'</div>',feat,grid,mv,hls,about];
     return '<div class="home">'+order.join('')+'</div>';
   }
 
