@@ -8885,7 +8885,8 @@ async function hubStoreCatalog(){
     const d=await r.json(); const file=Array.isArray(d)?d:((d&&d.products)||[]);
     const rows=[];
     for(const p0 of file){ if(!p0||!p0.code||p0.active===false||p0.discontinued===true) continue;
-      const p=Object.assign({},p0,{base_price:null,dealer_price:null,tiers:[],msrp:null,map:null});
+      let p=Object.assign({},p0,{base_price:null,dealer_price:null,tiers:[],msrp:null,map:null});
+      { const _uc=(typeof unitOrderCfg==="function")?unitOrderCfg(line.slug):null; if(_uc) p=unitOrderProduct(p,_uc); }   /* a unit-ordered line (Bemis) quotes per unit here too */
       const e=quoteEntry(p,line); if(e){ e.cost=null; e.account=false; rows.push(e); } }
     return rows;
   };
@@ -8935,6 +8936,7 @@ async function loadPricing(){
           }catch(e){}
         }
         if(!priced) items=items.map(p=>Object.assign({},p,{base_price:null,msrp:null,map:null}));
+        { const _uc=(typeof unitOrderCfg==="function")?unitOrderCfg(m.slug):null; if(_uc) items=items.map(p=>unitOrderProduct(p,_uc)); }   /* unit-ordered line: history / favourites / quotes read per unit */
         for(const p of items){
           const code=String(p.code||'').trim(); if(!code) continue;
           const _mp=(p.map!=null&&Number(p.map)>0)?Number(p.map):null;

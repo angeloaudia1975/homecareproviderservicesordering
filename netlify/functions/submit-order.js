@@ -32,8 +32,15 @@ const DEFAULT_TO = "orders@homecareproviderservices.us";
 /* Every HCPS dealer order reaches the owner's intake mailbox (owner, 2026-10-27), whatever ORDER_TO adds.
    Orders are NEVER sent to a manufacturer: HCPS reviews each one and places it with the manufacturer itself. */
 const OWNER_INTAKE = "angelo@homecareproviderservices.us";
+/* ROUTING GUARD (owner 2026-11-23): an order email goes ONLY to an HCPS address. ORDER_TO (or anything else that feeds this list) can add HCPS
+   mailboxes but can never route an order to a manufacturer or any outside recipient — a non-HCPS address is dropped (and counted in the log),
+   and an empty or all-outside list falls back to the default intake. Golden-parts orders have their own, separate routing. */
+const HCPS_MAIL = /^[A-Za-z0-9._%+-]+@homecareproviderservices\.us$/i;
 function recipients(envTo) {
-  const list = String(envTo || DEFAULT_TO).split(",").map((s) => s.trim()).filter(Boolean);
+  const raw = String(envTo || DEFAULT_TO).split(",").map((s) => s.trim()).filter(Boolean);
+  const list = raw.filter((a) => HCPS_MAIL.test(a));
+  if (list.length < raw.length) console.error("order recipients: " + (raw.length - list.length) + " non-HCPS address(es) ignored");
+  if (!list.length) list.push(DEFAULT_TO);
   if (!list.some((a) => a.toLowerCase() === OWNER_INTAKE)) list.push(OWNER_INTAKE);
   return [...new Map(list.map((a) => [a.toLowerCase(), a])).values()];
 }
