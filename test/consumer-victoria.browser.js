@@ -42,7 +42,7 @@ function server() {
             : b.action === 'cv_speak' ? { ok: true, audio: MP3, mime: 'audio/mpeg' } : { ok: true };
           return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(j) });
         });
-        const url = BASE + '/store/jamesmedicalequipmentbowlinggreen' + (mode === 'pilot' ? '?utm_source=facebook&utm_medium=social&utm_campaign=hcps-victoria-gp309' : mode === 'test' ? '?utm_source=facebook&hcps_test=1' : '') + '#product/golden-technologies%7CGP309//GP309';
+        const url = BASE + '/store/jamesmedicalequipmentbowlinggreen' + (mode === 'pilot' ? '?utm_source=facebook&utm_medium=social&utm_campaign=hcps-victoria-gp309' : mode === 'test' ? '?utm_source=facebook&hcps_test=1764000000.0123456789abcdef0123456789abcdef' : '') + '#product/golden-technologies%7CGP309//GP309';
         await page.goto(url, { waitUntil: 'networkidle' }); await page.waitForSelector('.pdp');
         if (mode === 'off') {
           await page.waitForTimeout(600);
@@ -54,8 +54,8 @@ function server() {
           await t(`${label} ${mode}: the panel is on the product page; ask → answer${mode === 'cap' ? ' says to call' : ''}`, async () => {
             await page.fill('#cvq', 'How much does it weigh?'); await page.click('#cvf button'); await page.waitForFunction(() => document.querySelectorAll('.cv-a').length > 0);
             const a = await page.textContent('.cv-a'); ok(mode === 'cap' ? /isn't available/.test(a) && /270-904-8521/.test(a) : /25\.8 lbs/.test(a), a);
-            const q = posts.find((p) => p.action === 'cv_ask'); ok(q && q.d === 'golden-technologies|GP309' && q.src === (mode === 'pilot' ? 'ad' : mode === 'test' ? 'test' : 'organic'), JSON.stringify(q));
-            if (mode === 'test') ok(posts.filter((p) => p.action === 'cv_event').every((p) => p.src === 'test'), 'a test visit was counted as a shopper');
+            const q = posts.find((p) => p.action === 'cv_ask'); ok(q && q.d === 'golden-technologies|GP309' && q.src === (mode === 'pilot' || mode === 'test' ? 'ad' : 'organic') && (mode === 'test' ? q.test_key === '1764000000.0123456789abcdef0123456789abcdef' : !q.test_key), JSON.stringify(q));
+            if (mode === 'test') ok(posts.filter((p) => p.action === 'cv_event').every((p) => p.test_key === '1764000000.0123456789abcdef0123456789abcdef'), 'every event carries the test key; the server decides whether it is signed');
             const tgt = await page.evaluate(() => { const r = document.querySelector('#cvf button').getBoundingClientRect(); return r.height; }); ok(tgt >= 44, 'touch target ' + tgt);
             ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), 'horizontal scroll'); });
           if (mode === 'pilot') {

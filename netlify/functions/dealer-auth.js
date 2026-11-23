@@ -3,6 +3,7 @@
 //   POST {action:"me"}  + Authorization: Bearer <jwt>  -> {status, dealer, lines} for signed-in dealer
 // Login itself (email+password -> JWT) is done client-side against Supabase Auth with the anon key;
 // this function never sees a password except at registration. Service-role, server-side only.
+const DS = require("./_deploy_seen.js");   // VERBATIM copy of the admin repo's _deploy_seen.js (admin test compares them)
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
 const CORS = {
@@ -43,6 +44,7 @@ exports.handler = async (event)=>{
   try{
     if(!SUPABASE_URL||!SERVICE_ROLE) return json(500,{error:"Supabase env vars not set"});
     if(event.httpMethod!=="POST") return json(405,{error:"method not allowed"});
+    await DS.observe(sb,"portal",Date.now());   // when this portal release first served in production (admin Learning & Improvement recurrence)
     let b; try{b=JSON.parse(event.body||"{}");}catch{return json(400,{error:"bad JSON"});}
 
     if(b.action==="register"){
