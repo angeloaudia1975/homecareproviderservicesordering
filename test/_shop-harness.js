@@ -58,7 +58,9 @@ async function open(browser, w, h, opts) {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.host)) return route.fulfill({ status: 200, body: '' });
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '[]' });
   });
-  await page.goto((opts.host || HOST) + '/?preview=' + 'p'.repeat(48) + (opts.hash || ''), { waitUntil: 'domcontentloaded', timeout: 60000 });
+  /* opts.session: a signed-in DEALER (no staff preview) — a synthetic stored session the page restores on load */
+  if (opts.session) await ctx.addInitScript((s) => { try { if (!sessionStorage.getItem('__seeded')) { localStorage.setItem('hcps_session', JSON.stringify(s)); sessionStorage.setItem('__seeded', '1'); } } catch (e) {} }, opts.session);
+  await page.goto((opts.host || HOST) + (opts.session ? '/' + (opts.query ? '?' + opts.query : '') : '/?preview=' + 'p'.repeat(48) + (opts.query ? '&' + opts.query : '')) + (opts.hash || ''), { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForFunction(() => typeof AUTH !== 'undefined' && AUTH.status === 'approved' && (state.manufacturers || []).length > 5, null, { timeout: 30000 });
   await page.waitForTimeout(800);
   // Pricing is not under test here: catalogs open with their public rows only (no prices), so navigation can be checked.
