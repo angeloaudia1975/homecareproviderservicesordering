@@ -9,10 +9,13 @@
 "use strict";
 const KEY = "deploy_seen", MAX = 400;
 let seenHere = false;
+let INFO = {}; try { INFO = require("./_build_info.json") || {}; } catch (e) { INFO = {}; }   // written by the build (scripts/write-build-info.js)
+const buildCommit = () => sha12(process.env.COMMIT_REF) || sha12(INFO.commit);
+const buildContext = () => String(process.env.CONTEXT || INFO.context || "");
 const sha12 = (v) => { const s = String(v || "").trim().toLowerCase(); return /^[0-9a-f]{7,40}$/.test(s) ? s.slice(0, 12) : null; };
 async function observe(sb, site, now) {
   if (seenHere) return false; seenHere = true;
-  const c = sha12(process.env.COMMIT_REF); if (!c || process.env.CONTEXT !== "production") return false;
+  const c = buildCommit(); if (!c || buildContext() !== "production") return false;
   const k = `${site}:${c}`;
   try {
     for (let i = 0; i < 4; i++) {
@@ -34,4 +37,4 @@ function deployedAt(seen, ref) {
   for (const [k, at] of Object.entries((seen && seen.commits) || {})) { const c = k.split(":")[1] || ""; if ((c.startsWith(r) || r.startsWith(c)) && (!best || at < best)) best = at; }
   return best;
 }
-module.exports = { KEY, observe, deployedAt, sha12, _reset: () => { seenHere = false; } };
+module.exports = { KEY, observe, deployedAt, sha12, buildCommit, _reset: () => { seenHere = false; } };
