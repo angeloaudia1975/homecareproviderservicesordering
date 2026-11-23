@@ -59915,11 +59915,11 @@
     },
     {
      "label": "Electrical requirements",
-     "value": "100–120 V AC, 60 Hz"
+     "value": "AC 100–120 V, 60 Hz — or AC 220–240 V, 50 Hz (separate voltage versions; not automatic dual-voltage)"
     },
     {
      "label": "Power consumption",
-     "value": "0.7 A / 72 W (100–120 V)"
+     "value": "0.7 A / 72 W (100–120 V, 60 Hz) — or 0.35 A / 70 W (220–240 V, 50 Hz)"
     },
     {
      "label": "Sound level",
@@ -59946,8 +59946,12 @@
      "value": "−40 to 70 °C, 0–95% RH"
     },
     {
+     "label": "Shipping box",
+     "value": "14.3″ × 7.5″ × 9.8″; 10 lb"
+    },
+    {
      "label": "Electrical protection",
-     "value": "Class II, Type BF"
+     "value": "Class II; applied part Type BF"
     },
     {
      "label": "HCPCS code",
@@ -59979,7 +59983,7 @@
    "field_provenance": {
     "description": "HCPS-written 2026-11-20 strictly from Dalton's Cliq VC-701 sell sheet (owner-supplied 2026-11-20)",
     "features": "Dalton's Cliq VC-701 sell sheet (owner-supplied 2026-11-20)",
-    "specs": "Dalton's Cliq VC-701 sell sheet (owner-supplied 2026-11-20) (weight 3.5 kg / 7.7 lb; dimensions 13.00 × 5.91 × 8.27 in)",
+    "specs": "Owner-supplied VC-701 specification sheet (2026-11-23); weight 3.5 kg / 7.7 lb explicitly confirmed by the owner; voltage/power alternatives kept as paired versions",
     "warranty": "Dalton's Cliq VC-701 sell sheet (owner-supplied 2026-11-20)",
     "category": "HCPS catalog (Respiratory)",
     "replaces": "Replaces ASP-HD for new sales (owner 2026-11-20 16:48: VC-701 replaces ASP-HD at $149 each)"

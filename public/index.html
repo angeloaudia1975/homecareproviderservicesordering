@@ -2023,6 +2023,35 @@ function packOf(p){
   const u=String((p&&p.uom)||'').trim();
   return { n, label: u || (n+'-pack') };
 }
+/* UNIT ORDERING WITH A LOOSE-UNIT FEE (owner 2026-11-23, Bemis PDF effective 2025-10-10). A manufacturer whose manufacturers.json entry
+   carries unitOrdering {mode:"unit", looseUnitFee:N} is bought by the INDIVIDUAL UNIT at the unit dealer price (the master record's case
+   price ÷ the master-case quantity); the master-case quantity stays as packaging (pack_qty). ONE fee of N is added per product (part
+   number) when that product's total quantity in the order is not an exact multiple of its master case (case 1 never pays; it is
+   per product line, never per unit; lines of the same part number are added together first so splitting a line neither avoids nor
+   repeats the fee). It is a separate, labelled charge — never freight. Historical case-based orders keep their recorded quantities. */
+function unitOrderCfg(slug){ try{ const m=mfrInfo(slug), u=m&&m.unitOrdering; return (u&&u.mode==="unit"&&Number(u.looseUnitFee)>=0)?u:null; }catch(e){ return null; } }
+function unitOrderProduct(p,cfg){
+  if(!p||p._unitOrder||!cfg) return p;
+  const n=Number(p.case_qty), pack=n>1?Math.round(n):1;
+  const q=x=>(x==null||x===""||!Number.isFinite(Number(x)))?x:Math.round(Number(x)/pack*100)/100;
+  const o=Object.assign({},p,{_unitOrder:true,pack_qty:pack,uom:"Each",case_qty:null,msrp_each:false});
+  if(pack>1){
+    o.base_price=q(p.base_price);
+    if(Array.isArray(p.tiers)) o.tiers=p.tiers.map(t=>t&&t.price!=null?Object.assign({},t,{price:q(t.price)}):t);
+    if(p.dealer_price!=null) o.dealer_price=q(p.dealer_price);
+    if(p.msrp!=null&&p.msrp_each!==true&&p.msrp_basis!=="each") o.msrp=q(p.msrp);   /* a per-piece MSRP / MAP is already per unit */
+    if(p.map!=null&&p.map_basis==="order_unit") o.map=q(p.map);
+  }
+  return o;
+}
+function looseUnitFeeFor(slug,lines){
+  const cfg=unitOrderCfg(slug); const rows=[]; let fee=0;
+  if(!cfg||!(lines||[]).length) return {fee:0,rows};
+  const by=new Map();
+  for(const {p,qty} of lines){ const k=String(p.code||"").trim().toUpperCase(); const e=by.get(k)||{code:p.code,name:p.name,qty:0,pack_qty:Number(p.pack_qty)||1}; e.qty+=Math.max(0,Math.round(Number(qty))||0); by.set(k,e); }
+  for(const e of by.values()){ if(e.pack_qty>1&&e.qty>0&&e.qty%e.pack_qty!==0){ const x=Math.round(Number(cfg.looseUnitFee)*100)/100; rows.push({code:e.code,name:e.name,qty:e.qty,pack_qty:e.pack_qty,fee:x}); fee=Math.round((fee+x)*100)/100; } }
+  return {fee,rows};
+}
 function packNote(p){ const k=packOf(p); return k ? `Dealer order unit = 1 ${k.label} (${k.n} each)` : ""; }
 /* SUGGESTED RETAIL (owner 2026-11-18; unit basis 2026-11-19). When a product has neither an MSRP nor a MAP, the shop shows
    2 × the dealer cost of ONE PIECE (quantity 1, no tier, no contract price), labelled "Suggested retail" — never "MSRP".
@@ -2681,7 +2710,9 @@ async function mergeCatalogEdits(slug, prods){
     }
   }catch(e){}
   if(_gated) try{ console.log('[HCPS] '+slug+': '+_gated+' SKU(s) not listed — no enrichment page'); }catch(e){}
-  return await applyMasterPrices(slug, prods.map(inheritColorPrice).map(fillMsrp));
+  const _mp=await applyMasterPrices(slug, prods.map(inheritColorPrice).map(fillMsrp));
+  const _uc=(typeof unitOrderCfg==="function")?unitOrderCfg(slug):null;   /* guard: test harnesses slice this function out of the page */
+  return _uc?_mp.map(p=>unitOrderProduct(p,_uc)):_mp;
 }
 
 /* ═══ PHASE 5 — COMMERCIAL FIELDS FROM THE MASTER RECORD ════════════════════
@@ -4338,7 +4369,11 @@ async function reorder(orderId){
     /* a configured line (railing upgrade) is told by its stored name; never reordered as the plain part */
     const um=/ — (.+) upgrade$/.exec(String(it.name||""));
     if(p && um){ p=withUpgrade(p,um[1]); }
-    if(p && !p._discontinued){ const k=cartKey(p); const cur=CART.get(k); CART.set(k,{p,qty:(cur?cur.qty:0)+(Math.max(1,Math.round(Number(it.qty))||1))}); added++; }
+    /* An order placed while the line was sold by the case counts cases; today's product is sold by the unit — convert, never reinterpret. */
+    let rq=Math.max(1,Math.round(Number(it.qty))||1);
+    if(p&&p._unitOrder===true&&it.unit_order!==true&&Number(p.pack_qty)>1&&Number(it.unit)>0){ const k=Math.round(Number(p.pack_qty)); let up=null; try{ up=Number(unitPrice(p,1)); }catch(e){} /* a legacy line stored the CASE price; a post-cutover line stored the unit price — whichever the stored price is nearer to */
+      if(up>0&&Math.abs(Number(it.unit)-k*up)<Math.abs(Number(it.unit)-up)){ rq=rq*k; try{ toast(`${p.code}: your past order was ${it.qty} case${Number(it.qty)===1?"":"s"} — added as ${rq} units.`); }catch(e){} } }
+    if(p && !p._discontinued){ const k=cartKey(p); const cur=CART.get(k); CART.set(k,{p,qty:(cur?cur.qty:0)+rq}); added++; }
     else missing++;
   }
   updateCart();
@@ -5534,12 +5569,14 @@ function deliveryServicesFor(slug,lines){
     if(v===true) fee=Math.round((fee+Number(s.fee))*100)/100;
     out.push({key:s.key,label:String(s.label||s.key),fee:Math.round(Number(s.fee)*100)/100,selected:v===true,answered:v===true||v===false,asked,offer:s.offer||"",question:s.question||""});
   }
+  const lu=looseUnitFeeFor(slug,lines);
+  if(lu.rows.length){ out.push({key:"loose_unit_fee",label:"Loose-unit handling fee",fee:lu.fee,selected:true,answered:true,asked:false,auto:true,detail:lu.rows}); fee=Math.round((fee+lu.fee)*100)/100; }
   return {services:out,fee,missing};
 }
 function svcBtnCss(on){return `min-height:44px;min-width:64px;padding:8px 16px;border-radius:9px;font:800 13.5px inherit;font-family:inherit;cursor:pointer;${on?"background:var(--orange,#ef6325);color:#fff;border:1px solid var(--orange,#ef6325)":"background:#fff;color:#1b2733;border:1px solid #c9d1da"}`;}
 function servicesBoxHtml(slug,sv){
-  if(!sv.services.length) return "";
-  return sv.services.map(x=>`<div class="svcbox${x.asked&&!x.answered?" needsvc":""}" data-svc="${esc(x.key)}" style="margin:10px 0;padding:10px 12px;border:1px solid ${x.asked&&!x.answered?"#f1d9a6":"var(--line)"};border-radius:10px;background:${x.asked&&!x.answered?"#fff7e6":"#fff"}">
+  if(!sv.services.filter(x=>!x.auto).length) return "";
+  return sv.services.filter(x=>!x.auto).map(x=>`<div class="svcbox${x.asked&&!x.answered?" needsvc":""}" data-svc="${esc(x.key)}" style="margin:10px 0;padding:10px 12px;border:1px solid ${x.asked&&!x.answered?"#f1d9a6":"var(--line)"};border-radius:10px;background:${x.asked&&!x.answered?"#fff7e6":"#fff"}">
     <div style="font-weight:700;font-size:13.5px;margin-bottom:6px">${esc(x.asked?(x.question||("Would you like "+x.label.toLowerCase()+" added for "+money(x.fee)+"?")):(x.offer||("Add "+x.label.toLowerCase()+" — "+money(x.fee))))}</div>
     <div role="group" aria-label="${esc(x.label)}" style="display:flex;gap:8px;flex-wrap:wrap">
       <button type="button" class="svcbtn" data-svcv="yes" aria-pressed="${x.selected}" style="${svcBtnCss(x.selected)}">${x.selected?"✓ ":""}Yes — add ${esc(money(x.fee))}</button>
@@ -5575,6 +5612,7 @@ function renderCart(){
     const tot=subtotal+f.fee+sv.fee;
     const cnt=lines.reduce((n,{qty})=>n+qty,0);
     const hasActual=f.rows.some(r=>r.status==="actual");
+    const luRows=looseUnitFeeFor(slug,lines).rows;
     const items=lines.map(({p,qty})=>{
       const u=checkoutUnit(p,qty);
       const fam=familyQty(p);
@@ -5588,6 +5626,7 @@ function renderCart(){
         <div><div class="t">${esc(p.name)}</div><div class="s">${esc(p.code)}${p._skuOption?" · "+esc(variantLabel(p)):""}${p.brand?" · "+esc(p.brand):""}</div>
         ${(typeof cartRuleProblems==="function"?cartRuleProblems():[]).filter(x=>x.k===cartKey(p)).map(x=>`<div class="s" style="color:#b42323;font-weight:700">${esc(x.msg)}</div>`).join("")}
         <div class="s">${packOf(p)?`${qty} × ${esc(packOf(p).label)} = ${qty*packOf(p).n} each · `:""}Unit ${u?money(u):"—"}${packOf(p)?" per "+esc(packOf(p).label):""} · Line ${u?money(u*qty):"—"}${contractPrice(p)!=null?` · <span style="color:#0a7f3f;font-weight:700">contract</span>`:""}</div>${volNote}${priceNoteHtml(p)}</div>
+        ${p._unitOrder===true&&Number(p.pack_qty)>1?`<div class="s">Master case of ${Number(p.pack_qty)}${luRows.some(r=>String(r.code).toUpperCase()===String(p.code).toUpperCase())?` · <b style="color:#8a5a00">loose units — ${money(luRows.find(r=>String(r.code).toUpperCase()===String(p.code).toUpperCase()).fee)} handling fee applies to this item (order a multiple of ${Number(p.pack_qty)} to avoid it)</b>`:" · full cases — no handling fee"}</div>`:""}
         <div class="r"><input type="number" min="0" value="${qty}"><button class="rm">Remove</button></div></div>`;
     }).join("");
     const fields=MFR[slug]||(MFR[slug]={po:"",notes:""});
@@ -5788,7 +5827,7 @@ function hcpsCartOrders(){
   for(const[slug,lines]of groupCart()){
     if(isGoldenSlug(slug)) continue;
     out.push({manufacturer_slug:slug, ...(slug==="dalton"&&CHECKOUT_PROMO.code?{promo_code:CHECKOUT_PROMO.code}:{}),
-      items:lines.map(({p,qty})=>({code:p.code, family:p.family==null?undefined:p.family, upgrade:p._upgrade||undefined, qty, unit:checkoutUnit(p,qty)}))});
+      items:lines.map(({p,qty})=>({code:p.code, family:p.family==null?undefined:p.family, upgrade:p._upgrade||undefined, qty, unit:checkoutUnit(p,qty), ...(p._unitOrder===true?{unit_order:true}:{})}))});
   }
   return out;
 }
@@ -5835,7 +5874,7 @@ function applyServerPrices(res){
     for(const it of o.items||[]){
       const ck=o.manufacturer_slug+"::"+it.code, k=ck+(it.family!=null&&it.family!==""?"::"+it.family:"")+(it.upgrade?"::u="+it.upgrade:""); const line=CART.get(k); if(!line) continue;
       const p=line.p;
-      if(it.available===false){ p._unavailable=true; PRICE_NOTES.set(k,{gone:true}); n++; continue; }
+      if(it.available===false){ p._unavailable=true; PRICE_NOTES.set(k,{gone:true, refresh:it.rule==="unit_refresh_required"}); n++; continue; }
       delete p._unavailable;
       const c=it.commercial||{};
       ["base_price","dealer_price","msrp","map","tiers","group","price_note"].forEach(f=>{ if(f in c) p[f]=c[f]; });
@@ -5852,6 +5891,7 @@ function applyServerPrices(res){
 }
 function priceNoteHtml(p){
   const pn=PRICE_NOTES.get(cartKey(p)); if(!pn) return "";
+  if(pn.gone&&pn.refresh) return `<div class="s pricenote gone">This line now orders by the unit — refresh the page, then add it again</div>`;
   if(pn.gone) return `<div class="s pricenote gone">No longer available — remove this item to place your order</div>`;
   return `<div class="s pricenote">Price updated: <s>${money(pn.old)}</s> → <b>${money(pn.now)}</b></div>`;
 }
@@ -6004,7 +6044,7 @@ async function submitOrder(){
       manufacturer_slug:slug, manufacturer_name:info.name,
       ...(slug==="dalton"&&promoQuote()?{promo_code:CHECKOUT_PROMO.code}:{}),
       po:((MFR[slug]&&MFR[slug].po)||"").trim(), notes:((MFR[slug]&&MFR[slug].notes)||"").trim(),
-      items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,upgrade:p._upgrade||undefined,name:p.name,brand:p.brand||"",uom:p.uom||"",case_qty:(packOf(p)?packOf(p).n:undefined),qty,unit:checkoutUnit(p,qty)})),
+      items:lines.map(({p,qty})=>({code:p.code,family:p.family==null?undefined:p.family,upgrade:p._upgrade||undefined,name:p.name,brand:p.brand||"",uom:p.uom||"",case_qty:(packOf(p)?packOf(p).n:undefined),...(p._unitOrder===true?{unit_order:true,pack_qty:p.pack_qty}:{}),qty,unit:checkoutUnit(p,qty)})),
       items_count:lines.reduce((n,{qty})=>n+qty,0),
       items_subtotal:Number((slug==="dalton"?(promoQuote()?.subtotal??f.itemsTotal):f.itemsTotal).toFixed(2)),
       freight_fee:Number(f.fee.toFixed(2)),
@@ -7325,7 +7365,14 @@ async function authMe(){
 function hydrateCart(saved){
   if(!saved||!Array.isArray(saved.items))return;
   CART.clear();
-  for(const it of saved.items){ if(it&&it.p&&it.p.code&&it.p.manufacturer&&Number(it.qty)>0) CART.set(cartKey(it.p),{p:it.p,qty:Number(it.qty)}); }
+  const _conv=[];
+  for(const it of saved.items){ if(it&&it.p&&it.p.code&&it.p.manufacturer&&Number(it.qty)>0){
+    let q=Number(it.qty);
+    /* UNIT ORDERING CUTOVER (2026-11-23): a Bemis cart saved while it was sold by the CASE holds case counts. It is converted ONCE to units
+       (cases × the master case) and says so; the line is then re-priced from the current catalog at the unit price. */
+    if(unitOrderCfg(it.p.manufacturer)&&it.p._unitOrder!==true){ const k=Math.max(1,Math.round(Number(it.p.case_qty))||1); if(k>1){ _conv.push(`${it.p.code}: ${q} case${q===1?"":"s"} → ${q*k} units`); q=q*k; } it.p=unitOrderProduct(it.p,unitOrderCfg(it.p.manufacturer)); }
+    CART.set(cartKey(it.p),{p:it.p,qty:q}); } }
+  if(_conv.length) try{ toast("Bemis now orders by the unit — your saved cart was converted ("+_conv.join("; ")+"). Please review the quantities."); }catch(e){}
   for(const k in MFR) delete MFR[k];
   if(saved.mfr&&typeof saved.mfr==="object") Object.assign(MFR,saved.mfr);
   PRICE_NOTES.clear();

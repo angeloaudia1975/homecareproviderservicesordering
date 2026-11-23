@@ -332,7 +332,7 @@ function buildEmail(dealer, order, submittedAt) {
     `Review order: ${link}`,
   ].filter((x, k, a) => !(x === "" && a[k - 1] === "")).join("\n");
 
-  const subject = (order.account_hold ? "[Held — account setup] " : order.account_notice ? "[New account needed] " : "") +
+  const subject = (order.account_hold ? "[Held — Pending account verification] " : order.account_notice ? "[New account needed] " : "") +
     `New order · ${dealer.business || "Dealer"} · ${order.manufacturer_name} · PO ${order.po || "—"} · ${money(mny.total)}${mny.pending ? " + freight" : ""}`;
   return { html, text, subject };
 }
