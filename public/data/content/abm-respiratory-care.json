@@ -29,9 +29,11 @@
      "size": "",
      "status": "active",
      "disabled": false,
-     "image": "",
-     "images": [],
-     "source": ""
+     "image": "/assets/products/abm-respiratory-care/gallery/b72438df9be99aef6728.jpg",
+     "images": [
+      "/assets/products/abm-respiratory-care/gallery/b72438df9be99aef6728.jpg"
+     ],
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BK389.png png sha256 ebabb437f1650fc4"
     }
    ],
    "sku_count": 1,
@@ -46,8 +48,17 @@
     "category": "HCPS catalog (what dealers see today)",
     "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/b72438df9be99aef6728.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/b72438df9be99aef6728.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BK389.png png sha256 ebabb437f1650fc4",
+     "note": "Owner-selected cable photo (actual photograph, native 634 px).",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -286,9 +297,11 @@
      "size": "",
      "status": "active",
      "disabled": false,
-     "image": "",
-     "images": [],
-     "source": ""
+     "image": "/assets/products/abm-respiratory-care/gallery/60f87f7f9cee7f078ddd.jpg",
+     "images": [
+      "/assets/products/abm-respiratory-care/gallery/60f87f7f9cee7f078ddd.jpg"
+     ],
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BC21095.png png sha256 586ec512505f31de"
     }
    ],
    "sku_count": 1,
@@ -303,8 +316,17 @@
     "category": "HCPS catalog (what dealers see today)",
     "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf; ABM's BiWaze Clear home care quick reference guide, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/11/biwaze-clear-home-care-quick-reference-guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/60f87f7f9cee7f078ddd.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/60f87f7f9cee7f078ddd.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BC21095.png png sha256 586ec512505f31de",
+     "note": "Underside of the control unit showing the battery compartment (actual photograph).",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -363,6 +385,10 @@
     {
      "label": "Coverage",
      "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
+    },
+    {
+     "label": "Nebulizer",
+     "value": "Aerogen® Solo with built-in controller — FDA cleared for saline solution only with the nebulizer (ABM BiWaze Clear brochure, Rev 6.0 JULY-2025)."
     }
    ],
    "warranty": null,
@@ -392,7 +418,8 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part",
-    "specs_hcpcs": "ABM's published PDAC coding letter (DCN 24263003000000, Dec 6 2024) assigns A7021 to this BiWaze Clear Dual Lumen Breathing Circuit model, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2025/04/PDAC_BIWAZE-CLEAR.pdf (read 2026-11-18)"
+    "specs_hcpcs": "ABM's published PDAC coding letter (DCN 24263003000000, Dec 6 2024) assigns A7021 to this BiWaze Clear Dual Lumen Breathing Circuit model, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2025/04/PDAC_BIWAZE-CLEAR.pdf (read 2026-11-18)",
+    "nebulizer": "ABM \"BiWaze Clear Brochure – Home Care\", PRTN-1585539264-381 Rev 6.0 JULY-2025, page 1 (supplied by owner 2026-11-23)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/e9902fe3ec9eba247b57.jpg",
    "images_gallery": [
@@ -463,6 +490,10 @@
     {
      "label": "Coverage",
      "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
+    },
+    {
+     "label": "Nebulizer",
+     "value": "Aerogen® Solo with built-in controller — FDA cleared for saline solution only with the nebulizer (ABM BiWaze Clear brochure, Rev 6.0 JULY-2025)."
     }
    ],
    "warranty": null,
@@ -493,7 +524,8 @@
     "category": "HCPS catalog (what dealers see today)",
     "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)",
     "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part",
-    "specs_hcpcs": "ABM's published PDAC coding letter (DCN 24263003000000, Dec 6 2024) assigns A7021 to this BiWaze Clear Dual Lumen Breathing Circuit model, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2025/04/PDAC_BIWAZE-CLEAR.pdf (read 2026-11-18)"
+    "specs_hcpcs": "ABM's published PDAC coding letter (DCN 24263003000000, Dec 6 2024) assigns A7021 to this BiWaze Clear Dual Lumen Breathing Circuit model, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2025/04/PDAC_BIWAZE-CLEAR.pdf (read 2026-11-18)",
+    "nebulizer": "ABM \"BiWaze Clear Brochure – Home Care\", PRTN-1585539264-381 Rev 6.0 JULY-2025, page 1 (supplied by owner 2026-11-23)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/6ef97f8306e640b41751.jpg",
    "images_gallery": [
@@ -562,6 +594,10 @@
     {
      "label": "Coverage",
      "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
+    },
+    {
+     "label": "Nebulizer",
+     "value": "Aerogen® Solo with built-in controller — FDA cleared for saline solution only with the nebulizer (ABM BiWaze Clear brochure, Rev 6.0 JULY-2025)."
     }
    ],
    "warranty": null,
@@ -592,7 +628,8 @@
     "category": "HCPS catalog (what dealers see today)",
     "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)",
     "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part",
-    "specs_hcpcs": "ABM's published PDAC coding letter (DCN 24263003000000, Dec 6 2024) assigns A7021 to this BiWaze Clear Dual Lumen Breathing Circuit model, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2025/04/PDAC_BIWAZE-CLEAR.pdf (read 2026-11-18)"
+    "specs_hcpcs": "ABM's published PDAC coding letter (DCN 24263003000000, Dec 6 2024) assigns A7021 to this BiWaze Clear Dual Lumen Breathing Circuit model, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2025/04/PDAC_BIWAZE-CLEAR.pdf (read 2026-11-18)",
+    "nebulizer": "ABM \"BiWaze Clear Brochure – Home Care\", PRTN-1585539264-381 Rev 6.0 JULY-2025, page 1 (supplied by owner 2026-11-23)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/a9f0de12e0d4bee4c6d4.jpg",
    "images_gallery": [
@@ -828,9 +865,21 @@
     "Store up to 10 therapy profiles with customizable names",
     "Touchscreen control and intuitive user interface",
     "Lightweight system is only 9 lbs, including the lithium-ion battery",
-    "A lithium-ion battery is included with each system, supporting up to 10 therapies (10-minute therapy on a new, fully charged battery)"
+    "A lithium-ion battery is included with each system, supporting up to 10 therapies (10-minute therapy on a new, fully charged battery)",
+    "Oscillating lung expansion (OLE) therapy: positive expiratory pressure (PEP), high-frequency oscillation (HFO) and nebulization combined in a 10-minute therapy (therapy time may differ with patient needs and ordered therapies)",
+    "Patient interfaces: face mask, mouthpiece or trach adapter; may also be used in-line with a ventilator in acute care settings",
+    "In-vitro (bench) results reported by ABM: up to 3x more expiratory flow with high-frequency oscillations, and up to 4.5x more aerosol than a leading OLE system. In-vitro results do not establish clinical outcomes"
    ],
-   "specs": [],
+   "specs": [
+    {
+     "label": "Nebulizer",
+     "value": "Aerogen® Solo with built-in controller — FDA cleared for saline solution only with the nebulizer (ABM BiWaze Clear brochure, Rev 6.0 JULY-2025)."
+    },
+    {
+     "label": "Coverage",
+     "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility. Patient conditions listed in ABM literature are not a guarantee of coverage."
+    }
+   ],
    "warranty": null,
    "category": "BiWaze Systems",
    "subcategory": "BiWaze Clear",
@@ -849,7 +898,12 @@
    ],
    "sku_count": 1,
    "source_url": "https://abmrc.com/biwaze-clear-home-care-2/",
-   "documents": [],
+   "documents": [
+    {
+     "title": "BiWaze Clear Brochure – Home Care (ABM PRTN-1585539264-381, Rev 6.0 JULY-2025)",
+     "url": "/assets/products/abm-respiratory-care/docs/BiWaze-Clear-Brochure-Home-Care-PRTN-1585539264-381-Rev6.0.pdf"
+    }
+   ],
    "videos": [],
    "sizing_note": null,
    "aliases": [],
@@ -858,7 +912,8 @@
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
     "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)",
-    "features": "ABM's own wording, ABM's BiWaze Clear home care quick reference guide, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/11/biwaze-clear-home-care-quick-reference-guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
+    "features": "ABM's own wording, ABM's BiWaze Clear home care quick reference guide, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/11/biwaze-clear-home-care-quick-reference-guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part | added 2026-11-23: ABM \"BiWaze Clear Brochure – Home Care\", PRTN-1585539264-381 Rev 6.0 JULY-2025, page 1 (supplied by owner 2026-11-23)",
+    "specs": "ABM \"BiWaze Clear Brochure – Home Care\", PRTN-1585539264-381 Rev 6.0 JULY-2025, page 1 (supplied by owner 2026-11-23) — nebulizer clearance limitation preserved; no HCPCS applied to this system SKU (BK367 is not established as the PDAC letter's BK181)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/2fb20960b10dcbf1e33c.jpg",
    "images_gallery": [
@@ -1146,9 +1201,11 @@
      "size": "Small",
      "status": "active",
      "disabled": false,
-     "image": "",
-     "images": [],
-     "source": ""
+     "image": "/assets/products/abm-respiratory-care/gallery/24c660949ae4fdbe30a4.jpg",
+     "images": [
+      "/assets/products/abm-respiratory-care/gallery/24c660949ae4fdbe30a4.jpg"
+     ],
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BiWaze Cough Dual Lumen Circuit Adult Face Mask.jfif (supplied as BiWaze_Cough_Dual_Lumen_Circuit_Adult_Face_Mask_All_Sizes.png) png sha256 6b32f96727c26ecd"
     },
     {
      "sku": "BC23412",
@@ -1156,9 +1213,11 @@
      "size": "Medium",
      "status": "active",
      "disabled": false,
-     "image": "",
-     "images": [],
-     "source": ""
+     "image": "/assets/products/abm-respiratory-care/gallery/24c660949ae4fdbe30a4.jpg",
+     "images": [
+      "/assets/products/abm-respiratory-care/gallery/24c660949ae4fdbe30a4.jpg"
+     ],
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BiWaze Cough Dual Lumen Circuit Adult Face Mask.jfif (supplied as BiWaze_Cough_Dual_Lumen_Circuit_Adult_Face_Mask_All_Sizes.png) png sha256 6b32f96727c26ecd"
     },
     {
      "sku": "BC23418",
@@ -1166,9 +1225,11 @@
      "size": "Large",
      "status": "active",
      "disabled": false,
-     "image": "",
-     "images": [],
-     "source": ""
+     "image": "/assets/products/abm-respiratory-care/gallery/24c660949ae4fdbe30a4.jpg",
+     "images": [
+      "/assets/products/abm-respiratory-care/gallery/24c660949ae4fdbe30a4.jpg"
+     ],
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BiWaze Cough Dual Lumen Circuit Adult Face Mask.jfif (supplied as BiWaze_Cough_Dual_Lumen_Circuit_Adult_Face_Mask_All_Sizes.png) png sha256 6b32f96727c26ecd"
     }
    ],
    "sku_count": 3,
@@ -1183,8 +1244,17 @@
     "category": "HCPS catalog (what dealers see today)",
     "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/24c660949ae4fdbe30a4.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/24c660949ae4fdbe30a4.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BiWaze Cough Dual Lumen Circuit Adult Face Mask.jfif (supplied as BiWaze_Cough_Dual_Lumen_Circuit_Adult_Face_Mask_All_Sizes.png) png sha256 6b32f96727c26ecd",
+     "note": "Owner-approved representative image for Small (BC23406), Medium (BC23412) and Large (BC23418); mask size is not distinguishable in the photo.",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -1245,9 +1315,11 @@
      "size": "",
      "status": "active",
      "disabled": false,
-     "image": "",
-     "images": [],
-     "source": ""
+     "image": "/assets/products/abm-respiratory-care/gallery/48fbe9823c060fd76811.jpg",
+     "images": [
+      "/assets/products/abm-respiratory-care/gallery/48fbe9823c060fd76811.jpg"
+     ],
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BC23400.png png sha256 19c47bdd21a1f2cc"
     }
    ],
    "sku_count": 1,
@@ -1262,8 +1334,17 @@
     "category": "HCPS catalog (what dealers see today)",
     "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/48fbe9823c060fd76811.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/48fbe9823c060fd76811.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BC23400.png png sha256 19c47bdd21a1f2cc",
+     "note": "Dual-lumen circuit with child face mask (actual photograph).",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -1324,9 +1405,11 @@
      "size": "",
      "status": "active",
      "disabled": false,
-     "image": "",
-     "images": [],
-     "source": ""
+     "image": "/assets/products/abm-respiratory-care/gallery/6fe7e80b8d4cebe98d42.jpg",
+     "images": [
+      "/assets/products/abm-respiratory-care/gallery/6fe7e80b8d4cebe98d42.jpg"
+     ],
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BC23387.png png sha256 1bc37e240f9f8987"
     }
    ],
    "sku_count": 1,
@@ -1341,8 +1424,17 @@
     "category": "HCPS catalog (what dealers see today)",
     "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/6fe7e80b8d4cebe98d42.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/6fe7e80b8d4cebe98d42.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BC23387.png png sha256 1bc37e240f9f8987",
+     "note": "Dual-lumen circuit with mouthpiece (actual photograph).",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -1403,9 +1495,11 @@
      "size": "",
      "status": "active",
      "disabled": false,
-     "image": "",
-     "images": [],
-     "source": ""
+     "image": "/assets/products/abm-respiratory-care/gallery/437cbc41d0cfef4fdf59.jpg",
+     "images": [
+      "/assets/products/abm-respiratory-care/gallery/437cbc41d0cfef4fdf59.jpg"
+     ],
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BC23394.png png sha256 2b4f1b206a462c86"
     }
    ],
    "sku_count": 1,
@@ -1420,8 +1514,17 @@
     "category": "HCPS catalog (what dealers see today)",
     "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/437cbc41d0cfef4fdf59.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/437cbc41d0cfef4fdf59.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BC23394.png png sha256 2b4f1b206a462c86",
+     "note": "Dual-lumen circuit with trach adapter (actual photograph).",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,
@@ -1876,7 +1979,7 @@
      "size": "",
      "status": "active",
      "disabled": false,
-     "image": "",
+     "image": "/assets/products/abm-respiratory-care/gallery/a53fb602a54948558358.jpg",
      "images": [],
      "source": ""
     }
@@ -1893,11 +1996,19 @@
     "category": "HCPS catalog (what dealers see today)",
     "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze Cough System\" (BC23575 Rev 5.0 AUG-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/03/BiWaze-Cough-Patient-Guide.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
-   "image": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+   "image": "/assets/products/abm-respiratory-care/gallery/a53fb602a54948558358.jpg",
    "images_gallery": [
     {
-     "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+     "url": "/assets/products/abm-respiratory-care/gallery/a53fb602a54948558358.jpg",
      "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BC21092.png png sha256 ceaf984f5ed8b710",
+     "note": "Standard Cough circuit with mouthpiece (actual photograph, native 1001 px).",
+     "approved": true
+    },
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/dfe2aa5e5d1d59308430.jpg",
+     "primary": false,
      "caption": "",
      "source": "owner-supplied ABM image library (New folder.zip, 2026-10-31): \"BiWaze standard circuit.png\" sha256 d17aeb26038a79ce",
      "note": "BiWaze Cough standard circuit — single-path breathing tube, adapter and bacterial/viral filter. The patient interface (mouthpiece) is included in the circuit but not shown in this photo.",
@@ -2035,8 +2146,22 @@
    "name": "BiWaze Cough System – USA Home Care",
    "status": "published",
    "description": "Standard USA (includes control unit, internal battery, carrying bag, English user manual, power cord, filter adapter, single path circuit)",
-   "features": [],
-   "specs": [],
+   "features": [
+    "Mechanical insufflation-exsufflation (MIE) system designed to support patients with a weak or ineffective cough",
+    "Dual-blower technology separates inhaled air from exhaled mucus",
+    "Programmable oscillations on inhale, exhale or both phases of the cough cycle",
+    "Delivers positive airway pressure (PAP) during the pause phase",
+    "Stores up to 10 therapy profiles with customizable names; programmable therapy cycles (up to 20)",
+    "Portable (9 lbs) with touchscreen control and built-in lithium-ion battery",
+    "Optional dual-lumen breathing circuit separates inhaled air from exhaled mucus (sold separately)",
+    "Higher peak cough flows and PAP during the pause are described by ABM from a bench study (Malone & DiBlasi, 2022); bench results do not establish clinical outcomes"
+   ],
+   "specs": [
+    {
+     "label": "Coverage",
+     "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility. Patient conditions listed in ABM literature are not a guarantee of coverage."
+    }
+   ],
    "warranty": null,
    "category": "BiWaze Systems",
    "subcategory": "BiWaze Cough",
@@ -2055,7 +2180,12 @@
    ],
    "sku_count": 1,
    "source_url": "https://abmrc.com/biwaze-cough-home/",
-   "documents": [],
+   "documents": [
+    {
+     "title": "BiWaze Cough Quick Hits – Home Care (ABM PRTN-1585539264-145, Rev 4.0 JULY-2025)",
+     "url": "/assets/products/abm-respiratory-care/docs/BiWaze-Cough-Quick-Hits-Home-Care-PRTN-1585539264-145-Rev4.0.pdf"
+    }
+   ],
    "videos": [],
    "sizing_note": null,
    "aliases": [],
@@ -2063,7 +2193,9 @@
     "description": "HCPS catalog line only (no product-specific manufacturer source)",
     "warranty": "not stated by the source — left blank",
     "category": "HCPS catalog (what dealers see today)",
-    "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)"
+    "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)",
+    "features": "ABM \"BiWaze Cough Quick Hits – Home Care\", PRTN-1585539264-145 Rev 4.0 JULY-2025, page 1 (supplied by owner 2026-11-23)",
+    "specs": "ABM \"BiWaze Cough Quick Hits – Home Care\", PRTN-1585539264-145 Rev 4.0 JULY-2025, page 1 (supplied by owner 2026-11-23) — no HCPCS applied to this system SKU (the PDAC letter lists PRTN/DDOC document numbers, not BC20113)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/de15b42c01cac214f7a2.jpg",
    "images_gallery": [
@@ -2259,6 +2391,10 @@
     {
      "label": "Coverage",
      "value": "Coverage and billing are decided by the payer; this is not a statement of reimbursement eligibility."
+    },
+    {
+     "label": "Nebulizer",
+     "value": "Aerogen® Solo with built-in controller — FDA cleared for saline solution only with the nebulizer (ABM BiWaze Clear brochure, Rev 6.0 JULY-2025)."
     }
    ],
    "warranty": null,
@@ -2315,7 +2451,8 @@
     "category": "HCPS catalog (what dealers see today)",
     "images": "manufacturer photos — https://abmrc.com/ product carousel (manufacturer photo)",
     "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part",
-    "specs_hcpcs": "ABM's published PDAC coding letter (DCN 24263003000000, Dec 6 2024) assigns A7021 to this BiWaze Clear Dual Lumen Breathing Circuit model, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2025/04/PDAC_BIWAZE-CLEAR.pdf (read 2026-11-18)"
+    "specs_hcpcs": "ABM's published PDAC coding letter (DCN 24263003000000, Dec 6 2024) assigns A7021 to this BiWaze Clear Dual Lumen Breathing Circuit model, listed on abmrc.com — https://abmrc.com/wp-content/uploads/2025/04/PDAC_BIWAZE-CLEAR.pdf (read 2026-11-18)",
+    "nebulizer": "ABM \"BiWaze Clear Brochure – Home Care\", PRTN-1585539264-381 Rev 6.0 JULY-2025, page 1 (supplied by owner 2026-11-23)"
    },
    "image": "/assets/products/abm-respiratory-care/gallery/490f148a99c297b3e29b.jpg",
    "images_gallery": [
@@ -2492,9 +2629,11 @@
      "size": "",
      "status": "active",
      "disabled": false,
-     "image": "",
-     "images": [],
-     "source": ""
+     "image": "/assets/products/abm-respiratory-care/gallery/a3896174d47bfa13ea26.jpg",
+     "images": [
+      "/assets/products/abm-respiratory-care/gallery/a3896174d47bfa13ea26.jpg"
+     ],
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BK281.png png sha256 b359860d59eb8014"
     }
    ],
    "sku_count": 1,
@@ -2509,8 +2648,17 @@
     "category": "HCPS catalog (what dealers see today)",
     "features": "ABM's own wording, ABM's \"A Patient Guide to BiWaze® Clear System\" (BK386 Rev.4.0 SEP-2025), listed on abmrc.com — https://abmrc.com/wp-content/uploads/2026/06/BIWAZE-CLEAR-PATIENT-GUIDE.pdf (read 2026-11-18) — owner decision 2026-11-18: ABM accessory details published from ABM's documents on abmrc.com; a manual is linked only when abmrc.com lists it and it names the part"
    },
-   "image": null,
-   "images_gallery": [],
+   "image": "/assets/products/abm-respiratory-care/gallery/a3896174d47bfa13ea26.jpg",
+   "images_gallery": [
+    {
+     "url": "/assets/products/abm-respiratory-care/gallery/a3896174d47bfa13ea26.jpg",
+     "primary": true,
+     "caption": "",
+     "source": "owner-supplied ABM images, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — BK281.png png sha256 b359860d59eb8014",
+     "note": "Actual photograph, native 151x145 px — used as supplied (no upscaling; no resolution threshold applied).",
+     "approved": true
+    }
+   ],
    "enrichment_flags": {
     "mc": {
      "v": 1,

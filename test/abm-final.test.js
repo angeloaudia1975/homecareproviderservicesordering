@@ -26,8 +26,8 @@ await t('verified photos from New folder (2).zip are assigned with file name and
     const e=entries().find(s=>s.sku===c); const img=e.image||e._page.image; if(!img||!fs.existsSync(path.join(ROOT,'public',img))) throw new Error(c+' not displayed'); } });
 await t('BC21087 shows its own face-mask circuit photo first (the family photo stays as a second view)',()=>{
   const p=C['biwaze-cough-standard-circuit-child-face-mask']; if(!/ccd97dfe963c5b2c3d9b/.test(p.image)) throw new Error(p.image); eq(p.images_gallery.length,2); });
-await t('held photos stay unassigned: BK389 (same beige photo, no new evidence), BK281 (identified but 151 px), BC21095 (battery compartment, not the battery)',()=>{
-  for(const c of ['BK389','BK281','BC21095']){ const e=entries().find(s=>s.sku===c); if(e.image||e._page.image) throw new Error(c+' has an image'); if(O._images[c]) throw new Error(c+' in _images'); } });
+await t('owner 2026-11-23: the previously held BK389, BK281 and BC21095 now carry the owner-supplied photos (file exists; provenance names the ZIP)',()=>{
+  for(const c of ['BK389','BK281','BC21095']){ const e=entries().find(s=>s.sku===c); if(!e.image||!/HCPS_Catalog_Images_2026-11-23/.test(e.source||'')) throw new Error(c+' lacks its supplied photo/provenance'); if(!fs.existsSync(path.join(ROOT,'public',e.image))) throw new Error(c+' file missing'); } });
 /* the hub's quote / new-action lists now come from the storefront's own merged catalog: test/quote-catalog.test.js */
 console.log(`abm final: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
 })();
