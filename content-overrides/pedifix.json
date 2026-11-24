@@ -4236,5 +4236,43 @@
    "features": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 56 — read against the page image 2026-11-19",
    "specs": "PediFix OTC Wholesale Catalog, 2021–2022 edition (the file HCPS stores as pedifix-catalog-2025.pdf), catalog page 56 — read against the page image 2026-11-19"
   }
+ },
+ "pressureoff-customizable-insole-system-9-wide-width": {
+  "description": "PressureOFF™ Insoles enable targeted offloading of plantar pathologies in your patient's footwear.",
+  "features": [
+   "Removable Bottom Pegs Create Low Pressure & Friction Zones",
+   "Offloads Sore Spots to Relieve Pain",
+   "Distributes Weight Away from Sensitive Areas",
+   "Reduces Pressure & Friction",
+   "Unloads Targeted Pathologies"
+  ],
+  "specs": [
+   {
+    "label": "Top layer",
+    "value": "Poron®"
+   },
+   {
+    "label": "Total thickness",
+    "value": "9.0 mm"
+   },
+   {
+    "label": "Offloading depth",
+    "value": "6.0 mm"
+   },
+   {
+    "label": "Sizes",
+    "value": "Wide trimmable sizes, Left or Right foot"
+   },
+   {
+    "label": "Package",
+    "value": "1 per pack. Includes optional PegSaver™ Base."
+   }
+  ],
+  "field_provenance": {
+   "description": "PediFix's own wording — https://medical.pedifix.com/p-553-pressureoff-customizable-offloading-insole-system-9-wide-p244.aspx (read 2026-11-23 via search result text)",
+   "features": "PediFix's own bullets, verbatim — https://medical.pedifix.com/p-553-pressureoff-customizable-offloading-insole-system-9-wide-p244.aspx",
+   "specs": "stated values only, PediFix — https://medical.pedifix.com/p-553-pressureoff-customizable-offloading-insole-system-9-wide-p244.aspx (\"Poron® Top, a total thickness of 9.0mm, with offloading of 6.0mm … Wide Trimmable sizes for Left or Right foot\"; \"1 per pack. Includes optional PegSaver™ Base.\")"
+  },
+  "source_url": "https://medical.pedifix.com/p-553-pressureoff-customizable-offloading-insole-system-9-wide-p244.aspx"
  }
 }
