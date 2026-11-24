@@ -53,7 +53,8 @@ t('owner image library (2026-10-31): exact-part photos on their own SKUs only; n
   const ov=JSON.parse(fs.readFileSync(path.join(ROOT,'content-overrides','abm-respiratory-care.json'),'utf8'))._images;
   for(const c of ['BC21274','BC22496','BK371','BC21083','BC22506']) eq(/New folder\.zip.*sha256 [0-9a-f]{16}/.test(ov[c].slice(-1)[0].source),true,c+' provenance');
   // the USA cord photo never on the Swiss / Australian cords; the Cough manual never on the Clear manual; the Clear circuit never on Cough dual-lumen
-  for(const c of ['BC23400','BC23406','BC23412','BC23418','BC23387','BC23394','BK389','BK281','BC21095']) eq(shown(c),'',c+' must have no photo yet (2026-11-02: BK291 and BC22480 now verified; BC2396, BC23966, BK381 retired)');
+  /* owner 2026-11-23: every purchasable ABM option resolves to a working image — the nine supplied photos are attached (BK389 owner-selected, BK281 151 px as supplied, BC21095, BC23400/87/94, shared adult-mask image on BC23406/12/18) */
+  for(const c of ['BC23400','BC23406','BC23412','BC23418','BC23387','BC23394','BK389','BK281','BC21095']){ const u=shown(c); if(!u) throw new Error(c+' must show its supplied photo'); if(!fs.existsSync(path.join(ROOT,'public',u))) throw new Error(c+' photo file missing: '+u); }
 });
 t('shared pages describe every option they hold (not only the first size)',()=>{
   const C=JSON.parse(fs.readFileSync(path.join(ROOT,'public','data','content','abm-respiratory-care.json'),'utf8')).pages;

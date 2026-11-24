@@ -51,7 +51,9 @@ t('every photo a page or option names exists in the preview assets; DLOOP has it
     ok(fs.existsSync(path.join(ROOT, 'public', u)), p.page_key + ' ' + u);
   const acc = pages['modular-ramp-accessories'];
   const sk = c => acc.skus.find(s => s.sku === c);
-  for (const c of ['CK', 'VPLK']) ok(sk(c).image === 'none', c + ' must say none, never another product\'s photo');
+  /* owner 2026-11-23: VPLK carries its own supplied photo (file exists, provenance names the ZIP); CK is approved for removal and never borrows a photo */
+  ok(/\/access4u\/gallery\//.test(sk('VPLK').image) && /HCPS_Catalog_Images_2026-11-23/.test(sk('VPLK').source), 'VPLK must carry its own supplied photo');
+  ok(sk('CK').image === 'none', 'CK must say none, never another product\'s photo');
   ok(/8da3baec8e81e9ce8f59/.test(sk('DLOOP').image) && /low resolution/.test(sk('DLOOP').image_note || ''), 'DLOOP: owner DLOOP.jpg, flagged low resolution');
   ok(!/8da3baec8e81e9ce8f59|c7b152e60aef106d8e0f/.test(acc.image), 'family hero is neither the D-Loop nor the stairs photo');
   ok(acc.skus.find(s => s.sku === 'GATE36').image, 'gate keeps its own photo');

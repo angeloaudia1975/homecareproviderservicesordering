@@ -6640,9 +6640,11 @@
      "size": "VPL Kit — Bruno or Harmar (VPLK)",
      "status": "active",
      "disabled": false,
-     "image": "none",
-     "images": [],
-     "source": "",
+     "image": "/assets/products/access4u/gallery/6e27986343e9221becd7.jpg",
+     "images": [
+      "/assets/products/access4u/gallery/6e27986343e9221becd7.jpg"
+     ],
+     "source": "owner-supplied Access4U image, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — VPLK.jpg png sha256 9362c5dd988332d5",
      "axes": {
       "Accessory": "VPL Kit — Bruno or Harmar (VPLK)"
      },
@@ -6713,6 +6715,14 @@
      "primary": false,
      "caption": "",
      "source": "current catalog photo"
+    },
+    {
+     "url": "/assets/products/access4u/gallery/6e27986343e9221becd7.jpg",
+     "primary": false,
+     "caption": "VPL Kit",
+     "source": "owner-supplied Access4U image, \"HCPS_Catalog_Images_2026-11-23.zip\" (owner 2026-11-23) — VPLK.jpg png sha256 9362c5dd988332d5",
+     "note": "Owner-selected VPLK photo (actual photograph, native 387x314 px).",
+     "approved": true
     }
    ],
    "enrichment_flags": {

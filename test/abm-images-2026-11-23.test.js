@@ -1,0 +1,18 @@
+/* ABM images + brochure enrichment (owner 2026-11-23): every active ABM SKU resolves to a photo file that exists; the nine supplied photos
+   and VPLK are attached; HCPCS only where a source names the exact part (Clear circuits BK291/289/287/285/280/293 = A7021, ABM PDAC letter
+   DCN 24263003000000); none on systems, accessories, batteries, cables or warranties; the saline-only nebulizer limitation stays on Clear pages. */
+'use strict';
+const fs=require('fs'),path=require('path'); const ROOT=path.join(__dirname,'..');
+const J=(...p)=>JSON.parse(fs.readFileSync(path.join(ROOT,...p),'utf8'));
+const C=J('public','data','content','abm-respiratory-care.json').pages, O=J('content-overrides','abm-respiratory-care.json'), A=J('public','data','content','access4u.json').pages;
+let pass=0,fail=0; const t=(n,f)=>{try{f();pass++;console.log('ok   '+n)}catch(e){fail++;console.log('FAIL '+n+'\n     '+e.message)}};
+const RET=new Set(Object.keys(O._retired||{}));
+const exists=u=>u&&fs.existsSync(path.join(ROOT,'public',u));
+const skus=()=>Object.values(C).flatMap(p=>(p.skus||[]).filter(s=>s.status!=='retired'&&s.disabled!==true&&!RET.has(s.sku)).map(s=>({s,p})));
+t('every active ABM SKU resolves to an existing photo file (SKU photo, else page photo)',()=>{ const bad=skus().filter(({s,p})=>!exists(s.image)&&!exists(p.image)&&!(p.images_gallery||[]).some(g=>exists(g.url))).map(x=>x.s.sku); if(bad.length) throw new Error('no working photo: '+bad); });
+t('the three adult-mask dual-lumen sizes share the approved representative image',()=>{ const p=C['biwaze-cough-dual-lumen-circuit-adult-face-mask']; const u=new Set(p.skus.map(s=>s.image)); if(u.size!==1||!exists([...u][0])||p.skus.length!==3) throw new Error('sizes do not share one existing image'); });
+t('VPLK has its own existing photo; CK never borrows one',()=>{ const s=A['modular-ramp-accessories'].skus; const v=s.find(x=>x.sku==='VPLK'); if(!exists(v.image)) throw new Error('VPLK image missing'); const c=s.find(x=>x.sku==='CK'); if(c&&c.image&&c.image!=='none') throw new Error('CK has an image'); });
+t('HCPCS appears only on the six verified Clear circuits',()=>{ const OK=new Set(['BK291','BK289','BK287','BK285','BK280','BK293']); for(const {s,p} of skus()){ const has=(p.specs||[]).some(x=>/hcpc/i.test(x.label)); if(has&&!OK.has(s.sku)) throw new Error(s.sku+' carries an HCPCS row without a part-level source'); if(!has&&OK.has(s.sku)) throw new Error(s.sku+' lost its verified A7021'); } });
+t('Clear pages keep the saline-only nebulizer limitation; bench claims keep their qualifier',()=>{ for(const k of ['biwaze-clear-system-home-care-usa','biwaze-clear-dual-lumen-mouthpiece','biwaze-clear-dual-lumen-trach','biwaze-dual-lumen-adult-face-mask','biwaze-clear-dual-lumen-child-face-mask']){ if(!JSON.stringify(C[k].specs).includes('saline solution only')) throw new Error(k+' lacks the saline-only limitation'); } const f=C['biwaze-clear-system-home-care-usa'].features.join(' '); if(!/In-vitro/.test(f)||!/do not establish clinical outcomes/.test(f)) throw new Error('bench qualifier missing'); if(!/bench results do not establish clinical outcomes/.test(C['biwaze-cough-system-usa-home-care'].features.join(' '))) throw new Error('cough bench qualifier missing'); });
+t('brochures are product resources with revision, and the files exist',()=>{ for(const k of ['biwaze-clear-system-home-care-usa','biwaze-cough-system-usa-home-care']){ const d=C[k].documents[0]; if(!/Rev \d/.test(d.title)||!exists(d.url)) throw new Error(k+' brochure link broken'); } });
+console.log(`abm images 2026-11-23: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
