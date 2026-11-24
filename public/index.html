@@ -1406,6 +1406,8 @@ body.shopv2 .section{padding-top:18px;}
 .cv2-chipnext:hover{border-color:var(--navy);}
 .cv2-chip{flex:none;border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:999px;padding:7px 14px;min-height:36px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
 .cv2-chip:hover{border-color:var(--navy);}
+.pcs-last{font-size:12px;font-weight:700;color:#0f5c8f;margin:2px 0 4px;}
+.cv2-cat.pcs-mine{font-weight:800;}
 .cv2-chip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
 .cv2-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding:10px 0 12px;}
 .cv2-count{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--gray);}
@@ -5039,6 +5041,7 @@ function cardHtml(p){
   const dispName = p._gname || p.name;
   const multi = Array.isArray(p._variants) && p._variants.length>1;
   const openCode = p._openCode || p.code;
+  const _pcsl = (typeof cvCat==='function' && cvCat()==='mine:') ? pcsLastFor(p) : null;   // Your Purchased Products: last ordered date + Order Again
   const img = mainUrl
     ? `<img src="${esc(imgUrl(mainUrl,400))}" alt="${esc(dispName)}" width="400" height="400" loading="lazy" decoding="async" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='${esc(mainUrl)}';}else{this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:'No image'}))}">`
     : `<span class="ph">No image</span>`;
@@ -5059,14 +5062,15 @@ function cardHtml(p){
     ? `<div class="buy"><span class="discbadge">Discontinued — reference only</span><button class="cv2-ghost" type="button" data-open="${esc(openCode)}">View details</button></div>`
     : multi
     ? `<div class="buy"><button class="chooseBtn" type="button" data-open="${esc(openCode)}">Choose options <span aria-hidden="true">→</span></button></div>`
-    : `${upgradeSelectHtml(p)}<div class="buy"><input class="qtyin" type="number" min="1" value="1" aria-label="Quantity for ${esc(p.code)}"><button class="addbtn" data-code="${esc(p.code)}" data-family="${esc(p.family==null?"":p.family)}">Add to cart</button></div>`;
+    : `${upgradeSelectHtml(p)}<div class="buy"><input class="qtyin" type="number" min="1" value="1" aria-label="Quantity for ${esc(p.code)}"><button class="addbtn" data-code="${esc(p.code)}" data-family="${esc(p.family==null?"":p.family)}">${_pcsl?"Order Again":"Add to cart"}</button></div>`;
   const label = [p.subcategory||p.category||"", p.brand||""].filter(Boolean).join(" · ");
+  const pcsBadge = _pcsl ? `<div class="pcs-last">Last ordered ${esc(pcsDate(_pcsl))} · adds to your cart to review — nothing is sent</div>` : "";
   return `<div class="card cv2-card" data-code="${esc(openCode)}">
     <div class="img">${img}</div>
     <div class="cbody">
       ${label?`<div class="cat-tag">${esc(label)}</div>`:""}
       <a class="pname" href="#" data-open="${esc(openCode)}">${esc(dispName)}</a>
-      ${codeLine}${skuHit}
+      ${codeLine}${skuHit}${pcsBadge}
       ${p.description?`<div class="pdesc">${esc(p.description)}</div>`:""}
       ${priceBlock}
       ${tierHtml}
@@ -5090,7 +5094,9 @@ function wireAdd(scope){
       const lab=sel&&sel.value;
       const q=lab?withUpgrade(p,lab):p;
       if(lab&&!q){ toast("That upgrade is not available for "+code); return; }
+      const _had=CART.get(cartKey(q)); const _q0=_had?_had.qty:0;
       addToCart(q,qty);
+      { const _now=CART.get(cartKey(q)); if(/^Order Again/.test(btn.textContent||'')&&_now&&_now.qty>_q0&&typeof openCart==='function') openCart(); }   // Your Purchased Products: the cart opens for review only when the item went in — nothing is submitted   // Your Purchased Products: the cart opens for review — nothing is submitted
     };
   });
 }
@@ -5198,7 +5204,64 @@ function cvBase(){
   const hitKeys=new Set(kept.filter(p=>`${p.code} ${p.name} ${p.category} ${p.subcategory} ${p.brand} ${p.description} ${p.hcpc} ${p._gname||''} ${p._encPage||''} ${mfrName}`.toLowerCase().includes(q)).map(groupKeyOf));
   return kept.filter(p=>hitKeys.has(groupKeyOf(p)));
 }
+/* PURCHASING CATEGORIES + YOUR PURCHASED PRODUCTS (owner 2026-11-23).
+   • The President's published shopping categories for a line arrive from the server as part numbers only (no prices). A category lists a
+     product through any of its part numbers; the whole product card (every option the dealer may buy) appears, so a category never
+     splits a family. What the dealer can see and buy is still decided by the products this page already loaded for the dealer's own
+     account, territory and location — a part number the dealer cannot see simply does not appear, and no price is ever taken from here.
+   • "Your Purchased Products" is the signed-in location's own history (portal orders + manufacturer sales history), supplied by the
+     server for THIS login only. Each entry is matched to ONE exact current product (manufacturer + part number); a part number with
+     several different current products, or none, is not shown. Current price/availability are the page's own; "Order Again" only adds
+     to the cart for review — it never submits. Nothing here writes a price, a product, a cart line on its own or an order. */
+const PCS_API="https://homecareproviderservices.netlify.app/.netlify/functions/purchasing-categories-api";
+const PCS={at:0,structure:{},purchased:[],ok:false,busy:null,mineCache:null};
+async function pcsCall(action,bearer){
+  if(!bearer) return null;
+  try{ const r=await fetch(PCS_API,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+bearer},body:JSON.stringify({action})});
+    if(!r.ok) return null; const j=await r.json().catch(()=>null); return j&&j.ok?j:null; }catch(e){ return null; }
+}
+/* the bearer to ask with: a Manage Dealer session, else the dealer's own sign-in; none in a staff preview */
+function pcsBearer(){ const mg=(typeof mgBearer==='function')?mgBearer():''; if(mg) return mg;
+  if(typeof PREVIEW!=='undefined'&&PREVIEW) return ''; return (AUTH&&AUTH.session&&AUTH.session.access_token)||''; }
+/* loaded once and kept for 5 minutes; a failure leaves the Shop exactly as it was (the catalog's own categories, no purchased list) */
+function pcsWho(){ try{ const mg=(typeof mgBearer==='function')?mgBearer():''; if(mg) return 'm|'+mg; return (AUTH&&AUTH.session&&AUTH.session.access_token&&AUTH.dealer)?'d|'+(AUTH.dealer.id||AUTH.dealer.email||''):''; }catch(e){ return ''; } }   // the signed-in location (stable across a token refresh)
+function pcsEnsure(force){
+  const who=pcsWho(); if(PCS.uid!==who){ PCS.uid=who; PCS.structure={}; PCS.purchased=[]; PCS.ok=false; PCS.at=0; PCS.mineCache=null; PCS.keyCache=null; PCS.busy=null; }   // another login / location never sees the previous one's list
+  if(!force&&PCS.busy) return PCS.busy;
+  if(!force&&PCS.ok&&Date.now()-PCS.at<300000) return Promise.resolve();
+  const run=(async()=>{ if(!who) return;
+    if(!/^m\|/.test(who)){ try{ await ensureFreshSession(); }catch(e){} }
+    if(pcsWho()!==who) return;                 // signed out / switched while refreshing
+    const bearer=pcsBearer(); const [a,b]=await Promise.all([pcsCall('structure',bearer),pcsCall('purchased',bearer)]);
+    if(PCS.uid!==who) return;   // the login changed while this was loading: its answer belongs to the previous login — dropped
+    if(a){ PCS.structure=a.categories||{}; } if(b){ PCS.purchased=Array.isArray(b.items)?b.items:[]; }
+    PCS.ok=!!(a||b); PCS.at=Date.now(); PCS.mineCache=null; PCS.keyCache=null; })().catch(()=>{}).finally(()=>{ if(PCS.busy===run) PCS.busy=null; });
+  PCS.busy=run; return run;
+}
+const pcsUp=c=>String(c==null?'':c).trim().toUpperCase();
+function pcsCats(){ const st=PCS.structure&&PCS.structure[state.active]; return st&&Array.isArray(st.categories)?st.categories:[]; }
+/* the purchased entries for the open line that match exactly ONE current product, newest first */
+function pcsMine(){
+  const key=state.active+'|'+state.products.length; if(PCS.mineCache&&PCS.mineCache.key===key) return PCS.mineCache;
+  const by=new Map(); state.products.forEach(p=>{ const c=pcsUp(p.code); if(!by.has(c)) by.set(c,[]); by.get(c).push(p); });
+  const hit=new Map(), skipped=[]; 
+  (PCS.purchased||[]).filter(e=>e&&e.manufacturer===state.active).forEach(e=>{
+    const list=by.get(pcsUp(e.code))||[];
+    if(list.length!==1){ skipped.push(e); return; }          // none, or ambiguous (several different current products): never guessed
+    const p=list[0]; if(p._discontinued||p._held){ skipped.push(e); return; }
+    hit.set(pcsUp(e.code),{p,last:e.last,precision:e.precision}); });
+  PCS.mineCache={key,hit,skipped}; return PCS.mineCache;
+}
+function pcsLastFor(p){ const m=pcsMine().hit; const list=(p&&Array.isArray(p._variants)&&p._variants.length)?p._variants:[p]; let best=null;
+  list.forEach(v=>{ const h=m.get(pcsUp(v.code)); if(h&&(!best||h.last>best.last)) best=h; }); return best; }
+function pcsDate(h){ if(!h||!h.last) return ''; const [y,mo,d]=h.last.split('-').map(Number); const dt=new Date(y,mo-1,d||1);
+  return h.precision==='month'?dt.toLocaleDateString('en-US',{month:'short',year:'numeric'}):dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function pcsGroupKeys(c){ const set=new Set((c.codes||[]).map(pcsUp)), keys=new Set(); state.products.forEach(p=>{ if(set.has(pcsUp(p.code))) keys.add(groupKeyOf(p)); }); return keys; }
+function pcsRank(cat){ const c=pcsCats().find(x=>x.id===cat.slice(3)); if(!c) return null; const idx=new Map(); (c.codes||[]).forEach((x,i)=>{ if(!idx.has(pcsUp(x))) idx.set(pcsUp(x),i); });
+  return p=>{ let best=1e9; (Array.isArray(p._variants)&&p._variants.length?p._variants:[p]).forEach(v=>{ const i=idx.get(pcsUp(v.code)); if(i!=null&&i<best) best=i; }); return best; }; }
 function cvInCat(p,cat){ if(!cat) return true; if(cat.startsWith('sub:')) return p.subcategory===cat.slice(4);
+  if(cat==='mine:') return pcsMine().hit.has(pcsUp(p.code));
+  if(cat.startsWith('pc:')){ const c=pcsCats().find(x=>x.id===cat.slice(3)); if(!c) return false; const k=(PCS.keyCache=PCS.keyCache||{}); const ck=state.active+'|'+state.products.length+'|'+c.id; return (k[ck]||(k[ck]=pcsGroupKeys(c))).has(groupKeyOf(p)); }
   return cat==='Other' ? (!p.category||p.category==='Other') : p.category===cat; }
 /* how many family cards a list makes (the number a dealer sees), not how many SKUs */
 function cvFamilies(list){ return new Set(list.map(groupKeyOf)).size; }
@@ -5254,6 +5317,10 @@ function cvLeads(list){
          return String(a.manufacturer||"").localeCompare(String(b.manufacturer||""))||(oa-ob); })()
     || String(a.subcategory||"").localeCompare(String(b.subcategory||""))
     || name(a).localeCompare(name(b)));
+  /* the President's arrangement inside a purchasing category; most recent purchase first in Your Purchased Products (relevance sort, no search) */
+  if(!q&&(!s||s==='relevance')){ const cat=cvCat();
+    if(cat==='mine:'){ const last=L=>{ const h=pcsLastFor(L); return h?h.last:''; }; leads.sort((a,b)=>last(b).localeCompare(last(a))||name(a).localeCompare(name(b))); }
+    else if(cat.startsWith('pc:')){ const rk=pcsRank(cat); if(rk) leads.sort((a,b)=>rk(a)-rk(b)||name(a).localeCompare(name(b))); } }
   /* an exact part number comes first, whatever the sort: "BC2396" must not show "BC23966" above it */
   if(q){ const exact=L=>(L._variants||[L]).some(v=>cvNorm(v.code)===q);
     const ex=leads.filter(exact); if(ex.length) return ex.concat(leads.filter(L=>!exact(L))); }
@@ -5368,8 +5435,11 @@ function renderProducts(){
   /* sidebar: categories (counts are product cards under the other filters), then the lines, brand, price */
   const navItem=(v,label,n,on,cls)=>`<button type="button" class="cv2-cat${cls?' '+cls:''}${on?' on':''}" data-cv="cat" data-v="${esc(v)}"${on?' aria-current="true"':''}><span>${esc(label)}</span><em>${n}</em></button>`;
   const catOf=cat.startsWith('sub:')?((state.products.find(p=>p.subcategory===cat.slice(4))||{}).category||''):cat;
-  $("#cv2Nav").innerHTML=navItem('', 'All Products', cvFamilies(base), !cat, 'all')
-    +tree.map(t=>navItem(t.c,t.c,t.n,cat===t.c)+((catOf===t.c&&t.subs.length)?`<div class="cv2-subs">${t.subs.map(s=>navItem('sub:'+s.sc,s.sc,s.n,cat==='sub:'+s.sc,'sub')).join('')}</div>`:'')).join('');
+  const _mine=pcsMine(), _pcs=pcsCats();
+  const mineNav=_mine.hit.size?navItem('mine:','★ Your Purchased Products',cvFamilies(base.filter(p=>_mine.hit.has(pcsUp(p.code)))),cat==='mine:','pcs-mine'):'';
+  const pcsNav=_pcs.map(c=>navItem('pc:'+c.id,c.name,cvFamilies(base.filter(p=>cvInCat(p,'pc:'+c.id))),cat==='pc:'+c.id)).join('');
+  $("#cv2Nav").innerHTML=mineNav+navItem('', 'All Products', cvFamilies(base), !cat, 'all')
+    +(_pcs.length?pcsNav:tree.map(t=>navItem(t.c,t.c,t.n,cat===t.c)+((catOf===t.c&&t.subs.length)?`<div class="cv2-subs">${t.subs.map(s=>navItem('sub:'+s.sc,s.sc,s.n,cat==='sub:'+s.sc,'sub')).join('')}</div>`:'')).join(''));
   const lines=entitledManufacturers().filter(x=>x.hasData), owned=ownedSlugSet();
   const brands=[...new Set(state.products.map(p=>p.brand).filter(Boolean))].sort();
   const priced=state.products.some(p=>Number(unitPrice(p,1)||0)>0);
@@ -5380,10 +5450,11 @@ function renderProducts(){
   $("#cv2Facets").innerHTML=facets;
   const sq=$("#cv2q"); if(sq && document.activeElement!==sq && sq.value!==cvQuery()) sq.value=cvQuery();
   /* breadcrumb + chips */
-  const catLabel=cat?cat.replace(/^sub:/,''):'';
+  const catLabel=cat==='mine:'?'Your Purchased Products':cat.startsWith('pc:')?((_pcs.find(c=>'pc:'+c.id===cat)||{}).name||''):cat?cat.replace(/^sub:/,''):'';
   $("#cv2Crumb").innerHTML=`<a href="#" data-cv="all">All manufacturers</a><span>›</span><a href="#" data-cv="cat" data-v="">${esc(m.name||'Shop')}</a>${catOf&&cat.startsWith('sub:')?`<span>›</span><a href="#" data-cv="cat" data-v="${esc(catOf)}">${esc(catOf)}</a>`:''}${catLabel?`<span>›</span><b>${esc(catLabel)}</b>`:''}`;
   $("#cv2Chips").innerHTML=(tree.length>1||cat)?[`<button type="button" role="listitem" class="cv2-chip${!cat?' on':''}" data-cv="cat" data-v="">All Products (${cvFamilies(base)})</button>`]
-    .concat(tree.map(t=>`<button type="button" role="listitem" class="cv2-chip${catOf===t.c?' on':''}" data-cv="cat" data-v="${esc(t.c)}">${esc(t.c)} (${t.n})</button>`)).join(''):'';
+    .concat(_mine.hit.size?[`<button type="button" role="listitem" class="cv2-chip${cat==='mine:'?' on':''}" data-cv="cat" data-v="mine:">★ Your Purchased Products (${cvFamilies(base.filter(p=>_mine.hit.has(pcsUp(p.code))))})</button>`]:[])
+    .concat((_pcs.length?_pcs.map(c=>({c:'pc:'+c.id,l:c.name,n:cvFamilies(base.filter(p=>cvInCat(p,'pc:'+c.id)))})):tree.map(t=>({c:t.c,l:t.c,n:t.n}))).map(t=>`<button type="button" role="listitem" class="cv2-chip${(_pcs.length?cat===t.c:catOf===t.c)?' on':''}" data-cv="cat" data-v="${esc(t.c)}">${esc(t.l)} (${t.n})</button>`)).join(''):'';
   { const c=$("#cv2Chips"), nb=document.querySelector('.cv2-chipnext'); if(c&&nb) requestAnimationFrame(()=>{ nb.hidden=!(c.scrollWidth>c.clientWidth+4); }); }
   /* toolbar */
   const pages=Math.max(1,Math.ceil(leads.length/CUI.per)); if(CUI.page>pages) CUI.page=pages;
@@ -6757,6 +6828,8 @@ async function selectManufacturer(slug){
   if(typeof cvLoading==='function') cvLoading();
   const current=await loadProducts(slug);
   if(!current || state.active!==slug) return;   // a newer line was chosen while this one loaded
+  if(typeof pcsEnsure==='function') await pcsEnsure();   // purchasing categories + this login's purchase history (a failure leaves the Shop exactly as it was)
+  if(state.active!==slug) return;
   renderBanner(); renderProducts(); renderA4U(); renderSW();
   window.scrollTo({top:0,behavior:"smooth"});
   if(slug && !_viewedLines.has(slug)){ _viewedLines.add(slug); track('product_view',slug); }  // viewed a line's catalog (+3)
