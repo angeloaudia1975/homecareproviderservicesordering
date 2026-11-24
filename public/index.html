@@ -1406,6 +1406,7 @@ body.shopv2 .section{padding-top:18px;}
 .cv2-chipnext:hover{border-color:var(--navy);}
 .cv2-chip{flex:none;border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:999px;padding:7px 14px;min-height:36px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
 .cv2-chip:hover{border-color:var(--navy);}
+.cv2-navhd{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#5a6b7b;margin:10px 0 2px;padding:0 8px;}
 .pcs-last{font-size:12px;font-weight:700;color:#0f5c8f;margin:2px 0 4px;}
 .cv2-cat.pcs-mine{font-weight:800;}
 .cv2-chip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
@@ -5439,7 +5440,10 @@ function renderProducts(){
   const mineNav=_mine.hit.size?navItem('mine:','★ Your Purchased Products',cvFamilies(base.filter(p=>_mine.hit.has(pcsUp(p.code)))),cat==='mine:','pcs-mine'):'';
   const pcsNav=_pcs.map(c=>navItem('pc:'+c.id,c.name,cvFamilies(base.filter(p=>cvInCat(p,'pc:'+c.id))),cat==='pc:'+c.id)).join('');
   $("#cv2Nav").innerHTML=mineNav+navItem('', 'All Products', cvFamilies(base), !cat, 'all')
-    +(_pcs.length?pcsNav:tree.map(t=>navItem(t.c,t.c,t.n,cat===t.c)+((catOf===t.c&&t.subs.length)?`<div class="cv2-subs">${t.subs.map(s=>navItem('sub:'+s.sc,s.sc,s.n,cat==='sub:'+s.sc,'sub')).join('')}</div>`:'')).join(''));
+    +pcsNav+(_pcs.length?'<div class="cv2-navhd" role="presentation">Catalog categories</div>':'')
+    /* the line's own catalog categories (and subcategories) ALWAYS stay — the President's shopping categories are added above
+       them, never a replacement (owner 2026-11-23 20:45: no destructive replacement of existing navigation) */
+    +tree.map(t=>navItem(t.c,t.c,t.n,cat===t.c)+((catOf===t.c&&t.subs.length)?`<div class="cv2-subs">${t.subs.map(s=>navItem('sub:'+s.sc,s.sc,s.n,cat==='sub:'+s.sc,'sub')).join('')}</div>`:'')).join('');
   const lines=entitledManufacturers().filter(x=>x.hasData), owned=ownedSlugSet();
   const brands=[...new Set(state.products.map(p=>p.brand).filter(Boolean))].sort();
   const priced=state.products.some(p=>Number(unitPrice(p,1)||0)>0);
@@ -5454,7 +5458,7 @@ function renderProducts(){
   $("#cv2Crumb").innerHTML=`<a href="#" data-cv="all">All manufacturers</a><span>›</span><a href="#" data-cv="cat" data-v="">${esc(m.name||'Shop')}</a>${catOf&&cat.startsWith('sub:')?`<span>›</span><a href="#" data-cv="cat" data-v="${esc(catOf)}">${esc(catOf)}</a>`:''}${catLabel?`<span>›</span><b>${esc(catLabel)}</b>`:''}`;
   $("#cv2Chips").innerHTML=(tree.length>1||cat)?[`<button type="button" role="listitem" class="cv2-chip${!cat?' on':''}" data-cv="cat" data-v="">All Products (${cvFamilies(base)})</button>`]
     .concat(_mine.hit.size?[`<button type="button" role="listitem" class="cv2-chip${cat==='mine:'?' on':''}" data-cv="cat" data-v="mine:">★ Your Purchased Products (${cvFamilies(base.filter(p=>_mine.hit.has(pcsUp(p.code))))})</button>`]:[])
-    .concat((_pcs.length?_pcs.map(c=>({c:'pc:'+c.id,l:c.name,n:cvFamilies(base.filter(p=>cvInCat(p,'pc:'+c.id)))})):tree.map(t=>({c:t.c,l:t.c,n:t.n}))).map(t=>`<button type="button" role="listitem" class="cv2-chip${(_pcs.length?cat===t.c:catOf===t.c)?' on':''}" data-cv="cat" data-v="${esc(t.c)}">${esc(t.l)} (${t.n})</button>`)).join(''):'';
+    .concat(_pcs.map(c=>({c:'pc:'+c.id,l:c.name,n:cvFamilies(base.filter(p=>cvInCat(p,'pc:'+c.id))),pc:1})).concat(tree.map(t=>({c:t.c,l:t.c,n:t.n}))).map(t=>`<button type="button" role="listitem" class="cv2-chip${(t.pc?cat===t.c:catOf===t.c)?' on':''}" data-cv="cat" data-v="${esc(t.c)}">${esc(t.l)} (${t.n})</button>`)).join(''):'';
   { const c=$("#cv2Chips"), nb=document.querySelector('.cv2-chipnext'); if(c&&nb) requestAnimationFrame(()=>{ nb.hidden=!(c.scrollWidth>c.clientWidth+4); }); }
   /* toolbar */
   const pages=Math.max(1,Math.ceil(leads.length/CUI.per)); if(CUI.page>pages) CUI.page=pages;
