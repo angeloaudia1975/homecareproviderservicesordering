@@ -1,7 +1,9 @@
 "use strict";
 /* Public-file verification only: no dealer session, page scripts, API keys or database calls.
    Candidate pushes compare the recorded production baseline; marked main releases wait for
-   the exact checked-out index and panel to be served. A main restore is not a release. */
+   the reviewed index and panel to be served. The only permitted HTML transformation is
+   the single dashboard-link rewrite observed in the production diagnostic on 2026-11-25;
+   every other byte must match. A main restore is not a release. */
 const fs = require("node:fs");
 const crypto = require("node:crypto");
 const { execFileSync } = require("node:child_process");
@@ -37,7 +39,20 @@ async function main() {
     const bytes = candidate
       ? execFileSync("git", ["show", BASELINE + ":" + item.file], { maxBuffer: MAX_BYTES })
       : fs.readFileSync(item.file);
-    return Object.assign({}, item, { sha256: digest(bytes) });
+    const sha256 = digest(bytes);
+    let prettyUrlSha256 = null;
+    if (item.file === "public/index.html") {
+      // Netlify Pretty URLs changes only this exact anchor's URL and quote style.
+      // Compare a second full-file hash; never normalize arbitrary HTML or scripts.
+      const source = '<a class="logo" href="/dashboard.html">';
+      const served = "<a class='logo' href='/dashboard'>";
+      const html = bytes.toString("utf8");
+      if (html.split(source).length !== 2) {
+        throw new Error("Expected exactly one known dashboard link; review the verifier.");
+      }
+      prettyUrlSha256 = digest(Buffer.from(html.replace(source, served), "utf8"));
+    }
+    return Object.assign({}, item, { sha256, prettyUrlSha256 });
   });
   const deadline = Date.now() + (release ? 15 * 60 * 1000 : 60 * 1000);
   async function checkOne(item, attempt) {
@@ -57,9 +72,12 @@ async function main() {
     const bytes = Buffer.from(await response.arrayBuffer());
     if (bytes.length > MAX_BYTES) throw new Error(item.file + ": unexpectedly large response");
     const actual = digest(bytes);
-    const matches = actual === item.sha256;
+    const matches = actual === item.sha256 ||
+      (item.prettyUrlSha256 !== null && actual === item.prettyUrlSha256);
     console.log(item.file + " " + (matches ? "MATCH" : "MISMATCH") +
-      " expected=" + item.sha256 + " actual=" + actual);
+      " source=" + item.sha256 +
+      (item.prettyUrlSha256 ? " knownPrettyUrl=" + item.prettyUrlSha256 : "") +
+      " actual=" + actual);
     return matches;
   }
 
@@ -73,13 +91,16 @@ async function main() {
     }
     if (results.every(result => result.status === "fulfilled" && result.value === true)) {
       const summary = candidate
-        ? "Production search files match the recorded baseline " + BASELINE + "."
-        : "Production serves both exact reviewed files from " + process.env.GITHUB_SHA + ".";
+        ? "Production search files match the recorded baseline " + BASELINE +
+          ", allowing only the known single dashboard-link Pretty URL rewrite."
+        : "Production serves both reviewed files from " + process.env.GITHUB_SHA +
+          ", allowing only the known single dashboard-link Pretty URL rewrite.";
       console.log(summary);
       if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(
         process.env.GITHUB_STEP_SUMMARY,
         "## Victoria product-search verification\n\n" + summary + "\n\n" +
-        expected.map(item => "- " + item.file + ": " + item.sha256).join("\n") +
+        expected.map(item => "- " + item.file + ": source " + item.sha256 +
+          (item.prettyUrlSha256 ? "; known Pretty URL output " + item.prettyUrlSha256 : "")).join("\n") +
         "\n\nThis checks public file delivery; authenticated dealer acceptance is separate.\n"
       );
       return;
