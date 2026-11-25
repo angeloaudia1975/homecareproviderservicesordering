@@ -1,0 +1,104 @@
+name: Victoria product search
+
+on:
+  push:
+    branches:
+      - codex/victoria-product-search
+      - main
+    paths:
+      - public/index.html
+      - public/assets/dealer-victoria-panel.js
+      - scripts/verify-victoria-search-production.js
+      - test/victoria-product-search.test.js
+      - test/victoria-product-search.browser.js
+      - test/dealer-victoria-search.browser.js
+      - test/_shop-harness.js
+      - .github/workflows/victoria-product-search.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: victoria-product-search-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  search-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20
+
+      - name: Product-search regressions
+        run: node test/victoria-product-search.test.js
+
+      - name: Parse Victoria panel
+        run: node --check public/assets/dealer-victoria-panel.js
+
+      - name: Install browser test runtime outside the checkout
+        run: |
+          npm install --prefix "$RUNNER_TEMP/victoria-search-tools" --no-save --package-lock=false playwright@1.65.1
+          node "$RUNNER_TEMP/victoria-search-tools/node_modules/playwright/cli.js" --version
+          node "$RUNNER_TEMP/victoria-search-tools/node_modules/playwright/cli.js" install --with-deps chromium
+
+      - name: Prepare public roster fixture
+        env:
+          ADMIN_REPO: ${{ runner.temp }}/victoria-search-admin
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/victoria-search-tools/node_modules/playwright
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const manufacturers = JSON.parse(
+            fs.readFileSync('public/data/manufacturers.json', 'utf8')
+          );
+          const directory = path.join(
+            process.env.ADMIN_REPO, '_site', 'data'
+          );
+          fs.mkdirSync(directory, { recursive: true });
+          const partners = manufacturers
+            .filter(m => m && m.slug && !m.retired && !m.testOnly)
+            .map(m => ({ id: m.slug, name: m.name || m.slug }));
+          fs.writeFileSync(
+            path.join(directory, 'partners.json'),
+            JSON.stringify({ version: 1, partners }) + '\n'
+          );
+          console.log('Synthetic roster prepared:', partners.length, 'lines');
+          NODE
+
+      - name: Existing desktop and phone search journeys
+        env:
+          ADMIN_REPO: ${{ runner.temp }}/victoria-search-admin
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/victoria-search-tools/node_modules/playwright
+        run: node test/dealer-victoria-search.browser.js
+
+      - name: K-class descriptions, loading recovery and dealer isolation
+        env:
+          ADMIN_REPO: ${{ runner.temp }}/victoria-search-admin
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/victoria-search-tools/node_modules/playwright
+        run: node test/victoria-product-search.browser.js
+
+  production-files:
+    needs: search-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20
+
+      - name: Verify baseline or release with public GET requests
+        run: node scripts/verify-victoria-search-production.js
