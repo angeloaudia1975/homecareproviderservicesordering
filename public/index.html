@@ -4148,15 +4148,17 @@ async function renderShopSearch(host,seq){
   $("#mfrName").textContent="Search results";
   $("#mfrSub").textContent="Every line you can order, searched at once.";
   host.innerHTML=`<div class="shopland"><div class="msg" style="text-align:center;color:var(--gray);padding:20px">Searching your lines…</div></div>`;
-  const hits=(typeof window.gsSearchAll==="function")?await window.gsSearchAll(q):[];
+  let hits=[], status={complete:false,message:"Your catalog could not be loaded. Please try the search again."};
+  try{ if(typeof window.gsSearchAll==="function"){ hits=await window.gsSearchAll(q); status=typeof window.gsSearchStatus==="function"?window.gsSearchStatus():{complete:true}; } }catch(e){}
   if(state.active!==SHOPALL||seq!==_loadSeq||q!==SL_Q) return;
-  document.querySelector(".mstat").innerHTML=`<div><b>${hits.length}</b><span>Results</span></div>`;
+  document.querySelector(".mstat").innerHTML=`<div><b>${status.complete?hits.length:"—"}</b><span>${status.complete?"Results":"Search incomplete"}</span></div>`;
   let shown=60;
   const paint=()=>{
-    host.innerHTML=`<div class="shopland sl-search"><div class="sl-shead"><h2>${hits.length} result${hits.length===1?"":"s"} for &ldquo;${esc(q)}&rdquo;</h2><a href="#" class="sl-clear" data-sl-clear="1">← All manufacturers</a></div>`
+    host.innerHTML=`<div class="shopland sl-search"><div class="sl-shead"><h2>${status.complete?hits.length+" result"+(hits.length===1?"":"s"):"Search incomplete"} for &ldquo;${esc(q)}&rdquo;</h2><a href="#" class="sl-clear" data-sl-clear="1">← All manufacturers</a></div>`
+      +(!status.complete?`<div class="msg" role="status">${esc(status.message)} <button type="button" class="btn gh" data-sl-retry="1">Try again</button></div>`:"")
       +(hits.length?`<div class="sl-results" role="listbox">${hits.slice(0,shown).map(h=>window.gsRowHtml(Object.assign({page:true},h))).join("")}</div>`
         +(hits.length>shown?`<button type="button" class="sl-more" data-sl-more="1">Show more (${hits.length-shown} left)</button>`:"")
-        :`<div class="empty"><h3>No matches</h3><p>Nothing on your lines matches &ldquo;${esc(q)}&rdquo;. Try a part number, a product type or a manufacturer name.</p></div>`)+`</div>`;
+        :!status.complete?"":`<div class="empty"><h3>No matches</h3><p>Nothing on your lines matches &ldquo;${esc(q)}&rdquo;. Try a part number, a product type or a manufacturer name.</p></div>`)+`</div>`;
   };
   paint();
   host.__slPaintMore=()=>{ shown+=60; paint(); };
@@ -4166,6 +4168,7 @@ function wireShopLanding(host){
   if(!host.__slWired){ host.__slWired=1; host.addEventListener("click",function(e){ if(state.active!==SHOPALL) return;
     if(e.target.closest("[data-sl-clear]")){ e.preventDefault(); SL_Q=""; selectManufacturer(SHOPALL); return; }
     if(e.target.closest("[data-sl-more]")){ if(host.__slPaintMore) host.__slPaintMore(); return; }
+    if(e.target.closest("[data-sl-retry]")){ e.preventDefault(); selectManufacturer(SHOPALL); return; }
     const r=e.target.closest(".gsr2"); if(r){ openFromSearch(r.getAttribute("data-slug"),r.getAttribute("data-code")); return; }
     const d=e.target.closest("[data-sld]"); if(d&&host.contains(d)){ slDrawer(d.getAttribute("data-sld")==="open"); return; }
     const m=e.target.closest(".sl-m[data-slm]"); if(m&&host.contains(m)){ slJump(m.getAttribute("data-slm")); return; }
@@ -11115,15 +11118,21 @@ async function dvOpenReimb(){
 /* one clear match (a single product, or an exact item number) opens its product page; several open the results with their
    first names, so Victoria can ask one short question (owner 2026-11-20 23:31) */
 async function dvOpenSearch(q){
-  if(typeof showShopSearch!=="function") return {ok:false};
+  if(typeof showShopSearch!=="function"||typeof window.gsSearchAll!=="function") return {ok:false,reason:"search_unavailable"};
   q=String(q||"").trim().slice(0,80);
-  let hits=[]; try{ hits=(typeof window.gsSearchAll==="function")?await window.gsSearchAll(q):[]; }catch(e){ hits=[]; }
+  let hits; try{ hits=await window.gsSearchAll(q); }catch(e){ return {ok:false,reason:"catalog_unavailable",message:"Your catalog could not be loaded. Please try the search again."}; }
+  let status=typeof window.gsSearchStatus==="function"?window.gsSearchStatus():{complete:true};
+  if(!status.complete) return {ok:false,reason:status.reason,message:status.message,query:q};
   const one=hits.length===1||(hits.length>1&&hits[0].score===0&&hits[1].score>0);
   if(one){ const x=hits[0].x; const r=await dvOpenProduct(x.slug,x.p.code); if(r&&r.ok) return {ok:true,count:hits.length,query:q,opened:r}; }
-  await showShopSearch(q);
-  for(let i=0;i<60;i++){ const h=document.querySelector(".sl-search .sl-shead h2"); if(h&&state.active===SHOPALL&&SL_Q===q){ const n=parseInt(h.textContent,10);
+  try{ await showShopSearch(q); }catch(e){ return {ok:false,reason:"catalog_unavailable",message:"Your catalog could not be loaded. Please try the search again.",query:q}; }
+  for(let i=0;i<60;i++){
+    status=typeof window.gsSearchStatus==="function"?window.gsSearchStatus():{complete:true};
+    if(!status.complete) return {ok:false,reason:status.reason,message:status.message,query:q};
+    const h=document.querySelector(".sl-search .sl-shead h2"); if(h&&state.active===SHOPALL&&SL_Q===q){ const n=parseInt(h.textContent,10);
+      if(!isFinite(n)) return {ok:false,reason:"search_unavailable",query:q};
       const names=[...document.querySelectorAll(".sl-search .gsr2 .gst b")].slice(0,3).map(b=>b.textContent.trim());
-      return {ok:true,count:isFinite(n)?n:0,query:SL_Q,top:names}; } await new Promise(r=>setTimeout(r,150)); }
+      return {ok:true,count:n,query:SL_Q,top:names}; } await new Promise(r=>setTimeout(r,150)); }
   return {ok:false,query:q};
 }
 /* one of the portal's screens (the same buttons as the top navigation) */
@@ -11910,7 +11919,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
      a line whose pricing loaded; Golden only when Golden lets this dealer see prices. Never MSRP-as-cost, never
      another dealer's price. "View all results" opens the full list on the Shop page. Opening a result goes through
      the line's own product page, so configurators work as before. */
-  let _gsAll=null,_gsTimer=null,_gsLoading=null,_gsQ='';
+  let _gsAll=null,_gsTimer=null,_gsLoading=null,_gsQ='',_gsFailed=new Set();
   const GS_SYN=[
     ['walker','rollator','walking aid'],['wheelchair','transport chair','chair'],['lift chair','recliner','power recliner','lift recliner'],
     ['scooter','mobility scooter'],['commode','toilet','bedside commode'],['shower chair','bath seat','shower seat','bath bench','transfer bench'],
@@ -11918,6 +11927,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     ['bp','blood pressure','sphygmomanometer'],['oximeter','pulse oximeter','spo2'],['oxygen','concentrator','o2'],['nebulizer','neb'],
     ['cane','walking stick'],['raised toilet seat','toilet seat riser','elevated toilet seat'],['grab bar','safety rail','rail'],
     ['bed','hospital bed','hi-low','hi low'],['mattress','overlay','pressure redistribution'],['cushion','seat cushion','pad'],
+    ['arm','armrest','arm rest'],['footrest','foot rest'],['legrest','leg rest'],['anti tipper','anti tipping','anti tip','antitipper'],
     ['stairlift','stair lift'],['compression','stocking','hosiery'],['glove','gloves','nitrile'],['gauze','sponge','dressing'],
     ['thermometer','temp'],['knee','knee brace'],['wrist','wrist brace','carpal'],['ankle','ankle brace'],['back','lumbar','back brace']
   ];
@@ -11930,9 +11940,16 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
      owner 2026-11-20; never on item numbers (a digit) or 3-letter words; listed words stay as typed */
   const SING_KEEP=new Set(['plus','lens','this','bus','gas','yes','less','bias','atlas','canvas','chassis','series','species','axis','basis','does','goes','news','was','has','his','its','ours','yours','always','perhaps']);
   const gsSing=w=>/[0-9]/.test(w)||SING_KEEP.has(w)?[]:w.length>=6&&/ies$/.test(w)?[w.slice(0,-3)+'y']:w.length>=5&&/(ss|x|ch|sh)es$/.test(w)?[w.slice(0,-2)]:w.length>=4&&/s$/.test(w)&&!/(ss|us|is)$/.test(w)?[w.slice(0,-1)]:[];
-  const GS_FILLER=new Set(['show','me','find','search','look','looking','for','the','a','an','my','some','any','all','just','only','ones','one','please','i','want','need','do','you','have','carry','see','get','open','what','which','are','is','there','of','to','that','those','these','them']);
+  const GS_FILLER=new Set(['show','me','find','search','look','looking','for','the','a','an','my','some','any','all','just','only','ones','one','please','i','want','need','do','you','have','carry','see','get','open','what','which','are','is','there','of','to','that','those','these','them','with','and','can','could','would','am']);
+  /* Normalize spoken model names before filler removal ("K one" must not lose "one"). This is catalog
+     model matching only; it never assigns a billing code or infers a wheelchair class from its weight. */
+  const GS_K_WORDS={one:'1',two:'2',three:'3',four:'4',five:'5',six:'6',seven:'7',eight:'8',nine:'9'};
+  const gsSpoken=q=>String(q==null?'':q).toLowerCase()
+    .replace(/\b(?:k|kay)[\s-]+(one|two|three|four|five|six|seven|eight|nine|[1-9])\b/g,(_,n)=>'k'+(GS_K_WORDS[n]||n))
+    .replace(/\bk([1-9])s\b/g,'k$1')
+    .replace(/\bwheel\s+chairs?\b/g,'wheelchair');
   function gsTerms(q){
-    const n=gsDehyphen(gsNorm(q)); if(!n) return [];
+    const n=gsDehyphen(gsNorm(gsSpoken(q))); if(!n) return [];
     /* spoken / typed filler ("show me the semi-electric ones") is left out when other words remain */
     const all=n.split(' ').filter(Boolean), real=all.filter(w=>!GS_FILLER.has(w)), words=real.length?real:all;
     /* Each word (or a known multi-word phrase) becomes a set of alternatives; every set must match. Phrases are found on
@@ -11943,7 +11960,20 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     rest.trim().split(' ').filter(Boolean).forEach(w=>{ const alt=new Set([w,...sing(w)]); if(/[a-z]-[0-9]|[0-9]-[a-z]/.test(w)) alt.add(w.replace(/-/g,'')); /* "PR-519" also finds PR519 (owner 2026-11-20, live Golden check) */ GS_SYN.forEach(g=>{ if(g.includes(w)||sing(w).some(v=>g.includes(v))) g.forEach(x=>alt.add(x)); }); sets.push([...alt]); });
     return sets.length?sets:[words];
   }
-  function gsIndex(x){ const p=x.p; const n=gsNorm([p.name,groupDisplayName(p),p.code,p.category,p.subcategory,p.brand,x.mname].filter(Boolean).join(' ')); const d=gsDehyphen(n); return d===n?n:n+' | '+d; }
+  function gsIndex(x){ const p=x.p;
+    /* Only the product facts already merged for this dealer: no extra catalog, price or draft-content fetch. */
+    const features=Array.isArray(p._features)?p._features.filter(f=>typeof f==='string').join(' '):'';
+    const n=gsNorm([p.name,groupDisplayName(p),p.code,p.category,p.subcategory,p.brand,x.mname,p.description,features].filter(Boolean).join(' '));
+    const d=gsDehyphen(n); return d===n?n:n+' | '+d; }
+  function gsMatches(x,a){
+    /* K1 must not match the DK16 in a K2/K3 SKU; K3 must not match DK30 in a bariatric SKU.
+       A model is named as a whole word or starts its item number (K01 is Dalton's K1 prefix). */
+    if(/^k[1-9]$/.test(a)){
+      const modelText=gsDehyphen(gsNorm([x.p.name,groupDisplayName(x.p)].filter(Boolean).join(' ')));
+      return gsWord(modelText,a)||new RegExp('^k0?'+a.slice(1)+'(?=[a-z]|$)').test(gsNorm(x.p.code));
+    }
+    return x.ix.indexOf(a)>=0;
+  }
   /* RANKING (owner 2026-11-20 23:31): complete products before rails and accessories. A product is an accessory when the head
      of its name (before "with", a comma or a bracket) names a part — rail, trapeze, table, boards, cart… — or is "X for Y" —
      unless the dealer asked for that part ("bed rails" ranks rails first). Then: every word in the NAME, as whole words, before
@@ -11975,30 +12005,51 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     return [String((AUTH&&AUTH.dealer&&AUTH.dealer.id)||''), (typeof PREVIEW!=='undefined'&&PREVIEW&&PREVIEW.token)?'pv':'', gsLines().map(m=>m.slug).sort().join(','), g, gp].join('|'); }
   function gsEnsure(onLine){
     const key=gsAuthKey();
-    if(key!==_gsKey){ _gsKey=key; _gsAll=null; _gsLoading=null; _gsListeners=new Set(); }
+    if(key!==_gsKey){ _gsKey=key; _gsAll=null; _gsLoading=null; _gsListeners=new Set(); _gsFailed=new Set(); }
     if(onLine) _gsListeners.add(onLine);
-    if(_gsAll&&!_gsLoading) return Promise.resolve(_gsAll);
+    if(_gsAll&&!_gsLoading&&!_gsFailed.size) return Promise.resolve(_gsAll);
     if(_gsLoading) return _gsLoading;
-    const all=[]; _gsAll=all; const listeners=_gsListeners;
-    const run=Promise.all(gsLines().map(m=>Promise.resolve().then(()=>loadLine(m.slug)).then(prods=>{
-        if(_gsAll!==all) return;   // superseded by a newer index (different dealer / lines)
-        (prods||[]).forEach(p=>{ if(p&&p.code){ const x={p,slug:m.slug,mname:m.name}; x.ix=gsIndex(x); all.push(x); } });
+    const wanted=gsLines().filter(m=>!_gsAll||_gsFailed.has(m.slug));
+    const all=_gsAll||[]; _gsAll=all; const listeners=_gsListeners;
+    _gsFailed=new Set(wanted.map(m=>m.slug));
+    const run=Promise.all(wanted.map(m=>Promise.resolve().then(()=>loadLine(m.slug)).then(prods=>{
+        if(_gsAll!==all||_gsKey!==key||gsAuthKey()!==key) return; // superseded dealer / lines
+        /* loadLine deliberately returns [] without caching a failed load. A genuine loaded-empty line
+           has its own array in lineCache. Keep failed lines retryable instead of caching a false zero. */
+        const cached=typeof DASH!=='undefined'&&DASH.lineCache&&Object.prototype.hasOwnProperty.call(DASH.lineCache,m.slug)&&Array.isArray(DASH.lineCache[m.slug]);
+        if(!Array.isArray(prods)||(!prods.length&&!cached)) return;
+        const rows=prods.filter(p=>p&&p.code).map(p=>{const x={p,slug:m.slug,mname:m.name};x.ix=gsIndex(x);return x;});
+        all.push(...rows); _gsFailed.delete(m.slug);
         listeners.forEach(f=>{ try{ f(); }catch(e){} });
       }).catch(()=>{}))).then(()=>{ if(_gsLoading===run){ _gsLoading=null; _gsListeners=new Set(); } return all; });
     _gsLoading=run;
     return run;
   }
-  window.gsReset=function(){ _gsAll=null; _gsLoading=null; _gsKey=''; _gsListeners=new Set(); };
+  function gsStatus(){
+    const signedIn=typeof AUTH!=='undefined'&&AUTH&&AUTH.status==='approved';
+    const current=signedIn&&_gsKey===gsAuthKey();
+    const complete=!!(current&&_gsAll&&!_gsLoading&&!_gsFailed.size);
+    return {complete,reason:complete?null:!signedIn?'sign_in_required':'catalog_unavailable',
+      unavailable:current?gsLines().filter(m=>_gsFailed.has(m.slug)).map(m=>m.slug):[],
+      message:complete?'':!signedIn?'Please sign in again to search your products.':'Your catalog could not be fully loaded. Please try the search again.'};
+  }
+  window.gsSearchStatus=gsStatus;
+  window.gsReset=function(){ _gsAll=null; _gsLoading=null; _gsKey=''; _gsListeners=new Set(); _gsFailed=new Set(); };
   window.gsWarm=function(){ try{ return gsEnsure(); }catch(e){ return null; } };   // Victoria opening: the product index loads before she is asked to search
   function gsSearch(q){
     const sets=gsTerms(q); if(!sets.length||!_gsAll||_gsKey!==gsAuthKey()) return [];
     const nq=gsNorm(q), seen=new Set(), out=[];
     const qw=new Set(); sets.forEach(alts=>alts.forEach(a=>a.split(' ').forEach(w=>{ if(w){ qw.add(w); (gsSing(w)||[]).forEach(v=>qw.add(v)); } })));
     const allowed=new Set(gsLines().map(m=>m.slug)); let gOk=false; try{ gOk=goldenEntitled(); }catch(e){}
+    const queryWords=gsDehyphen(gsNorm(gsSpoken(q)));
+    const namedLines=gsLines().filter(m=>[m.slug,m.name].filter(Boolean).some(v=>gsWord(queryWords,gsDehyphen(gsNorm(v))))).map(m=>m.slug);
     _gsAll.forEach(x=>{
-      if(!allowed.has(x.slug)||(isGoldenSlug(x.slug)&&!gOk)) return;
-      if(!sets.every(alts=>alts.some(a=>x.ix.indexOf(a)>=0))) return;
+      if(!allowed.has(x.slug)||(isGoldenSlug(x.slug)&&!gOk)||(namedLines.length&&!namedLines.includes(x.slug))) return;
+      if(!sets.every(alts=>alts.some(a=>gsMatches(x,a)))) return;
       const code=gsNorm(x.p.code), name=gsNorm(groupDisplayName(x.p)||x.p.name), nm=gsDehyphen(name)+' '+gsDehyphen(gsNorm(x.p.name));
+      /* A full-electric bed's comparison to a semi-electric one does not change its configuration. */
+      const power=/\b(semi|full) electric\b/.exec(queryWords);
+      if(power&&gsWord(nm,(power[1]==='semi'?'full':'semi')+' electric')&&!gsWord(nm,power[0])) return;
       let score=(code===nq?0:code.indexOf(nq)===0?1:name.indexOf(nq)===0?2:name.indexOf(nq)>=0?3:gsNorm(x.p.name).indexOf(nq)>=0?4
         :sets.every(alts=>alts.some(a=>gsWord(nm,a)))?5:sets.every(alts=>alts.some(a=>nm.indexOf(a)>=0))?6:7);
       if(score>1&&gsAccessory(groupDisplayName(x.p)||x.p.name,qw)) score+=10;
@@ -12026,9 +12077,9 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     if(gsNorm(q).length<2){ box.innerHTML=''; box.classList.remove('on'); return; }
     const paint=()=>{
       if(q!==_gsQ) return;
-      const hits=gsSearch(q), loading=!!_gsLoading||!_gsAll;
-      box.innerHTML=(hits.length?hits.slice(0,8).map(gsRow).join(''):(loading?'':`<div class="gsr empty">No matches for &ldquo;${esc(q)}&rdquo;</div>`))
-        +(loading?`<div class="gsr empty">Searching your lines…</div>`:'')
+      const hits=gsSearch(q), loading=!!_gsLoading||!_gsAll, status=gsStatus();
+      box.innerHTML=(hits.length?hits.slice(0,8).map(gsRow).join(''):(loading||!status.complete?'':`<div class="gsr empty">No matches for &ldquo;${esc(q)}&rdquo;</div>`))
+        +(loading?`<div class="gsr empty">Searching your lines…</div>`:!status.complete?`<div class="gsr empty" role="status">${esc(status.message)}</div>`:'')
         +(hits.length?`<button type="button" class="gsall" data-q="${esc(q)}">View all ${hits.length} result${hits.length===1?'':'s'} →</button>`:'');
       box.classList.add('on'); const gi=$q('#gsearch'); if(gi) gi.setAttribute('aria-expanded','true');
       return hits;
@@ -12036,7 +12087,7 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     paint();
     await gsEnsure(paint);
     const hits=paint();
-    if(!hits) return;
+    if(!hits||!gsStatus().complete) return; // an unavailable line is not evidence of missing demand
     /* The global box searches every line a dealer is entitled to, so a miss here is a miss
        across the whole catalogue — the strongest "we do not carry this" signal there is. */
     searchSettle('global',function(){

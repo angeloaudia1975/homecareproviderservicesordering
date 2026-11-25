@@ -8,9 +8,7 @@ on:
     paths:
       - public/index.html
       - public/assets/dealer-victoria-panel.js
-      - scripts/prepare-victoria-product-search.cjs
       - scripts/verify-victoria-search-production.js
-      - scripts/upload-victoria-search-blobs.cjs
       - test/victoria-product-search.test.js
       - test/victoria-product-search.browser.js
       - test/dealer-victoria-search.browser.js
@@ -37,10 +35,6 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 20
-
-      - name: Prepare the reviewed candidate source
-        if: github.ref == 'refs/heads/codex/victoria-product-search'
-        run: node scripts/prepare-victoria-product-search.cjs
 
       - name: Product-search regressions
         run: node test/victoria-product-search.test.js
@@ -91,10 +85,6 @@ jobs:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/victoria-search-tools/node_modules/playwright
         run: node test/victoria-product-search.browser.js
 
-      - name: Confirm tested candidate retains its reviewed hashes
-        if: github.ref == 'refs/heads/codex/victoria-product-search'
-        run: node scripts/prepare-victoria-product-search.cjs
-
   production-files:
     needs: search-tests
     runs-on: ubuntu-latest
@@ -112,32 +102,3 @@ jobs:
 
       - name: Verify baseline or release with public GET requests
         run: node scripts/verify-victoria-search-production.js
-
-  prepare-source-objects:
-    needs:
-      - search-tests
-      - production-files
-    if: >-
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/codex/victoria-product-search'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: 20
-
-      - name: Regenerate only the reviewed source files
-        run: node scripts/prepare-victoria-product-search.cjs
-
-      - name: Store two verified blobs without changing refs
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: node scripts/upload-victoria-search-blobs.cjs

@@ -222,9 +222,11 @@
         else if (x.type === 'open_search') await go(async () => { let v = null; try { v = DV.openSearch ? await DV.openSearch(x.query) : null; } catch (e) { v = null; }
           /* one clear match: its product page is open (confirmed once it is on screen); several: the results are on screen and
              Victoria asks one short question (owner 2026-11-20 23:31) */
-          const ok = !!(v && v.ok); const n = ok ? v.count : 0;           checked(ok, !ok ? 'The search for “' + x.query + '” didn\'t open. Use the search bar at the top of the page.'
+          const ok = !!(v && v.ok); const n = ok ? v.count : 0;
+          const searchFailure = v && v.message ? v.message : 'The search didn\'t open. Please try the search bar at the top of the page.';
+          checked(ok, !ok ? searchFailure
             : v.opened ? 'The product page for ' + v.opened.name + ' is open.' : 'Shop Products shows ' + n + ' result' + (n === 1 ? '' : 's') + ' for “' + x.query + '” (every line on your account).');
-          said.push(!ok ? 'The search didn\'t open. Use the search bar at the top of the page.'
+          said.push(!ok ? searchFailure
             : v.opened ? 'The ' + v.opened.name + ' page is open.'
             : !n ? 'Shop Products found nothing for that on your lines.'
             : 'Shop Products shows ' + n + ' result' + (n === 1 ? '' : 's') + '.' + (n > 1 ? ' Which one would you like?' : '')); });   // names stay on screen, not read aloud
