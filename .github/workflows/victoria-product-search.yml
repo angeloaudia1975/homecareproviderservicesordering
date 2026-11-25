@@ -28,9 +28,6 @@ jobs:
   search-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      ADMIN_REPO: ${{ runner.temp }}/victoria-search-admin
-      PLAYWRIGHT_MODULE: ${{ runner.temp }}/victoria-search-tools/node_modules/playwright
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
@@ -58,6 +55,9 @@ jobs:
           node "$RUNNER_TEMP/victoria-search-tools/node_modules/playwright/cli.js" install --with-deps chromium
 
       - name: Prepare public roster fixture
+        env:
+          ADMIN_REPO: ${{ runner.temp }}/victoria-search-admin
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/victoria-search-tools/node_modules/playwright
         run: |
           node <<'NODE'
           const fs = require('node:fs');
@@ -80,9 +80,15 @@ jobs:
           NODE
 
       - name: Existing desktop and phone search journeys
+        env:
+          ADMIN_REPO: ${{ runner.temp }}/victoria-search-admin
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/victoria-search-tools/node_modules/playwright
         run: node test/dealer-victoria-search.browser.js
 
       - name: K-class descriptions, loading recovery and dealer isolation
+        env:
+          ADMIN_REPO: ${{ runner.temp }}/victoria-search-admin
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/victoria-search-tools/node_modules/playwright
         run: node test/victoria-product-search.browser.js
 
       - name: Confirm tested candidate retains its reviewed hashes
