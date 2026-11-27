@@ -59774,7 +59774,7 @@
      "images": [],
      "source": "",
      "retired": {
-      "reason": "Owner decision 2026-11-20: replaced by the Cliq VC-701 Aspirator (VC-701) at $149 each — retired from new sales; order and sales history keep ASP-HD",
+      "reason": "Owner decision 2026-11-20: replaced by the Cliq VC-701 Aspirator (VC-701) — retired from new sales; order and sales history keep ASP-HD",
       "decided": "2026-11-20",
       "ref": "Owner directive 2026-11-20 16:48 CT"
      }
@@ -59986,7 +59986,7 @@
     "specs": "Owner-supplied VC-701 specification sheet (2026-11-23); weight 3.5 kg / 7.7 lb explicitly confirmed by the owner; voltage/power alternatives kept as paired versions",
     "warranty": "Dalton's Cliq VC-701 sell sheet (owner-supplied 2026-11-20)",
     "category": "HCPS catalog (Respiratory)",
-    "replaces": "Replaces ASP-HD for new sales (owner 2026-11-20 16:48: VC-701 replaces ASP-HD at $149 each)"
+    "replaces": "Replaces ASP-HD for new sales (owner 2026-11-20 16:48: VC-701 replaces ASP-HD)"
    },
    "image": "/assets/products/dalton/gallery/10b7c1b5ed587bb1e997.jpg",
    "images_gallery": [
