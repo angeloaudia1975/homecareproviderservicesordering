@@ -30,6 +30,8 @@ function extract(start, end) {
   return html.slice(a, b);
 }
 const searchSource = extract("let _gsAll=null", "function gsRow(r)");
+const referenceSource = extract('function catalogSkuHcpcs(', '/* RETIRED PART NUMBERS');
+const lineSource = extract('const _lineInflight={};', '// Fetch this dealer');
 const openSource = extract('async function dvOpenSearch(q)', 'async function dvOpenView(v)');
 const row = (code, name, more) => Object.assign({ code, name, category: 'Wheelchairs' }, more);
 const byCode = code => catalog.find(p => p.code === code);
@@ -147,6 +149,65 @@ async function test(name, run) {
     assert.ok(codes(await h.search('K3 adjustable length front rigging')).includes('K3DK16FTADJ'), 'Feature-only phrase must be indexed');
     const noClassInference = harness({ datasets: { dalton: [row('GENERIC-A', 'Lightweight manual wheelchair', { description: 'A folding wheelchair with adjustable arms.' })] } });
     assert.equal((await noClassInference.search('K3 wheelchair')).length, 0, 'Do not infer K3 from lightweight');
+  });
+
+  await test('Light weight and height-adjustable arm search require the right product evidence', async () => {
+    const real = harness();
+    assert.ok(codes(await real.search('light weight wheelchair')).includes('K3DK16FTADJ'));
+    assert.ok(codes(await real.search('height-adjustable arm wheelchair')).includes('K3DK16FTADJ'));
+    assert.ok(codes(await real.search('wheelchair with adjustable arm height')).includes('K3DK16FTADJ'));
+    const h = harness({ datasets: { dalton: [
+      row('FIXED', 'Wheelchair', { description: 'Height-adjustable leg rests and fixed arms.' }),
+      row('SPEC', 'Wheelchair', { _skuSpecs: [{ label: 'Arm Type', value: 'Height-adjustable' }] }),
+      row('FIXED-OPTION', 'Wheelchair', { description: 'Family offered with height-adjustable arms.',
+        _specs: [{ label: 'Arm Type', value: 'Height-adjustable' }], _skuSpecs: [{ label: 'Arm Type', value: 'Fixed' }] }),
+    ] } });
+    assert.deepEqual(codes(await h.search('height-adjustable arm wheelchair')), ['SPEC']);
+  });
+
+  await test('HCPCS searches use exact catalog references and never infer a code from a model name', async () => {
+    const h = harness({ datasets: { dalton: [
+      row('REFERENCE', 'Wheelchair', { _searchHcpcs: ['K0001'] }),
+      row('MENTION', 'K1 wheelchair', { description: 'Compare to K0001 and K0003.' }),
+      row('K0001', 'Wheelchair with a code-like SKU'),
+    ] } });
+    assert.deepEqual(codes(await h.search('HCPCS K0001 wheelchair')), ['REFERENCE']);
+    assert.deepEqual(codes(await h.search('HCPCS code K0001 wheelchair')), ['REFERENCE']);
+    assert.equal((await h.search('K0001'))[0].x.p.code, 'K0001', 'bare SKU retains exact priority');
+    assert.deepEqual(codes(await h.search('K0003')), []);
+    const unrelated = harness({ lines: ['other'], datasets: { other: [row('K3UNRELATED', 'Wheelchair'), row('K3', 'Literal SKU')] } });
+    assert.deepEqual(codes(await unrelated.search('K3 wheelchair')), []);
+    assert.deepEqual(codes(await unrelated.search('K3')), ['K3']);
+  });
+
+  await test('Catalog code references must be published, exact and unqualified', () => {
+    const refs = vm.runInNewContext(referenceSource + ';catalogSkuHcpcs');
+    const spec = value => [{ label: 'HCPCS code', value }];
+    const sku = { sku: 'OPTION-A' };
+    const page = { status: 'published', specs: spec('K0001'), skus: [sku] };
+    assert.deepEqual(Array.from(refs(page, sku)), ['K0001']);
+    assert.deepEqual(Array.from(refs({ ...page, status: 'approved' }, sku)), []);
+    assert.deepEqual(Array.from(refs({ ...page, skus: [sku, { sku: 'OPTION-B' }] }, sku)), []);
+    assert.deepEqual(Array.from(refs(page, { ...sku, specs: spec('K0001 pending') })), []);
+    assert.deepEqual(Array.from(refs(page, { ...sku, specs: [...spec('K0001'), ...spec('K0003')] })), []);
+  });
+
+  await test('A catalog session reset isolates unfinished line loads even when both sessions carry the same line', async () => {
+    let finish;
+    const first = new Promise(resolve => { finish = resolve; });
+    const DASH = { lineCache: {} };
+    const s = { DASH, CATALOG_SOURCE: {}, isGoldenSlug: () => false,
+      fetch: async () => ({ ok: true, json: async () => [] }),
+      mergeCatalogEdits: async () => first };
+    const load = vm.runInNewContext(lineSource + ';loadLine', s);
+    const previous = load('dalton');
+    await new Promise(resolve => setImmediate(resolve));
+    DASH.lineCache = {};
+    s.mergeCatalogEdits = async () => [{ code: 'CURRENT' }];
+    assert.equal((await load('dalton'))[0].code, 'CURRENT');
+    finish([{ code: 'PREVIOUS' }]);
+    assert.equal((await previous).length, 0);
+    assert.equal(DASH.lineCache.dalton[0].code, 'CURRENT');
   });
 
   await test('With and and are conversational filler, while without remains meaningful', async () => {
