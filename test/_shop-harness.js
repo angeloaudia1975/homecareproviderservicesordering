@@ -65,7 +65,7 @@ async function open(browser, w, h, opts) {
   await page.waitForTimeout(800);
   // Pricing is not under test here: catalogs open with their public rows only (no prices), so navigation can be checked.
   // opts.prices: { slug: price } gives every product of that line a synthetic list price (to check the dealer's own price shows).
-  await page.evaluate(pr => { window.mergeCatalogEdits = async (slug, prods) => (prods || []).map(p => Object.assign({}, p, pr && pr[slug] != null ? { base_price: pr[slug], tiers: [] } : {})); }, opts.prices || null);
+  if (!opts.realCatalog) await page.evaluate(pr => { window.mergeCatalogEdits = async (slug, prods) => (prods || []).map(p => Object.assign({}, p, pr && pr[slug] != null ? { base_price: pr[slug], tiers: [] } : {})); }, opts.prices || null);
   return { ctx, page, seen };
 }
 module.exports = { chromium, open, ACCESS, path, fs };

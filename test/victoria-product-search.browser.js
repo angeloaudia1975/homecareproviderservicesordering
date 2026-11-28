@@ -1,12 +1,10 @@
 "use strict";
 /* Real portal page and published Dalton content; _shop-harness intercepts EVERY request.
    Synthetic dealer only, no prices, sends, orders or live service calls. */
-const {chromium,open,path,fs}=require("./_shop-harness.js");
+const {chromium,open}=require("./_shop-harness.js");
 const assert=require("node:assert/strict");
-const pages=Object.values(JSON.parse(fs.readFileSync(path.join(__dirname,"../public/data/content/dalton.json"),"utf8")).pages);
-const content={};
-for(const pg of pages)if(pg.status==="published")for(const sku of pg.skus||[])
-  content[sku.sku]={description:pg.description,_features:pg.features||[],_encPage:pg.name,_pageKey:pg.page_key};
+const {splitCatalogFile}=require("../netlify/functions/_catalog_commercial.js");
+const fileOverlay=splitCatalogFile(require("../public/data/dalton.json")).overlay;
 let passed=0;
 async function check(name,fn){await fn();passed++;console.log("PASS "+name);}
 (async()=>{
@@ -15,15 +13,17 @@ async function check(name,fn){await fn();passed++;console.log("PASS "+name);}
     for(const [width,height] of [[1280,900],[390,844]]){
       const {ctx,page,seen}=await open(browser,width,height,{
         access:{your_accounts:["dalton"],available:[],request_access:[],golden:"None"},
+        realCatalog:true,
         html:source=>source.replace("Object.assign(window,{dvProbe});","Object.assign(window,{dvProbe,dvOpenSearch});")
       });
       try{
-        await page.evaluate(content=>{
-          const original=window.mergeCatalogEdits;
-          window.mergeCatalogEdits=async(slug,products)=>(await original(slug,products)).map(p=>
-            slug==="dalton"?Object.assign({},p,content[p.code]||{}):p);
-          DASH.lineCache={};window.gsReset();
-        },content);
+        await page.route("**/.netlify/functions/catalog-layers?**",route=>{
+          const req=route.request(), query=new URL(req.url()).searchParams;
+          if(query.get("manufacturer")!=="dalton") return route.fallback();
+          assert.ok(req.headers()["x-hcps-preview"]||req.headers().authorization,"authenticated layer request");
+          return route.fulfill({json:{ok:true,identity_sha256:query.get("identity"),file_overlay:fileOverlay,custom_products:[],product_overrides:[]}});
+        });
+        await page.evaluate(()=>{DASH.lineCache={};window.gsReset();});
         const search=q=>page.evaluate(q=>window.gsSearchAll(q).then(rows=>rows.map(r=>({
           code:r.x.p.code,slug:r.x.slug
         }))),q);
@@ -48,6 +48,12 @@ async function check(name,fn){await fn();passed++;console.log("PASS "+name);}
           const rows=await search("Dalton K3 wheelchair with anti tippers");
           assert.equal(rows.length,6);
           assert.ok(rows.every(x=>/^K3DK(?:16|18|20)/.test(x.code)));
+        });
+        await check(width+": exact Dalton product references are searchable via the real public-content merge",async()=>{
+          const refs=(await search("HCPCS K0001 wheelchair")).map(x=>x.code).sort();
+          assert.deepEqual(refs,["K01DK18F15","K01DK18L15"]);
+          assert.equal((await search("K0003 wheelchair")).length,0);
+          assert.ok((await search("height-adjustable arm wheelchair")).some(x=>x.code==="K3DK16FTADJ"));
         });
         await check(width+": Victoria opens the real Shop results and confirms eight",async()=>{
           const result=await page.evaluate(()=>dvOpenSearch("Dalton K three wheelchairs"));

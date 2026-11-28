@@ -2413,6 +2413,15 @@ async function commercialLayers(slug, rows){
   if(j.identity_sha256!==identity) throw new Error('catalog-layers answered for another version of the catalog file');
   return j;
 }
+/* Search references are exact catalog facts. A multi-SKU page cannot lend one option's code to another. */
+function catalogSkuHcpcs(page, sku){
+  if(!page||!sku||!['published','active'].includes(page.status)) return [];
+  const labeled=rows=>(Array.isArray(rows)?rows:[]).filter(r=>r&&/^(?:hcpcs?(?: code| reference)?|medicare code|billing code)$/i.test(String(r.label||'').trim()));
+  const option=labeled(sku.specs);
+  const refs=option.length?option:page.skus?.length===1?labeled(page.specs):[];
+  const codes=[...new Set(refs.map(r=>String(r.value||'').trim().toUpperCase()))];
+  return codes.length===1&&/^[A-V][0-9]{4}$/.test(codes[0])?codes:[];
+}
 /* RETIRED PART NUMBERS (owner decisions; durable). A part number listed here is never shown, priced or ordered —
    whatever a catalog file, an import, an added product or an enrichment page says — because the order server runs this
    same merge (_shop_engine.js). Retiring by an override row alone was reversible by deleting the row; this list is not.
@@ -2521,6 +2530,7 @@ async function mergeCatalogEdits(slug, prods){
      on it can be ordered. hidden (or switched off) is the way to remove a page entirely. Server
      pricing runs this same code, so an order for a discontinued product is refused there too. */
   const VISIBLE_STATUSES=['published','active','discontinued'];
+  const searchHcpcs=new Map();
   let _gated=0;                 // declared here because it is read after the catch below
   try{
     let pages=null;
@@ -2637,6 +2647,10 @@ async function mergeCatalogEdits(slug, prods){
           if(_sx && _sx.axes && typeof _sx.axes==='object' && !Array.isArray(_sx.axes) && Object.keys(_sx.axes).length) p._axes=Object.assign({},_sx.axes);
           if(p._axes){ const _ix=(pg.skus||[]).indexOf(_sx); if(_ix>=0) p._axisOrder=_ix; }
           if(_sx && Array.isArray(_sx.specs) && _sx.specs.length) p._skuSpecs=_sx.specs.filter(r=>r&&r.label&&r.value!=null&&r.value!=='');
+          if(sKey===key&&typeof catalogSkuHcpcs==='function'){
+            const refs=catalogSkuHcpcs(pg,_sx);
+            if(refs.length) searchHcpcs.set(p.code,refs);
+          }
           if(pg.name) p._encPage=String(pg.name).trim();
           /* THE ENRICHMENT DESCRIPTION IS THE DESCRIPTION (Phase 2.5). It used to fill only a
              blank, so wherever the catalog file carried its own text the approved description
@@ -2715,7 +2729,13 @@ async function mergeCatalogEdits(slug, prods){
   if(_gated) try{ console.log('[HCPS] '+slug+': '+_gated+' SKU(s) not listed — no enrichment page'); }catch(e){}
   const _mp=await applyMasterPrices(slug, prods.map(inheritColorPrice).map(fillMsrp));
   const _uc=(typeof unitOrderCfg==="function")?unitOrderCfg(slug):null;   /* guard: test harnesses slice this function out of the page */
-  return _uc?_mp.map(p=>unitOrderProduct(p,_uc)):_mp;
+  const visible=_uc?_mp.map(p=>unitOrderProduct(p,_uc)):_mp;
+  // Attach search metadata after catalog composition without changing the serialized product or pricing fields.
+  if(searchHcpcs.size) visible.forEach(p=>{
+    const refs=searchHcpcs.get(p.code);
+    if(refs) Object.defineProperty(p,'_searchHcpcs',{value:refs});
+  });
+  return visible;
 }
 
 /* ═══ PHASE 5 — COMMERCIAL FIELDS FROM THE MASTER RECORD ════════════════════
@@ -4325,27 +4345,36 @@ async function ftmOpen(slug,code,placement,slot,month){
    starting a second copy. Settled loads leave the in-flight map, so a failure is never remembered. */
 const _lineInflight={};
 function loadLine(slug){
-  if(DASH.lineCache[slug]) return Promise.resolve(DASH.lineCache[slug]);
-  if(_lineInflight[slug]) return _lineInflight[slug];
+  const cache=DASH.lineCache;
+  if(cache[slug]) return Promise.resolve(cache[slug]);
+  if(_lineInflight[slug]?.cache===cache) return _lineInflight[slug].promise;
   const p=_loadLineOnce(slug);
-  _lineInflight[slug]=p;
-  const done=()=>{ if(_lineInflight[slug]===p) delete _lineInflight[slug]; };
+  _lineInflight[slug]={cache,promise:p};
+  const done=()=>{ if(_lineInflight[slug]?.promise===p) delete _lineInflight[slug]; };
   p.then(done,done);
   return p;
 }
 async function _loadLineOnce(slug){
-  if(DASH.lineCache[slug]) return DASH.lineCache[slug];
+  const cache=DASH.lineCache;
+  if(cache[slug]) return cache[slug];
   let prods=[];
-  if(isGoldenSlug(slug)){ if(!goldenEntitled()) return []; try{ prods=await goldenCatalogProducts(); }catch(e){ return []; } DASH.lineCache[slug]=prods; return prods; }
   try{
-    const r=await fetch(`./data/${slug}.json`,{cache:"no-store"});
-    if(!r.ok) throw new Error('catalog '+r.status);
-    prods=await mergeCatalogEdits(slug,(await r.json())||[]);   // same edits/hides/custom as the catalog view
+    if(isGoldenSlug(slug)){
+      if(!goldenEntitled()) return [];
+      prods=await goldenCatalogProducts();
+    }else{
+      const r=await fetch(`./data/${slug}.json`,{cache:"no-store"});
+      if(!r.ok) throw new Error('catalog '+r.status);
+      const rows=await r.json();
+      if(cache!==DASH.lineCache) return [];
+      prods=await mergeCatalogEdits(slug,rows||[]);   // same edits/hides/custom as the catalog view
+    }
   }catch(e){ return []; }   // not cached: a brief outage must not hide the line for the rest of the session
+  if(cache!==DASH.lineCache) return [];   // a load started before sign-out cannot populate the new session
   /* A line whose pricing could not load answers empty — don't remember that either (C3-07). */
   const _cs=(typeof CATALOG_SOURCE!=='undefined'&&CATALOG_SOURCE[slug])||null;
   if(!prods.length && _cs && _cs.source==='unavailable') return prods;
-  DASH.lineCache[slug]=prods; return prods;
+  cache[slug]=prods; return prods;
 }
 // Fetch this dealer's saved order history (cached per session; invalidated on submit).
 async function loadOrders(){
@@ -11944,14 +11973,24 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
   /* Normalize spoken model names before filler removal ("K one" must not lose "one"). This is catalog
      model matching only; it never assigns a billing code or infers a wheelchair class from its weight. */
   const GS_K_WORDS={one:'1',two:'2',three:'3',four:'4',five:'5',six:'6',seven:'7',eight:'8',nine:'9'};
+  const GS_ARM_HEIGHT='heightadjustablearm';
+  const gsArmPhrase=s=>s
+    .replace(/\b(?:height adjustable|adjustable height)(?: (?:padded|swing back|flip back|desk length|full length|detachable|removable)){0,4} arm(?: ?rests?|s)?\b/g,GS_ARM_HEIGHT)
+    .replace(/\barm(?: ?rests?|s)? (?:are |is |can be )?(?:height adjustable|adjustable height)\b/g,GS_ARM_HEIGHT)
+    .replace(/\badjustable arm(?: ?rests?|s)? height\b/g,GS_ARM_HEIGHT);
   const gsSpoken=q=>String(q==null?'':q).toLowerCase()
     .replace(/\b(?:k|kay)[\s-]+(one|two|three|four|five|six|seven|eight|nine|[1-9])\b/g,(_,n)=>'k'+(GS_K_WORDS[n]||n))
     .replace(/\bk([1-9])s\b/g,'k$1')
-    .replace(/\bwheel\s+chairs?\b/g,'wheelchair');
+    .replace(/\bwheel\s+chairs?\b/g,'wheelchair')
+    .replace(/\blight[\s-]+weight\b/g,'lightweight');
   function gsTerms(q){
-    const n=gsDehyphen(gsNorm(gsSpoken(q))); if(!n) return [];
+    const n=gsArmPhrase(gsDehyphen(gsNorm(gsSpoken(q)))); if(!n) return [];
     /* spoken / typed filler ("show me the semi-electric ones") is left out when other words remain */
-    const all=n.split(' ').filter(Boolean), real=all.filter(w=>!GS_FILLER.has(w)), words=real.length?real:all;
+    const all=n.split(' ').filter(Boolean);
+    const codeQuery=all.some(w=>/^hcpcs?$/.test(w))&&all.some(w=>/^[a-v][0-9]{4}$/.test(w));
+    const real=all.filter(w=>!GS_FILLER.has(w)&&!(codeQuery&&/^(?:hcpcs?|code)$/.test(w)))
+      .map(w=>codeQuery&&/^[a-v][0-9]{4}$/.test(w)?'hcpcs:'+w:w);
+    const words=real.length?real:all;
     /* Each word (or a known multi-word phrase) becomes a set of alternatives; every set must match. Phrases are found on
        the singular words too ("hospital beds" is the phrase "hospital bed"). */
     const sets=[]; let rest=' '+words.map(w=>gsSing(w)[0]||w).join(' ')+' ';
@@ -11962,10 +12001,28 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
   }
   function gsIndex(x){ const p=x.p;
     /* Only the product facts already merged for this dealer: no extra catalog, price or draft-content fetch. */
-    const features=Array.isArray(p._features)?p._features.filter(f=>typeof f==='string').join(' '):'';
-    const n=gsNorm([p.name,groupDisplayName(p),p.code,p.category,p.subcategory,p.brand,x.mname,p.description,features].filter(Boolean).join(' '));
+    const features=Array.isArray(p._features)?p._features.filter(f=>typeof f==='string'):[];
+    const skuSpecs=Array.isArray(p._skuSpecs)?p._skuSpecs:[];
+    const specs=skuSpecs.concat(p._specs||[]).filter(r=>r&&
+      /^(?:arm(?:rest)? (?:type|height)|product type|(?:product )?weight(?: capacity)?|seat (?:size|width|depth|height)|frame material)$/i.test(String(r.label||'')));
+    const isArmSpec=r=>r&&/^arm(?:rest)? (?:type|height)$/i.test(r.label);
+    const skuArms=skuSpecs.filter(isArmSpec);
+    const armSpecs=skuArms.length?skuArms:specs.filter(isArmSpec);
+    const facts=[p.name,groupDisplayName(p),p.description,...features,...specs.map(r=>r.label+' '+r.value)];
+    const factText=facts.map(f=>gsDehyphen(gsNorm(gsSpoken(f))));
+    // An option with its own arm specs never inherits a different configuration from the family.
+    x.armHeight=armSpecs.some(r=>
+      /\b(?:height adjustable|adjustable height)\b/.test(gsDehyphen(gsNorm(r.value)))&&
+      !/\b(?:not|non|fixed)\b/.test(gsNorm(r.value)))||(!armSpecs.length&&factText.some(f=>{
+        const normalized=gsArmPhrase(f);
+        return gsWord(normalized,GS_ARM_HEIGHT)&&!/\b(?:not|without|non) heightadjustablearm\b/.test(normalized);
+      }));
+    const n=gsNorm([p.name,p.code,p.category,p.subcategory,p.brand,x.mname,...factText].filter(Boolean).join(' '));
     const d=gsDehyphen(n); return d===n?n:n+' | '+d; }
   function gsMatches(x,a){
+    if(a===GS_ARM_HEIGHT) return x.armHeight;
+    if(a.startsWith('hcpcs:')) return (x.p._searchHcpcs||[]).includes(a.slice(6).toUpperCase());
+    if(/^[a-v][0-9]{4}$/.test(a)) return gsNorm(x.p.code).startsWith(a)||(x.p._searchHcpcs||[]).includes(a.toUpperCase());
     /* K1 must not match the DK16 in a K2/K3 SKU; K3 must not match DK30 in a bariatric SKU.
        A model is named as a whole word or starts its item number (K01 is Dalton's K1 prefix). */
     if(/^k[1-9]$/.test(a)){
@@ -12045,8 +12102,9 @@ window.P360={boot:boot,show:showView,invalidateHistory:()=>{ HISTORY=null; },get
     const namedLines=gsLines().filter(m=>[m.slug,m.name].filter(Boolean).some(v=>gsWord(queryWords,gsDehyphen(gsNorm(v))))).map(m=>m.slug);
     _gsAll.forEach(x=>{
       if(!allowed.has(x.slug)||(isGoldenSlug(x.slug)&&!gOk)||(namedLines.length&&!namedLines.includes(x.slug))) return;
-      if(!sets.every(alts=>alts.some(a=>gsMatches(x,a)))) return;
-      const code=gsNorm(x.p.code), name=gsNorm(groupDisplayName(x.p)||x.p.name), nm=gsDehyphen(name)+' '+gsDehyphen(gsNorm(x.p.name));
+      const code=gsNorm(x.p.code);
+      if(code!==nq&&!sets.every(alts=>alts.some(a=>gsMatches(x,a)))) return;
+      const name=gsNorm(groupDisplayName(x.p)||x.p.name), nm=gsDehyphen(name)+' '+gsDehyphen(gsNorm(x.p.name));
       /* A full-electric bed's comparison to a semi-electric one does not change its configuration. */
       const power=/\b(semi|full) electric\b/.exec(queryWords);
       if(power&&gsWord(nm,(power[1]==='semi'?'full':'semi')+' electric')&&!gsWord(nm,power[0])) return;
